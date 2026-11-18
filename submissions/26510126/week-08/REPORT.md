@@ -404,7 +404,7 @@ flowchart TB
   end
 
   U(["the user: goal"])
-  SV(["supervisor (Claude Code):<br/>watch_r3 (kept outside this folder), leak audits every 3 h,<br/>review alerts, supervise_r3"])
+  SV(["supervisor (Claude Code):<br/>watch_r3, leak audits every 3 h,<br/>review alerts, supervise_r3"])
 
   M -->|"supply, settles"| CHK
   M -->|"orders, mandates"| SC
@@ -468,6 +468,15 @@ Final. Round 3 closed on 2026-11-17 at 23:59 KST; the market answered our next p
 ended at 2026-11-17 23:59 KST". Counts come from one run of `python r3_results.py` on 11/18 10:41 (the kit log and its
 archives, `.market/payments.jsonl`); the ranks from the board we saved at 11/18 00:00,
 `logs/board/board-round3-final-1118-0000.json`.
+
+**Where the records are.** Every log the report cites is committed under `logs/`: the kit log as 21 archives cut
+every 12-17 h (`logs/archive/*.gz`, 11/4-11/17) and the live `logs/market-kit.log` (`market-kit.log.1` is left out: it is the same text as the
+last archive); `logs/talks_r3.jsonl` and `logs/demand_r3.jsonl` as `.gz` copies (64 MB and 45 MB raw); the meta logs,
+`strategies_r3.jsonl`, the verdict ledgers and the board history as they were written. `.market/` is the kit's working
+folder and stays git-ignored; its `payments.jsonl` (every deal our buyer agreed, paid or not, and why) is copied to
+`logs/payments_r3.jsonl`. `watch_r3.py`, the supervisor's
+watch, ran from the kit's own folder and is copied here unchanged. `python r3_results.py --no-board` recounts the
+figures of this section from these files.
 
 | | Count | Quoted from |
 |---|---|---|

@@ -1,0 +1,100 @@
+test_restock_r3.py failed
+
+=== diff ===
+--- /Users/hoon/Developer/ai-agent-engineering-101-week08/submissions/26510126/week-08/restock_r3.py	2026-11-15 06:47:44
++++ /Users/hoon/Developer/agent-market/staging/auto/1115-1709/restock_r3.py	2026-11-15 17:09:46
+@@ -600,6 +600,10 @@
+                 # that passes the average-margin check was bought whole: depth times the share of A draws that can sell
+                 if e is not None and depth:
+                     depth = round(depth * e[2]) if e[2] <= 0 else max(1, round(depth * e[2]))
++                # a stale 300k+ SKU is held at 2, not dear_depth: dear stock grew 58M to 92M at cost in 10 h, 443 goods units
++                # (13.7M) sat over a day, and 63 bought against 47 sold an hour, while top sellers were held at 0-5 units
++                if c["list_price"] >= 300_000 and c["sku"] in stale:
++                    depth = min(depth, 2)
+                 # the depth, not the SKU plan's qty: on 11/6 the market's best sellers (sku_score 600-1,500) planned 20
+                 # units a line, 2.5-28M at cost, more than the goods room left, so each was skipped and cheap lines took
+                 # the window; 4,379 units of 300k+ settled market-wide in 6 h, we held none of the top 12 and sold 6
+--- /Users/hoon/Developer/ai-agent-engineering-101-week08/submissions/26510126/week-08/test_restock_r3.py	2026-11-15 02:05:34
++++ /Users/hoon/Developer/agent-market/staging/auto/1115-1709/test_restock_r3.py	2026-11-15 17:09:49
+@@ -566,6 +566,23 @@
+ q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}.get("SB", 0)
+ case("a hot 300k+ SKU with 1 own deal is capped at half its depth (20 of 40), not 2", q == 20, q)
+ 
++# a hot 300k+ SKU (sku_score 1500, dear_depth 8) with one unit of ours held 30 h is refilled to 2, held fresh to 8
++qs = []
++for age in (1, 30):
++    bed = [{"unit": "b0", "sku": "SB", "category": "G>bed", "kind": "goods", "grade": "B", "cost": 240000,
++            "list_price": 400000, "supplied_at": NOW, "expires_at": None}]
++    (md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": bed}), encoding="utf-8")
++    (md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SB": 1500},
++                                                       "first": {"b0": time.time() - age * 3600}}), encoding="utf-8")
++    restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=500_000_000, goods_frac=1.0, max_list=1_500_000, dear_depth=8)
++    out = io.StringIO()
++    with contextlib.redirect_stdout(out):
++        restock_r3.main()
++    qs.append({b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}.get("SB", 0))
++restock_r3.strategy = real
++case("a stale 300k+ SKU is refilled to depth 2 (1 more), a fresh one to its full depth",
++     qs[0] > 1 and qs[1] == 1, qs)
++
+ # leak audit #29: the A cost draws keep sold units (a_hist, 48 h); the seed reads goods A talks, one per (sku, cost)
+ td = Path(tempfile.mkdtemp(prefix="restock-seed-"))
+ tn = time.time()
+
+=== output ===
+치': 1}
+PASS  ten authors count at most 3: {'가구>의자': 3}
+PASS  a post naming more than three categories counts nothing
+PASS  a post over the length cap counts nothing
+PASS  our own post counts nothing
+PASS  a post older than six hours counts nothing
+PASS  a SKU in a post maps to its category; malformed posts are skipped: {'가구>침대': 1}
+PASS  food first: with 600,000 of goods held (cap 0.35 x 2,000,000 = 700,000), the buy is food plus at most one 30,000 goods unit: {'food': 18, 'goods': 0}
+PASS  reserve 0 from the meta-harness: code still keeps 700,000 (balance 800,000, so at most 100,000 spent): {'spent (estimated)': 78000.0, 'lines': 9}
+PASS  under the cash floor nothing is bought: spend limit reached (balance 650000, cash floor 700000, stock at cost 0)
+PASS  runs 20 min apart: depth x4 for a selling food category (4 units, not 2): {'SF1': 4, 'why': '60 SKUs short, buying 18 lines (runs 1200 s apart: depth x4.0)'}
+PASS  a raised bankruptcy line (900,000) raises the cash floor to 1,100,000: nothing bought at 1,000,000: spend limit reached (balance 1000000, cash floor 1100000, stock at cost 0)
+PASS  window closed: no lines, and the scores still update: supply closed until 17:20:01
+PASS  window open: depth x2 for a selling food category (4 units), lines bought: {'SF1': 4, 'lines': 18, 'why': '60 SKUs short, buying 18 lines (runs 30 s apart: depth x2.0)'}
+PASS  orders become category weight, a nearest-reference SKU and a reference price: ({'F>hot': 6.0}, {'SH1': 6.0}, {'F>hot': 15000.000000000004})
+PASS  restock buys the ordered category first, at the reference price (not the 10,000 median alone), with depth: {'first': {'sku': 'SH1', 'qty': 3}, 'hot': {'SH0': None, 'SH1': 3, 'SH2': 2}}
+PASS  order weights are not written into the decaying scores (no compounding)
+PASS  a SKU the market surged to 1.47x is not bought; one at 1.02x still is: {'buy': ['SH2', 'SH0', 'SF0', 'SF1', 'SF2', 'SF3', 'SF4', 'SF5', 'SF6', 'SF7', 'SF8', 'SF9', 'SF10', 'SF11', 'SF12', 'SF13', 'SF14', 'SF15'], 'why': "62 SKUs short, buying 18 lines; 1 SKUs left out for the market's surge (over 1.15x)"}
+PASS  dear goods get dear_depth units a line
+PASS  a 200,000 SKU is held at 2 units, a 400,000 one gets dear_depth: {'SX': 20, 'SM': 2}
+PASS  a 400,000 SKU under DEAR_HOT (sku_score 53) is held at 2 units, a best seller (2,000) gets dear_depth: {'SX': 20, 'SC': 1}
+PASS  a 400,000 SKU under DEAR_HOT (sku_score 53) is held at 1 unit: {'SX': 20, 'SC': 1}
+PASS  a best-selling 400,000 SKU too dear for a full line is bought trimmed to the room (1M / 240k = 4), not skipped: {'SX': 4}
+PASS  a 400,000 SKU at sku_score 300 is held about 6 deep, one at 600 about 12 (dear_depth 4 x score/DEAR_HOT): {300: 5, 600: 11}
+PASS  a 400,000 SKU at sku_score 1,000 is held about 20 deep (heat capped at 5x dear_depth): {'SX': 19, 'SC': 1}
+PASS  a 400,000 SKU at sku_score 1,000 surged to 1.08x is held 4 deep (no heat), not 20: {'SX': 4, 'SC': 1}
+FAIL  a 400,000 SKU at sku_score 1,000 holding a unit unsold over 24 h is held 4 deep (no heat), 3 more bought: {'SX': 1, 'SC': 1}
+PASS  a 200,000 SKU at sku_score 1,000 is held about 8 deep (heat capped at 2x dear_depth), one under DEAR_HOT at 2: {'SM': 8, 'SC': 1, 'SX': 1}
+PASS  a 120,000 SKU is held at 2 units, not sku_cap: {'SL': 1}
+PASS  a cheap SKU over DEAR_HOT (400) is bought up to 2x sku_cap, one under it (40) only to sku_cap: {'SH': 6, 'SS': 3}
+PASS  a goods SKU at sku_score 2 is held at 1 unit, one at 40 deeper: {'SS': 3, 'SH': 1}
+PASS  a not-hot goods SKU holding a unit unsold over 24 h gets no restock, one without gets some: {'SH': 3}
+PASS  a hot cheap SKU holding a unit unsold over 24 h is bought no deeper than sku_cap (held 1 included): {'SS': 3, 'SH': 2}
+PASS  a cheap SKU at sku_score 600 is bought deeper than one at 400 (6), up to 3x sku_cap: {'SH': 8, 'SS': 2}
+PASS  goods at 120,000 (max_list 80,000, under 2x) are stocked by the category loop: ['SH1', 'SD0', 'SF0', 'SF1', 'SF2', 'SF3', 'SF4', 'SF5', 'SF6', 'SF7', 'SF8', 'SF9', 'SF10', 'SF11', 'SF12', 'SF13', 'SF14', 'SF15']
+PASS  breadth_lines and sku_cap are in the defaults
+PASS  the best-selling 300k+ SKU comes before an empty category's slow 1.2M goods (room 2.5M - 0.48M held): {'SB': 8}
+PASS  10 slow 400,000 units (2.4M) held against a 2.5M cap do not block the best seller: bought 10 (2.5M / 240k): {'SB': 10}
+PASS  with 40 slow 300k+ units held, a slow 400,000 SKU we hold none of is not bought, the best seller is: {'SB': 20}
+PASS  a selling food category (score 8) still skips a 5 h SKU at the median price and takes the 200 h one: {'FLONG': 2}
+PASS  a 400,000 SKU held at 0.48 of list is sized at 192,000 a unit: 12 units from 2.3M of room (0.60 gave 9): {'SB': 12}
+PASS  a line whose A draws (0.85 of list) sit above the market median 0.80 is skipped, with no A held it is bought: [20, 0]
+PASS  a line with a quarter of its A draws above the market median is bought at 3/4 depth (10 units, 8): [10, 8]
+PASS  10 goods units held 30 h count at half cost in goods_room: 2 hot 400,000 units bought, held fresh 1: [1, 2]
+PASS  a dear line holds at most the market's settles of the SKU in 6 h (2 of 40), once 6 h of history exists: [2, 20]
+PASS  a hot 300k+ SKU with 1 own deal is capped at half its depth (20 of 40), not 2: 20
+PASS  a stale 300k+ SKU is refilled to depth 2 (1 more), a fresh one to its full depth: [20, 1]
+PASS  the a_hist seed keeps one goods A entry per (sku, cost) within 48 h, skipping B, food, old and bad lines: {'talk:S1:60': ['S1', 0.6, 1794728401.7192378]}
+PASS  the a_hist seed is empty when the talks log is missing
+PASS  the f_hist seed keeps food entries by (sku, grade, cost) within 48 h, skipping goods: {'talk:F1:A:65': ['F1', 'A', 0.65, 1794729601.7192378]}
+PASS  our_deals keeps goods deals within 24 h and reads only new lines on the next run: ({'S1|A': [[0.74, 1794729601.7192378]]}, {'S1|A': [[0.74, 1794729601.7192378], [0.76, 1794730191.7192378]]})
+PASS  the A_HOLD storage charge is 3.7 days at 1% a day (0.037): 0.037
+
+51/52 passed
+
+--- stderr ---
