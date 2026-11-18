@@ -160,35 +160,9 @@ def ledger_kinds():
     f.tight_layout(); cs.save(f, f"{OUT}/ledger.png")
 
 
-def incidents():
-    E = [("11-05", "거래", "고장 환불 12.7M (2.8시간)"), ("11-06", "거래", "최고 판매 품목 2시간 품절"),
-         ("11-08", "판단", "전략가가 진단 없이 판단"), ("11-11", "인프라", "우리 상점 1시간 연결 끊김"),
-         ("11-13", "거래", "우대 가격이 원가 아래로"), ("11-15", "거래", "베개를 정가 넘게 판매"),
-         ("11-16", "판단", "별점 우대가 다른 학생 순위를 올림"), ("11-16", "판단", "A/B가 시간 비용 0을 채택"),
-         ("11-17", "거래", "재고 과다 매입 (215M 미판매)")]
-    color = {"거래": cs.US, "판단": cs.AQUA, "인프라": cs.YELLOW}
-    f, ax = cs.fig(h=3.4)
-    n = len(E)
-    for i, (d, r, lab) in enumerate(E):
-        x = int(d[3:]); y = n - 1 - i
-        ax.hlines(y, 4.6, x, color=cs.GRID, lw=1)
-        ax.plot([x], [y], "o", color=color[r], ms=7, zorder=3)
-        ax.text(x + 0.25, y, f"{lab}", va="center", fontsize=8.5, color=cs.INK)
-    ax.set_yticks([]); ax.set_xticks(range(5, 18, 2)); ax.set_xticklabels([f"11-{d:02d}" for d in range(5, 18, 2)])
-    ax.set_xlim(4.6, 24.5); ax.set_ylim(-0.7, n - 0.3)
-    for sp in ("left",): ax.spines[sp].set_visible(False)
-    ax.spines["bottom"].set_bounds(4.6, 17.5)
-    for k, (r, col) in enumerate(color.items()):
-        yy = n - 1 - k * 0.8
-        ax.plot([20.2], [yy], "o", color=col, ms=7)
-        ax.text(20.6, yy, r, va="center", color=cs.INK, fontsize=9)
-    cs.title(ax, "이벤트 9건: 날짜와 일어난 층")
-    f.tight_layout(); cs.save(f, f"{OUT}/incidents.png")
-
-
 if __name__ == "__main__":
     results(); preopen()
     rows = list(board_rows())
     gap = book_gap(rows)
     defence(gap); endgame(gap); cash_stock(rows)
-    ledger_kinds(); incidents()
+    ledger_kinds()
