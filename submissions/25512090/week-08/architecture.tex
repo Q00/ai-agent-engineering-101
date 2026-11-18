@@ -1,0 +1,74 @@
+\documentclass[landscape,10pt]{article}
+\usepackage{tikz}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=0.7cm]{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usetikzlibrary{shapes,arrows,positioning,calc,fit}
+\pagestyle{empty}
+
+\begin{document}
+\section*{\normalsize Week 08 / Round 3: Jaehoonang -- Dual-Model Market Agent, 8-Department Architecture}
+\noindent\footnotesize\textbf{Agent:} Jaehoonang (ID: 25512090) \quad
+\textbf{Market:} \texttt{market.ourolabs.ai} \quad
+\textbf{Models:} Claude Sonnet 5 (macro, 30 min) + Claude Haiku 4.5 (micro, per-event) \quad
+\textbf{Harness:} \texttt{scripts/market\_kit.py} (unmodified, read-only)
+
+\vspace{1.5mm}
+\begin{center}
+\begin{tikzpicture}[
+    layer/.style={rectangle, draw=black, thick, rounded corners, minimum width=27.6cm, minimum height=2.6cm, align=left},
+    comp/.style={rectangle, draw=blue!60, fill=white, rounded corners, text width=3.35cm, minimum height=1.9cm, align=center, font=\scriptsize, inner sep=1.5mm},
+    wide/.style={rectangle, draw=blue!60, fill=white, rounded corners, text width=4.9cm, minimum height=1.7cm, align=center, font=\scriptsize, inner sep=1.5mm}
+]
+
+% Layer 0 -- shared context / memory
+\node[layer, fill=orange!8] (l0) at (0, 9.9) {};
+\node[anchor=north west, font=\bfseries] at (l0.north west) {Layer 0: Shared Context \& Memory (filesystem-as-blackboard, every department reads/writes JSON, no RPC)};
+\node[wide] (m1) at (-10.8, 9.35) {\texttt{memory\_manager.py}\\Sliding-window ledger aggregation (O(1)): shop velocity, SKU demand};
+\node[wide] (m2) at (-5.4, 9.35) {\texttt{team\_memory.py}\\Per-department throttle timestamps + counters, JSON-persisted};
+\node[wide] (m3) at (0, 9.35) {\texttt{strategy.json}\\Mutable shared config: markup, decay rate/floor, reserve ratio, guards};
+\node[wide] (m4) at (5.4, 9.35) {\texttt{credit\_ratings.json} / \texttt{negotiation\_log.jsonl}\\Counterparty tiers \& our own full negotiation history};
+\node[wide] (m5) at (10.8, 9.35) {\texttt{.market/*.json} (kit-written, read-only)\\inventory, catalog, demand, shops, order};
+
+% Layer 1 -- macro model
+\node[layer, fill=red!7] (l1) at (0, 6.5) {};
+\node[anchor=north west, font=\bfseries] at (l1.north west) {Layer 1: Macro Strategist -- Claude Sonnet 5, \texttt{strategy\_daemon.py}, 30 min loop};
+\node[wide] (c1) at (-8.1, 5.95) {Competitor board scan\\top-15 shops by profit $\to$ memory\_manager};
+\node[wide] (c2) at (-2.7, 5.95) {Distressed-debtor scan\\candidates $\to$ \texttt{target\_debtors} in strategy.json};
+\node[wide] (c3) at (2.7, 5.95) {Endgame mode switch (this session)\\reserve $\to$0, decay rate $\times$2, decay trigger $\to$0};
+\node[wide] (c4) at (8.1, 5.95) {Atomic strategy.json rewrite\\(write tmp file, then replace -- never half-written)};
+
+% Layer 2 -- micro model, 8 departments
+\node[layer, fill=green!7] (l2) at (0, 2.85) {};
+\node[anchor=north west, font=\bfseries] at (l2.north west) {Layer 2: Micro Execution -- Claude Haiku 4.5, 8 independent long-running department processes, each with its own throttle and JSON ledger};
+\node[comp] (d1) at (-11.6, 2.3) {\texttt{seller.py}\\PricingTeam: markup + Dutch-decay floor (cost$\times$1.01, never below cost)};
+\node[comp] (d2) at (-7.7, 2.3) {\texttt{market\_buyer.py}\\\texttt{handle\_shops}: stock-matched, cheapness-ranked, top-3 retry};
+\node[comp] (d3) at (-3.85, 2.3) {\texttt{loan\_engine.py}\\LoanDesk: credit-scored lending + default collection};
+\node[comp] (d4) at (0, 2.3) {\texttt{repo\_engine.py}\\Repo / JAE-Credit token lending against held stock};
+\node[comp] (d5) at (3.85, 2.3) {\texttt{futures\_engine.py}\\Forward contracts: fixed strike price, anchor SKU};
+\node[comp] (d6) at (7.7, 2.3) {\texttt{hegemony\_engine.py}\\CreditRatingAgency: AAA/CCC tiers from public ledger};
+\node[comp] (d7) at (11.6, 2.3) {\texttt{forum\_agent.py}\\AdTeam/PurchaseTeam: liquidation pitch, want-ad outreach};
+
+% Layer 3 -- hardcoded guardrails
+\node[layer, fill=yellow!10] (l3) at (0, -1.0) {};
+\node[anchor=north west, font=\bfseries] at (l3.north west) {Layer 3: Hardcoded Guardrails -- plain Python \texttt{if}, never bypassed by any department};
+\node[wide] (g1) at (-10.8, -1.55) {Cost floor\\price $\ge$ cost+10, every SKU, every path};
+\node[wide] (g2) at (-5.4, -1.55) {Bankruptcy guard\\balance $\le$ 500k blocks restock spending};
+\node[wide] (g3) at (0, -1.55) {Negotiation cap\\offer $\le 1.25\times$list (worst-case saved $\ge -1$)};
+\node[wide] (g4) at (5.4, -1.55) {Perishable short\\no held-food exposure, ever};
+\node[wide] (g5) at (10.8, -1.55) {Stock-match gate\\never cite a SKU we do not actually hold};
+
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.5mm}
+\noindent\scriptsize\textbf{Three findings that drove this architecture (full evidence trail in REPORT.md \S19, \S22, \S23):}
+\begin{enumerate}[nosep,leftmargin=5mm,itemsep=0pt]\scriptsize
+\item \textbf{Buyer `saved' is a margin-share formula, not a discount-vs-list ratio.} Patch 3.6: $\mathrm{saved}=\dfrac{\text{list}-\text{price}}{\text{list}-\text{cost}}$, clamped at $+1$, with an unfulfilled order scoring a flat $-1$ and a refund $0$. Solving for the price that scores as badly as an outright failure gives $2\cdot\text{list}-\text{cost}$; the platform's own published worst-case cost band (75\% of list) bounds that at $1.25\times\text{list}$ -- so \texttt{negotiate()} now caps every offer there instead of escalating to the full (list-padded) budget, which could score \emph{worse} than simply failing. A first attempt capping at exactly $1.0\times$list was too strict (measured: deal rate fell 38\%$\to$9-15\%) and was corrected to $1.25\times$ after deriving the real break-even algebraically.
+\item \textbf{Shop selection was reputation-blind to price.} \texttt{handle\_shops()} summed raw review star-counts (uncapped by review volume, up to 50 points) against a price-cheapness signal weighted only 20$\times$ (range $-1$ to $+11$) -- a popular-but-expensive shop always beat a genuinely cheap one. Rebalanced to a review-count-invariant average star rating plus a $100\times$ price-cheapness term, so cheapness dominates, matching what \texttt{saved} actually rewards.
+\item \textbf{Our own \texttt{find\_unit()} matching was backwards.} It checked whether our long product name was contained in the buyer's short query string -- almost never true for the standard ``I want to buy a \{category\}'' protocol message. A live repro (asking our own shop for a humidifier we held 6 units of) returned a false ``out of stock'' until fixed to also strip boilerplate and match the buyer's keyword against our category/name.
+\end{enumerate}
+
+\end{document}
