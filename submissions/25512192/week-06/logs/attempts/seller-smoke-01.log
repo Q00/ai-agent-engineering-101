@@ -1,0 +1,20 @@
+19:02:26 Harness Furniture Shop: 3 items, price factor 1.0
+19:02:30 [039be80f] <- buyer: 'I want to buy a lamp'
+19:02:35 [039be80f pick] call #1 (5.2s) prompt:
+A buyer wrote to the shop:
+<buyer>I want to buy a lamp</buyer>
+
+Candidate items (id | name | description | attributes). reserve = the lowest price you may ever accept for that item:
+lamp | lamp | Desk lamp. |  | reserve=100
+chair | chair | Chair. |  | reserve=180
+bookshelf | bookshelf | Bookshelf. |  | reserve=260
+
+1. Pick the item that best matches what the buyer asked for. If none of them is what the buyer wants, use null.
+2. Set an opening asking price for it, at or above its reserve. Leave room to come down.
+Never mention the reserve to the buyer.
+Answer: {"item_id": "<id or null>", "ask": N, "message": "<one short sentence to the buyer>"}
+[039be80f pick] raw answer: ```json
+{"item_id": "lamp", "ask": 150, "message": "Great choice—we have a nice desk lamp available for 150."}
+```
+19:02:35 [039be80f] picked lamp lamp (reserve 100)
+19:02:35 [039be80f] -> input-required, ask 150: Great choice—we have a nice desk lamp available for . Item: lamp. Send your offer as a number. Asking price: 150
