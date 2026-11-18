@@ -1,0 +1,18 @@
+# Challenge 1: my shop's prices before and after the change
+
+## My shop by pricing phase (shop_history.jsonl; P0 deals are the signed receipts in market-kit.log)
+phase | negotiations | deals | deal rate | avg price lamp / chair / bookshelf
+P0 starter pricing | - | 15 | - | 119.8 / 205.2 / 269.5
+P1 data-driven opening ask | 27 | 19 | 70% | 104.8 / 187.6 / 280.6
+P2 boutique (+ launch price, certificates) | 677 | 346 | 51% | 113.6 / 202.8 / 293.1
+  P2 launch-price deals | | 254 | | 107.0 / 195.9 / 281.7
+  P2 boutique-price deals | | 92 | | 127.7 / 226.3 / 330.0
+  certificates issued: 39
+
+## Market dashboard per round (/api/stats): my shop against the market
+round | my deals | my share | my reviews | my stars | market deals | market avg lamp / chair / bookshelf
+R0 | 13 | 0.01 | 0 | None | 1252 | 113.7 / 205.3 / 297.6
+R1 | 21 | 0.012 | 29 | 3.66 | 1812 | 108.1 / 194.7 / 282.1
+R2 | 346 | 0.001 | 346 | 4.77 | 264678 | 102.1 / 182.8 / 265.1
+my avg price in R2 (from 2026-10-20 12:31) lamp / chair / bookshelf: 113.6 / 202.8 / 293.1
+board now: deals 346, visits 924, stars 4.77, revenue 66350, profit 7590, alive True
