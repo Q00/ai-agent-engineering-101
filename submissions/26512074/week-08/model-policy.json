@@ -1,0 +1,45 @@
+{
+  "model": "gpt-5.6-terra",
+  "reasoning": "low",
+  "generated_at": 1793105786,
+  "evidence_sha256": "a1ae40ce5007134a0134ece9093f64e2bf8a3faa3c8397705d22556b0cf0086a",
+  "policy": {
+    "items": {
+      "lamp": {
+        "opening_markup": 15,
+        "minimum_markup": 0,
+        "concession_step": 5,
+        "floor_after": 3,
+        "max_rounds": 5
+      },
+      "chair": {
+        "opening_markup": 15,
+        "minimum_markup": 0,
+        "concession_step": 7,
+        "floor_after": 3,
+        "max_rounds": 5
+      },
+      "bookshelf": {
+        "opening_markup": 15,
+        "minimum_markup": 0,
+        "concession_step": 10,
+        "floor_after": 3,
+        "max_rounds": 5
+      }
+    },
+    "buyer": {
+      "max_premium": 15,
+      "explore_percent": 20,
+      "reliability_weight": 0.6,
+      "price_weight": 0.3,
+      "concentration_weight": 0.1,
+      "max_rounds": 5
+    },
+    "checkout_tools": [
+      "create_checkout_session",
+      "get_checkout_session",
+      "complete_checkout_session"
+    ],
+    "rationale": "Lamp ask 115; chair 207; bookshelf 299. Use modest markups, then bounded concessions to reserve by round 3. Prioritize verified settlement reliability and low prices, while diversifying some exploration; checkout proceeds in the required verified sequence."
+  }
+}
