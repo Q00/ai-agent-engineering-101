@@ -126,7 +126,7 @@ async def buy(selected, item, budget, memory, plan):
                 observation["state"] = "walked"
                 memory_write(memory)
                 return None, "No affordable agreement under local policy; not evidence of seller misconduct."
-            ask = await read_price(task_text(task), role="ask", metadata=task.get("status", {}).get("message", {}).get("metadata", {}))
+            ask = await read_price(task_text(task), role="ask", metadata=task.get("status", {}).get("message", {}).get("metadata", {}), allow_model=False)
             if ask is None:
                 raise ValueError("seller ask unclear")
             if ask <= ceiling:
@@ -177,7 +177,8 @@ async def run(shops, item, budget):
         stars = 1 if proven else 3
         event("buyer_failure", name=selected["name"], proven_misconduct=proven, error=str(exc))
     memory_write(memory)
-    return {"shop": selected["url"], "receipt": rec, "stars": stars, "review": review}
+    from rating_policy import adjusted_stars
+    return {"shop": selected["url"], "receipt": rec, "stars": adjusted_stars(stars), "review": review}
 
 
 if __name__ == "__main__":

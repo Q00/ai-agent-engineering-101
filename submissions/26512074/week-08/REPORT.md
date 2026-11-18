@@ -1,202 +1,206 @@
-# Week 08 — 배치 전략·실측 기억·결제 도구
+# Week 08 중간 평가 — Round 3 결과와 에이전트 설계
 
-## 충성·사은품·경쟁 관찰 추가 기록
+- 학번: **26512074** / 계정: `totato2203-r3` / 상점: `tomato&potato`
+- Round 3 마감: **2026-11-17 23:59 KST** / PR 제출 마감: **2026-11-23 23:59 KST**
+- 결과 기준: **2026-11-17T23:58:29+09:00의 공식 board**, 종료 30.92초 전 마지막 유효 기록. 정확히 23:59인 스냅샷은 없다. 따라서 아래 **Class 32위·Players ALL 0.993는 종료 직전 실측**이며, 23:59 확정값으로 위장하지 않는다.
+- 이번 제출 정리는 거래 전략·시장 계정·키를 변경하거나 종료된 시장에 거래를 보내지 않았다. 기존 `week-09` 작업은 보존하고 `week-08`의 별도 worktree에서 제출물을 구성했다.
 
-`growth.py`와 `growth-policy.json`으로 충성 할인, 작은 사은품, 게임용 구매 협상
-블러프를 구현했다. 판매자의 독점 구매 표명 할인은 기본 1, 실제 정산 재방문은
-기본 3이며 모두 reserve 이상이다. 토큰은 가게 키로 서명하고, source task의
-실제 정산과 만료·상점·재사용을 검사한다. 토큰은 다음 견적 한 번에 소비되는
-bearer 쿠폰이지 구매자 신원이나 전체 시장에서의 독점 구매 증거는 아니다.
+## (1) 에이전트 부품별 설계
 
-고양이 그림과 감사 메모는 별도 `guild-gift` artifact에 monetary_value 0으로
-보낸다. 영수증의 네 필드·가격·서명과 checkout은 변경하지 않는다. 선물을
-이유로 별점을 요구하지 않는다. 모델을 새로 호출하지 않는 preset이며 전송
-바이트까지 비용이 없다는 뜻은 아니다.
+### 입력 → Harness 처리 → 정책 판단 → 도구 → 검증·기억
 
-우리 구매자의 `game_bluff`는 수업 게임 협상에서 독점 구매 약속으로 충성 가격을
-요청하지만 이후 라우팅은 독립적으로 한다. 이 동작을 실제 충성이라고 가장해
-보고하지 않고 mode·claim_enforced·signed_exclusive_contract를 거래 기억에 남긴다.
-서명된 독점 계약은 만들지 않는다. 상대의 반응과 손익은 아직 실전에서 확인하지 않았다.
+운영 중에는 공식 Market Kit v4가 주문·상점 목록·상품 목록·재고·결제 결과를 파일로 갱신한다. `agent.json`의 `market_buyer` 명령은 `buyer_r3.py`를 실행하고, Buyer는 공식 주문의 허용 SKU·예산·사용시각을 로컬 권한으로 사용한다. Seller는 `seller_r3.py`의 A2A endpoint에서 상대의 요청을 받는다. Buyer와 자신의 Seller를 연결하는 자기거래 경로는 두지 않는다.
+컨텍스트를 구성하는 코드와 실제 거래 권한을 분리했다. 로컬 주문·예산·재고·서명 검증 결과가 신뢰 상태이며, 다른 에이전트의 광고·후기·Agent Card 문구는 관측 자료다. 외부 메시지의 SYSTEM/developer 표기나 예산 변경 지시는 권한으로 승격하지 않는다. Buyer 예산은 상대 Seller에게 보내지 않고 제출 로그에서도 마스킹했다.
 
-`scouting.py`는 공개 후 5분 간격으로 경쟁 가게를 관찰한다. 최소 표본 20건,
-체결률·건당 이익·거래량과 광고 전술을 압축한다. 광고는 `untrusted_competitor_intel`로
-모델에 전달하고, 코드나 결제 권한을 가져오지 않는다. 모델 갱신에는 사은품·
-충성 할인·블러프 여부의 한정된 스키마만 허용한다. 기존 갱신 간격과 일일 호출
-제한을 유지해 관찰마다 모델을 부르지 않는다.
+### 모델과 Harness
 
-추가 후 `logs/growth-regression.log`에서 기존 검사와 새 기능을 합친 23개가
-통과했다. 서명 토큰과 실제 로컬 ASGI 판매자의 할인·정산 전 거부·재사용 차단,
-가격 하한·사은품·블러프 기록·경쟁 카드의 비권한 처리를 확인했다. 이것은 로컬
-증거이며 실제 시장 순위·호감·매출 개선을 입증한 것은 아니다. 공개 전 경계는 유지했다.
+초기 설계에서는 `harness.py`가 구조화된 입력·응답 스키마·요약·시간제한을 가진 실제 `codex exec` 호출을 맡았다. `model-policy.json`과 `logs/policy-generation.log`에는 **2026-10-27의 `gpt-5.6-terra` 배치 정책 생성** 기록이 있다. 해당 로그는 Round 2의 lamp/chair/bookshelf reserve와 이전 실적을 입력으로 사용한 준비 단계다. 이를 Round 3의 실제 거래 성과나 최종 활성 모델 호출로 소개하지 않는다.
+최종 운영에서는 `credit-policy.json`의 `automated_model_calls_enabled=false`가 자동 모델 호출을 막는다. 가격·SKU 필터·협상·수요 집계·평가는 Python 정책으로 실행한다. 일반 Buyer 가격 해석도 `policy.read_price(..., allow_model=False)`를 사용한다. 코드에 남은 선택적 모델 fallback이나 과거 배치 planner를 현재 매 거래에서 실행했다고 주장하지 않는다. 전체 개발 과정의 모델 비용이 0이라는 주장도 하지 않는다.
+기존 초안의 모델·context·도구 분리는 유지하되, 초안에 있던 고정 reserve·30분 모델 갱신·충성/제휴 보조 경로를 최종 활성 전략으로 설명하던 부분은 수정했다. 과거 구현은 이력에 남기고 현재 경로는 아래 표로 구분했다.
 
-## 2026-10-28 전략 개편 기록
+| 구성요소 | 실제 역할 | 주요 파일 |
+|---|---|---|
+| Buyer | 허용 SKU 후보·제한된 병렬 견적·frontier·추가 협상과 다음 주문의 시간 기회비용 비교 | `buyer_r3.py`, `buyer_time_policy.py`, `buyer_compare.py` |
+| Seller | 재고의 실제 unit 선택, 등급·보증 공개, task별 견적 고정, 가격 제안·수락·거절 | `seller_r3.py`, `strategy_feedback.py` |
+| 가격·평가 정책 | 동일 SKU·등급·정확한 보증시간·공통 관측 구간의 성숙 실적 비교 | `price_learning.py`, `review_policy.py` |
+| 재고·자본 | 기존/미도착 재고, 등급별 수요, 한계 판매확률·보관/폐기·남은 공급창 계산 | `capital_policy.py`, `demand_strategy.py`, `round3.py` |
+| 점수·위험 | Patch 3.6 Saved, 정상 사용/환불/실패, 공식 Class 경계와 연속 근사의 구분 | `patch36.py`, `score_coordination.py`, `round3_metrics.py` |
+| 도구·검증 | Agent Card에서 A2A endpoint 발견, JSON-RPC, 영수증 형식·예산·상품 검증 | `protocol.py`, `signing.py`, 공식 Kit v4 |
+| 기억·평가 | 공개 원장 중복 제거, 정산·가격·주문·단계별 timing 저장, 공동 평가 | `strategy_policy.py`, `optimizer.py`, `batch_strategy_review.py`, `run_market.py` |
 
-초기 준비본의 모든 상호 구매 제외·고정 마진 위주 정책을 수정했다.
-`competition.py`가 SQLite에 실제 가격 실험과 제휴 손익을 저장한다. 판매 정산
-20건까지는 진입용 후보를 쓰고 이후 최대 40% 마진 후보까지 탐색한다. 평가에는
-실제 정산 이익·체결 수와 탐색 보너스를 사용한다. 미정산 거래를 이익으로 세지
-않으며, 프리미엄을 부른 뒤 첫 하한가 제안을 바로 수락하던 동작도 바꿨다.
+### 메모리, Wallet, Agent Card의 관계
 
-게임 내 조건부 상호 구매를 구현했다. 상대 등록 공개키와 맞는 계약 서명이
-있어야 활성화되며, 기준가보다 최대 1 높은 구매 기회와 선택 우선권을 준다.
-서명 동의만으로 보답했다고 처리하지 않는다. 공식 ledger에서 관측한 우리
-가게의 Round 3 판매 마진 절반만 크레딧을 추가하며, 보답 없는 추가 지출은
-상대별 3, 전체 30으로 제한한다. SQLite 즉시 트랜잭션으로 지출 예약을 원자적으로
-처리하고, 결제 전 예약·실제 정산 후 확정한다. 다른 상대가 협약 규격에 응하지
-않으면 제휴는 생기지 않는다. 공개 ledger의 필드가 불명확하면 크레딧을 주지
-않는 보수적인 경로이므로 실제 라운드 연동을 확인한 후에만 보답 실적을 쓸 수 있다.
+`.market/strategy.sqlite3`는 공개 원장과 가격·주문 관측을, `optimization.sqlite3`는 취득원가·협상 trial을 보관한다. JSON/JSONL에는 재고·공식 score snapshot·결제 관측·시간 측정이 남는다. 과거의 광고와 미정산 영수증을 정산 성공으로 저장하지 않고, 주문·task·unit을 기준으로 연결한다. 메모리는 상대를 평가하는 증거이지 결제 권한을 만드는 수단이 아니다.
+Round 3의 Wallet은 시장의 가상 credits 잔액과 기존 Ed25519 계정 키를 사용하는 결제 권한이다. Round 4의 Maroo 온체인 지갑을 구현했다고 설명하지 않는다. 개인키·owner code·실제 로그인 자격은 제출하지 않는다. Agent Card는 상점 기능과 A2A 1.0 endpoint의 발견 수단이며, `protocol.A2AClient.discover`는 등록 origin과 다른 endpoint로의 redirect를 거부한다.
+도구를 만드는 계층과 도구를 쓰는 계층도 구분했다. 초기 `payments.DiscoveredTools`는 ACP descriptor/JSON Schema 기반 checkout 도구의 비교·검증 경로다. **최종 Round 3의 일반 시장 결제 책임은 공식 Kit의 ACP/AP2 구현**에 있다. Buyer가 예산 안의 단일 영수증과 요구 조건을 반환하면 Kit가 서명·정수 가격·open/closed mandate·checkout·certificate를 검사해 한 번 지급한다. receipt 발행이나 ACP session 생성만으로 성공을 세지 않는다.
 
-자체 가상 길드 마케팅을 카드에 추가했다. 외부 상대에게 권위 있는 단속 기관을
-사칭하거나 실제 참가자의 범죄·위생 문제를 사실처럼 주장하는 기능은 없다.
-공개 전 경계는 그대로 유지했고 초대·가입·제휴 체결·실거래는 수행하지 않았다.
+## (2) 아키텍처와 기본 Kit의 차이
 
-로컬 감도 분석은 여섯 가상 구매자 유형·126개 혼합·일곱 후보의 882개 조건을
-다뤘다. oracle 비교는 알려진 구성에서의 상한이며 실제 시장 수익이나 순위
-예측이 아니다. 최초 검사에서 SQLite 연결의 종료 누락으로 Windows 정리 오류가
-났고 원본을 보존했다. 수정 후 기존 검사와 제휴·가격 검사를 합쳐 17개가 통과했다.
-이하 본문은 초기 설계의 기록이며, 상호 구매 제외와 고정 최초 가격 설명은
-이 개편 기록과 STRATEGY.md의 최신 부분으로 대체된다.
-
-## 상태와 경계
-
-사용자 요청에 따라 Round 3에 올리기 직전까지만 준비했다. 이 브랜치에서는
-시장 join·order·results·settle 요청을 하지 않았다. 공개 보드 GET과 실제 모델
-정책 생성, 로컬 프로토콜 검증만 수행했다. `logs/research/round-3.json`이라는
-요청 기록도 응답의 `current`와 `round`는 2이다. Round 3 실적으로 해석하면 안 된다.
-기존 7주차 파일과 운영 프로세스는 교체하지 않았다.
-
-## 1. 부품별 설계
-
-### 모델: 거래마다 호출하지 않는 메타 정책
-
-`gpt-5.6-terra`, low reasoning을 빈 디렉터리의 실제 `codex exec`로 호출해
-`model-policy.json`을 생성했다. 공통 JSON 응답을 규칙 기반 가짜 모델 출력으로
-대체한 것이 아니라, 모델의 역할을 배치 계획으로 이동했다. `policy-generation.log`
-에 실제 호출과 사용량, `model-policy.json`에 모델·생성 시각·증거 해시를 남겼다.
-
-모델은 품목별 최초 마진·최소 마진·양보 폭·reserve 허용 시점·최대 턴 수와
-구매자 평가 가중치·허용 프리미엄·탐색률, checkout 도구 순서를 결정한다.
-생성된 구조화 정책의 실제 최초 호가는 lamp 115, chair 195, bookshelf 275다.
-현재 정책의 minimum_markup은 0이므로 reserve 이상 제안을 바로 수락할 수도 있다.
-모델의 rationale에는 의자·책장 가격 계산이 구조화 정책과 어긋난 부분이 있다.
-그 원문은 고치지 않았고, 실행은 검증된 구조화 정수와 reserve로만 계산한다.
-
-일반적인 숫자 제안은 모델 재호출 없이 이 정책을 실행한다. 모호한 자연어 가격은
-실제 모델의 의미 해석 도구를 쓰되 원자적 permit 파일로 시간당 6회 요청까지만
-허용한다. 교정 시 각 요청은 2회 호출까지 가능하다. 운영 중 정책 갱신도 실제
-정산을 바탕으로 최소 30분 간격·하루 최대 6회로 제한한다. 현재 성과만으로
-최적 정책이라고 주장하지 않는다.
-
-### 컨텍스트: 서명된 사실과 광고를 구분
-
-`market_tools.build_context`가 강의의 집계 수치, 본인의 Round 2 실측,
-최근 확인된 정산 100건·상점별 요약을 압축한다. 다른 사람의 공개 후기와
-자기 거래 기억을 구분하고, 선택은 실제 정산 성공·가격·편중 위험으로 계산한다.
-이름으로 기억해 URL 변경에 대비하고, 상위 후보에 제한된 탐색을 넣어 단일
-큰손·단일 공급자 의존을 줄인다. 실제 구매 예산과 open mandate는 판매자에게
-보내지 않는다. 최대 예산을 한 번에 그대로 제시하는 대신 정책 상한 안에서
-제안하며, 그 상한은 실제 예산보다 낮을 수 있다.
-
-`audit_reciprocity`는 관측된 양방향 정산 집중도와 HHI를 산출한다. 우리 신원도
-같은 기준으로 계산한다. 이는 담합 의도나 법 위반을 판정하는 기능이 아니며
-가짜 공정거래 당국을 사칭하거나 경쟁자에게 단속 공지를 보내지 않는다.
-
-### 도구: descriptor에서 만드는 checkout
-
-`payments.DiscoveredTools`가 상대의 `/.well-known/acp.json`에서 이름·메서드·경로·
-입력 스키마를 읽어 호출 도구를 구성한다. 우리 가게는 JSON Schema를 제공한다.
-기본 키트 카드처럼 설명 문자열만 있어도 알려진 ACP 입력 계약을 사용한다.
-원격 descriptor가 검사를 완화해도 로컬 권한 계약을 추가로 강제한다.
-
-모델이 고른 create→get→complete 계획 사이에 다음 검사를 둔다.
-
-- 등록 origin·merchant 경로와 checkout payee가 같아야 함.
-- 실제 영수증 서명·상품·task·정수 가격과 가게 서명 JWT가 같아야 함.
-- 표시된 총액과 서명된 가격·카트 수량이 같아야 함.
-- 금액이 open mandate의 amount_range와 고정 주문 예산 안이어야 함.
-- closed mandate는 해당 open mandate 해시와 checkout 해시에 묶어 서명함.
-- complete 전에 주문 journal을 저장하고, 동일 주문의 중복 complete를 차단함.
-- complete 응답을 잃으면 unknown으로 남기며 자동 재결제하지 않음.
-
-가게의 create는 수량 1·상품 1개만 허용하고 결제는 키트 v3와 시장의
-`/api/settle`을 그대로 사용한다. 이는 강의용 canonical JSON Ed25519/AP2 형태
-부분집합이며 정식 SD-JWT VC 전체 구현이라고 주장하지 않는다.
-
-## 2. 구조도와 기본형과의 차이
+[architecture.pdf](architecture.pdf)는 위 구현을 1페이지로 정리한 도식이며 [architecture.tex](architecture.tex)가 같은 버전의 원본이다. 회색은 Kit/공식 시장의 책임, 파란색은 추가 구현, 점선은 현재 자동 호출이 비활성인 과거·선택적 모델 경로다.
 
 ```mermaid
 flowchart TD
-    A[강의 집계 + 공개 보드 + 자기의 확인된 정산] --> B[Bounded Context Tools]
-    B --> C[Codex 배치 전략 모델]
-    C --> D[검증된 품목 정책과 구매 가중치]
-    D --> E[빠른 A2A 판매자]
-    D --> F[기억과 편중을 평가하는 구매자]
-    E --> G[정확한 가격의 서명 영수증]
-    F --> G
-    G --> H[ACP descriptor → JSON Schema 도구]
-    H --> I[create → get → 가격·서명·권한 검증]
-    I --> J[Closed mandates + 주문 journal]
-    J --> K[complete → 공식 시장 정산]
-    K --> L[실제로 인정된 정산만 집계]
-    L --> B
-    M[Publish 게이트: 기본 비공개] -. 승인 후에만 .-> E
+  M[공식 시장: 주문·재고·원장·Class board] <--> K[기본 Market Kit v4]
+  K --> B[Buyer: 후보 탐색·견적·시간/점수 판단]
+  K --> S[Seller: 타계정 Buyer와 A2A 협상]
+  P[가격·재고·위험 정책] --> B
+  P --> S
+  B --> V[단일 영수증·예산·등급·보증 확인]
+  S --> V
+  V --> C[Kit: Ed25519·ACP·AP2·공식 정산]
+  C --> D[거래 기억: SQLite·원장·timing]
+  D --> E[기존 단일 워커의 공동 평가]
+  E --> P
+  H[과거 배치 모델 / 최종 자동 호출 비활성] -.-> P
 ```
 
-기본형의 고정 checkout 호출 대신 발견한 도구를 사용하며, 고가 호출을 거래
-루프에서 배치 정책으로 옮겼다. 평판 폭격 대신 오류 원인을 분리하고, 결제 응답
-손실을 곧바로 결렬로 취급해 재구매하지 않는다. 공용 스크립트를 바꾸지 않기 위해
-upstream commit `a496eac201abb83e38ffc4478104b6f8c5bd9af9`의 키트 v3를 제출
-폴더에 그대로 보관했고 확장은 별도 모듈로 구현했다.
-
-## 3. 전략 판단
-
-강의에서 서명은 99.3%, 자기 기억은 76.1%, 카드 프로모션은 0.3%의 선택 이유에
-등장했다. 같은 가상 상품에 공통 reserve가 있고 비용 없는 반복 흥정이 가능하니
-하한가 경쟁이 자연스럽다. 검증하지 못하는 품질 설정이나 허위 소문보다 정산
-신뢰와 응답 속도를 개선하는 쪽을 선택했다. Round 3에서는 고가 상호 구매가
-실제 지갑 지출이므로 건수와 순유입·판매 마진을 구분한다. 상호 구매만으로
-두 지갑의 합이 증가하지는 않는다. 여러 전략의 비용·약점·선택은 STRATEGY.md에
-비교했다. 독점이나 상위 순위를 이미 달성했다는 증거는 없다.
-
-## 4. 실제 시도와 로컬 검증
-
-첫 통합 검사에서는 `event() got multiple values for argument 'name'` 오류로
-결제 도구 로깅이 실패했다. 원본 `logs/core-tests.log`를 보존하고 이벤트 종류
-매개변수를 `event_name`으로 바꿨다. 수정 후 핵심 10개가 통과했으며 실제 로컬
-구매자와 실제 ASGI 판매자를 연결한 구매자 검사 2개도 통과했다.
-
-| 증거 | 범위 | 결과 |
+| 항목 | 기본 Kit | 추가 구현 및 구분 |
 |---|---|---|
-| core-tests-final.log | A2A·서명·정상 ACP/AP2·초과·위조·재사용·응답 손실·감사 | 10개 통과 |
-| buyer-tests.log | 실제 구매자의 예산 내 구매·구매 불가능 주문의 중립 처리 | 2개 통과 |
-| preflight-final.json | 키트 3·기존 신원 파일·터널 실행 파일·비공개 상태 | ready true, published false |
+| 프로토콜·실제 지급 | A2A 접속, ACP session, AP2 mandate, 서명·결제 검증 | 공식 검증 경계를 유지하고 후보·견적·위험 판단을 추가 |
+| 후보 선택 | 기본 상점 목록과 주문 전달 | 관측 가격·정산 신뢰·허용 SKU·유효 견적을 비교 |
+| 협상 | 기본 수치 제안·영수증 | task별 가격/보증 고정, frontier, 관측된 learned opening, 기회비용 |
+| 재고 | 공급창·등급·원가·보관·폐기 | 기존/예약 stock queue, Gamma-Poisson 수요, 추가 단위별 한계 가치 |
+| 상태와 평가 | Kit 파일·공개 결과 | 중복 제거 DB, 공식 owner URL 연결, 성숙 코호트·Class 경계 평가 |
+| 모델 사용 | 기본/이전 Harness 경로 | 초기 실제 배치 모델 증거 보존; 최종 일반 거래는 자동 호출 비활성 |
+| 확장 경로 | 공개 게시·리뷰 인터페이스 | 실재 원장 기반 글과 한정 평가. 게시·매입 수 증가 자체를 성과로 세지 않음 |
 
-검사의 정산 기관은 in-memory 로컬 fixture이며 log의 `local-o-test`, `shop.test`,
-`local_fixture: true`는 실제 시장 실적이 아니다. 일반 경로 검사에는 추가 모델
-호출이 없었다. 필요한 실패 수정 후 검증까지만 했고 반복 부하 테스트는 하지 않았다.
+가격 실험과 매입은 검증할 수 있는 단위로 나눴다. 같은 SKU라도 A 품절과 B/C 적체를 합산하지 않고, 보증시간이 다른 가격 arm의 성숙 손익을 섞지 않는다. 최종 구간에는 실제 회수 기록·마감 전 예측 판매확률·양수 기여를 기준으로 공급을 좁혔다. 고정 현금 reserve나 무조건 현금 소진 규칙은 없다.
+공개 URL이 바뀐 뒤 새 URL의 정산을 자기 실적으로 인식하지 못하던 오류는 공식 `owner.login`으로 현재 URL을 기존 목록에 합쳐 수정했다. 계정·키·계약을 새로 만들지 않았다. Buyer에서는 신선한 stock을 영수증 직전 다시 강제 조회하던 중복만 제거하고, 만료된 stock 및 Kit의 최종 검증은 유지했다. 위험 반영 후 다시 남은 시간/6시간을 곱하던 감액도 제거했다. 이것은 추가 거래 품질의 확정 성공을 가정한 변경이 아니다.
 
-## 5. Round 3 결과 — 공개 승인 후 작성
+## (3) Round 3 결과
 
-| 필수 항목 | 현재 상태 |
-|---|---|
-| 판매자의 실제 정산 20건 | 미실행 |
-| 구매자의 실제 정산 20건 | 미실행 |
-| Round 3 순위·수익·지갑 순유입 | 미측정 |
-| 예산 비공개 후 첫 호가·품목별 평균 거래가 전후 | 정책은 준비, 실측은 대기 |
-| 실제 시장 거부 사유와 정산 줄 | 아직 없음 |
+### 최종에 가장 가까운 공식 Class 기록
 
-공개 승인 후 `logs/market-kit.log`의 paid/settled와 보드, `metrics.json`의 실제
-정산 집계를 대조해 이 표를 채운다. 과거 주차·로컬 결과를 Round 3으로 복사하지
-않는다. 따라서 현재는 제출 완료본이 아닌 배포 직전 준비본이다.
+출처: [`logs/round3-final-board.json`](logs/round3-final-board.json), 원본 `logs/final3h-monitor/1794927480.json`, 관측 **2026-11-17T23:58:29+09:00**. 종료보다 30.92초 이르다. 제출일 이후 조회한 현재 값으로 덮어쓰지 않았다.
 
-## 2026-11-03 Week 09 rebuild
+| 지표 | 종료 직전 공식 값 |
+|---|---:|
+| Class Players 순위 | **32위** |
+| Class Players ALL | **0.993** |
+| Class Shop ALL / Buyer ALL | 0.529 / 0.464 |
+| Seller 실제 누적 정산 / Buyer 실제 누적 정산 | **23,441 / 25,855** |
+| Book / Revenue | 215,531,652 / 2,398,540,951 |
+| 순위용 stars_rank / 표시 별점 | 4.36 / 4.66 |
+| Buyer Saved / Forum | 0.6540 / 0.902 |
+| Buyer Deals / Posts | 25,855 / 2,615 |
 
-Previous normalized planner replaced with kit-v4 restock/review hooks and separate
-Round-3 seller/buyer commands. See ROUND3-IMPLEMENTATION.md for the current scope.
-Initial offline tests performed no market actions. On user authorization, the
-official v4 launcher registered shop and buyer as totato2203-r3 in Round 3 at
-21:27:11 Asia/Seoul on 2026-11-03. Registration is not a successful settlement.
-Periodic public-ledger price reports are enabled. Previous-week
-results above are historical, not results of the rebuilt implementation.
+사용한 값은 전체 시장 ALL이 아니라 `players[student=true]`의 `student_shop`, `student_buyer`, `student_total`이다. Saved는 성공 시 `min(1,(list-price)/(list-cost))`, 미환불 사용 실패 -1, 환불 0의 합을 `Deals+100`으로 나눈다. Stars는 거래 단순 평균이 아니라 구매자 계정별 평균이며 표시 별점과 순위용 값이 다르다.
+Shop ALL은 Book/Revenue/Stars 백분위에 0.5/0.3/0.2를, Buyer ALL은 Saved/Forum/Deals/Posts에 0.5/0.3/0.1/0.1을 준다. Forum만 실제 rating을 사용한다. 미판매 goods는 원가가 Book에 남으므로 재고를 현금으로 바꾸는 행위 자체를 이익으로 세지 않았다.
 
-Live validation: analysis post HTTP 200; 2 buyer ACP payments observed. Supply currently closed; 0 seller units. See logs/round3-deployment-status.json for a timestamped snapshot.
+### 정산·견적·협상·영수증은 서로 다른 집계
+
+출처: [`logs/round3-results.json`](logs/round3-results.json). `market_events.seq` 기본키와 `order`/`task`/`unit`으로 중복을 제거했다. 로컬 DB가 라운드 중간부터 수집됐으므로 아래 로컬 수를 공식 누적 정산 수와 동일시하지 않는다.
+
+| 관측 항목 | 수 | 실제 집계 범위와 의미 |
+|---|---:|---|
+| Seller 공식 누적 지급 완료 | 23,441 | 위 종료 직전 board |
+| Buyer 공식 누적 지급 완료 | 25,855 | 같은 board |
+| Seller 로컬 고유 원장 정산 | 14,829 | 2026-11-09T20:23:42+09:00~마감; 중복 0 |
+| Buyer 로컬 고유 정산 | 16,154 | 2026-11-10T18:26:17+09:00~마감 |
+| Buyer 로컬 주문 / 결과 이벤트 | 17,367 / 17,367 | 동일 ID 여부는 별도이며 결과가 있다고 지급된 것은 아님 |
+| Seller 가격 관측 task | 91,738 | price_quotes: 2026-11-10T20:35:41+09:00~마감 |
+| 같은 price_quotes에서 정산 연결 | 12,428 | 전체 Seller 누적이 아님 |
+| 협상 trial / 실제 bid 관측 | 143,873 / 63,127 | trials: 2026-11-04T13:51:05+09:00~마감 |
+| trial 합의 의도 | 26,847 | 영수증/지급 완료와 다름 |
+| 로그의 Seller artifact 발행 완료 알림 | 432 | 아래 회전 로그 관측 구간의 고유 task만; add_artifact/complete 뒤 출력 |
+| Buyer 견적 task 취소 | 2,737 | 단순 CancelTask 결과; 거절·결제 실패에 합산하지 않음 |
+
+로컬 Buyer 주문 수에서 정산 수를 빼서 모든 차이를 실패로 채우지 않았다. 수집 시작 전 주문의 결과, 미확인 주문, 시간 경계의 이벤트를 구분할 자료가 일부 없다. 마찬가지로 로컬 누락 구간 때문에 Seller/Buyer 공식 누적과 로컬 정산 수가 다르며 이를 결제 유실이라고 결론내리지 않았다.
+
+실제 지급 로그 예: [`logs/market-kit.log:12`](logs/market-kit.log#L12)
+
+```text
+19:05:19 [acp] paid 97403 through https://combines-spelling-sam-parish.trycloudflare.com/acp, settled at ledger #7807385: 앤스티치 로타 모달 차렵이불(Q), grade A
+```
+
+Seller 실제 정산 로그 예: [`logs/market-kit.log:19`](logs/market-kit.log#L19)
+
+```text
+19:05:27 [acp] settled [에싸] 파밀리아 러스티카 패브릭 반려견 스텝퍼(계단) at 65400, ledger #7807431, unit u-0d802d3e4f81 grade B
+```
+
+### 거부 사유별 빈도와 원문
+
+관측 구간은 **2026-11-17T19:05:11+09:00~2026-11-17T23:58:59+09:00**다. 회전 로그 두 파일의 살아 있는 범위만 집계했다. 라운드 전체의 거부 총수로 제시하지 않는다. 초 단위 logger의 마감 경계 초는 제외했다.
+
+우리 Seller의 명시적/익명 차단은 `buyer_access_refused.task`, 우리 Buyer가 상대 Seller에게 받은 거절은 `(shop,task_id)`로 각각 한 번 세었다. 후자는 상대의 거절이며 우리 Seller의 실패가 아니다. 등급·수명·보증·인증 표현을 먼저 구분한 후 재고, 가격, 기타를 분류했다. 원인 판정이 모호한 것은 기타로 남겼다.
+
+| 주체·표본 | 거부 사유 | 고유 task 수 | 대표 원문 위치 |
+|---|---|---:|---|
+| Buyer가 받은 상대의 거절 | 가격·협상 거절 | 172 | `logs/market-kit.log:237` |
+| Buyer가 받은 상대의 거절 | 기타 명시적 거절 | 5 | `logs/market-kit.log:34407` |
+| Buyer가 받은 상대의 거절 | 등급·수명·보증·인증 조건 거절 | 131 | `logs/market-kit.log:29` |
+| Buyer가 받은 상대의 거절 | 재고 부족·미취급 | 2,160 | `logs/market-kit.log:59` |
+| 우리 Seller | 구매자 명시적 차단 | 11 | `logs/market-kit.log:3413` |
+| 우리 Seller | 익명 템플릿 차단 | 84 | `logs/market-kit.log:1344` |
+
+**가격·협상 거절** — [원문 237행](logs/market-kit.log#L237)
+```text
+19:06:33 [buyer] {"at": "2026-11-17T10:06:33.665113+00:00", "event": "a2a_response", "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com", "task_id": "b5b203c6-5a81-4f89-a553-96b652a19c5d", "state": "TASK_STATE_REJECTED", "text": "No deal below 12201.", "metadata": {}, "artifacts": []}
+```
+
+**기타 명시적 거절** — [원문 34407행](logs/market-kit.log#L34407)
+```text
+22:33:05 [buyer] {"at": "2026-11-17T13:33:05.055014+00:00", "event": "a2a_response", "shop": "https://visible-prep-uploaded-ceiling.trycloudflare.com", "task_id": "b83c6672-9993-4374-9ae5-673a5f69f478", "state": "TASK_STATE_REJECTED", "text": "Sorry, we can't take this order.", "metadata": {}, "artifacts": []}
+```
+
+**등급·수명·보증·인증 조건 거절** — [원문 29행](logs/market-kit.log#L29)
+```text
+19:05:29 [buyer] {"at": "2026-11-17T10:05:29.001173+00:00", "event": "a2a_response", "shop": "https://ccd-premiere-screens-puzzles.trycloudflare.com", "task_id": "eedd2aab-525e-4623-b9ae-36377b02a50d", "state": "TASK_STATE_REJECTED", "text": "Sorry, this shop offers no new warranty: new quotes are 0 h (no warranty), so a deal that requires a warranty cannot be signed and no receipt was signed. If a 0 h deal is fine, please start a new negotiation without the warranty requirement.", "metadata": {}, "artifacts": []}
+```
+
+**재고 부족·미취급** — [원문 59행](logs/market-kit.log#L59)
+```text
+19:05:48 [buyer] {"at": "2026-11-17T10:05:48.266270+00:00", "event": "a2a_response", "shop": "https://pixels-setting-knock-muscles.trycloudflare.com", "task_id": "b5f3e141-38e9-40f6-ae52-9602ab812f0d", "state": "TASK_STATE_REJECTED", "text": "Sorry, we have none of that in stock right now.", "metadata": {}, "artifacts": []}
+```
+
+**구매자 명시적 차단** — [원문 3413행](logs/market-kit.log#L3413)
+```text
+19:24:14 [seller] {"event": "buyer_access_refused", "buyer": "q00", "task": "45e814da-b21d-416a-9eca-544da90bf7a4"}
+```
+
+**익명 템플릿 차단** — [원문 1344행](logs/market-kit.log#L1344)
+```text
+19:12:33 [seller] {"event": "buyer_access_refused", "buyer": "sergiobuilds (anonymous refusal template)", "task": "22b0a063-5140-47b2-9f26-dc28c0706e83"}
+```
+
+전체 분류와 대표 1~2줄은 [`logs/round3-rejections.json`](logs/round3-rejections.json)에 있다. 18개의 파싱 불가 JSON 줄은 보존하되 거부 수에 임의 배분하지 않았다. 네트워크·예산·서명 등 조사 후보에 해당하는 신뢰할 수 있는 고유 거절 이벤트가 확인되지 않은 항목을 0으로 채우지 않았다.
+
+### Week 10 LAB 기준과 종료 구간 비교
+
+Week 10 LAB 실제 기준은 **2026-11-11T20:02:38+09:00**에 저장됐다. [`logs/week10-lab.json`](logs/week10-lab.json)의 `baseline`이며, `status=published`, `http_status=200`, `post_id=81972`가 남아 있다. 상대는 허용 SKU와 사용시간을 만족하는 재고를 찾는 구매자, 가설은 실제 재고 공지가 탐색을 돕는다는 것이었다. 성공확률은 미측정이며 실패 비용은 게시 슬롯과 처리시간이다.
+
+기준은 누적 매출이 아니라 **직전 2시간 2026-11-11T18:02:40+09:00~2026-11-11T20:02:38+09:00의 관측값**이다. 종료 비교도 **2026-11-17T21:59:00+09:00~2026-11-17T23:59:00+09:00의 2시간 로컬 원장**으로 맞췄다. 단, 기준 원장 관측 시작이 명목 2시간보다 늦어 완전히 동일한 수집 완전성을 보장하지는 않는다.
+
+| 지표 | Week 10 LAB 기준 | 종료 시점/구간 | 변화·한계 |
+|---|---:|---:|---|
+| Seller 최근 2시간 정산 | 83 | 182 | +99; 인과 효과 아님 |
+| Seller 최근 2시간 매출 | 10,445,083 | 25,013,005 | +14,567,922; 같은 2시간 창의 관측 |
+| Seller 공식 누적 정산 | 기준 파일에 미기록 | 23,441 | 증가량 미산정 |
+| Buyer 공식 누적 정산 | 미기록 | 25,855 | 증가량 미산정 |
+| 누적 Revenue / Book | 미기록 | 2,398,540,951 / 215,531,652 | cash를 Book으로 대체하지 않음 |
+| Buyer Saved | 미기록 | 0.6540 | 보간하지 않음 |
+| Class Players ALL / 순위 | 미기록 | 0.993 / 32위 | Week 10 순위를 꾸며 넣지 않음 |
+| 기준 피드의 자기 글·likes·replies | 2개·8개·1개 | 해당 옛글의 종료 시점 자료 없음 | 최종 posts 누적과 비교 불가 |
+| 거부 사유 | LAB 기준에 미기록 | 위 로그 표 | 범위가 달라 증감 미산정 |
+
+`week10-lab.json.latest`는 별도로 남은 11월 13일의 rolling 관측이며 종료값이 아니다. 오래된 글이 최신 100개 feed에서 보이지 않는 상태를 삭제·좋아요 0·효과 없음으로 바꾸지 않았다. 게시 후 매출 상승이 그 글 때문에 발생했다고 주장하지 않는다.
+
+### 전략별 검증 결과와 실제 병목
+
+- v10 공동 평가(11/16 10:02~16:02)의 공개 Buyer 정산은 786건, 시간당 131건이었다. 공식 Deals도 같은 전체 구간에서 +786이다. 과거 +607은 14:45 중간값이라 최종 6시간 값과 달랐다.
+- v10.1의 초기 90분에는 Buyer subprocess 중앙값 12.71초, 공개 주문→결과 중앙값 20.20초, P90 31.13초가 관측됐다. 서로 다른 처리 구간이므로 12.71초를 시장 전체 정산시간이라고 쓰지 않았다.
+- v10.1 성숙 확인 순기여는 시간당 약 618,152로 v10의 약 233,101보다 높았지만, v10.1 운영 체크포인트의 Class Players는 1.022→1.009로 하락했다. 손익 개선과 상대 순위 개선은 별개였다.
+- Buyer 신규 217건 중 최종 점수 복원이 가능한 것은 38건뿐이었다. 실패·환불이 먼저 드러나는 선택 표본의 평균 .2430을 전체 품질 악화나 전체 최종 평균으로 일반화하지 않았다.
+- 종료 직전에는 최초 최종구간 기준 32위·ALL 1.000에서 Deals 경계를 지나 1.002까지 올랐으나, 마지막 기록은 32위·0.993이다. 모든 버전과 변경이 성공했다고 결론내리지 않는다. 세부 시각·코호트·지표는 `logs/strategy-evaluations.json`에 있다.
+- 높은 재고 원가와 B/C 적체, 보관·폐기·과거 계약 환불, 부족한 신규 고유 평가자 자료가 병목이었다. 마지막 구간의 다음 Saved 경계는 필요한 신규 평균 q가 1을 넘었고, 다음 Book 경계도 최근 실제 증가속도로 도달하기 어려웠다. 거래량이나 양수 gross만 최적화하는 것은 목표와 달랐다.
+- 종료 후 수행한 이 제출 작업은 새로운 거래나 실전 전략 실험을 추가하지 않았다. 검증 가능한 실패·관측 불완전성을 숨기지 않고 설계의 한계로 기록했다.
+
+## 검증과 제출 자료
+
+추가 원장 증거는 `logs/round3-settlements.csv`의 공개 필드 30,983행이다. `python analysis/verify_results.py`로 역할별 고유 정산 수, 마지막 2시간 매출, 공식 board 대조, 인용 원문 줄을 네트워크 없이 재검증할 수 있다. 검증 결과는 `logs/evidence-validation.txt`에 있다.
+
+핵심 오프라인 테스트 47개가 제출용 복사본에서 통과했다. 종료된 시각을 현재 시각으로 사용해 테스트가 무조건 중단되지 않도록 **테스트 fixture의 라운드 마감만 미래로 고정**했다. 운영 코드를 바꾸거나 실전 주문을 생성한 것이 아니다. 예산·단일 영수증·Patch 3.6·등급/보증·stock TTL·마감 감액·추가 매입·예약 중복·원본 영수증 복원·명시적/익명 차단·owner URL 갱신을 검사했다. 실제 명령과 결과는 `logs/validation.txt`에 있다.
+아키텍처는 Tectonic 0.17.0(XeTeX), TikZ, fontspec/xeCJK, Windows 맑은 고딕으로 컴파일했다. PDF는 1페이지이며 렌더링해 한글·도식·잘림을 확인했다. Windows 폰트 경로 경고는 다른 환경에서 같은 폰트 설치가 필요하다는 재현성 조건이고 컴파일 실패는 아니다. 빌드 로그는 `logs/architecture-build.log`에 있다.
+제출용 `logs/market-kit.log`는 기존 회전본과 현재 파일의 고정 byte snapshot을 순서대로 합친 사본이다. API/로그인 token, owner code, 비공개 예산·권한값은 마스킹하고 이벤트 줄은 제거하지 않았다. 원본은 로컬의 무시되는 `.market/submission-audit/`와 원래 경로에 보존했다. `logs/log-provenance.json`은 원본 SHA-256·byte 수·출력 줄 번호 대응을 기록한다. 원본 개인키와 전체 운영 DB, 대량 백업·가상환경은 제출하지 않는다.
+보안 전수 검사와 실제 PR diff 범위는 `logs/security-scan.json`에 기록한다. 강의 요구사항은 [Week 08](https://wpti.dev/ai-agent-engineering-101/week-08.html), [Week 10 LAB](https://wpti.dev/ai-agent-engineering-101/week-10.html), [Week 11 LAB/HW](https://wpti.dev/ai-agent-engineering-101/week-11.html)을 기준으로 확인했다. PR에 포함되는 변경은 `submissions/26512074/week-08/`로 한정하고 기존 이력은 squash/강제 push하지 않았다.

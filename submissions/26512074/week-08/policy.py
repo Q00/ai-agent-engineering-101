@@ -1,3 +1,4 @@
+import os
 """One real model plans a batch; execution does not pretend to call an LLM."""
 import asyncio
 import hashlib
@@ -89,19 +90,27 @@ async def prepare(evidence, output):
     return data
 
 
-async def read_price(text, *, role, ask=None, metadata=None):
+async def read_price(text, *, role, ask=None, metadata=None, allow_model=False):
     """Pure parsing for the ordinary path; real model only for ambiguous prose."""
     if metadata and metadata.get("ask") is not None and role == "ask":
         return whole(metadata["ask"])
     raw = text.strip()
     if role == "offer" and raw.lower() in ("accept", "accepted", "ok", "okay", "yes", "deal"):
         return ask
+    numeric=re.fullmatch(r"(?:KRW\s*|[$₩]\s*)?(\d[\d,]*(?:\.\d+)?)\s*(?:KRW|원)?[.!]?",raw,re.I)
+    if numeric:
+        return whole(float(numeric.group(1).replace(',','')))
+    contextual=re.findall(r"(?:asking(?:\s+price)?|counteroffer|current\s+ask|current\s+price(?:\s+of)?|our\s+ask|total\s+price|price\s+is|가격|호가)\s*[:=]?\s*[$₩]?\s*(\d[\d,]*(?:\.\d+)?)",raw,re.I)
+    if contextual and role=='ask':
+        return whole(float(contextual[-1].replace(',','')))
     patterns = [r"\s*(?:I offer\s*)?(\d+(?:\.\d+)?)\s*"] if role == "offer" else [
         r"(?:asking|current ask|counteroffer|current price|price is|ask is|asking price is)\s*[:=$]?\s*(\d+(?:\.\d+)?)"]
     for pattern in patterns:
         matches = list(re.finditer(pattern, raw, re.I)) if role == "ask" else list(re.finditer("^" + pattern + "$", raw, re.I))
         if matches:
             return whole(float(matches[-1].group(1)))
+    if not allow_model or os.environ.get("ROUND3_SEMANTIC_MODEL", "0") != "1":
+        return None
     schema = {"type": "object", "additionalProperties": False,
         "properties": {"price": {"type": ["number", "null"]}}, "required": ["price"]}
     def check(answer):

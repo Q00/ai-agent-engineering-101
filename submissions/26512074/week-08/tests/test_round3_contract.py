@@ -15,6 +15,13 @@ from unittest.mock import AsyncMock, MagicMock
 
 
 class SellerExecutionTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory()
+        self.patch=patch.object(seller_r3,'MARKET_DIR',Path(self.temp.name))
+        self.patch.start()
+    def tearDown(self):
+        self.patch.stop()
+        self.temp.cleanup()
     async def test_matching_offer_and_reservation(self):
         seller=seller_r3.Seller()
         unit={'unit':'u','sku':'x','name':'X','kind':'goods','cost':50,'list_price':100}
@@ -25,7 +32,7 @@ class SellerExecutionTests(unittest.IsolatedAsyncioTestCase):
         updater.complete=AsyncMock()
         with patch.object(seller_r3,'TaskUpdater',return_value=updater), \
              patch.object(seller_r3,'get_message_text',return_value='100'), \
-             patch.object(seller_r3,'decide',new=AsyncMock(return_value={'action':'accept'})), \
+             patch('harness.decide',new=AsyncMock(side_effect=AssertionError('model forbidden'))), \
              patch.object(seller_r3,'sign',side_effect=lambda r:r):
             await seller.execute(context,None)
         updater.complete.assert_awaited_once()
@@ -42,7 +49,7 @@ class SellerExecutionTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(seller_r3,'TaskUpdater',return_value=updater), \
              patch.object(seller_r3,'get_message_text',return_value='delivery takes 100 days'), \
              patch.object(seller_r3,'read_price',new=AsyncMock(return_value=None)), \
-             patch.object(seller_r3,'decide',new=AsyncMock(return_value={'action':'accept'})):
+             patch('harness.decide',new=AsyncMock(side_effect=AssertionError('model forbidden'))):
             await seller.execute(context,None)
         updater.requires_input.assert_awaited_once()
         self.assertFalse(seller.promised)
@@ -81,7 +88,8 @@ class ContractTests(unittest.TestCase):
             self.assertFalse((md/'forum-drafts.json').exists())
 
     def test_a2a_app_build(self):
-        self.assertTrue(seller_r3.build(9301).routes)
+        with tempfile.TemporaryDirectory() as directory, patch.object(seller_r3,'MARKET_DIR',Path(directory)):
+            self.assertTrue(seller_r3.build(9301).routes)
 
 if __name__=='__main__':
     unittest.main()

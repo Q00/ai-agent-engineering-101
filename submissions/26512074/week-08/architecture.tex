@@ -1,24 +1,50 @@
-﻿\documentclass{article}
-\usepackage[margin=18mm]{geometry}
+\documentclass[10pt,a4paper,landscape]{article}
+\usepackage[margin=15mm]{geometry}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\setmainfont{Malgun Gothic}
+\setCJKmainfont{Malgun Gothic}
+\setmonofont{Consolas}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning}
 \pagestyle{empty}
 \begin{document}
 \begin{center}
-{\Large Round 3: Evidence, Inventory, Negotiation}\\[8mm]
-\begin{tikzpicture}[node distance=10mm,box/.style={draw,rounded corners,text width=12cm,align=center,minimum height=15mm},>=Stealth]
-\node[box] (inputs) {Official kit v4 files\\Inventory, catalog, orders, shops, payments; public settled ledger};
-\node[box,below=of inputs] (memory) {Durable evidence\\Ledger cursor and replay deduplication; seven-day decayed demand\\Payment success history; timed forum drafts};
-\node[box,below=of memory] (strategy) {Procurement and prices (round3.py)\\20-minute MRP horizon + safety stock + cash reserve\\Worst-case supply cost; perishability salvage; storage and warranty model};
-\node[box,below=of strategy] (agents) {A2A negotiation\\Seller: model decision + code price floor + unit reservation\\Buyer: acceptable SKUs + budget cap + shelf-life acceptance};
-\node[box,below=of agents] (settle) {Official kit owns settlement\\Canonical Ed25519 receipt, ACP checkout, AP2 mandate\\Post-settlement review hook; evidence returns to memory};
-\draw[->] (inputs)--(memory);
-\draw[->] (memory)--(strategy);
-\draw[->] (strategy)--(agents);
-\draw[->] (agents)--(settle);
+{\Large Round 3 에이전트: 증거에 기반한 협상과 검증된 정산}\\[2mm]
+{26512074 \quad tomato\&potato / totato2203-r3 \quad 종료 시 운영 구조: 2026-11-17}
+\end{center}
+\begin{center}
+\begin{tikzpicture}[>=Stealth,font=\small,
+ base/.style={draw,rounded corners,fill=gray!10,text width=6cm,align=center,minimum height=13mm},
+ added/.style={base,fill=blue!6,draw=blue!50!black},
+ arrow/.style={->,thick},optional/.style={->,dashed,gray!75}]
+\node[base,text width=12cm] (market) at (0,7.4) {공식 시장: 상품·재고·주문·공개 원장·Class board\\타계정 Buyer / Seller와 A2A 협상; 자기 계정 거래는 제외};
+\node[base,text width=12cm] (kit) at (0,5.7) {기본 Market Kit v4 / \texttt{launch\_round3.py}\\파일 갱신·주문 발급·터널·ACP checkout·AP2 결제·정산 결과 전송};
+\node[added] (buyer) at (-7,3.5) {Buyer: \texttt{buyer\_r3.py}\\후보 견적·frontier·시간 기회비용\\예산·등급·수명·보증 확인 / 단일 영수증};
+\node[added] (seller) at (0,3.5) {Seller: \texttt{seller\_r3.py}\\A2A 견적·협상 / unit 예약\\task별 가격·보증 고정 / Ed25519 서명};
+\node[added] (policy) at (7,3.5) {정책·재고·위험 판단\\\texttt{strategy\_feedback / price\_learning}\\\texttt{capital\_policy / patch36}};
+\node[base,text width=12cm] (settle) at (-3.5,1.0) {영수증 → ACP create/get → AP2 mandates → 공식 정산\\Kit가 signature·정수 가격·권한·정확한 unit/certificate를 검증\\영수증 발행과 실제 지급 완료는 별도 집계};
+\node[added] (memory) at (7,1.0) {로컬 기억·증거\\SQLite / ledger·payments / timing\\공식 owner 주소 연결·중복 제거};
+\node[added] (model) at (-7,-1.3) {이전·선택적 모델 경로\\\texttt{harness.py}: 구조화 정책 생성\\최종 운영은 모델 자동 호출 비활성};
+\node[added] (eval) at (0,-1.3) {기존 단일 운영 워커\\시장 수집 → 동일 코호트 공동 평가\\성숙 손익·공식 ALL / 한정된 정책 갱신};
+\node[added] (evidence) at (7,-1.3) {제출 근거\\정산·거부 원문 로그 / board 스냅샷\\시각·집계 범위·미확정 결과를 구분};
+\draw[<->,thick] (market)--(kit);
+\draw[arrow] (kit.south west) -- (buyer.north);
+\draw[arrow] (kit)--(seller);
+\draw[arrow] (kit.south east)--(policy.north);
+\draw[arrow] (policy)--(seller);
+\draw[arrow] (buyer.south)--(-7,2.0)--(settle.north west);
+\draw[arrow] (seller.south)--(settle.north east);
+\draw[arrow] (settle)--node[above,font=\scriptsize]{확인된 결과}(memory);
+\draw[arrow] (memory)--(policy);
+\draw[arrow] (memory)--(evidence);
+\draw[arrow] (evidence)--(eval);
+\draw[arrow] (eval.north east)--(2.9,-0.2)--(3.5,-0.2)--(3.5,4.6)--(policy.north west);
+\draw[optional] (model.north)--(-10.4,-0.2)--(-10.4,4.7)--(policy.north);
 \end{tikzpicture}
 \end{center}
-Implemented locally; no market run or performance claims. Forum output remains
-in draft files. Repair, expiry extension, loans and resale transfers have no
-verified market operation. No model training or rank optimizer is claimed.
+\noindent\textbf{도식 읽기:} 회색은 기본 Kit/공식 시장의 정산 책임, 파란색은 추가 구현이다.
+점선은 과거·선택적 모델 경로이며 최종 일반 거래의 활성 호출을 뜻하지 않는다.
+Buyer와 Seller 사이에 자기거래 경로는 없다. 매입은 기존 재고·예약·등급별 수요와 잔여시간을 반영한다.
+설명 기준은 \texttt{REPORT.md}이며, 종료 직전 마지막 유효 board는 2026-11-17 23:58:29 KST다.
 \end{document}

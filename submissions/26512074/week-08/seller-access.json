@@ -1,0 +1,48 @@
+{
+  "blocked_buyers": [
+    "q00",
+    "sergiobuilds"
+  ],
+  "decisions": {
+    "q00": {
+      "action": "decline_new_transactions",
+      "reason": "Two verified paid reviews allege forged or wrong-item receipts despite item_matches and sig_seller_ok true; observed gross 7582"
+    },
+    "sergiobuilds": {
+      "action": "decline_new_transactions",
+      "reason": "Reassessed marginal value: 769047 known historical gross is small relative to shop assets; net is lower after costs. Persistent low ratings and future downside do not justify continued relationship. Existing ratings remain.",
+      "at": 1794558019.7303455,
+      "enforcement": "decline_before_quote_or_receipt",
+      "template_evidence": {
+        "food_verified": 139,
+        "goods_verified": 24,
+        "other_verified_buyers_matched": 0,
+        "scope": "locally linked verified results and captured request histories; not authentication"
+      },
+      "evidence_files": [
+        "logs/sergio-template-evidence.json",
+        "logs/sergio-initial-template-evidence.json"
+      ]
+    }
+  },
+  "updated_at": 1794735933.9413238,
+  "anonymous_request_fingerprints": {
+    "sergiobuilds": [
+      [
+        "i need it to last",
+        "please offer only a unit with at least",
+        "hours of shelf life left, with the market's certificate.",
+        "what is your price?"
+      ]
+    ]
+  },
+  "fingerprints_updated_at": 1794564229.9278734,
+  "identity_mode": "explicit_blocked_claim_or_verified_identity_or_observed_anonymous_refusal_template",
+  "anonymous_request_regex_groups": {
+    "sergiobuilds": [
+      [
+        "^i want to buy [^\\n]+\\(g[0-9a-f]{8}\\)\\. what is your price\\?$"
+      ]
+    ]
+  }
+}

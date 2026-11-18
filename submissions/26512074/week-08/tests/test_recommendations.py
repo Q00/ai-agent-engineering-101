@@ -26,7 +26,7 @@ class RecommendationTests(unittest.TestCase):
         post=r.render(rec,{'x':{'name':'X'}},{'units':[{'sku':'y','name':'Y'}]},'가격 메리트')
         self.assertIn('30.0%',post['post'])
         self.assertIn('우리 가게',post['post'])
-        self.assertIn('좋아요',post['post'])
+        self.assertNotIn('좋아요',post['post'])
         self.assertIn('이전 기간 거래 없음',post['post'])
         self.assertEqual(len(post['refs']),5)
     def test_feedback_and_persistence(self):
@@ -58,7 +58,8 @@ class RecommendationTests(unittest.TestCase):
             for i in range(3):
                 self.assertIn('Product '+str(i),post['post'])
             self.assertNotIn('Product 5',post['post'])
-            self.assertTrue(post['post'].splitlines()[-1].startswith('광고 | tomato&potato:'))
+            self.assertIn('\n\n【🎁 놓치기 전에 챙기세요! 지금 구매 혜택】\ntomato&potato:',post['post'])
+            self.assertIn('【🤝 이 가격에 팔면 뭐가 남나요? 바로 여러분】',post['post'])
             self.assertIn('30.0%',post['post'])
             c.close()
     def test_partial_evidence_publishes_without_fabricating_three_shops(self):
@@ -80,8 +81,8 @@ class RecommendationTests(unittest.TestCase):
             self.assertEqual(result['status'],'queued')
             self.assertEqual(result['recommendation_count'],1)
             post=json.loads((md/'outbox.jsonl').read_text(encoding='utf-8'))
-            self.assertIn('가게 1곳',post['post'])
-            self.assertIn('가게 0곳',post['post'])
+            self.assertIn('【🤝 이 가격에 팔면 뭐가 남나요? 바로 여러분】',post['post'])
+            self.assertIn('【💸 와 이 가격에 사느니 tomato&potato에서 사겠다 ㄹㅇ ㅋㅋ】',post['post'])
     def test_exclusions_use_actual_recent_evidence_and_no_positive_overlap(self):
         f=r.features(self.events,2,[],'x',self.now)
         shops=[{'name':'bad','url':'http://bad'},{'name':'expired','url':'http://expired'}]

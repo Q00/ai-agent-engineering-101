@@ -16,8 +16,10 @@ def recent_ledger(path,now):
         with Path(path).open('rb') as source:
             source.seek(0,2)
             size=source.tell()
-            source.seek(max(0,size-8*1024*1024))
-            if size>8*1024*1024:
+            # Eight MB covered less than one hour in the live market, silently
+            # starving the two-hour same-grade benchmark of observations.
+            source.seek(max(0,size-64*1024*1024))
+            if size>64*1024*1024:
                 source.readline()
             rows=[]
             for line in source:
@@ -35,8 +37,6 @@ def recent_ledger(path,now):
 REGISTRATION='totato2203-r3'
 DISPLAY='tomato&potato'
 ALIASES={REGISTRATION,DISPLAY}
-CASH_RESERVE=2000000
-INVENTORY_CAP=1500000
 
 
 def exposure(inventory):
@@ -44,8 +44,8 @@ def exposure(inventory):
 
 
 def buy_budget(inventory):
-    return max(0,min(250000,inventory.get('balance',0)-CASH_RESERVE,
-                     INVENTORY_CAP-exposure(inventory)))
+    from profit_strategy import capital
+    return capital(inventory)['budget']
 
 
 def own_events(ledger):
@@ -63,11 +63,17 @@ def ownership_tags():
 
 
 def recovery_price(unit,inventory,ledger,now):
+    from strategy_policy import active,ROOT
+    if active(ROOT/'.market'):
+        from strategy_feedback import market_price
+        return market_price(ROOT/'.market',unit,inventory,now)
     """Use actual same-SKU/grade settlements; never label estimates as quotes."""
     if unit.get('grade')=='expired' or (unit.get('expires_at') is not None and unit['expires_at']<=now):
         return None
     cost=unit['cost']
     prices=[]
+    freshness_prices=[]
+    tags=ownership_tags()
     seen=set()
     for e in ledger:
         d=e.get('data',{})
@@ -77,24 +83,31 @@ def recovery_price(unit,inventory,ledger,now):
         price=d.get('amount')
         if (d.get('sku') or d.get('item'))!=unit['sku'] or d.get('grade')!=unit.get('grade'):
             continue
+        if d.get('shop') in tags:
+            continue
         if not 0<=now-e.get('ts',0)<7200 or isinstance(price,bool) or not isinstance(price,(int,float)) or not math.isfinite(price) or price<=0:
             continue
         prices.append(price)
-    stressed=inventory.get('balance',0)<CASH_RESERVE or exposure(inventory)>INVENTORY_CAP
-    margin=.05 if stressed else .15
+        if unit.get('kind')=='food' and unit.get('expires_at') is not None and isinstance(d.get('expires_at'),(int,float)):
+            remaining=unit['expires_at']-now
+            sold_remaining=d['expires_at']-e['ts']
+            if remaining*.8<=sold_remaining<=remaining*1.2:freshness_prices.append(price)
+    freshness_matched=len(freshness_prices)>=3
+    if freshness_matched:prices=freshness_prices
+    from profit_strategy import capital,quantile,settings
+    limits=capital(inventory)
+    stressed=inventory.get('balance',0)<limits['cash_reserve'] or exposure(inventory)>limits['inventory_cap']
     # Reserve covers acquisition and a positive unit margin, without adding
     # seven speculative future storage days to today's acceptance threshold.
     floor=math.ceil(cost*1.01)
-    ask=math.ceil(cost*(1+margin))
-    if len(prices)>=3:
-        ask=min(ask,math.floor(median(prices)*.99))
-    ask=max(floor,min(unit['list_price'],ask))
+    reference=median(prices)*settings()['market_opening_buffer'] if len(prices)>=3 else unit['list_price']
+    ask=max(floor,math.ceil(reference))
     if unit.get('expires_at') is not None:
         hours=(unit['expires_at']-now)/3600
         if hours<6:
             ask=max(1,math.floor(ask*max(.1,hours/6)))
             floor=max(1,math.ceil(cost*(.1 if hours<1 else .2)))
             ask=max(floor,ask)
-    return {'ask':ask,'floor':floor,'market_samples':len(prices),
+    return {'ask':ask,'floor':floor,'market_reference':reference,'market_samples':len(prices),
             'market_median':median(prices) if len(prices)>=3 else None,
-            'cash_recovery':stressed}
+            'cash_recovery':stressed,'freshness_matched':freshness_matched}

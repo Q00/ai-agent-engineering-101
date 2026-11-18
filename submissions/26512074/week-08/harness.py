@@ -98,6 +98,20 @@ async def decide(role, trusted, untrusted, *, validator=None, schema=None):
     No canned response or deterministic trading fallback exists. Transport failures
     propagate to the caller, which must keep a purchase's outcome uncertain.
     """
+    from optimizer import append,ROOT
+    # Re-read for every call: disabling automation does not depend on stale
+    # process environment or on restarting every seller and buyer.
+    try:
+        credit_policy=json.loads((ROOT/'credit-policy.json').read_text(encoding='utf-8'))
+    except (OSError,ValueError):
+        credit_policy={}
+    if credit_policy.get('automated_model_calls_enabled') is not True:
+        append(ROOT/'.market/optimization/model-usage.jsonl',
+               {'at':time.time(),'event':'call_blocked','role':role,'calls':0,'tokens':0,
+                'reason':'persistent_credit_policy'})
+        raise RuntimeError('Automated model calls disabled by credit-policy.json')
+    if os.environ.get('ROUND3_ALLOW_MODEL_CALLS','0') != '1':
+        raise RuntimeError('Automated model calls are disabled; deterministic market operation remains available')
     failure = None
     for attempt in range(2):
         call_id = uuid.uuid4().hex[:12]
@@ -120,6 +134,8 @@ async def decide(role, trusted, untrusted, *, validator=None, schema=None):
                    "--json", "-"]
             emit("harness_start", call_id=call_id, role=role, model=MODEL, attempt=attempt + 1,
                  prompt_chars=len(prompt), trusted=trusted, remote=untrusted)
+            append(ROOT/'.market/optimization/model-usage.jsonl',
+                   {'at':time.time(),'event':'call_started','role':role,'call_id':call_id,'calls':1,'tokens':None})
             started = time.monotonic()
             proc = await asyncio.create_subprocess_exec(*cmd, cwd=cwd,
                 stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
@@ -140,6 +156,8 @@ async def decide(role, trusted, untrusted, *, validator=None, schema=None):
                         usage = event.get("usage")
                 except (ValueError, AttributeError):
                     pass
+            append(ROOT/'.market/optimization/model-usage.jsonl',
+                   {'at':time.time(),'event':'call_finished','call_id':call_id,'calls':0,'usage':usage})
             if proc.returncode or not output_path.exists():
                 # stderr is diagnostic CLI output; never read credentials/configs.
                 detail = stderr.decode(errors="replace")[-1600:]

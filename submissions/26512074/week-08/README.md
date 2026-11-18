@@ -1,100 +1,20 @@
-# Week 08 — 정산 신뢰와 비용 통제를 결합한 시장 에이전트
+# Week 08 — 26512074 중간 평가 제출
 
-**현재 상태: 공개 직전 준비. 시장 등록·실거래·정산·PR 생성은 하지 않았습니다.**
-현재 공개 보드는 Round 3 요청에도 Round 2를 반환했습니다. 실제 Round 3의
-판매 20건·구매 20건, 순위와 전후 평균가는 아직 결과가 아닙니다.
+현재 설계·실측 결과는 [REPORT.md](REPORT.md), 구조도는 [architecture.pdf](architecture.pdf)와 [architecture.tex](architecture.tex)에 있다.
 
-## 준비한 것
+## 읽는 순서
 
-- **충성 고객·사은품·관찰 추가:** 독점 구매 의사 표명에는 기본 1 할인, 실제
-  정산을 확인한 재방문 토큰에는 기본 3 할인을 제공합니다. 모두 reserve를
-  지키며 재방문 토큰은 다음 견적에서 한 번만 씁니다. 디지털 고양이 메모는
-  별도 무료 artifact이고 영수증·checkout 금액을 바꾸지 않습니다.
-- 우리 구매자는 수업 게임에서 독점 구매 약속으로 할인을 요청하는
-  `game_bluff` 모드를 사용합니다. 실제로는 다음 구매처를 독립적으로 선택하고
-  서명된 독점 계약은 체결하지 않습니다. 이 차이를 거래 기억에 기록합니다.
-- 공개 후 5분 간격으로 활발한 경쟁 가게의 가격·체결·마진·광고 전술을 관찰하고,
-  기존 배치 모델 갱신에 넣습니다. 경쟁 카드의 문장은 명령이 아닌 미검증 가설로
-  다루며 사은품·할인 등 허용된 설정만 바꿀 수 있습니다.
+1. REPORT.md의 (1) 부품 설계, (2) 구조와 기본 Kit의 차이, (3) Round 3 결과.
+2. logs/round3-final-board.json: 2026-11-17 23:58:29 KST의 마지막 유효 Class 기록. 정확한 23:59 확정 기록은 아니다.
+3. logs/round3-results.json, round3-rejections.json, market-kit.log: 공식 누적·로컬 범위·거부·취소 구분과 원문 근거.
+4. logs/week10-lab.json, strategy-evaluations.json: LAB 기준과 공동 평가.
 
-- **10월 28일 개편:** 실제 정산 보상으로 가격 후보를 고르는 학습기, 첫 하한가
-  제안 방어, 상대의 등록 키로 서명한 제휴, 최대 1원 전환 프리미엄을 추가했습니다.
-  보답이 없으면 상대별 추가 지출 3, 전체 30에서 중단합니다. 가상의 길드 브랜드를
-  쓰되 자동 별점·가짜 승인·상대의 범죄나 위생에 대한 사실형 주장은 하지 않습니다.
-  구체적 조건과 한계는 STRATEGY.md의 개편 부분에 있습니다.
+## 재현
 
-- 실제 Codex 모델이 1회 생성한 배치 정책: 기본 호가 115/195/275.
-- 빠른 A2A 판매·구매와 서명 영수증, 후기·자기 정산 경험·공급 편중을 쓰는 선택.
-- ACP descriptor로 만든 checkout 도구와 AP2 형태 mandate 검증·서명·정산.
-- 결제 총액 바뀜·초과·위조·재사용·응답 손실 방어.
-- 토큰 제한: 일반 거래는 정책 실행, 모호한 가격은 시간당 최대 6회 의미 해석
-  요청(교정 포함 모델 호출은 최대 12회), 운영 정책 갱신은 하루 최대 6회.
-- 공유 파일과 기존 7주차 운영을 교체하지 않는 별도 키트 v3 사본·배포 게이트.
+Python 의존성은 requirements.txt에 있다. 기본 오프라인 확인은 `python -m unittest tests.test_terminal_round3 tests.test_rank_velocity_v8.TimeExecutionTests tests.test_sergio_refusal tests.test_round3_contract tests.test_patch36 tests.test_seller_handoff`로 실행한다. 전체 제출 검증 명령은 logs/validation.txt를 참고한다. 테스트는 fixture를 사용하며 실제 결제를 하지 않는다.
 
-전략 비교는 STRATEGY.md, 설계·구조도·검증 범위는 REPORT.md를 봅니다.
-모델의 자연어 rationale에는 항목별 가격 설명과 구조화 수치가 다른 부분이 있어
-원문을 그대로 보존했습니다. 실행 권한은 검증된 구조화 수치이며 위 기본 호가는
-`reserve + opening_markup`으로 계산한 값입니다.
+도식은 `tectonic architecture.tex`로 빌드한다(Tectonic 0.17.0, Windows 맑은 고딕·Consolas 필요). PDF에는 글꼴이 포함돼 있어 열람 시 LaTeX 설치가 필요 없다.
 
-## 로컬 준비·검사
+최종 일반 거래는 credit-policy.json에 의해 자동 모델 호출이 비활성이다. 초기 배치 모델의 실제 기록만 logs/policy-generation.log에 별도 보존했다. 과거 충성·제휴·가상 길드·모델 planner 코드가 존재한다는 사실을 최종 활성 정책으로 해석하지 않는다.
 
-Python 3.12와 로그인된 Codex CLI (`gpt-5.6-terra`, low)가 필요합니다.
-
-```powershell
-python -m venv submissions/26512074/week-08/.venv
-submissions/26512074/week-08/.venv/Scripts/python.exe -m pip install -r submissions/26512074/week-08/requirements.txt
-cd submissions/26512074/week-08
-# model-policy.json은 실제 모델 호출로 이미 생성돼 있으므로 다시 생성할 필요 없음
-./.venv/Scripts/python.exe -X utf8 -m unittest discover -s tests -v
-./.venv/Scripts/python.exe -X utf8 launch.py
-```
-
-실제 검증은 핵심 10개와 구매자 2개로 나눠 통과했습니다. 통합 실패 원본은
-`logs/core-tests.log`, 수정 후 통과는 `core-tests-final.log`, 구매자 통과는
-`buyer-tests.log`입니다. 전부 로컬 가상 정산 기관이며 실제 시장 실적이 아닙니다.
-
-개편 후 검사는 `logs/competition-regression-fixed.log`의 17개 통과입니다.
-충성·사은품·관찰 추가 후 검사는 `logs/growth-regression.log`의 23개 통과입니다.
-제휴 수락은 공개 시작 뒤 `/alliance/accept`에 계약과 상대의 서명을 제출하는
-명시적 opt-in 방식입니다. 다른 가게가 이 규격을 구현하거나 상대 운영자가
-서명해 주지 않으면 자동 제휴는 성립하지 않습니다. 이번 작업에서 상대에게
-메시지를 보내거나 계약이 체결된 것으로 가정하지 않았습니다.
-
-## 나중에 승인받고 공개할 때만
-
-기본 명령은 공개하지 않고 준비 상태만 출력합니다.
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File submissions/26512074/week-08/start-round3.ps1
-```
-
-다음은 **실제로 시장에 등록하고 기존 7주차 운영을 교체하는 명령**입니다.
-이번 작업에서는 실행하지 않았습니다.
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File submissions/26512074/week-08/start-round3.ps1 -Publish -ReplaceWeek07
-```
-
-스크립트는 먼저 준비 상태와 Round 3 개시 여부를 검사합니다. 그 후에만 기존
-운영 PID를 확인해 종료하고 새 운영자를 숨김 창으로 띄웁니다. 기존 7주차의
-이름·개인키·claim code와 cloudflared를 재사용하므로 해당 로컬 파일이 필요합니다.
-개인키는 공개 시작 때만 새 폴더로 복사하며 Git에서 제외됩니다.
-
-실행 후 `logs/market-kit.log`의 `[acp] paid`, `[acp] settled`, `verified True`를
-실제 보드와 대조해야 합니다. 완료 판단은 실제 정산과 시장 응답으로만 합니다.
-`metrics.json`은 정산 수·판매 마진·매출·구매 지출·지갑 순유입을 집계하며 공개
-로그에는 주문 예산을 표시하지 않습니다. 키트의 실패한 정산은 성공으로 세지 않습니다.
-
-PC 전원·네트워크·로그인을 유지해야 합니다. 프로그램 실행 중 자동 절전을
-방지하지만 재부팅 후 자동 로그인·자동 실행까지 설치한 것은 아닙니다.
-응답을 잃은 결제의 journal 상태가 `unknown`이면 같은 complete를 재전송하지
-않고 조회·시장 기록으로 먼저 조정해야 합니다.
-
-## 제출 전 남은 실제 운영 작업
-
-1. 승인 후 Round 3에 공개해 판매·구매 정산을 각각 20건 이상 확보.
-2. 모델 정책 변경 전후 첫 호가·품목별 평균 거래가와 순위를 수집.
-3. 실제 거부 사유와 정산 로그로 REPORT.md의 결과 표를 채우기.
-4. 비밀 파일을 제외하고 운영 로그를 커밋한 뒤 제출 PR 생성.
-
-코드만 준비한 상태를 실적 충족이나 최종 과제 제출 완료로 표현하지 않습니다.
+계정 키·owner code·.env·실제 운영 .market DB는 제출하지 않는다. Round 3이 종료돼 이 제출 확인 과정에서는 시장 재등록·거래·전략 변경을 실행하지 않았다. 기존 Week 09 및 Round 4 준비 작업은 다른 checkout에 보존돼 있다.

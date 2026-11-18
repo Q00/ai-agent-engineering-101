@@ -60,52 +60,14 @@ def pricing(unit, now, rate=0, competitor=None, failure=.1, warranty_hours=0):
     return {'ask':ask,'floor':floor,'warranty_hours':warranty_hours,
             'expected_profit':ask*(1-risk)-cost-holding}
 
-def procurement(inv,catalog,ledger,now):
-    if inv.get('round',3)<3 or not inv.get('restock',{}).get('open',False):
-        return {'buy':[]}
-    from shop_profit import buy_budget,own_events
-    cash = buy_budget(inv)
-    if cash<=0:
-        return {'buy':[]}
-    rates = forecast(own_events(ledger),now)
-    held = Counter(u['sku'] for u in inv.get('units',[]) if u.get('grade')!='expired'
-                   and (u.get('expires_at') or math.inf)>now)
-    candidates = []
-    for sku,p in catalog.items():
-        listed = p['list_price']
-        if listed<=0:
-            continue
-        r = rates.get(sku,{'rate':0,'sigma':0})
-        # Carry three supply cycles instead of buying for only twenty minutes.
-        horizon = 20/1440
-        target = math.ceil(r['rate']*horizon+2*r['sigma']*math.sqrt(horizon))
-        if r['rate']>0:
-            target=max(target,1 if p['kind']=='food' else 2)
-            target=min(target,4)
-        if p['kind']=='food':
-            target = min(target,max(1,math.floor(r['rate']*3*p.get('shelf_hours',0)/24*.45)))
-        if not rates and sum(held.values())<6:
-            target = 1
-        need = max(0,target-held[sku])
-        if need:
-            candidates.append((r['rate']/listed,sku,need,math.ceil(listed*.75)))
-    buy=[]
-    probe_left=max(0,6-sum(held.values()))
-    for _,sku,need,worst_cost in sorted(candidates,key=lambda x:(held[x[1]]>0,-x[0],x[3],x[1])):
-        qty=min(20,need,cash//worst_cost)
-        if not rates:
-            qty=min(qty,probe_left)
-        if qty:
-            buy.append({'sku':sku,'qty':qty})
-            cash-=qty*worst_cost
-            probe_left-=qty
-        if len(buy)==10:
-            break
-    return {'buy':buy}
+def procurement(inv,catalog,ledger,now,md=None):
+    from profit_strategy import replenish
+    return replenish(inv,catalog,ledger,now,Path(md) if md is not None else Path(__file__).resolve().parent/'.market')
 
 def review(deal):
+    from rating_policy import adjusted_stars
     honest=deal['settled'].get('claim_honest')
-    return {'stars':2 if honest is False else 5,'review':
+    return {'stars':adjusted_stars(2 if honest is False else 5),'review':
             'Settled purchase; grade claim was false.' if honest is False else
             'Payment settled; no unobserved quality or failure claims.'}
 
@@ -127,13 +89,69 @@ def refresh_ledger(md):
         if len(rows)<500:
             break
 
+def wait_supply_window(md,inventory,clock=None,sleeper=None):
+    """Catch an imminent window in the kit's existing background restock job."""
+    clock=clock or time.time;sleeper=sleeper or time.sleep
+    window=inventory.get('restock',{});opens=window.get('opens_at')
+    if window.get('open') or not isinstance(opens,(int,float)):return inventory
+    delay=opens-clock()
+    # Official kit schedules every 60 s and syncs inventory every 10 s.
+    if not -10<=delay<=60:return inventory
+    deadline=opens+10
+    while clock()<deadline:
+        try:fresh=read(Path(md)/'inventory.json',inventory)
+        except (ValueError,OSError):fresh=inventory
+        current=fresh.get('restock',{})
+        if current.get('open'):return fresh
+        if current.get('opens_at',opens)!=opens:return fresh
+        sleeper(min(.5,max(0,deadline-clock())))
+    return read(Path(md)/'inventory.json',inventory)
+
+
 def restock_hook(state,now=None):
     md=Path(state)
+    live_clock=now is None
     now=time.time() if now is None else now
+    from strategy_policy import active
+    coordinated=active(md)
+    if not coordinated:
+        from patch36 import refresh_scoreboard
+        refresh_scoreboard(md,now)
     inv=read(md/'inventory.json',{})
+    if coordinated and live_clock:
+        inv=wait_supply_window(md,inv)
+        now=time.time()
+    from optimizer import append
+    append(md/'restock-trace.jsonl',{'at':now,'restock':inv.get('restock'),'balance':inv.get('balance')})
     catalog=read(md/'catalog.json',{})
-    ledger=lines(md/'ledger.jsonl')
-    result=procurement(inv,catalog,ledger,now)
+    if coordinated:
+        # The persistent worker computes observations outside the supply window.
+        # Never spend a three-minute supply slot rebuilding the public market.
+        ledger=[]
+    else:
+        from shop_profit import ownership_tags
+        from ledger_window import window
+        ledger=window(md/'ledger.jsonl',now,ownership_tags())
+        from high_value_growth import update as growth_update
+        growth_update(md,inv,catalog,ledger,now)
+    result=procurement(inv,catalog,ledger,now,md)
+    if live_clock and inv.get('restock',{}).get('closes_at') is not None:
+        # Risk/statistics refresh can consume part of the short supply window.
+        # Recheck after all computation, before handing orders to the kit.
+        slots=min(10,max(0,math.floor((inv['restock']['closes_at']-time.time()-10)/12)))
+        result['buy']=result.get('buy',[])[:slots]
+        preview=read(md/'procurement-preview.json',{})
+        if preview.get('at')==now:
+            from optimizer import atomic
+            preview['buy']=result['buy']
+            preview.setdefault('limits',{})['window_order_slots']=min(slots,preview.get('limits',{}).get('window_order_slots',10))
+            atomic(md/'procurement-preview.json',preview)
+        if active(md):
+            from strategy_policy import database
+            kept={b['sku'] for b in result['buy']}
+            with database(md,True) as c:
+                for row in c.execute('select id,sku from funds where at=?',(now,)).fetchall():
+                    if row['sku'] not in kept:c.execute('delete from funds where id=?',(row['id'],))
     if os.environ.get('ROUND3_FORUM_ENABLED')=='1' and (md/'recommendations-ready.json').exists():
         from recommendations import ensure_worker
         ensure_worker(md)
