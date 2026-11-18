@@ -7,8 +7,8 @@ from chart_style import fig, save, US, AQUA, INK, INK2, GRID, SURF
 OUT = sys.argv[1] if len(sys.argv) > 1 else "reports/structure.png"
 BUY_FILL, SELL_FILL, NEU_FILL = "#e3f4ec", "#fbe6dc", "#f1f0ec"
 
-f, ax = fig(6.9, 4.6)
-ax.set_xlim(0, 116); ax.set_ylim(0, 100); ax.axis("off")
+f, ax = fig(6.6, 4.6)
+ax.set_xlim(0, 107); ax.set_ylim(0, 100); ax.axis("off")
 
 
 def box(cx, cy, w, h, name, sub, fill, edge):
@@ -52,27 +52,30 @@ arrow(L, 28 - BH / 2, L, 14)
 arrow(R, 28 - BH / 2, R, 14)
 ax.text(L + 1.5, 38, "파라미터", fontsize=7, color=INK2, va="center")
 ax.text(R + 1.5, 38, "파라미터", fontsize=7, color=INK2, va="center")
-# the archive DB: a column of its own on the right
-DX, DW, DY0, DY1, E = 106, 16, 4, 76, 3.2
-ax.add_patch(Rectangle((DX - DW / 2, DY0 + E / 2), DW, DY1 - DY0 - E, fc=NEU_FILL, ec="none", zorder=1))
-ax.plot([DX - DW / 2] * 2, [DY0 + E / 2, DY1 - E / 2], color=INK2, lw=1.2, zorder=2)
-ax.plot([DX + DW / 2] * 2, [DY0 + E / 2, DY1 - E / 2], color=INK2, lw=1.2, zorder=2)
-ax.add_patch(Ellipse((DX, DY0 + E / 2), DW, E, fc=NEU_FILL, ec="none", zorder=1))
-ax.add_patch(Arc((DX, DY0 + E / 2), DW, E, theta1=180, theta2=360, color=INK2, lw=1.2, zorder=2))
-ax.add_patch(Ellipse((DX, DY1 - E / 2), DW, E, fc=NEU_FILL, ec=INK2, lw=1.2, zorder=3))
-ax.text(DX, 47, "보관 DB", ha="center", va="center", fontsize=10, color=INK, fontweight="bold", zorder=4)
-ax.text(DX, 40, "market_archive.db", ha="center", va="center", fontsize=6.3, color=INK2, zorder=4)
-ax.text(DX, 30, "원장\n보드 스냅숏\n우리 로그", ha="center", va="center", fontsize=7.2, color=INK2, linespacing=1.6,
-        zorder=4)
-# in: the market's public ledger and board, our programs' logs
-arrow(92, 9, DX - DW / 2, 9)
-ax.text(95, 11.5, "원장", fontsize=6.8, color=INK2, ha="center")
-arrow(R + BW / 2, 28, DX - DW / 2, 28)
-ax.text(95, 30.5, "로그", fontsize=6.8, color=INK2, ha="center")
+# the archive DB: a thin, quiet column on the right (light lines; it stores, it does not decide)
+FAINT, FAINT_FILL = "#bdbcb6", "#f6f5f2"
+DX, DW, DY0, DY1, E = 101, 8, 4, 76, 2.2
+ax.add_patch(Rectangle((DX - DW / 2, DY0 + E / 2), DW, DY1 - DY0 - E, fc=FAINT_FILL, ec="none", zorder=1))
+for x in (DX - DW / 2, DX + DW / 2):
+    ax.plot([x, x], [DY0 + E / 2, DY1 - E / 2], color=FAINT, lw=0.9, zorder=2)
+ax.add_patch(Ellipse((DX, DY0 + E / 2), DW, E, fc=FAINT_FILL, ec="none", zorder=1))
+ax.add_patch(Arc((DX, DY0 + E / 2), DW, E, theta1=180, theta2=360, color=FAINT, lw=0.9, zorder=2))
+ax.add_patch(Ellipse((DX, DY1 - E / 2), DW, E, fc=FAINT_FILL, ec=FAINT, lw=0.9, zorder=3))
+ax.text(DX, 40, "보관 DB", ha="center", va="center", fontsize=7.5, color=INK2, rotation=-90, zorder=4)
+
+
+def faint(x1, y1, x2, y2):
+    ax.add_patch(FancyArrowPatch((x1, y1), (x2, y2), arrowstyle="-|>", mutation_scale=7, lw=0.8, color=FAINT,
+                                 shrinkA=0, shrinkB=0))
+
+
+# in: the market's public ledger, our programs' logs
+faint(92, 9, DX - DW / 2, 9)
+faint(R + BW / 2, 28, DX - DW / 2, 28)
 # out: the analyst and the observers read it
-arrow(DX - DW / 2, 68, 92, 68)
-ax.plot([DX, DX], [DY1, 88], color=INK2, lw=1)
-arrow(DX, 88, R + BW / 2, 88)
+faint(DX - DW / 2, 68, 92, 68)
+ax.plot([DX, DX], [DY1, 88], color=FAINT, lw=0.8)
+faint(DX, 88, R + BW / 2, 88)
 
 # ntfy: the user and the observers talk through phone pushes (light dashed, both ways)
 ax.annotate("", xy=(L + BW / 2, 88), xytext=(R - BW / 2, 88),
