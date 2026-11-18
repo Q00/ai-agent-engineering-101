@@ -1,0 +1,9 @@
+11-09 11:36:21 waiting for the accept-rule report and its addendum
+11-09 14:14:52 on {'enabled': True, 'skip_first_llm': True, 'card_ttl_s': 600, 'first_reply_s': 10, 'note': 'person 11/09 ~11:55: skip the thrown-away first harness call, card cache 10 min, 10 s first-reply limit (slow_shop_skip); on after the 14:13 accept-rule report', 'since': 1794201292}
+11-09 14:14:53 [alert] info buyer_speed_on: buyer 속도 개선 적용 14:14: 버려지던 첫 LLM 호출 생략(첫 제안가 동일), 가게 카드 주소별 10분 캐시, 첫 응답 10초 넘으면 다음 후보 가게(slow_shop_skip). 가격 판단 그대로. 3시간 점검 예정 (telegram sent)
+11-09 17:15:55 [alert] daily buyer_speed_report:1794201292: buyer 속도 개선 3.0시간 점검 (14:14 ~ 17:14, 후 vs 전 같은 길이): 첫 LLM 호출 생략, 가게 카드 10분 캐시, 첫 응답 10초 제한
+- 주문 1건 처리 시간 평균 29.3 vs 54.8초, 중앙값 22.0 vs 33.0초
+- 시간당 주문 110.7 vs 75.7, 시간당 deals 27.0 vs 22.3, 성사율 24.4% vs 29.5%
+- saved 0.4193 -> 0.4199 (전 구간 0.4177 -> 0.4193)
+- slow_shop_skip 49건 ({'first reply': 34, 'card': 15}): outseop-26510122 21건 (전 24시간 우리 성사 58건, 상위 10); myeonggi 13건 (전 24시간 우리 성사 22건, 상위 10); yeonsong2 7건 (전 24시간 우리 성사 197건, 상위 10); 25512088 6건 (전 24시간 우리 성사 0건); mjforge 2건 (전 24시간 우리 성사 0건) (telegram sent)
+11-09 17:15:55 report sent

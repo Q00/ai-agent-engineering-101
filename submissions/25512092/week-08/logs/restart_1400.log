@@ -1,0 +1,20 @@
+11-09 11:13:16 waiting for the 14:00 high-price report
+11-09 12:01:36 waiting for the 14:00 high-price report
+11-09 12:05:04 waiting for the 14:00 high-price report
+11-09 12:06:11 b_warranty on {'enabled': True, 'on_cats': ['TV', '냉방/환기/제습'], 'trial_cats': ['침대/매트리스'], 'trial_share': 0.5, 'trial_since': 1794193504, 'trial_until': 1794279904, 'note': 'person 11/09 ~11:30: B grade high-price 48 h warranty on TV / 냉방; 침대/매트리스 24 h trial on 50% of units; on with the 14:00 seller restart', 'since': 1794193504}; seller restart: killed 14896, back 12:06:10 [seller] [seller] 28 units with a receipt in the last 25 min held back
+11-09 12:06:13 [alert] info restart_1400: 14:00 seller 재시작 12:06: (1) C등급 소파 보증 없음, A/B 72시간 (2) 10분 무활동 협상 expired, 물건 다시 판매, 매시간 잠금 기록(20% 넘으면 긴급) (3) B등급 고가 보증 48시간: TV·냉방 붙임, 침대/매트리스 24시간 50% 시험. seller 재시작 완료. 3시간 뒤 잠금 해제 점검, 24시간 뒤 B 보증 보고 (telegram sent)
+11-09 12:07:44 [alert] info restart_lock_now: 재시작 직후 협상에 잡힌 재고 0.2% (1/592개, 원가 23,835); 열린 협상 1 (telegram sent)
+11-09 13:05:47 [alert] info restart_lock_1h: 재시작 후 1시간: '재고 없음' 응답 5건 (그중 보유 SKU 4) vs 직전 1시간 387건 (373); 판매 68 vs 56; 지금 잠긴 재고 1.1%, expired 21건 (telegram sent)
+11-09 15:06:49 [alert] daily lock_report:1794193504: 오래 열린 협상 자동 해제 3.0시간 점검 (12:05 ~ 15:05, 후 vs 전 같은 길이; 같은 재시작에 C등급 소파 보증·B등급 보증 시험, STOCK_CAP 30M도 함께 적용됨)
+- 재고 없음 응답(이름 지정 SKU, 대체 제안 포함) 58 vs 436건
+- 그중 실제 보유 SKU에 나간 것 44 vs 436건
+- 대체 제안(후보를 보낸 것) 42 vs 193건 (11:58~12:0x 대체 A안 중단 구간은 후보 없이 '재고 없음')
+- 판매 252 vs 220건, 매출 9,866,898 vs 5,137,121
+- 1점 리뷰(재고/품목) 0 vs 10건
+- 지금 협상에 잡힌 재고 6/587 (1.0%), expired 98건 (telegram sent)
+11-09 15:06:49 lock report sent
+11-10 12:35:52 [alert] daily b_warranty_report:1794193504: B등급 고가 보증 48시간 24시간 보고 (11-09 12:05 ~ 11-10 12:05); 침대/매트리스는 단위 50% 시험(b_warranty_trial)
+- 침대/매트리스 보증 있음: 협상 20, 성사 11 (55%), 판매 9 (판매가 중앙값 248,350), 환불 4건 2,092,180, 협상당 순이익 -67,476, 별점 3.67 (n 9)
+- 침대/매트리스 보증 없음: 협상 70, 성사 22 (31%), 판매 21 (판매가 중앙값 297,779), 환불 4건 792,523, 협상당 순이익 4,712, 별점 4.43 (n 21)
+시험 끝: 침대/매트리스 B등급은 보증 없음으로 돌아감 (TV·냉방은 유지). 계속할지는 사람 결정 (telegram sent)
+11-10 12:35:52 b report sent

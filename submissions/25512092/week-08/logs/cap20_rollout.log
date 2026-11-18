@@ -1,0 +1,30 @@
+11-07 21:34:23 applied #7: limits.STOCK_CAP 15,000,000 -> 20,000,000; b0 이상 없음 (예산 1,769,845 -> 1,769,845); 커밋 26d8392; brake enabled since 1794054864
+11-07 21:34:25 [alert] info cap20_on: STOCK_CAP 15M -> 20M 적용 21:34 (#7, limits.STOCK_CAP 15,000,000 -> 20,000,000; b0 이상 없음 (예산 1,769,845 -> 1,769,845); 커밋 26d8392). CASH_RESERVE 1.0M 그대로. 자동 브레이크 켬: 판매 중앙값 3시간 초과(최근 6시간) / 상향 후 입고분 중 6시간+ 안 팔린 원가 3M 초과 / 현금 2M 미만 -> 15M + 긴급 알림. 3시간 점검 보고 예정 (telegram sent)
+11-08 00:35:26 [alert] daily cap20_report:1794054863: STOCK_CAP 20M 3.0시간 점검 (21:34 ~ 00:34), 후 vs 전 같은 길이
+- 매출 11,926,276 vs 11,787,605 / 판매 342 vs 267 / 마진 2,098,750 vs 2,090,145
+- 회전: 입고→판매 중앙값 0.89 vs 0.92시간, 입고 304 vs 254개 중 창 안에 팔린 것 190 vs 133
+- 보관비 약 17,234 vs 17,406
+- 막힌 매입(STOCK_CAP): run 0 vs 21 (완전 막힘 0 vs 0), 깎인 예산 0 vs 37,988,662
+- 현금 8,310,479 -> 10,810,566, 재고 원가 14,459,093 -> 13,579,391
+- 브레이크: 안 걸림 (최근 값: 중앙값 0.9시간, 상향 후 입고분 6시간+ 0, 현금 10,988,783) (telegram sent)
+11-08 00:35:26 report sent
+11-08 11:02:43 again #13: limits.STOCK_CAP 15,000,000 -> 20,000,000; b0 이상 없음 (예산 2,212,307 -> 2,212,307); 커밋 69581c0; brake (share 25%) since 1794103364
+11-08 11:02:45 [alert] info cap20_again_on: STOCK_CAP 15M -> 20M 재상향 11:02 (#13, limits.STOCK_CAP 15,000,000 -> 20,000,000; b0 이상 없음 (예산 2,212,307 -> 2,212,307); 커밋 69581c0). 브레이크 조건 2: 상향 후 입고분(6시간 지난 것) 원가 중 미판매 비율 25% 초과 (새벽 07:29 걸린 시점 19.6%). 중앙값 3시간, 현금 2M 그대로. 3시간 점검 보고 예정 (telegram sent)
+11-08 14:04:08 [alert] daily cap20_again_report:1794103364: STOCK_CAP 20M 재상향 3.0시간 점검 (11:02 ~ 14:02), 후 vs 전 같은 길이
+- 매출 12,650,421 vs 11,898,212 / 판매 223 vs 227
+- 마진 1,811,871 vs 1,863,501
+- 막힌 매입 원인별 (후 vs 전): 부패주의 내 판매량 (줄) 8 vs 109, 고가 개수 한도 찬 run 21 vs 33, STOCK_CAP (run 예산 깎임/막힘) 18 vs 22, 10줄 한도 찬 run 18 vs 12, 부패주의 시험 (줄) 0 vs 5
+- 회전: 입고→판매 중앙값 2.54 vs 0.9시간; 현금 17,955,490 -> 14,876,374, 재고 원가 14,225,863 -> 18,200,252
+- 브레이크: 안 걸림; 6시간+ 미판매 비율 - (상향 후 6시간 지난 입고분 없음) (기준 25%, 0개 / 원가 0 중 0), 중앙값 1.38시간, 현금 14,880,427
+- spend_share 이력: 10:58 analyst approved 0.5 (#10: person approved 11/08 ~10:58, applied directly | purcha); 11:14 ceo policy 0.4 (default (stock 14,795,803, cash 17,571,556, 6 h profit 3,595); 11:16 purchasing spend_share_pin 0.5 (person 11/08 ~11:15: 0.4 -> 0.5 (CEO set 0.4 at 11:14, defau) | 고정(CEO 변경 금지) 11-09 11:16까지 (telegram sent)
+11-08 14:04:08 again report sent
+11-08 16:48:48 again #16: limits.STOCK_CAP 20,000,000 -> 20,000,000; b0 이상 없음 (예산 2,212,307 -> 2,212,307); 커밋 835d15e; brake (share 25%) since 1794124128
+11-08 16:48:49 [alert] info cap20_again_on: STOCK_CAP 15M -> 20M 재상향 16:48 (#16, limits.STOCK_CAP 20,000,000 -> 20,000,000; b0 이상 없음 (예산 2,212,307 -> 2,212,307); 커밋 835d15e). 브레이크 조건 2: 상향 후 입고분(6시간 지난 것) 원가 중 미판매 비율 25% 초과 (새벽 07:29 걸린 시점 19.6%). 중앙값 3시간, 현금 2M 그대로. 3시간 점검 보고 예정 (telegram sent)
+11-08 19:49:51 [alert] daily cap20_again_report:1794124128: STOCK_CAP 20M 재상향 3.0시간 점검 (16:48 ~ 19:48), 후 vs 전 같은 길이
+- 매출 15,233,730 vs 6,880,016 / 판매 325 vs 199
+- 마진 2,120,753 vs 1,184,063
+- 막힌 매입 원인별 (후 vs 전): 부패주의 내 판매량 (줄) 5 vs 112, 부패주의 시험 (줄) 2 vs 53, STOCK_CAP (run 예산 깎임/막힘) 18 vs 24, 고가 개수 한도 찬 run 27 vs 8, 10줄 한도 찬 run 18 vs 9, 기타 skip (줄) 0 vs 10, CASH_RESERVE/STOCK_CAP (run 매입 없음) 0 vs 2
+- 회전: 입고→판매 중앙값 0.89 vs 1.44시간; 현금 14,977,536 -> 22,337,712, 재고 원가 19,164,295 -> 13,624,313
+- 브레이크: 안 걸림; 6시간+ 미판매 비율 - (상향 후 6시간 지난 입고분 없음) (기준 25%, 0개 / 원가 0 중 0), 중앙값 1.03시간, 현금 22,357,701
+- spend_share 이력: 18:03 ceo pinned 0.4 (pinned by the person for 24 h: not changed (default (stock 1); 18:33 ceo pinned 0.4 (pinned by the person for 24 h: not changed (default (stock 1); 19:04 ceo pinned 0.4 (pinned by the person for 24 h: not changed (default (stock 1); 19:35 ceo pinned 0.4 (pinned by the person for 24 h: not changed (default (stock 1) | 고정(CEO 변경 금지) 11-09 11:16까지 (telegram sent)
+11-08 19:49:51 again report sent

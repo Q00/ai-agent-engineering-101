@@ -1,0 +1,52 @@
+{
+ "enabled": false,
+ "median_h": 4,
+ "window_h": 6,
+ "min_sales": 10,
+ "old_h": 12,
+ "old_cost": 3000000,
+ "old_scope": "since",
+ "cash_min": 4000000,
+ "low": 20000000,
+ "since": 1794279355,
+ "pid": null,
+ "why": "person 11/07 ~20:40; 11/08 ~11:00 raised again, condition 2 = share of cost unsold > 25%; 11/08 ~20:35 cap 30M, a trip goes back to 20M; 11/09 ~11:20 cap 30M, a trip goes back to 20M; 11/09 ~19:00 cap 40M, condition 2 share > 25% AND unsold > 3M from 5M eligible, a trip goes back to 20M; 11/09 ~23:10 automatic cap (cash + stock - 3M): stock trips -> auto off, 20M; cash trip -> buying paused until cash > 3M; 11/09 ~23:55 overnight: median 4 h, unsold 35% and 5M, 2 checks in a row (person decides at 09:00); person's decision 11/10 ~11:50: automatic cap on again, unsold at 12 h (35%, 5M, 2 in a row kept); person 11/10 ~18:50 (freeze exception): cash_min 2M -> 4M",
+ "old_share": 0.35,
+ "min_old_n": 20,
+ "history": [
+  {
+   "fired": 1794090562,
+   "fired_why": [
+    "6시간 넘게 안 팔린 재고 원가 3,058,144 > 3,000,000 (50개, 상향 후 입고분만)"
+   ]
+  },
+  {},
+  {},
+  {},
+  {
+   "fired": 1794217635,
+   "fired_why": [
+    "상향 후 입고분 중 6시간+ 미판매 비율 39.8% > 25% (원가 782,811 / 1,969,050, 50개 중)"
+   ]
+  },
+  {
+   "fired": 1794257418,
+   "fired_why": [
+    "상향 후 입고분 중 6시간+ 미판매 비율 63.1% > 35% 이고 미판매 원가 5,404,422 > 5,000,000 (원가 5,404,422 / 8,568,618, 70개 중)"
+   ]
+  }
+ ],
+ "old_unsold_min": 5000000,
+ "min_old_cost": 5000000,
+ "orig_before_night": {
+  "median_h": 3,
+  "old_share": 0.25,
+  "old_unsold_min": 3000000,
+  "consecutive": 1
+ },
+ "consecutive": 2,
+ "warn_streak": 0,
+ "warn_only": true,
+ "warn_last": 1794290796,
+ "ended": 1794905978
+}
