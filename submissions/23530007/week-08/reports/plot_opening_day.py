@@ -38,5 +38,5 @@ ax.set_xticks(range(0, H+1, 2)); ax.set_xticklabels([f"{i}h" for i in range(0, H
 ax.set_xlabel("개장 후 시간 (11-03 12:00 UTC부터)", color=INK2)
 ax.set_title("개장 12시간 누적 판매 건수: 시장 1위", loc="left", color=INK, fontsize=13, pad=10)
 fig.tight_layout(); fig.subplots_adjust(right=0.80)
-fig.savefig(out, dpi=150, facecolor=SURF)
+fig.savefig(out, dpi=100, facecolor=SURF)
 print(me_n, second, total, len(ts_by))
