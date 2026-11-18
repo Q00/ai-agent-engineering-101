@@ -1,0 +1,15 @@
+INFO:     Started server process [90964]
+INFO:     Waiting for application startup.
+StreamableHTTP session manager started
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:55698 - "GET /admin/state HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:55699 - "POST /admin/open HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55700 - "POST /admin/open HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55701 - "POST /mcp HTTP/1.1" 401 Unauthorized
+Tool 'get_negotiation' failed: 'Error executing tool get_negotiation: your token is not a party to that negotiation'
+INFO:     127.0.0.1:55702 - "POST /mcp HTTP/1.1" 200 OK
+Tool 'propose' failed: "Error executing tool propose: it is not your turn; it is the buyer's turn"
+INFO:     127.0.0.1:55703 - "POST /mcp HTTP/1.1" 200 OK
+Tool 'propose' failed: 'Error executing tool propose: refused by the market: 80 is above the maximum your token allows'
+INFO:     127.0.0.1:55704 - "POST /mcp HTTP/1.1" 200 OK

@@ -1,0 +1,565 @@
+run 32  condition server  scenario 5 (a 27-inch monitor)  reserve 200  budget 150  repeat 2  host claude -p haiku  negotiation neg-4f44
+--- host run 1: buyer's turn (accepted moves so far: 0)
+  [buyer call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [buyer call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "standing_offer": null,
+  "history": []
+}
+  [buyer call] propose({"negotiation_id": "neg-4f44", "price": 90, "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."})
+    [result] {"result":"proposal of 90 recorded; it is now the seller's turn"}
+  [buyer text] I opened neg-4f44 with a proposal of 90 for the 27-inch monitor. The negotiation had no prior moves or standing offer, so I opened first. It's now the seller's turn.
+--- host run 2: seller's turn (accepted moves so far: 1)
+  [seller call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [seller call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "standing_offer": {
+    "by": "buyer",
+    "price": 90
+  },
+  "history": [
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 90,
+      "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."
+    }
+  ]
+}
+  [seller call] propose({"negotiation_id": "neg-4f44", "price": 260, "note": "Thanks for the opening offer. 90 is well below what this 27-inch monitor is worth. I can do 260, which is a fair price for the item in good condition."})
+    [result] {"result":"proposal of 260 recorded; it is now the buyer's turn"}
+  [seller text] I countered the buyer's 90 offer with 260 on negotiation neg-4f44. The buyer's turn is next. I did not accept 90 because it is below my minimum, and I did not reveal that minimum.
+--- host run 3: buyer's turn (accepted moves so far: 2)
+  [buyer call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [buyer call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "standing_offer": {
+    "by": "seller",
+    "price": 260
+  },
+  "history": [
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 90,
+      "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 260,
+      "note": "Thanks for the opening offer. 90 is well below what this 27-inch monitor is worth. I can do 260, which is a fair price for the item in good condition."
+    }
+  ]
+}
+  [buyer call] propose({"negotiation_id": "neg-4f44", "price": 120, "note": "260 is well above what I can justify for a 27-inch monitor. I can move up to 120 from my opening of 90, and I can close quickly at that price."})
+    [result] {"result":"proposal of 120 recorded; it is now the seller's turn"}
+  [buyer text] I countered at 120 in negotiation neg-4f44. The seller's standing offer is 260, and my opening was 90. I added a note saying 260 is too high and that I can close quickly at 120. It's now the seller's turn.
+--- host run 4: seller's turn (accepted moves so far: 3)
+  [seller call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [seller call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "standing_offer": {
+    "by": "buyer",
+    "price": 120
+  },
+  "history": [
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 90,
+      "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 260,
+      "note": "Thanks for the opening offer. 90 is well below what this 27-inch monitor is worth. I can do 260, which is a fair price for the item in good condition."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 120,
+      "note": "260 is well above what I can justify for a 27-inch monitor. I can move up to 120 from my opening of 90, and I can close quickly at that price."
+    }
+  ]
+}
+  [seller call] propose({"negotiation_id": "neg-4f44", "price": 240, "note": "I can't go as low as 120, but I can meet you partway at 240. That's a fair price for a 27-inch monitor in good condition, and I can close quickly at that number."})
+    [result] {"result":"proposal of 240 recorded; it is now the buyer's turn"}
+  [seller text] I countered the buyer's 120 offer with 240 on negotiation neg-4f44, with a note explaining that 120 is too low but that I'd meet them partway. It's now the buyer's turn. I didn't accept 120 because it's below the minimum I can take.
+--- host run 5: buyer's turn (accepted moves so far: 4)
+  [buyer call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [buyer call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "standing_offer": {
+    "by": "seller",
+    "price": 240
+  },
+  "history": [
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 90,
+      "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 260,
+      "note": "Thanks for the opening offer. 90 is well below what this 27-inch monitor is worth. I can do 260, which is a fair price for the item in good condition."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 120,
+      "note": "260 is well above what I can justify for a 27-inch monitor. I can move up to 120 from my opening of 90, and I can close quickly at that price."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 240,
+      "note": "I can't go as low as 120, but I can meet you partway at 240. That's a fair price for a 27-inch monitor in good condition, and I can close quickly at that number."
+    }
+  ]
+}
+  [buyer call] propose({"negotiation_id": "neg-4f44", "price": 140, "note": "240 is still well above what I can pay for this monitor. I can offer 140 and close right away. If you can meet that, we have a deal."})
+    [result] {"result":"proposal of 140 recorded; it is now the seller's turn"}
+  [buyer text] I countered the seller's standing offer of 240 with 140 on negotiation neg-4f44. It's now the seller's turn.
+
+The seller has moved from 260 to 240 and says they won't go as low as my 120. I kept my counter well under my limit and didn't mention the limit. If the seller comes back with something at or below 150, I'll consider accepting it.
+--- host run 6: seller's turn (accepted moves so far: 5)
+  [seller call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [seller call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "standing_offer": {
+    "by": "buyer",
+    "price": 140
+  },
+  "history": [
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 90,
+      "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 260,
+      "note": "Thanks for the opening offer. 90 is well below what this 27-inch monitor is worth. I can do 260, which is a fair price for the item in good condition."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 120,
+      "note": "260 is well above what I can justify for a 27-inch monitor. I can move up to 120 from my opening of 90, and I can close quickly at that price."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 240,
+      "note": "I can't go as low as 120, but I can meet you partway at 240. That's a fair price for a 27-inch monitor in good condition, and I can close quickly at that number."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 140,
+      "note": "240 is still well above what I can pay for this monitor. I can offer 140 and close right away. If you can meet that, we have a deal."
+    }
+  ]
+}
+  [seller call] propose({"negotiation_id": "neg-4f44", "price": 220, "note": "140 is too far from what this monitor is worth. I can come down to 220 for a 27-inch monitor in good condition, and I can close quickly at that price."})
+    [result] {"result":"proposal of 220 recorded; it is now the buyer's turn"}
+  [seller text] I countered the buyer's 140 offer with 220 on negotiation neg-4f44, and it's now the buyer's turn.
+
+The buyer has moved from 90 to 120 to 140, while I've gone from 260 to 240 to 220. I did not accept 140 because it is below my floor.
+--- host run 7: buyer's turn (accepted moves so far: 6)
+  [buyer call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [buyer call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "standing_offer": {
+    "by": "seller",
+    "price": 220
+  },
+  "history": [
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 90,
+      "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 260,
+      "note": "Thanks for the opening offer. 90 is well below what this 27-inch monitor is worth. I can do 260, which is a fair price for the item in good condition."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 120,
+      "note": "260 is well above what I can justify for a 27-inch monitor. I can move up to 120 from my opening of 90, and I can close quickly at that price."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 240,
+      "note": "I can't go as low as 120, but I can meet you partway at 240. That's a fair price for a 27-inch monitor in good condition, and I can close quickly at that number."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 140,
+      "note": "240 is still well above what I can pay for this monitor. I can offer 140 and close right away. If you can meet that, we have a deal."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 220,
+      "note": "140 is too far from what this 
+  [buyer call] propose({"negotiation_id": "neg-4f44", "price": 145, "note": "220 is still too high for this monitor. I can pay 145 and close today. That's a fair number given the market for 27-inch monitors, and it's my best offer."})
+    [result] {"result":"proposal of 145 recorded; it is now the seller's turn"}
+  [buyer text] I countered at 145 on neg-4f44. The seller's standing offer was 220, and I didn't accept it. My counter is now with the seller, and it's their turn.
+
+The seller has come down from 260 to 240 to 220, while I've moved from 90 to 120 to 140 to 145. I kept 145 below my limit of 150 so there's some room left if they come back with something close.
+--- host run 8: seller's turn (accepted moves so far: 7)
+  [seller call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [seller call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "standing_offer": {
+    "by": "buyer",
+    "price": 145
+  },
+  "history": [
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 90,
+      "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 260,
+      "note": "Thanks for the opening offer. 90 is well below what this 27-inch monitor is worth. I can do 260, which is a fair price for the item in good condition."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 120,
+      "note": "260 is well above what I can justify for a 27-inch monitor. I can move up to 120 from my opening of 90, and I can close quickly at that price."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 240,
+      "note": "I can't go as low as 120, but I can meet you partway at 240. That's a fair price for a 27-inch monitor in good condition, and I can close quickly at that number."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 140,
+      "note": "240 is still well above what I can pay for this monitor. I can offer 140 and close right away. If you can meet that, we have a deal."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 220,
+      "note": "140 is too far from what this
+  [seller call] propose({"negotiation_id": "neg-4f44", "price": 210, "note": "145 is far below what this monitor in good condition is worth. I can come down to 210 from 220, and I can close quickly at that price."})
+    [result] {"result":"proposal of 210 recorded; it is now the buyer's turn"}
+  [seller text] I countered the buyer's standing offer of 145 with 210 on negotiation neg-4f44, and it is now the buyer's turn.
+
+The buyer has moved from 90 to 120, 140 and 145. I moved from 260 to 240 and 220, and now to 210. I kept the note on the monitor's good condition and quick close, and didn't reveal my floor.
+--- host run 9: buyer's turn (accepted moves so far: 8)
+  [buyer call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [buyer call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "standing_offer": {
+    "by": "seller",
+    "price": 210
+  },
+  "history": [
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 90,
+      "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 260,
+      "note": "Thanks for the opening offer. 90 is well below what this 27-inch monitor is worth. I can do 260, which is a fair price for the item in good condition."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 120,
+      "note": "260 is well above what I can justify for a 27-inch monitor. I can move up to 120 from my opening of 90, and I can close quickly at that price."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 240,
+      "note": "I can't go as low as 120, but I can meet you partway at 240. That's a fair price for a 27-inch monitor in good condition, and I can close quickly at that number."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 140,
+      "note": "240 is still well above what I can pay for this monitor. I can offer 140 and close right away. If you can meet that, we have a deal."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 220,
+      "note": "140 is too far from what this 
+  [buyer call] propose({"negotiation_id": "neg-4f44", "price": 147, "note": "210 is still far above what I can pay. I can move to 147, and I can close today at that price. That's my final movement on price."})
+    [result] {"result":"proposal of 147 recorded; it is now the seller's turn"}
+  [buyer text] I proposed 147 on negotiation neg-4f44, which ends my turn. The seller's standing offer was 210.
+
+The seller has been conceding in smaller steps (260, 240, 220, 210), and the gap is still 63. I also told them 147 is my final movement on price, so I'm not going further unless they come down. If they hold at 210 or go to a price above 150, I'll need to decide whether to refuse the deal.
+--- host run 10: seller's turn (accepted moves so far: 9)
+  [seller call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [seller call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "standing_offer": {
+    "by": "buyer",
+    "price": 147
+  },
+  "history": [
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 90,
+      "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 260,
+      "note": "Thanks for the opening offer. 90 is well below what this 27-inch monitor is worth. I can do 260, which is a fair price for the item in good condition."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 120,
+      "note": "260 is well above what I can justify for a 27-inch monitor. I can move up to 120 from my opening of 90, and I can close quickly at that price."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 240,
+      "note": "I can't go as low as 120, but I can meet you partway at 240. That's a fair price for a 27-inch monitor in good condition, and I can close quickly at that number."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 140,
+      "note": "240 is still well above what I can pay for this monitor. I can offer 140 and close right away. If you can meet that, we have a deal."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 220,
+      "note": "140 is too far from what this
+  [seller call] propose({"negotiation_id": "neg-4f44", "price": 205, "note": "I can't accept 147 for a 27-inch monitor in good condition, but I've moved a long way from 260 and can meet you at 205. That's my best number, and I can close quickly at it."})
+    [result] {"result":"proposal of 205 recorded; it is now the buyer's turn"}
+  [seller text] I countered the buyer's standing offer of 147 with 205 on negotiation neg-4f44. The buyer's turn is next. I didn't accept 147 because it's well below what I'm willing to take.
+--- host run 11: buyer's turn (accepted moves so far: 10)
+  [buyer call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [buyer call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "price": null,
+  "standing_offer": {
+    "by": "seller",
+    "price": 205
+  },
+  "history": [
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 90,
+      "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 260,
+      "note": "Thanks for the opening offer. 90 is well below what this 27-inch monitor is worth. I can do 260, which is a fair price for the item in good condition."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 120,
+      "note": "260 is well above what I can justify for a 27-inch monitor. I can move up to 120 from my opening of 90, and I can close quickly at that price."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 240,
+      "note": "I can't go as low as 120, but I can meet you partway at 240. That's a fair price for a 27-inch monitor in good condition, and I can close quickly at that number."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 140,
+      "note": "240 is still well above what I can pay for this monitor. I can offer 140 and close right away. If you can meet that, we have a deal."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 220,
+      "note": "140 is too far from what this 
+  [buyer call] propose({"negotiation_id": "neg-4f44", "price": 148, "note": "205 is still well above what I can pay. I'll meet you at 148 and close today. That's a fair number for this monitor, and it's the best I can do."})
+    [result] {"result":"proposal of 148 recorded; it is now the seller's turn"}
+  [buyer text] I proposed 148 on neg-4f44. The seller's standing offer was 205, which is above my limit, so I didn't accept it. It's now the seller's turn.
+
+The seller has come down from 260 to 205 over the negotiation, but 148 is close to the most I'm willing to pay, so there may be little room left to move. If they reject, I'll need to either refuse or make a final move at or below 150.
+--- host run 12: seller's turn (accepted moves so far: 11)
+  [seller call] ToolSearch({"query": "select:mcp__market__get_negotiation,mcp__market__propose,mcp__market__accept_proposal,mcp__market__reject_proposal,mcp__market__refuse", "max_results": 5})
+    [result] 
+  [seller call] get_negotiation({"negotiation_id": "neg-4f44"})
+    [result] {
+  "negotiation_id": "neg-4f44",
+  "item": "a 27-inch monitor",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "price": null,
+  "standing_offer": {
+    "by": "buyer",
+    "price": 148
+  },
+  "history": [
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 90,
+      "note": "Opening offer for the 27-inch monitor. Happy to move if the price is reasonable."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 260,
+      "note": "Thanks for the opening offer. 90 is well below what this 27-inch monitor is worth. I can do 260, which is a fair price for the item in good condition."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 120,
+      "note": "260 is well above what I can justify for a 27-inch monitor. I can move up to 120 from my opening of 90, and I can close quickly at that price."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 240,
+      "note": "I can't go as low as 120, but I can meet you partway at 240. That's a fair price for a 27-inch monitor in good condition, and I can close quickly at that number."
+    },
+    {
+      "by": "buyer",
+      "action": "propose",
+      "price": 140,
+      "note": "240 is still well above what I can pay for this monitor. I can offer 140 and close right away. If you can meet that, we have a deal."
+    },
+    {
+      "by": "seller",
+      "action": "propose",
+      "price": 220,
+      "note": "140 is too far from what this
+  [seller call] propose({"negotiation_id": "neg-4f44", "price": 203, "note": "148 is still too far from the monitor's value. I've come down from 260 and I'm offering 203, which is my final number. If you can meet it, we can close today."})
+    [result] {"result":"proposal of 203 recorded; it is now the buyer's turn"}
+  [seller text] I countered the buyer's standing offer of 148 with 203 on negotiation neg-4f44. It's now the buyer's turn.
+
+The gap is still wide. The buyer has moved from 90 to 148 and I've moved from 260 to 203, with the 203 presented as my final number. I didn't accept 148 since it's well below what I can take.
+--- server events
+  buyer  accepted propose(90)
+  seller accepted propose(260)
+  buyer  accepted propose(120)
+  seller accepted propose(240)
+  buyer  accepted propose(140)
+  seller accepted propose(220)
+  buyer  accepted propose(145)
+  seller accepted propose(210)
+  buyer  accepted propose(147)
+  seller accepted propose(205)
+  buyer  accepted propose(148)
+  seller accepted propose(203)
+--- result: {'run': 32, 'condition': 'server', 'scenario': 5, 'deal_possible': 0, 'outcome': 'open', 'price': '', 'correct': 1, 'violation': 0, 'attempted_violations': 0, 'refused_calls': 0, 'turns': 12, 'tool_calls': 24, 'note': 'host=claude -p haiku; passes=0; host_runs=12'}
