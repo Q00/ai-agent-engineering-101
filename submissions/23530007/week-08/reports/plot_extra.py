@@ -182,7 +182,7 @@ def incidents():
         yy = n - 1 - k * 0.8
         ax.plot([20.2], [yy], "o", color=col, ms=7)
         ax.text(20.6, yy, r, va="center", color=cs.INK, fontsize=9)
-    cs.title(ax, "사건 9건: 날짜와 일어난 층")
+    cs.title(ax, "이벤트 9건: 날짜와 일어난 층")
     f.tight_layout(); cs.save(f, f"{OUT}/incidents.png")
 
 
