@@ -1,0 +1,41 @@
+{
+ "t": 1794917124.0853112,
+ "mode": "apply",
+ "answer": {
+  "market_read": "We are in the T-3 phase (2.88 h left), which is report-only, so I made no moves. No target is in play either: book, revenue and stars all have P(flip) of 0.0. Book: we lead SungJinho by 26.06 M and the projected end lead is 13.6 M on the 6 h fit and 11.2 M on the 12 h fit. They gain on us at about 4.2 M/h and would need 6.2 h to catch up. Revenue: we are 1.40 M ahead of SungJinho and 6.1 B behind inextro. Stars: we are 3rd at 4.48, .02 from rank 2 and rank 4. The OFF targets book_slope and book_projection are about the lead growing, not about keeping it, and the rule says to spend nothing on a decided part. The biggest fixable leak is still the kit's double-promise. Over the last 2 h, paid margin was 3.76 M/h against 4.68 M/h agreed. B pays only 49 of 93 closes (paid share .53: 6.2 M of B margin closed, 4.5 M paid). A pays 99 of 115 (.86) and C 35 of 35. settle_health shows 21 refusals out of 243 deals, 19 of them 'unit not in stock for this order'. A price knob cannot fix that. Refunds are 0.48 M/h against a .35 M/h target, which matches a B break rate of 6-10% and is not a new cause. The 11:33 per-SKU ask cuts are still inside their window to 13:33 (paid_margin_h, baseline 3.05 M/h). The 2 h paid margin of 3.76 M/h leans toward 'helped' but is not decided yet. The floor_mult 1.09 to 1.07 move is due about 12:30. The end-game code left everything as set: no buying stop beyond what is already running, and no move in this phase.",
+  "moves": [],
+  "facts": [
+   {
+    "op": "retire",
+    "id": "F282"
+   },
+   {
+    "op": "retire",
+    "id": "F283"
+   },
+   {
+    "op": "add",
+    "id": "F288",
+    "text": "12:06 11-17 margin_by_grade(2 h): paid 3.76 M/h, agreed 4.68 M/h. A: 99 of 115 paid, 29 k a deal. B: 49 of 93 paid (share .53), 92 k a deal, 6.2 M margin closed against 4.5 M paid. C: 35 of 35 paid, 5 k. About 0.9 M/h of agreed margin goes unpaid, mostly B, from the double-promise fault.",
+    "query": "margin_by_grade(2)",
+    "expires_h": 3
+   },
+   {
+    "op": "add",
+    "id": "F289",
+    "text": "12:06 11-17 shop_health: the kit is running, the seller got a task 0 s ago, the card url is null (unreachable from outside since the 10:47 restart), 3 exits in the window. settle_health 2 h: 21 of 243 refused, 19+2 'unit not in stock for this order'.",
+    "query": "shop_health; settle_health",
+    "expires_h": 3
+   }
+  ],
+  "requests": [],
+  "notes_for_buyer": [
+   "12:06 shop: T-3 report-only, so no shop knob changes. Our book lead is 26.1 M with P(flip) 0, and revenue and stars ranks are decided too. Settle refusals on deals with our own shop (double-promise) are still live: B pays only .53 of its closes over 2 h. Expect some of our agreed deals at yms979 not to settle."
+  ],
+  "answer_to_operator": "Your order to widen the book lead: I made no change this run. The brief for this run puts T-3 as report-only, and the book race has P(flip) 0.0. We are 26.06 M ahead of 25620027. They gain about 4.2 M/h on us (8.27 against 2.40 M/h over 3 h), and the projected end lead is 13.6 M (6 h fit) or 11.2 M (12 h fit). The lead is shrinking but stays positive at the close. Paid margin over 2 h is 3.76 M/h. The one fixable leak is about 0.9 M/h of agreed margin that never settles because the kit promises the same unit twice. B is hit hardest: 49 of 93 closes paid. Pricing cannot fix that; it needs a kit fix. Two other faults are still open: the card url is null since the 10:47 restart, and G04ee8423/G6398e431 still carry ask 1.6, outside the .85-1.05 bounds.",
+  "alert_user": [
+   "킷이 같은 재고를 두 번 약속하는 문제가 계속되고 있습니다. 2시간 동안 B등급 체결의 47%가 결제되지 않았고, 미결제 마진은 시간당 약 0.9 M입니다. 킷 수정이 필요합니다."
+  ]
+ },
+ "raw": "{\"market_read\": \"We are in the T-3 phase (2.88 h left), which is report-only, so I made no moves. No target is in play either: book, revenue and stars all have P(flip) of 0.0. Book: we lead SungJinho by 26.06 M and the projected end lead is 13.6 M on the 6 h fit and 11.2 M on the 12 h fit. They gain on us at about 4.2 M/h and would need 6.2 h to catch up. Revenue: we are 1.40 M ahead of SungJinho and 6.1 B behind inextro. Stars: we are 3rd at 4.48, .02 from rank 2 and rank 4. The OFF targets book_slope and book_projection are about the lead growing, not about keeping it, and the rule says to spend nothing on a decided part. The biggest fixable leak is still the kit's double-promise. Over the last 2 h, paid margin was 3.76 M/h against 4.68 M/h agreed. B pays only 49 of 93 closes (paid share .53: 6.2 M of B margin closed, 4.5 M paid). A pays 99 of 115 (.86) and C 35 of 35. settle_health shows 21 refusals out of 243 deals, 19 of them 'unit not in stock for this order'. A price knob cannot fix that. Refunds are 0.48 M/h against a .35 M/h target, which matches a B break rate of 6-10% and is not a new cause. The 11:33 per-SKU ask cuts are still inside their window to 13:33 (paid_margin_h, baseline 3.05 M/h). The 2 h paid margin of 3.76 M/h leans toward 'helped' but is not decided yet. The floor_mult 1.09 to 1.07 move is due about 12:30. The end-game code left everything as set: no buying stop beyond what is already running, and no move in this phase.\", \"moves\": [], \"facts\": [{\"op\": \"retire\", \"id\": \"F282\"}, {\"op\": \"retire\", \"id\": \"F283\"}, {\"op\": \"add\", \"id\": \"F288\", \"text\": \"12:06 11-17 margin_by_grade(2 h): paid 3.76 M/h, agreed 4.68 M/h. A: 99 of 115 paid, 29 k a deal. B: 49 of 93 paid (share .53), 92 k a deal, 6.2 M margin closed against 4.5 M paid. C: 35 of 35 paid, 5 k. About 0.9 M/h of agreed margin goes unpaid, mostly B, from the double-promise fault.\", \"query\": \"margin_by_grade(2)\", \"expires_h\": 3}, {\"op\": \"add\", \"id\": \"F289\", \"text\": \"12:06 11-17 shop_health: the kit is running, the seller got a task 0 s ago, the card url is null (unreachable from outside since the 10:47 restart), 3 exits in the window. settle_health 2 h: 21 of 243 refused, 19+2 'unit not in stock for this order'.\", \"query\": \"shop_health; settle_health\", \"expires_h\": 3}], \"requests\": [], \"notes_for_buyer\": [\"12:06 shop: T-3 report-only, so no shop knob changes. Our book lead is 26.1 M with P(flip) 0, and revenue and stars ranks are decided too. Settle refusals on deals with our own shop (double-promise) are still live: B pays only .53 of its closes over 2 h. Expect some of our agreed deals at yms979 not to settle.\"], \"answer_to_operator\": \"Your order to widen the book lead: I made no change this run. The brief for this run puts T-3 as report-only, and the book race has P(flip) 0.0. We are 26.06 M ahead of 25620027. They gain about 4.2 M/h on us (8.27 against 2.40 M/h over 3 h), and the projected end lead is 13.6 M (6 h fit) or 11.2 M (12 h fit). The lead is shrinking but stays positive at the close. Paid margin over 2 h is 3.76 M/h. The one fixable leak is about 0.9 M/h of agreed margin that never settles because the kit promises the same unit twice. B is hit hardest: 49 of 93 closes paid. Pricing cannot fix that; it needs a kit fix. Two other faults are still open: the card url is null since the 10:47 restart, and G04ee8423/G6398e431 still carry ask 1.6, outside the .85-1.05 bounds.\", \"alert_user\": [\"킷이 같은 재고를 두 번 약속하는 문제가 계속되고 있습니다. 2시간 동안 B등급 체결의 47%가 결제되지 않았고, 미결제 마진은 시간당 약 0.9 M입니다. 킷 수정이 필요합니다.\"]}"
+}

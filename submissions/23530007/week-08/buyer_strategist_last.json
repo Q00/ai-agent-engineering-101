@@ -1,0 +1,37 @@
+{
+ "t": 1794922364.0292854,
+ "answer": {
+  "read": "We are in the T-3 h report-only phase with 1.5 h left, so this run makes no moves. Per-deal v is ON: v6 is .873 (food .891, goods .852, n 377) against .845. Deals per hour is OFF: the 3 h slope is 61.4 and the last hour was 59 (food 26, goods 33) against a need of 85. The funnel shows why. Goods visits mostly end before a deal (per hour: too dear 137, rejected 125, grade C claimed 110, over budget 72). Rejections come before any offer, so they are not a price problem, and the grade C answers are the 2 h skip rule working as intended. Low-value skips are 41/h for goods and 7/h for food, but their expected medians are .718 and .792, below the .75 breakeven or barely above it. Lowering the bar to catch them would have little effect and could not be measured before the end. Neither buyer rank can change before the end. Saved stays 15th: seochanit is .0013 above and pulling away (proj .76965 vs our .76833), and Nocha12 is .0078 below. Deals stay 10th: kimauve is 60 ahead and growing at about the same rate (61.7/h vs our 61.4/h), and their projected end is 24,101 vs our 24,050. The end-game code set v_breakeven to .73 (deals_in_play true) and slot_value to .02, and both stay as set. Guard G9 fired on the last tick; nothing is frozen and there are no overrides. The runner-up's buyer (25620027), head to head: v .911 (6 h .902) at 70.3 deals/h vs our .873 at 62.8. Same-shop goods gaps: ddolcom .913 vs .843 and ovotnwjd-maker .95 vs .879. We still lead posts 3697 to 3661 (gap 36, P(flip) 0).",
+  "moves": [],
+  "facts": [
+   {
+    "op": "add",
+    "id": "F256",
+    "text": "13:32 T-3 report only. v6 .873 ON (food .891, goods .852, n 377). deals_h slope3 61.4 OFF vs 85; last 1 h 59 (food 26, goods 33) on 162 orders/h. Goods non-deals/h (1 h): too dear 137, rejected 125, grade C 110, over budget 72. Skips: goods 41/h (median .718), food 7/h (.792). Saved 15th is fixed (seochanit +.0013 and pulling away, Nocha12 -.0078). Deals 10th: kimauve +60, proj end 24101 vs our 24050. Guard G9 fired last tick, nothing frozen.",
+    "query": "RACE + FUNNEL + evidence.score (13:32)",
+    "expires_h": 2
+   },
+   {
+    "op": "rewrite",
+    "id": "F255",
+    "text": "13:32 25620027 head to head: v .911 (6 h .902) at 70.3 deals/h vs our .873 at 62.8. Same-shop goods: ddolcom .913 vs .843, ovotnwjd-maker .95 vs .879, cheapest-in-town .926 vs .916. They open at our shop at .44 of list with 1.5 numbers per talk. Posts: we lead 3697 to 3661 (gap 36, P(flip) 0).",
+    "query": "evidence.peer_benchmark + RACE.posts (13:32)",
+    "expires_h": 2
+   },
+   {
+    "op": "retire",
+    "id": "F250"
+   },
+   {
+    "op": "retire",
+    "id": "F252"
+   }
+  ],
+  "notes_for_shop": [
+   "13:32 buyer: T-3 report only, so no buyer moves. Saved (15th) and deals (10th) ranks are fixed to the end: kimauve +60 deals at the same pace. Our 24 h deals show no yms979 rows, so our buyer is not affected by the double-promise settle refusals."
+  ],
+  "answer_to_operator": "No operator note or constraint this run.",
+  "alert_user": []
+ },
+ "raw": "```json\n{\"read\": \"We are in the T-3 h report-only phase with 1.5 h left, so this run makes no moves. Per-deal v is ON: v6 is .873 (food .891, goods .852, n 377) against .845. Deals per hour is OFF: the 3 h slope is 61.4 and the last hour was 59 (food 26, goods 33) against a need of 85. The funnel shows why. Goods visits mostly end before a deal (per hour: too dear 137, rejected 125, grade C claimed 110, over budget 72). Rejections come before any offer, so they are not a price problem, and the grade C answers are the 2 h skip rule working as intended. Low-value skips are 41/h for goods and 7/h for food, but their expected medians are .718 and .792, below the .75 breakeven or barely above it. Lowering the bar to catch them would have little effect and could not be measured before the end. Neither buyer rank can change before the end. Saved stays 15th: seochanit is .0013 above and pulling away (proj .76965 vs our .76833), and Nocha12 is .0078 below. Deals stay 10th: kimauve is 60 ahead and growing at about the same rate (61.7/h vs our 61.4/h), and their projected end is 24,101 vs our 24,050. The end-game code set v_breakeven to .73 (deals_in_play true) and slot_value to .02, and both stay as set. Guard G9 fired on the last tick; nothing is frozen and there are no overrides. The runner-up's buyer (25620027), head to head: v .911 (6 h .902) at 70.3 deals/h vs our .873 at 62.8. Same-shop goods gaps: ddolcom .913 vs .843 and ovotnwjd-maker .95 vs .879. We still lead posts 3697 to 3661 (gap 36, P(flip) 0).\",\n  \"moves\": [],\n  \"facts\": [\n    {\"op\": \"add\", \"id\": \"F256\", \"text\": \"13:32 T-3 report only. v6 .873 ON (food .891, goods .852, n 377). deals_h slope3 61.4 OFF vs 85; last 1 h 59 (food 26, goods 33) on 162 orders/h. Goods non-deals/h (1 h): too dear 137, rejected 125, grade C 110, over budget 72. Skips: goods 41/h (median .718), food 7/h (.792). Saved 15th is fixed (seochanit +.0013 and pulling away, Nocha12 -.0078). Deals 10th: kimauve +60, proj end 24101 vs our 24050. Guard G9 fired last tick, nothing frozen.\", \"query\": \"RACE + FUNNEL + evidence.score (13:32)\", \"expires_h\": 2},\n    {\"op\": \"rewrite\", \"id\": \"F255\", \"text\": \"13:32 25620027 head to head: v .911 (6 h .902) at 70.3 deals/h vs our .873 at 62.8. Same-shop goods: ddolcom .913 vs .843, ovotnwjd-maker .95 vs .879, cheapest-in-town .926 vs .916. They open at our shop at .44 of list with 1.5 numbers per talk. Posts: we lead 3697 to 3661 (gap 36, P(flip) 0).\", \"query\": \"evidence.peer_benchmark + RACE.posts (13:32)\", \"expires_h\": 2},\n    {\"op\": \"retire\", \"id\": \"F250\"},\n    {\"op\": \"retire\", \"id\": \"F252\"}\n  ],\n  \"notes_for_shop\": [\"13:32 buyer: T-3 report only, so no buyer moves. Saved (15th) and deals (10th) ranks are fixed to the end: kimauve +60 deals at the same pace. Our 24 h deals show no yms979 rows, so our buyer is not affected by the double-promise settle refusals.\"],\n  \"answer_to_operator\": \"No operator note or constraint this run.\",\n  \"alert_user\": []}\n```"
+}

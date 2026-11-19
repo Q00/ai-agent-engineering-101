@@ -1,0 +1,195 @@
+{
+ "end": "2026-11-17T23:59:00+09:00",
+ "shop": {
+  "base": {
+   "ask_share": {
+    "A": 0.9,
+    "B": 0.8,
+    "C": 0.68
+   },
+   "meet_frac": 0.5,
+   "floor_mult": 1.05,
+   "warranty_hours": 72,
+   "b_first": 0,
+   "a_only_on": 1,
+   "warranty_grades": [
+    "A",
+    "B"
+   ],
+   "buy": true,
+   "keep_cash": 5000000.0,
+   "max_stock_share": 0.9,
+   "extra": 4,
+   "max_goods_price": 700000,
+   "clear_window_hours": 0,
+   "clear_floor": 1.0,
+   "clear_ask_min": 0.6,
+   "intel_window_hours": 6,
+   "intel_min_samples": 3,
+   "intel_undercut": 0.02,
+   "intel_band": 0.05,
+   "rep_min": 5,
+   "rep_low": 4.0,
+   "rep_high": 4.6,
+   "rep_step": 0.03,
+   "max_goods_price_hot": 5000000,
+   "slow_hours": 24,
+   "slow_ask_cut": 0.9,
+   "slow_floor_mult": 1.0,
+   "cover_min_sales": 0.5,
+   "tier_value_share": 0.1,
+   "tier_unserved": 10,
+   "tier_count": 6,
+   "tier_max_price": 5000000,
+   "sku_hours": 6,
+   "sku_miss_weight": 0.5,
+   "sku_lines": 17,
+   "scarce_hours": 3,
+   "scarce_asks": 3,
+   "scarce_floor_mult": 1.15,
+   "max_goods_lines": 18,
+   "market_top": 80,
+   "market_share": 0.4,
+   "sku_max_price": 5000000,
+   "sku_cover_hours": 12,
+   "scarce_min_rate": 1.0,
+   "scarce_market_hours": 3,
+   "scarce_share": 0.4,
+   "scarce_cover_hours": 2,
+   "scarce_max_shops": 5,
+   "grade_first": 0,
+   "must_stock": {},
+   "restock_food": true,
+   "food_wide": {
+    "on": false,
+    "lines": 2,
+    "qty": 5,
+    "top": 60,
+    "min_shelf_h": 168,
+    "target": 1
+   },
+   "rival_under_hot": 0.02,
+   "rival_under": 0.0,
+   "rival_over": 0.0,
+   "must_stock_off": {
+    "Gd1f907d6": 2,
+    "G476cc094": 2,
+    "Gea0b0c3f": 2,
+    "G0b4dad18": 2,
+    "G35351812": 2,
+    "G8e05d8be": 2,
+    "G1a7852ed": 2,
+    "Gd34e4e64": 2,
+    "G08eb3ca2": 2,
+    "Gf16a542a": 2
+   },
+   "sell_b": 0,
+   "sell_c": 0,
+   "food_shelf_floor": 0.8,
+   "star_tuner_on": 1,
+   "rev_defense": 0,
+   "warranty_default_h": 3,
+   "c_fallback": 0,
+   "ask_offset_A": 0.0,
+   "ask_offset_B": 0.0,
+   "b_max_list": 1000000,
+   "keep_cash_ramp": {
+    "t0": 1794744995.5987384,
+    "from": 5000000.0,
+    "to": 5000000.0,
+    "per_h": 1500000
+   },
+   "warranty_default_big_h": 2,
+   "big_list": 1500000,
+   "own_cover_h": 3.0,
+   "big_per_window": 2,
+   "big_room_share": 0.5
+  },
+  "LAUNCH": {
+   "ask_share": {
+    "A": 0.85,
+    "B": 0.75,
+    "C": 0.62
+   },
+   "meet_frac": 0.35
+  },
+  "CASH_TIGHT": {
+   "ask_share": {
+    "A": 0.86,
+    "B": 0.76,
+    "C": 0.64
+   },
+   "keep_cash": 500000,
+   "extra": 1
+  },
+  "FLUSH": {
+   "extra": 8,
+   "max_goods_price": 5000000,
+   "max_stock_share": 0.98
+  },
+  "WIND_DOWN": {
+   "tier_count": 0
+  },
+  "LIQUIDATE": {
+   "buy": true
+  },
+  "LIQUIDATE_LAST": {
+   "buy": true
+  }
+ },
+ "buyer": {
+  "base": {
+   "goods_grades": [
+    "A",
+    "B"
+   ],
+   "food_extra_hours": 0.25,
+   "rival_penalty": 0.04,
+   "code_haggle": true,
+   "max_shops": 6,
+   "target_mean": 0.74,
+   "goods_delta": 0.0,
+   "skip_delta_food": -0.08,
+   "skip_delta_goods": -0.04,
+   "talk_share": 0.3,
+   "take_v": 0.9,
+   "open_v": 0.96,
+   "step_v": 0.05,
+   "rounds": 3,
+   "soft_rounds": 2,
+   "food_delta": 0.0,
+   "near_v": 0.03,
+   "v_breakeven": 0.745,
+   "slot_value": 0.06,
+   "dead_p": 0.05,
+   "hurry_secs": 15,
+   "pay_unwarranted_A": 1,
+   "v_floor": 0.745,
+   "anchor_share": 0.5,
+   "anchor_share_food": 0.5,
+   "anchor_share_goods": 0.5
+  },
+  "END_SALE": {},
+  "LOW_FILL": {}
+ },
+ "regimes": {
+  "launch_hours": 12,
+  "launch_deals": 100,
+  "cash_tight": 1000000,
+  "flush": 8000000,
+  "wind_down_hours": 0,
+  "liquidate_hours": 0,
+  "liquidate_last_hours": 0,
+  "end_sale_hours": 12,
+  "low_fill_window": 40,
+  "low_fill_rate": 0.3
+ },
+ "strategist": {
+  "mode": "apply",
+  "tools": [
+   "buyer strategist",
+   "strategist",
+   "curator"
+  ]
+ }
+}
