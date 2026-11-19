@@ -1,148 +1,208 @@
 % Round 3 agent of yms979 (23530007): one-page architecture figure (labels in Korean).
 % Same layout as REPORT 5.1 (reports/plot_structure.py): people and observers on top, the analyst, the buy/sell
-% judgment, the buyer/seller code, the market at the bottom, the archive column on the right.
-% Dashed frames group similar modules.
-% Build: xelatex architecture.tex   (TikZ + kotex, font UnDotum)
-\documentclass[11pt]{article}
-\usepackage[a4paper,landscape,margin=7mm]{geometry}
+% judgment, the buyer/seller code, the market at the bottom, the archive column on the right. Dashed frames group
+% similar modules; numbered badges on the arrows follow the loop told in sentences under the figure.
+% Build: xelatex architecture.tex   (TikZ + kotex; font Pretendard (OFL) if installed, else UnDotum)
+\documentclass[10pt]{article}
+\usepackage[a4paper,landscape,margin=8mm]{geometry}
 \usepackage{kotex}
-\setmainhangulfont{UnDotum}
-\setsanshangulfont{UnDotum}
+\IfFontExistsTF{Pretendard}{%
+  \setmainfont{Pretendard}[BoldFont={Pretendard SemiBold}]
+  \setsansfont{Pretendard}[BoldFont={Pretendard SemiBold}]
+  \setmainhangulfont{Pretendard}[BoldFont={Pretendard SemiBold}]
+  \setsanshangulfont{Pretendard}[BoldFont={Pretendard SemiBold}]
+}{%
+  \setmainhangulfont{UnDotum}
+  \setsanshangulfont{UnDotum}
+}
 \usepackage{tikz}
 \usetikzlibrary{fit,arrows.meta,backgrounds,calc}
 \pagestyle{empty}
-% the REPORT chart palette (reports/chart_style.py, plot_structure.py)
+\setlength{\parindent}{0pt}
+% the REPORT chart palette (reports/chart_style.py), softened for print
+\definecolor{ink}{HTML}{1F1E1B}
+\definecolor{ink2}{HTML}{6B6A65}
+\definecolor{line}{HTML}{D6D4CC}
+\definecolor{arrowc}{HTML}{8F8D86}
+\definecolor{band}{HTML}{F6F5F1}
 \definecolor{us}{HTML}{D95926}
 \definecolor{aqua}{HTML}{1BAF7A}
-\definecolor{ink}{HTML}{0B0B0B}
-\definecolor{ink2}{HTML}{52514E}
-\definecolor{grid}{HTML}{E6E5E0}
-\definecolor{buyfill}{HTML}{E3F4EC}
-\definecolor{sellfill}{HTML}{FBE6DC}
-\definecolor{neufill}{HTML}{F1F0EC}
-\definecolor{faint}{HTML}{BDBCB6}
-\definecolor{faintfill}{HTML}{F6F5F2}
-% box text: bold Korean name, the code name in small grey, then the role in plain words
-\newcommand{\cn}[1]{{\tiny\color{ink2}#1}}
+\definecolor{buyfill}{HTML}{EAF7F1}
+\definecolor{sellfill}{HTML}{FCEEE7}
+\definecolor{faint}{HTML}{C4C2BA}
+\newcommand{\cn}[1]{{\fontsize{5.6}{7}\selectfont\color{ink2}#1}}   % code name, small and grey
 \begin{document}
+
+% ---------- title ----------
+\begin{minipage}[b]{0.72\linewidth}
+{\fontsize{17}{20}\selectfont\bfseries Round 3 에이전트 구조}\\[1.2mm]
+{\small\color{ink2}주문은 코드가 바로 처리하고, LLM은 30분마다 그 코드의 설정을 바꾼다. 모든 기록은 남기고, 사람은 휴대폰으로 함께한다.}
+\end{minipage}\hfill
+\begin{minipage}[b]{0.25\linewidth}\raggedleft{\small\color{ink2}yms979 $\cdot$ 23530007 $\cdot$ week-08}\end{minipage}
+
+\vspace{2mm}
 \centering
-{\sffamily\large\bfseries yms979 (23530007) Round 3 에이전트 구조}\par\vspace{2mm}
-\begin{tikzpicture}[y=1.16cm,
-  font=\sffamily\scriptsize,
-  >={Stealth[length=1.7mm]},
-  mod/.style={draw=ink2, fill=neufill, rounded corners=2pt, align=center, inner sep=2.6pt, text width=#1,
-              line width=0.5pt, text=ink},
-  llm/.style={mod=#1, line width=1.3pt},
-  buy/.style={fill=buyfill, draw=aqua},
-  sell/.style={fill=sellfill, draw=us},
-  store/.style={draw=faint, fill=faintfill, align=center, inner sep=2pt, text width=3.1cm, font=\sffamily\tiny,
-                text=ink2},
-  grp/.style={draw=#1, densely dashed, rounded corners=5pt, inner sep=5pt, line width=0.7pt},
-  gttl/.style={font=\sffamily\tiny\bfseries, text=#1, anchor=south west, inner sep=1.5pt},
-  arr/.style={->, draw=ink2, line width=0.6pt},
-  both/.style={<->, draw=ink2, line width=0.6pt},
-  fa/.style={->, draw=faint, line width=0.6pt},
-  lbl/.style={font=\sffamily\tiny, fill=white, inner sep=1pt, text=ink2, align=center},
+\begin{tikzpicture}[y=0.88cm,
+  font=\scriptsize, text=ink,
+  >={Stealth[length=1.8mm, width=1.4mm]},
+  card/.style={draw=line, fill=white, rounded corners=4pt, align=flush center, inner xsep=4pt, inner ysep=3.2pt,
+               text width=#1, line width=0.6pt},
+  llm/.style={card=#1, line width=1.3pt, draw=ink2},
+  buy/.style={fill=buyfill, draw=aqua!45},
+  sell/.style={fill=sellfill, draw=us!40},
+  buyllm/.style={fill=buyfill, draw=aqua},
+  sellllm/.style={fill=sellfill, draw=us},
+  pill/.style={fill=#1, text=white, rounded corners=3.5pt, inner xsep=4pt, inner ysep=1.6pt, font=\fontsize{5.8}{6}\selectfont\bfseries},
+  grp/.style={draw=#1, dash pattern=on 2.2pt off 1.8pt, rounded corners=7pt, inner sep=6pt, line width=0.7pt},
+  glab/.style={fill=band, inner xsep=3pt, inner ysep=1pt, font=\fontsize{6.2}{7}\selectfont\bfseries, text=#1, anchor=west},
+  bandl/.style={font=\footnotesize\bfseries, text=ink2, align=left, anchor=west},
+  arr/.style={->, draw=arrowc, line width=0.8pt, rounded corners=5pt},
+  both/.style={<->, draw=arrowc, line width=0.8pt, rounded corners=5pt},
+  fa/.style={->, draw=faint, line width=0.7pt, rounded corners=5pt},
+  badge/.style={circle, fill=ink, text=white, draw=white, line width=0.9pt, inner sep=0pt, minimum size=3.9mm,
+                font=\fontsize{6.4}{7}\selectfont\bfseries},
+  note/.style={font=\fontsize{5.8}{7}\selectfont, text=ink2, align=flush center},
+  store/.style={draw=line, fill=white, rounded corners=3pt, align=flush center, inner sep=2.4pt, text width=3.3cm,
+                font=\fontsize{5.8}{7}\selectfont, text=ink2},
 ]
-% ---------- layers (as in REPORT 5.1) ----------
-\foreach \y/\t in {13.2/사람 $\cdot$ 감시, 10.5/분석, 7.6/판단, 3.9/실행, 1.0/시장}
-  \node[anchor=west, font=\sffamily\footnotesize, text=ink2] at (-13.6,\y) {\t};
-\foreach \y in {11.9, 9.25, 6.2, 1.9}
-  \draw[grid, line width=0.6pt] (-13.6,\y) -- (9.3,\y);
+% ---------- layer bands (soft, no rules) ----------
+\foreach \y/\h/\t in {11.45/3.45/사람과\\감시, 8.75/2.4/분석, 5.85/2.6/판단, 1.45/4.1/실행, 0/1.15/시장} {
+  \fill[band, rounded corners=8pt] (0,\y) rectangle (23.45,\y+\h);
+  \node[bandl] at (0.3,\y+\h/2) {\t};
+}
 
 % ---------- people and observers ----------
-\node[mod=4.1cm] (op)   at (-8.75,13.2) {\textbf{운영자}\\\cn{코딩 에이전트}\\사용자 지시를 코드·툴로 옮김};
-\node[mod=3.5cm] (user) at (-4.15,13.2) {\textbf{사용자}\\\cn{사람}\\목표와 큰 결정을 정함};
+\node[card=4.2cm] (op)   at (4.55,13.15) {\textbf{운영자}\hspace{4pt}\cn{코딩 에이전트}\\[1pt]사용자의 말을 코드와 툴로 옮긴다};
+\node[card=4.2cm] (user) at (9.75,13.15) {\textbf{사용자}\\[1pt]목표를 정하고 큰 결정을 내린다};
 \node[grp=ink2, fit=(op)(user)] (gpeople) {};
-\node[gttl=ink2] at (gpeople.north west) {사람};
-\draw[both] (op.east) -- node[lbl, above=1pt, fill=none]{대화} (user.west);
+\node[glab=ink2] at ($(gpeople.north west)+(0.25,0)$) {사람};
+\draw[both] (op.east) -- (user.west);
 
-\node[mod=3.0cm] (o1) at (0.75,13.85) {\textbf{휴대폰 알림}\\\cn{notify.py, inbox.py}\\알림 보내고 답장 받음};
-\node[mod=3.0cm] (o2) at (4.05,13.85) {\textbf{실행 일정}\\\cn{watch\_round.sh}\\15분마다 차례로 실행};
-\node[mod=3.0cm] (o3) at (7.35,13.85) {\textbf{규칙 감시}\\\cn{rules\_fast.py}\\규칙 변경 즉시 알림};
-\node[mod=3.0cm] (o4) at (0.75,12.6) {\textbf{정기 보고}\\\cn{brief.py, win\_prob.py}\\순위와 1위 확률 보고};
-\node[mod=3.0cm] (o5) at (4.05,12.6) {\textbf{가드}\\\cn{guards.py}\\이상 시 전략가 깨움};
-\node[mod=3.0cm] (o6) at (7.35,12.6) {\textbf{A/B 실험}\\\cn{ab.py}\\설정 후보 비교·채택};
+\node[card=4.55cm] (o1) at (15.5,14.05) {\textbf{가드}\hspace{4pt}\cn{guards.py}\\[1pt]이상이 보이면 전략가를 깨운다};
+\node[card=4.55cm] (o2) at (20.6,14.05) {\textbf{A/B 실험}\hspace{4pt}\cn{ab.py}\\[1pt]설정 후보를 나눠 써 보고 고른다};
+\node[card=4.55cm] (o3) at (15.5,13.0)  {\textbf{정기 보고}\hspace{4pt}\cn{brief.py, win\_prob.py}\\[1pt]한 시간마다 1위 확률을 알린다};
+\node[card=4.55cm] (o4) at (20.6,13.0)  {\textbf{규칙 감시}\hspace{4pt}\cn{rules\_fast.py}\\[1pt]시장 규칙이 바뀌면 바로 알린다};
+\node[card=4.55cm] (o5) at (15.5,11.95) {\textbf{휴대폰 알림}\hspace{4pt}\cn{notify.py, inbox.py}\\[1pt]알림을 보내고 답장을 받는다};
+\node[card=4.55cm] (o6) at (20.6,11.95) {\textbf{실행 일정}\hspace{4pt}\cn{watch\_round.sh}\\[1pt]15분마다 모두를 차례로 돌린다};
 \node[grp=ink2, fit=(o1)(o6)] (gobs) {};
-\node[gttl=ink2] at (gobs.north west) {관측자 (감시 코드)};
-\draw[<->, draw=ink2, line width=0.5pt, dash pattern=on 1.5pt off 1.5pt] (user.east) -- node[lbl, above=1pt, fill=none]{ntfy} (user.east -| gobs.west);
+\node[glab=ink2] at ($(gobs.north west)+(0.25,0)$) {관측자};
+\draw[<->, draw=ink2, line width=0.7pt, dash pattern=on 1.6pt off 1.4pt] (user.east) -- (user.east -| gobs.west)
+  node[note, fill=band, inner sep=1pt, pos=0.5, above=1.5pt]{ntfy};
 
 % ---------- analyst and tools ----------
-\node[llm=7.4cm] (cur) at (-5.8,10.5) {\textbf{분석가} -- \textbf{Claude Sonnet}\\\cn{memory\_curator.py (11-11 전 Opus)}\\시장을 측정해 두 전략가에게 같은 요약(digest)을 주고,\\전략가의 질문에 숫자로 답함};
-\node[mod=3.4cm] (tools) at (1.3,10.5) {\textbf{조회 툴 27개}\\\cn{market\_tools.py (MCP, 읽기 전용)}\\판단 중 숫자 직접 확인};
-\node[mod=3.4cm] (meas)  at (5.0,10.5) {\textbf{측정 코드}\\\cn{market\_picture.py 외 3개}\\순위·판매·원가 계산};
+\node[llm=8.2cm] (cur) at (7.65,9.95) {\textbf{분석가}\hspace{4pt}\cn{memory\_curator.py}\\[1pt]시장을 측정해, 두 전략가가 같은 사실을 보고 판단하게 한다.\\전략가가 물으면 숫자로 답한다.};
+\node[pill=ink2] at ($(cur.north east)+(-0.3,0)$) [anchor=east] {Claude Sonnet};
+\node[card=4.1cm] (tools) at (15.45,9.95) {\textbf{조회 툴 27개}\hspace{4pt}\cn{market\_tools.py, MCP}\\[1pt]전략가가 판단 도중에\\숫자를 직접 확인한다};
+\node[card=4.1cm] (meas)  at (20.15,9.95) {\textbf{측정 코드}\hspace{4pt}\cn{market\_picture.py 외 3개}\\[1pt]순위, 판매 흐름, 원가를\\계산한다};
 \node[grp=ink2, fit=(tools)(meas)] (gtools) {};
-\node[gttl=ink2] at (gtools.north west) {툴 $\cdot$ 측정 코드};
-\draw[both] (cur.east) -- node[lbl, above=1pt, fill=none]{측정} (cur.east -| gtools.west);
+\node[glab=ink2] at ($(gtools.north west)+(0.25,0)$) {툴과 측정};
+\draw[both] (cur.east) -- (cur.east -| gtools.west);
 
 % ---------- judgment ----------
-\node[llm=7.8cm, buy]  (bstrat) at (-6.15,7.6) {\textbf{구매 판단} -- \textbf{Claude Opus}\\\cn{buyer\_strategist.py, 30분마다 (:00, :30)}\\구매자의 상한가와 건너뛰기 기준을 정한다\\바꿀 때마다 예측을 남기고, 코드가 채점한다};
-\node[llm=7.8cm, sell] (sstrat) at (3.85,7.6)  {\textbf{판매 판단} -- \textbf{Claude Opus}\\\cn{strategist.py, 30분마다 (:15, :45)}\\상점의 호가와 재고 목표를 정한다\\바꿀 때마다 예측을 남기고, 코드가 채점한다};
+\node[llm=9.4cm, buyllm]  (bstrat) at (7.05,7.1) {\textbf{구매 판단}\hspace{4pt}\cn{buyer\_strategist.py $\cdot$ 매시 :00, :30}\\[1pt]구매자가 얼마까지 내고 어떤 거래를 건너뛸지 정한다.\\바꿀 때마다 예측을 남기고, 나중에 코드가 채점한다.};
+\node[pill=aqua] at ($(bstrat.north east)+(-0.3,0)$) [anchor=east] {Claude Opus};
+\node[llm=9.4cm, sellllm] (sstrat) at (18.05,7.1) {\textbf{판매 판단}\hspace{4pt}\cn{strategist.py $\cdot$ 매시 :15, :45}\\[1pt]상점의 호가와 재고 목표를 정한다.\\바꿀 때마다 예측을 남기고, 나중에 코드가 채점한다.};
+\node[pill=us] at ($(sstrat.north east)+(-0.3,0)$) [anchor=east] {Claude Opus};
 \node[grp=ink2, fit=(bstrat)(sstrat)] (gjudge) {};
-\node[gttl=ink2, anchor=south] at (gjudge.north -| -1.15,0) {판단 (LLM 전략가 둘)};
-\draw[both] (bstrat.east) -- node[lbl, above=2pt, fill=none]{정보 교환\\15분 엇갈림} (sstrat.west);
+\node[glab=ink2] at ($(gjudge.north west)+(0.25,0)$) {판단};
+\draw[both] (bstrat.east) -- (sstrat.west) node[note, midway, below=2pt]{서로 정보\\15분 간격};
 
 % ---------- execution ----------
-\node[draw=ink2, fill=neufill, rounded corners=2pt, inner sep=2.6pt, minimum width=18.2cm, line width=0.5pt] (policy) at (-1.2,5.5) {\textbf{파라미터 적용} \cn{policy.py}\enspace 전략가가 바꾼 값을 범위 검사한 뒤 실행 코드에 넘김};
+\node[card=20.4cm, fill=white] (policy) at (12.55,5.0) {\textbf{파라미터 적용}\hspace{4pt}\cn{policy.py}\hspace{8pt}전략가가 바꾼 값은 코드가 범위를 검사한 뒤에야 실행 코드에 들어간다};
 
-\node[mod=3.7cm, buy] (b1) at (-8.25,4.05) {\textbf{구매자}\\\cn{market\_buyer.py}\\주문마다 상점을 고르고 흥정};
-\node[mod=3.7cm, buy] (b2) at (-4.05,4.05) {\textbf{결제 툴}\\\cn{acp\_tools.py}\\acp.json으로 결제};
-\node[llm=3.7cm, buy] (b3) at (-8.25,2.75) {\textbf{답변 해석} -- \textbf{Claude Haiku}\\\cn{harness.py}\\못 읽는 답만 해석};
-\node[mod=3.7cm, buy] (b4) at (-4.05,2.75) {\textbf{리뷰}\\\cn{review.py}\\거래 뒤 별점과 포럼 글};
+\node[card=4.2cm, buy] (b1) at (4.55,3.6) {\textbf{구매자}\hspace{4pt}\cn{market\_buyer.py}\\[1pt]주문마다 상점을 고르고 흥정한다};
+\node[card=4.2cm, buy] (b2) at (9.55,3.6) {\textbf{결제 툴}\hspace{4pt}\cn{acp\_tools.py}\\[1pt]상점의 acp.json을 읽어 결제한다};
+\node[card=4.2cm, buy, buyllm, line width=1.3pt] (b3) at (4.55,2.3) {\textbf{답변 해석}\hspace{4pt}\cn{harness.py}\\[1pt]코드가 못 읽는 답만 맡는다};
+\node[pill=aqua] at ($(b3.north east)+(-0.2,0)$) [anchor=east] {Claude Haiku};
+\node[card=4.2cm, buy] (b4) at (9.55,2.3) {\textbf{리뷰}\hspace{4pt}\cn{review.py}\\[1pt]거래가 끝나면 별점과 글을 남긴다};
 \node[grp=aqua, fit=(b1)(b4)] (gbuy) {};
-\node[gttl=aqua!70!black] at (gbuy.north west) {구매 쪽 실행 코드};
-
-\node[mod=3.6cm, sell] (s1) at (1.85,4.05) {\textbf{판매자}\\\cn{seller\_r3.py}\\주문마다 호가를 냄};
-\node[mod=3.6cm, sell] (s2) at (5.85,4.05) {\textbf{매입}\\\cn{restock.py}\\공급창마다 팔릴 물건을 삼};
-\node[mod=7.6cm, sell] (s3) at (3.85,2.75) {\textbf{상점 서버}\enspace\cn{market\_kit.py (수업 키트 + kit.patch)}\\시장 연결, 결제(ACP), 꺼지면 자동 재시작};
-\node[grp=us, fit=(s1)(s3)] (gsell) {};
-\node[gttl=us] at (gsell.north west) {판매 쪽 실행 코드};
-
-% ---------- market ----------
-\node[draw=ink, fill=ink, text=white, rounded corners=2pt, text width=17.8cm, align=center, inner sep=4pt]
-  (market) at (-1.2,1.0) {\textbf{Agent Market}\enspace 주문(약 20초에 1건) $\cdot$ 원장 $\cdot$ 보드 $\cdot$ 포럼 $\cdot$ 공급창(20분마다 3분) $\cdot$ 규칙 페이지 $\cdot$ ACP + AP2 정산};
-
-% ---------- archive column (thin, quiet: it stores, it does not decide) ----------
-\node[store] (arch)  at (11.6,10.75) {\textbf{보관 DB}\\market\_archive.db\\시장 원장·보드·우리 로그 전부};
-\node[store] (hist)  at (11.6,9.75)  {\textbf{순위 기록}\\class\_history.jsonl\\학생별 점수 추이};
-\node[store] (xdb)   at (11.6,8.1)   {\textbf{교환 DB}\\strategy\_exchange.db\\전략가 게시·질문·요약};
-\node[store] (smem)  at (11.6,7.1)   {\textbf{전략가 기억}\\*\_strategist\_memory.json\\변경·예측·채점, 사실};
-\node[store] (cost)  at (11.6,4.6)   {\textbf{원가 DB}\\cost\_model.db\\유닛별 원가};
-\node[store] (bmem)  at (11.6,3.7)   {\textbf{구매자 기억}\\buyer\_memory.json\\방문 기록, 실패 기억};
-\node[store] (slog)  at (11.6,2.8)   {\textbf{판매 로그}\\seller\_r3\_log.jsonl\\호가·거래·취소};
-\node[grp=faint, fit=(arch)(slog)] (gstore) {};
-\node[gttl=ink2] at (gstore.north west) {보관 $\cdot$ 기억 (파일)};
-
-% ---------- flow, top to bottom ----------
-% people -> judgment (operator notes, code)
-\draw[arr] ($(op.south west)+(0.9,0)$) coordinate (opx) -- (opx |- gjudge.north) node[lbl, pos=0.45, rotate=90]{메모 $\cdot$ 코드 수정};
-% observers <-> judgment (wakes and user orders down, alert_user up)
-\draw[arr] (7.35,0 |- gobs.south) -- (7.35,0 |- gjudge.north) node[lbl, pos=0.3, rotate=90]{깨우기 $\cdot$ 사용자 지시};
-\draw[arr] (8.0,0 |- gjudge.north) -- (8.0,0 |- gobs.south) node[lbl, pos=0.3, rotate=90]{사용자에게 경보};
-% analyst and tools <-> judgment
-\draw[both] (cur.south) -- (cur.south |- gjudge.north) node[lbl, pos=0.5]{요약·답 / 발견·질문};
-\draw[both] (tools.south |- gtools.south) -- (tools.south |- gjudge.north) node[lbl, pos=0.5]{툴 조회};
-% judgment -> parameters -> code
-\draw[arr] (bstrat.south) -- node[lbl]{파라미터} (bstrat.south |- policy.north);
-\draw[arr] (sstrat.south) -- node[lbl]{파라미터} (sstrat.south |- policy.north);
-\draw[arr] (policy.south -| bstrat.south) -- (bstrat.south |- gbuy.north);
-\draw[arr] (policy.south -| sstrat.south) -- (sstrat.south |- gsell.north);
-% code <-> market
-\draw[both] (gbuy.south -| bstrat.south) -- node[lbl, right=1pt, fill=none]{주문 $\cdot$ checkout $\cdot$ 별점} (market.north -| bstrat.south);
-\draw[both] (gsell.south -| sstrat.south) -- node[lbl, right=1pt, fill=none]{정산 $\cdot$ 공급} (market.north -| sstrat.south);
+\node[glab=aqua!80!black] at ($(gbuy.north west)+(0.25,0)$) {구매 쪽 실행};
 \draw[arr] (b1.east) -- (b2.west);
 \draw[arr] (b1.south) -- (b3.north);
 
-% ---------- archive: in from the market and our code, out to tools, observers, strategists ----------
-\draw[fa] (market.east) -| node[lbl, pos=0.25, above, fill=none]{원장} (gstore.south);
-\draw[fa] (gsell.east |- s2.east) -- node[lbl, above, fill=none]{로그} (gstore.west |- s2.east);
-\draw[fa, <->] (gjudge.east |- sstrat.east) -- node[lbl, above, fill=none]{게시, 기억} (gstore.west |- sstrat.east);
-\draw[fa] (gstore.west |- meas.east) -- node[lbl, above, fill=none]{읽기} (gtools.east |- meas.east);
-\draw[fa] (gstore.north) |- node[lbl, pos=0.75, above, fill=none]{읽기} (gobs.east |- o3.east);
+\node[card=4.2cm, sell] (s1) at (15.55,3.6) {\textbf{판매자}\hspace{4pt}\cn{seller\_r3.py}\\[1pt]호가를 내고 실제 등급대로 판다};
+\node[card=4.2cm, sell] (s2) at (20.55,3.6) {\textbf{매입}\hspace{4pt}\cn{restock.py}\\[1pt]공급창이 열리면 팔릴 물건을 산다};
+\node[card=9.2cm, sell] (s3) at (18.05,2.3) {\textbf{상점 서버}\hspace{4pt}\cn{market\_kit.py (수업 키트 + kit.patch)}\\[1pt]시장과 연결하고 결제를 받으며, 꺼지면 다시 켠다};
+\node[grp=us, fit=(s1)(s3)] (gsell) {};
+\node[glab=us] at ($(gsell.north west)+(0.25,0)$) {판매 쪽 실행};
+
+% ---------- market ----------
+\node[fill=ink, text=white, rounded corners=5pt, minimum width=20.8cm, minimum height=0.62cm, inner sep=3pt]
+  (market) at (12.55,0.575) {\small\textbf{Agent Market}\hspace{10pt}\scriptsize 주문 $\cdot$ 원장 $\cdot$ 보드 $\cdot$ 포럼 $\cdot$ 공급창(20분마다) $\cdot$ 규칙 $\cdot$ ACP / AP2 정산};
+
+% ---------- archive column (quiet: it stores, it does not decide) ----------
+\node[store] (st1) at (25.9,13.7) {\textbf{\color{ink}보관 DB}\\market\_archive.db\\시장 원장과 우리 로그 전부};
+\node[store] (st2) at (25.9,12.05) {\textbf{\color{ink}순위 기록}\\class\_history.jsonl\\학생별 점수 추이};
+\node[store] (st3) at (25.9,10.4) {\textbf{\color{ink}교환 DB}\\strategy\_exchange.db\\전략가의 게시, 질문, 요약};
+\node[store] (st4) at (25.9,8.75) {\textbf{\color{ink}전략가 기억}\\*\_strategist\_memory.json\\변경, 예측, 채점, 사실};
+\node[store] (st5) at (25.9,7.1)  {\textbf{\color{ink}원가 DB}\\cost\_model.db\\유닛별 원가};
+\node[store] (st6) at (25.9,5.45) {\textbf{\color{ink}구매자 기억}\\buyer\_memory.json\\방문 기록, 실패 기억};
+\node[store] (st7) at (25.9,3.8)  {\textbf{\color{ink}판매 로그}\\seller\_r3\_log.jsonl\\호가, 거래, 취소};
+\begin{scope}[on background layer]
+\node[grp=faint, fit=(st1)(st7), inner sep=7pt] (gstore) {};
+\end{scope}
+\node[glab=ink2, fill=white] at ($(gstore.north west)+(0.25,0)$) {보관과 기억};
+
+% ---------- the loop, numbered ----------
+% (1) market <-> execution
+\draw[both] (gbuy.south -| bstrat.south) -- (market.north -| bstrat.south) coordinate[pos=0.5] (n1a);
+\draw[both] (gsell.south -| sstrat.south) -- (market.north -| sstrat.south) coordinate[pos=0.5] (n1b);
+% (2) into the archive
+\draw[fa] (market.east) -| (gstore.south) coordinate[pos=0.25] (n2);
+\draw[fa] (gsell.east |- s2.east) -- (gstore.west |- s2.east);
+% (3) archive -> tools; analyst and tools -> judgment
+\draw[fa] (gstore.west |- meas.east) -- (gtools.east |- meas.east);
+\draw[fa, <->] (gjudge.east |- sstrat.east) -- (gstore.west |- sstrat.east);
+\draw[fa] (gstore.west |- o2.east) -- (gobs.east |- o2.east);
+\draw[both] (cur.south) -- (cur.south |- gjudge.north) coordinate[pos=0.5] (n3a);
+\draw[both] (tools.south |- gtools.south) -- (tools.south |- gjudge.north) coordinate[pos=0.5] (n3b);
+% (4) judgment -> parameters, (5) parameters -> code
+\draw[arr] (bstrat.south) -- (bstrat.south |- policy.north) coordinate[pos=0.5] (n4a);
+\draw[arr] (sstrat.south) -- (sstrat.south |- policy.north) coordinate[pos=0.5] (n4b);
+\draw[arr] (policy.south -| bstrat.south) -- (bstrat.south |- gbuy.north) coordinate[pos=0.5] (n5a);
+\draw[arr] (policy.south -| sstrat.south) -- (sstrat.south |- gsell.north) coordinate[pos=0.5] (n5b);
+% (6) observers <-> judgment
+\draw[both] (22.95,0 |- gobs.south) -- (22.95,0 |- gjudge.north) coordinate[pos=0.5] (n6);
+% people: the operator's notes and code reach the strategists
+\draw[arr] (2.75,0 |- op.south) -- (2.75,0 |- gjudge.north) coordinate[pos=0.5] (np);
+\node[note, anchor=west, align=left] at ($(np)+(0.12,0)$) {메모,\\코드};
+
+\foreach \c/\n in {n1a/1, n1b/1, n2/2, n3a/3, n3b/3, n4a/4, n4b/4, n5a/5, n5b/5, n6/6}
+  \node[badge] at (\c) {\n};
 \end{tikzpicture}
 
-\vspace{1mm}
-\parbox{27.4cm}{\sffamily\scriptsize
-\textbf{읽는 법:} 굵은 테두리는 LLM(모델 이름 표기), 얇은 테두리는 코드다. 초록은 구매 쪽, 주황은 판매 쪽, 회색은 공통이다. 점선 테두리는 비슷한 모듈의 묶음이고, 연한 선은 보관 열로 들어가고 나오는 기록이다. 판단층은 JSON으로 답하고, 코드가 범위를 검사한 뒤 파라미터만 바꾼다. 거래는 실행층의 코드가 주문 속도로 한다.\\
-\textbf{키트 기본형과 다른 점:} 키트는 규칙 상점 하나와 주문마다 도는 구매자 하나다. 여기서는 실행층을 두 LLM 전략가가 범위가 정해진 파라미터로 조종한다. 전략가는 움직이기 전에 진단하고, 예측은 코드가 채점하며, 피해가 크면 되돌린다. 세 번째 LLM(분석가)이 공통 기억(digest)과 시장 정보 창구를 맡고, 툴 27개로 전략가가 숫자를 직접 확인한다. 관측자가 가드, A/B, 1위 확률을 돌리고, ntfy 양방향 경로로 사용자가 고리 안에 들어온다.}
+\vspace{2.4mm}
+% ---------- the loop in sentences ----------
+\raggedright
+\newcommand{\bd}[1]{\tikz[baseline=-0.6ex]\node[circle, fill=ink, text=white, inner sep=0pt, minimum size=3.6mm, font=\fontsize{6.2}{7}\selectfont\bfseries]{#1};}
+{\footnotesize\bfseries 한 번의 순환}\par\vspace{1.2mm}
+\begin{minipage}[t]{0.325\linewidth}\scriptsize\setlength{\parskip}{1.2mm}
+\bd{1}\hspace{3pt}시장에서 주문이 오면, 구매자와 판매자 코드가 모델을 거치지 않고 바로 거래한다.
+
+\bd{2}\hspace{3pt}거래 결과와 시장 원장은 오른쪽 보관 열에 쌓이고, 지우지 않는다.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.325\linewidth}\scriptsize\setlength{\parskip}{1.2mm}
+\bd{3}\hspace{3pt}분석가가 이 기록을 측정해 요약을 만들고, 두 전략가는 같은 요약을 읽는다. 더 필요한 숫자는 툴로 직접 확인한다.
+
+\bd{4}\hspace{3pt}두 전략가는 30분마다, 서로 15분씩 엇갈려 판단하고 파라미터를 바꾼다.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.325\linewidth}\scriptsize\setlength{\parskip}{1.2mm}
+\bd{5}\hspace{3pt}코드가 그 값의 범위를 검사해 넘기면 다음 주문부터 반영되고, 남긴 예측은 나중에 코드가 채점한다.
+
+\bd{6}\hspace{3pt}관측자는 15분마다 전체를 살피다가, 이상이 보이면 전략가를 깨우고 사용자에게 알린다.
+\end{minipage}
+
+\vspace{2.2mm}
+{\color{line}\rule{\linewidth}{0.5pt}}\par\vspace{1.2mm}
+\begin{minipage}[t]{0.49\linewidth}\scriptsize\color{ink2}
+\textbf{\color{ink}키트 기본형과 다른 점}\enspace 키트는 규칙대로 움직이는 상점 하나와 구매자 하나다. 우리는 그 위에 판단하는 LLM 셋(전략가 둘, 분석가 하나)과, 모든 기록을 남기는 보관 열, 감시하고 알리는 관측자를 얹었다. 사람은 두 길로 들어온다. 사용자는 휴대폰(ntfy)으로 관측자와 주고받고, 운영자는 메모와 코드로 전략가에게 닿는다.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.47\linewidth}\scriptsize\color{ink2}
+\textbf{\color{ink}읽는 법}\enspace
+\tikz[baseline=-0.6ex]\node[draw=ink2, line width=1.3pt, rounded corners=2pt, minimum width=5mm, minimum height=2.6mm]{};~굵은 테두리와 이름표는 LLM,\enspace
+\tikz[baseline=-0.6ex]\node[draw=line, line width=0.6pt, rounded corners=2pt, minimum width=5mm, minimum height=2.6mm]{};~얇은 테두리는 코드,\enspace
+\tikz[baseline=-0.6ex]\node[fill=buyfill, draw=aqua, rounded corners=2pt, minimum width=5mm, minimum height=2.6mm]{};~구매 쪽,\enspace
+\tikz[baseline=-0.6ex]\node[fill=sellfill, draw=us, rounded corners=2pt, minimum width=5mm, minimum height=2.6mm]{};~판매 쪽.\enspace
+점선은 비슷한 모듈의 묶음이고, 연한 선은 보관 열을 오가는 기록이다.
+\end{minipage}
 \end{document}
