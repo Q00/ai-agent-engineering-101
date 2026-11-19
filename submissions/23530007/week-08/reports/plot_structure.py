@@ -25,8 +25,8 @@ BOXES = {
     "analyst": (59, 68, 66, BH, "분석가 (큐레이터)", "원장 · 보드 정리, 전략가 요청에 답", NEU_FILL, INK2),
     "buy_judge": (L, 48, BW, BH, "구매 판단", "구매 전략가 · 30분마다", BUY_FILL, AQUA),
     "sell_judge": (R, 48, BW, BH, "판매 판단", "상점 전략가 · 30분마다", SELL_FILL, US),
-    "buyer": (L, 28, BW, BH, "구매자", "market_buyer · review", BUY_FILL, AQUA),
-    "seller": (R, 28, BW, BH, "판매자", "seller_r3 · restock", SELL_FILL, US),
+    "buyer": (L, 28, BW, BH, "구매자", "주문마다 고르고 흥정", BUY_FILL, AQUA),
+    "seller": (R, 28, BW, BH, "판매자", "호가를 내고 재고를 채움", SELL_FILL, US),
 }
 
 
