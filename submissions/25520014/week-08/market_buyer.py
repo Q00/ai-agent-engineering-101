@@ -307,7 +307,7 @@ def value_cap(x, order, m):
     lp = x["list_price"]
     goods = x.get("kind") == "goods"
     value = lp * (1 - m.break_mix()) if goods else lp
-    r = ratio_cap("A", MIN_SHARE / (1 - m.breaks["A"]) if goods else MIN_SHARE)
+    r = ratio_cap("A", MIN_SHARE / (1 - m.breaks["A"]) if goods else MIN_SHARE, food=not goods)
     return value, min(value, order["budget"], lp * r)
 
 
@@ -558,9 +558,14 @@ def haggle(c, rpc_url, task, ask, other, started, rec):
             return buyer.receipt(task)
         if state != "TASK_STATE_INPUT_REQUIRED":
             rec["end"] = f"shop ended ({state})"
-            said(rec, c["shop"], task)
+            if c.get("counter"):                # refused our one offer: not a refusal of the first question
+                rec["counter"]["said"] = buyer.status_text(task)[:200]
+            else:
+                said(rec, c["shop"], task)
             return None
         fit_timeout()
+        if c.get("counter"):
+            buyer.RPC_TIMEOUT = min(buyer.RPC_TIMEOUT, COUNTER_SECS)
         if ask is None:
             rec["end"] = "no price in the shop's message"
             said(rec, c["shop"], task)
@@ -599,6 +604,11 @@ def haggle(c, rpc_url, task, ask, other, started, rec):
             said(rec, c["shop"], task)
             buyer.walk_away(rpc_url, task["id"], rec["end"])
             return None
+        if c.get("counter") and offer is not None:    # the shop answered our one offer over the cap
+            rec["counter"]["reply"] = ask
+            rec["end"] = f"counter {offer} refused, ask {ask} above our cap {c['cap']}"
+            buyer.walk_away(rpc_url, task["id"], rec["end"])
+            return None
         if late or (stalls >= STALLS and ask > c["cap"]):
             rec["end"] = f"ask {ask} above our cap {c['cap']}"
             buyer.walk_away(rpc_url, task["id"], rec["end"])
@@ -606,8 +616,16 @@ def haggle(c, rpc_url, task, ask, other, started, rec):
         goal = min(ask, c["cap"])
         nxt = round(min(target, ask) * OPEN_UNDER) if offer is None else round(offer + (goal - offer) * RAISE)
         nxt = min(max(nxt, (offer or 0) + 1, floor), goal)   # always a raise, never past the cap or the ask
+        if c.get("counter"):
+            nxt = c["cap"]
         offer = nxt
         rec["offers"].append(offer)
+        if c.get("counter"):
+            text = f"I can pay {offer} for it, and not more. Deal at {offer}?"
+            history.append(f"Me: {text}")
+            task = buyer.send(rpc_url, text, task["id"])
+            ask = ask_in(task, c, offer)
+            continue
         # name another shop's quote only when it is under every ask this shop gave (11-04 17:05: moss-and-oak raised
         # 303872 -> 339154 after our first offer, we named lee-sungsoo's 324608, and it closed at 324608)
         low = min(rec["asks"][first:])
@@ -631,6 +649,17 @@ def haggle(c, rpc_url, task, ask, other, started, rec):
 # with; when all are, the order ends after the quotes. Food is left as it was (not measured). Undo: False.
 QUIT_OVER_CAP = True
 QUIT_LEAVE_SECS = 2         # at most this long for each CancelTask before the order ends
+# 11-14 (owner, a 2 h trial): at the shops below, other buyers paid 6-8% under the first ask they gave us for the same
+# SKU and grade within 10 minutes (24 h, 460 of our over-cap quits: lee-sungsoo 227 at 0.917 of our ask, kimauve 85
+# 0.930, yms979 57 0.940, thisjonghoon 26 0.931), and under our cap in 207 of them; our ask was a median 4% over the
+# cap (wk8-test/missed_goods.py). So when every goods first ask is over the cap and one of these shops asked at most
+# COUNTER_X x its cap, it gets one offer at the cap (a fixed line, no model) and an answer within COUNTER_SECS; a
+# deal only at or under the cap, otherwise the order ends as before. A refusal of the counter is kept in
+# rec["counter"], not as the shop's answer to the first question, so it does not put the shop on the avoid list.
+# Undo: COUNTER_SHOPS = ().
+COUNTER_SHOPS = ()            # 11-14 16:10 off: 22 counters 14:35-16:06, none taken (the shops answer their first ask again)
+COUNTER_X = 1.08
+COUNTER_SECS = 15
 
 
 # 11-10: the cap was the best case (an A under a warranty) whatever the shop offered, so we haggled a B or C down to
@@ -654,9 +683,9 @@ def grade_cap(c, text, m, rec):
     if not g and goods:
         return
     g = g.group(1).upper() if g else None
-    r = ratio_cap(g or "B", MIN_SHARE / (1 - m.breaks[g]) if goods else MIN_SHARE)
+    r = ratio_cap(g or "B", MIN_SHARE / (1 - m.breaks[g]) if goods else MIN_SHARE, food=not goods)
     if g:
-        c["grade"], c["floor"] = g, int(c["list"] * COST[g][0])
+        c["grade"], c["floor"] = g, int(c["list"] * (COST if goods else FOOD_COST)[g][0])
         rec.setdefault("quote_grades", {})[c["shop"]] = g + ("w" if goods and WARRANTY_IN.search(text) else "")
     cap = int(max(0, c["list"] * r))
     if cap < c["cap"]:
@@ -676,6 +705,14 @@ BREAK_WINDOW_H = 6          # goods break up to 6 h after the sale (agent.md): a
 # at a time) the 10th-90th percentiles were A 0.57-0.73, B 0.42-0.59, C 0.27-0.45, food and goods alike. Under the old
 # cap (0.68 of the list whatever the grade) a C at 0.68 kept about half the margin and an A at 0.72 (0.81) was refused.
 COST = {"A": (0.55, 0.75), "B": (0.40, 0.60), "C": (0.25, 0.45)}
+# 11-13 (owner): food is not like that. A food grade is the shelf life left when the unit is sold, not what the unit
+# cost; 48 h of food settles with the unit's cost in the supply ledger (market, 100k): cost / list by the grade sold
+# A 0.548, B 0.507, C 0.468 (sd 0.05-0.07). With the goods ranges our food A looked worth 0.897 and was 0.746 (402
+# deals, 57% under min_share, those at 0.643) and our food C looked 0.787 and was 0.922. Replay of our 48 h: the food
+# caps A 0.745 -> 0.668, B 0.630 -> 0.638, C 0.516 -> 0.607 of the list drop 241 deals that kept 0.669 (199 A), the
+# end Saved +0.0025 (wk8-test/food_fix_replay.py). Same width as the goods ranges (0.2, sd 0.058), centred on the
+# means. Undo: FOOD_COST = COST.
+FOOD_COST = {"A": (0.45, 0.65), "B": (0.41, 0.61), "C": (0.37, 0.57)}
 FOOD_MIX = {"A": 0.25, "B": 0.50, "C": 0.25}    # food grades as supplied (agent.md), for a message that names none
 # least expected share of the shop's margin a deal must keep (buyer_policy; held by the owner): cap and accept. Replay
 # of our last 48 h of food orders (wk8-test/p36_replay.py), projected to 11-17 23:59: Saved 0.7348 as it was,
@@ -683,12 +720,12 @@ FOOD_MIX = {"A": 0.25, "B": 0.50, "C": 0.25}    # food grades as supplied (agent
 MIN_SHARE = P["min_share"]
 
 
-def share_kept(g, r):
+def share_kept(g, r, food=False):
     """Expected share of the shop's margin kept at price ratio r (price / list) on a unit of grade g, its cost
-    uniform over the grade's range: min(1, (1 - r) / (1 - cost)). g None: the food supply mix."""
+    uniform over the grade's range (FOOD_COST for food): min(1, (1 - r) / (1 - cost)). g None: the food supply mix."""
     if g not in COST:
-        return sum(w * share_kept(k, r) for k, w in FOOD_MIX.items())
-    lo, hi = COST[g]
+        return sum(w * share_kept(k, r, food) for k, w in FOOD_MIX.items())
+    lo, hi = (FOOD_COST if food else COST)[g]
     if r <= lo:
         return 1.0
     if r >= 1:
@@ -697,14 +734,14 @@ def share_kept(g, r):
     return ((1 - r) * math.log((1 - lo) / (1 - top)) + (hi - top)) / (hi - lo)
 
 
-def ratio_cap(g, share):
-    """The highest price ratio at which share_kept(g, .) is still `share` (0 when no price reaches it)."""
+def ratio_cap(g, share, food=False):
+    """The highest price ratio at which share_kept(g, ., food) is still `share` (0 when no price reaches it)."""
     if share > 1:
         return 0.0
     lo, hi = 0.0, 1.0
     for _ in range(30):
         mid = (lo + hi) / 2
-        lo, hi = (mid, hi) if share_kept(g, mid) >= share else (lo, mid)
+        lo, hi = (mid, hi) if share_kept(g, mid, food) >= share else (lo, mid)
     return lo
 
 
@@ -724,7 +761,7 @@ def accept_policy(order, c, price, m, receipt=None, list_price=None):
     if c["kind"] == "food":
         hours = order.get("use_within_hours")
         acc = {"cert": True, "min_hours_left": round(hours + FOOD_MARGIN_H, 2)} if hours else {"cert": True}
-        ok = [g for g in "ABC" if share_kept(g, r) >= MIN_SHARE]
+        ok = [g for g in "ABC" if share_kept(g, r, food=True) >= MIN_SHARE]
         if ok != ["A", "B", "C"]:
             acc["grades"] = ok or ["A"]
         return acc
@@ -870,10 +907,25 @@ def main():
     # 0.55 of the list keeps 0.70, an A at 0.70 keeps 0.86); goods count the grade's break as under a warranty.
     def kept(t):
         c, ask = t[0], t[3] if t[3] is not None else t[0]["expect"]
-        s = share_kept(c.get("grade"), ask / c["list"])
+        s = share_kept(c.get("grade"), ask / c["list"], food=c.get("kind") != "goods")
         return s * (1 - m.breaks[c.get("grade") or "A"]) if c.get("kind") == "goods" else s
     live.sort(key=lambda t: (t[3] is not None and t[3] > t[0]["cap"], -kept(t)))
-    if QUIT_OVER_CAP and order.get("kind") == "goods" and live and all(over_cap(t) for t in live):
+    counter = []
+    if QUIT_OVER_CAP and COUNTER_SHOPS and order.get("kind") == "goods" and live and all(over_cap(t) for t in live):
+        counter = [t for t in live if t[0]["shop"] in COUNTER_SHOPS and t[0]["cap"] > 0
+                   and t[3] <= COUNTER_X * t[0]["cap"] and t[2]["status"]["state"] == "TASK_STATE_INPUT_REQUIRED"]
+    if counter:                                  # one offer at the cap to the best such shop, the rest are left
+        t0 = counter[0]
+        t0[0]["counter"] = True
+        rec["counter"] = {"shop": t0[0]["shop"], "ask": t0[3], "cap": t0[0]["cap"]}
+        rec["shop_ends"] = [f"{t[0]['shop']}: first quote {t[3]} above our cap {t[0]['cap']}, not haggled"
+                            for t in live if t is not t0]
+        for c, u, task, _ in live:
+            if c is not t0[0] and task["status"]["state"] == "TASK_STATE_INPUT_REQUIRED":
+                threading.Thread(target=buyer.walk_away, args=(u, task["id"], "the price is over our budget"),
+                                 daemon=True).start()
+        live = [t0]
+    elif QUIT_OVER_CAP and order.get("kind") == "goods" and live and all(over_cap(t) for t in live):
         c, _, _, ask = live[0]                   # the sort put the most margin kept first
         rec.update(shop=c["shop"], sku=c["sku"], list=c["list"], cap=c["cap"], expect=c["expect"], es=c["es"],
                    tried=0, quit_over_cap=True)

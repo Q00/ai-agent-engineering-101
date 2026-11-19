@@ -5,8 +5,9 @@ with claim C or B), on fake shops (no network, no model).
 
 Part 1, doomed() on its own: the food order needs 540.5 h of a 720 h shelf life (75%), so a C claim (at most 45%,
 324 h) and a B claim (at most 80%, 576 h) differ: C is sure to fail, B may pass. Goods: a claim outside the grades.
-Part 2, the flow: cheap signs at once with claim C, ok closes at 16000 with claim A. The buyer must pass on cheap's
-receipt and close with ok.
+Part 2, the flow: cheap signs at once with claim C, ok closes at 12500 with claim A. The buyer must pass on cheap's
+receipt and close with ok. (11-14: ok closed at 16000, 0.80 of the list, over every cap since 11-12 (patch 3.6: A
+0.745, food A 0.668 since 11-13 23:18), so the flow failed on the cap; the prices now sit under the cap of a unit that names no grade, B 0.638.)
 """
 import io
 import json
@@ -69,8 +70,8 @@ def send(url, text, task_id=None):
         return task("TASK_STATE_COMPLETED", "Deal at 9000.", shop, {"price": 9000, "item": SKU, "claim": "C"})
     n = sum(1 for s, _ in sent if s == "ok")
     if n >= 3:
-        return task("TASK_STATE_COMPLETED", "Deal at 16000.", shop, {"price": 16000, "item": SKU, "claim": "A"})
-    return task("TASK_STATE_INPUT_REQUIRED", "The price is 17000.", shop)
+        return task("TASK_STATE_COMPLETED", "Deal at 12500.", shop, {"price": 12500, "item": SKU, "claim": "A"})
+    return task("TASK_STATE_INPUT_REQUIRED", "The price is 13500.", shop)
 
 
 buyer.find_endpoint = lambda base: (None, base)
