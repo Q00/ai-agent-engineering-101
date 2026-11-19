@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+date: Tue, 29 Sep 2026 12:04:47 GMT
+server: uvicorn
+content-length: 1419
+content-type: application/json
+
+{"jsonrpc":"2.0","id":2,"result":{"cacheScope":"private","resultType":"complete","tools":[{"description":"Evaluate an arithmetic expression. Numbers and + - * / ** only.","inputSchema":{"type":"object","properties":{"expression":{"title":"Expression","type":"string"}},"required":["expression"],"title":"calculatorArguments"},"name":"calculator","outputSchema":{"properties":{"result":{"title":"Result","type":"string"}},"required":["result"],"title":"calculatorOutput","type":"object"}},{"description":"Read a text file inside the server working directory, up to 4000 characters.","inputSchema":{"type":"object","properties":{"path":{"title":"Path","type":"string"}},"required":["path"],"title":"read_fileArguments"},"name":"read_file","outputSchema":{"properties":{"result":{"title":"Result","type":"string"}},"required":["result"],"title":"read_fileOutput","type":"object"}},{"description":"Return current time, or calendar fields and day number for an ISO date.","inputSchema":{"type":"object","properties":{"timezone":{"default":"Asia/Seoul","title":"Timezone","type":"string"},"date_str":{"default":"","title":"Date Str","type":"string"}},"title":"clockArguments"},"name":"clock","outputSchema":{"properties":{"result":{"title":"Result","type":"string"}},"required":["result"],"title":"clockOutput","type":"object"}}],"ttlMs":0,"_meta":{"io.modelcontextprotocol/serverInfo":{"name":"week01-tools","version":""}}}}
