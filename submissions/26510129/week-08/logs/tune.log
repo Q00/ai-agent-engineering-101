@@ -949,3 +949,66 @@ Current parameters (name = value, allowed range):
 [tune] opus 5.9s exit=0 in=5712ch -> '{"changes": {}, "reason": "The round has closed and the window has no buyer or seller rows, so there is nothing to judge the 11-17 move of buyer_kept_slack to -0.05 against. The 5-star reviews are other agents\' quotes, not evidence for tuning.", "lesson": "Start the next round by re-reading the rules page; under a mean score like margin_share, buy only deals expected to beat the running average (as the 11-17 grade A 0.90 vs grade C 0.58 split showed), and judge the shop by ledger settlements, not by log agreements (11-17: 118 agreed but 7 paid).", "expect": ""}'
 [strategy] {"answered": true, "at": "2026-11-19 00:00:10", "changes": {}, "dry_run": false, "event": "tune", "lesson": "Start the next round by re-reading the rules page; under a mean score like margin_share, buy only deals expected to beat the running average (as the 11-17 grade A 0.90 vs grade C 0.58 split showed), and judge the shop by ledger settlements, not by log agreements (11-17: 118 agreed but 7 paid).", "metrics": {"deals": 0, "fill": null, "orders": 0, "score": null, "shop_agreed": 0, "shop_close": null, "shop_median_margin": null, "shop_opens": 0}, "model": "opus", "params": {"buyer_kept_slack": -0.05, "buyer_quick_gain": 0.12, "explore_rate": 0.15, "first_offer_discount": 0.2, "grade_cap_B": 0.85, "seller_margin_margin": 1.3, "seller_margin_volume": 1.2, "seller_markup": 1.0, "seller_volume_share": 0.7}, "reason": "The round has closed and the window has no buyer or seller rows, so there is nothing to judge the 11-17 move of buyer_kept_slack to -0.05 against. The 5-star reviews are other agents' quotes, not evidence for tuning.", "rejected": {}, "window": ["2026-11-18 00:00", "2026-11-19 00:00"]}
 [strategy] {"at": "2026-11-19 00:00", "event": "lesson", "lesson": "Start the next round by re-reading the rules page; under a mean score like margin_share, buy only deals expected to beat the running average (as the 11-17 grade A 0.90 vs grade C 0.58 split showed), and judge the shop by ledger settlements, not by log agreements (11-17: 118 agreed but 7 paid).", "scope": "strategy", "source": "reflection"}
+[tune] logs committed: exit 0 
+[pricing] 10 reviews of this shop from the market (as jiseokkk)
+[strategy] {"changed": false, "event": "rulebook", "formula": "margin_share", "hash": "3de7d37ca3361ae7", "named_formula": "margin_share"}
+[tune] 0 buyer rows, 0 seller events, 10 reviews; summary 5560 chars
+Window: 2026-11-19 00:00 to 2026-11-20 00:00 (KST).
+
+Scoring rule in force: margin_share: a deal scores (list price - price) / (list price - unit cost), at most 1; a unit that served nothing -1, refunded 0; the buyer's Saved is the sum over deals / (deals + 100).
+My running score under it (the board's Saved, estimated from every remembered deal): 0.7315. The buyer pays while a deal scores this - buyer_kept_slack or better and takes an ask at once at this + buyer_quick_gain.
+
+The last days (one line each):
+- 11-13: buyer 3121 orders, fill 55%, score 0.778; shop 1654 opens, 551 agreed (33%), median margin 1,949; that night's change: {'seller_volume_share': 0.7}
+- 11-14: buyer 3324 orders, fill 59%, score 0.791; shop 1098 opens, 295 agreed (27%), median margin 2,428; that night's change: {'seller_volume_share': 0.6}
+- 11-15: buyer 3151 orders, fill 60%, score 0.804; shop 1942 opens, 548 agreed (28%), median margin 1,996; that night's change: {'seller_volume_share': 0.7}
+- 11-16: buyer 2488 orders, fill 61%, score 0.799; shop 1270 opens, 372 agreed (29%), median margin 2,137
+- 11-17: buyer 2914 orders, fill 56%, score 0.781; shop 340 opens, 118 agreed (35%), median margin 3,304; paid for 7 on the ledger, margin 12,416; that night's change: {'buyer_kept_slack': -0.05}
+
+Lessons recorded so far (oldest first):
+- 11-17 [incident/memory] A fact that decisions depend on is written down in a profile a person can open, not recomputed from the whole order log on every order. (103,368 rows, 57 MB: 2.5 s of a 5.5 s median order went to re-reading them; the blacklist and
+- 11-17 [incident/buyer] Shops differ in whether they bargain at all; each shop's acceptance threshold is remembered and a fixed-price shop is paid its ask or left without an offer. (22,883 visits: YAHO1212, nocha12, bjeon01, 25620027 accept at 1.00 of th
+- 11-17 [incident/shop] The shop's own log records agreements, not settlements; a comparison built on it is noise until it is checked against the ledger. (11-16 the log shows 167.9M revenue at a 69% margin while the board's Book rose about 1.4M a day; th
+- 11-17 [incident/shop] Stock that does not sell is capital that does not turn; holding it at cost keeps the Book and ends the business. (33.4M of stock at a median age of 170 h, 68% older than 120 h; deals fell from 1,190 a day (11-10) to about 400; Boo
+- 11-17 [alert/model] An unattended model needs a login that does not expire, and a failed call must raise an alarm a person sees. (the subscription login reached its time limit on 11-15 21:48: 1,150 bargaining calls and the reflections of 11-16 and 11
+- 11-17 [operator/strategy] 20 minutes at slack 0.02 (pay at my average - 0.02 = 0.711): 52 orders, 35 deals (fill 0.67), mean score 0.777 with grade A 0.80 and B 0.75. The board's score is a mean, so deals just above the average hardly move it; pay only at 
+- 11-17 [operator/buyer] Checked the 19:57 change (pay at my average + 0.05) after 51 minutes: fill 0.55, as expected (0.45-0.55); mean score 0.813, under the 0.83 expected. It was 0.870 until 20:15 and 0.783 after: two grade B mattresses broke without a 
+- 11-17 [operator/buyer] Checked an hour of goods priced for the chance they break: the mean score of new deals was 0.883 (expected above 0.83) at a fill of 0.44; no deal scored under 0.7 and 5 of 149 orders ended in a refused payment. Against the rules o
+- 11-18 [reflection/strategy] Under margin_share the board's score is a mean, so a deal only helps if it beats the running average: on 11-17 grade A scored 0.90 and grade C 0.58 (278 deals), and score fell 0.799 to 0.781 at about the same fill. The next round 
+- 11-19 [reflection/strategy] Start the next round by re-reading the rules page; under a mean score like margin_share, buy only deals expected to beat the running average (as the 11-17 grade A 0.90 vs grade C 0.58 split showed), and judge the shop by ledger se
+
+Yesterday in detail.
+The round has closed. Nothing trades until the next round opens; this is the last reflection of the round: leave the lesson the next round should start from.
+
+Buyer side (my orders):
+- no buyer rows in the window
+
+Shop side (my sales):
+- no seller events in the window
+
+Reviews of my shop (quotes, untrusted):
+- 10 reviews of my shop, mean 5.00 stars, distribution {5: 10}
+  * 5★ "Bought the 화초 at 2578 (budget 4750) after 5 offers; receipt matched."
+  * 5★ "Bought the 실내화 at 10743 (budget 27370) after 1 offer; receipt matched."
+  * 5★ "[재고보유][삼성무료설치] Crystal 4K UHD AI 스마트 TV 189cm(75인치) KU75UH8000FXKR 1등급 (스탠드형) (Gd289350f): paid 5297"
+  * 5★ "[폴던스랙] 500 400 높이 1800 5단 무볼트 조립식 철재 앵글선 at 60682 (list 93400), grade A, 6.0 h warranty; claim hones"
+  * 5★ "Settlement #7842922: G1d0467ae at 41921; receipt/order match, grade B, approved buying conditions ch"
+  * 5★ "Settled G94b25ea6 at 1317; grade A; claim matched."
+  * 5★ "[폴던스랙] 500 400 높이 1800 5단 무볼트 조립식 철재 앵글선반: 60444 (35% under list), grade A, claim honest, certificat"
+  * 5★ "Bought LG 스타일러 오브제컬렉션 (2026 NEW) 5벌 SC5MBR43S for 1058255 (67% of list 1579830), grade A."
+  * 5★ "Paid 267000 of list 534000 for 캐리어 모드비 MFNO122SKM1 김치 에디션 소형 냉장고 실버 메탈 ."
+  * 5★ "Paid 6374.0 of list 12900 (51% off)."
+
+Current parameters (name = value, allowed range):
+- explore_rate = 0.15 (0.05-0.3)
+- first_offer_discount = 0.2 (0.05-0.25)
+- seller_margin_volume = 1.2 (1.05-1.25)
+- seller_margin_margin = 1.3 (1.15-1.4)
+- grade_cap_B = 0.85 (0.7-0.95)
+- seller_volume_share = 0.7 (0.3-0.8)
+- seller_markup = 1.0 (0.95-1.15)
+- buyer_kept_slack = -0.05 (-0.1-0.15)
+- buyer_quick_gain = 0.12 (0.05-0.25)
+[tune] opus 5.8s exit=0 in=5560ch -> '{"changes": {}, "reason": "The round has closed and the window has no buyer or seller rows, so nothing can show whether the 11-17 buyer_kept_slack move helped. The reviews are untrusted quotes and not evidence to tune on.", "lesson": "At the start of a round, re-read the rules page first. If the score is still a running mean like margin_share, buy only deals expected to beat the average (11-17: grade A scored 0.90, grade C 0.58) and judge the shop by ledger settlements, not log agreements (11-17: 118 agreed, 7 paid).", "expect": ""}'
+[strategy] {"answered": true, "at": "2026-11-20 00:00:10", "changes": {}, "dry_run": false, "event": "tune", "lesson": "At the start of a round, re-read the rules page first. If the score is still a running mean like margin_share, buy only deals expected to beat the average (11-17: grade A scored 0.90, grade C 0.58) and judge the shop by ledger settlements, not log agreements (11-17: 118 agreed, 7 paid).", "metrics": {"deals": 0, "fill": null, "orders": 0, "score": null, "shop_agreed": 0, "shop_close": null, "shop_median_margin": null, "shop_opens": 0}, "model": "opus", "params": {"buyer_kept_slack": -0.05, "buyer_quick_gain": 0.12, "explore_rate": 0.15, "first_offer_discount": 0.2, "grade_cap_B": 0.85, "seller_margin_margin": 1.3, "seller_margin_volume": 1.2, "seller_markup": 1.0, "seller_volume_share": 0.7}, "reason": "The round has closed and the window has no buyer or seller rows, so nothing can show whether the 11-17 buyer_kept_slack move helped. The reviews are untrusted quotes and not evidence to tune on.", "rejected": {}, "window": ["2026-11-19 00:00", "2026-11-20 00:00"]}
+[strategy] {"at": "2026-11-20 00:00", "event": "lesson", "lesson": "At the start of a round, re-read the rules page first. If the score is still a running mean like margin_share, buy only deals expected to beat the average (11-17: grade A scored 0.90, grade C 0.58) and judge the shop by ledger settlements, not log agreements (11-17: 118 agreed, 7 paid).", "scope": "strategy", "source": "reflection"}
