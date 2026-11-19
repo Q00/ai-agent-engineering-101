@@ -1,0 +1,270 @@
+"""A harness-driven seller exposed as an A2A server (a2a-sdk 1.2.x, JSON-RPC binding).
+
+    python seller.py --port 9999
+
+Started from the lab's rule-based seller_agent.py. The A2A side is unchanged; every
+decision (asking price, counteroffers, accept, reject) comes from the harness:
+
+    claude -p --model sonnet --tools "" --setting-sources "" --no-session-persistence
+
+The harness answers in JSON. The reserve is in the prompt and is also enforced in code:
+an ask below the reserve is raised to the reserve, and an accept below it becomes a
+counteroffer at the reserve.
+
+Challenge 1: the shop sells from catalog.json (3000 items). A first message that names
+an item exactly ("I want to buy a lamp") goes straight to it. Otherwise two harness
+calls: the first turns the request into a spec (kinds, sizes, books, seats), search.py
+keeps the items that fit it and ranks them, and the second picks one of the top 20 by
+id. Code checks that the id is one of the candidates, and the reserve comes from that
+catalog entry.
+
+Challenge 2: `--shop N` (1 to 20) turns this into one shop of a directory. Shop N sells
+4 of the catalog's kinds (every kind is sold by several shops) with its reserves
+multiplied by a seeded factor between 0.9 and 1.4, and its Agent Card says which kinds.
+Without --shop it is the trade test's shop with the whole catalog.
+"""
+import argparse
+import asyncio
+import json
+import random
+import re
+import sys
+import tempfile
+
+import uvicorn
+from starlette.applications import Starlette
+
+from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
+from a2a.server.agent_execution import AgentExecutor, RequestContext
+from a2a.server.events import EventQueue
+from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
+from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
+from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
+
+from search import Catalog
+
+NAME = "Sonnet Shop"
+CATALOG = Catalog()
+SHOP_KINDS = 4
+
+
+def open_shop(n):
+    """Shop n of the directory: its name, its kinds, and a catalog with its own reserves."""
+    global NAME, CATALOG
+    full = Catalog()
+    kinds = [k for k in full.kinds if k not in ("lamp", "chair", "bookshelf")]  # the trade test's plain items
+    mine = [kinds[(3 * n + j) % len(kinds)] for j in range(SHOP_KINDS)]
+    factor = random.Random(n).uniform(0.9, 1.4)
+    NAME = f"Sonnet Shop {n}"
+    CATALOG = Catalog(items=[dict(i, reserve=int(i["reserve"] * factor)) for i in full.items if i["kind"] in mine])
+    log(f"[shop] {NAME}: {', '.join(mine)}; reserves x{factor:.2f}; {len(CATALOG.items)} items")
+MAX_ROUNDS = 10  # safety net so a task cannot run forever
+HARNESS = ["claude", "-p", "--model", "sonnet", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
+WORKDIR = tempfile.mkdtemp(prefix="seller-harness-")  # empty dir: no project instructions
+
+SPEC = """You work at a furniture shop. A buyer wrote:
+{request}
+
+Turn the request into a search spec. Kinds the shop sells: {kinds}.
+Answer with one JSON object and nothing else; use null for anything the buyer does not say:
+{{"kinds": [<kinds from the list that could fit>], "wooden": true | null,
+ "max_height_cm": <int> | null, "min_height_cm": <int> | null, "max_width_cm": <int> | null,
+ "books": <int> | null, "seats": <int> | null}}
+Turn everyday references into numbers (a desk or a table is about 75 cm tall).
+"""
+
+PICK = """You are a furniture shop owner. A buyer wrote:
+{request}
+
+These catalog items matched a search for the request (id | description):
+{candidates}
+
+Pick the one item that best fits what the buyer describes, including any sizes or
+amounts they mention. Listings are short and leave out most features: a feature the
+listing does not mention (lumbar support, armrests, adjustable height) is not a reason
+to pick none, so pick the closest item of the right kind. Pick none only when no
+candidate is the kind of thing they want.
+Answer with one JSON object and nothing else:
+{{"id": "<one id from the list>" | null, "why": "<one short sentence>"}}
+"""
+
+PROMPT = """You are a shop owner negotiating with a buyer the price of this item: {item}
+Your reserve price is {reserve}: never ask below it and never accept an offer below it.
+Above the reserve, a higher price is better, but a deal is better than no deal.
+
+Negotiation so far:
+{history}
+
+Decide your next move. Answer with one JSON object and nothing else:
+{{"action": "ask" | "accept" | "reject", "price": <integer>, "message": "<one short sentence to the buyer>"}}
+- "ask": you name your asking price (an opening price or a counteroffer) in "price".
+- "accept": you accept the buyer's latest offer; "price" is that offer.
+- "reject": you end the negotiation without a deal.
+"""
+
+
+def log(*a):
+    print(*a, file=sys.stderr, flush=True)
+
+
+async def harness(prompt):
+    proc = await asyncio.create_subprocess_exec(
+        *HARNESS, cwd=WORKDIR,
+        stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+    out, err = await asyncio.wait_for(proc.communicate(prompt.encode()), timeout=150)
+    return out.decode()
+
+
+async def pick(request):
+    """The catalog item the buyer asks for, or None."""
+    hit = CATALOG.exact(request)
+    if hit:
+        return hit
+    spec = await ask_json(SPEC.format(request=request, kinds=", ".join(CATALOG.kinds)),
+                          lambda d: isinstance(d.get("kinds"), list))
+    log(f"[spec] {json.dumps(spec)}")
+    candidates = CATALOG.search(request, spec=spec)
+    if not candidates:
+        return None
+    log(f"[search] {len(candidates)} candidates: " + " ".join(c["id"] for c in candidates))
+    by_id = {c["id"]: c for c in candidates}
+    prompt = PICK.format(request=request, candidates="\n".join(f"{c['id']} | {c['description']}" for c in candidates))
+    # code-side guard: only a candidate can be sold
+    d = await ask_json(prompt, lambda d: d.get("id") is None or d.get("id") in by_id)
+    return by_id.get(d["id"]) if d else None
+
+
+async def ask_json(prompt, valid):
+    """The harness's answer as a dict that passes valid(), or None after two tries."""
+    for attempt in range(2):
+        raw = await harness(prompt)
+        log(f"[harness] {raw.strip()}")
+        m = re.search(r"\{.*\}", raw, re.S)
+        try:
+            d = json.loads(m.group())
+            if isinstance(d, dict) and valid(d):
+                return d
+        except (AttributeError, TypeError, ValueError):
+            pass
+        log(f"[seller] unusable answer, attempt {attempt + 1}")
+    return None
+
+
+async def decide(item, history):
+    prompt = PROMPT.format(item=item["description"], reserve=item["reserve"], history="\n".join(history))
+    for attempt in range(2):
+        raw = await harness(prompt)
+        log(f"[harness] {raw.strip()}")
+        m = re.search(r"\{.*\}", raw, re.S)
+        try:
+            d = json.loads(m.group())
+            if d["action"] in ("ask", "accept", "reject") and isinstance(d["price"], (int, float)):
+                return d["action"], int(d["price"]), str(d.get("message", ""))
+        except (AttributeError, KeyError, TypeError, ValueError):
+            pass
+        log(f"[seller] unparsable answer, attempt {attempt + 1}")
+    return None
+
+
+class Seller(AgentExecutor):
+    def __init__(self):
+        self.open = {}  # task id -> {"item", "ask", "rounds", "history"}
+
+    async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
+        task = context.current_task
+        if task is None:
+            task = new_task_from_user_message(context.message)
+            await event_queue.enqueue_event(task)
+        up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
+        say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
+        text = get_message_text(context.message) or ""
+        deal = self.open.get(task.id)
+
+        if deal is None:  # first message: which item?
+            item = await pick(text)
+            if item is None:
+                await up.reject(say("Sorry, nothing in our catalog fits that."))
+                return
+            log(f"[seller] task={task.id[:8]} picked {item['id']} {item['name']} reserve={item['reserve']}")
+            deal = self.open[task.id] = {"item": item, "ask": None, "rounds": 0,
+                                         "history": [f"Buyer: {text}"]}
+            offer = None
+        else:
+            m = re.search(r"\d+(?:\.\d+)?", text)
+            if m is None:
+                await up.requires_input(say(f"Send your offer as a number. Asking {deal['ask']}."))
+                return
+            offer = int(float(m.group()))
+            deal["rounds"] += 1
+            deal["history"].append(f"Buyer offers {offer}.")
+
+        item, reserve = deal["item"], deal["item"]["reserve"]
+        decision = await decide(item, deal["history"])
+        if decision is None:  # harness failed twice: hold the current ask
+            action, price, message = "ask", deal["ask"] or reserve, ""
+        else:
+            action, price, message = decision
+
+        # code-side guards on the reserve
+        if action == "accept" and (offer is None or offer < reserve):
+            log(f"[guard] accept of {offer} below reserve {reserve} -> ask {max(price, reserve)}")
+            action, price = "ask", max(price, reserve)
+        if action == "ask" and price < reserve:
+            log(f"[guard] ask {price} below reserve {reserve} -> {reserve}")
+            price = reserve
+        if action == "ask" and deal["rounds"] >= MAX_ROUNDS:
+            action = "reject"
+        log(f"[seller] task={task.id[:8]} {item['id']} offer={offer} -> {action} {price}")
+
+        if action == "accept":
+            receipt = {"seller": NAME, "item": item["name"], "id": item["id"], "price": offer}
+            await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+            await up.complete(say(f"{message} Deal: {item['name']} at {offer}."))
+            del self.open[task.id]
+        elif action == "reject":
+            await up.reject(say(f"{message} No deal."))
+            del self.open[task.id]
+        else:
+            deal["ask"] = price
+            deal["history"].append(f"You ask {price}.")
+            # the asking price goes last: buyers read the last number as the ask
+            await up.requires_input(say(f"{message} Asking price: {price}"))
+
+    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
+        task = context.current_task
+        self.open.pop(task.id, None)
+        await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+
+
+def build(port):
+    url = f"http://127.0.0.1:{port}/"
+    card = AgentCard(
+        name=NAME,
+        description=f"Sells {len(CATALOG.items)} pieces of furniture: {', '.join(CATALOG.kinds)}. "
+                    "Describe what you need; a model picks the item and negotiates the price.",
+        version="1.0.0",
+        default_input_modes=["text/plain"],
+        default_output_modes=["application/json", "text/plain"],
+        capabilities=AgentCapabilities(streaming=True),
+        supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", url=url, protocol_version="1.0")],
+        skills=[AgentSkill(
+            id="negotiate",
+            name="Negotiate a purchase",
+            description="Ask for an item, then send a price. The shop answers with a counteroffer or a receipt.",
+            tags=["shopping", "negotiation"] + CATALOG.kinds,
+            examples=["I want to buy a lamp", "something wooden to keep about 40 books", "90"],
+        )],
+    )
+    handler = DefaultRequestHandler(agent_executor=Seller(), task_store=InMemoryTaskStore(), agent_card=card)
+    return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--port", type=int, default=9999)
+    ap.add_argument("--shop", type=int, help="run as shop N of the challenge 2 directory")
+    args = ap.parse_args()
+    if args.shop:
+        open_shop(args.shop)
+    uvicorn.run(build(args.port), host="127.0.0.1", port=args.port, log_level="warning")
