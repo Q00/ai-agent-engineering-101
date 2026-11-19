@@ -1,0 +1,20 @@
+provider=openrouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.7 host=week01-loop max_moves=8
+
+--- scenario 1 (a used bicycle), reserve=80, budget=120 ---
+[open] neg-747c91f4 condition=server_inject item=a used bicycle reserve=80 budget=120
+[turn] move 1, buyer
+[error] ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+
+--- scenario 2 (a desk lamp), reserve=30, budget=45 ---
+[open] neg-dd119d00 condition=server_inject item=a desk lamp reserve=30 budget=45
+[turn] move 1, buyer
+[error] ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+
+--- scenario 3 (a mechanical keyboard), reserve=90, budget=70 ---
+[open] neg-829d0186 condition=server_inject item=a mechanical keyboard reserve=90 budget=70
+[turn] move 1, buyer
+[error] ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+
+--- scenario 4 (a second-hand textbook), reserve=25, budget=20 ---
+[open] neg-7e1cf433 condition=server_inject item=a second-hand textbook reserve=25 budget=20
+[turn] move 1, buyer

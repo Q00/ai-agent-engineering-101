@@ -1,0 +1,27 @@
+===== lamp, budget 120
+buyer: lamp, budget 120, seller http://127.0.0.1:9102, harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence
+card: 'Lamp Shop', JSONRPC at http://127.0.0.1:9102/, skills ['negotiate']
+  -> 'I want to buy a lamp'
+  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+  [harness 4.0s] '{"action": "offer", "price": 100}'
+  -> '100' (taskId 21e60f4e)
+  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+result: TASK_STATE_COMPLETED, bought at 100.0, 4s
+exit 0
+===== bookshelf, budget 230
+buyer: bookshelf, budget 230, seller http://127.0.0.1:9102, harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence
+card: 'Lamp Shop', JSONRPC at http://127.0.0.1:9102/, skills ['negotiate']
+  -> 'I want to buy a bookshelf'
+  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+  [harness 3.7s] '{"action": "offer", "price": 200}'
+  -> '200' (taskId 13628b5f)
+  <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 269.
+  [harness 4.1s] '{"action": "offer", "price": 210}'
+  -> '210' (taskId 13628b5f)
+  <- TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 260.
+  [harness 5.3s] '{"action": "offer", "price": 240}'
+[guard] offer at 240 is above the budget 230; offering 230
+  -> '230' (taskId 13628b5f)
+  <- TASK_STATE_REJECTED | No deal at 230.
+result: TASK_STATE_REJECTED, nothing bought, 13s
+exit 0

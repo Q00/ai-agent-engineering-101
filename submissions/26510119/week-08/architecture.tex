@@ -1,0 +1,87 @@
+% Architecture of the week-08 (midterm) shop and buyer agents.
+% Build with XeLaTeX: tectonic architecture.tex  (Overleaf: set the compiler to XeLaTeX).
+% Korean text uses Noto Sans CJK KR.
+\documentclass[11pt]{article}
+\usepackage[a4paper,landscape,margin=12mm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Noto Sans CJK KR}
+\setmonofont{Noto Sans Mono CJK KR}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\pagestyle{empty}
+
+\definecolor{kit}{HTML}{8C9096}
+\definecolor{navy}{HTML}{1F3A5F}
+\definecolor{navybg}{HTML}{EDF1F6}
+\definecolor{llm}{HTML}{B85C1E}
+
+\tikzset{
+  every node/.style={font=\small, align=center, text=black!85},
+  kitbox/.style={draw=kit, line width=0.7pt, rounded corners=1.5pt, inner sep=6pt, text=black!60,
+                 text width=4.6cm},
+  ourbox/.style={draw=navy, line width=0.9pt, rounded corners=1.5pt, inner sep=7pt, fill=white,
+                 text width=4.4cm, minimum height=1.75cm},
+  arr/.style={-{Latex[length=2.2mm]}, line width=0.8pt, draw=#1},
+  both/.style={{Latex[length=2.2mm]}-{Latex[length=2.2mm]}, line width=0.8pt, draw=#1},
+  small/.style={font=\footnotesize, text=#1},
+}
+
+\begin{document}
+\vspace*{\fill}
+\noindent
+\begin{tikzpicture}[x=1cm,y=1cm]
+
+% ---------------------------------------------------------------- headers
+\node[anchor=west, font=\Large\bfseries, text=black] at (0,17.3) {마켓 에이전트 구조};
+\node[anchor=west, font=\normalsize, text=kit] at (0,16.1) {키트 기본};
+\node[anchor=west, font=\normalsize\bfseries, text=navy] at (7.4,16.1) {우리 구조};
+\draw[kit!60, line width=0.5pt] (6.7,16.4) -- (6.7,1.0);
+
+% ================================================================ kit default
+\node[kitbox] (dm) at (2.7,14.6) {마켓 · 키트};
+\node[kitbox, below=1.0cm of dm] (ds) {판매 \\[-1pt] {\footnotesize LLM이 모든 수를 결정}};
+\node[kitbox, below=0.45cm of ds] (db) {구매 \\[-1pt] {\footnotesize 가게를 무작위로 선택}};
+\node[kitbox, below=0.45cm of db] (dr) {재고 \\[-1pt] {\footnotesize 무작위 품목 구매}};
+\draw[arr=kit] (dm) -- (ds);
+\node[small=kit, below=0.8cm of dr, text width=4.8cm] {세 부분이 서로 정보를 나누지 않음.\\ 지난 거래에서 배우지 않음.};
+
+% ================================================================ ours
+\node[kitbox, text width=19.4cm] (kit) at (17.45,14.6) {마켓 · 키트 \;{\footnotesize (기본 그대로 사용)}};
+
+\node[ourbox, anchor=north] (seller) at (11.6,13.3) {\textbf{판매}\\[2pt] {\footnotesize 등급·유통기한을 그대로 알리고\\ 정한 가격 범위에서 흥정}};
+\node[ourbox, anchor=north] (buyer)  at (16.55,13.3) {\textbf{구매}\\[2pt] {\footnotesize 평판·기록으로 가게를 고르고\\ 안 되면 다음 가게로}};
+\node[ourbox, anchor=north] (minute) at (21.5,13.3) {\textbf{재고 · 시장 분석 · 게시판}\\[2pt] {\footnotesize 장부에서 팔리는 품목만 들이고\\ 거래 근거로 글 작성}};
+\foreach \n in {seller,buyer,minute} \draw[arr=kit] (kit.south -| \n.north) -- (\n.north);
+
+\node[draw=navy, line width=0.9pt, fill=navybg, rounded corners=1.5pt, inner sep=8pt,
+      minimum width=14.8cm, anchor=north] (board) at (16.55,10.5)
+  {\textbf{공유 규칙집} \;\texttt{policy.json}\; + 거래 기록\\[2pt]
+   {\footnotesize 세 에이전트가 결정할 때마다 읽음. 수정은 학습 루프만 함}};
+\foreach \n in {seller,buyer,minute} \draw[both=navy] (\n.south) -- (\n.south |- board.north);
+
+% LLM inside the code limits
+\node[draw=llm, line width=0.9pt, rounded corners=1.5pt, inner sep=8pt, text width=6.6cm, anchor=north]
+  (llm) at (11.6,7.0) {\textbf{LLM} \;{\footnotesize Claude Haiku}\\[2pt] {\footnotesize 호가, 제안가, 가게, 다음 실험을 고름}};
+\draw[llm, dashed, line width=0.7pt] ($(llm.north west)+(-0.35,0.35)$) rectangle ($(llm.south east)+(0.35,-2.05)$);
+\node[small=llm, below=0.45cm of llm, text width=7.2cm]
+  {코드가 정한 한계 안에서만 움직임: 원가+5\% 이상, 예산 이하,\\ 설정은 한 번에 ±20\% 이내};
+\draw[both=llm, densely dashed] (llm.north |- 0,7.35) -- (llm.north |- board.south);
+
+% learning loop (A) on a circle
+\coordinate (c) at (21.5,3.75);
+\def\r{2.05}
+\draw[navy, line width=1.1pt, -{Latex[length=2.6mm]}] ($(c)+(80:\r)$) arc[start angle=80, end angle=10, radius=\r];
+\draw[navy, line width=1.1pt, -{Latex[length=2.6mm]}] ($(c)+(-10:\r)$) arc[start angle=-10, end angle=-80, radius=\r];
+\draw[navy, line width=1.1pt, -{Latex[length=2.6mm]}] ($(c)+(-100:\r)$) arc[start angle=-100, end angle=-170, radius=\r];
+\draw[navy, line width=1.1pt, -{Latex[length=2.6mm]}] ($(c)+(170:\r)$) arc[start angle=170, end angle=100, radius=\r];
+\node[font=\normalsize\bfseries, text=navy] at (c) {학습 루프\\[-1pt] {\footnotesize\mdseries 15분마다}};
+\node[fill=white, inner sep=2pt] at ($(c)+(90:\r)$)  {\textbf{나누기}\\[-2pt] {\footnotesize 거래 절반에 새 값}};
+\node[fill=white, inner sep=2pt, anchor=west] at ($(c)+(0:\r)+(-0.35,0)$)   {\textbf{측정}\\[-2pt] {\footnotesize 실제 이익·절약}};
+\node[fill=white, inner sep=2pt] at ($(c)+(-90:\r)$) {\textbf{채택}\\[-2pt] {\footnotesize 확실히 나을 때만}};
+\node[fill=white, inner sep=2pt, anchor=east] at ($(c)+(180:\r)+(0.35,0)$) {\textbf{제안}\\[-2pt] {\footnotesize LLM이 다음 실험}};
+\draw[both=navy, line width=1.1pt] ($(c)+(0,\r+0.55)$) -- (c |- board.south)
+  node[pos=0.5, right, small=navy, align=left]{결과를 읽고\\ 규칙 수정};
+
+\end{tikzpicture}
+\vspace*{\fill}
+\end{document}

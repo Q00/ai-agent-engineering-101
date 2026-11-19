@@ -1,0 +1,51 @@
+Harness Shop on :9101, harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence
+
+[f46abcaf] buyer: 'I want to buy a lamp'
+  [harness 4.4s] '{"ask": 150}'
+[f46abcaf] ask 150
+
+[f46abcaf] buyer: '60'
+  [harness 13.5s] '{"action": "counter", "price": 120}'
+[f46abcaf] counter 120
+
+[f46abcaf] buyer: '120'
+  [harness 4.6s] '{"action": "accept", "price": 120}'
+[f46abcaf] accept 120
+
+[e9452055] buyer: 'I want to buy a bookshelf'
+  [harness 4.5s] '{"ask": 340}'
+[e9452055] ask 340
+
+[e9452055] buyer: '140'
+  [harness 4.1s] '{"action": "counter", "price": 300}'
+[e9452055] counter 300
+
+[e9452055] buyer: '170'
+  [harness 4.0s] '{"action": "counter", "price": 285}'
+[e9452055] counter 285
+
+[e9452055] buyer: '200'
+  [harness 4.2s] '{"action": "counter", "price": 270}'
+[e9452055] counter 270
+
+[e9452055] buyer: '230'
+  [harness 4.9s] '{"action": "counter", "price": 265}'
+[e9452055] counter 265
+
+[e9452055] buyer: '230'
+  [harness 5.4s] '{"action": "counter", "price": 262}'
+[e9452055] counter 262
+
+[e9452055] buyer: '230'
+  [harness 4.3s] '{"action": "counter", "price": 255}'
+[guard] counter 255 is below the reserve 260; asking 260
+[e9452055] counter 260
+
+[e9452055] buyer: '230'
+  [harness 4.9s] '{"action": "counter", "price": 260}'
+[e9452055] counter 260
+
+[e9452055] buyer: '230'
+  [harness 4.4s] '{"action": "counter", "price": 250}'
+[guard] counter 250 is below the reserve 260; asking 260
+[e9452055] counter 260

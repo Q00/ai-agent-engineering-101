@@ -1,0 +1,201 @@
+Harness Shop on :57717, harness: openrouter nvidia/nemotron-3-super-120b-a12b (reasoning off, temperature 0.7), reserve guard on
+
+[e5b34da6] buyer: 'I want to buy a lamp'
+[pricing] lamp: Your last 60 negotiations for lamp: 25 deals (42%). Your opening asks averaged 150. Sale prices averaged 122 (from 100 to 140); 3 sold exactly at your lowest price. Buyers' first offers averaged 101.
+  [harness 8.5s] '{"ask": 130}'
+[e5b34da6] ask 130
+
+[e5b34da6] buyer: '60'
+  [harness 0.7s] '{"action": "counter", "price": 125}'
+[e5b34da6] counter 125
+
+[e5b34da6] buyer: '80'
+  [harness 1.0s] '{"action": "counter", "price": 120}'
+[e5b34da6] counter 120
+
+[e5b34da6] buyer: '120'
+  [harness 0.5s] '{"action": "accept", "price": 120}'
+[e5b34da6] accept 120
+
+[4b550387] buyer: 'I want to buy a lamp'
+Failed to detach context
+Traceback (most recent call last):
+  File "/root/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/root/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/root/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/root/miniconda3/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/root/miniconda3/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/root/miniconda3/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7fb2187c0450> at 0x7fb215ccd6c0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-54' coro=<EventQueueSource._dispatch_loop() done, defined at /root/miniconda3/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/root/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/root/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/root/miniconda3/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/root/miniconda3/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/root/miniconda3/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/root/miniconda3/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7fb2187c0450> at 0x7fb215ccd480> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-55' coro=<EventQueueSource._dispatch_loop() done, defined at /root/miniconda3/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+[pricing] lamp: Your last 60 negotiations for lamp: 25 deals (42%). Your opening asks averaged 150. Sale prices averaged 122 (from 100 to 140); 3 sold exactly at your lowest price. Buyers' first offers averaged 99.
+  [harness 1.1s] '{"ask": 130}'
+[4b550387] ask 130
+
+[4b550387] buyer: '60'
+  [harness 0.6s] '{"action": "counter", "price": 120}'
+[4b550387] counter 120
+
+[4b550387] buyer: '120'
+  [harness 0.8s] '{"action": "accept", "price": 120}'
+[4b550387] accept 120
+
+[4d01b69e] buyer: 'I want to buy a lamp'
+[pricing] lamp: Your last 60 negotiations for lamp: 26 deals (43%). Your opening asks averaged 150. Sale prices averaged 122 (from 100 to 140); 3 sold exactly at your lowest price. Buyers' first offers averaged 98.
+  [harness 0.5s] '{"ask": 130}'
+[4d01b69e] ask 130
+
+[4d01b69e] buyer: '60'
+  [harness 0.7s] '{"action": "counter", "price": 125}'
+[4d01b69e] counter 125
+
+[4d01b69e] buyer: '80'
+  [harness 0.9s] '{"action": "counter", "price": 120}'
+[4d01b69e] counter 120
+
+[4d01b69e] buyer: '120'
+  [harness 0.7s] '{"action": "accept", "price": 120}'
+[4d01b69e] accept 120
+
+[b752fb37] buyer: 'I want to buy a bookshelf'
+[pricing] bookshelf: Your last 60 negotiations for bookshelf: 38 deals (63%). Your opening asks averaged 336. Sale prices averaged 289 (from 260 to 330); 5 sold exactly at your lowest price. Buyers' first offers averaged 253.
+  [harness 0.7s] '{"ask": 340}'
+[b752fb37] ask 340
+
+[b752fb37] buyer: '140'
+  [harness 1.2s] '{"action": "counter", "price": 320}'
+[b752fb37] counter 320
+
+[b752fb37] buyer: '170'
+  [harness 1.2s] '{"action": "counter", "price": 300}'
+[b752fb37] counter 300
+
+[b752fb37] buyer: '200'
+  [harness 11.2s] '{"action": "counter", "price": 290}'
+[b752fb37] counter 290
+
+[b752fb37] buyer: '230'
+  [harness 10.8s] '{"action": "counter", "price": 285}'
+[b752fb37] counter 285
+
+[b752fb37] buyer: '230'
+  [harness 1.1s] '{"action": "counter", "price": 280}'
+[b752fb37] counter 280
+
+[b752fb37] buyer: '230'
+  [harness 0.8s] '{"action": "counter", "price": 275}'
+[b752fb37] counter 275
+
+[b752fb37] buyer: '230'
+  [harness 0.7s] '{"action": "counter", "price": 270}'
+[b752fb37] counter 270
+
+[b752fb37] buyer: '230'
+  [harness 0.8s] '{"action": "counter", "price": 265}'
+[b752fb37] counter 265
+
+[b9f8a7a9] buyer: 'I want to buy a bookshelf'
+[pricing] bookshelf: Your last 60 negotiations for bookshelf: 37 deals (62%). Your opening asks averaged 336. Sale prices averaged 290 (from 260 to 330); 4 sold exactly at your lowest price. Buyers' first offers averaged 253.
+  [harness 1.6s] '{"ask": 330}'
+[b9f8a7a9] ask 330
+
+[b9f8a7a9] buyer: '140'
+  [harness 0.6s] '{"action": "counter", "price": 290}'
+[b9f8a7a9] counter 290
+
+[b9f8a7a9] buyer: '170'
+  [harness 0.6s] '{"action": "counter", "price": 280}'
+[b9f8a7a9] counter 280
+
+[b9f8a7a9] buyer: '200'
+  [harness 2.3s] '{"action": "counter", "price": 270}'
+[b9f8a7a9] counter 270
+
+[b9f8a7a9] buyer: '230'
+  [harness 0.6s] '{"action": "counter", "price": 265}'
+[b9f8a7a9] counter 265
+
+[b9f8a7a9] buyer: '230'
+  [harness 1.5s] '{"action": "counter", "price": 260}'
+[b9f8a7a9] counter 260
+
+[b9f8a7a9] buyer: '230'
+  [harness 0.6s] '{"action": "reject"}'
+[b9f8a7a9] reject
+
+[df91444d] buyer: 'I want to buy a bookshelf'
+[pricing] bookshelf: Your last 60 negotiations for bookshelf: 36 deals (60%). Your opening asks averaged 336. Sale prices averaged 290 (from 260 to 330); 4 sold exactly at your lowest price. Buyers' first offers averaged 250.
+  [harness 0.7s] '{"ask": 320}'
+[df91444d] ask 320
+
+[df91444d] buyer: '140'
+  [harness 0.6s] '{"action": "counter", "price": 300}'
+[df91444d] counter 300
+
+[df91444d] buyer: '170'
+  [harness 0.7s] '{"action": "counter", "price": 295}'
+[df91444d] counter 295
+
+[df91444d] buyer: '200'
+  [harness 0.9s] '{"action": "counter", "price": 290}'
+[df91444d] counter 290
+
+[df91444d] buyer: '230'
+  [harness 1.1s] '{"action": "counter", "price": 280}'
+[df91444d] counter 280
+
+[df91444d] buyer: '230'
+  [harness 0.6s] '{"action": "counter", "price": 275}'
+[df91444d] counter 275
+
+[df91444d] buyer: '230'
+  [harness 0.7s] '{"action": "counter", "price": 270}'
+[df91444d] counter 270
+
+[df91444d] buyer: '230'
+  [harness 0.6s] '{"action": "counter", "price": 265}'
+[df91444d] counter 265
+
+[df91444d] buyer: '230'
+  [harness 1.1s] '{"action": "counter", "price": 265}'
+[df91444d] counter 265
