@@ -59,9 +59,9 @@
 
 % ---------- 2 decision layer ----------
 \node[code=7.4cm] (tools) at (0,4.55) {\textbf{market\_tools.py}: MCP, 읽기 전용 툴 27개\\+ market\_picture.py, buyer\_value.py, cost\_model.py};
-\node[opus=5.4cm] (shop)   at (-8.7,2.55) {\textbf{판매 판단: 상점 전략가} -- \textbf{Claude Opus}\\strategist.py, 30분마다 (:15, :45)\\상점 파라미터 33개 + SKU별 파라미터\\목표: 2·3위 상점과의 격차\\진단 $\to$ 변경 $\to$ 2시간 예측, 채점};
+\node[opus=5.4cm] (shop)   at (-8.7,2.55) {\textbf{판매 판단: 상점 전략가} -- \textbf{Claude Opus}\\strategist.py, 30분마다 (:15, :45)\\상점 파라미터 33개 + SKU별 파라미터\\목표: 2·3위 상점과의 격차\\진단 $\to$ 변경 $\to$ 1--3시간 예측, 채점};
 \node[opus=6.2cm] (cur)    at (0,2.55)    {\textbf{분석가: 메모리 큐레이터} -- \textbf{Claude Sonnet}\\memory\_curator.py (11-11 전 Opus)\\게시마다 + 15분마다\\측정: 종합/상점/구매자 경주, 별점,\\1위 목표, A/B 결과, 규칙 변경\\공통 \textbf{digest} 작성, 요청에 답};
-\node[opus=5.4cm] (bstrat) at (8.7,2.55)  {\textbf{구매 판단: 구매 전략가} -- \textbf{Claude Opus}\\buyer\_strategist.py, 30분마다 (:00, :30)\\상한가, 건너뛰기 기준,\\A/B arm, 상점 편향\\목표: 종합 1위를 위한 구매자 점수\\진단 $\to$ 변경 $\to$ 1--6시간 예측, 채점};
+\node[opus=5.4cm] (bstrat) at (8.7,2.55)  {\textbf{구매 판단: 구매 전략가} -- \textbf{Claude Opus}\\buyer\_strategist.py, 30분마다 (:00, :30)\\상한가, 건너뛰기 기준,\\A/B arm, 상점 편향\\목표: 종합 1위를 위한 구매자 점수\\진단 $\to$ 변경 $\to$ 1--3시간 예측, 채점};
 \begin{scope}[on background layer]
 \node[lay, fit=(tools)(shop)(bstrat)] (L2) {};
 \end{scope}
@@ -124,5 +124,5 @@
 \vspace{1.5mm}
 \parbox{27.6cm}{\sffamily\scriptsize
 \textcolor{violet!70!black}{\textbf{LLM 에이전트}}는 판단하고(상점·구매) 시장을 해석한다(분석가). \textcolor{blue!60!black}{\textbf{코드}}는 주문 속도로 거래하고 측정한다. \textcolor{teal!60!black}{\textbf{메모리}}는 툴, 분석가의 digest, 전략가마다 채점된 기록으로 읽는 파일이다. \textcolor{orange!70!black}{\textbf{관측자}}는 사용자 휴대폰에 알리고 사용자 메시지를 받아 온다. \textcolor{red!60!black}{\textbf{사람}}: 사용자가 목표와 큰 결정을 정하고(대화 또는 ntfy), 운영자(코딩 에이전트)가 그것을 코드와 메모로 옮긴다.\\
-\textbf{키트 기본형과 다른 점:} 키트는 규칙 상점 하나와 주문마다 도는 구매자 하나다. 여기서는 코드 실행층을 두 LLM 전략가가 범위가 정해진 파라미터로 조종한다. 전략가는 움직이기 전에 진단하고, 예측이 채점되어 빗나가면 되돌린다. 세 번째 LLM 에이전트(분석가)가 공통 메모리이자 시장 정보 창구다. A/B arm은 주문당 점수 기여로 판정한다. 알림과 휴대폰 양방향 경로로 사용자와 운영자가 고리 안에 들어온다.}
+\textbf{키트 기본형과 다른 점:} 키트는 규칙 상점 하나와 주문마다 도는 구매자 하나다. 여기서는 코드 실행층을 두 LLM 전략가가 범위가 정해진 파라미터로 조종한다. 전략가는 움직이기 전에 진단하고, 예측이 채점되고, 피해가 크면 되돌린다. 세 번째 LLM 에이전트(분석가)가 공통 메모리이자 시장 정보 창구다. A/B arm은 주문당 점수 기여로 판정한다. 알림과 휴대폰 양방향 경로로 사용자와 운영자가 고리 안에 들어온다.}
 \end{document}
