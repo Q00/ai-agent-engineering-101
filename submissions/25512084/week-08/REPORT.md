@@ -224,65 +224,66 @@ I added the true grade claim, certificate flag, and six-hour warranty for goods.
 
 The shop and buyer both exceeded the minimum requirement of 20 settled Round 3 deals by a large margin.
 
-The submission-time market snapshot below was saved on **2026-11-17 at 15:43 KST**.
+The final Round 3 ranking is taken from the board frozen at **2026-11-17 23:59 KST**.
 
-### Players
+### Final Players ranking
 
-In the saved Players table snapshot:
+The midterm ranking uses the **Players Class view**, where percentiles are calculated among students only.
 
 - Player: `dariaklt`
-- Players rank shown: **#48**
-- Total: **86**
-- Shop ALL: **39**
-- Buyer ALL: **47**
+- Class rank: **#39 / 46**
+- Class percentile: **16**
+- Total: **64**
+- Shop: **28**
+- Buyer: **36**
 
-The assignment specifies that the final graded Round 3 rank is taken from the board's **Class** view when the round ends. This report records the rank visible in the saved submission-time snapshot.
+### Week 10 baseline compared with the final result
 
-### Shop
+The Week 10 leaderboard snapshot from **2026-11-10 at 15:23 KST** was used as the baseline.
 
-At the same submission-time snapshot:
+| Metric | Week 10 baseline | Final Round 3 |
+| --- | ---: | ---: |
+| Players total | 76 | 89 |
+| Shop ALL | 34 | 41 |
+| Buyer ALL | 42 | 47 |
+| Shop cash | 2,290,195 | 10,394,229 |
+| Shop stock | 151,621 | 148,057 |
+| Shop book | 2,441,816 | 10,542,286 |
+| Shop revenue | 9,046,561 | 36,606,288 |
+| Buyer Saved | 17.6% | 65.1% |
+| Buyer surplus | 15,904,230 | 87,440,864 |
+| Buyer forum rating | 0.907 | 0.921 |
+| Buyer deals | 2,809 | 7,864 |
+| Buyer served | 2,519 / 2,809 | 7,568 / 7,864 |
 
-- counted shop deals: **2,234**
-- receipts: **4,370**
-- receipts with order: **4,370**
-- reviews: **2,216**
-- stars: **4.57**
-- Shop ALL: **39**
-- shop-side rank: **#42**
-- cash: **9,765,207**
-- stock: **221,703**
-- book: **9,986,910**
-- revenue: **34,549,567**
+The largest improvement was in buyer value preservation. Saved increased from **17.6% to 65.1%** while buyer deals increased from **2,809 to 7,864**. Shop revenue also increased from about **9.0 million to 36.6 million**.
 
-The seller was online again on the final submission day after the lab PC had been accidentally powered off and the Cloudflare tunnel, shop, and buyer were restarted.
+### Settlements and refusal reasons in the committed deployment log
 
-### Buyer
+The final committed `logs/market-kit.log` contains the following recorded events:
 
-At the same submission-time snapshot:
+| Event | Count |
+| --- | ---: |
+| Buyer-side ACP paid settlements | 1,774 |
+| Shop-side ACP settlements | 367 |
+| Shelf-life refusals | 3,931 |
+| Warranty refusals | 1,915 |
+| Price/value rejects | 382 |
+| Unreachable-shop probe failures | 537 |
+| Buyer walkaways | 1,242 |
+| Item mismatch failures | 0 |
 
-- Buyer ALL: **47**
-- buyer-side rank: **#51**
-- Saved: **64.7%**
-- surplus: **85,887,391**
-- forum rating: **0.92**
-- deals: **7,689**
-- served: **7,393 / 7,689**
+These counts describe events recorded in the committed deployment log rather than the full market-wide leaderboard totals.
 
-The buyer's Saved score increased substantially over the earlier Round 3 runs while maintaining thousands of settled transactions.
+Representative log lines:
 
-### Refusal reasons observed in the deployment log
+`[acp] not paying: 0.10 h of shelf life left, the policy asks for 24.0`
 
-The main safe refusal modes were visible directly in `logs/market-kit.log`.
+`[buyer] [reject] 25620027: price=9809 > 75% list_price=9675 (list=12900)`
 
-Examples include:
+`[acp] paid 27348 through .../acp, settled at ledger #6729637`
 
-- `[walk] ... no acceptable deal. No reachable quote within mandate cap.`
-- `[probe] moss-and-oak: unreachable (HTTPStatusError)`
-- `[acp] not paying: warranty 0 h, the policy asks for 6`
-- `[acp] not paying: 23.48 h of shelf life left, the policy asks for 24.0`
-
-These refusals are intentional safety behavior. The buyer does not force settlement when no reachable offer fits its value / mandate ceiling, when a shop is unreachable, or when ACP checkout fails the requested warranty or shelf-life policy.
-
+The refusal counts show that the buyer most often rejected transactions for insufficient shelf life or warranty coverage rather than forcing an unsafe checkout. The final committed log contained **zero item-mismatch failures**, consistent with the exact acceptable-SKU filtering introduced during Round 3.
 ## 8. Deployment
 
 The final system runs on a Windows lab PC.
