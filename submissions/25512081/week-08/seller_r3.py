@@ -182,6 +182,15 @@ SOLD_HOLD = 120           # seconds a sold unit stays out of offers, until inven
 # from 1,838,575 to 2,065,671; the B unit (cost 1.11M) was last offered 11:56, the C unit 12:32). A talk holds its
 # unit OPEN_HOLD seconds; a late reply whose unit has gone to another talk or sold gets no deal.
 OPEN_HOLD = 300
+# A buyer that opens an ACP checkout and never pays or cancels leaves the kit holding that unit (the kit drops a
+# session only after 500 newer ones, hours later), and the kit refuses every later checkout of it while
+# inventory.json still lists it, so we kept closing deals on it (Nov 17 13:54-18:17: 180 checkouts refused "unit u-...
+# is not in stock for this order" on 4 food units, ~40/h, while 5 other grade B units of G3434758a went unoffered).
+# A unit the kit refused within BLOCKED_HOLD seconds is not offered; after that it is tried once again.
+KIT_LOG = Path(os.environ.get("KIT_LOG", "logs/market-kit.log"))
+BLOCKED_HOLD = 2 * 3600
+KIT_REFUSED = re.compile(r"^(\d\d):(\d\d):(\d\d) \[acp\] checkout refused: unit (u-[0-9a-f]+) is not in stock "
+                         r"for this order")
 # A food order is worth nothing to the buyer unless the food lasts its use_within_hours (agent.md), and our seller
 # never sees the order. So: ship food that lasts what the buyer says it needs ("must last 30 hours"), else what
 # orders usually need (.market/use_within.json, the use_within_hours our own buyer saw, 80th percentile).
@@ -210,6 +219,36 @@ def inventory():
         return json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
+
+
+_blocked = {"at": 0.0, "units": set()}
+
+
+def blocked_units():
+    """Units the kit refused at checkout in the last BLOCKED_HOLD seconds (read from the tail of the kit log,
+    at most every 30 s; log lines carry only the time of day)."""
+    now = time.time()
+    if now - _blocked["at"] < 30:
+        return _blocked["units"]
+    units, tail = set(), ""
+    try:
+        with open(KIT_LOG, "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 3_000_000))
+            tail = f.read().decode("utf-8", "replace")
+    except OSError:
+        pass
+    t = time.localtime(now)
+    tod = t.tm_hour * 3600 + t.tm_min * 60 + t.tm_sec
+    for line in tail.splitlines():
+        m = KIT_REFUSED.match(line)
+        if m and (tod - (int(m[1]) * 3600 + int(m[2]) * 60 + int(m[3]))) % 86400 < BLOCKED_HOLD:
+            units.add(m[4])
+    if units - _blocked["units"]:
+        log(f"[blocked] kit refused checkout of {sorted(units - _blocked['units'])}; not offered for "
+            f"{BLOCKED_HOLD // 60} min")
+    _blocked.update(at=now, units=units)
+    return units
 
 
 def hours_left(u):
@@ -566,7 +605,7 @@ class Seller(AgentExecutor):
             self.sold = {k: t for k, t in self.sold.items() if now - t < SOLD_HOLD}
             self.open = {k: d for k, d in self.open.items() if now - d.get("ts", now) < 3600}
             taken = {d["unit"]["unit"] for d in self.open.values()
-                     if d["unit"]["unit"] and now - d.get("ts", now) < OPEN_HOLD} | set(self.sold)
+                     if d["unit"]["unit"] and now - d.get("ts", now) < OPEN_HOLD} | set(self.sold) | blocked_units()
             u = find_unit(text, taken)
             if u is None:
                 await up.reject(say("Sorry, none of that in stock."))

@@ -114,6 +114,14 @@ UNIT_COST = 0.6
 MIN_MARGIN = 0.05          # 0.15 until Nov 9 06:30: Book counts stock at cost (Patch 3.3), so thin-margin turnover adds revenue (0.3 of shop ALL, ours at the 72nd percentile and falling) while Book still grows; at 0.15 surged popular SKUs (market pays 0.62-0.71 of list) were skipped and 254M of cash sat idle
 SURGE_STEP, SURGE_MAX = 0.002, 1.5
 DEFAULT_PX = 0.78          # grade A median share of list (Nov 4 research) when a SKU has few settles
+# Nov 16 06:17: Downing G24f5f979 (list 3.82M) was never in the market's surge list, so the MIN_MARGIN check above
+# never ran, while what we actually paid rose to a median 0.67 of list (grade A units 2.72-2.86M) against a market
+# price of 0.666. A units priced out by cost x 1.05 then did not count as held (efea780), so restock bought more:
+# 9 of our 10 units were grade A at ~2.78M vs the market's grade A median 2.60M. Big-ticket SKUs now also skip a line
+# when the median of our own recent unit costs (supply rows in the ledger) is over the market price x (1 - MIN_MARGIN).
+OWN_COST_H = 6             # our unit costs older than this are forgotten, so a skipped SKU is tried again
+OWN_COST_MIN = 3           # at least this many recent units before the check applies
+OUR_SHOP = "kimauve"
 
 
 def log(msg):
@@ -148,6 +156,12 @@ def read_ledger(st, catalog):
                 break
             for r in rows:
                 d = r.get("data") or {}
+                if r.get("kind") == "supply" and d.get("shop") == OUR_SHOP and d.get("qty") and d.get("total"):
+                    lp_s = (catalog.get(d.get("sku")) or {}).get("list_price")
+                    if lp_s and lp_s >= BIG_TICKET:       # what we actually paid, as a share of list
+                        share = round(d["total"] / d["qty"] / lp_s, 3)
+                        st["own_cost"][d["sku"]] = (st["own_cost"].get(d["sku"], [])
+                                                    + [[int(r.get("ts") or 0), share]] * min(d["qty"], 10))[-10:]
                 if r.get("kind") == "result":             # how much of the market's demand goes unmet now
                     st["pulse"][0] += 1
                     st["pulse"][1] += 0 if d.get("receipt") else 1
@@ -345,8 +359,13 @@ def surge_cut(sku, qty, catalog, st, surge):
     lp = (catalog.get(sku) or {}).get("list_price", 0)
     px = st["sku_px"].get(sku) or []
     sale = sorted(px)[len(px) // 2] if len(px) >= 3 else DEFAULT_PX
+    own = sorted(s for t, s in (st.get("own_cost") or {}).get(sku, []) if time.time() - t < OWN_COST_H * 3600)
+    if lp >= BIG_TICKET and len(own) >= OWN_COST_MIN and own[len(own) // 2] > sale * (1 - MIN_MARGIN):
+        log(f"own cost: {sku} x{qty} cut to 0 (our last {len(own)} units cost a median {own[len(own) // 2]:.3f} "
+            f"of list, market pays {sale:.3f})")
+        return 0, 0.0
     f, n, cost = surge.get(sku, 1.0), 0, 0.0
-    if f <= 1.0:                                     # no surge: unchanged (under 50 units we do not know the count)
+    if f <= 1.0:                                    # no surge: unchanged (under 50 units we do not know the count)
         return qty, UNIT_COST * lp * qty
     while n < qty:
         fk = min(SURGE_MAX, f + SURGE_STEP * n)
@@ -457,7 +476,7 @@ def main():
     catalog = catalog_of(sd)
     st = load(sd / "restock_state.json", {})
     for k, v in (("pop", {}), ("sku_pop", {}), ("sold", {}), ("sold_log", []), ("settles", 0),
-                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", []), ("rev", {}), ("sold_ts", {}), ("sku_rev", {}), ("sku_shops", {})):
+                 ("sku_px", {}), ("cat_px", {}), ("breaks", {}), ("unit_grade", {}), ("shop_px", {}), ("recent", []), ("pulse", [0, 0]), ("pulse_log", []), ("rev", {}), ("sold_ts", {}), ("sku_rev", {}), ("sku_shops", {}), ("own_cost", {})):
         st.setdefault(k, v)
     st["pop"] = {k: v * DECAY for k, v in st["pop"].items()}
     st["rev"] = {k: v * DECAY for k, v in st["rev"].items()}
