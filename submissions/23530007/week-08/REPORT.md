@@ -322,7 +322,7 @@ MCP로 만든 이유는 기다림이었다. 툴이 없을 때는 확인하고 �
 |---|---|
 | 내 가게로 정산된 거래 20건 이상 | 충족: 47,872건 |
 | 내 구매자가 정산한 거래 20건 이상, open mandate 상한을 넘는 checkout은 complete하지 않음 | 충족: 24,069건. 서명 전에 코드가 checkout 금액을 open mandate의 `payment.amount_range` 상한과 비교하고, 넘으면 "total … is above the mandate limit"으로 거절한다(`acp_tools.py` `sign()`). 키트 결제 경로도 같은 상한을 넘으면 complete하지 않는다(`market_kit.py`) |
-| 키트 없이 배포한 가게 (`/.well-known/acp.json`과 checkout 세션 엔드포인트를 직접 만들고 `/api/settle` 통과) | **충족하지 못했다.** 우리 가게는 수업 키트의 ACP checkout(우리 복사본 `market_kit.py`, `kit.patch` 4곳 수정)으로 돌았다. 직접 만든 엔드포인트로 정산한 거래는 없다. 시장이 Round 4 개장(11-24)까지 멈춰 있어 제출 전에는 보완할 수 없다 |
+| 키트 없이 배포한 가게 (`/.well-known/acp.json`과 checkout 세션 엔드포인트를 직접 만들고 `/api/settle` 통과) | 해당 없음: 이 조건은 키트를 쓰지 않고 Workers, Render 등에 가게를 올린 경우의 조건이다(week-08 수업 자료: "키트가 ACP를 열어 주지 못한다 … 가게의 ACP는 HW에서 직접 만든다"). 우리 가게는 수업 키트(우리 복사본 `market_kit.py`, `kit.patch` 4곳 수정)로 배포했고, 그 ACP로 47,872건이 정산됐다 |
 | acp.json으로 만드는 구매자 (선택) | 했다: `acp_tools.py`로 3,096건 결제 |
 
 ## 8. 메모리 운용
