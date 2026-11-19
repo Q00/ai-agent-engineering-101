@@ -2,7 +2,7 @@
 % Same layout as REPORT 5.1 (reports/plot_structure.py): people and observers on top, the analyst, the buy/sell
 % judgment, the buyer/seller code, the market at the bottom, the archive column on the right. Dashed frames group
 % similar modules; numbered badges on the arrows follow the loop told in sentences under the figure.
-% Build: xelatex architecture.tex   (TikZ + kotex; font Pretendard (OFL) if installed, else UnDotum)
+% Build: xelatex architecture.tex   (TikZ + kotex; Pretendard (OFL) if installed, else UnDotum, Noto Sans CJK KR, NanumGothic)
 \documentclass[10pt]{article}
 \usepackage[a4paper,landscape,margin=8mm]{geometry}
 \usepackage{kotex}
@@ -11,10 +11,16 @@
   \setsansfont{Pretendard}[BoldFont={Pretendard SemiBold}]
   \setmainhangulfont{Pretendard}[BoldFont={Pretendard SemiBold}]
   \setsanshangulfont{Pretendard}[BoldFont={Pretendard SemiBold}]
-}{%
+}{\IfFontExistsTF{UnDotum}{%
   \setmainhangulfont{UnDotum}
   \setsanshangulfont{UnDotum}
-}
+}{\IfFontExistsTF{Noto Sans CJK KR}{%
+  \setmainhangulfont{Noto Sans CJK KR}
+  \setsanshangulfont{Noto Sans CJK KR}
+}{\IfFontExistsTF{NanumGothic}{%
+  \setmainhangulfont{NanumGothic}
+  \setsanshangulfont{NanumGothic}
+}{}}}}   % else kotex's default Hangul font
 \usepackage{tikz}
 \usetikzlibrary{fit,arrows.meta,backgrounds,calc}
 \pagestyle{empty}
