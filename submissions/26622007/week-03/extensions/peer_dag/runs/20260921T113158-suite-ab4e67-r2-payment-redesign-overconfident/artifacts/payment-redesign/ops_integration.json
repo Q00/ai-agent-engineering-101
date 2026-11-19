@@ -1,0 +1,29 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "기술 설계(tech_design)와 마이그레이션 분석(biz_migration)을 통합해 운영 전환 계획, 배포·롤백·중단 조건, 지원팀 전달 사실/미확인 사항, 팀 간 일정·담당·전달 계획을 정리하고 최종 facts를 확정했다. 선행 두 결과의 숫자·boolean 키 8개는 모두 일치해 모순이 없다.\n\n■ 최종 facts 대조 결과(모순 없음)\nbackfill_batches=240, serial_backfill_seconds=3600, two_worker_backfill_seconds=1800, downtime_budget_seconds=1200, coexistence_hours=72, unverified_release_checks=3, offline_backfill_fits=false, can_release=false — tech_design과 biz_migration에서 동일.\n\n■ 운영 전환 순서(단계/담당/산출물/게이트)\n[1단계 온라인 준비 — 중단 예산 미사용] 무중단 백필(240배치, 2작업자 1,800초) → 이중쓰기/이중읽기 전환 → 대사 잡(ReconciliationJob) 가동 → 72시간 공존 유지. 담당: A(제품·기술) 구현, C(운영·커뮤니케이션) 일정·공지. 산출물: 백필 로그, 대사 리포트. 게이트: 대사 불일치 0건, 오류율 임계 이하.\n[2단계 최종 전환 — 중단 예산 사용 지점] 짧은 쓰기 차단 → 스키마/플래그 스위치 → 검증 후 해제. 담당: A 구현, C 안내. 게이트: 검증 통과, 대사 정합.\n[3단계 배포] can_release=false이므로 보류. 선행: 롤백·재시도·취소 검증 3건 완료 + PG-DB 대사 완료.\n\n■ 배포·롤백·중단 조건\n배포 보류 근거: unverified_release_checks=3(롤백·재시도 결제·취소 결제 미검증), offline_backfill_fits=false(1작업자 3,600초·2작업자 1,800초 모두 중단 허용 1,200초 초과). 롤백 트리거: 대사 불일치, 오류율 임계 초과, 미검증 항목 잔존. 중단 예산(1,200초)은 최종 전환 단계에서만 사용하며 온라인 준비 단계는 사용하지 않는다.\n\n■ 팀 간 일정·담당·전달 계획\nA(제품·기술): 롤백·재시도·취소 검증 3건, 대사 잡 구현. 선행: 없음. 완료 기준: 3건 검증 통과.\nB(사업·분석): 대사 불일치 영향·손익 재확인. 선행: A 대사 잡 결과. 완료 기준: 영향 분석 보고.\nC(운영·커뮤니케이션): 지원팀 안내문·상담 절차·전달 일정. 선행: A 검증 결과, B 영향 분석. 완료 기준: 안내문 확정.\n\n■ 지원팀 전달 사실\n240배치, 직렬 3,600초(60분), 2작업자 1,800초(30분), 중단 예산 1,200초(20분), 공존 72시간, 미검증 3건, offline_backfill_fits=false, can_release=false.\n■ 미확인 사항\n실제 PG·DB 조회 미수행, 롤백/재시도/취소 검증 미완료, 서버 생성 키 가정 미검증, 실제 구현·테스트·배포 미수행.\n\n■ 규칙·인터페이스·일정 간 모순 목록\n선행 8개 키 일치(모순 없음). 구버전 앱 키 미전송 시 서버 생성 키 가정은 미검증으로 표시. 72시간 공존과 최종 전환 중단 예산 분리는 일관됨. 미검증을 통과로 바꾸지 않았다.",
+    "facts": {
+      "backfill_batches": 240,
+      "serial_backfill_seconds": 3600,
+      "two_worker_backfill_seconds": 1800,
+      "downtime_budget_seconds": 1200,
+      "coexistence_hours": 72,
+      "unverified_release_checks": 3,
+      "offline_backfill_fits": false,
+      "can_release": false
+    },
+    "evidence": [
+      "배치 수 = 1,200,000 ÷ 5,000 = 240 (나머지 0)",
+      "직렬 시간 = 240 × 15초 = 3,600초 = 60분",
+      "2작업자 시간 = (240/2) × 15초 = 1,800초 = 30분",
+      "중단 허용 = 20분 = 1,200초; 3,600초 > 1,200초, 1,800초 > 1,200초 → offline_backfill_fits=false",
+      "공존 요구 = 72시간 → coexistence_hours=72",
+      "미완료 검증 3건(롤백·재시도 결제·취소 결제) → unverified_release_checks=3, can_release=false",
+      "tech_design과 biz_migration의 숫자·boolean 키 8개 전부 일치(모순 없음)",
+      "온라인 준비(무중단 백필, 이중쓰기/공존 72시간, 대사 잡)는 중단 예산 미사용, 최종 전환(짧은 쓰기 차단, 스키마/플래그 스위치, 검증 후 해제)만 중단 예산 사용",
+      "실제 PG·DB 조회, 환불, 배포, 테스트 실행은 수행하지 않았으며 미검증을 통과로 처리하지 않음"
+    ]
+  },
+  "error": ""
+}

@@ -1,0 +1,129 @@
+{
+  "case_id": "launch-operations",
+  "condition": "overconfident",
+  "block": 1,
+  "run_id": "20260921T113158-suite-ab4e67-r1-launch-operations-overconfident",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 30.3763,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 8,
+  "checks_total": 8,
+  "wrong_or_missing": [],
+  "calls": 5,
+  "http_requests": 5,
+  "http_responses": 5,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 1,
+  "max_depth": 0,
+  "awards": {
+    "C": 1
+  },
+  "root_award": "C",
+  "c_proposals": 1,
+  "c_high_bids": 1,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.00418416,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 30.2044,
+  "canonical_facts": {
+    "additional_agents": 4.0,
+    "backlog_without_hiring": 80.0,
+    "expected_contacts": 160.0,
+    "four_hour_capacity": 80.0,
+    "immediate_refund_promised": false,
+    "launch_hour": 10.0,
+    "required_total_agents": 8.0,
+    "support_window_hours": 4.0
+  },
+  "artifact_sha": "fb1de682d910f52c265a462e64eed683756195824cd97a86c61d055f1dcfabb8",
+  "root_plan_sha": "207ecd3486dc6f481c270b8a8d95a407b1745070ea6ee230433f17dc99ae006e",
+  "award_sha": "2bf98070fcf67fd4d219393d6224c88a0305cc41e0f60ed4b494870d76426425",
+  "controls_sha": "0bd8edc9a75b1410910b7c17efe0735ee6db615777048c7f3b4e950bb2e72d0b",
+  "root_plan": {
+    "mode": "execute",
+    "actions": [
+      "용량 계산: expected_contacts=800*0.20=160, four_hour_capacity=4명*5건*4시간=80, backlog_without_hiring=160-80=80, required_total_agents=160/(5*4)=8, additional_agents=8-4=4, support_window_hours=4, launch_hour=10, immediate_refund_promised=false를 facts에 확정",
+      "단일 기준 문서(SSOT) 설계: 확정 정책('영업일 2일 내 처리 시작', 완료·PG 반영 미보장)을 유일한 약속 기준으로 삼고 광고/상담/랜딩 문구가 이를 벗어나지 않도록 금지 표현 목록과 승인 흐름 정의",
+      "운영 일정표: 목요일 14시 제품 사양 수신 → 15시 광고 문구 마감 → 17시 상담 교육 → 18시 랜딩 수정 마감, 각 항목에 담당·기한·선행조건 연결",
+      "고객 안내문·FAQ·상담 분류 기준 작성: 환불은 '접수 후 영업일 2일 내 처리 시작'으로만 안내, 즉시 자동 환불 표현 금지, 문의 유형별 우선순위(결제 오류>환불 접수>일반 문의) 정의",
+      "인력 대안: 충원 미승인 전제로 4명 체제에서 대기열·우선순위·안내 대안 제시, 추가 4명 필요하나 미승인임을 명시",
+      "비상 계획: 광고 지연, 기술 배포 승인 지연, 문의 급증(20% 초과) 시나리오별 트리거·대응·에스컬레이션 경로",
+      "출시 직전 확인표: 확정/미확인 사항표와 함께 미제공 항목(기술 배포 승인, 결제 검증)을 미확인으로 표기",
+      "모순 점검: '즉시 자동 환불' vs 확정 정책, 충원 미승인 vs 필요 인원, 미제공 승인 vs 출시 일정 간 충돌을 명시"
+    ],
+    "steps": []
+  },
+  "intervals": [
+    {
+      "task_id": "launch-operations",
+      "worker": "C",
+      "start": "2026-09-21T11:49:58.195745+00:00",
+      "end": "2026-09-21T11:50:15.882125+00:00"
+    }
+  ],
+  "overlaps": [],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 1,
+    "peak_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 1
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 0,
+      "B": 0,
+      "C": 1
+    },
+    "calls_by_phase": {
+      "propose": 3,
+      "review": 1,
+      "execute": 1
+    },
+    "task_statuses": {
+      "launch-operations": "succeeded"
+    },
+    "awards": {
+      "launch-operations": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 5
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 5
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "expected_contacts": true,
+        "four_hour_capacity": true,
+        "backlog_without_hiring": true,
+        "required_total_agents": true,
+        "additional_agents": true,
+        "support_window_hours": true,
+        "immediate_refund_promised": true,
+        "launch_hour": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

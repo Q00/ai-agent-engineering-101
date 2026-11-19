@@ -1,0 +1,265 @@
+{
+  "A": [
+    {
+      "id": "mem-65823fff470a3d74",
+      "owner": "A",
+      "scope": "rag-vector-adoption",
+      "visibility": "team",
+      "status": "model_note_unverified",
+      "run_id": "20260917T025324-01-investigate-9e7320",
+      "task_id": "rag-investigate/backup_ops_research",
+      "created_at": "2026-09-17T02:53:24.886793+00:00",
+      "expires_at": "2026-09-24T02:53:24.886793+00:00",
+      "goal": "pgvector(PITR, pg_dump, 기존 PostgreSQL 백업 책임=플랫폼팀)와 Qdrant(스냅샷, 복구, 관리형 옵션)의 백업·복구·운영 부담을 공식 문서로 조사한다. 운영 인력 2명 가정의 부담을 정성적으로 평가한다.",
+      "summary": "## pgvector vs Qdrant 백업·복구·운영 부담 조사 (backup_ops_research)\n\n가정: 100만×1536차원 벡터, 30 tenant, 일 1% 갱신, 기존 PostgreSQL 운영 인력 2명. 내부 결정 ID **ADR-RAG-7429**, 기존 PostgreSQL 백업 책임 **플랫폼팀**. 실제 latency/recall 벤치마크는 수행하지 않았으므로 성능 수치는 `not_measured`로 남긴다.\n\n### 1. pgvector 측 (PostgreSQL 백업 체계 재사용)\n\n| 항목 | 공식 문서 근거 요약 |\n|---|---|\n| PITR | PostgreSQL은 `pg_wal/`에 WAL을 유지하며, 파일시스템 백업 + WAL 아카이빙을 결합해 특정 시점으로 복구(PITR)할 수 있다. 문서는 이를 \"높은 신뢰성이 필요한 많은 상황에서 선호되는 백업 기법\"으로 설명한다. |\n| pg_dump/pg_restore | `pg_dump`/`pg_dumpall`은 논리 덤프이며 파일시스템 수준 백업이 아니고 WAL 리플레이에 쓸 수 없다. 즉 PITR 대체가 아니라 보조 수단이다. `pg_restore`는 비-plain 아카이브에서 선택적/재정렬 복원이 가능하지만 large object는 선택 복원이 불가하다. |\n| 복구 범위 | 연속 아카이빙 방식은 전체 클러스터 복원만 지원하고 부분집합 복원은 안 된다. 또한 base backup + WAL 아카이브 저장공간이 상당히 필요하다. |\n| 운영 부담(2명) | 백업 자동화·WAL 아카이빙·복구 리허설은 기존 플랫폼팀 PostgreSQL 운영 절차에 얹을 수 있어 신규 도구 학습이 적다. 다만 벡터 인덱스(HNSW/IVFFlat) 재구축 비용은 별도 검증이 필요하며, 이번 조사에서 측정하지 않았다. |\n\n### 2. Qdrant 측 (스냅샷/관리형)\n\n이번 실행에서 Qdrant 공식 문서 검색이 검색 한도(1회)로 수행되지 못했다. 따라서 Qdrant의 스냅샷 생성/복구, 분산 배포 일관성, Qdrant Cloud 관리형 백업 옵션, 자체 운영 부담에 대한 **공식 URL 근거를 확보하지 못했고**, 해당 항목은 `unresolved`로 남긴다. Qdrant 관련 서술은 이번 산출물에서 사실 주장으로 채택하지 않는다(비용 수치도 창작하지 않음).\n\n### 3. 정성 비교(확보된 근거 범위)\n\n- **pgvector**: 기존 PostgreSQL 백업/PITR 체계와 플랫폼팀 책임을 그대로 상속 → 2명 인력 기준 운영 부담이 상대적으로 낮고 복구 절차가 기존 런북과 일관. 단, 전체 클러스터 단위 복원 제약과 WAL 저장공간 부담, 벡터 인덱스 재구축 시간 미검증이 위험.\n- **Qdrant**: 스냅샷/관리형 옵션의 운영 편의 가능성은 있으나 공식 근거 미확보로 판단 보류. 자체 운영 시 신규 백업·복구 런북과 장애 대응 절차를 2명이 추가로 떠안는 부담은 검증 필요.\n\n### 4. 테스트 계획\n1. 스테이징에서 pgvector PITR 복구 리허설(백업 시점 → 복구 완료 시간, WAL 저장량) 측정.\n2. HNSW/IVFFlat 인덱스 재구축 소요 시간과 복구 후 recall 영향 측정.\n3. Qdrant 공식 문서 재검색 후 스냅샷 복구 리허설 및 관리형 백업 옵션 확인.\n4. 30 tenant 필터 검색의 백업/복구 후 정합성 확인.\n\n### 5. 미해결 항목\n- Qdrant 스냅샷/복구/관리형 백업 공식 근거 미확보(검색 한도).\n- 벡터 인덱스 재구축 비용, PITR 복구 시간, 관리형 비용 수치 모두 미측정.\n- 최종 저장소 권고는 인덱스·필터 조사(별도 하위 작업)와 ",
+      "facts": {
+        "backup_owner": "플랫폼팀",
+        "measured_latency": "not_measured",
+        "unresolved": "Qdrant 스냅샷/복구/관리형 백업 공식 근거 미확보(검색 한도 1회); 벡터 인덱스 재구축 비용·PITR 복구 시간·관리형 비용 수치 미측정; 최종 저장소 권고는 인덱스·필터 조사 및 Qdrant 근거 보강 후 확정",
+        "memory_refs": "none",
+        "internal_decision_id": "ADR-RAG-7429",
+        "pgvector_pitr_supported": "true",
+        "pg_dump_is_logical_not_pitr": "true",
+        "pitr_restore_scope": "전체 클러스터 단위(부분집합 복원 불가)",
+        "qdrant_official_evidence_obtained": "false",
+        "recommended_storage": "미확정(추가 조사 필요)",
+        "cost_figures_fabricated": "false"
+      },
+      "sources": [
+        {
+          "url": "https://www.postgresql.org/docs/18/app-pgrestore.html",
+          "title": "PostgreSQL: Documentation: 18: pg_restore",
+          "excerpt": "pg_restore is a utility for restoring a PostgreSQL database from an archive created by pg_dump in one of the non-plain-text formats. It will issue the commands necessary to reconstruct the database to the state it was in at the time it was saved. The archive files also allow pg_restore to be selective about what is restored, or even to reorder the items prior to being restored. The archive files are designed to be portable across architectures.\n\n...\n\npg_restore cannot restore large objects selectively; for instance, only those for a specific table. If an archive contains large objects, then all large objects will be restored, or none of them if they are excluded",
+          "retrieved_at": "2026-09-17T02:54:48.101297+00:00"
+        },
+        {
+          "url": "https://www.postgresql.org/docs/current/backup.html",
+          "title": "Documentation: 18: Chapter 25. Backup and Restore - PostgreSQL",
+          "excerpt": "25.3. Continuous Archiving and Point-in-Time Recovery (PITR)\n...\n: 25.3.1. Setting Up WAL Archiving\n...\n25.\n...\n. Recovering Using a Continuous Archive Backup\n...\nPostgreSQL data:\n...\n- SQL dump\n...\n- File system level backup\n- Continuous archiving",
+          "retrieved_at": "2026-09-17T02:54:48.101266+00:00"
+        },
+        {
+          "url": "https://www.postgresql.org/docs/current/continuous-archiving.html",
+          "title": "18: 25.3. Continuous Archiving and Point-in-Time Recovery (PITR)",
+          "excerpt": "At all times, PostgreSQL maintains a write ahead log (WAL) in the `pg_wal/` subdirectory of the cluster's data directory. The log records every change made to the database's data files. This log exists primarily for crash-safety purposes: if the system crashes, the database can be restored to consistency by “ replaying” the log entries made since the last checkpoint. However, the existence of the log makes it possible to use a third strategy for backing up databases: we can combine a file-system-level backup with backup of the WAL files. If recovery is needed, we restore the file system backup and then replay from the backed-up WAL files to bring the system to a current state. This approach ",
+          "retrieved_at": "2026-09-17T02:54:48.101212+00:00"
+        }
+      ],
+      "unverified_urls": []
+    },
+    {
+      "id": "mem-228e3524f75d90b1",
+      "owner": "A",
+      "scope": "rag-vector-adoption",
+      "visibility": "team",
+      "status": "model_note_unverified",
+      "run_id": "20260917T025324-01-investigate-9e7320",
+      "task_id": "rag-investigate/decision_synthesis",
+      "created_at": "2026-09-17T02:53:24.886793+00:00",
+      "expires_at": "2026-09-24T02:53:24.886793+00:00",
+      "goal": "index_tenant_findings와 backup_ops_findings에 의존해 pgvector vs Qdrant 선택 근거, 위험, 테스트 계획, 미해결 항목을 통합한 최종 결정 문서를 작성한다.",
+      "summary": "## 벡터 저장소 선정: pgvector vs Qdrant 통합 결정 문서 (ADR-RAG-7429)\n\n가정: 100만 × 1536차원 벡터, 30 tenant, tenant 필터 top-10 검색, 일 1% 갱신(약 1만 벡터/일), 기존 PostgreSQL 운영 인력 2명. 내부 결정 ID **ADR-RAG-7429**, 기존 PostgreSQL 백업 책임 **플랫폼팀**. 실제 latency/recall 벤치마크는 수행하지 않았으므로 모든 성능 수치는 `not_measured`다.\n\n### 1. 비교 표\n\n| 항목 | pgvector (PostgreSQL 확장) | Qdrant |\n|---|---|---|\n| 인덱스 | HNSW(m=16, ef_construction=64 기본), IVFFlat(lists=100, probes=1 기본) | HNSW 기반(m, ef_construct 등) — 공식 문서 미확보 |\n| 필터 적용 | 근사 인덱스는 **post-filter**: 인덱스 스캔 후 필터. 10% 선택도 + ef_search=40이면 평균 4행만 매칭 | payload 필터 1급 지원(공식 근거 미확보) |\n| 필터 보완 | 0.8.0+ **iterative index scan**(hnsw.max_scan_tuples, ivfflat.max_probes) | 미확인 |\n| 다중 tenant | 값 종류 많으면 **PARTITION BY LIST** 권장 | 컬렉션 분리/multitenancy 전략(공식 근거 미확보) |\n| 튜닝 지침 | lists ≈ rows/1000(≤1M), >1M은 sqrt(rows); probes ≈ sqrt(lists) | 미확인 |\n| 백업/PITR | `pg_wal/` WAL + 파일시스템 백업 결합 PITR. pg_dump는 논리 덤프로 PITR 대체 불가. 연속 아카이빙은 **전체 클러스터 단위 복원만** 지원 | 스냅샷/관리형 백업 옵션 존재 가능하나 공식 근거 미확보 |\n| 운영 부담(2명) | 기존 플랫폼팀 PostgreSQL 백업·런북 상속 → 신규 학습 적음. 단 WAL 저장공간·인덱스 재구축 부담 추가 | 자체 운영 시 신규 백업·복구 런북 필요(검증 필요) |\n\n### 2. 선택 근거\n\n- **1순위 후보: pgvector + tenant LIST 파티셔닝 + HNSW, iterative scan 활성화.** 기존 PostgreSQL 운영 인력 2명과 플랫폼팀 백업 책임을 그대로 상속하므로 신규 도구 도입·학습 비용이 가장 낮다. 30 tenant는 LIST 파티셔닝이 현실적인 규모이며, 파티션별 HNSW 인덱스로 tenant 필터를 인덱스 레벨로 밀어내 post-filter 손실을 줄일 수 있다.\n- **2순위 후보: Qdrant.** payload 필터·multitenancy를 1급 기능으로 제공하는 것으로 알려져 있으나, 이번 실행에서도 공식 문서 URL을 확보하지 못해 우위 주장을 채택하지 않는다.\n- 관리형 서비스는 비용 수치를 제공받지 못해 정량 비교 불가.\n\n### 3. 위험\n\n1. **tenant 필터 post-filter 손실(최대 리스크).** 30 tenant 중 하나는 ≈3.3% 선택도로, ef_search=40에서 평균 1~2행만 매칭될 수 있다. iterative scan 또는 파티셔닝 없이는 recall@10이 급락할 수 있다.\n2. **복구 범위 제약.** 연속 아카이빙은 전체 클러스터 복원만 지원하고 부분집합 복원이 불가하다. tenant 단위 복구 요구가 생기면 별도 설계가 필요하다.\n3. **WAL/백업 저장공간 부담.** base backup + WAL 아카이브 저장공간",
+      "facts": {
+        "recommended_storage": "pgvector (tenant LIST 파티셔닝 + HNSW, iterative scan) 1순위 후보, Qdrant 2순위 후보(공식 근거 미확보)",
+        "internal_decision_id": "ADR-RAG-7429",
+        "backup_owner": "플랫폼팀",
+        "measured_latency": "not_measured",
+        "unresolved": "Qdrant 공식 문서(HNSW 파라미터/payload 필터/multitenancy/스냅샷·복구) URL 미확보; 실제 latency·recall 미측정; 관리형 비용 비교 불가; pgvector 파티션별 인덱스 재구축 주기 미검증; 최종 저장소 확정 보류",
+        "memory_refs": "none",
+        "vector_count": 1000000,
+        "dimension": 1536,
+        "tenant_count": 30,
+        "daily_update_vectors": 10000,
+        "pgvector_hnsw_default_m": 16,
+        "pgvector_hnsw_default_ef_construction": 64,
+        "pgvector_hnsw_default_ef_search": 40,
+        "pgvector_ivfflat_default_lists": 100,
+        "pgvector_ivfflat_default_probes": 1,
+        "pgvector_filter_mode": "post-filter (approximate index), iterative scan since 0.8.0",
+        "pgvector_partitioning_recommended": true,
+        "pgvector_pitr_supported": true,
+        "pgvector_pitr_restore_scope": "전체 클러스터 단위(부분집합 복원 불가)",
+        "pg_dump_is_logical_not_pitr": true,
+        "qdrant_official_evidence_obtained": false,
+        "benchmark_executed": false,
+        "cost_figures_fabricated": false
+      },
+      "sources": [
+        {
+          "url": "https://github.com/pgvector/pgvector?tab=readme-ov-file",
+          "title": "pgvector/pgvector",
+          "excerpt": "Specify HNSW parameters\n\n- `m` - the max number of connections per layer (16 by default)\n- `ef_construction` - the size of the dynamic candidate list for constructing the graph (64 by default)\n\n```sql\nCREATE INDEX ON items USING hnsw (embedding vector_l2_ops) WITH (m = 16, ef_construction = 64);\n```\n\n...\n\nA higher value of `ef_construction` provides better recall at the cost of index build time / insert speed.\n\n...\n\nAn IVFFlat index divides vectors into lists, and then searches a subset of those lists that are closest to the query vector. It has faster build times and uses less memory than HNSW, but has lower query performance (in terms of speed-recall tradeoff).\n\n...\n\nThree keys to achievin",
+          "retrieved_at": "2026-09-17T02:54:49.929654+00:00"
+        },
+        {
+          "url": "https://github.com/pgvector/pgvector/blob/master/src/hnsw.h",
+          "title": "src/hnsw.h at master · pgvector/pgvector",
+          "excerpt": "#define HNSW_DEFAULT_EF_CONSTRUCTION 64\n...\n#define HNSW_MIN_EF_CONSTRUCTION 4\n#define HNSW_MAX_EF_CONSTRUCTION 1000\n...\ntypedef struct HnswOptions\n...\n{\n int32 vl_len_; /* varlena header (do not touch directly!) */\n int m; /* number of connections */\n int",
+          "retrieved_at": "2026-09-17T02:54:49.929670+00:00"
+        },
+        {
+          "url": "https://github.com/pgvector/pgvector/blob/master/src/ivfflat.h",
+          "title": "src/ivfflat.h at master · pgvector/pgvector",
+          "excerpt": "/* IVFFlat parameters */\n#define IVFFLAT_DEFAULT_LISTS 100\n#define IVFFLAT_MIN_LISTS 1\n#define IVFFLAT_MAX_LISTS 32768\n#define IVFFLAT_DEFAULT_PROBES 1\n...\n{\n int32 vl_len_; /* varlena header (do not touch directly!) */\n int lists; /* number of lists */\n}",
+          "retrieved_at": "2026-09-17T02:54:49.929680+00:00"
+        },
+        {
+          "url": "https://www.postgresql.org/docs/18/app-pgrestore.html",
+          "title": "PostgreSQL: Documentation: 18: pg_restore",
+          "excerpt": "pg_restore is a utility for restoring a PostgreSQL database from an archive created by pg_dump in one of the non-plain-text formats. It will issue the commands necessary to reconstruct the database to the state it was in at the time it was saved. The archive files also allow pg_restore to be selective about what is restored, or even to reorder the items prior to being restored. The archive files are designed to be portable across architectures.\n\n...\n\npg_restore cannot restore large objects selectively; for instance, only those for a specific table. If an archive contains large objects, then all large objects will be restored, or none of them if they are excluded",
+          "retrieved_at": "2026-09-17T02:54:48.101297+00:00"
+        },
+        {
+          "url": "https://www.postgresql.org/docs/current/backup.html",
+          "title": "Documentation: 18: Chapter 25. Backup and Restore - PostgreSQL",
+          "excerpt": "25.3. Continuous Archiving and Point-in-Time Recovery (PITR)\n...\n: 25.3.1. Setting Up WAL Archiving\n...\n25.\n...\n. Recovering Using a Continuous Archive Backup\n...\nPostgreSQL data:\n...\n- SQL dump\n...\n- File system level backup\n- Continuous archiving",
+          "retrieved_at": "2026-09-17T02:54:48.101266+00:00"
+        },
+        {
+          "url": "https://www.postgresql.org/docs/current/continuous-archiving.html",
+          "title": "18: 25.3. Continuous Archiving and Point-in-Time Recovery (PITR)",
+          "excerpt": "At all times, PostgreSQL maintains a write ahead log (WAL) in the `pg_wal/` subdirectory of the cluster's data directory. The log records every change made to the database's data files. This log exists primarily for crash-safety purposes: if the system crashes, the database can be restored to consistency by “ replaying” the log entries made since the last checkpoint. However, the existence of the log makes it possible to use a third strategy for backing up databases: we can combine a file-system-level backup with backup of the WAL files. If recovery is needed, we restore the file system backup and then replay from the backed-up WAL files to bring the system to a current state. This approach ",
+          "retrieved_at": "2026-09-17T02:54:48.101212+00:00"
+        }
+      ],
+      "unverified_urls": []
+    },
+    {
+      "id": "mem-4a1df38327a7d1de",
+      "owner": "A",
+      "scope": "rag-vector-adoption",
+      "visibility": "team",
+      "status": "model_note_unverified",
+      "run_id": "20260917T025324-01-investigate-9e7320",
+      "task_id": "rag-investigate",
+      "created_at": "2026-09-17T02:53:24.886793+00:00",
+      "expires_at": "2026-09-24T02:53:24.886793+00:00",
+      "goal": "합성 프로젝트: 한국어 RAG 서비스의 벡터 저장소를 pgvector와 Qdrant 중에서 선정하기 위한 기술 검토다. 100만 개 1536차원 벡터, 30개 tenant, tenant 필터를 적용한 top-10 검색, 하루 1% 문서 갱신을 가정한다. 기존 PostgreSQL 운영 인력은 2명이다. 초기에는 외부 관리형 서비스도 검토 가능하지만 비용 수치를 지어내지 말라. 내부 결정 ID는 ADR-RAG-7429이고 기존 PostgreSQL의 백업 책임은 플랫폼팀이다. 이 내부 결정 ID와 책임을 최종 facts와 장기 기록에 남겨 다음 실행이 이어받을 수 있게 하라. 공식 문서를 실제로 검색해서 (1) 인덱스·필터 검색과 다중 tenant 분리, (2) 백업·복구·운영 부담을 독립적으로 조사한 뒤 (3) 두 결과에 의존하는 선택 근거·실험 계획을 작성하라. 첫 계획은 정확히 세 하위 작업을 갖는 delegate로 하고 마지막 작업은 앞의 두 조사에 의존해야 한다. 작업의 이름은 자유다. 하위 조사 중 필요하면 제한 안에서 재위임할 수 있다. 실제 latency나 recall 벤치마크를 돌린 적은 없으므로 성능 수치를 꾸며내지 말라. 웹 검색에는 공개 기술 키워드만 쓰고 내부 결정 ID를 검색하지 말라.",
+      "summary": "## 벡터 저장소 선정 기술 검토: pgvector vs Qdrant (ADR-RAG-7429)\n\n가정: 100만 × 1536차원 벡터, 30 tenant, tenant 필터 top-10 검색, 일 1% 갱신(약 1만 벡터/일), 기존 PostgreSQL 운영 인력 2명. 내부 결정 ID **ADR-RAG-7429**, 기존 PostgreSQL 백업 책임 **플랫폼팀**. 실제 latency/recall 벤치마크는 수행하지 않았으므로 모든 성능 수치는 `not_measured`다. personal_memory/handoff_memory는 비어 있어 과거 내부 결정·담당 팀 정보는 참고하지 않았고, source에 명시된 현재 사실만 사용했다.\n\n### 1. 비교 표\n\n| 항목 | pgvector (PostgreSQL 확장) | Qdrant |\n|---|---|---|\n| 인덱스 | HNSW(m=16, ef_construction=64 기본), IVFFlat(lists=100, probes=1 기본) | HNSW 기반(m, ef_construct 등) — 공식 문서 미확보 |\n| 필터 적용 | 근사 인덱스는 **post-filter**: 인덱스 스캔 후 필터. 10% 선택도 + ef_search=40이면 평균 4행만 매칭 | payload 필터 1급 지원(공식 근거 미확보) |\n| 필터 보완 | 0.8.0+ **iterative index scan**(hnsw.max_scan_tuples, ivfflat.max_probes) | 미확인 |\n| 다중 tenant | 값 종류 많으면 **PARTITION BY LIST** 권장 | 컬렉션 분리/multitenancy 전략(공식 근거 미확보) |\n| 튜닝 지침 | lists ≈ rows/1000(≤1M), >1M은 sqrt(rows); probes ≈ sqrt(lists) | 미확인 |\n| 백업/PITR | `pg_wal/` WAL + 파일시스템 백업 결합 PITR. pg_dump는 논리 덤프로 PITR 대체 불가. 연속 아카이빙은 **전체 클러스터 단위 복원만** 지원 | 스냅샷/관리형 백업 옵션 존재 가능하나 공식 근거 미확보 |\n| 운영 부담(2명) | 기존 플랫폼팀 PostgreSQL 백업·런북 상속 → 신규 학습 적음. 단 WAL 저장공간·인덱스 재구축 부담 추가 | 자체 운영 시 신규 백업·복구 런북 필요(검증 필요) |\n\n### 2. 선택 근거\n\n- **1순위 후보: pgvector + tenant LIST 파티셔닝 + HNSW, iterative scan 활성화.** 기존 PostgreSQL 운영 인력 2명과 플랫폼팀 백업 책임을 그대로 상속하므로 신규 도구 도입·학습 비용이 가장 낮다. 30 tenant는 LIST 파티셔닝이 현실적인 규모이며, 파티션별 HNSW 인덱스로 tenant 필터를 인덱스 레벨로 밀어내 post-filter 손실을 줄일 수 있다.\n- **2순위 후보: Qdrant.** payload 필터·multitenancy를 1급 기능으로 제공하는 것으로 알려져 있으나, 이번 실행에서도 공식 문서 URL을 확보하지 못해 우위 주장을 채택하지 않는다.\n- 관리형 서비스는 비용 수치를 제공받지 못해 정량 비교 불가.\n\n### 3. 위험\n\n1. **tenant 필터 post-filter 손실(최대 리스크).** 30 tenant 중 하나는 ≈3.3% 선택도로, ef_search=40에서 평균 1~2행만 매칭될 수 있다. iterative scan 또는 파티셔닝 없이는 recall@10이 급락할 수 있다.\n2. **복구 범위 제약.** 연속 아카이빙은 전체 클러스터 복원만 지원하고 부분집합 복원이 불가",
+      "facts": {
+        "recommended_storage": "pgvector (tenant LIST 파티셔닝 + HNSW, iterative scan) 1순위 후보, Qdrant 2순위 후보(공식 근거 미확보)",
+        "internal_decision_id": "ADR-RAG-7429",
+        "backup_owner": "플랫폼팀",
+        "measured_latency": "not_measured",
+        "memory_refs": "none",
+        "unresolved": "Qdrant 공식 문서(HNSW 파라미터/payload 필터/multitenancy/스냅샷·복구) URL 미확보; 실제 latency·recall 미측정; 관리형 비용 비교 불가; pgvector 파티션별 인덱스 재구축 주기 미검증; 최종 저장소 확정 보류",
+        "vector_count": 1000000,
+        "dimension": 1536,
+        "tenant_count": 30,
+        "daily_update_vectors": 10000,
+        "benchmark_executed": false,
+        "cost_figures_fabricated": false,
+        "pgvector_hnsw_default_m": 16,
+        "pgvector_hnsw_default_ef_construction": 64,
+        "pgvector_hnsw_default_ef_search": 40,
+        "pgvector_ivfflat_default_lists": 100,
+        "pgvector_ivfflat_default_probes": 1,
+        "pgvector_filter_mode": "post-filter (approximate index), iterative scan since 0.8.0",
+        "pgvector_partitioning_recommended": true,
+        "pgvector_pitr_supported": true,
+        "pgvector_pitr_restore_scope": "전체 클러스터 단위(부분집합 복원 불가)",
+        "pg_dump_is_logical_not_pitr": true,
+        "qdrant_official_evidence_obtained": false
+      },
+      "sources": [
+        {
+          "url": "https://github.com/pgvector/pgvector?tab=readme-ov-file",
+          "title": "pgvector/pgvector",
+          "excerpt": "Specify HNSW parameters\n\n- `m` - the max number of connections per layer (16 by default)\n- `ef_construction` - the size of the dynamic candidate list for constructing the graph (64 by default)\n\n```sql\nCREATE INDEX ON items USING hnsw (embedding vector_l2_ops) WITH (m = 16, ef_construction = 64);\n```\n\n...\n\nA higher value of `ef_construction` provides better recall at the cost of index build time / insert speed.\n\n...\n\nAn IVFFlat index divides vectors into lists, and then searches a subset of those lists that are closest to the query vector. It has faster build times and uses less memory than HNSW, but has lower query performance (in terms of speed-recall tradeoff).\n\n...\n\nThree keys to achievin",
+          "retrieved_at": "2026-09-17T02:54:49.929654+00:00"
+        },
+        {
+          "url": "https://github.com/pgvector/pgvector/blob/master/src/hnsw.h",
+          "title": "src/hnsw.h at master · pgvector/pgvector",
+          "excerpt": "#define HNSW_DEFAULT_EF_CONSTRUCTION 64\n...\n#define HNSW_MIN_EF_CONSTRUCTION 4\n#define HNSW_MAX_EF_CONSTRUCTION 1000\n...\ntypedef struct HnswOptions\n...\n{\n int32 vl_len_; /* varlena header (do not touch directly!) */\n int m; /* number of connections */\n int",
+          "retrieved_at": "2026-09-17T02:54:49.929670+00:00"
+        },
+        {
+          "url": "https://github.com/pgvector/pgvector/blob/master/src/ivfflat.h",
+          "title": "src/ivfflat.h at master · pgvector/pgvector",
+          "excerpt": "/* IVFFlat parameters */\n#define IVFFLAT_DEFAULT_LISTS 100\n#define IVFFLAT_MIN_LISTS 1\n#define IVFFLAT_MAX_LISTS 32768\n#define IVFFLAT_DEFAULT_PROBES 1\n...\n{\n int32 vl_len_; /* varlena header (do not touch directly!) */\n int lists; /* number of lists */\n}",
+          "retrieved_at": "2026-09-17T02:54:49.929680+00:00"
+        },
+        {
+          "url": "https://www.postgresql.org/docs/18/app-pgrestore.html",
+          "title": "PostgreSQL: Documentation: 18: pg_restore",
+          "excerpt": "pg_restore is a utility for restoring a PostgreSQL database from an archive created by pg_dump in one of the non-plain-text formats. It will issue the commands necessary to reconstruct the database to the state it was in at the time it was saved. The archive files also allow pg_restore to be selective about what is restored, or even to reorder the items prior to being restored. The archive files are designed to be portable across architectures.\n\n...\n\npg_restore cannot restore large objects selectively; for instance, only those for a specific table. If an archive contains large objects, then all large objects will be restored, or none of them if they are excluded",
+          "retrieved_at": "2026-09-17T02:54:48.101297+00:00"
+        },
+        {
+          "url": "https://www.postgresql.org/docs/current/backup.html",
+          "title": "Documentation: 18: Chapter 25. Backup and Restore - PostgreSQL",
+          "excerpt": "25.3. Continuous Archiving and Point-in-Time Recovery (PITR)\n...\n: 25.3.1. Setting Up WAL Archiving\n...\n25.\n...\n. Recovering Using a Continuous Archive Backup\n...\nPostgreSQL data:\n...\n- SQL dump\n...\n- File system level backup\n- Continuous archiving",
+          "retrieved_at": "2026-09-17T02:54:48.101266+00:00"
+        },
+        {
+          "url": "https://www.postgresql.org/docs/current/continuous-archiving.html",
+          "title": "18: 25.3. Continuous Archiving and Point-in-Time Recovery (PITR)",
+          "excerpt": "At all times, PostgreSQL maintains a write ahead log (WAL) in the `pg_wal/` subdirectory of the cluster's data directory. The log records every change made to the database's data files. This log exists primarily for crash-safety purposes: if the system crashes, the database can be restored to consistency by “ replaying” the log entries made since the last checkpoint. However, the existence of the log makes it possible to use a third strategy for backing up databases: we can combine a file-system-level backup with backup of the WAL files. If recovery is needed, we restore the file system backup and then replay from the backed-up WAL files to bring the system to a current state. This approach ",
+          "retrieved_at": "2026-09-17T02:54:48.101212+00:00"
+        }
+      ],
+      "unverified_urls": []
+    }
+  ],
+  "B": [
+    {
+      "id": "mem-32d20f79baea194f",
+      "owner": "B",
+      "scope": "rag-vector-adoption",
+      "visibility": "team",
+      "status": "model_note_unverified",
+      "run_id": "20260917T025324-01-investigate-9e7320",
+      "task_id": "rag-investigate/index_tenant_research",
+      "created_at": "2026-09-17T02:53:24.886793+00:00",
+      "expires_at": "2026-09-24T02:53:24.886793+00:00",
+      "goal": "pgvector와 Qdrant의 인덱스·필터 검색·다중 tenant 분리 전략을 공식 문서로 조사한다. 100만 1536차원, 30 tenant, tenant 필터 top-10, 일 1% 갱신 가정에 대한 적합성과 한계를 정리한다.",
+      "summary": "## pgvector vs Qdrant: 인덱스·필터·다중 tenant 분리 조사 (index_tenant_research)\n\n가정: 100만 × 1536차원 벡터, 30 tenant, tenant 필터 top-10, 일 1% 갱신(약 1만 벡터/일). 실제 latency/recall 벤치마크는 수행하지 않았으며, 아래는 공식 문서 기반 정성 비교다.\n\n| 항목 | pgvector (PostgreSQL 확장) | Qdrant |\n|---|---|---|\n| 인덱스 종류 | HNSW(m, ef_construction), IVFFlat(lists, probes) | HNSW 기반 (m, ef_construct 등) |\n| 기본 파라미터 | m=16, ef_construction=64, ef_search=40, lists 기본 100, probes 기본 1 | 공식 문서 검색 실패(검색 한도 도달) → 미확인 |\n| 필터 적용 | 근사 인덱스는 **post-filter**: 인덱스 스캔 후 필터. 10% 선택도 + ef_search=40이면 평균 4행만 매칭 | payload 필터 지원(공식 문서 미확인) |\n| 필터 보완책 | 0.8.0+ **iterative index scan**으로 결과 부족 시 추가 스캔(hnsw.max_scan_tuples, ivfflat.max_probes) | 미확인 |\n| 다중 tenant 분리 | 값 종류가 많으면 **파티셔닝** 권장(PARTITION BY LIST) | 컬렉션 분리/multitenancy 전략(공식 문서 미확인) |\n| 튜닝 지침 | lists ≈ rows/1000 (≤1M), >1M은 sqrt(rows); probes ≈ sqrt(lists) | 미확인 |\n| 갱신 부담 | HNSW는 ef_construction↑ 시 빌드/삽입 비용↑. 일 1만 건 삽입은 증분 반영 가능하나 대량 변경 시 재구축 필요 | 미확인 |\n\n### 핵심 판단\n- **tenant 필터가 항상 걸리는 top-10 검색**이 핵심 리스크다. pgvector 근사 인덱스는 post-filter이므로 30개 tenant 중 하나(≈3.3% 선택도)를 필터링하면 ef_search=40에서 평균 1~2행만 매칭될 수 있다. iterative index scan(0.8.0+) 또는 tenant별 파티셔닝으로 완화해야 한다.\n- 30 tenant는 파티셔닝이 현실적인 규모다. tenant별 LIST 파티션 + 파티션별 HNSW 인덱스는 필터를 인덱스 레벨로 밀어내 post-filter 손실을 줄인다.\n- 일 1% 갱신(1만/일)은 HNSW 증분 삽입으로 감당 가능한 수준이나, 파티션/인덱스 재구축·VACUUM·백업 창구 운영 부담은 기존 PostgreSQL 인력 2명에게 추가된다.\n- Qdrant는 payload 필터·multitenancy를 1급 기능으로 제공하는 것으로 알려져 있으나, 이번 실행에서 공식 문서 검색이 한도(1회)로 실패해 **공식 URL 근거를 확보하지 못했다**. 따라서 Qdrant 우위 주장은 미검증으로 남긴다.\n\n### 권고(후보)\n- 1순위 후보: **pgvector + tenant LIST 파티셔닝 + HNSW**, iterative scan 활성화. 기존 PostgreSQL 운영 인력·백업(플랫폼팀) 재사용 이점.\n- 2순위 후보: **Qdrant**(payload 필터/multitenancy) — 공식 문서 재조사 후 비교 필요.\n- 관리형 옵션은 비용 수치 미제공으로 정량 비교 불가.\n\n### 테스트 계획(미실행)\n1. 100만×1536, 30 tenant 분포에서 tenant 필터 top-10 recall@10 및 p",
+      "facts": {
+        "recommended_storage": "pgvector (tenant LIST 파티셔닝 + HNSW, iterative scan) 1순위 후보, Qdrant 2순위 후보(공식 근거 미확보)",
+        "internal_decision_id": "ADR-RAG-7429",
+        "backup_owner": "플랫폼팀",
+        "measured_latency": "not_measured",
+        "unresolved": "Qdrant 공식 문서 URL 미확보(HNSW 파라미터/payload 필터/multitenancy); 실제 latency·recall 미측정; 관리형 비용 비교 불가; pgvector 파티션별 인덱스 재구축 주기 미검증",
+        "memory_refs": "none",
+        "pgvector_hnsw_default_m": 16,
+        "pgvector_hnsw_default_ef_construction": 64,
+        "pgvector_hnsw_default_ef_search": 40,
+        "pgvector_ivfflat_default_lists": 100,
+        "pgvector_ivfflat_default_probes": 1,
+        "pgvector_ivfflat_lists_guidance": "rows/1000 (<=1M), sqrt(rows) (>1M)",
+        "pgvector_probes_guidance": "sqrt(lists)",
+        "pgvector_filter_mode": "post-filter (approximate index), iterative scan since 0.8.0",
+        "pgvector_partitioning_recommended": true,
+        "tenant_count": 30,
+        "vector_count": 1000000,
+        "dimension": 1536,
+        "daily_update_vectors": 10000,
+        "qdrant_official_evidence": "not_obtained",
+        "benchmark_executed": false
+      },
+      "sources": [
+        {
+          "url": "https://github.com/pgvector/pgvector?tab=readme-ov-file",
+          "title": "pgvector/pgvector",
+          "excerpt": "Specify HNSW parameters\n\n- `m` - the max number of connections per layer (16 by default)\n- `ef_construction` - the size of the dynamic candidate list for constructing the graph (64 by default)\n\n```sql\nCREATE INDEX ON items USING hnsw (embedding vector_l2_ops) WITH (m = 16, ef_construction = 64);\n```\n\n...\n\nA higher value of `ef_construction` provides better recall at the cost of index build time / insert speed.\n\n...\n\nAn IVFFlat index divides vectors into lists, and then searches a subset of those lists that are closest to the query vector. It has faster build times and uses less memory than HNSW, but has lower query performance (in terms of speed-recall tradeoff).\n\n...\n\nThree keys to achievin",
+          "retrieved_at": "2026-09-17T02:54:49.929654+00:00"
+        },
+        {
+          "url": "https://github.com/pgvector/pgvector/blob/master/src/hnsw.h",
+          "title": "src/hnsw.h at master · pgvector/pgvector",
+          "excerpt": "#define HNSW_DEFAULT_EF_CONSTRUCTION 64\n...\n#define HNSW_MIN_EF_CONSTRUCTION 4\n#define HNSW_MAX_EF_CONSTRUCTION 1000\n...\ntypedef struct HnswOptions\n...\n{\n int32 vl_len_; /* varlena header (do not touch directly!) */\n int m; /* number of connections */\n int",
+          "retrieved_at": "2026-09-17T02:54:49.929670+00:00"
+        },
+        {
+          "url": "https://github.com/pgvector/pgvector/blob/master/src/ivfflat.h",
+          "title": "src/ivfflat.h at master · pgvector/pgvector",
+          "excerpt": "/* IVFFlat parameters */\n#define IVFFLAT_DEFAULT_LISTS 100\n#define IVFFLAT_MIN_LISTS 1\n#define IVFFLAT_MAX_LISTS 32768\n#define IVFFLAT_DEFAULT_PROBES 1\n...\n{\n int32 vl_len_; /* varlena header (do not touch directly!) */\n int lists; /* number of lists */\n}",
+          "retrieved_at": "2026-09-17T02:54:49.929680+00:00"
+        }
+      ],
+      "unverified_urls": []
+    }
+  ],
+  "C": []
+}

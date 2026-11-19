@@ -1,0 +1,85 @@
+{
+  "passed": true,
+  "errors": [],
+  "mode": "live",
+  "peak_calls": 3,
+  "peak_execution_calls": 2,
+  "calls_by_phase": {
+    "propose": 12,
+    "review": 4,
+    "execute": 3,
+    "synthesize": 1
+  },
+  "task_statuses": {
+    "release-review/profitability_review": "succeeded",
+    "release-review/tech_risk_review": "succeeded",
+    "release-review/release_recommendation": "succeeded",
+    "release-review": "succeeded"
+  },
+  "awards": {
+    "release-review": {
+      "requester": "A",
+      "worker": "A",
+      "mode": "delegate",
+      "dependencies": {
+        "profitability_review": [],
+        "tech_risk_review": [],
+        "release_recommendation": [
+          "profitability_review",
+          "tech_risk_review"
+        ]
+      }
+    },
+    "release-review/profitability_review": {
+      "requester": "A",
+      "worker": "B",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "release-review/tech_risk_review": {
+      "requester": "A",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "release-review/release_recommendation": {
+      "requester": "A",
+      "worker": "A",
+      "mode": "execute",
+      "dependencies": {}
+    }
+  },
+  "providers": {
+    "Together": 4,
+    "Novita": 1,
+    "Morph": 4,
+    "Reka": 3,
+    "Alibaba": 1,
+    "Parasail": 2,
+    "BaseTen": 1,
+    "Relace": 1,
+    "SiliconFlow": 1,
+    "GMICloud": 1,
+    "Modal": 1
+  },
+  "models": {
+    "deepseek/deepseek-v4.1-flash": 20
+  },
+  "evaluation": {
+    "passed": true,
+    "checks": {
+      "p_margin": true,
+      "q_margin": true,
+      "p_profit": true,
+      "q_profit": true,
+      "p_break_even": true,
+      "q_break_even": true,
+      "p_low_profit": true,
+      "q_low_profit": true,
+      "p_high_profit": true,
+      "q_high_profit": true,
+      "migration_before_app": true,
+      "can_release": true
+    }
+  }
+}

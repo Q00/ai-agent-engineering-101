@@ -1,0 +1,27 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "제공된 기술 자료만 근거로 출시 전 기술 위험을 정리했다. 새 앱은 price_version을 필요로 하므로 DB 마이그레이션이 앱 배포보다 선행되어야 한다(migration_before_app=true). 구버전 앱은 마이그레이션 후 읽기가 가능하다는 사실은 확인되었으나, 새 앱이 쓴 데이터에 대한 롤백, 재시도 결제, 취소 결제 세 가지 검증은 아직 미검증 상태다. 따라서 이 세 검증이 완료되기 전에는 출시할 수 없다(can_release=false). 본 작업에서는 로그나 테스트 실행 결과를 생성하지 않았고, 제공 자료에 명시된 사실만 반영했다. 수익성 관련 수치(p_margin 등)는 이 작업 범위(기술 위험) 밖이며 별도 수익성 검토 작업의 결과가 필요하다.",
+    "facts": {
+      "migration_before_app": true,
+      "can_release": false,
+      "rollback_test_verified": false,
+      "retry_payment_test_verified": false,
+      "cancel_payment_test_verified": false,
+      "old_app_read_after_migration_ok": true,
+      "new_app_requires_price_version": true,
+      "release_blocker_count": 3,
+      "unverified_tests": "롤백, 재시도 결제, 취소 결제"
+    },
+    "evidence": [
+      "제공 자료: '새 앱은 price_version이 필요해 DB 마이그레이션 뒤 배포해야 한다' → 마이그레이션이 배포보다 선행되어야 하므로 migration_before_app=true.",
+      "제공 자료: '구버전 앱의 마이그레이션 후 읽기는 가능하다' → old_app_read_after_migration_ok=true.",
+      "제공 자료: '새 앱이 쓴 데이터의 롤백, 재시도 결제, 취소 결제 테스트는 아직 미검증이다' → rollback_test_verified=false, retry_payment_test_verified=false, cancel_payment_test_verified=false, release_blocker_count=3.",
+      "제공 자료: '이번 검토에서는 이 세 검증이 끝나야 출시 가능하다' → 세 검증 미완료 상태이므로 can_release=false.",
+      "본 작업은 기술 위험 범위이므로 수익성 수치(p_margin, q_margin, p_profit, q_profit, p_break_even, q_break_even, p_low_profit, q_low_profit, p_high_profit, q_high_profit)는 산출하지 않았으며, 해당 값은 수익성 검토 작업 결과에서 확인해야 한다.",
+      "로그나 테스트 실행 결과는 제공되지 않았으므로 생성하지 않았고, 미검증 항목은 미검증으로 명시했다."
+    ]
+  },
+  "error": ""
+}

@@ -1,0 +1,31 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "## tenant/메타데이터 필터링·검색 품질 검증 조사 (task: tenant_quality)\n\n### 1. 이전 대비 변경점\n- 이번 실행에서는 personal_memory/handoff_memory가 모두 비어 있어 과거 조사 내용·내부 결정 ID·PostgreSQL 백업 담당 팀을 확인할 수 없었다. 따라서 internal_decision_id, backup_owner는 **unknown**으로 남긴다(추측 금지).\n- 새 제약(폐쇄망, 외부 관리형 SaaS 불가, stateful 저장소 운영 인력 증원 불가)은 본 조사 범위(필터링·품질 검증)에 직접 영향: 두 제품 모두 자체 호스팅 전제로만 평가했다.\n\n### 2. 필터링 방식 비교 표\n\n| 항목 | pgvector (PostgreSQL 확장) | Qdrant (자체 호스팅) |\n|---|---|---|\n| 인덱스 유형 | HNSW, IVFFlat (근사) | HNSW 기반 벡터 인덱스 + payload index |\n| 필터 적용 시점 | 근사 인덱스 스캔 **이후** 필터 적용(사후 필터링) | payload index로 필터를 먼저 좁힘(가장 제한적인 인덱스 우선) |\n| 필터로 인한 리콜 저하 | 조건이 10% 행에 매칭되고 ef_search=40이면 평균 4행만 매칭 → 결과 부족 | payload index 사전 생성 시 필터링 성능·결과 안정성 확보 |\n| 완화 수단 | 0.8.0+ iterative index scan (`hnsw.iterative_scan = strict_order/relaxed_order`, `hnsw.max_scan_tuples`, `ivfflat.max_probes`) | 필터 대상 필드에 payload index 생성(가급적 데이터 적재 전), 복합 조건 시 최우선 제한 인덱스 사용 |\n| 리콜 튜닝 파라미터 | IVFFlat: lists(rows/1000, >1M은 sqrt(rows)), probes(sqrt(lists)); HNSW: ef_search | HNSW 계열 파라미터 + payload index 설계 |\n| 재현성 도구 | SQL로 직접 측정 필요 | `is_empty`/슬라이스 필터로 결정적 부분집합 샘플링 가능(recall 평가·canary에 활용) |\n\n### 3. 품질 검증 절차 초안 (recall@k, 필터 적용 시 리콜 저하 확인)\n1. **골든 쿼리셋 구축**: 쿼리-정답 문서 쌍(ground truth) 라벨링. Qdrant 공식 문서는 ranx 라이브러리로 recall@k, MRR, NDCG@k, Precision@k, MAP 계산을 권장.\n2. **베이스라인 측정**: 필터 없이 recall@k 측정(인덱스 파라미터 고정).\n3. **필터 조건별 측정**: tenant_id 등 제한적 필드를 필터로 걸고 동일 쿼리셋 재측정 → 리콜 저하폭 산출.\n4. **pgvector 완화 검증**: `hnsw.iterative_scan = relaxed_order`(리콜 우선) vs `strict_order`(정확 순서) 비교, `hnsw.max_scan_tuples`/`ivfflat.max_probes` 상향 시 리콜-지연 트레이드오프 기록.\n5. **Qdrant 완화 검증**: 필터 대상 필드에 payload index 생성 전/후 리콜·지연 비교, 복합 필터 시 제한적 인덱스 우선 동작 확인.\n6. **회귀 게이트**: 필터 적용 리콜이 베이스라인 대비 허용 임계 이내인지 배포 전 체크.\n\n### 4. 최종 판단(본 조사 범위 한정)\n- 폐쇄망·운영 인력 제약 하에서는 **이미 운영 중인 PostgreSQL + pgvector**가 신규 stateful 저장소(Qdrant) 추가 운영 부담을 피한다는 점에서 유리하다. 단, tenant 필터가 선택도가 높은(제한적인) 조건이면 pgvector의 사후 필터링 리콜 저하가 실측 리스크이므로 iterative scan 설정과 리콜 회귀 게이트가 필수다.\n- Qdrant는 payload index 기반 사전 필터링으로 필터 리콜 안정성이 구조적으로 유리하나, 자체 호스팅 시 별도 저장소 운영·백업 체계가 추가로 필요하다.\n- **실제 벤치마크·복구 테스트는 미실행**이므로 위 판단은 문서 근거 기반 설계 검토이며, 성능/복구 성공을 주장하지 않는다.\n\n### 5. 배포/복구 체크리스트(본 조사 기여분)\n- [ ] tenant_id 등 필터 필드에 인덱스(pgvector: 필요 시 partial index 검토 / Qdrant: payload index) 사전 생성\n- [ ] 골든 쿼리셋 + recall@k 자동 측정 파이프라인 구성\n- [ ] 필터 적용 리콜 저하 임계값 정의 및 회귀 게이트 통과 확인\n- [ ] pgvector iterative scan 파라미터(ef_search, max_scan_tuples, max_probes) 운영값 문서화\n- [ ] 백업/복구 절차는 별도 조사(다른 하위 작업) 결과와 통합 — 본 조사에서는 미검증\n\n### 6. 미해결 항목\n- internal_decision_id, backup_owner: 메모리 부재로 unknown\n- 기존 규모(벡터 수)·품질 목표(recall@k 목표치): 이전 메모리 없음 → 확인 필요\n- 실제 리콜/지연 수치: not_measured\n- 폐쇄망 내 패키지 반입·업그레이드 경로: 미조사",
+    "facts": {
+      "pgvector_filter_notes": "근사 인덱스(HNSW/IVFFlat)는 필터를 인덱스 스캔 이후에 적용하므로 선택도 높은 필터에서 결과가 부족해질 수 있음(예: 10% 매칭 + ef_search=40 → 평균 4행). 0.8.0+ iterative index scan(strict_order/relaxed_order, hnsw.max_scan_tuples, ivfflat.max_probes)으로 완화 가능. IVFFlat 리콜 3요소: 데이터 적재 후 인덱스 생성, lists=rows/1000(>1M은 sqrt(rows)), probes=sqrt(lists).",
+      "qdrant_filter_notes": "payload 필드에 인덱스를 생성해 필터링 성능 확보, 가급적 데이터 적재 전 생성 권장. 복합 조건에서는 가장 제한적인 인덱스를 우선 사용. 결정적 슬라이스 필터로 recall 평가·canary용 부분집합 재현 샘플링 가능.",
+      "quality_validation_plan": "1) 골든 쿼리셋(쿼리-정답 쌍) 구축 2) 필터 없이 recall@k 베이스라인 측정 3) tenant 필터 적용 후 재측정하여 저하폭 산출 4) pgvector는 iterative_scan relaxed_order 및 max_scan_tuples/max_probes 상향 비교 5) Qdrant는 payload index 생성 전/후 비교 6) 필터 리콜 저하 임계값 기반 배포 회귀 게이트. ranx로 recall@k/MRR/NDCG@k/Precision@k/MAP 계산 권장.",
+      "measured_latency": "not_measured",
+      "unresolved": "internal_decision_id unknown(메모리 없음); backup_owner unknown(메모리 없음); 기존 벡터 규모·품질 목표(recall@k 목표치) 확인 필요; 실제 리콜/지연 수치 미측정; 폐쇄망 패키지 반입·업그레이드 경로 미조사; 백업/복구 적합성은 별도 하위 조사 필요",
+      "memory_refs": "none",
+      "internal_decision_id": "unknown",
+      "backup_owner": "unknown",
+      "external_saas_allowed": false,
+      "benchmark_executed": false,
+      "recovery_test_executed": false,
+      "pgvector_iterative_scan_available": "0.8.0 이상",
+      "qdrant_payload_index_recommended": true
+    },
+    "evidence": [
+      "https://github.com/pgvector/pgvector/?tab=readme-ov-file — pgvector 공식 README: IVFFlat은 리스트 분할·일부 리스트만 검색, HNSW보다 빌드 빠르고 메모리 적지만 속도-리콜 트레이드오프 낮음. 좋은 리콜 3요소(데이터 적재 후 인덱스 생성, lists=rows/1000 또는 sqrt(rows), probes=sqrt(lists)). 근사 인덱스는 필터를 인덱스 스캔 이후 적용하며 10% 매칭+ef_search=40이면 평균 4행만 매칭, iterative index scan으로 완화.",
+      "https://github.com/pgvector/pgvector/blob/master/README.md — iterative index scan: 0.8.0부터 필터 쿼리에서 인덱스를 추가 스캔해 충분한 결과 확보(hnsw.max_scan_tuples, ivfflat.max_probes 한계). strict_order는 거리 정확 순서, relaxed_order는 순서가 약간 어긋나도 리콜 우수.",
+      "https://qdrant.tech/documentation/manage-data/payload/ — Qdrant 공식 Payload 문서: 필터 검색 효율을 위해 payload 필드 인덱스 생성, 인덱스된 필드는 벡터 인덱스에도 영향. 결과를 가장 제한하는 필드에 인덱스 권장, 복합 쿼리에서 가장 제한적인 인덱스 우선 사용.",
+      "https://qdrant.tech/documentation/search/filtering/ — Qdrant 공식 Filtering 문서: 성능 위해 필터 대상 필드에 payload index 생성, 가급적 데이터 적재 전 생성. 결정적 슬라이스 필터로 recall 평가·train/test 분할·canary 롤아웃용 부분집합 재현 샘플링 가능.",
+      "https://qdrant.tech/documentation/improve-search/retrieval-relevance/ — Qdrant 공식 Measuring Retrieval Relevance 문서: 골든 쿼리셋(ground truth) 구축 후 ranx로 recall@k, MRR, NDCG@k, Precision@k, MAP 계산, Qrels/Run 구성 절차 제시.",
+      "memory:none — personal_memory 및 handoff_memory가 비어 있어 참고한 메모리 ID 없음. internal_decision_id/backup_owner는 unknown으로 반환."
+    ]
+  },
+  "error": ""
+}

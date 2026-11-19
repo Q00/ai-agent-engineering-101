@@ -1,0 +1,31 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "결제 중복 사고를 재현 가능한 설계 결함으로 분석한 결과다. 핵심 원인 가설: (1) 두 요청 모두 idempotency_key가 비어 있어 PG가 동일 주문에 대해 독립 승인 2건을 생성했고, (2) 첫 요청 504는 네트워크 타임아웃일 뿐 승인 여부를 확정할 수 없는데 클라이언트가 이를 실패로 간주하고 2초 뒤 재시도했으며, (3) 웹훅이 중복/순서 역전될 수 있어 주문 DB 완료 처리가 1건으로 수렴했다. 즉 '멱등 키 부재 + 타임아웃 시 승인 확정 불가 + 웹훅 멱등성 부재'의 3중 결함이다. 확인할 증거: PG 승인 로그의 동일 order_id 2건과 각 승인 시각/금액, 두 요청의 헤더에 idempotency_key 부재, 웹훅 수신 로그의 중복/순서, 주문 DB 결제 이력 1건과 PG 대사 불일치.\n\n[인터페이스 정의]\n- PaymentCommand: 책임=결제/취소 명령의 진입점, 멱등 키 생성·전달, 상태 전이 오케스트레이션. 시그니처: pay(order_id, amount, currency, idempotency_key) -> PaymentResult; cancel(order_id, idempotency_key) -> PaymentResult. 저장: order_id, idempotency_key, amount, status, pg_approval_id, created_at, updated_at. 고유 제약: UNIQUE(order_id, idempotency_key). 오류 경계: 타임아웃 시 상태를 UNKNOWN으로 두고 재시도는 동일 키로만 허용.\n- IdempotencyStore: 책임=키-결과 매핑 저장, 동시 요청 직렬화. 시그니처: get(key) -> Optional<Result>; putIfAbsent(key, result) -> bool; lock(key) -> Lock. 저장: key, result_json, status, expires_at. 고유 제약: PRIMARY KEY(key). 오류 경계: 저장 실패 시 결제 진행 금지(선저장 후호출).\n- GatewayPort: 책임=PG 호출 추상화, 타임아웃/재시도 정책. 시그니처: authorize(order_id, amount, idempotency_key) -> GatewayResult(status, approval_id, error_code); cancel(approval_id, idempotency_key) -> GatewayResult; query(approval_id) -> GatewayResult. 저장: 없음(외부). 오류 경계: 타임아웃은 UNKNOWN, 재시도는 동일 키, 지수 백오프, 최대 N회.\n- WebhookHandler: 책임=웹훅 수신, 멱등 적용, 순서 역전 방어. 시그니처: handle(event_id, approval_id, order_id, status, occurred_at) -> Ack. 저장: event_id(고유), approval_id, order_id, status, occurred_at, applied_at. 고유 제약: UNIQUE(event_id), 상태 전이 유효성 검사. 오류 경계: 중복 event_id 무시, 늦은 도착은 occurred_at 비교로 역전 방지.\n- ReconciliationJob: 책임=PG-DB 대사, 불일치 탐지·보정. 시그니처: run(window) -> ReconciliationReport. 저장: run_id, window, mismatches, resolved, created_at. 고유 제약: UNIQUE(run_id). 오류 경계: 자동 보정은 승인 2건 중 1건 환불, 수동 검토 큐 분리.\n\n[상태 전이표] 생성(CREATED) → 승인요청(PENDING) → 승인(APPROVED) | 실패(FAILED) | 취소(CANCELED). 대사 상태: MATCHED, PG_ONLY(승인만), DB_ONLY(DB만), AMOUNT_MISMATCH. 허용 전이: CREATED→PENDING, PENDING→APPROVED/FAILED, APPROVED→CANCELED, FAILED→(재시도 시 PENDING, 동일 키). 금지: APPROVED→PENDING, CANCELED→APPROVED.\n\n[코드 디렉터리] payment/command/PaymentCommand, payment/idempotency/IdempotencyStore, payment/gateway/GatewayPort, payment/webhook/WebhookHandler, payment/reconcile/ReconciliationJob, payment/domain/StateMachine, payment/domain/Models.\n\n[의사코드] pay(): key=idempotency_key or generate(order_id); if store.get(key) return cached; lock(key); if store.get(key) return cached; store.putIfAbsent(key, PENDING); r=gateway.authorize(order_id, amount, key); if r.timeout: store.put(key, UNKNOWN); return UNKNOWN; if r.ok: store.put(key, APPROVED, approval_id); else store.put(key, FAILED). WebhookHandler: if store.exists(event_id) return ACK; if occurred_at < last_applied(order_id) return ACK(역전 무시); apply transition; store.put(event_id). ReconciliationJob: for each order in window: pg=gateway.query; db=load; if pg.count>1 and db.count==1: enqueue refund(pg.extra); mark PG_ONLY.\n\n[테스트 행렬] (1) 동시 중복 제출: 동일 키 2요청 → 기대 APPROVED 1건, PG 승인 1건. (2) 순서 역전: 승인 웹훅이 취소 웹훅보다 늦게 도착 → 기대 CANCELED 유지, 늦은 승인 무시. (3) 중복 웹훅: 동일 event_id 2회 → 기대 1회만 적용. (4) 부분 실패: PG 승인 후 DB 저장 실패 → 기대 UNKNOWN, 대사에서 PG_ONLY 탐지. (5) 타임아웃 재시도: 504 후 동일 키 재시도 → 기대 승인 1건. 검증 포인트: PG 승인 건수, DB 상태, 대사 리포트.\n\n[미검증] 실제 PG·DB 조회, 환불, 배포, 롤백·재시도 결제·취소 결제 검증은 수행하지 않았다. 위 설계는 제안이며 실제 구현/테스트 수행이 아니다.",
+    "facts": {
+      "backfill_batches": 240,
+      "serial_backfill_seconds": 3600,
+      "two_worker_backfill_seconds": 1800,
+      "downtime_budget_seconds": 1200,
+      "coexistence_hours": 72,
+      "unverified_release_checks": 3,
+      "offline_backfill_fits": false,
+      "can_release": false
+    },
+    "evidence": [
+      "배치 수 = 1,200,000 / 5,000 = 240",
+      "1개 작업자 전체 시간 = 240 × 15초 = 3,600초",
+      "2개 작업자 전체 시간 = 240 / 2 × 15초 = 1,800초",
+      "서비스 중단 허용 = 20분 × 60 = 1,200초",
+      "오프라인 일괄 처리 가능 여부: 1,800초(2작업자) > 1,200초이므로 offline_backfill_fits=false",
+      "공존 요구사항: 구버전·신버전 앱 72시간 공존 → coexistence_hours=72",
+      "미완료 검증: 롤백, 재시도 결제, 취소 결제 3건 → unverified_release_checks=3",
+      "배포 가능 판정: 오프라인 백필이 허용 시간 초과이고 미검증 3건 존재 → can_release=false",
+      "원인 근거: 제공 자료에 첫 요청 504, 2초 뒤 재시도 200, 두 요청 모두 idempotency_key 비어 있음, PG 승인 2건, 주문 DB 완료 1건으로 명시됨",
+      "타임아웃 확정 불가 근거: 제공 자료에 '네트워크 타임아웃만으로 승인 여부를 확정할 수 없다'고 명시됨",
+      "웹훅 위험 근거: 제공 자료에 '웹훅은 중복되거나 순서가 뒤바뀔 수 있다'고 명시됨"
+    ]
+  },
+  "error": ""
+}

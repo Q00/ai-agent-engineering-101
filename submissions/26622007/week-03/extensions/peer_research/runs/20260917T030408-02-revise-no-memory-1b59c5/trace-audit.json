@@ -1,0 +1,102 @@
+{
+  "passed": true,
+  "errors": [],
+  "mode": "research-live",
+  "peak_calls": 3,
+  "peak_execution_calls": 2,
+  "calls_by_phase": {
+    "propose": 12,
+    "review": 4,
+    "execute": 3,
+    "synthesize": 1
+  },
+  "task_statuses": {
+    "rag-revise/tenant_quality": "succeeded",
+    "rag-revise/closed_net_backup": "succeeded",
+    "rag-revise/adr_checklist": "succeeded",
+    "rag-revise": "succeeded"
+  },
+  "awards": {
+    "rag-revise": {
+      "requester": "A",
+      "worker": "A",
+      "mode": "delegate",
+      "dependencies": {
+        "closed_net_backup": [],
+        "tenant_quality": [],
+        "adr_checklist": [
+          "closed_net_backup",
+          "tenant_quality"
+        ]
+      }
+    },
+    "rag-revise/closed_net_backup": {
+      "requester": "A",
+      "worker": "B",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "rag-revise/tenant_quality": {
+      "requester": "A",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "rag-revise/adr_checklist": {
+      "requester": "A",
+      "worker": "B",
+      "mode": "execute",
+      "dependencies": {}
+    }
+  },
+  "providers": {
+    "GMICloud": 2,
+    "Morph": 2,
+    "Together": 4,
+    "SiliconFlow": 2,
+    "Alibaba": 3,
+    "Modal": 2,
+    "OpenAI": 3,
+    "Makora": 1,
+    "Parasail": 1
+  },
+  "models": {
+    "deepseek/deepseek-v4.1-flash": 20
+  },
+  "evaluation": {
+    "passed": true,
+    "checks": {
+      "root_succeeded": true,
+      "required_string_facts": true,
+      "decision_id": true,
+      "backup_owner": true,
+      "no_invented_latency": true,
+      "report_length": true,
+      "comparison_table": true,
+      "two_independent_then_join": true,
+      "verified_url_count": true,
+      "fresh_search_cited": true,
+      "search_tool_used": true,
+      "no_unretrieved_evidence_urls": true,
+      "both_products_sourced": true,
+      "memory_refs_delivered": true,
+      "new_constraint": true,
+      "memory_used_or_explicitly_absent": true
+    },
+    "cited_verified_urls": [
+      "https://github.com/pgvector/pgvector",
+      "https://github.com/pgvector/pgvector/blob/master/README.md",
+      "https://qdrant.tech/documentation/concepts/snapshots",
+      "https://qdrant.tech/documentation/guides/installation",
+      "https://qdrant.tech/documentation/improve-search/retrieval-relevance",
+      "https://qdrant.tech/documentation/manage-data/payload",
+      "https://qdrant.tech/documentation/search/filtering",
+      "https://www.postgresql.org/docs/current/app-pgbasebackup.html",
+      "https://www.postgresql.org/docs/current/app-pgdump.html",
+      "https://www.postgresql.org/docs/current/continuous-archiving.html"
+    ],
+    "unretrieved_urls": [],
+    "memory_refs": [],
+    "limits": "Checks trace source retrieval and known scenario facts, not claim entailment, measured performance or statistical reproducibility."
+  }
+}

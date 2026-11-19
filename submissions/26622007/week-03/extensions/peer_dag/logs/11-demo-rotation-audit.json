@@ -1,0 +1,88 @@
+{
+  "passed": true,
+  "errors": [],
+  "mode": "demo",
+  "peak_calls": 3,
+  "peak_execution_calls": 2,
+  "calls_by_phase": {
+    "propose": 18,
+    "review": 6,
+    "execute": 4,
+    "synthesize": 2
+  },
+  "task_statuses": {
+    "release-review/technical": "succeeded",
+    "release-review/economics/p": "succeeded",
+    "release-review/economics/q": "succeeded",
+    "release-review/economics": "succeeded",
+    "release-review/recommendation": "succeeded",
+    "release-review": "succeeded"
+  },
+  "awards": {
+    "release-review": {
+      "requester": "A",
+      "worker": "A",
+      "mode": "delegate",
+      "dependencies": {
+        "economics": [],
+        "technical": [],
+        "recommendation": [
+          "economics",
+          "technical"
+        ]
+      }
+    },
+    "release-review/economics": {
+      "requester": "A",
+      "worker": "B",
+      "mode": "delegate",
+      "dependencies": {
+        "p": [],
+        "q": []
+      }
+    },
+    "release-review/technical": {
+      "requester": "A",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "release-review/economics/p": {
+      "requester": "B",
+      "worker": "A",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "release-review/economics/q": {
+      "requester": "B",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "release-review/recommendation": {
+      "requester": "A",
+      "worker": "A",
+      "mode": "execute",
+      "dependencies": {}
+    }
+  },
+  "providers": {},
+  "models": {},
+  "evaluation": {
+    "passed": true,
+    "checks": {
+      "p_margin": true,
+      "q_margin": true,
+      "p_profit": true,
+      "q_profit": true,
+      "p_break_even": true,
+      "q_break_even": true,
+      "p_low_profit": true,
+      "q_low_profit": true,
+      "p_high_profit": true,
+      "q_high_profit": true,
+      "migration_before_app": true,
+      "can_release": true
+    }
+  }
+}

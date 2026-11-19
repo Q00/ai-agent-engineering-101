@@ -1,0 +1,32 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "pgvector와 자체 호스팅 Qdrant의 tenant 필터링 방식과 검색 품질 검증 계획을 공식 문서 기반으로 조사했다. pgvector는 PostgreSQL의 일반 WHERE 조건과 부분 인덱스(partial index), 그리고 iterative index scan으로 tenant를 격리하는 반면, Qdrant는 payload에 tenant 키를 저장하고 payload index를 만든 뒤 filter로 격리하며, 필터링이 인덱스 스캔과 결합되는 방식(필터 가능/불가능 조건)에 따라 recall과 지연이 달라진다. 품질 검증은 두 시스템 모두 고정된 쿼리셋과 정답 라벨(ground truth)로 recall@k, nDCG 등을 측정하고 필터 적용/미적용 조건을 나눠 비교하는 절차가 필요하다. 폐쇄망·자체 호스팅 관점에서 두 방식 모두 외부 SaaS 호출 없이 검증 가능하다. 실제 벤치마크와 복구 리허설은 수행하지 않았으므로 measured_latency는 not_measured로 남긴다. 이전 실행 메모리(personal_memory, handoff_memory)가 비어 있어 내부 결정 ID와 백업 담당 팀은 unknown이다.\n\n| 항목 | pgvector (PostgreSQL 확장) | Qdrant (자체 호스팅) |\n|---|---|---|\n| tenant 격리 | WHERE tenant_id = $1 + 부분 인덱스, 필요 시 파티셔닝 | payload의 tenant 필드 + payload index, filter 조건 |\n| 필터-검색 결합 | 플래너가 인덱스 스캔과 필터를 결합, iterative scan으로 recall 보정 | filterable index 여부에 따라 pre/post-filter, 조건에 따라 HNSW 그래프 탐색 제약 |\n| 운영 부담 | 기존 PostgreSQL 운영 인력 재사용, 신규 stateful 저장소 불필요 | 별도 stateful 서비스 운영 필요(인력 증원 불가 제약과 충돌) |\n| 폐쇄망 적합성 | 완전 자체 호스팅, 외부 호출 없음 | 완전 자체 호스팅 가능, 외부 호출 없음 |\n| 품질 검증 | recall@k, 필터 조건별 비교, EXPLAIN으로 인덱스 사용 확인 | recall@k, filter 조건별 비교, payload index 적용 확인 |\n\n체크리스트: (1) 공식 문서 URL 확보 완료, (2) tenant 필터 방식 양쪽 확인 완료, (3) 품질 검증 절차 초안 작성 완료, (4) 실제 벤치마크 미실행(not_measured), (5) 복구 리허설 미실행(검증 필요), (6) 내부 결정 ID/백업 담당 팀 unknown.",
+    "facts": {
+      "pgvector_tenant_filter": "PostgreSQL WHERE 조건(tenant_id = $1)으로 행을 제한하고, tenant별 부분 인덱스(partial index) 또는 파티셔닝으로 검색 공간을 축소한다. 필터 선택도가 높을 때는 iterative index scan으로 인덱스 스캔을 반복해 필터 통과 행을 충분히 확보한다.",
+      "qdrant_tenant_filter": "payload에 tenant 식별자를 저장하고 payload index를 생성한 뒤 filter(match 조건)로 검색을 제한한다. 필터 조건이 인덱싱되어 있으면 HNSW 탐색에 반영되고, 그렇지 않으면 post-filter로 처리되어 recall이 낮아질 수 있다.",
+      "quality_validation_plan": "고정 쿼리셋과 정답 라벨(ground truth)을 준비해 recall@k, nDCG@k를 측정한다. tenant 필터 적용/미적용, 필터 선택도(고/저) 조건을 나눠 비교하고, pgvector는 EXPLAIN으로 인덱스 사용 여부를, Qdrant는 payload index 적용 여부를 확인한다. 폐쇄망 내부에서만 실행하며 외부 SaaS 호출은 사용하지 않는다.",
+      "measured_latency": "not_measured",
+      "unresolved": "실제 벤치마크 미실행(recall/지연 수치 없음), 폐쇄망 백업·복구 리허설 미실행, 기존 데이터 규모와 품질 목표 수치 미확인, 내부 결정 ID와 PostgreSQL 백업 담당 팀 미확인",
+      "memory_refs": "none",
+      "internal_decision_id": "unknown",
+      "backup_owner": "unknown",
+      "external_saas_allowed": false,
+      "benchmark_executed": false,
+      "recovery_test_executed": false,
+      "pgvector_official_doc_found": true,
+      "qdrant_official_doc_found": true
+    },
+    "evidence": [
+      "pgvector 공식 저장소/문서: https://github.com/pgvector/pgvector — HNSW/IVFFlat 인덱스, 필터링 시 인덱스 스캔과 WHERE 조건 결합, iterative index scan(hnsw.iterative_scan)으로 필터 통과 행 확보 방식을 설명.",
+      "pgvector 필터링 관련 문서: https://github.com/pgvector/pgvector#filtering — WHERE 조건과 부분 인덱스(partial index)로 tenant별 검색 공간을 제한하는 방식 근거.",
+      "Qdrant 공식 문서(필터링): https://qdrant.tech/documentation/concepts/filtering/ — payload 기반 filter 조건과 match 연산으로 tenant를 격리하는 방식 근거.",
+      "Qdrant 공식 문서(인덱싱): https://qdrant.tech/documentation/concepts/indexing/ — payload index 생성과 필터 가능 조건이 검색 성능/recall에 미치는 영향 근거.",
+      "Qdrant 공식 문서(검색/품질): https://qdrant.tech/documentation/concepts/search/ — 검색 파라미터와 필터 결합 시 결과 품질 확인 절차 근거.",
+      "memory:none — personal_memory와 handoff_memory가 비어 있어 참고한 메모리 ID 없음. 내부 결정 ID와 백업 담당 팀은 추측하지 않고 unknown으로 반환.",
+      "실제 벤치마크·복구 테스트 미실행: measured_latency=not_measured, benchmark_executed=false, recovery_test_executed=false로 명시."
+    ]
+  },
+  "error": ""
+}

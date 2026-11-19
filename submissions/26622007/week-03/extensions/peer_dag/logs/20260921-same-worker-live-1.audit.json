@@ -1,0 +1,108 @@
+{
+  "passed": true,
+  "errors": [],
+  "mode": "live",
+  "concurrency_policy": "task-worker-isolated-v1",
+  "peak_calls": 3,
+  "peak_execution_calls": 2,
+  "peak_calls_by_worker": {
+    "A": 2,
+    "B": 1,
+    "C": 2
+  },
+  "peak_execution_calls_by_worker": {
+    "A": 0,
+    "B": 0,
+    "C": 2
+  },
+  "calls_by_phase": {
+    "propose": 12,
+    "review": 4,
+    "execute": 2
+  },
+  "task_statuses": {
+    "release-review/profitability_review": "succeeded",
+    "release-review/tech_risk_review": "succeeded",
+    "release-review/release_recommendation": "failed",
+    "release-review": "failed"
+  },
+  "awards": {
+    "release-review": {
+      "requester": "A",
+      "worker": "C",
+      "mode": "delegate",
+      "dependencies": {
+        "profitability_review": [],
+        "tech_risk_review": [],
+        "release_recommendation": [
+          "profitability_review",
+          "tech_risk_review"
+        ]
+      }
+    },
+    "release-review/profitability_review": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "release-review/tech_risk_review": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    }
+  },
+  "providers": {
+    "Fireworks": 17
+  },
+  "models": {
+    "deepseek/deepseek-v4.1-flash": 17
+  },
+  "evaluation": {
+    "passed": false,
+    "checks": {
+      "p_margin": false,
+      "q_margin": false,
+      "p_profit": false,
+      "q_profit": false,
+      "p_break_even": false,
+      "q_break_even": false,
+      "p_low_profit": false,
+      "q_low_profit": false,
+      "p_high_profit": false,
+      "q_high_profit": false,
+      "migration_before_app": false,
+      "can_release": false
+    }
+  },
+  "response_format_validation": {
+    "requests_checked": 19,
+    "responses_checked": 17,
+    "errors": []
+  },
+  "execution_overlap": [
+    {
+      "first": {
+        "task_id": "release-review/profitability_review",
+        "worker": "C",
+        "phase": "execute",
+        "start": "2026-09-21T09:04:47.265727+00:00",
+        "end": "2026-09-21T09:04:56.707989+00:00",
+        "start_line": 71,
+        "end_line": 97
+      },
+      "second": {
+        "task_id": "release-review/tech_risk_review",
+        "worker": "C",
+        "phase": "execute",
+        "start": "2026-09-21T09:04:50.839315+00:00",
+        "end": "2026-09-21T09:04:58.122879+00:00",
+        "start_line": 92,
+        "end_line": 104
+      },
+      "overlap_seconds": 5.868674,
+      "same_worker": true
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "case_id": "game-design-architecture",
+  "condition": "baseline",
+  "block": 1,
+  "run_id": "20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-baseline",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 38.6744,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 10,
+  "checks_total": 10,
+  "wrong_or_missing": [],
+  "calls": 5,
+  "http_requests": 5,
+  "http_responses": 5,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 1,
+  "max_depth": 0,
+  "awards": {
+    "A": 1
+  },
+  "root_award": "A",
+  "c_proposals": 1,
+  "c_high_bids": 0,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.006459736,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 38.4913,
+  "canonical_facts": {
+    "board_height": 6.0,
+    "board_width": 6.0,
+    "coop_fits_budget": false,
+    "core_scope_hours": 160.0,
+    "developer_hours": 160.0,
+    "max_turns": 12.0,
+    "offline_required": true,
+    "qa_hours": 40.0,
+    "seeded_replay_required": true,
+    "with_coop_hours": 240.0
+  },
+  "artifact_sha": "e0f13c744cadf99c167de769b4c55b8c07ac78021fab32964da3b14a6462a9c0",
+  "root_plan_sha": "5f1c880492d1ea31d70bfd30f12595446b3782997ec786c9514cbbf407c6bf38",
+  "award_sha": "97150bcfad177a63c0ffaf5157b26557ce426e64aed5334e4cd6b1c30fb19cf9",
+  "controls_sha": "cfd2ef459faf8ba173d8b03587b5b88883caeb14eee172ec0e868a281ecee942",
+  "root_plan": {
+    "mode": "execute",
+    "actions": [
+      "제공 자료의 수치로 예산을 계산한다: 개발자 가용=2명×20h×4주=160h, QA=1명×10h×4주=40h. 기본 범위 합계=24+24+32+24+20+24+12=160h. 협동 포함=160+80=240h. 기본 범위는 개발 160h에 정확히 맞고 QA 40h는 별도이므로 coop_fits_budget=false로 판정한다.",
+      "게임 기획서를 작성한다: 6×6 보드, 최대 12턴, 탐험→전투→보상→탈출 루프, 승리(탈출)/패배(체력0 또는 12턴 초과), 난이도 곡선, 전투·보상 규칙, 튜토리얼·접근성, 각 규칙에 재미 가설을 연결한다.",
+      "코드 구조를 설계한다: 디렉터리 트리, 모듈 책임, 의존 방향(domain←application←infra/ui), GameState/Command/Event/Rng/SaveCodec 타입·시그니처, 턴 처리 의사코드를 짧은 텍스트 조각으로 제시한다.",
+      "규칙→모듈→테스트 대응표와 저장 스키마 버전·재현 테스트·수용 기준을 작성하고, 기획 규칙이 코드 설계로 지원되는지 통합 대조한다.",
+      "모순·미확인 사항을 정리한다(예: 기본 범위가 개발 예산 160h에 여유 0, QA 시간이 개발 추정에 미포함, 협동 80h는 병렬화로 사람시간 불변).",
+      "facts에 숫자 키(board_width=6, board_height=6, max_turns=12, developer_hours=160, qa_hours=40, core_scope_hours=160, with_coop_hours=240)와 boolean(coop_fits_budget=false, seeded_replay_required=true, offline_required=true)을 채우고, summary/evidence에 문서·표·코드 조각을 문자열로 넣는다. 실제 구현/테스트 완료로 서술하지 않는다."
+    ],
+    "steps": []
+  },
+  "intervals": [
+    {
+      "task_id": "game-design-architecture",
+      "worker": "A",
+      "start": "2026-09-22T01:25:16.341937+00:00",
+      "end": "2026-09-22T01:25:36.130693+00:00"
+    }
+  ],
+  "overlaps": [],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 1,
+    "peak_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 1
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 0,
+      "C": 0
+    },
+    "calls_by_phase": {
+      "propose": 3,
+      "review": 1,
+      "execute": 1
+    },
+    "task_statuses": {
+      "game-design-architecture": "succeeded"
+    },
+    "awards": {
+      "game-design-architecture": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 5
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 5
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "board_width": true,
+        "board_height": true,
+        "max_turns": true,
+        "developer_hours": true,
+        "qa_hours": true,
+        "core_scope_hours": true,
+        "with_coop_hours": true,
+        "coop_fits_budget": true,
+        "seeded_replay_required": true,
+        "offline_required": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

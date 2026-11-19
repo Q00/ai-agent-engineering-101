@@ -1,0 +1,76 @@
+{
+  "scope": "Alternative provider availability/schema diagnostic only; not part of the ongoing Fireworks 45-run study.",
+  "source_tape": "extensions/peer_dag/logs/20260922T012131-no-token-limit-9703d2-r1-release-review-baseline.jsonl",
+  "config": {
+    "model": "deepseek/deepseek-v4.1-flash",
+    "temperature": 0,
+    "reasoning": {
+      "enabled": false
+    },
+    "provider": {
+      "only": [
+        "together"
+      ],
+      "allow_fallbacks": true,
+      "require_parameters": true,
+      "max_price": {
+        "prompt": 0.3,
+        "completion": 1.2
+      }
+    },
+    "timeout_seconds": 30,
+    "response_deadline_seconds": 90,
+    "max_attempts": 2,
+    "retry_delay_seconds": 2,
+    "rate_limit_retry": {
+      "max_attempts": 6,
+      "initial_delay_seconds": 15,
+      "max_delay_seconds": 60,
+      "max_wait_seconds": 300
+    },
+    "max_http_requests": 6
+  },
+  "passed": false,
+  "phases": [
+    {
+      "phase": "propose",
+      "schema_passed": false,
+      "error": "CallError: HTTP 400",
+      "request_count": 1,
+      "request_contract_passed": true,
+      "providers": [],
+      "finish_reasons": []
+    },
+    {
+      "phase": "review",
+      "schema_passed": true,
+      "error": null,
+      "request_count": 1,
+      "request_contract_passed": true,
+      "providers": [
+        "Together"
+      ],
+      "finish_reasons": [
+        "stop"
+      ]
+    },
+    {
+      "phase": "execute",
+      "schema_passed": false,
+      "error": "CallError: HTTP 400",
+      "request_count": 1,
+      "request_contract_passed": true,
+      "providers": [],
+      "finish_reasons": []
+    },
+    {
+      "phase": "synthesize",
+      "schema_passed": false,
+      "error": "CallError: HTTP 400",
+      "request_count": 1,
+      "request_contract_passed": true,
+      "providers": [],
+      "finish_reasons": []
+    }
+  ]
+}

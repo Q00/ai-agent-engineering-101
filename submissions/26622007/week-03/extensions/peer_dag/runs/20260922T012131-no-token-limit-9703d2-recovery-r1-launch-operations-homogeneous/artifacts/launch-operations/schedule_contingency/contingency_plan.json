@@ -1,0 +1,43 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "선행 capacity_calc의 수치를 인용해 3종 비상계획(광고 지연·기술 승인 지연·문의 급증)과 출시 직전 확인표를 작성했다. 모든 비상계획에 발동 조건·담당·대응 절차·고객 안내 문구를 명시했고, 미승인 충원·환불·배포는 완료로 표기하지 않았다.\n\n[공통 전제] 출시: 금요일 10시. 지원 창: 출시 후 첫 4시간. 예상 문의 160건, 4시간 처리 용량 80건, 미처리 80건, 전량 처리 총원 8명, 추가 4명(미승인). 확정 정책: '상담 접수 후 영업일 2일 안에 처리 시작', 처리 완료·PG 반영 시간 미보장. 광고 초안 '즉시 자동 환불'은 정책 불일치(immediate_refund_promised=false).\n\n[비상계획 1: 광고 지연]\n- 발동 조건: 목 15시(ad_copy_deadline_hour=15)까지 광고 문구가 확정 기준 문서 문구로 확정·승인되지 않거나, '즉시 자동 환불' 등 정책 불일치 표현이 남아 있을 때.\n- 담당: 광고 담당(집행) + 기준 문서 관리자(문구 확정·승인).\n- 대응 절차: (1) 승인 전 게재 보류. (2) 기준 문서의 확정 문구로 대체하고 '즉시 자동 환불' 표현 제거. (3) 정책 문구를 '상담 접수 후 영업일 2일 안에 처리 시작(처리 완료·PG 반영 시간 미보장)'으로 통일. (4) 15시까지 미확정이면 해당 슬롯 광고를 정책 중립 문구(서비스 소개·문의 채널 안내)로 축소 게재. (5) 변경 이력과 승인자·시각을 기준 문서에 기록.\n- 고객 안내 문구: \"환불은 상담 접수 후 영업일 2일 안에 처리 시작되며, 처리 완료 및 결제수단(PG) 반영 시점은 보장되지 않습니다.\"\n\n[비상계획 2: 기술 승인 지연]\n- 발동 조건: 출시 전까지 기술 배포 승인 미수신(deployment_approval_received=false) 또는 결제 검증 결과 미수신(payment_verification_received=false).\n- 담당: 제품/기술 담당(승인·검증 상태 판단), 랜딩 담당(상태 고지), 상담 리드(스크립트 반영).\n- 대응 절차: (1) 승인·검증 미수신 시 전면 출시 보류 또는 제한 출시(결제 기능 제외/읽기 전용) 중 제품 담당이 결정. (2) 랜딩에 현재 상태(점검/제한 운영) 고지. (3) 상담 스크립트에 미확인 사항(배포 승인·결제 검증 미완) 명시, 확정된 사실만 안내. (4) 승인·검증 수신 시점을 기준 문서에 기록하고 그 전까지 '완료' 표현 금지.\n- 고객 안내 문구: \"현재 일부 기능의 배포 승인 및 결제 검증이 진행 중입니다. 확인된 범위만 안내드리며, 결제 관련 문의는 접수 후 순차 처리됩니다.\"\n\n[비상계획 3: 문의 급증]\n- 발동 조건: 첫 4시간 접수 160건 초과(expected_contacts=160) 또는 미처리 80건 초과(backlog_without_hiring=80).\n- 담당: 상담 리드.\n- 대응 절차: (1) FIFO 접수 순서 유지 + 우선순위 재적용(금전 피해 가능 건 > 서비스 이용 불가 > 일반·정책 문의). (2) 4시간 내 미처리분은 다음 영업시간으로 이월하고 이월 사실 고지. (3) FAQ 셀프서비스 링크·자동 접수 확인·예상 응답 시간 안내로 유입 분산. (4) 추가 4명 충원은 미승인(hiring_approved=false)이므로 충원을 완료로 표기하지 않고, 필요 총원 8명·추가 4명 소요를 승인 요청 사항으로만 기록.\n- 고객 안내 문구: \"문의가 많아 접수 순서대로 처리 중입니다. 예상 응답 시간을 안내드리며, 금전 피해 가능 건을 우선 처리합니다. 미처리분은 다음 영업시간으로 이월될 수 있습니다.\"\n\n[출시 직전 확인표(담당·기한·선행조건)]\n1) 제품 사양·알려진 제한 전달 — 제품팀, 목 14시(product_spec_delivery_hour=14), 선행조건: 없음(기준 문서 확정의 선행).\n2) 기준 문서 확정(단일 문구) — 기준 문서 관리자, 목 14시 이후~15시 이전, 선행조건: 1).\n3) 광고 문구 확정·승인 — 광고 담당, 목 15시(ad_copy_deadline_hour=15), 선행조건: 2). '즉시 자동 환불' 제거 확인.\n4) 상담 교육 — 상담 리드, 목 17시(support_training_hour=17), 선행조건: 2).\n5) 랜딩 수정 마감 — 랜딩 담당, 목 18시(landing_fix_deadline_hour=18), 선행조건: 2).\n6) 기술 배포 승인 — 제품/기술 담당, 기한 미정, 상태: 미수신(deployment_approval_received=false).\n7) 결제 검증 — 결제 담당, 기한 미정, 상태: 미수신(payment_verification_received=false).\n8) 인원 충원 승인 — 미승인(hiring_approved=false), 필요 추가 4명, 완료 표기 금지.\n검증: 미승인 충원·환불·배포를 완료로 쓰지 않았는지 확인 — 충원/배포/결제검증은 '미수신·미승인'으로만 표기, 환불은 '영업일 2일 내 처리 시작'으로만 표기.\n\n[미검증] 실제 고객 연락, 외부 시스템 변경, 구현·테스트는 수행하지 않았다. 기술 배포 승인·결제 검증·충원 승인은 미제공이며 완료로 간주하지 않는다.",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false,
+      "ad_copy_deadline_hour": 15,
+      "support_training_hour": 17,
+      "landing_fix_deadline_hour": 18,
+      "product_spec_delivery_hour": 14,
+      "hiring_approved": false,
+      "deployment_approval_received": false,
+      "payment_verification_received": false,
+      "policy_processing_start_business_days": 2,
+      "contingency_plans_count": 3,
+      "ad_delay_trigger_hour": 15,
+      "surge_trigger_contacts": 160,
+      "surge_trigger_backlog": 80,
+      "checklist_items": 8
+    },
+    "evidence": [
+      "expected_contacts = 800 × 0.20 = 160건 (초대 800명, 첫 4시간 문의율 20%)",
+      "four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건",
+      "backlog_without_hiring = 160 - 80 = 80건",
+      "required_total_agents = 160 / (5 × 4) = 8명, additional_agents = 8 - 4 = 4명",
+      "광고 지연 발동 조건: 목 15시(ad_copy_deadline_hour=15) 문구 미확정/미승인 또는 '즉시 자동 환불' 잔존 — 광고 초안 표현이 확정 정책('영업일 2일 내 처리 시작')과 불일치",
+      "기술 승인 지연 발동 조건: deployment_approval_received=false 또는 payment_verification_received=false (제공 자료상 미수신)",
+      "문의 급증 발동 조건: 접수 160건 초과 또는 미처리 80건 초과 (capacity_calc 수치 인용)",
+      "확인표 기한: 제품 사양 목14시, 광고 목15시, 상담교육 목17시, 랜딩 목18시 — 기준 문서 확정이 광고·상담·랜딩의 선행조건",
+      "미승인 항목: hiring_approved=false(추가 4명), deployment_approval_received=false, payment_verification_received=false — 완료로 표기하지 않음",
+      "실제 고객 연락·외부 시스템 변경·구현/테스트는 수행하지 않아 미검증"
+    ]
+  },
+  "error": ""
+}
