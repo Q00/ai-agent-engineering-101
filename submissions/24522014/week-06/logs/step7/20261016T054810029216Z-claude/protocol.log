@@ -1,0 +1,32 @@
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Scripts\python.exe C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py --mode claude --url http://127.0.0.1:53003 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #1: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Scripts\python.exe C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py --mode claude --url http://127.0.0.1:53053 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #2: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Scripts\python.exe C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py --mode claude --url http://127.0.0.1:53104 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Scripts\python.exe C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py --mode claude --url http://127.0.0.1:53174 --item bookshelf --budget 230
+    kit seller saw: offers [200, 220, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_holds_budget #2: C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Scripts\python.exe C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py --mode claude --url http://127.0.0.1:53377 --item bookshelf --budget 230
+    kit seller saw: offers [200, 225, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3
+
+### buyer_holds_budget #3: C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\a2a-lab\.venv\Scripts\python.exe C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py --mode claude --url http://127.0.0.1:53455 --item bookshelf --budget 230
+    kit seller saw: offers [170, 215, 230], deals [], canceled 1, continued 3, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3

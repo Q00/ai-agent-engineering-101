@@ -1,0 +1,59 @@
+{
+  "outcome": "purchased",
+  "harness": "codex",
+  "model": "gpt-6.1-terra",
+  "item": "G200e39a3",
+  "budget": 23472,
+  "task_id": "d1ee3bf5-78c0-447d-b1dd-74f28097663a",
+  "state": "TASK_STATE_COMPLETED",
+  "receipt": {
+    "task": "d1ee3bf5-78c0-447d-b1dd-74f28097663a",
+    "warranty_hours": 0.0,
+    "sig_seller": "goba9Nj4z1J8uKQepC3ATZLGfq5/DWLbrHndX3HarIabk+NHHGh2Vk7bHhIZLjxUVTd3tj1zL9Wx6lvRToLoCw==",
+    "cert": true,
+    "unit": "u-6cc43c4a81d8",
+    "shop": "Seochanit Shop",
+    "price": 22300.0,
+    "item": "G200e39a3",
+    "claim": "B"
+  },
+  "turns": 1,
+  "decisions": [
+    {
+      "turn": 1,
+      "source": "model",
+      "reason_code": "model_offer",
+      "parser_reason": "over_budget",
+      "action": "offer",
+      "price": 22300,
+      "quote_check": {
+        "reason_code": null,
+        "basis": null,
+        "grade": "B",
+        "grade_basis": "structured",
+        "hours_left": 115.33,
+        "hours_basis": "structured",
+        "text_hours_note": "absent",
+        "text_grade_ambiguous": false,
+        "conflicts": [],
+        "accept_grades": [
+          "A",
+          "B"
+        ],
+        "min_hours_left": 44.0
+      },
+      "counter_check": {
+        "reason_code": "counter_ratio_exceeded",
+        "ask": 27743,
+        "cap": 23472,
+        "list_price": 37900,
+        "offer": null,
+        "ask_per_cap": 1.182,
+        "surplus_per_list": 0.3807
+      },
+      "provider": "agy",
+      "model": "gemini-4-argon-low",
+      "route_reason": "agy_first"
+    }
+  ]
+}

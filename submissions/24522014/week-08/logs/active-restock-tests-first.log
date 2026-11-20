@@ -1,0 +1,24 @@
+F.......[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 가격 실험 중 · 다음 진단 01-02 15:16 KST
+.............[harness] fixture
+[harness] deterministic acceptance of the disclosed quote
+Executing <Task finished name='Task-2' coro=<ActualSellerConsumer.test_runtime_quote_and_signed_offer_carry_experiment_identity() done, defined at C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_strategy_controller.py:257> result=None created at C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py:110> took 0.292 seconds
+................[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 기준선 수집 · 다음 진단 01-02 13:16 KST
+[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 가격 실험 중 · 다음 진단 01-02 15:16 KST
+[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 현금 보호 · 다음 진단 01-02 15:18 KST
+..[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 정책 실험 중지 · 다음 진단 01-02 13:16 KST
+.[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 정책 변경 대기 · 다음 진단 01-02 15:17 KST
+.............................[알림 오류] OSError: notification unavailable
+..........
+======================================================================
+FAIL: test_budget_and_new_seven_day_storage_are_reserved (test_active_restock.ActiveCapacity.test_budget_and_new_seven_day_storage_are_reserved)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_active_restock.py", line 59, in test_budget_and_new_seven_day_storage_are_reserved
+    self.assertEqual(info["new_stock_seven_day_storage"], info["estimated_max_cost"]*.07)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 15750.0 != 15750.000000000002
+
+----------------------------------------------------------------------
+Ran 79 tests in 0.519s
+
+FAILED (failures=1)

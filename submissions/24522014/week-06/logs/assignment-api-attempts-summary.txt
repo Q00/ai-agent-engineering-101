@@ -1,0 +1,22 @@
+Submission tooling attempt summary (not a raw console transcript)
+
+1. Host-only Git credential lookup failed:
+   fatal: Cannot prompt because user interactivity has been disabled.
+   Repository URL plus username=kcwarni resolved the existing credential.
+   No credential value was printed or saved.
+
+2. An empty pull-request list was initially treated as a single empty array by PowerShell.
+   The output contained null PR fields; this was not treated as successful creation.
+   Filtering for an actual PR number corrected the lookup.
+
+3. The first actual create request returned HTTP 422:
+   For 'properties/body' ... is not a string or null.
+   Get-Content produced an extended PowerShell string whose provider properties were
+   serialized by ConvertTo-Json. Reading the body with File.ReadAllText supplied a plain
+   string. The next create request returned open PR #299.
+
+4. An unauthenticated CI status request hit the public GitHub API rate limit.
+   Retried with the existing repository credential. The authenticated request returned
+   completed/success for check, mergeable=true and mergeable_state=clean at head 75ec4b1.
+
+These were submission/API tooling failures, separate from the passing 21-run trade test.

@@ -1,0 +1,127 @@
+{
+  "window": {
+    "since": "20261104T130324000000Z",
+    "until": null,
+    "first_run": "20261104T130340047900Z",
+    "last_run": "20261104T132950556576Z"
+  },
+  "sample": {
+    "hook_runs": 75,
+    "distinct_orders": 75,
+    "runs_with_decision_trail": 67
+  },
+  "funnel": [
+    {
+      "stage": "orders",
+      "count": 75,
+      "of_previous": null,
+      "of_selected": null
+    },
+    {
+      "stage": "selected",
+      "count": 67,
+      "of_previous": 0.8933,
+      "of_selected": 1.0
+    },
+    {
+      "stage": "quoted",
+      "count": 54,
+      "of_previous": 0.806,
+      "of_selected": 0.806
+    },
+    {
+      "stage": "offered",
+      "count": 13,
+      "of_previous": 0.2407,
+      "of_selected": 0.194
+    },
+    {
+      "stage": "receipt",
+      "count": 7,
+      "of_previous": 0.5385,
+      "of_selected": 0.1045
+    },
+    {
+      "stage": "paid",
+      "count": 7,
+      "of_previous": 1.0,
+      "of_selected": 0.1045
+    }
+  ],
+  "causes": {
+    "model_quota_hour": 28,
+    "seller_rejected_at_open": 13,
+    "quote_shelf_life_short": 9,
+    "quote_grade_unacceptable": 9,
+    "paid": 7,
+    "selection:attempt_cooldown": 7,
+    "selection:no_useful_research": 1,
+    "model_walk_away": 1
+  },
+  "decision_paths": {
+    "model_gate:model_quota_hour": 28,
+    "quote_filter:quote_shelf_life_short": 9,
+    "quote_filter:quote_grade_unacceptable": 9,
+    "deterministic:rule_counter_offer": 7,
+    "deterministic:rule_offer": 5,
+    "model:model_offer": 2,
+    "model:model_walk_away": 1
+  },
+  "non_rule_paths_by_parser_reason": {
+    "model_quota_hour|parser=over_budget": 15,
+    "model_quota_hour|parser=no_labeled_price": 13,
+    "model_offer|parser=no_labeled_price": 2,
+    "model_walk_away|parser=over_budget": 1
+  },
+  "counter_offer": {
+    "offered": 7,
+    "receipt": 1,
+    "paid": 1,
+    "exclusions": {
+      "counter_ratio_exceeded": 11,
+      "counter_already_used": 3,
+      "counter_surplus_too_low": 2
+    }
+  },
+  "model_routes": {
+    "agy:gemini-3.8-flash-low|agy_first": 3
+  },
+  "open_refusals_by_request_format": {
+    "name_and_sku": {
+      "attempts": 26,
+      "refused_at_open": 5
+    }
+  },
+  "open_refusals_by_listed_qty": {
+    "1": {
+      "attempts": 5,
+      "refused_at_open": 2
+    },
+    "2-3": {
+      "attempts": 10,
+      "refused_at_open": 3
+    },
+    "4+": {
+      "attempts": 11,
+      "refused_at_open": 0
+    }
+  },
+  "runs_skipping_refusing_shops": {},
+  "turn_limit": {
+    "endings": 0,
+    "cancel_results": {}
+  },
+  "quote_filter_by_basis": {
+    "quote_shelf_life_short|basis=text": 7,
+    "quote_grade_unacceptable|basis=text": 6,
+    "quote_shelf_life_short|basis=structured": 2,
+    "quote_grade_unacceptable|basis=structured": 2,
+    "quote_grade_unacceptable|basis=structured+text": 1
+  },
+  "quote_conflicts": {},
+  "quote_text_shelf_life": {
+    "absent": 33,
+    "stated": 23,
+    "vague": 5
+  }
+}

@@ -1,0 +1,53 @@
+.........[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 가격 실험 중 · 다음 정기 진단 01-02 15:16 KST
+..........................................[decision] fixture
+[decision] deterministic acceptance of the disclosed quote
+...........................................................................................................E............................[알림 오류] OSError: notification unavailable
+.........................................[모니터링] 관측 정상 · 자기 확정 정산 10건 · 종합 순위 10위 · 비교 표본 대기 · 다음 정기 진단 01-02 15:17 KST
+................................................................................................................................C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\threading.py:1028: ResourceWarning: unclosed file <_io.TextIOWrapper name=4 encoding='utf-8'>
+  del self._target, self._args, self._kwargs
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\threading.py:1028: ResourceWarning: unclosed file <_io.TextIOWrapper name=5 encoding='utf-8'>
+  del self._target, self._args, self._kwargs
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_model_breaker.py:145: ResourceWarning: unclosed file <_io.TextIOWrapper name=6 encoding='utf-8'>
+  self.assertEqual(mb.read_usage(10, [sys.executable, "-c", script])["weekly_percent"], 8)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_model_breaker.py:145: ResourceWarning: unclosed file <_io.TextIOWrapper name=7 encoding='utf-8'>
+  self.assertEqual(mb.read_usage(10, [sys.executable, "-c", script])["weekly_percent"], 8)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.............................................Cannot load selection inputs: Food order requires a nonnegative use period
+...[decision] fixture
+.[decision] fixture
+[guard] inventory condition/price changed; disclose again and request confirmation
+...........................................................09:47:49 [acp] settle refused: {'error': 'budget'}
+......................Dispatcher task is not running. Cannot wait for event dispatch.
+....................................................................[decision] rule: opening at the quote
+[decision] deterministic acceptance of the disclosed quote
+..................[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 기준선 수집 · 다음 정기 진단 01-02 13:16 KST
+[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 가격 실험 중 · 다음 정기 진단 01-02 15:16 KST
+[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 현금 보호 · 다음 정기 진단 01-02 15:18 KST
+..[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 정책 실험 중지 · 다음 정기 진단 01-02 13:16 KST
+.[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 추가 대기 없음·다음 훅에서 재검토 · 다음 정기 진단 01-02 15:17 KST
+...................
+======================================================================
+ERROR: test_reactions_missing_are_unknown_and_api_error_not_success (test_forum_engagement.ForumEngagementTests.test_reactions_missing_are_unknown_and_api_error_not_success)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_forum_engagement.py", line 32, in setUp
+    self.save("forum.json", self.posts)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_forum_engagement.py", line 38, in save
+    write(path, data)
+    ~~~~~^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\market_state.py", line 20, in write
+    tmp.replace(path)
+    ~~~~~~~~~~~^^^^^^
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 1091, in replace
+    os.replace(self, target)
+    ~~~~~~~~~~^^^^^^^^^^^^^^
+PermissionError: [WinError 32] 다른 프로세스가 파일을 사용 중이기 때문에 프로세스가 액세스 할 수 없습니다: 'C:\\Users\\강철원\\AppData\\Local\\Temp\\tmp9gog1tk3\\.market\\forum.json.4b0218e78ed547b3af1e7056102218f8.tmp' -> 'C:\\Users\\강철원\\AppData\\Local\\Temp\\tmp9gog1tk3\\.market\\forum.json'
+
+----------------------------------------------------------------------
+Ran 594 tests in 4.488s
+
+FAILED (errors=1)

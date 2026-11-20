@@ -1,0 +1,91 @@
+# window: gate off 2026-11-04 11:26:01Z to now
+{
+  "window": {
+    "since": "20261104T112601000000Z",
+    "until": null
+  },
+  "by_role_and_actual_model": {
+    "buyer|gpt-6.1-sol": {
+      "calls": 13,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "timeouts": 0,
+      "usage_limit_errors": 0,
+      "elapsed_median": 6.255,
+      "elapsed_p90": 7.939,
+      "elapsed_max": 8.537,
+      "tokens_sum": 46177,
+      "tokens_median": 3371,
+      "max_calls_in_one_utc_hour": 13,
+      "label_differs_from_actual": 0
+    },
+    "seller|gpt-6-luna": {
+      "calls": 1,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "timeouts": 0,
+      "usage_limit_errors": 0,
+      "elapsed_median": 4.677,
+      "elapsed_p90": 4.677,
+      "elapsed_max": 4.677,
+      "tokens_sum": 2337,
+      "tokens_median": 2337,
+      "max_calls_in_one_utc_hour": 1,
+      "label_differs_from_actual": 0
+    },
+    "seller|gpt-6.1-sol": {
+      "calls": 26,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "timeouts": 0,
+      "usage_limit_errors": 0,
+      "elapsed_median": 4.2669999999999995,
+      "elapsed_p90": 5.451,
+      "elapsed_max": 6.061,
+      "tokens_sum": 80036,
+      "tokens_median": 2882.0,
+      "max_calls_in_one_utc_hour": 26,
+      "label_differs_from_actual": 0
+    }
+  },
+  "seller_failures": {
+    "harness_calls_failed": 0,
+    "kit_log_decision_failed": 0
+  },
+  "usage_limit_errors": 0,
+  "hooks": {
+    "hook_runs": 29,
+    "hook_runs_per_hour": 178.8,
+    "trades": 15,
+    "trade_seconds_median": 0.62,
+    "trade_seconds_p90": 27.13,
+    "trade_seconds_max": 29.87
+  },
+  "funnel": {
+    "orders": 29,
+    "selected": 15,
+    "quoted": 10,
+    "offered": 7,
+    "receipt": 4,
+    "paid": 3
+  },
+  "decision_paths": {
+    "model:model_offer": 11,
+    "model:model_walk_away": 2,
+    "quote_filter:quote_shelf_life_short": 2,
+    "quote_filter:quote_grade_unacceptable": 1,
+    "deterministic:rule_offer": 1
+  },
+  "causes": {
+    "selection:attempt_cooldown": 13,
+    "seller_rejected_at_open": 5,
+    "paid": 3,
+    "model_walk_away": 2,
+    "quote_shelf_life_short": 2,
+    "agent_error": 1,
+    "payment_refused:certificate": 1,
+    "quote_grade_unacceptable": 1,
+    "selection:no_useful_research": 1
+  },
+  "rollback_signal": false
+}

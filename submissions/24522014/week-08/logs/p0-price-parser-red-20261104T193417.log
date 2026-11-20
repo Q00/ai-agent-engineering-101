@@ -1,0 +1,347 @@
+FFE.EEEEEEEEFFFEF...FFFFFFEEEEEEEEEEEEEEEE
+======================================================================
+ERROR: test_budget_and_repeat_still_guarded_with_periods (test_balanced_strategy.FastQuotes.test_budget_and_repeat_still_guarded_with_periods)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 74, in test_budget_and_repeat_still_guarded_with_periods
+    self.assertEqual(buyer_fast.decision('Counteroffer: 100.', 100, 100)['action'], 'walk_away')
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+======================================================================
+ERROR: test_classify_explains_each_outcome_without_changing_decision (test_balanced_strategy.FastQuotes.test_classify_explains_each_outcome_without_changing_decision) (text='asking 100.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 106, in test_classify_explains_each_outcome_without_changing_decision
+    decided, reason, _ = buyer_fast.classify(text, cap, last)
+                         ^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'classify'
+
+======================================================================
+ERROR: test_classify_explains_each_outcome_without_changing_decision (test_balanced_strategy.FastQuotes.test_classify_explains_each_outcome_without_changing_decision) (text='asking 100.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 106, in test_classify_explains_each_outcome_without_changing_decision
+    decided, reason, _ = buyer_fast.classify(text, cap, last)
+                         ^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'classify'
+
+======================================================================
+ERROR: test_classify_explains_each_outcome_without_changing_decision (test_balanced_strategy.FastQuotes.test_classify_explains_each_outcome_without_changing_decision) (text='asking 101.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 106, in test_classify_explains_each_outcome_without_changing_decision
+    decided, reason, _ = buyer_fast.classify(text, cap, last)
+                         ^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'classify'
+
+======================================================================
+ERROR: test_classify_explains_each_outcome_without_changing_decision (test_balanced_strategy.FastQuotes.test_classify_explains_each_outcome_without_changing_decision) (text='Our price is 90.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 106, in test_classify_explains_each_outcome_without_changing_decision
+    decided, reason, _ = buyer_fast.classify(text, cap, last)
+                         ^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'classify'
+
+======================================================================
+ERROR: test_classify_explains_each_outcome_without_changing_decision (test_balanced_strategy.FastQuotes.test_classify_explains_each_outcome_without_changing_decision) (text='asking 100.50')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 106, in test_classify_explains_each_outcome_without_changing_decision
+    decided, reason, _ = buyer_fast.classify(text, cap, last)
+                         ^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'classify'
+
+======================================================================
+ERROR: test_classify_explains_each_outcome_without_changing_decision (test_balanced_strategy.FastQuotes.test_classify_explains_each_outcome_without_changing_decision) (text='asking 100. Counteroffer: 90.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 106, in test_classify_explains_each_outcome_without_changing_decision
+    decided, reason, _ = buyer_fast.classify(text, cap, last)
+                         ^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'classify'
+
+======================================================================
+ERROR: test_classify_explains_each_outcome_without_changing_decision (test_balanced_strategy.FastQuotes.test_classify_explains_each_outcome_without_changing_decision) (text='previous asking 900.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 106, in test_classify_explains_each_outcome_without_changing_decision
+    decided, reason, _ = buyer_fast.classify(text, cap, last)
+                         ^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'classify'
+
+======================================================================
+ERROR: test_classify_explains_each_outcome_without_changing_decision (test_balanced_strategy.FastQuotes.test_classify_explains_each_outcome_without_changing_decision)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 109, in test_classify_explains_each_outcome_without_changing_decision
+    self.assertEqual(buyer_fast.classify('asking 101.', 100)[2], 101)
+                     ^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'classify'
+
+======================================================================
+ERROR: test_conflicting_prices_hold_even_with_periods (test_balanced_strategy.FastQuotes.test_conflicting_prices_hold_even_with_periods)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 70, in test_conflicting_prices_hold_even_with_periods
+    self.assertEqual(buyer_fast.decision('asking 100. Counteroffer: 100.', 1000)['price'], 100)
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+======================================================================
+ERROR: test_sentence_final_period_is_not_a_decimal (test_balanced_strategy.FastQuotes.test_sentence_final_period_is_not_a_decimal) (text='asking 110.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 41, in test_sentence_final_period_is_not_a_decimal
+    {'action': 'offer', 'price': price, 'reason': buyer_fast.OFFER_REASON})
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'OFFER_REASON'
+
+======================================================================
+ERROR: test_sentence_final_period_is_not_a_decimal (test_balanced_strategy.FastQuotes.test_sentence_final_period_is_not_a_decimal) (text='Counteroffer: 234659.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 41, in test_sentence_final_period_is_not_a_decimal
+    {'action': 'offer', 'price': price, 'reason': buyer_fast.OFFER_REASON})
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'OFFER_REASON'
+
+======================================================================
+ERROR: test_sentence_final_period_is_not_a_decimal (test_balanced_strategy.FastQuotes.test_sentence_final_period_is_not_a_decimal) (text='Our asking price is 42630.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 41, in test_sentence_final_period_is_not_a_decimal
+    {'action': 'offer', 'price': price, 'reason': buyer_fast.OFFER_REASON})
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'OFFER_REASON'
+
+======================================================================
+ERROR: test_sentence_final_period_is_not_a_decimal (test_balanced_strategy.FastQuotes.test_sentence_final_period_is_not_a_decimal) (text='The asking price is 42630')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 41, in test_sentence_final_period_is_not_a_decimal
+    {'action': 'offer', 'price': price, 'reason': buyer_fast.OFFER_REASON})
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'OFFER_REASON'
+
+======================================================================
+ERROR: test_sentence_final_period_is_not_a_decimal (test_balanced_strategy.FastQuotes.test_sentence_final_period_is_not_a_decimal) (text='asking 1,000.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 41, in test_sentence_final_period_is_not_a_decimal
+    {'action': 'offer', 'price': price, 'reason': buyer_fast.OFFER_REASON})
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'OFFER_REASON'
+
+======================================================================
+ERROR: test_sentence_final_period_is_not_a_decimal (test_balanced_strategy.FastQuotes.test_sentence_final_period_is_not_a_decimal) (text='Asking: 28652. ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 41, in test_sentence_final_period_is_not_a_decimal
+    {'action': 'offer', 'price': price, 'reason': buyer_fast.OFFER_REASON})
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'OFFER_REASON'
+
+======================================================================
+ERROR: test_sentence_final_period_is_not_a_decimal (test_balanced_strategy.FastQuotes.test_sentence_final_period_is_not_a_decimal) (text='Asking price: 21500.\n')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 41, in test_sentence_final_period_is_not_a_decimal
+    {'action': 'offer', 'price': price, 'reason': buyer_fast.OFFER_REASON})
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'OFFER_REASON'
+
+======================================================================
+ERROR: test_sentence_final_period_is_not_a_decimal (test_balanced_strategy.FastQuotes.test_sentence_final_period_is_not_a_decimal) (text='asking 110, no warranty.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 41, in test_sentence_final_period_is_not_a_decimal
+    {'action': 'offer', 'price': price, 'reason': buyer_fast.OFFER_REASON})
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'OFFER_REASON'
+
+======================================================================
+ERROR: test_sentence_final_period_is_not_a_decimal (test_balanced_strategy.FastQuotes.test_sentence_final_period_is_not_a_decimal) (text='가격: 110원.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 41, in test_sentence_final_period_is_not_a_decimal
+    {'action': 'offer', 'price': price, 'reason': buyer_fast.OFFER_REASON})
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'OFFER_REASON'
+
+======================================================================
+ERROR: test_sentence_final_period_is_not_a_decimal (test_balanced_strategy.FastQuotes.test_sentence_final_period_is_not_a_decimal) (text='asking 1881820 KRW.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 41, in test_sentence_final_period_is_not_a_decimal
+    {'action': 'offer', 'price': price, 'reason': buyer_fast.OFFER_REASON})
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'buyer_fast' has no attribute 'OFFER_REASON'
+
+======================================================================
+ERROR: test_shapes_seen_in_real_quotes (test_balanced_strategy.FastQuotes.test_shapes_seen_in_real_quotes) (text='Foo 700gx2 (1.4kg): asking 14354. Send your offer as a number.\nReply with a number, or ok to take the ask: 14354')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 52, in test_shapes_seen_in_real_quotes
+    self.assertEqual(buyer_fast.decision(text, 2000000)['price'], price)
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+======================================================================
+ERROR: test_shapes_seen_in_real_quotes (test_balanced_strategy.FastQuotes.test_shapes_seen_in_real_quotes) (text='Bar 500mL X 60 (Gdf79cd07), grade C, 243.2 h shelf life left. Asking 18308. Send your offer as a number.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 52, in test_shapes_seen_in_real_quotes
+    self.assertEqual(buyer_fast.decision(text, 2000000)['price'], price)
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+======================================================================
+ERROR: test_shapes_seen_in_real_quotes (test_balanced_strategy.FastQuotes.test_shapes_seen_in_real_quotes) (text='Baz Q (G1515d951), 6 h warranty. This negotiation closes after 6 offers. Asking 326334. Send your offer as a number.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 52, in test_shapes_seen_in_real_quotes
+    self.assertEqual(buyer_fast.decision(text, 2000000)['price'], price)
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+======================================================================
+ERROR: test_shapes_seen_in_real_quotes (test_balanced_strategy.FastQuotes.test_shapes_seen_in_real_quotes) (text='SKU G1 | unit u-8 | Qux 500mL | list 15200 | grade B now | 348.4 h left | 85% of list | ask 12920')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 52, in test_shapes_seen_in_real_quotes
+    self.assertEqual(buyer_fast.decision(text, 2000000)['price'], price)
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+======================================================================
+ERROR: test_shapes_seen_in_real_quotes (test_balanced_strategy.FastQuotes.test_shapes_seen_in_real_quotes) (text='[sku G8] Quux | grade=A | list=87900 ask=70900 (-19%)')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 52, in test_shapes_seen_in_real_quotes
+    self.assertEqual(buyer_fast.decision(text, 2000000)['price'], price)
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+======================================================================
+ERROR: test_shapes_seen_in_real_quotes (test_balanced_strategy.FastQuotes.test_shapes_seen_in_real_quotes) (text='Foo: asking 19853. Opening quote discount included: 20466 -> 19853; saving 613.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 52, in test_shapes_seen_in_real_quotes
+    self.assertEqual(buyer_fast.decision(text, 2000000)['price'], price)
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+
+======================================================================
+FAIL: test_a_malformed_price_is_not_hidden_by_a_clean_one (test_balanced_strategy.FastQuotes.test_a_malformed_price_is_not_hidden_by_a_clean_one) (text='asking 100.50 and asking 100')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 63, in test_a_malformed_price_is_not_hidden_by_a_clean_one
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 100, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+======================================================================
+FAIL: test_a_malformed_price_is_not_hidden_by_a_clean_one (test_balanced_strategy.FastQuotes.test_a_malformed_price_is_not_hidden_by_a_clean_one) (text='asking 1,00. asking 100.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 63, in test_a_malformed_price_is_not_hidden_by_a_clean_one
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 1, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+======================================================================
+FAIL: test_conflicting_prices_hold_even_with_periods (test_balanced_strategy.FastQuotes.test_conflicting_prices_hold_even_with_periods) (text='asking 100-110.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 69, in test_conflicting_prices_hold_even_with_periods
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 100, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+======================================================================
+FAIL: test_conflicting_prices_hold_even_with_periods (test_balanced_strategy.FastQuotes.test_conflicting_prices_hold_even_with_periods) (text='asking 100 to 110.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 69, in test_conflicting_prices_hold_even_with_periods
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 100, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+======================================================================
+FAIL: test_conflicting_prices_hold_even_with_periods (test_balanced_strategy.FastQuotes.test_conflicting_prices_hold_even_with_periods) (text='asking 100 -> 90.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 69, in test_conflicting_prices_hold_even_with_periods
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 100, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+======================================================================
+FAIL: test_decimals_and_malformed_numbers_still_hold (test_balanced_strategy.FastQuotes.test_decimals_and_malformed_numbers_still_hold) (text='asking 1,00.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 58, in test_decimals_and_malformed_numbers_still_hold
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 1, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+======================================================================
+FAIL: test_past_and_market_figures_are_not_the_current_ask (test_balanced_strategy.FastQuotes.test_past_and_market_figures_are_not_the_current_ask) (text='이전 가격: 900원.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 89, in test_past_and_market_figures_are_not_the_current_ask
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 900, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+======================================================================
+FAIL: test_quantity_like_followers_are_not_prices (test_balanced_strategy.FastQuotes.test_quantity_like_followers_are_not_prices) (text='asking 3 packs for 100.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 95, in test_quantity_like_followers_are_not_prices
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 3, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+======================================================================
+FAIL: test_quantity_like_followers_are_not_prices (test_balanced_strategy.FastQuotes.test_quantity_like_followers_are_not_prices) (text='asking 10% below list.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 95, in test_quantity_like_followers_are_not_prices
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 10, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+======================================================================
+FAIL: test_quantity_like_followers_are_not_prices (test_balanced_strategy.FastQuotes.test_quantity_like_followers_are_not_prices) (text='asking 110kg.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 95, in test_quantity_like_followers_are_not_prices
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 110, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+======================================================================
+FAIL: test_quantity_like_followers_are_not_prices (test_balanced_strategy.FastQuotes.test_quantity_like_followers_are_not_prices) (text='asking 100 was too low.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 95, in test_quantity_like_followers_are_not_prices
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 100, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+======================================================================
+FAIL: test_quantity_like_followers_are_not_prices (test_balanced_strategy.FastQuotes.test_quantity_like_followers_are_not_prices) (text='제안가 110원입니다.')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 95, in test_quantity_like_followers_are_not_prices
+    self.assertIsNone(buyer_fast.decision(text, 1000))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'action': 'offer', 'price': 110, 'reason': 'Unambiguous current ask within coded value/quality cap; checkout will verify terms.'} is not None
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.005s
+
+FAILED (failures=12, errors=26)

@@ -1,0 +1,80 @@
+# window: gate still on, 2026-11-04 09:39Z to now
+{
+  "window": {
+    "since": "20261104T093900000000Z",
+    "until": null
+  },
+  "by_role_and_actual_model": {
+    "buyer|gpt-6-luna": {
+      "calls": 6,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "timeouts": 0,
+      "usage_limit_errors": 0,
+      "elapsed_median": 4.2195,
+      "elapsed_p90": 5.264,
+      "elapsed_max": 5.264,
+      "tokens_sum": 11404,
+      "tokens_median": 1278.0,
+      "max_calls_in_one_utc_hour": 3,
+      "label_differs_from_actual": 0
+    },
+    "seller|gpt-6-luna": {
+      "calls": 269,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "timeouts": 0,
+      "usage_limit_errors": 0,
+      "elapsed_median": 3.898,
+      "elapsed_p90": 21.561,
+      "elapsed_max": 60.972,
+      "tokens_sum": 406642,
+      "tokens_median": 849,
+      "max_calls_in_one_utc_hour": 158,
+      "label_differs_from_actual": 0
+    }
+  },
+  "seller_failures": {
+    "harness_calls_failed": 0,
+    "kit_log_decision_failed": 0
+  },
+  "usage_limit_errors": 0,
+  "hooks": {
+    "hook_runs": 303,
+    "hook_runs_per_hour": 174.4,
+    "trades": 150,
+    "trade_seconds_median": 0.59,
+    "trade_seconds_p90": 7.85,
+    "trade_seconds_max": 44.12
+  },
+  "funnel": {
+    "orders": 303,
+    "selected": 150,
+    "quoted": 111,
+    "offered": 16,
+    "receipt": 15,
+    "paid": 10
+  },
+  "decision_paths": {
+    "model_gate:model_quota_hour": 27,
+    "deterministic:rule_offer": 10,
+    "quote_filter:quote_grade_unacceptable": 7,
+    "quote_filter:quote_shelf_life_short": 7,
+    "model:model_offer": 3
+  },
+  "causes": {
+    "selection:attempt_cooldown": 148,
+    "walk_away_unlogged_pre_fix": 55,
+    "seller_rejected_at_open": 35,
+    "model_quota_hour": 27,
+    "paid": 10,
+    "quote_grade_unacceptable": 7,
+    "quote_shelf_life_short": 7,
+    "selection:no_useful_research": 5,
+    "payment_refused:shelf_life": 3,
+    "agent_error": 2,
+    "payment_refused:grade": 2,
+    "transport_error": 2
+  },
+  "rollback_signal": false
+}

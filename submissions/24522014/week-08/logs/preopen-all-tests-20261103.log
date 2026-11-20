@@ -1,0 +1,105 @@
+..................Cannot load selection inputs: Food order requires a nonnegative use period
+...[harness] fixture
+.[harness] fixture
+[guard] inventory condition/price changed; disclose again and request confirmation
+..........................FDispatcher task is not running. Cannot wait for event dispatch.
+................EFDispatcher task is not running. Cannot wait for event dispatch.
+...FDispatcher task is not running. Cannot wait for event dispatch.
+........
+======================================================================
+ERROR: test_natural_below_quote_offer_still_uses_existing_negotiation (test_signed_seller.SellerProtocol.test_natural_below_quote_offer_still_uses_existing_negotiation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\°­Ã¶¿ø\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\°­Ã¶¿ø\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_signed_seller.py", line 272, in test_natural_below_quote_offer_still_uses_existing_negotiation
+    self.assertEqual(negotiate.call_args.args[3], 100)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'args'
+
+======================================================================
+FAIL: test_new_card_and_quote_show_refund_without_rating_or_extra_numbers (test_satisfaction_refund.RefundProtocol.test_new_card_and_quote_show_refund_without_rating_or_extra_numbers)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\°­Ã¶¿ø\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\°­Ã¶¿ø\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_satisfaction_refund.py", line 114, in test_new_card_and_quote_show_refund_without_rating_or_extra_numbers
+    self.assertEqual(re.findall(r'\d+',text),['105'])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['100'] != ['105']
+
+First differing element 0:
+'100'
+'105'
+
+- ['100']
+?     ^
+
++ ['105']
+?     ^
+
+
+======================================================================
+FAIL: test_natural_overbid_keeps_lower_quote_until_explicit_confirmation (test_signed_seller.SellerProtocol.test_natural_overbid_keeps_lower_quote_until_explicit_confirmation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\°­Ã¶¿ø\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\°­Ã¶¿ø\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_signed_seller.py", line 264, in test_natural_overbid_keeps_lower_quote_until_explicit_confirmation
+    self.assertEqual(re.findall(r'\d+', task['status']['message']['parts'][0]['text']), ['105'])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['100'] != ['105']
+
+First differing element 0:
+'100'
+'105'
+
+- ['100']
+?     ^
+
++ ['105']
+?     ^
+
+
+======================================================================
+FAIL: test_service_questions_get_truthful_terms_before_any_purchase (test_signed_seller.SellerProtocol.test_service_questions_get_truthful_terms_before_any_purchase)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\°­Ã¶¿ø\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\°­Ã¶¿ø\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_signed_seller.py", line 241, in test_service_questions_get_truthful_terms_before_any_purchase
+    self.assertEqual(re.findall(r'\d+', text), ['105'])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['100'] != ['105']
+
+First differing element 0:
+'100'
+'105'
+
+- ['100']
+?     ^
+
++ ['105']
+?     ^
+
+
+----------------------------------------------------------------------
+Ran 79 tests in 0.627s
+
+FAILED (failures=3, errors=1)

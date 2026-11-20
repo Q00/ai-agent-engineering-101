@@ -1,0 +1,56 @@
+# window: sol model, gate on 11:22:36Z to 11:26:01Z
+{
+  "window": {
+    "since": "20261104T112236000000Z",
+    "until": "20261104T112601000000Z"
+  },
+  "by_role_and_actual_model": {
+    "seller|gpt-6-luna": {
+      "calls": 10,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "timeouts": 0,
+      "usage_limit_errors": 0,
+      "elapsed_median": 3.778,
+      "elapsed_p90": 4.806,
+      "elapsed_max": 4.806,
+      "tokens_sum": 18031,
+      "tokens_median": 1637.5,
+      "max_calls_in_one_utc_hour": 10,
+      "label_differs_from_actual": 0
+    }
+  },
+  "seller_failures": {
+    "harness_calls_failed": 0,
+    "kit_log_decision_failed": 0
+  },
+  "usage_limit_errors": 0,
+  "hooks": {
+    "hook_runs": 11,
+    "hook_runs_per_hour": 194.5,
+    "trades": 5,
+    "trade_seconds_median": 0.23,
+    "trade_seconds_p90": 2.54,
+    "trade_seconds_max": 2.54
+  },
+  "funnel": {
+    "orders": 11,
+    "selected": 5,
+    "quoted": 4,
+    "offered": 0,
+    "receipt": 0,
+    "paid": 0
+  },
+  "decision_paths": {
+    "model_gate:model_quota_hour": 3,
+    "quote_filter:quote_shelf_life_short": 1
+  },
+  "causes": {
+    "selection:attempt_cooldown": 5,
+    "model_quota_hour": 3,
+    "quote_shelf_life_short": 1,
+    "seller_rejected_at_open": 1,
+    "selection:no_useful_research": 1
+  },
+  "rollback_signal": false
+}

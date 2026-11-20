@@ -1,0 +1,24 @@
+............................................................................Cannot load selection inputs: Food order requires a nonnegative use period
+...[harness] fixture
+.[harness] fixture
+[guard] inventory condition/price changed; disclose again and request confirmation
+.......................13:22:39 [acp] settle refused: {'error': 'budget'}
+......................Dispatcher task is not running. Cannot wait for event dispatch.
+..............................[harness] fixture
+[harness] deterministic acceptance of the disclosed quote
+............................F....
+======================================================================
+FAIL: test_forum_signals_are_weak_and_do_not_override_stock_limit (test_week09_improvements.InventoryLoss.test_forum_signals_are_weak_and_do_not_override_stock_limit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_week09_improvements.py", line 88, in test_forum_signals_are_weak_and_do_not_override_stock_limit
+    self.assertEqual(hints, {"D": 1})
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+AssertionError: {} != {'D': 1}
+- {}
++ {'D': 1}
+
+----------------------------------------------------------------------
+Ran 188 tests in 0.973s
+
+FAILED (failures=1)

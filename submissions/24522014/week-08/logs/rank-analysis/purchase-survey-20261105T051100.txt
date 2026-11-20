@@ -1,0 +1,63 @@
+records 3215, 19.2 h, paid 302, orders seen twice 0
+rule_offer paid rate 187 / 223 0.839  rule_counter 93 / 112
+
+== A. no_labeled_price stopped at a model limit
+  stops 269 (14.0/h); by shape [('name_colon_krw', 116), ('lowest_price', 70), ('has_number', 32), ('my_price', 24), ('final_price', 17), ('metadata_ask_only', 10)]
+  top 2 shops 186/269: [('gom31-certified-goods', 116), ('ggari-shop', 70), ('nocha12', 24), ('inextro', 22), ('Kiro729', 10), ('moss-and-oak', 9)]
+  readable fit {'over_cap_within_order_budget': 109, 'unreadable': 32, 'over_order_budget': 11, 'within_cap': 117}; price over list 1
+  surplus if within cap: n 117 median 232628 sum 23853658; at rule rate 0.84: 5.1 deals/h, 1,042,916 surplus/h before breakage
+  new text rule against structured ask, same reply: {'same': 30}
+  false reading test: new text rules on replies the current parser already reads
+  replies read by a new rule 249
+    ('final_price', 'plausible') 18
+    ('final_price', 'same_as_structured') 6
+    ('lowest_price', 'plausible') 74
+    ('meet_partway', 'plausible') 1
+    ('my_price', 'plausible') 39
+    ('my_price', 'same_as_structured') 39
+    ('name_colon_krw', 'over_list') 1
+    ('name_colon_krw', 'plausible') 116
+
+== B. asks over our cap, inside the order budget (mandate limit), stopped at a model limit
+  public sample: goods settles 18513, broken rows 1231, broken rows whose settle is also in the sample 521
+  The sample is pages, so a sale and its break are often apart; rates below count only joined pairs and are floors.
+   ('A', False): settled 3382 broken joined 40 rate 0.0118
+   ('A', True): settled 9833 broken joined 105 rate 0.0107
+   ('B', False): settled 1538 broken joined 65 rate 0.0423
+   ('B', True): settled 2051 broken joined 101 rate 0.0492
+   ('C', False): settled 833 broken joined 106 rate 0.1273
+   ('C', True): settled 876 broken joined 104 rate 0.1187
+   ('가구/침구', False): settled 5518 broken joined 203 rate 0.0368
+   ('가구/침구', True): settled 12260 broken joined 293 rate 0.0239
+  unjoined upper view, no warranty goods: broken rows 458 / settled rows 5753 = 0.0796
+  ours as a shop on the board: 70 broken / 1063 deals = 0.0659; goods only, mostly no warranty, grade mix A70 B20 C10 by contract
+  ours as a buyer: 831 deals by grade {'B': 471, 'A': 360}, broken.jsonl lines 11, deals with a matched fault 2
+  assumed break rate for the sums below {'A': 0.03, 'B': 0.06, 'C': 0.12}, no warranty: a break turns surplus into minus the price
+  records with ask, cap and list price 466; over order budget 155; over list 78; grade [('A', 252), (None, 144), ('B', 70)]; kind [('goods', 282), ('food', 184)]; second-turn 176
+  inside order budget and under list: 278 (14.5/h)
+  ratio | n | /h | surplus before breakage | expected after breakage | at rule paid rate, per hour | median surplus/list
+   1.1: 106 | 5.5 | 15,829,012 | 10,405,845 | 454,959 | 0.2491825695635222
+   1.2: 157 | 8.2 | 22,807,042 | 15,211,506 | 665,069 | 0.22
+   1.25: 192 | 10.0 | 25,868,289 | 17,715,644 | 774,553 | 0.21567085890737964
+   1.3: 210 | 10.9 | 26,664,044 | 18,349,357 | 802,260 | 0.21023704602608753
+   1.4: 246 | 12.8 | 30,775,914 | 21,580,715 | 943,540 | 0.20174999999999998
+  per deal, negative after breakage: 3 of 169
+  by grade, within 1.4: [('A', 132), (None, 81), ('B', 33)]
+
+== C. selection_attempt_cooldown and seller_rejected
+  gap between orders: median 21.0 s, under 20 s 948/3214
+  skipped 746 (38.9/h); same order paid later 0; orders are not retried (orders seen twice above)
+  paid per order that was not skipped 0.122; if skipped orders did as well: 4.8 deals/h more
+  surplus per paid deal, before breakage: mean 90,920 median 14143.0
+  seller_rejected 592 (30.9/h), same order paid later 0
+  reply type [('no_stock', 523), ('other', 45), ('cannot_verify_or_policy', 24)]; listed qty of the chosen offer [(None, 480), (1, 44), ('4+', 27), (3, 21), (2, 20)]; [('another_eligible_shop', 521), ('no_other_eligible_shop', 71)]; shops 36, top [('ggari-shop', 65), ('elm-street', 58), ('willow-goods', 49), ('YAHO1212', 41), ('grand-furniture', 31)]
+  orders get one attempt, so each is lost; with another eligible shop a second attempt might pay at about 0.161
+
+== D. model limit stops by category, against all attempted orders
+  침대/매트리스: attempted 682 stops 384 (0.56); parser [('over_budget', 228), ('no_labeled_price', 152), ('malformed_price', 3)]; ask/cap median 1.2085; cap source [('public_r3_settlement', 268), ('unknown', 78), ('own_r3_settlement', 38)]; median order budget 603750.0; shops [('25620027', 74), ('gom31-certified-goods', 66), ('ggari-shop', 60)]
+  김치: attempted 739 stops 141 (0.19); parser [('over_budget', 84), ('no_labeled_price', 57)]; ask/cap median 1.2127; cap source [('public_r3_settlement', 105), ('own_r3_settlement', 22), ('unknown', 14)]; median order budget 38980; shops [('gom31-certified-goods', 25), ('nocha12', 20), ('psyoung82', 16)]
+  침구: attempted 82 stops 39 (0.48); parser [('over_budget', 26), ('no_labeled_price', 12), ('malformed_price', 1)]; ask/cap median 1.16905; cap source [('public_r3_settlement', 26), ('unknown', 13)]; median order budget 75205.0; shops [('ggari-shop', 9), ('25620027', 5), ('totato2203-r3', 3)]
+  소파/의자/스툴: attempted 49 stops 32 (0.65); parser [('over_budget', 20), ('no_labeled_price', 11), ('malformed_price', 1)]; ask/cap median 1.2181000000000002; cap source [('public_r3_settlement', 29), ('unknown', 3)]; median order budget 2301600; shops [('gom31-certified-goods', 9), ('inextro', 5), ('25620027', 4)]
+  커피/차: attempted 193 stops 30 (0.16); parser [('over_budget', 26), ('no_labeled_price', 4)]; ask/cap median 1.1668; cap source [('public_r3_settlement', 15), ('own_r3_settlement', 8), ('unknown', 7)]; median order budget 22420; shops [('25620027', 10), ('elm-street', 6), ('mjforge', 4)]
+  조리/가공 견과류: attempted 199 stops 27 (0.14); parser [('over_budget', 21), ('no_labeled_price', 6)]; ask/cap median 1.1462; cap source [('public_r3_settlement', 17), ('unknown', 7), ('own_r3_settlement', 3)]; median order budget 28870; shops [('jiseokkk', 5), ('mjforge', 4), ('ddolcom', 4)]
+  all attempted by category [('김치', 739), ('침대/매트리스', 682), ('조리/가공 견과류', 199), ('커피/차', 193), ('침구', 82), ('소파/의자/스툴', 49), ('주스/코코아/생수', 41), ('신선과일(부패주의)', 35)]

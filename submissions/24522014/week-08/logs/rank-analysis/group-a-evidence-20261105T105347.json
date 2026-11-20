@@ -1,0 +1,2082 @@
+{
+ "part_one": {
+  "window_utc": [
+   "20261105T000000",
+   "20261105T105347"
+  ],
+  "hours": 10.9,
+  "population": {
+   "orders": 1684,
+   "trades_read": 1423,
+   "replies_open_for_input": 1318,
+   "no_trade_log": 261
+  },
+  "parser_replay_vs_records": {
+   "checked": 1312
+  },
+  "replies_group_a_would_read": {
+   "my_price": {
+    "quote_filter_refused": 12,
+    "stopped_at_gate": 22,
+    "model_handled": 3,
+    "turn_limit": 1
+   },
+   "metadata_ask": {
+    "model_handled": 2,
+    "stopped_at_gate": 10
+   }
+  },
+  "replies_group_a_saw_but_refused": {},
+  "deals_group_a_would_read": 46,
+  "stopped_at_gate": {
+   "deals": 32,
+   "gate_reasons": {
+    "model_quota_hour": 32
+   },
+   "by_how": {
+    "my_price": 22,
+    "metadata_ask": 10
+   },
+   "first_read_turn": {
+    "1": 22,
+    "2": 10
+   },
+   "within_cap": {
+    "deals": 6,
+    "deals_per_hour": 0.55,
+    "by_how": {
+     "my_price": 6
+    },
+    "surplus_before_breakage_if_all_paid": 35950,
+    "surplus_by_how": {
+     "my_price": 35950
+    },
+    "top3_share": 0.654,
+    "distinct_shop_sku_pairs": 4,
+    "surplus_one_deal_per_pair": 22079,
+    "shops": 1,
+    "shops_by_surplus_top5": [
+     [
+      "nocha12",
+      35950
+     ]
+    ],
+    "missing_list_price": 0
+   },
+   "above_cap": {
+    "deals": 26,
+    "by_how": {
+     "my_price": 16,
+     "metadata_ask": 10
+    },
+    "counter_rule_results": {
+     "rule_counter_offer": 14,
+     "counter_ratio_exceeded": 2,
+     "counter_already_used": 10
+    },
+    "counter_rule_would_offer_the_cap": {
+     "deals": 14,
+     "by_how": {
+      "my_price": 14
+     },
+     "shops": {
+      "nocha12": 14
+     },
+     "surplus_at_cap_if_all_accepted": 119509,
+     "distinct_shop_sku_pairs": 4,
+     "ask_per_cap": [
+      1.014,
+      1.026,
+      1.081,
+      1.081,
+      1.102,
+      1.102,
+      1.109,
+      1.119,
+      1.136,
+      1.145,
+      1.145,
+      1.146,
+      1.146,
+      1.149
+     ]
+    }
+   }
+  },
+  "model_handled": {
+   "deals": 2,
+   "by_how": {
+    "metadata_ask": 1,
+    "my_price": 1
+   },
+   "first_read_turn": {
+    "2": 1,
+    "1": 1
+   },
+   "paid_by_expression": {},
+   "not_paid": {
+    "deals": 2,
+    "within_cap": 0,
+    "by_how": {},
+    "surplus_before_breakage_if_all_paid": 0,
+    "payment_refused": 0,
+    "outcomes": {}
+   }
+  },
+  "other": {
+   "deals": 12,
+   "what": {
+    "quote_filter_refused": 12
+   },
+   "reasons": {
+    "quote_shelf_life_short": 6,
+    "quote_grade_unacceptable": 6
+   },
+   "by_how": {
+    "my_price": 12
+   },
+   "paid": 0
+  },
+  "measured_rule_offer_to_paid_same_window": {
+   "first_turn_rule_offers": 156,
+   "paid": 136
+  },
+  "window_scale": {
+   "deals_model_called": 22,
+   "deals_model_called_paid": 5,
+   "deals_rule_counter": 274,
+   "deals_rule_counter_paid": 64,
+   "deals_stopped_at_gate": 481,
+   "gate_reasons": {
+    "model_quota_hour": 481
+   },
+   "rule_counter_by_shop_top8": {
+    "Kiro729": {
+     "counters": 41,
+     "paid": 4
+    },
+    "lee-sungsoo": {
+     "counters": 30,
+     "paid": 4
+    },
+    "moss-and-oak": {
+     "counters": 29,
+     "paid": 6
+    },
+    "25620027": {
+     "counters": 27,
+     "paid": 10
+    },
+    "inextro": {
+     "counters": 27,
+     "paid": 1
+    },
+    "thisjonghoon": {
+     "counters": 19,
+     "paid": 3
+    },
+    "psyoung82": {
+     "counters": 16,
+     "paid": 11
+    },
+    "dragonash": {
+     "counters": 15,
+     "paid": 3
+    }
+   }
+  },
+  "same_replay_for_group_b_switches": {
+   "lowest_price_alone": {
+    "replies": {
+     "lowest_price": {
+      "stopped_at_gate": 25,
+      "model_handled": 2
+     }
+    },
+    "refused": {},
+    "deals": 26,
+    "stopped_at_gate": {
+     "deals": 25,
+     "gate_reasons": {
+      "model_quota_hour": 25
+     },
+     "by_how": {
+      "lowest_price": 25
+     },
+     "first_read_turn": {
+      "1": 25
+     },
+     "within_cap": {
+      "deals": 19,
+      "deals_per_hour": 1.74,
+      "by_how": {
+       "lowest_price": 19
+      },
+      "surplus_before_breakage_if_all_paid": 3763466,
+      "surplus_by_how": {
+       "lowest_price": 3763466
+      },
+      "top3_share": 0.351,
+      "distinct_shop_sku_pairs": 10,
+      "surplus_one_deal_per_pair": 1660214,
+      "shops": 1,
+      "shops_by_surplus_top5": [
+       [
+        "ggari-shop",
+        3763466
+       ]
+      ],
+      "missing_list_price": 0
+     },
+     "above_cap": {
+      "deals": 6,
+      "by_how": {
+       "lowest_price": 6
+      },
+      "counter_rule_results": {
+       "counter_ratio_exceeded": 3,
+       "rule_counter_offer": 3
+      },
+      "counter_rule_would_offer_the_cap": {
+       "deals": 3,
+       "by_how": {
+        "lowest_price": 3
+       },
+       "shops": {
+        "ggari-shop": 3
+       },
+       "surplus_at_cap_if_all_accepted": 297894,
+       "distinct_shop_sku_pairs": 3,
+       "ask_per_cap": [
+        1.05,
+        1.061,
+        1.14
+       ]
+      }
+     }
+    },
+    "model_handled": {
+     "deals": 1,
+     "by_how": {
+      "lowest_price": 1
+     },
+     "first_read_turn": {
+      "1": 1
+     },
+     "paid_by_expression": {
+      "lowest_price": {
+       "paid": 1,
+       "ask_within_cap": 1,
+       "ask_above_cap": 0,
+       "paid_equal_to_ask": 1,
+       "paid_below_ask": 0,
+       "paid_above_ask": 0,
+       "extra_cost_if_rule_took_the_ask": 0,
+       "extra_cost_per_hour": 0,
+       "extra_cost_share_of_paid": 0.0,
+       "paid_price_sum": 90675,
+       "shops": {
+        "ggari-shop": 1
+       }
+      }
+     },
+     "not_paid": {
+      "deals": 0,
+      "within_cap": 0,
+      "by_how": {},
+      "surplus_before_breakage_if_all_paid": 0,
+      "payment_refused": 0,
+      "outcomes": {}
+     }
+    },
+    "other": {
+     "deals": 0,
+     "what": {},
+     "reasons": {},
+     "by_how": {},
+     "paid": 0
+    }
+   },
+   "colon_krw_alone": {
+    "replies": {
+     "colon_krw": {
+      "model_handled": 2,
+      "stopped_at_gate": 42
+     }
+    },
+    "refused": {},
+    "deals": 44,
+    "stopped_at_gate": {
+     "deals": 42,
+     "gate_reasons": {
+      "model_quota_hour": 42
+     },
+     "by_how": {
+      "colon_krw": 42
+     },
+     "first_read_turn": {
+      "1": 42
+     },
+     "within_cap": {
+      "deals": 16,
+      "deals_per_hour": 1.47,
+      "by_how": {
+       "colon_krw": 16
+      },
+      "surplus_before_breakage_if_all_paid": 4052440,
+      "surplus_by_how": {
+       "colon_krw": 4052440
+      },
+      "top3_share": 0.431,
+      "distinct_shop_sku_pairs": 6,
+      "surplus_one_deal_per_pair": 1715840,
+      "shops": 1,
+      "shops_by_surplus_top5": [
+       [
+        "gom31-certified-goods",
+        4052440
+       ]
+      ],
+      "missing_list_price": 0
+     },
+     "above_cap": {
+      "deals": 26,
+      "by_how": {
+       "colon_krw": 26
+      },
+      "counter_rule_results": {
+       "rule_counter_offer": 22,
+       "counter_ratio_exceeded": 4
+      },
+      "counter_rule_would_offer_the_cap": {
+       "deals": 22,
+       "by_how": {
+        "colon_krw": 22
+       },
+       "shops": {
+        "gom31-certified-goods": 22
+       },
+       "surplus_at_cap_if_all_accepted": 5709407,
+       "distinct_shop_sku_pairs": 8,
+       "ask_per_cap": [
+        1.007,
+        1.008,
+        1.008,
+        1.008,
+        1.008,
+        1.008,
+        1.008,
+        1.008,
+        1.008,
+        1.008,
+        1.017,
+        1.063,
+        1.102,
+        1.12,
+        1.12,
+        1.121,
+        1.134,
+        1.134,
+        1.142,
+        1.158,
+        1.159,
+        1.174
+       ]
+      }
+     }
+    },
+    "model_handled": {
+     "deals": 2,
+     "by_how": {
+      "colon_krw": 2
+     },
+     "first_read_turn": {
+      "1": 2
+     },
+     "paid_by_expression": {
+      "colon_krw": {
+       "paid": 2,
+       "ask_within_cap": 2,
+       "ask_above_cap": 0,
+       "paid_equal_to_ask": 0,
+       "paid_below_ask": 2,
+       "paid_above_ask": 0,
+       "extra_cost_if_rule_took_the_ask": 22246,
+       "extra_cost_per_hour": 2042,
+       "extra_cost_share_of_paid": 0.0286,
+       "paid_price_sum": 778610,
+       "shops": {
+        "gom31-certified-goods": 2
+       }
+      }
+     },
+     "not_paid": {
+      "deals": 0,
+      "within_cap": 0,
+      "by_how": {},
+      "surplus_before_breakage_if_all_paid": 0,
+      "payment_refused": 0,
+      "outcomes": {}
+     }
+    },
+    "other": {
+     "deals": 0,
+     "what": {},
+     "reasons": {},
+     "by_how": {},
+     "paid": 0
+    }
+   }
+  }
+ },
+ "part_two": {
+  "window_utc_from": "20261103T120000",
+  "earlier_count_reproduced_by_its_method": {
+   "metadata_ask": {
+    "ask_equals_settled": 11
+   },
+   "my_price": {
+    "ask_equals_settled": 6,
+    "read_above_settled_unexplained": 12
+   },
+   "final_price": {
+    "ask_equals_settled": 4
+   },
+   "lowest_price": {
+    "ask_equals_settled": 8
+   },
+   "colon_krw": {
+    "read_above_settled_unexplained": 6,
+    "ask_equals_settled": 2,
+    "closed_at_our_lower_offer": 3
+   }
+  },
+  "expressions": {
+   "my_price": {
+    "all": {
+     "deals": 18,
+     "ask_equals_settled": 6,
+     "closed_at_our_lower_offer": 12,
+     "first_ask_within_cap": 14,
+     "first_ask_above_cap": 4,
+     "extra_if_rule_took_first_ask_within_cap": 31314,
+     "extra_share_of_those_paid": 0.0516,
+     "first_ask_equals_settled": 1,
+     "first_ask_over_settled_median": 1.052,
+     "shops": {
+      "nocha12": 18
+     }
+    },
+    "up_to_earlier_count": {
+     "deals": 18,
+     "ask_equals_settled": 6,
+     "closed_at_our_lower_offer": 12,
+     "first_ask_within_cap": 14,
+     "first_ask_above_cap": 4,
+     "extra_if_rule_took_first_ask_within_cap": 31314,
+     "extra_share_of_those_paid": 0.0516,
+     "first_ask_equals_settled": 1,
+     "first_ask_over_settled_median": 1.052,
+     "shops": {
+      "nocha12": 18
+     }
+    },
+    "after_earlier_count": {
+     "deals": 0,
+     "first_ask_within_cap": 0,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 0,
+     "extra_share_of_those_paid": null,
+     "first_ask_equals_settled": 0,
+     "first_ask_over_settled_median": null,
+     "shops": {}
+    }
+   },
+   "final_price": {
+    "all": {
+     "deals": 4,
+     "ask_equals_settled": 4,
+     "first_ask_within_cap": 4,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 0,
+     "extra_share_of_those_paid": 0.0,
+     "first_ask_equals_settled": 4,
+     "first_ask_over_settled_median": 1.0,
+     "shops": {
+      "inextro": 4
+     }
+    },
+    "up_to_earlier_count": {
+     "deals": 4,
+     "ask_equals_settled": 4,
+     "first_ask_within_cap": 4,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 0,
+     "extra_share_of_those_paid": 0.0,
+     "first_ask_equals_settled": 4,
+     "first_ask_over_settled_median": 1.0,
+     "shops": {
+      "inextro": 4
+     }
+    },
+    "after_earlier_count": {
+     "deals": 0,
+     "first_ask_within_cap": 0,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 0,
+     "extra_share_of_those_paid": null,
+     "first_ask_equals_settled": 0,
+     "first_ask_over_settled_median": null,
+     "shops": {}
+    }
+   },
+   "metadata_ask": {
+    "all": {
+     "deals": 11,
+     "ask_equals_settled": 11,
+     "first_ask_within_cap": 11,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 0,
+     "extra_share_of_those_paid": 0.0,
+     "first_ask_equals_settled": 11,
+     "first_ask_over_settled_median": 1.0,
+     "shops": {
+      "Kiro729": 10,
+      "psyoung82": 1
+     }
+    },
+    "up_to_earlier_count": {
+     "deals": 11,
+     "ask_equals_settled": 11,
+     "first_ask_within_cap": 11,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 0,
+     "extra_share_of_those_paid": 0.0,
+     "first_ask_equals_settled": 11,
+     "first_ask_over_settled_median": 1.0,
+     "shops": {
+      "Kiro729": 10,
+      "psyoung82": 1
+     }
+    },
+    "after_earlier_count": {
+     "deals": 0,
+     "first_ask_within_cap": 0,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 0,
+     "extra_share_of_those_paid": null,
+     "first_ask_equals_settled": 0,
+     "first_ask_over_settled_median": null,
+     "shops": {}
+    }
+   },
+   "lowest_price": {
+    "all": {
+     "deals": 9,
+     "ask_equals_settled": 9,
+     "first_ask_within_cap": 9,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 0,
+     "extra_share_of_those_paid": 0.0,
+     "first_ask_equals_settled": 9,
+     "first_ask_over_settled_median": 1.0,
+     "shops": {
+      "ggari-shop": 9
+     }
+    },
+    "up_to_earlier_count": {
+     "deals": 8,
+     "ask_equals_settled": 8,
+     "first_ask_within_cap": 8,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 0,
+     "extra_share_of_those_paid": 0.0,
+     "first_ask_equals_settled": 8,
+     "first_ask_over_settled_median": 1.0,
+     "shops": {
+      "ggari-shop": 8
+     }
+    },
+    "after_earlier_count": {
+     "deals": 1,
+     "ask_equals_settled": 1,
+     "first_ask_within_cap": 1,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 0,
+     "extra_share_of_those_paid": 0.0,
+     "first_ask_equals_settled": 1,
+     "first_ask_over_settled_median": 1.0,
+     "shops": {
+      "ggari-shop": 1
+     }
+    },
+    "unexplained_or_negotiated_rows": []
+   },
+   "colon_krw": {
+    "all": {
+     "deals": 11,
+     "closed_at_our_lower_offer": 9,
+     "ask_equals_settled": 2,
+     "first_ask_within_cap": 11,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 104244,
+     "extra_share_of_those_paid": 0.0238,
+     "first_ask_equals_settled": 2,
+     "first_ask_over_settled_median": 1.028,
+     "shops": {
+      "gom31-certified-goods": 11
+     }
+    },
+    "up_to_earlier_count": {
+     "deals": 11,
+     "closed_at_our_lower_offer": 9,
+     "ask_equals_settled": 2,
+     "first_ask_within_cap": 11,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 104244,
+     "extra_share_of_those_paid": 0.0238,
+     "first_ask_equals_settled": 2,
+     "first_ask_over_settled_median": 1.028,
+     "shops": {
+      "gom31-certified-goods": 11
+     }
+    },
+    "after_earlier_count": {
+     "deals": 0,
+     "first_ask_within_cap": 0,
+     "first_ask_above_cap": 0,
+     "extra_if_rule_took_first_ask_within_cap": 0,
+     "extra_share_of_those_paid": null,
+     "first_ask_equals_settled": 0,
+     "first_ask_over_settled_median": null,
+     "shops": {}
+    },
+    "unexplained_or_negotiated_rows": [
+     {
+      "when": "20261103T210631",
+      "shop": "gom31-certified-goods",
+      "item": "G1515d951",
+      "first_ask": 313619,
+      "last_ask": 313619,
+      "settled": 305916,
+      "sent": [
+       297938,
+       304000,
+       305916
+      ],
+      "trail_empty": true,
+      "verdict": "closed_at_our_lower_offer"
+     },
+     {
+      "when": "20261103T214301",
+      "shop": "gom31-certified-goods",
+      "item": "G1515d951",
+      "first_ask": 313619,
+      "last_ask": 313619,
+      "settled": 305144,
+      "sent": [
+       298000,
+       305000,
+       305144
+      ],
+      "trail_empty": true,
+      "verdict": "closed_at_our_lower_offer"
+     },
+     {
+      "when": "20261104T004133",
+      "shop": "gom31-certified-goods",
+      "item": "G6b9db161",
+      "first_ask": 310800,
+      "last_ask": 310800,
+      "settled": 302400,
+      "sent": [
+       295260,
+       300000,
+       302400
+      ],
+      "trail_empty": true,
+      "verdict": "closed_at_our_lower_offer"
+     },
+     {
+      "when": "20261104T004250",
+      "shop": "gom31-certified-goods",
+      "item": "G6b9db161",
+      "first_ask": 310800,
+      "last_ask": 310800,
+      "settled": 302400,
+      "sent": [
+       294000,
+       302400
+      ],
+      "trail_empty": true,
+      "verdict": "closed_at_our_lower_offer"
+     },
+     {
+      "when": "20261104T041307",
+      "shop": "gom31-certified-goods",
+      "item": "G6b9db161",
+      "first_ask": 302400,
+      "last_ask": 302400,
+      "settled": 294000,
+      "sent": [
+       287280,
+       292236,
+       294000
+      ],
+      "trail_empty": true,
+      "verdict": "closed_at_our_lower_offer"
+     },
+     {
+      "when": "20261104T050751",
+      "shop": "gom31-certified-goods",
+      "item": "G6b9db161",
+      "first_ask": 302400,
+      "last_ask": 302400,
+      "settled": 294000,
+      "sent": [
+       280000,
+       285000,
+       290000,
+       294000
+      ],
+      "trail_empty": true,
+      "verdict": "closed_at_our_lower_offer"
+     },
+     {
+      "when": "20261104T113529",
+      "shop": "gom31-certified-goods",
+      "item": "G03d0199f",
+      "first_ask": 1159920,
+      "last_ask": 1159920,
+      "settled": 1127700,
+      "sent": [
+       1067000,
+       1100000,
+       1127700
+      ],
+      "trail_empty": false,
+      "verdict": "closed_at_our_lower_offer"
+     },
+     {
+      "when": "20261105T000247",
+      "shop": "gom31-certified-goods",
+      "item": "G66ded25b",
+      "first_ask": 12888,
+      "last_ask": 12888,
+      "settled": 12530,
+      "sent": [
+       11900,
+       12300,
+       12530
+      ],
+      "trail_empty": false,
+      "verdict": "closed_at_our_lower_offer"
+     },
+     {
+      "when": "20261105T010419",
+      "shop": "gom31-certified-goods",
+      "item": "Gb5d0dde7",
+      "first_ask": 787968,
+      "last_ask": 787968,
+      "settled": 766080,
+      "sent": [
+       725000,
+       755000,
+       766080
+      ],
+      "trail_empty": false,
+      "verdict": "closed_at_our_lower_offer"
+     }
+    ]
+   }
+  },
+  "when_we_sent_the_stated_figure": {
+   "metadata_ask": {
+    "times_we_sent_the_stated_figure": 11,
+    "deal_paid_at_it": 11
+   },
+   "lowest_price": {
+    "times_we_sent_the_stated_figure": 11,
+    "deal_paid_at_it": 9,
+    "not_paid_at_it": 2
+   },
+   "my_price": {
+    "times_we_sent_the_stated_figure": 6,
+    "deal_paid_at_it": 6
+   },
+   "final_price": {
+    "times_we_sent_the_stated_figure": 4,
+    "deal_paid_at_it": 4
+   }
+  },
+  "my_price_and_metadata": {
+   "my_price_replies": 214,
+   "with_equal_metadata_ask": 214
+  }
+ },
+ "my_price_twelve": [
+  {
+   "when": "20261103T164155",
+   "shop": "nocha12",
+   "item": "G6b9db161",
+   "asks_in_order": [
+    375193,
+    359000
+   ],
+   "settled": 319000,
+   "numbers_we_sent": [
+    336000,
+    319000
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 56193,
+   "ask_moved_inside_deal": true
+  },
+  {
+   "when": "20261103T174317",
+   "shop": "nocha12",
+   "item": "G6b9db161",
+   "asks_in_order": [
+    374272
+   ],
+   "settled": 354000,
+   "numbers_we_sent": [
+    354000
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 20272,
+   "ask_moved_inside_deal": false
+  },
+  {
+   "when": "20261103T205550",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "asks_in_order": [
+    27856
+   ],
+   "settled": 26500,
+   "numbers_we_sent": [
+    26500
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 1356,
+   "ask_moved_inside_deal": false
+  },
+  {
+   "when": "20261103T232337",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "asks_in_order": [
+    27859
+   ],
+   "settled": 26500,
+   "numbers_we_sent": [
+    26500
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 1359,
+   "ask_moved_inside_deal": false
+  },
+  {
+   "when": "20261104T003640",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "asks_in_order": [
+    27827
+   ],
+   "settled": 26500,
+   "numbers_we_sent": [
+    26500
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 1327,
+   "ask_moved_inside_deal": false
+  },
+  {
+   "when": "20261104T010707",
+   "shop": "nocha12",
+   "item": "Gbb0cbbff",
+   "asks_in_order": [
+    80000,
+    75587
+   ],
+   "settled": 74000,
+   "numbers_we_sent": [
+    74000,
+    74000
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 6000,
+   "ask_moved_inside_deal": true
+  },
+  {
+   "when": "20261104T012958",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "asks_in_order": [
+    37900,
+    31073
+   ],
+   "settled": 28000,
+   "numbers_we_sent": [
+    26500,
+    28000
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 9900,
+   "ask_moved_inside_deal": true
+  },
+  {
+   "when": "20261104T015428",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "asks_in_order": [
+    32000
+   ],
+   "settled": 30400,
+   "numbers_we_sent": [
+    30400
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 1600,
+   "ask_moved_inside_deal": false
+  },
+  {
+   "when": "20261104T032711",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "asks_in_order": [
+    13821
+   ],
+   "settled": 13130,
+   "numbers_we_sent": [
+    13130
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 691,
+   "ask_moved_inside_deal": false
+  },
+  {
+   "when": "20261104T040903",
+   "shop": "nocha12",
+   "item": "G1515d951",
+   "asks_in_order": [
+    380911,
+    340135
+   ],
+   "settled": 330000,
+   "numbers_we_sent": [
+    320000,
+    330000
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 50911,
+   "ask_moved_inside_deal": true
+  },
+  {
+   "when": "20261104T042357",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "asks_in_order": [
+    12994
+   ],
+   "settled": 12350,
+   "numbers_we_sent": [
+    12350
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 644,
+   "ask_moved_inside_deal": false
+  },
+  {
+   "when": "20261104T045144",
+   "shop": "nocha12",
+   "item": "G3434758a",
+   "asks_in_order": [
+    16258
+   ],
+   "settled": 15300,
+   "numbers_we_sent": [
+    15300
+   ],
+   "trail_empty": true,
+   "settled_is_our_last_number": true,
+   "first_ask_minus_settled": 958,
+   "ask_moved_inside_deal": false
+  }
+ ],
+ "deals": [
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 13066,
+   "what": "quote_filter_refused",
+   "reason": "quote_shelf_life_short",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T001030",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 12610,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_shelf_life_short",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 91811,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T001518",
+   "shop": "nocha12",
+   "item": "G782145bd",
+   "cap": 79920,
+   "list_price": 99900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 30019,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "rule_offer",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T001709",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 32142,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 29005,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "rule_offer",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T002617",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 32142,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 13024,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T003210",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 11016,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 13020,
+   "what": "quote_filter_refused",
+   "reason": "quote_grade_unacceptable",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T011427",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 10404,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_grade_unacceptable",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 8362,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "rule_offer",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T014757",
+   "shop": "nocha12",
+   "item": "G37da7a5c",
+   "cap": 9405,
+   "list_price": 9900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 2,
+   "how": "metadata_ask",
+   "ask": 562421,
+   "what": "model_handled",
+   "reason": "model_offer",
+   "last_offer": 438000,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [
+    "model_offer"
+   ],
+   "when": "20261105T020644",
+   "shop": "Kiro729",
+   "item": "Gc1297f36",
+   "cap": 463358,
+   "list_price": 689400,
+   "turns": 3,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_walk_away",
+   "sent": [
+    438000,
+    455000
+   ]
+  },
+  {
+   "turn": 2,
+   "how": "metadata_ask",
+   "ask": 12245,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": 10638,
+   "rule_code": "over_budget",
+   "counter_already_used": true,
+   "earlier_steps": [
+    "rule_counter_offer"
+   ],
+   "when": "20261105T021021",
+   "shop": "psyoung82",
+   "item": "G0b0ca441",
+   "cap": 10638,
+   "list_price": 14900,
+   "turns": 2,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": [
+    10638
+   ]
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 12979,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "rule_offer",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T033035",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 13235,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 2,
+   "how": "metadata_ask",
+   "ask": 30410,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": 28196,
+   "rule_code": "over_budget",
+   "counter_already_used": true,
+   "earlier_steps": [
+    "rule_counter_offer"
+   ],
+   "when": "20261105T041651",
+   "shop": "Kiro729",
+   "item": "G200e39a3",
+   "cap": 28196,
+   "list_price": 37900,
+   "turns": 2,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": [
+    28196
+   ]
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 13673,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T043329",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 12403,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 13673,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T045006",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 12403,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 2,
+   "how": "metadata_ask",
+   "ask": 12189,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": 10638,
+   "rule_code": "over_budget",
+   "counter_already_used": true,
+   "earlier_steps": [
+    "rule_counter_offer"
+   ],
+   "when": "20261105T051827",
+   "shop": "psyoung82",
+   "item": "G0b0ca441",
+   "cap": 10638,
+   "list_price": 14900,
+   "turns": 2,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": [
+    10638
+   ]
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 20175,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "rule_offer",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T052336",
+   "shop": "nocha12",
+   "item": "Gb2392fa9",
+   "cap": 20374,
+   "list_price": 26900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 2,
+   "how": "metadata_ask",
+   "ask": 48495,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": 42225,
+   "rule_code": "over_budget",
+   "counter_already_used": true,
+   "earlier_steps": [
+    "rule_counter_offer"
+   ],
+   "when": "20261105T053418",
+   "shop": "Kiro729",
+   "item": "Gc21ca0bf",
+   "cap": 42225,
+   "list_price": 59480,
+   "turns": 2,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": [
+    42225
+   ]
+  },
+  {
+   "turn": 2,
+   "how": "metadata_ask",
+   "ask": 14630,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": 13457,
+   "rule_code": "over_budget",
+   "counter_already_used": true,
+   "earlier_steps": [
+    "rule_counter_offer"
+   ],
+   "when": "20261105T053844",
+   "shop": "psyoung82",
+   "item": "G7ced7d9f",
+   "cap": 13457,
+   "list_price": 20900,
+   "turns": 2,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": [
+    13457
+   ]
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 19950,
+   "what": "quote_filter_refused",
+   "reason": "quote_shelf_life_short",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T054222",
+   "shop": "nocha12",
+   "item": "Gb2392fa9",
+   "cap": 19890,
+   "list_price": 26900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_shelf_life_short",
+   "sent": []
+  },
+  {
+   "turn": 2,
+   "how": "metadata_ask",
+   "ask": 566733,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": 500186,
+   "rule_code": "over_budget",
+   "counter_already_used": true,
+   "earlier_steps": [
+    "rule_counter_offer"
+   ],
+   "when": "20261105T055329",
+   "shop": "Kiro729",
+   "item": "Ga4e6abc9",
+   "cap": 500186,
+   "list_price": 679000,
+   "turns": 2,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": [
+    500186
+   ]
+  },
+  {
+   "turn": 2,
+   "how": "metadata_ask",
+   "ask": 15040,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": 13457,
+   "rule_code": "over_budget",
+   "counter_already_used": true,
+   "earlier_steps": [
+    "rule_counter_offer"
+   ],
+   "when": "20261105T060224",
+   "shop": "psyoung82",
+   "item": "G7ced7d9f",
+   "cap": 13457,
+   "list_price": 20900,
+   "turns": 2,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": [
+    13457
+   ]
+  },
+  {
+   "turn": 2,
+   "how": "metadata_ask",
+   "ask": 23065,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": 19992,
+   "rule_code": "over_budget",
+   "counter_already_used": true,
+   "earlier_steps": [
+    "rule_counter_offer"
+   ],
+   "when": "20261105T062013",
+   "shop": "Kiro729",
+   "item": "G575cddb8",
+   "cap": 19992,
+   "list_price": 27900,
+   "turns": 2,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": [
+    19992
+   ]
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 7987,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T062431",
+   "shop": "nocha12",
+   "item": "G37da7a5c",
+   "cap": 7140,
+   "list_price": 9900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 12969,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T062637",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 11319,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 12969,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T064849",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 11319,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 30159,
+   "what": "quote_filter_refused",
+   "reason": "quote_shelf_life_short",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T065829",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 26520,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_shelf_life_short",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 30159,
+   "what": "quote_filter_refused",
+   "reason": "quote_grade_unacceptable",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T070518",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 26520,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_grade_unacceptable",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 30159,
+   "what": "quote_filter_refused",
+   "reason": "quote_grade_unacceptable",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T071030",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 26520,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_grade_unacceptable",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 30000,
+   "what": "quote_filter_refused",
+   "reason": "quote_shelf_life_short",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T072329",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 26520,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_shelf_life_short",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 13757,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T074639",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 11468,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 30000,
+   "what": "quote_filter_refused",
+   "reason": "quote_grade_unacceptable",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T080826",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 26117,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_grade_unacceptable",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 8191,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T081400",
+   "shop": "nocha12",
+   "item": "G37da7a5c",
+   "cap": 8078,
+   "list_price": 9900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 28245,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T081427",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 26117,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 28245,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T082755",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 26117,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 2,
+   "how": "metadata_ask",
+   "ask": 35387,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": 31920,
+   "rule_code": "over_budget",
+   "counter_already_used": true,
+   "earlier_steps": [
+    "rule_counter_offer"
+   ],
+   "when": "20261105T082821",
+   "shop": "Kiro729",
+   "item": "G0be9ed07",
+   "cap": 31920,
+   "list_price": 39900,
+   "turns": 2,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": [
+    31920
+   ]
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 520000,
+   "what": "quote_filter_refused",
+   "reason": "quote_grade_unacceptable",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T085320",
+   "shop": "nocha12",
+   "item": "G05277ffe",
+   "cap": 418200,
+   "list_price": 600000,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_grade_unacceptable",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 30535,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T090047",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 27542,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 13757,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T090339",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 12107,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 20910,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "rule_offer",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T090440",
+   "shop": "nocha12",
+   "item": "Gb2392fa9",
+   "cap": 21328,
+   "list_price": 26900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 28245,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T090716",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 27542,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 31537,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T091343",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 27542,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 31537,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T091901",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 27542,
+   "list_price": 37900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 31537,
+   "what": "model_handled",
+   "reason": "model_offer",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T092521",
+   "shop": "nocha12",
+   "item": "G200e39a3",
+   "cap": 27542,
+   "list_price": 37900,
+   "turns": 4,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "turn_limit_exceeded",
+   "sent": [
+    25800,
+    27000,
+    27542
+   ]
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 13757,
+   "what": "quote_filter_refused",
+   "reason": "quote_grade_unacceptable",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T093426",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 13346,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_grade_unacceptable",
+   "sent": []
+  },
+  {
+   "turn": 2,
+   "how": "metadata_ask",
+   "ask": 18576,
+   "what": "stopped_at_gate",
+   "reason": "model_quota_hour",
+   "last_offer": 17105,
+   "rule_code": "over_budget",
+   "counter_already_used": true,
+   "earlier_steps": [
+    "rule_counter_offer"
+   ],
+   "when": "20261105T094051",
+   "shop": "psyoung82",
+   "item": "G476cc094",
+   "cap": 17105,
+   "list_price": 25800,
+   "turns": 2,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "model_quota_hour",
+   "sent": [
+    17105
+   ]
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 8295,
+   "what": "quote_filter_refused",
+   "reason": "quote_shelf_life_short",
+   "last_offer": null,
+   "rule_code": "rule_offer",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T105222",
+   "shop": "nocha12",
+   "item": "G37da7a5c",
+   "cap": 8356,
+   "list_price": 9900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_shelf_life_short",
+   "sent": []
+  },
+  {
+   "turn": 1,
+   "how": "my_price",
+   "ask": 13028,
+   "what": "quote_filter_refused",
+   "reason": "quote_shelf_life_short",
+   "last_offer": null,
+   "rule_code": "over_budget",
+   "counter_already_used": false,
+   "earlier_steps": [],
+   "when": "20261105T105330",
+   "shop": "nocha12",
+   "item": "G66ded25b",
+   "cap": 12342,
+   "list_price": 17900,
+   "turns": 1,
+   "paid": false,
+   "paid_price": null,
+   "payment_refused": false,
+   "outcome": "quote_shelf_life_short",
+   "sent": []
+  }
+ ]
+}

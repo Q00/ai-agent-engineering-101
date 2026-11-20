@@ -1,0 +1,109 @@
+{
+  "scope": "paid:true with ledger only",
+  "status": "estimate; official value only in official_* fields",
+  "window": {
+    "since": "20261103T000000000000Z",
+    "until": null,
+    "deals": 526
+  },
+  "by_path": {
+    "deterministic:rule_offer": {
+      "deals": 3,
+      "broken": 0,
+      "surplus_sum": 129539,
+      "surplus_median": 5370,
+      "surplus_per_list_median": 0.21,
+      "price_per_cap_median": 0.9804,
+      "price_per_order_budget_median": 0.5005,
+      "price_per_first_ask_median": 1.0,
+      "cap_per_list_median": 0.8,
+      "with_cap": 3,
+      "with_labeled_first_ask": 3
+    },
+    "legacy_file:deterministic": {
+      "deals": 2,
+      "broken": 0,
+      "surplus_sum": 16050,
+      "surplus_median": 8025.0,
+      "surplus_per_list_median": 0.25,
+      "price_per_cap_median": 0.9561,
+      "price_per_order_budget_median": 0.7255,
+      "price_per_first_ask_median": 1.0,
+      "cap_per_list_median": 0.7836,
+      "with_cap": 2,
+      "with_labeled_first_ask": 2
+    },
+    "legacy_file:model": {
+      "deals": 520,
+      "broken": 2,
+      "surplus_sum": 12146930,
+      "surplus_median": 6625.0,
+      "surplus_per_list_median": 0.2576,
+      "price_per_cap_median": 0.815,
+      "price_per_order_budget_median": 0.6388,
+      "price_per_first_ask_median": 0.9669,
+      "cap_per_list_median": 0.9645,
+      "with_cap": 520,
+      "with_labeled_first_ask": 464
+    },
+    "path_unknown_no_decision_record": {
+      "deals": 1,
+      "broken": 0,
+      "surplus_sum": 84000,
+      "surplus_median": 84000,
+      "surplus_per_list_median": 0.2,
+      "price_per_cap_median": 0.7693,
+      "price_per_order_budget_median": 0.6973,
+      "price_per_first_ask_median": null,
+      "cap_per_list_median": 1.0399,
+      "with_cap": 1,
+      "with_labeled_first_ask": 0
+    }
+  },
+  "official_same_window": {
+    "from_observed_at": 1793707429.768747,
+    "to_observed_at": 1793788751.3488305,
+    "surplus_delta": 12018460,
+    "deals_delta": 523,
+    "buyer_all_from": null,
+    "buyer_all_to": 0.496,
+    "note": "Side by side only; a before/after difference is not a causal effect."
+  },
+  "reconciliation": {
+    "official_surplus": 12018460,
+    "official_deals": 523,
+    "official_served": 518,
+    "official_observed_at": 1793788751.3488305,
+    "estimated_surplus": 12246980,
+    "local_deals": 523,
+    "difference": 228520,
+    "broken_events_unmatched": 3
+  },
+  "last_offer_per_first_ask": {
+    "0.85-0.90": {
+      "offers": 47,
+      "receipt": 29,
+      "paid": 14
+    },
+    "0.90-0.95": {
+      "offers": 342,
+      "receipt": 294,
+      "paid": 111
+    },
+    "0.95-1.00": {
+      "offers": 553,
+      "receipt": 532,
+      "paid": 254
+    },
+    "at_or_above_ask": {
+      "offers": 113,
+      "receipt": 112,
+      "paid": 57
+    },
+    "below_0.85": {
+      "offers": 225,
+      "receipt": 68,
+      "paid": 33
+    }
+  }
+}

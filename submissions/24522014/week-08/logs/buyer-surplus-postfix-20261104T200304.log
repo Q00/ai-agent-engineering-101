@@ -1,0 +1,85 @@
+{
+  "scope": "paid:true with ledger only",
+  "status": "estimate; official value only in official_* fields",
+  "window": {
+    "since": "20261104T103400000000Z",
+    "until": null,
+    "deals": 5
+  },
+  "by_path": {
+    "deterministic:rule_offer": {
+      "deals": 4,
+      "broken": 0,
+      "surplus_sum": 141239,
+      "surplus_median": 8535.0,
+      "surplus_per_list_median": 0.255,
+      "price_per_cap_median": 0.9804,
+      "price_per_order_budget_median": 0.4887,
+      "price_per_first_ask_median": 1.0,
+      "cap_per_list_median": 0.757,
+      "with_cap": 4,
+      "with_labeled_first_ask": 4
+    },
+    "legacy_file:deterministic": {
+      "deals": 1,
+      "broken": 0,
+      "surplus_sum": 3870,
+      "surplus_median": 3870,
+      "surplus_per_list_median": 0.3,
+      "price_per_cap_median": 0.9151,
+      "price_per_order_budget_median": 0.7778,
+      "price_per_first_ask_median": 1.0,
+      "cap_per_list_median": 0.765,
+      "with_cap": 1,
+      "with_labeled_first_ask": 1
+    }
+  },
+  "goods_still_within_break_window": {
+    "deals": 1,
+    "estimated_surplus_at_risk": 119297,
+    "ledgers": [
+      2494831
+    ]
+  },
+  "official_same_window": {
+    "from_observed_at": 1793786949.5814402,
+    "to_observed_at": 1793790126.976919,
+    "official_surplus_delta": 157289,
+    "official_deals_delta": 6,
+    "buyer_all_from": 0.511,
+    "buyer_all_to": 0.485,
+    "local_estimate_same_interval": 157289,
+    "local_deals_same_interval": 6,
+    "note": "Side by side only; a before/after difference is not a causal effect."
+  },
+  "reconciliation": {
+    "official_surplus": 12159699,
+    "official_deals": 527,
+    "official_served": 522,
+    "official_observed_at": 1793790126.976919,
+    "estimated_surplus": 12274409,
+    "local_deals": 527,
+    "difference": 114710,
+    "broken_events_unmatched": [
+      {
+        "name": "[파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS",
+        "broke_at": 1793741996,
+        "candidates": 2,
+        "max_overstatement_if_covered": 20900
+      },
+      {
+        "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+        "broke_at": 1793767743,
+        "candidates": 10,
+        "max_overstatement_if_covered": 139456
+      }
+    ]
+  },
+  "last_offer_per_first_ask": {
+    "at_or_above_ask": {
+      "offers": 8,
+      "receipt": 7,
+      "paid": 5
+    }
+  }
+}
