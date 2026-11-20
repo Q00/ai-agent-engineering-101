@@ -1,0 +1,80 @@
+{
+  "categories": {
+    "remaining_negotiation": 52,
+    "success": 317,
+    "below_reserve": 163,
+    "mjforge_terms_or_protocol": 51,
+    "buyer_429": 34,
+    "price_unread_no_offers": 151,
+    "other_technical": 5
+  },
+  "examples": {
+    "remaining_negotiation": [
+      10626,
+      11659
+    ],
+    "success": [
+      11541,
+      11646
+    ],
+    "below_reserve": [
+      12184,
+      12286
+    ],
+    "mjforge_terms_or_protocol": [
+      20287,
+      21099
+    ],
+    "buyer_429": [
+      24226,
+      25350
+    ],
+    "price_unread_no_offers": [
+      25633,
+      25658
+    ],
+    "other_technical": [
+      35192,
+      35215
+    ]
+  },
+  "raw_zero_offers": 192,
+  "raw_429": 50,
+  "seller_counts": {
+    "followup": 1199,
+    "counter_below_offer": 96
+  },
+  "seller_samples": [],
+  "seller_anomalies": [
+    {
+      "task": "77a31764-1b03-46a7-a47e-3a03c42d81b6",
+      "offer": 190,
+      "response": {
+        "action": "ask",
+        "price": 185,
+        "reason": "The buyer improved from 180 to 190, which is above the 180 reserve and well above the 180 floor, so this is a real move toward a deal. Accepting 190 would close 5 below the current ask of 195, so I'm countering at 185. That concedes 10 from my ask, a meaningful step, and leaves a small gap to close without repeating the same quote. The offer count below reserve is 0, so the three-offer rejection rule does not apply."
+      },
+      "file": "submissions\\24522014\\week-07\\logs\\seller\\20261020T123903155634Z-d575c2fb.json"
+    },
+    {
+      "task": "490965b4-7dae-4812-8999-69265062e0b9",
+      "offer": 275,
+      "response": {
+        "action": "ask",
+        "price": 270,
+        "reason": "The buyer's offer of 275 is above the 260 reserve but below the current ask of 280, so the rule to accept at the offer does not apply and I countered. The buyer has repeated 275 for two rounds, so the negotiation has stalled. I conceded 10 points from 280 to 270 to give a real step toward a deal while staying 10 above reserve. The below-reserve count is zero, and the negotiation is still active."
+      },
+      "file": "submissions\\24522014\\week-07\\logs\\seller\\20261020T124151558584Z-b30a0188.json"
+    },
+    {
+      "task": "90cf04ae-0d05-4fba-9950-e71f1193f15e",
+      "offer": 270,
+      "response": {
+        "action": "ask",
+        "price": 265,
+        "reason": "Followup phase. The current offer of 270 is above the reserve of 260 but below the current ask of 275, so accepting is not triggered. The buyer improved from 234 to 270, so I'm making a meaningful concession of 10 from 275 rather than repeating the old quote. 265 stays above reserve and leaves a small gap the buyer can close. The below-reserve streak resets because 270 is not below reserve."
+      },
+      "file": "submissions\\24522014\\week-07\\logs\\seller\\20261020T124812430564Z-fbea672a.json"
+    }
+  ]
+}

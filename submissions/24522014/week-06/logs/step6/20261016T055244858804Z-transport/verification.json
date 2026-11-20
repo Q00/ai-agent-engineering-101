@@ -1,0 +1,67 @@
+{
+  "scope": "manual buyer transport only, no harness decisions",
+  "passed": true,
+  "cases": [
+    {
+      "case": "lamp-completed",
+      "returncode": 0,
+      "task_id": "9f8edf3a-e3cd-4527-a233-66d649c3976e",
+      "states": [
+        "TASK_STATE_INPUT_REQUIRED",
+        "TASK_STATE_INPUT_REQUIRED",
+        "TASK_STATE_COMPLETED"
+      ]
+    },
+    {
+      "case": "over-budget-blocked",
+      "returncode": 1,
+      "task_id": "63085f09-5d23-4617-b478-376781806330",
+      "states": [
+        "TASK_STATE_INPUT_REQUIRED"
+      ]
+    },
+    {
+      "case": "bookshelf-canceled",
+      "returncode": 0,
+      "task_id": "834a5554-ba5b-4447-8f46-b31b01f5e8c5",
+      "states": [
+        "TASK_STATE_INPUT_REQUIRED",
+        "TASK_STATE_INPUT_REQUIRED",
+        "TASK_STATE_CANCELED"
+      ]
+    },
+    {
+      "case": "chair-rejected",
+      "returncode": 0,
+      "task_id": "7cceb2b0-3f50-409c-9cfd-f416a7ddff0d",
+      "states": [
+        "TASK_STATE_INPUT_REQUIRED",
+        "TASK_STATE_INPUT_REQUIRED",
+        "TASK_STATE_INPUT_REQUIRED",
+        "TASK_STATE_INPUT_REQUIRED",
+        "TASK_STATE_INPUT_REQUIRED",
+        "TASK_STATE_REJECTED"
+      ]
+    }
+  ],
+  "shop_record": {
+    "messages": 12,
+    "continued": 8,
+    "offers": [
+      80,
+      110,
+      230,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "deals": [
+      110
+    ],
+    "canceled": 1,
+    "posts": 13,
+    "bad_version": 0
+  }
+}
