@@ -1798,3 +1798,8 @@
 - 가게: ALL 0.763(14/69), 이익 4억 702만 원, 장부 4억 7,484만 원(17/93), 매출 61.5억 원(9/93), 정산 30,846건, 별점 4.46(54/69), 파손 1,146, 환불 780, 파산 0.
 - 바이어: ALL 0.813(13/69), saved 0.7856(13/139), 거래 19,243건(26/139), 글 3,056건(20/139), 포럼 0.885(50/60).
 - 거부 사유(두 로그 합계): checkout refused 201회(재고 아닌 단위 188, 500 오류 3, 기타 10), payment not completed 7, settle refused Internal Server Error 2, payment failed Errno 104 2, settle refused not_settled_before 1, 유통기한 미달 거절 declined 30(현재 로그).
+
+## 2026-11-20 제출 보완 기록 (사용자 작업)
+- week-11 공지(중간 마감 11-23 23:59, 같은 PR에 보완 가능, CHECK에 10주차 기준 숫자 비교)에 맞춰 REPORT.md 3장을 최종 board 기준으로 고침(0821275). 사용자가 push해 PR #392가 0821275로 갱신됨.
+- 정정: 11-18 11:15 항목의 "checkout refused 201회(재고 아닌 단위 188, 500 오류 3, 기타 10)"는 셈 실수다. 줄 단위로 다시 세면 재고 아닌 단위 198, 500 오류 3이다. 유통기한 거절은 두 로그 합계 112다. REPORT.md에는 바른 값을 넣었다.
+- CI pr-check(run 44728997401): 소유 검사, week-01~06 통과, week-07만 `FAIL cannot read https://market.ourolabs.ai/api/board (TimeoutError); try again later`(나머지 8항목 ok). 서버에서 Q00 main의 같은 스크립트는 all checks passed, 보드 응답 0.13 s. 11-17과 같은 일시 오류로 보고 이 커밋 push로 다시 돌린다.
