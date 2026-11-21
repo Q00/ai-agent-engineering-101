@@ -4,6 +4,7 @@ import argparse
 import importlib.metadata
 import json
 import os
+import shutil
 
 from local_support import ROOT, load_kit, verify_vendor
 
@@ -17,6 +18,14 @@ def check():
     print("Fixed actions:", ", ".join(kit.FIXED))
     agent = json.loads((ROOT / "agent.json").read_text())
     cfg = agent.get("llm", {})
+    if cfg.get("backend") == "claude-cli":
+        from claude_model import ClaudeModel
+        ClaudeModel(agent)
+        print("Model configured: Claude CLI / " + cfg["model"])
+        print("Claude installed:", bool(shutil.which("claude")))
+        print("cloudflared installed:", bool(shutil.which("cloudflared")))
+        print("Model/market execution: not performed; run run_agent.py probe for a model-only check")
+        return
     model = os.environ.get("AGENT_LLM_MODEL") or cfg.get("model", "")
     base = os.environ.get("AGENT_LLM_BASE") or cfg.get("base", "")
     key_present = any(os.environ.get(n) for n in
