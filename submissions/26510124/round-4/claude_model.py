@@ -41,10 +41,13 @@ def parse_result(stdout, requested=MODEL):
             or result.get("deferred_tool_use") is not None):
         raise ValueError("CLI did not return one successful tool-free turn")
     usage = result.get("modelUsage")
-    if not isinstance(usage, dict) or set(usage) != {requested}:
+    if not isinstance(usage, dict) or len(usage) != 1:
         raise ValueError("CLI used an unexpected model; no automatic fallback")
-    detail = usage[requested]
-    if (not isinstance(detail, dict) or detail.get("canonicalModel", requested) != requested
+    actual = next(iter(usage))
+    if actual != requested and not (requested == "haiku" and actual.startswith("claude-haiku-")):
+        raise ValueError("CLI used an unexpected model; no automatic fallback")
+    detail = usage[actual]
+    if (not isinstance(detail, dict) or detail.get("canonicalModel", actual) != actual
             or type(detail.get("outputTokens")) is not int or detail["outputTokens"] <= 0):
         raise ValueError("CLI model usage could not be verified")
     text = result.get("result")
@@ -64,8 +67,9 @@ def parse_result(stdout, requested=MODEL):
 class ClaudeModel:
     def __init__(self, agent, root=ROOT):
         cfg = agent.get("llm", {})
-        if cfg.get("backend") != "claude-cli" or cfg.get("model") != MODEL:
-            raise ValueError("Expected claude-cli with the selected claude-opus-5-5 model")
+        if cfg.get("backend") != "claude-cli" or cfg.get("model") not in (MODEL, "haiku"):
+            raise ValueError("Expected claude-cli with claude-opus-5-5 or the Round 3 haiku profile")
+        self.model = cfg["model"]
         self.effort = cfg.get("effort", "low")
         if self.effort not in ("low", "medium", "high"):
             raise ValueError("Unsupported effort")
@@ -75,7 +79,7 @@ class ClaudeModel:
             raise ValueError("Claude CLI is not installed in this environment")
 
     def command(self):
-        return [self.executable, "-p", "--model", MODEL, "--effort", self.effort,
+        return [self.executable, "-p", "--model", self.model, "--effort", self.effort,
                 "--tools", "", "--setting-sources", "", "--no-session-persistence",
                 "--strict-mcp-config", "--disable-slash-commands", "--max-turns", "1",
                 "--settings", '{"disableAllHooks":true}',
@@ -93,7 +97,7 @@ class ClaudeModel:
         path = logs / (run_id("claude") + ".log")
         # Whole stdout/stderr is preserved; never log environment or authentication files.
         with tempfile.TemporaryDirectory(dir=scratch) as cwd, path.open("x", encoding="utf-8") as log:
-            log.write("BACKEND: claude-cli; model=" + MODEL + "; tools=disabled\n")
+            log.write("BACKEND: claude-cli; model=" + self.model + "; tools=disabled\n")
             log.write("INPUT_MESSAGES:\n" + prompt + "\n")
             log.flush()
             process = subprocess.Popen(self.command(), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -114,6 +118,6 @@ class ClaudeModel:
             if process.returncode:
                 raise ValueError(f"Claude CLI failed (exit {process.returncode}); see {path.relative_to(self.root)}")
             try:
-                return parse_result(stdout)
+                return parse_result(stdout, self.model)
             except (ValueError, TypeError, KeyError) as error:
                 raise ValueError(f"Invalid CLI decision; see {path.relative_to(self.root)}") from error

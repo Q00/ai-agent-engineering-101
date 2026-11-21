@@ -51,7 +51,8 @@ def main():
     if not os.environ.get("MARKET_OWNER"):
         raise ValueError("MARKET_OWNER must be set in the environment; never put the claim code in a file")
     kit = load_kit()
-    kit.Model = ClaudeModel
+    from role_runtime import install
+    install(kit)
     sys.argv = argv
     kit.main()
 
