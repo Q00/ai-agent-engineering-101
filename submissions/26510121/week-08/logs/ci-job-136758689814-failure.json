@@ -1,0 +1,26 @@
+{
+  "job_id": 136758689814,
+  "pr_number": 408,
+  "url": "https://github.com/Q00/ai-agent-engineering-101/pull/408",
+  "source": "GitHub Actions job log retrieved through connector",
+  "cause": "Round-3 PR also included 71 week-07 files, triggering the independent Week-07 validator.",
+  "lines": [
+    "2026-11-21T06:23:54.4183145Z HEAD is now at 02ae098 Merge 07ad59d3163cfe0952df65e0ab7c31cfaa0bb261 into 3dd6116ba5ac73ea9a34f31e6afc811389b3cb37",
+    "2026-11-21T06:23:54.6451630Z \u001b[36;1mgit diff --name-only HEAD^1 HEAD > changed.txt\u001b[0m",
+    "2026-11-21T06:23:54.9953446Z \u001b[36;1m  echo \"==> checking $d\"\u001b[0m",
+    "2026-11-21T06:23:55.0140888Z \u001b[36;1m  echo \"==> checking $d\"\u001b[0m",
+    "2026-11-21T06:23:55.0337960Z \u001b[36;1m  echo \"==> checking $d\"\u001b[0m",
+    "2026-11-21T06:23:55.0537864Z \u001b[36;1m  echo \"==> checking $d\"\u001b[0m",
+    "2026-11-21T06:23:55.0759226Z \u001b[36;1m  echo \"==> checking $d\"\u001b[0m",
+    "2026-11-21T06:23:55.0936442Z \u001b[36;1m  echo \"==> checking $d\"\u001b[0m",
+    "2026-11-21T06:23:55.1127459Z \u001b[36;1m  echo \"No week-07 submission touched; skipping.\"\u001b[0m",
+    "2026-11-21T06:23:55.1128374Z \u001b[36;1m  echo \"==> checking $d\"\u001b[0m",
+    "2026-11-21T06:23:55.1271732Z ==> checking submissions/26510121/week-07",
+    "2026-11-21T06:23:55.2883710Z FAIL  logs/market-kit.log missing or without a ledger entry; commit the log of your time in the market",
+    "2026-11-21T06:23:55.2885296Z FAIL  logs/market-kit.log has no '[market] shop registered' and '[market] buyer registered' lines; commit the kit log from the machine your agents run on",
+    "2026-11-21T06:23:55.2886880Z FAIL  REPORT.md missing",
+    "2026-11-21T06:23:55.2887306Z 3 check(s) failed",
+    "2026-11-21T06:23:55.2997027Z ##[error]Process completed with exit code 1."
+  ],
+  "resolution": "Remove week-07 from the index on week-08 with git rm --cached, keeping all local files and prior commits. PR diff should then contain only week-08."
+}
