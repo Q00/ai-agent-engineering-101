@@ -143,7 +143,7 @@ class PolicyController:
             state = self.read()
             self.advance(state, data, now)
             try:
-                if not self.cfg.get("enabled") or self.cfg.get("mode") != "auto":
+                if not self.cfg.get("enabled") or not self.cfg.get("model_enabled") or self.cfg.get("mode") != "auto":
                     raise ValueError("Automatic operations disabled")
                 if state["active"]:
                     raise ValueError("Current experiment is still running; evaluation uses no model")
@@ -152,7 +152,8 @@ class PolicyController:
                 if now < state["next_model_at"] or evidence_id == state["last_evidence"]:
                     raise ValueError("No new eligible evidence or model cooldown")
                 units = data.get("units")
-                if not isinstance(units, list) or not units:
+                if (not isinstance(units, list) or not units
+                        or any(not isinstance(u, dict) or not isinstance(u.get("sku"), str) for u in units)):
                     raise ValueError("No inventory targets")
                 targets = sorted({u["sku"] for u in units if isinstance(u, dict)
                                   and isinstance(u.get("sku"), str) and u.get("available") is True})

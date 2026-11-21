@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real CLI role responses in an isolated fixture; no market/tool/wallet execution."""
+"""Shop/buyer CLI response probe plus operations no-evidence gate; no market calls."""
 from contextlib import redirect_stdout, redirect_stderr
 import json
 from pathlib import Path
@@ -51,8 +51,9 @@ def probe():
                 if not event.done.is_set() or not event.answer.get("reply"):
                     raise AssertionError(f"{role} did not answer the probe")
                 print(json.dumps({"role": role, "requested_model": agent["role_models"][role]["model"],
+                                  "model_called": role != "operations",
                                   "answer": event.answer, "market": "not contacted"}, ensure_ascii=False), flush=True)
-            print("PASS: shop Haiku, buyer Opus, operations Opus replied through the role runtime; no market/tools/wallets", flush=True)
+            print("PASS: shop/buyer model replies; operations correctly skipped its model without evidence; no market/tools/wallets", flush=True)
         finally:
             if (work / "logs").exists():
                 shutil.copytree(work / "logs", evidence / "runtime-logs")

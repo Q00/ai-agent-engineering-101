@@ -9,7 +9,7 @@ import math
 from pathlib import Path
 import time
 
-from strategy.round3_math import buying_terms, selling_terms
+from strategy.round3_math import buying_terms, selling_terms, closing_context as round3_closing_context
 
 HERE = Path(__file__).resolve().parent
 
@@ -61,6 +61,31 @@ def buyer_terms(budget, product, order, fees, config=None):
     result["total_spend_cap"] = cap
     result["is_payment_authorization"] = False
     return result
+
+
+def closing_terms(product, deal, now):
+    """R3 negotiation with a defined first-offer case for automatic start_offer=1.
+
+The preserved R3 function assumes there are at least two offers when closing
+starts. One offer cannot prove improvement, but inventory age can justify closing.
+"""
+    terms, offers = deal["terms"], deal["offers"]
+    rules = terms["closing"]
+    if (len(offers) != 1 or rules["start_offer"] != 1 or deal.get("final_quote")
+            or deal.get("negotiation", {}).get("discount_reason")
+            or terms["closing_price_floor"] >= terms["price_floor"]):
+        return round3_closing_context(product, deal, now)
+    reason = None
+    supplied, expiry = product.get("supplied_at"), product.get("expires_at")
+    if (product["kind"] == "goods" and type(supplied) in (int, float) and math.isfinite(supplied)
+            and 0 <= supplied <= now - rules["goods_age_hours"] * 3600):
+        reason = "aged_goods"
+    elif (product["kind"] == "food" and type(expiry) in (int, float) and math.isfinite(expiry)
+          and 0 < expiry - now <= rules["food_remaining_hours"] * 3600):
+        reason = "expiring_food"
+    return {"stage": "close", "offer_number": 1, "discount_reason": reason,
+            "price_floor": terms["closing_price_floor"] if reason else terms["price_floor"],
+            "previous_best_offer": None}
 
 
 def read_evidence(root, role, now):

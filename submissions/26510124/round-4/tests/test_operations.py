@@ -8,7 +8,7 @@ from unittest.mock import patch
 from local_support import ROOT, offline_context
 from role_runtime import MultiRoleMind, SharedToolbox, RoleToolbox
 from strategy.control import PolicyController
-from strategy.runtime import policy, role_context
+from strategy.runtime import policy, role_context, seller_terms, closing_terms
 
 
 def evidence(now, version=0, profit=1000):
@@ -73,6 +73,19 @@ class OperationsTests(unittest.TestCase):
             terms = json.loads(role_context(self.root, "shop", self.now))["calculated_terms"][0]
             self.assertEqual(terms["opening_price"], 110)
 
+    def test_first_offer_closing_does_not_invent_an_improvement_or_crash(self):
+        cfg = policy()["shop"]; cfg["closing"]["start_offer"] = 1
+        product = {"kind": "goods", "grade": "B", "cost": 100, "supplied_at": 199999}
+        terms = seller_terms(product, self.data["fees"], cfg)
+        deal = {"terms": terms, "offers": [104]}
+        fresh = closing_terms(product, deal, 200000)
+        self.assertEqual(fresh["stage"], "close")
+        self.assertIsNone(fresh["discount_reason"])
+        self.assertEqual(fresh["price_floor"], 105)
+        aged = closing_terms(dict(product, supplied_at=0), deal, 200000)
+        self.assertEqual(aged["discount_reason"], "aged_goods")
+        self.assertEqual(aged["price_floor"], 102)
+
     def test_stale_insufficient_missing_and_old_version_data_do_not_reserve_calls(self):
         variants = [None, {}, dict(self.data, round=3), dict(self.data, observed_at=self.now - 901)]
         for key, value in (("completed_tasks", 19), ("settlements", 4), ("policy_version", 99), ("net_profit", None)):
@@ -129,6 +142,13 @@ class OperationsTests(unittest.TestCase):
         self.assertEqual(cfg["shop"]["closing"]["start_offer"], 2)
         self.assertNotIn("adjust_bps", cfg["shop"]["opening"])
 
+    def test_higher_refund_share_rolls_back_even_if_profit_improves(self):
+        self.activate()
+        later = self.now + 10801
+        measured = evidence(later, version=1, profit=1500)
+        measured["operations_metrics"]["refunds"] = 1
+        self.assertIsNone(self.controller.current(measured, later)["active"])
+
     def test_incomparable_window_is_not_evaluated_and_baseline_edit_rolls_back(self):
         self.activate()
         mixed = evidence(self.now + 10800, 0, -500)
@@ -169,3 +189,33 @@ class OperationsTests(unittest.TestCase):
         self.assertEqual(after, {"version": 1, "price": 198, "start": 1, "priority": "b"})
         self.assertEqual(mind.minds["operations"].raw_model.calls, 1)
         self.assertIn('"event": "applied"', (root / "logs/operations.jsonl").read_text())
+        later = self.now + 21600
+        write_evidence(root, evidence(later, 2))
+        with patch("strategy.runtime.time.time", return_value=later):
+            restored = shop.call("shop_policy_fixture", {})["result"]
+        self.assertEqual(restored, dict(before, version=2))
+        print("OFFLINE OPERATIONS CONSUMPTION:", json.dumps({"before": before, "applied": after, "expired": restored}))
+
+    def test_hold_and_model_failure_do_not_change_policy_or_retry_model(self):
+        class OutcomeModel:
+            def __init__(self, agent, root):
+                self.calls, self.fail = 0, False
+            def complete(self, messages, **kwargs):
+                self.calls += 1
+                if self.fail:
+                    raise ValueError("fixture model unavailable")
+                return json.dumps({"thought": "hold", "action": "write_note", "args": {
+                    "text": "No supported improvement", "policy_change": None}})
+        for fail in (False, True):
+            root = self.root / str(fail); root.mkdir()
+            ctx = offline_context(); ctx["addresses"] = {"shop": "fixture"}
+            shared = SharedToolbox(root, ctx)
+            agent = json.loads((ROOT / "agent.json").read_text())
+            mind = MultiRoleMind(root, agent, None, shared, ctx, ["shop"], model_factory=OutcomeModel)
+            ops = mind.minds["operations"]; ops.raw_model.fail = fail
+            write_evidence(root, self.data)
+            with patch("role_runtime.time.time", return_value=self.now):
+                ops.run_once([])
+                ops.run_once([])
+            self.assertEqual(ops.raw_model.calls, 1)
+            self.assertIsNone(PolicyController(root, policy()).current(self.data, self.now)["active"])

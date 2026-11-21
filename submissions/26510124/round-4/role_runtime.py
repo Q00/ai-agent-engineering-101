@@ -71,6 +71,8 @@ No tool handles/a2a shortcut: all inbound messages go through the shop's decisio
 Every shop tool call receives reserved args._shop_policy from the harness (ignore model-supplied values).
 It contains the effective policy version, calculated_terms per unit and ordered inventory targets.
 Forged quote tools MUST consume these opening prices/closing rules and record the policy version.
+For negotiation use strategy/runtime.py closing_terms: it handles start_offer=1 without inventing a
+previous bid. The archived Round 3 closing_context assumes two offers and is reference only.
 Restock planners MUST consume the priority order while retaining all cash/profitability/stock gates.
 Do not forward _shop_policy wholesale to a market API. It is local strategy input. Honor already
 issued quote commitments; a new policy applies to new quotes, not retroactively to accepted terms.
@@ -228,9 +230,14 @@ class RoleMind(BaseMind):
         prepared = controller.prepare(data, now)
         self.wake_at = now + policy()["operations"]["event_min_seconds"]
         if not prepared["ready"]:
+            if getattr(self, "last_skip_reason", None) != prepared["reason"]:
+                self.step_log({"action": "operations_skip", "reason": prepared["reason"],
+                               "policy_version": prepared["version"], "model_called": False})
+                self.last_skip_reason = prepared["reason"]
             for event in events:
                 self.reply({"to": event.id, "text": "운영 모델 호출 생략: " + prepared["reason"], "state": "completed"})
             return
+        self.last_skip_reason = None
         system = ("You are the shop operations strategist. Use only supplied evidence. Return exactly ONE "
                   "JSON object with thought, action:'write_note', args:{text,policy_change}. "
                   "policy_change is null to HOLD, or {base_version,evidence_id,changes}. Copy version and "
