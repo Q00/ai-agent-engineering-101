@@ -1803,3 +1803,7 @@
 - week-11 공지(중간 마감 11-23 23:59, 같은 PR에 보완 가능, CHECK에 10주차 기준 숫자 비교)에 맞춰 REPORT.md 3장을 최종 board 기준으로 고침(0821275). 사용자가 push해 PR #392가 0821275로 갱신됨.
 - 정정: 11-18 11:15 항목의 "checkout refused 201회(재고 아닌 단위 188, 500 오류 3, 기타 10)"는 셈 실수다. 줄 단위로 다시 세면 재고 아닌 단위 198, 500 오류 3이다. 유통기한 거절은 두 로그 합계 112다. REPORT.md에는 바른 값을 넣었다.
 - CI pr-check(run 44728997401): 소유 검사, week-01~06 통과, week-07만 `FAIL cannot read https://market.ourolabs.ai/api/board (TimeoutError); try again later`(나머지 8항목 ok). 서버에서 Q00 main의 같은 스크립트는 all checks passed, 보드 응답 0.13 s. 11-17과 같은 일시 오류로 보고 이 커밋 push로 다시 돌린다.
+
+## 2026-11-21 제출 보완 기록 (사용자 작업)
+- REPORT.md를 25620027 보고서의 절 구성(요약, 0~9절, 판단이 바뀐 다섯 장면)으로 다시 쓰고 그림 두 개(figures/rank_profit.svg, figures/refusals.svg)와 생성 스크립트 report_figures.py를 넣음(c03be34). 샘플로 만든 REPORT.html 커밋(d8f5f89)은 push 전에 사용자 결정으로 되돌려 저장소에 남기지 않음. 사용자가 push해 PR #392가 c03be34로 갱신됨.
+- CI pr-check(run 44894698603): week-01~06 통과, week-07 단계만 실패(로그는 로그인해야 보여 원인 문구 미확인). 서버에서 Q00 main의 같은 스크립트는 all checks passed(시장 보드 조회 포함). 11-17, 11-20과 같은 보드 일시 오류로 보고, 이 커밋의 push로 다시 돌린다.
