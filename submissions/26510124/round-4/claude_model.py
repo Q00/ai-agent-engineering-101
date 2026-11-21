@@ -47,7 +47,10 @@ def parse_result(stdout, requested=MODEL):
     if actual != requested and not (requested == "haiku" and actual.startswith("claude-haiku-")):
         raise ValueError("CLI used an unexpected model; no automatic fallback")
     detail = usage[actual]
-    if (not isinstance(detail, dict) or detail.get("canonicalModel", actual) != actual
+    canonical = detail.get("canonicalModel", actual) if isinstance(detail, dict) else None
+    same_model = canonical == actual or (requested == "haiku" and isinstance(canonical, str)
+                  and re.fullmatch(re.escape(canonical) + r"-\d{8}", actual) is not None)
+    if (not isinstance(detail, dict) or not same_model
             or type(detail.get("outputTokens")) is not int or detail["outputTokens"] <= 0):
         raise ValueError("CLI model usage could not be verified")
     text = result.get("result")

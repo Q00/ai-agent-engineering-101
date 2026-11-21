@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from claude_model import ClaudeModel, parse_result
 from local_support import ROOT, offline_context
-from role_runtime import MultiRoleMind, SharedToolbox, RoleToolbox, OperationsModel, kit
+from role_runtime import MultiRoleMind, SharedToolbox, RoleToolbox, OperationsModel, PolicyModel, kit
 
 
 def decision(action, **args):
@@ -98,11 +98,35 @@ class RoleTests(unittest.TestCase):
 
     def test_haiku_alias_accepts_only_verified_haiku_family(self):
         result = {"type": "result", "subtype": "success", "is_error": False, "num_turns": 1,
-                  "permission_denials": [], "modelUsage": {"claude-haiku-4-5-20251001": {"outputTokens": 1}},
+                  "permission_denials": [], "modelUsage": {"claude-haiku-4-5-20251001": {
+                      "outputTokens": 1, "canonicalModel": "claude-haiku-4-5"}},
                   "result": decision("sleep", seconds=30)}
         self.assertEqual(json.loads(parse_result(json.dumps(result), "haiku"))["action"], "sleep")
         with self.assertRaises(ValueError):
             parse_result(json.dumps(result), "claude-opus-5-5")
+        result["modelUsage"]["claude-haiku-4-5-20251001"]["canonicalModel"] = "claude-haiku-3-5"
+        with self.assertRaises(ValueError):
+            parse_result(json.dumps(result), "haiku")
         with patch("claude_model.shutil.which", return_value="claude"):
             command = ClaudeModel({"llm": self.agent["role_models"]["shop"]}).command()
         self.assertEqual(command[command.index("--model") + 1], "haiku")
+
+    def test_policy_is_refreshed_after_tool_observation_and_proposals_are_labeled(self):
+        captured = []
+        class Capture:
+            def complete(self, messages, **kwargs):
+                captured.append(messages[-1]["content"])
+                return decision("write_note", text="hold: insufficient evidence")
+        model = PolicyModel(Capture(), self.root, "operations")
+        with patch("role_runtime.role_context", side_effect=["version1", "version2"]):
+            first = json.loads(model.complete([]))
+            model.complete([])
+        self.assertTrue(captured[0].endswith("version1"))
+        self.assertTrue(captured[1].endswith("version2"))
+        self.assertTrue(first["args"]["text"].startswith("[operations PROPOSAL ONLY]"))
+
+    def test_miniapp_tools_are_not_available_to_operations_or_autonomous_buyer(self):
+        self.mind.app_tools["app_example"] = ("fixture", lambda args: None)
+        for role, child in self.mind.minds.items():
+            child.context([])
+            self.assertEqual("app_example" in child.app_tools, role == "shop")
