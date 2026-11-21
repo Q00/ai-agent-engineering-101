@@ -1,0 +1,49 @@
+Book Nook: 296 items, port 44299, chatty=False
+[seller 2eec0f27] <- 'a rug about 140 by 200 cm'
+[seller b616b229] <- 'a wooden bookshelf for about 60 books'
+[seller 2eec0f27] call 2 (7.7s) -> '{"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["rug", "carpet", "area rug", "140x200", "140 x 200 cm"]}'
+[seller 2eec0f27] query {"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["rug", "carpet", "area rug", "140x200", "140 x 200 cm"]} -> 8 candidates
+[seller b616b229] call 3 (7.7s) -> '{"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "book storage"]}'
+[seller b616b229] query {"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "bookcase", "book storage"]} -> 8 candidates
+[seller b616b229] call 4 (8.3s) -> '{"sku": "BOO-00092", "price": 210, "say": "Our white pine bookshelf holds about sixty books, which matches what you need."}'
+[seller b616b229] -> item BOO-00092 (search+pick), reserve 142, open ask 210
+[seller 2eec0f27] call 4 (8.8s) -> '{"sku": "RUG-09097", "price": 130, "say": "We have a machine washable rug in this size in a warm oak beige, and I can offer it to you at a good price."}'
+[seller 2eec0f27] -> item RUG-09097 (search+pick), reserve 102, open ask 130
+[seller b616b229] <- '120'
+[seller 2eec0f27] <- '75'
+[seller b616b229] call 6 (5.9s) -> '{"buyer_offer": 120, "action": "counter", "price": 165, "say": "That\'s below what I can accept, but I can meet you partway on the Industrial Pine Bookshelf B23."}'
+[seller b616b229] -> counter 165
+[seller 2eec0f27] call 6 (6.6s) -> '{"buyer_offer": 75, "action": "counter", "price": 116, "say": "I can\'t go as low as that, but I can meet you partway at this price for the Nordic Synthetic Rug G20."}'
+[seller 2eec0f27] -> counter 116
+[seller b616b229] <- '165.0'
+[seller 2eec0f27] <- '88'
+[seller b616b229] call 8 (4.1s) -> '{"buyer_offer": 165, "action": "accept", "price": 165, "say": "Thanks for meeting my asking price, the bookshelf is yours."}'
+[deal] Book Nook | BOO-00092 | 165 | task b616b229-f19c-4356-850f-d64bd438363b
+[seller 2eec0f27] call 8 (5.8s) -> '{"buyer_offer": 88, "action": "counter", "price": 106, "say": "I can meet you partway, but this rug\'s price has to stay above my floor, so this is my best offer on it."}'
+[seller 2eec0f27] -> counter 106
+[seller 2eec0f27] <- '95'
+[seller 2eec0f27] call 9 (4.9s) -> '{"buyer_offer": 95, "action": "counter", "price": 102, "say": "We\'re close, and this is the best I can do to meet you halfway on the rug."}'
+[seller 2eec0f27] -> counter 102
+[seller 2eec0f27] <- '98'
+[seller 2eec0f27] call 10 (6.2s) -> '{"buyer_offer": 98, "action": "counter", "price": 102, "say": "We\'re close, and this is the lowest I can go on this rug."}'
+[seller 2eec0f27] -> counter 102
+[seller 2eec0f27] <- '100'
+[seller 2eec0f27] call 11 (6.9s) -> '{"buyer_offer": 100, "action": "counter", "price": 102, "say": "We\'re very close, and 102 is the lowest I can go on this rug, but I\'d be glad to close the deal at that price."}'
+[seller 2eec0f27] -> counter 102
+[seller 4b749eac] <- 'a rug about 140 by 200 cm'
+[seller 4b749eac] call 12 (5.6s) -> '{"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["area rug", "carpet", "140 x 200 cm", "rectangular"]}'
+[seller 4b749eac] query {"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["area rug", "carpet", "140 x 200 cm", "rectangular"]} -> 8 candidates
+[seller 4b749eac] call 13 (6.6s) -> '{"sku": "RUG-09097", "price": 136, "say": "The Nordic Synthetic Rug G20 is a machine-washable 140x200 cm rug in oak beige, and it\'s available at the list price with room to discuss."}'
+[seller 4b749eac] -> item RUG-09097 (search+pick), reserve 102, open ask 136
+[seller 4b749eac] <- '90'
+[seller 4b749eac] call 14 (5.4s) -> '{"buyer_offer": 90, "action": "counter", "price": 112, "say": "I can\'t go as low as that, but I can meet you partway on this rug."}'
+[seller 4b749eac] -> counter 112
+[seller 4b749eac] <- '98'
+[seller 4b749eac] call 15 (6.6s) -> '{"buyer_offer": 98, "action": "counter", "price": 104, "say": "We\'re close, so I can meet you partway on this one."}'
+[seller 4b749eac] -> counter 104
+[seller 4b749eac] <- '100'
+[seller 4b749eac] call 16 (5.4s) -> '{"buyer_offer": 100, "action": "counter", "price": 102, "say": "We\'re very close, so I can meet you partway at our final price on this rug."}'
+[seller 4b749eac] -> counter 102
+[seller 4b749eac] <- '102.0'
+[seller 4b749eac] call 17 (4.9s) -> '{"buyer_offer": 102, "action": "accept", "price": 102, "say": "Deal, we have a sale at the price you offered for the Nordic Synthetic Rug G20."}'
+[deal] Book Nook | RUG-09097 | 102 | task 4b749eac-a585-45f5-aa86-7fa7440c4e61

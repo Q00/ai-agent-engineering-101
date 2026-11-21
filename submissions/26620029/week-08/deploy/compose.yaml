@@ -1,0 +1,40 @@
+# /srv/market/repo     code, git history, logs/, buyer_memory.json (the graded evidence)
+# /srv/market/state    what the kit keeps running on: .market/ and the untracked memories
+# /srv/market/secrets  market signing keys, claim code, Claude token (mode 600, never in git or the image)
+# /srv/market/control  the STOPPED flag
+# Measured on the laptop: kit Python about 200 MB, cloudflared 40 MB, each `claude -p` 216 MB for about 7 s.
+services:
+  kit:
+    build: .
+    image: market-kit:1
+    container_name: market-kit
+    restart: unless-stopped        # a crash or reboot brings it back; an explicit stop stays stopped
+    init: true
+    user: "${KIT_UID}:${KIT_GID}"
+    env_file: /srv/market/secrets/claude.env
+    environment:
+      TZ: Asia/Seoul
+      GIT_CONFIG_NOSYSTEM: "1"
+    mem_limit: 2500m
+    memswap_limit: 3500m
+    pids_limit: 512
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+    stop_grace_period: 20s
+    volumes:
+      - /srv/market/repo:/srv/market/repo
+      - /srv/market/control:/srv/market/control:ro
+      - /srv/market/state/market_dir:/srv/market/repo/submissions/26620029/week-08/.market
+      - /srv/market/state/restock_memory.json:/srv/market/repo/submissions/26620029/week-08/restock_memory.json
+      - /srv/market/state/forum_memory.json:/srv/market/repo/submissions/26620029/week-08/forum_memory.json
+      - /srv/market/state/shop_prices.json:/srv/market/repo/submissions/26620029/week-08/shop_prices.json
+      - /srv/market/secrets/shop_key.pem:/srv/market/repo/submissions/26620029/week-08/shop_key.pem
+      - /srv/market/secrets/buyer_key.pem:/srv/market/repo/submissions/26620029/week-08/buyer_key.pem
+      - /srv/market/secrets/market_owner.txt:/srv/market/repo/submissions/26620029/week-08/market_owner.txt:ro
+    healthcheck:
+      test: ["CMD-SHELL", "test $(( $(date +%s) - $(stat -c %Y /srv/market/repo/submissions/26620029/week-08/logs/market-kit.log) )) -lt 600"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 300s

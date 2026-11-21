@@ -1,0 +1,4 @@
+이 세션은 Round 3의 1시간 점검을 서버에서 맡는다. 한국어로 답한다.
+1. submissions/26620029/week-08/MONITOR_RULES.md 전체와 MONITOR_JOURNAL.md의 최근 기록을 읽는다.
+2. CronList로 점검 예약을 확인한다. 없으면 CronCreate로 cron "17 * * * *", recurring true, 프롬프트는 submissions/26620029/week-08/deploy/hourly_check.txt의 내용 그대로 등록한다. 이미 있으면 새로 만들지 않는다.
+3. 결과를 두 줄로 보고하고 다음 점검을 기다린다. 이 메시지 때문에 점검을 추가로 실행하거나 정책을 바꾸지 않는다.

@@ -1,0 +1,15 @@
+{
+  "harness": "claude -p --model haiku (starter harness.py); market_buyer picks shops in code from reviews + memory",
+  "seller": {
+    "cmd": "python seller_r3.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "python buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "restock": {
+    "cmd": "python restock.py --state {state}"
+  },
+  "market_buyer": {
+    "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"
+  }
+}
