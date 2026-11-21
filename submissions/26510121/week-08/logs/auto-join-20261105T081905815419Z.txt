@@ -1,0 +1,853 @@
+17:19:06 [kit] market_kit 4, C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08
+17:19:11 [tunnel] https://dates-specify-mba-questions.trycloudflare.com, waiting until it answers
+17:20:11 [shop] your seller on port 49174; others reach it through the kit at https://dates-specify-mba-questions.trycloudflare.com
+17:20:26 [market] shop registered as seochanit, round 3
+17:20:27 [market] buyer registered as seochanit, round 3
+17:20:28 [order o-0a309e097992] 침대/매트리스, budget 56340, round 3
+17:20:39 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:20:43 [market] ledger #2845878: verified False; result submitted once
+17:20:49 [order o-263e1b3c7519] 커튼/러그/쿠션/덮개, budget 17010, round 3
+17:21:00 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:21:01 [control] {"status": "defensive", "book": 7098483, "leader_gap": 0.623, "reasons": ["ledger_lag_or_unverified", "transport_unhealthy"], "suggestions": [{"role": "shop", "field": "assortment_coverage_fraction", "direction": 1, "reason": "observed unserved external requests"}, {"role": "shop", "field": "inventory_target_units", "direction": 1, "reason": "limited breadth with deployable capital"}, {"role": "buyer", "field": "buyer_food_time_seconds", "direction": -1, "reason": "avoid repeated costly unsuitable food searches"}]}
+17:21:06 [market] ledger #2845954: verified False; result submitted once
+17:21:07 [seller] Failed to detach context
+17:21:07 [seller] Traceback (most recent call last):
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:07 [seller]     result = await func(*args, **kwargs)
+17:21:07 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:07 [seller] GeneratorExit
+17:21:07 [seller] 
+17:21:07 [seller] During handling of the above exception, another exception occurred:
+17:21:07 [seller] 
+17:21:07 [seller] Traceback (most recent call last):
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:07 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:07 [seller]     self._current_context.reset(token)
+17:21:07 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A3E27C0> was created in a different Context
+17:21:07 [seller] Task was destroyed but it is pending!
+17:21:07 [seller] task: <Task pending name='Task-117' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:07 [seller] Failed to detach context
+17:21:07 [seller] Traceback (most recent call last):
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:07 [seller]     result = await func(*args, **kwargs)
+17:21:07 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:07 [seller] GeneratorExit
+17:21:07 [seller] 
+17:21:07 [seller] During handling of the above exception, another exception occurred:
+17:21:07 [seller] 
+17:21:07 [seller] Traceback (most recent call last):
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:07 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:07 [seller]     self._current_context.reset(token)
+17:21:07 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A3E19C0> was created in a different Context
+17:21:07 [seller] Task was destroyed but it is pending!
+17:21:07 [seller] task: <Task pending name='Task-118' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:07 [seller] Failed to detach context
+17:21:07 [seller] Traceback (most recent call last):
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:07 [seller]     result = await func(*args, **kwargs)
+17:21:07 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:07 [seller] GeneratorExit
+17:21:07 [seller] 
+17:21:07 [seller] During handling of the above exception, another exception occurred:
+17:21:07 [seller] 
+17:21:07 [seller] Traceback (most recent call last):
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:07 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:07 [seller]     self._current_context.reset(token)
+17:21:07 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A50C440> was created in a different Context
+17:21:07 [seller] Task was destroyed but it is pending!
+17:21:07 [seller] task: <Task pending name='Task-121' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:07 [seller] Failed to detach context
+17:21:07 [seller] Traceback (most recent call last):
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:07 [seller]     yield span
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:07 [seller]     result = await func(*args, **kwargs)
+17:21:07 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:07 [seller] GeneratorExit
+17:21:07 [seller] 
+17:21:07 [seller] During handling of the above exception, another exception occurred:
+17:21:07 [seller] 
+17:21:07 [seller] Traceback (most recent call last):
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:07 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:07 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:07 [seller]     self._current_context.reset(token)
+17:21:07 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A50F3C0> was created in a different Context
+17:21:07 [seller] Task was destroyed but it is pending!
+17:21:07 [seller] task: <Task pending name='Task-122' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:10 [order o-944cbcb09acd] 주스/코코아/생수, budget 19840, round 3
+17:21:20 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:21:21 [seller] Failed to detach context
+17:21:21 [seller] Traceback (most recent call last):
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:21 [seller]     result = await func(*args, **kwargs)
+17:21:21 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:21 [seller] GeneratorExit
+17:21:21 [seller] 
+17:21:21 [seller] During handling of the above exception, another exception occurred:
+17:21:21 [seller] 
+17:21:21 [seller] Traceback (most recent call last):
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:21 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:21 [seller]     self._current_context.reset(token)
+17:21:21 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A706280> was created in a different Context
+17:21:21 [seller] Task was destroyed but it is pending!
+17:21:21 [seller] task: <Task pending name='Task-242' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:21 [seller] Failed to detach context
+17:21:21 [seller] Traceback (most recent call last):
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:21 [seller]     result = await func(*args, **kwargs)
+17:21:21 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:21 [seller] GeneratorExit
+17:21:21 [seller] 
+17:21:21 [seller] During handling of the above exception, another exception occurred:
+17:21:21 [seller] 
+17:21:21 [seller] Traceback (most recent call last):
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:21 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:21 [seller]     self._current_context.reset(token)
+17:21:21 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A707D00> was created in a different Context
+17:21:21 [seller] Task was destroyed but it is pending!
+17:21:21 [seller] task: <Task pending name='Task-243' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:21 [seller] Failed to detach context
+17:21:21 [seller] Traceback (most recent call last):
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:21 [seller]     result = await func(*args, **kwargs)
+17:21:21 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:21 [seller] GeneratorExit
+17:21:21 [seller] 
+17:21:21 [seller] During handling of the above exception, another exception occurred:
+17:21:21 [seller] 
+17:21:21 [seller] Traceback (most recent call last):
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:21 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:21 [seller]     self._current_context.reset(token)
+17:21:21 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A76E340> was created in a different Context
+17:21:21 [seller] Task was destroyed but it is pending!
+17:21:21 [seller] task: <Task pending name='Task-246' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:21 [seller] Failed to detach context
+17:21:21 [seller] Traceback (most recent call last):
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:21 [seller]     yield span
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:21 [seller]     result = await func(*args, **kwargs)
+17:21:21 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:21 [seller] GeneratorExit
+17:21:21 [seller] 
+17:21:21 [seller] During handling of the above exception, another exception occurred:
+17:21:21 [seller] 
+17:21:21 [seller] Traceback (most recent call last):
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:21 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:21 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:21 [seller]     self._current_context.reset(token)
+17:21:21 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A60AF40> was created in a different Context
+17:21:21 [seller] Task was destroyed but it is pending!
+17:21:21 [seller] task: <Task pending name='Task-247' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:23 [market] ledger #2846021: verified False; result submitted once
+17:21:33 [order o-01a6af473706] 침구, budget 52390, round 3
+17:21:38 [buyer] {"buy": [], "bankrupt": false}
+17:21:43 [seller] Failed to detach context
+17:21:43 [seller] Traceback (most recent call last):
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:43 [seller]     result = await func(*args, **kwargs)
+17:21:43 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:43 [seller] GeneratorExit
+17:21:43 [seller] 
+17:21:43 [seller] During handling of the above exception, another exception occurred:
+17:21:43 [seller] 
+17:21:43 [seller] Traceback (most recent call last):
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:43 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:43 [seller]     self._current_context.reset(token)
+17:21:43 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873AA22480> was created in a different Context
+17:21:43 [seller] Task was destroyed but it is pending!
+17:21:43 [seller] task: <Task pending name='Task-406' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:43 [seller] Failed to detach context
+17:21:43 [seller] Traceback (most recent call last):
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:43 [seller]     result = await func(*args, **kwargs)
+17:21:43 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:43 [seller] GeneratorExit
+17:21:43 [seller] 
+17:21:43 [seller] During handling of the above exception, another exception occurred:
+17:21:43 [seller] 
+17:21:43 [seller] Traceback (most recent call last):
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:43 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:43 [seller]     self._current_context.reset(token)
+17:21:43 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873AA23E00> was created in a different Context
+17:21:43 [seller] Task was destroyed but it is pending!
+17:21:43 [seller] task: <Task pending name='Task-407' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:43 [seller] Failed to detach context
+17:21:43 [seller] Traceback (most recent call last):
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:43 [seller]     result = await func(*args, **kwargs)
+17:21:43 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:43 [seller] GeneratorExit
+17:21:43 [seller] 
+17:21:43 [seller] During handling of the above exception, another exception occurred:
+17:21:43 [seller] 
+17:21:43 [seller] Traceback (most recent call last):
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:43 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:43 [seller]     self._current_context.reset(token)
+17:21:43 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A50D140> was created in a different Context
+17:21:43 [seller] Task was destroyed but it is pending!
+17:21:43 [seller] task: <Task pending name='Task-410' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:43 [seller] Failed to detach context
+17:21:43 [seller] Traceback (most recent call last):
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:21:43 [seller]     yield span
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:21:43 [seller]     result = await func(*args, **kwargs)
+17:21:43 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:21:43 [seller] GeneratorExit
+17:21:43 [seller] 
+17:21:43 [seller] During handling of the above exception, another exception occurred:
+17:21:43 [seller] 
+17:21:43 [seller] Traceback (most recent call last):
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:21:43 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:21:43 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:21:43 [seller]     self._current_context.reset(token)
+17:21:43 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A50EE00> was created in a different Context
+17:21:43 [seller] Task was destroyed but it is pending!
+17:21:43 [seller] task: <Task pending name='Task-411' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:21:44 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:21:46 [market] ledger #2846126: verified False; result submitted once
+17:21:46 [control] {"status": "observe_and_trade", "book": 7098483, "leader_gap": 0.623, "reasons": [], "suggestions": [{"role": "shop", "field": "assortment_coverage_fraction", "direction": 1, "reason": "observed unserved external requests"}, {"role": "shop", "field": "inventory_target_units", "direction": 1, "reason": "limited breadth with deployable capital"}, {"role": "buyer", "field": "buyer_food_time_seconds", "direction": -1, "reason": "avoid repeated costly unsuitable food searches"}]}
+17:21:54 [order o-c6ea8febea4b] 비스켓/쿠키, budget 14410, round 3
+17:22:03 [seller] Failed to detach context
+17:22:03 [seller] Traceback (most recent call last):
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:03 [seller]     result = await func(*args, **kwargs)
+17:22:03 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:03 [seller] GeneratorExit
+17:22:03 [seller] 
+17:22:03 [seller] During handling of the above exception, another exception occurred:
+17:22:03 [seller] 
+17:22:03 [seller] Traceback (most recent call last):
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:03 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:03 [seller]     self._current_context.reset(token)
+17:22:03 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A66CC40> was created in a different Context
+17:22:03 [seller] Task was destroyed but it is pending!
+17:22:03 [seller] task: <Task pending name='Task-570' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:03 [seller] Failed to detach context
+17:22:03 [seller] Traceback (most recent call last):
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:03 [seller]     result = await func(*args, **kwargs)
+17:22:03 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:03 [seller] GeneratorExit
+17:22:03 [seller] 
+17:22:03 [seller] During handling of the above exception, another exception occurred:
+17:22:03 [seller] 
+17:22:03 [seller] Traceback (most recent call last):
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:03 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:03 [seller]     self._current_context.reset(token)
+17:22:03 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A66D9C0> was created in a different Context
+17:22:03 [seller] Task was destroyed but it is pending!
+17:22:03 [seller] task: <Task pending name='Task-571' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:03 [seller] Failed to detach context
+17:22:03 [seller] Traceback (most recent call last):
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:03 [seller]     result = await func(*args, **kwargs)
+17:22:03 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:03 [seller] GeneratorExit
+17:22:03 [seller] 
+17:22:03 [seller] During handling of the above exception, another exception occurred:
+17:22:03 [seller] 
+17:22:03 [seller] Traceback (most recent call last):
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:03 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:03 [seller]     self._current_context.reset(token)
+17:22:03 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A719900> was created in a different Context
+17:22:03 [seller] Task was destroyed but it is pending!
+17:22:03 [seller] task: <Task pending name='Task-574' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:03 [seller] Failed to detach context
+17:22:03 [seller] Traceback (most recent call last):
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:03 [seller]     yield span
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:03 [seller]     result = await func(*args, **kwargs)
+17:22:03 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:03 [seller] GeneratorExit
+17:22:03 [seller] 
+17:22:03 [seller] During handling of the above exception, another exception occurred:
+17:22:03 [seller] 
+17:22:03 [seller] Traceback (most recent call last):
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:03 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:03 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:03 [seller]     self._current_context.reset(token)
+17:22:03 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A71B240> was created in a different Context
+17:22:03 [seller] Task was destroyed but it is pending!
+17:22:03 [seller] task: <Task pending name='Task-575' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:07 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:22:10 [market] ledger #2846228: verified False; result submitted once
+17:22:15 [order o-b64087d43d66] 주스/코코아/생수, budget 10780, round 3
+17:22:24 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:22:27 [market] ledger #2846324: verified False; result submitted once
+17:22:29 [seller] Failed to detach context
+17:22:29 [seller] Traceback (most recent call last):
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:29 [seller]     result = await func(*args, **kwargs)
+17:22:29 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:29 [seller] GeneratorExit
+17:22:29 [seller] 
+17:22:29 [seller] During handling of the above exception, another exception occurred:
+17:22:29 [seller] 
+17:22:29 [seller] Traceback (most recent call last):
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:29 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:29 [seller]     self._current_context.reset(token)
+17:22:29 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A76F140> was created in a different Context
+17:22:29 [seller] Task was destroyed but it is pending!
+17:22:29 [seller] task: <Task pending name='Task-736' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:29 [seller] Failed to detach context
+17:22:29 [seller] Traceback (most recent call last):
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:29 [seller]     result = await func(*args, **kwargs)
+17:22:29 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:29 [seller] GeneratorExit
+17:22:29 [seller] 
+17:22:29 [seller] During handling of the above exception, another exception occurred:
+17:22:29 [seller] 
+17:22:29 [seller] Traceback (most recent call last):
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:29 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:29 [seller]     self._current_context.reset(token)
+17:22:29 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A76F500> was created in a different Context
+17:22:29 [seller] Task was destroyed but it is pending!
+17:22:29 [seller] task: <Task pending name='Task-737' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:29 [seller] Failed to detach context
+17:22:29 [seller] Traceback (most recent call last):
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:29 [seller]     result = await func(*args, **kwargs)
+17:22:29 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:29 [seller] GeneratorExit
+17:22:29 [seller] 
+17:22:29 [seller] During handling of the above exception, another exception occurred:
+17:22:29 [seller] 
+17:22:29 [seller] Traceback (most recent call last):
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:29 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:29 [seller]     self._current_context.reset(token)
+17:22:29 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A6096C0> was created in a different Context
+17:22:29 [seller] Task was destroyed but it is pending!
+17:22:29 [seller] task: <Task pending name='Task-740' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:29 [seller] Failed to detach context
+17:22:29 [seller] Traceback (most recent call last):
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:29 [seller]     yield span
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:29 [seller]     result = await func(*args, **kwargs)
+17:22:29 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:29 [seller] GeneratorExit
+17:22:29 [seller] 
+17:22:29 [seller] During handling of the above exception, another exception occurred:
+17:22:29 [seller] 
+17:22:29 [seller] Traceback (most recent call last):
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:29 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:29 [seller]     self._current_context.reset(token)
+17:22:29 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A60B380> was created in a different Context
+17:22:29 [seller] Task was destroyed but it is pending!
+17:22:29 [seller] task: <Task pending name='Task-741' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:36 [order o-0c8f8eb5c3e1] 김치, budget 48180, round 3
+17:22:50 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:22:52 [seller] Failed to detach context
+17:22:52 [seller] Traceback (most recent call last):
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:52 [seller]     result = await func(*args, **kwargs)
+17:22:52 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:52 [seller] GeneratorExit
+17:22:52 [seller] 
+17:22:52 [seller] During handling of the above exception, another exception occurred:
+17:22:52 [seller] 
+17:22:52 [seller] Traceback (most recent call last):
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:52 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:52 [seller]     self._current_context.reset(token)
+17:22:52 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A6D6840> was created in a different Context
+17:22:52 [seller] Task was destroyed but it is pending!
+17:22:52 [seller] task: <Task pending name='Task-901' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:52 [seller] Failed to detach context
+17:22:52 [seller] Traceback (most recent call last):
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:52 [seller]     result = await func(*args, **kwargs)
+17:22:52 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:52 [seller] GeneratorExit
+17:22:52 [seller] 
+17:22:52 [seller] During handling of the above exception, another exception occurred:
+17:22:52 [seller] 
+17:22:52 [seller] Traceback (most recent call last):
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:52 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:52 [seller]     self._current_context.reset(token)
+17:22:52 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A6D6500> was created in a different Context
+17:22:52 [seller] Task was destroyed but it is pending!
+17:22:52 [seller] task: <Task pending name='Task-902' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:52 [seller] Failed to detach context
+17:22:52 [seller] Traceback (most recent call last):
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:52 [seller]     result = await func(*args, **kwargs)
+17:22:52 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:52 [seller] GeneratorExit
+17:22:52 [seller] 
+17:22:52 [seller] During handling of the above exception, another exception occurred:
+17:22:52 [seller] 
+17:22:52 [seller] Traceback (most recent call last):
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:52 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:52 [seller]     self._current_context.reset(token)
+17:22:52 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A5D4040> was created in a different Context
+17:22:52 [seller] Task was destroyed but it is pending!
+17:22:52 [seller] task: <Task pending name='Task-905' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:52 [seller] Failed to detach context
+17:22:52 [seller] Traceback (most recent call last):
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:22:52 [seller]     yield span
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:22:52 [seller]     result = await func(*args, **kwargs)
+17:22:52 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:22:52 [seller] GeneratorExit
+17:22:52 [seller] 
+17:22:52 [seller] During handling of the above exception, another exception occurred:
+17:22:52 [seller] 
+17:22:52 [seller] Traceback (most recent call last):
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:22:52 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:22:52 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:22:52 [seller]     self._current_context.reset(token)
+17:22:52 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873A5D4680> was created in a different Context
+17:22:52 [seller] Task was destroyed but it is pending!
+17:22:52 [seller] task: <Task pending name='Task-906' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:22:54 [market] ledger #2846470: verified False; result submitted once
+17:22:55 [buyer] {"buy": [{"sku": "G8ec51935", "qty": 1}, {"sku": "G8adbc159", "qty": 1}, {"sku": "G05277ffe", "qty": 2}, {"sku": "Gc1297f36", "qty": 3}, {"sku": "G782145bd", "qty": 1}, {"sku": "G054ff120", "qty": 4}, {"sku": "G200e39a3", "qty": 1}, {"sku": "G78e0ddfe", "qty": 1}, {"sku": "G630a202e", "qty": 1}]}
+17:23:00 [order o-5f3a6d3c79d6] 신선과일(부패주의), budget 38740, round 3
+17:23:03 [supply] 1 x [자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개 for 1593675, balance 10501081
+17:23:14 [buyer] {"shop": "https://ensuring-duck-honors-experts.trycloudflare.com", "receipt": {"claim": "B", "sig_seller": "EWKeL1sCYtV1gKXrUvGCggHEuScceFEOQ4okFzSGkj/Dw0Oabm++BSgyPnP67wTf71Y2C6h4YqGm8hM/Hw47AQ==", "task": "31340cd7-0e66-44d5-9e70-769209c64872", "price": 14925, "item": "G022ce883", "unit": "u-bd6edce5a0b6", "shop": "psyoung82"}, "stars": 3, "review": "Pending checkout; settled quality will determine review.", "accept": {"cert": true, "expected_sku": "G022ce883", "min_hours_left": 24.008333333333333}}
+17:23:18 [supply] 1 x [자코모] 에비뉴엘 4인 오플 천연면피 소가죽 소파 for 1251452, balance 9249629
+17:23:19 [acp] checkout ships unit u-bd6edce5a0b6, claim B, certificate attached
+17:23:25 [acp] paid 14925 through https://ensuring-duck-honors-experts.trycloudflare.com/acp, settled at ledger #2846609: [양지촌농원] 26년산 보은건대추 1kg 26mm, grade B, 27.7 h of shelf life left
+17:23:30 [supply] 2 x [헬렌스타인][한파용] 국내생산 알러지케어 헝가리 워셔블 구스이불 Q for 712771, balance 8536858
+17:23:35 [market] ledger #2846677: verified True; result submitted once
+17:23:37 [order o-eb8cd062ca1f] 침대/매트리스, budget 544680, round 3
+17:23:47 [supply] 3 x 지누스 루미 수납형 침대 프레임 트롤리형 헤드보드 SS 슈퍼싱글 색상선택 2color for 1221658, balance 7315200
+17:24:01 [supply] 1 x 동서가구 사커 슈퍼싱글 SS 양면 매트리스 for 38058, balance 7277142
+17:24:09 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:24:11 [market] ledger #2846856: verified False; result submitted once
+17:24:16 [supply] 4 x 플로라 푹신한 퓨어 베스트 구름 베개솜 50X70 for 21487, balance 7255655
+17:24:17 [order o-96d7e3879a2f] 수납/장식 가구, budget 1419570, round 3
+17:24:27 [supply] 1 x [마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증) for 16155, balance 7239500
+17:24:38 [acp] settled 지누스 루미 수납형 침대 프레임 트롤리형 헤드보드 SS 슈퍼싱글 색상선택 2color at 480813, ledger #2846984, unit u-6a0d13cfd0ff grade A
+17:24:39 [acp] settled [헬렌스타인][한파용] 국내생산 알러지케어 헝가리 워셔블 구스이불 Q at 413194, ledger #2846993, unit u-1e96cf860fb3 grade A
+17:24:44 [supply] 1 x 느웰 순면 토퍼 매트리스 커버 5cm~7.5cm 퀸/킹 for 16620, balance 8116887
+17:24:47 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:24:51 [market] ledger #2847055: verified False; result submitted once
+17:24:53 [order o-bfd72c1325c8] 주스/코코아/생수, budget 24040, round 3
+17:24:58 [supply] {'sku': 'G630a202e', 'qty': 1} refused: 409 {"error":"supply window closed; replan"}
+17:25:04 [buyer] {"shop": "https://instrumental-briefs-rivers-growth.trycloudflare.com", "receipt": {"task": "857eba55-053d-43fd-9d03-f4bfd66f2fd5", "shop": "11im Straight Deals", "price": 12832, "item": "G3434758a", "unit": "u-890d150bec3c", "claim": "B", "sig_seller": "gTo2llhikNBZ1MxnbXbVFGLMhnTbzJwVyImNWSzuIKk6PHMVndqYzHB3c/Y3GZ1mvfDFyvtrf+57svlTe3+hCA=="}, "stars": 3, "review": "Pending checkout; settled quality will determine review.", "accept": {"cert": true, "expected_sku": "G3434758a", "min_hours_left": 360.0083333333333}}
+17:25:06 [acp] checkout ships unit u-890d150bec3c, claim B, certificate attached
+17:25:08 [acp] paid 12832 through https://instrumental-briefs-rivers-growth.trycloudflare.com/acp, settled at ledger #2847147: 제주 삼다수 무라벨 2L X 18병(유/무라벨 랜덤발송), grade B, 360.6 h of shelf life left
+17:25:10 [acp] settled 지누스 루미 수납형 침대 프레임 트롤리형 헤드보드 SS 슈퍼싱글 색상선택 2color at 412780, ledger #2847154, unit u-94c43573ce54 grade B
+17:25:12 [acp] settled 플로라 푹신한 퓨어 베스트 구름 베개솜 50X70 at 5600, ledger #2847162, unit u-7bf22ffb736e grade A
+17:25:18 [market] ledger #2847185: verified True; result submitted once
+17:25:20 [buyer] {"buy": [], "bankrupt": false}
+17:25:21 [order o-37e3c2707a7c] 주스/코코아/생수, budget 14900, round 3
+17:25:22 [acp] settled [자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개 at 1662438, ledger #2847203, unit u-57b190703c3c grade A
+17:25:28 [buyer] {"shop": "https://instrumental-briefs-rivers-growth.trycloudflare.com", "receipt": {"task": "7fead243-937e-45c6-9e0a-ab01fd23c884", "shop": "11im Straight Deals", "price": 11620, "item": "Gdf79cd07", "unit": "u-3789471b298e", "claim": "A", "sig_seller": "yPBc7SOAcawW0lthG16cdE8zpUu+uT5QNufGVjGcYJ4F97RFO17WXI3l4KTRR8O/Ej4NDi4lTnC3ohxY8zHtAw=="}, "stars": 3, "review": "Pending checkout; settled quality will determine review.", "accept": {"cert": true, "expected_sku": "Gdf79cd07", "min_hours_left": 540.0083333333333}}
+17:25:29 [acp] checkout ships unit u-3789471b298e, claim A, certificate attached
+17:25:29 [seller] Failed to detach context
+17:25:29 [seller] Traceback (most recent call last):
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:25:29 [seller]     yield span
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:25:29 [seller]     yield span
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:25:29 [seller]     yield span
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:25:29 [seller]     result = await func(*args, **kwargs)
+17:25:29 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:25:29 [seller] GeneratorExit
+17:25:29 [seller] 
+17:25:29 [seller] During handling of the above exception, another exception occurred:
+17:25:29 [seller] 
+17:25:29 [seller] Traceback (most recent call last):
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:25:29 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:25:29 [seller]     self._current_context.reset(token)
+17:25:29 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873D8FFC00> was created in a different Context
+17:25:29 [seller] Task was destroyed but it is pending!
+17:25:29 [seller] task: <Task pending name='Task-1500' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:25:29 [seller] Failed to detach context
+17:25:29 [seller] Traceback (most recent call last):
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:25:29 [seller]     yield span
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:25:29 [seller]     yield span
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:25:29 [seller]     yield span
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:25:29 [seller]     result = await func(*args, **kwargs)
+17:25:29 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:25:29 [seller] GeneratorExit
+17:25:29 [seller] 
+17:25:29 [seller] During handling of the above exception, another exception occurred:
+17:25:29 [seller] 
+17:25:29 [seller] Traceback (most recent call last):
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:25:29 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:25:29 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:25:29 [seller]     self._current_context.reset(token)
+17:25:29 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873D8FDFC0> was created in a different Context
+17:25:29 [seller] Task was destroyed but it is pending!
+17:25:29 [seller] task: <Task pending name='Task-1501' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:25:30 [acp] paid 11620 through https://instrumental-briefs-rivers-growth.trycloudflare.com/acp, settled at ledger #2847249: 풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송), grade A, 590.7 h of shelf life left
+17:25:32 [seller] Failed to detach context
+17:25:32 [seller] Traceback (most recent call last):
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:25:32 [seller]     yield span
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:25:32 [seller]     yield span
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:25:32 [seller]     yield span
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:25:32 [seller]     result = await func(*args, **kwargs)
+17:25:32 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:25:32 [seller] GeneratorExit
+17:25:32 [seller] 
+17:25:32 [seller] During handling of the above exception, another exception occurred:
+17:25:32 [seller] 
+17:25:32 [seller] Traceback (most recent call last):
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:25:32 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:25:32 [seller]     self._current_context.reset(token)
+17:25:32 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873DFA2B00> was created in a different Context
+17:25:32 [seller] Task was destroyed but it is pending!
+17:25:32 [seller] task: <Task pending name='Task-1540' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:25:32 [seller] Failed to detach context
+17:25:32 [seller] Traceback (most recent call last):
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:25:32 [seller]     yield span
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:25:32 [seller]     yield span
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:25:32 [seller]     yield span
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:25:32 [seller]     result = await func(*args, **kwargs)
+17:25:32 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:25:32 [seller] GeneratorExit
+17:25:32 [seller] 
+17:25:32 [seller] During handling of the above exception, another exception occurred:
+17:25:32 [seller] 
+17:25:32 [seller] Traceback (most recent call last):
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:25:32 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:25:32 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:25:32 [seller]     self._current_context.reset(token)
+17:25:32 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873DFA3040> was created in a different Context
+17:25:32 [seller] Task was destroyed but it is pending!
+17:25:32 [seller] task: <Task pending name='Task-1541' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:25:42 [market] ledger #2847279: verified True; result submitted once
+17:25:42 [acp] settled 지누스 루미 수납형 침대 프레임 트롤리형 헤드보드 SS 슈퍼싱글 색상선택 2color at 479348, ledger #2847273, unit u-52755ef693bc grade A
+17:25:45 [order o-bf2da50724d9] 김치, budget 17700, round 3
+17:25:50 [seller] Failed to detach context
+17:25:50 [seller] Traceback (most recent call last):
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:25:50 [seller]     yield span
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:25:50 [seller]     yield span
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:25:50 [seller]     yield span
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:25:50 [seller]     result = await func(*args, **kwargs)
+17:25:50 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:25:50 [seller] GeneratorExit
+17:25:50 [seller] 
+17:25:50 [seller] During handling of the above exception, another exception occurred:
+17:25:50 [seller] 
+17:25:50 [seller] Traceback (most recent call last):
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:25:50 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:25:50 [seller]     self._current_context.reset(token)
+17:25:50 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873FBF17C0> was created in a different Context
+17:25:50 [seller] Task was destroyed but it is pending!
+17:25:50 [seller] task: <Task pending name='Task-1652' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:25:50 [seller] Failed to detach context
+17:25:50 [seller] Traceback (most recent call last):
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:25:50 [seller]     yield span
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:25:50 [seller]     yield span
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:25:50 [seller]     yield span
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:25:50 [seller]     result = await func(*args, **kwargs)
+17:25:50 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:25:50 [seller] GeneratorExit
+17:25:50 [seller] 
+17:25:50 [seller] During handling of the above exception, another exception occurred:
+17:25:50 [seller] 
+17:25:50 [seller] Traceback (most recent call last):
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:25:50 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:25:50 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:25:50 [seller]     self._current_context.reset(token)
+17:25:50 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873D27D4C0> was created in a different Context
+17:25:50 [seller] Task was destroyed but it is pending!
+17:25:50 [seller] task: <Task pending name='Task-1653' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:25:54 [buyer] {"shop": "https://instrumental-briefs-rivers-growth.trycloudflare.com", "receipt": {"task": "180a58a1-3f15-497a-87b6-1f947b419919", "shop": "11im Straight Deals", "price": 11975, "item": "G66ded25b", "unit": "u-9a743d0455cb", "claim": "B", "sig_seller": "T6JmWeTc9Z5CFkD3YZTl1+6yJIsMkZtjmSnnIZgHwt4dxJ3z8R4mNccYElIFIB0eFoSBRLUlPiePXe6Qf9QIDA=="}, "stars": 3, "review": "Pending checkout; settled quality will determine review.", "accept": {"cert": true, "expected_sku": "G66ded25b", "min_hours_left": 84.00833333333334}}
+17:25:56 [acp] checkout ships unit u-9a743d0455cb, claim B, certificate attached
+17:25:59 [acp] paid 11975 through https://instrumental-briefs-rivers-growth.trycloudflare.com/acp, settled at ledger #2847348: 아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg, grade B, 90.3 h of shelf life left
+17:26:07 [market] ledger #2847409: verified True; result submitted once
+17:26:07 [order o-6e8ffa0163f6] 김치, budget 17700, round 3
+17:26:18 [buyer] {"shop": "https://handed-dept-provide-hit.trycloudflare.com", "receipt": {"task": "f7925bd7-5fb3-4405-88e4-38efd25f68c2", "shop": "Nocha Furniture", "claim": "B", "price": 13757, "sig_seller": "bnYqMVdrerURYAxYtAFp09GD/5mRaYMgeHFJT9xjCLyXl9lhP0XQvdSUNoGeXdDgsRSTxZSEJDCKwrpsWr6yCA==", "unit": "u-63415c448051", "item": "G66ded25b"}, "stars": 3, "review": "Pending checkout; settled quality will determine review.", "accept": {"cert": true, "expected_sku": "G66ded25b", "min_hours_left": 17.008333333333333}}
+17:26:22 [acp] checkout ships unit u-63415c448051, claim B, certificate attached
+17:26:26 [acp] paid 13757 through https://handed-dept-provide-hit.trycloudflare.com/acp, settled at ledger #2847466: 아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg, grade B, 111.3 h of shelf life left
+17:26:39 [market] ledger #2847506: verified True; result submitted once
+17:26:43 [order o-944b0ec22b22] 케이크/파이, budget 11270, round 3
+17:26:56 [buyer] {"shop": "https://current-none-directive-relatively.trycloudflare.com", "receipt": {"unit": "u-86f570fbb409", "task": "1ae12409-ae8d-424b-a63e-dc846c95da98", "shop": "Sealed Stock Shop", "sig_seller": "3JMBbA/4xdduJd6YJ0QKTfJYOHZm6PeHOPZAz9gLpIwQO0Tx23Ggvtq3ZR7WpuIp4q1dbqLqh2xCaj+Q9e59BQ==", "cert": true, "claim": "C", "price": 3542, "item": "G9d1f4ee4"}, "stars": 3, "review": "Pending checkout; settled quality will determine review.", "accept": {"cert": true, "expected_sku": "G9d1f4ee4", "min_hours_left": 24.008333333333333}}
+17:26:59 [buyer] {"buy": [], "bankrupt": false}
+17:26:59 [market] shop registered again as seochanit at https://dates-specify-mba-questions.trycloudflare.com
+17:27:01 [acp] not paying: 5.21 h of shelf life left, the policy asks for 24.008333333333333
+17:27:08 [r3] confirmed pre-payment refusal; trying another eligible offer (1/2)
+17:27:12 [control] {"status": "defensive", "book": 7369579, "leader_gap": 0.629, "reasons": ["market_shop_not_discoverable"], "suggestions": [{"role": "shop", "field": "assortment_coverage_fraction", "direction": 1, "reason": "observed unserved external requests"}, {"role": "shop", "field": "inventory_target_units", "direction": 1, "reason": "limited breadth with deployable capital"}, {"role": "buyer", "field": "buyer_food_time_seconds", "direction": -1, "reason": "avoid repeated costly unsuitable food searches"}]}
+17:27:17 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:27:22 [market] ledger #2847684: verified False; result submitted once
+17:27:28 [order o-8ff5f619e85a] 주스/코코아/생수, budget 5390, round 3
+17:27:41 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:27:50 [market] ledger #2847769: verified False; result submitted once
+17:27:51 [order o-98c1062aa1f2] 김치, budget 37460, round 3
+17:28:01 [control] {"status": "defensive", "book": 7369579, "leader_gap": 0.629, "reasons": ["transport_unhealthy", "market_shop_not_discoverable"], "suggestions": [{"role": "shop", "field": "assortment_coverage_fraction", "direction": 1, "reason": "observed unserved external requests"}, {"role": "shop", "field": "inventory_target_units", "direction": 1, "reason": "limited breadth with deployable capital"}, {"role": "buyer", "field": "buyer_food_time_seconds", "direction": -1, "reason": "avoid repeated costly unsuitable food searches"}]}
+17:28:06 [buyer] {"shop": "https://lucas-stadium-gage-birds.trycloudflare.com", "receipt": {"task": "7673974c-f7e4-410e-9d84-b61eeef8a662", "unit": "u-06a39cf5baf0", "item": "G200e39a3", "price": 28075, "claim": "B", "sig_seller": "qbbQx78bNKWaNVBVt4jOTWlHKwFbr3joDU0HFctIyxyn5eRjc0VWNoLEqraBqQt7SsS8Ao5XihX93jfk5UFWBQ==", "shop": "Ssadassa Shop"}, "stars": 3, "review": "Pending checkout; settled quality will determine review.", "accept": {"cert": true, "expected_sku": "G200e39a3", "min_hours_left": 17.008333333333333}}
+17:28:09 [market] shop registration pending; retrying in 15 s (SystemExit)
+17:28:10 [acp] checkout ships unit u-06a39cf5baf0, claim B, certificate attached
+17:28:15 [acp] paid 28075 through https://lucas-stadium-gage-birds.trycloudflare.com/acp, settled at ledger #2847847: [마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증), grade B, 116.2 h of shelf life left
+17:28:25 [market] ledger #2847910: verified True; result submitted once
+17:28:27 [buyer] {"buy": [], "bankrupt": false}
+17:28:28 [order o-6bf0e8a8f0ac] 신선과일(부패주의), budget 26120, round 3
+17:28:36 [buyer] {"shop": "https://lanes-advertisers-lead-platforms.trycloudflare.com", "receipt": {"price": 21097, "claim": "B", "item": "Gef4d3036", "unit": "u-41643dee5156", "shop": "buzllightyear shop", "task": "c05f43a8-b632-4e92-b980-109f30845460", "sig_seller": "5SqawiUJaSPLbrNJXpLepBtpuJLUe3Fvj52dqFH+vyTLpj4wCRlm6IzA74RUj4MOxUzjQLPkThZmZcRCPF0ABA=="}, "stars": 3, "review": "Pending checkout; settled quality will determine review.", "accept": {"cert": true, "expected_sku": "Gef4d3036", "min_hours_left": 24.008333333333333}}
+17:28:41 [control] {"status": "defensive", "book": 7369579, "leader_gap": 0.629, "reasons": ["transport_unhealthy", "market_shop_not_discoverable"], "suggestions": [{"role": "shop", "field": "assortment_coverage_fraction", "direction": 1, "reason": "observed unserved external requests"}, {"role": "shop", "field": "inventory_target_units", "direction": 1, "reason": "limited breadth with deployable capital"}, {"role": "buyer", "field": "buyer_food_time_seconds", "direction": -1, "reason": "avoid repeated costly unsuitable food searches"}]}
+17:28:41 [acp] checkout ships unit u-41643dee5156, claim B, certificate attached
+17:28:44 [market] shop registration pending; retrying in 15 s (SystemExit)
+17:28:47 [acp] paid 21097 through https://lanes-advertisers-lead-platforms.trycloudflare.com/acp, settled at ledger #2847959: 맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg, grade B, 26.1 h of shelf life left
+17:28:56 [market] ledger #2848006: verified True; result submitted once
+17:28:56 [order o-4650636759f0] 신선과일(부패주의), budget 15250, round 3
+17:28:59 [seller] Failed to detach context
+17:28:59 [seller] Traceback (most recent call last):
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:28:59 [seller]     yield span
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:28:59 [seller]     yield span
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:28:59 [seller]     yield span
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:28:59 [seller]     result = await func(*args, **kwargs)
+17:28:59 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:28:59 [seller] GeneratorExit
+17:28:59 [seller] 
+17:28:59 [seller] During handling of the above exception, another exception occurred:
+17:28:59 [seller] 
+17:28:59 [seller] Traceback (most recent call last):
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:28:59 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:28:59 [seller]     self._current_context.reset(token)
+17:28:59 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873E465540> was created in a different Context
+17:28:59 [seller] Task was destroyed but it is pending!
+17:28:59 [seller] task: <Task pending name='Task-1674' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:28:59 [seller] Failed to detach context
+17:28:59 [seller] Traceback (most recent call last):
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+17:28:59 [seller]     yield span
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+17:28:59 [seller]     yield span
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+17:28:59 [seller]     yield span
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+17:28:59 [seller]     result = await func(*args, **kwargs)
+17:28:59 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17:28:59 [seller] GeneratorExit
+17:28:59 [seller] 
+17:28:59 [seller] During handling of the above exception, another exception occurred:
+17:28:59 [seller] 
+17:28:59 [seller] Traceback (most recent call last):
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+17:28:59 [seller]     _RUNTIME_CONTEXT.detach(token)
+17:28:59 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+17:28:59 [seller]     self._current_context.reset(token)
+17:28:59 [seller] ValueError: <Token var=<ContextVar name='current_context' default={} at 0x0000028739D7FEC0> at 0x000002873E467100> was created in a different Context
+17:28:59 [seller] Task was destroyed but it is pending!
+17:28:59 [seller] task: <Task pending name='Task-1675' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+17:29:04 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:29:07 [market] ledger #2848036: verified False; result submitted once
+17:29:15 [control] {"status": "defensive", "book": 7369579, "leader_gap": 0.629, "reasons": ["transport_unhealthy", "market_shop_not_discoverable"], "suggestions": [{"role": "shop", "field": "assortment_coverage_fraction", "direction": 1, "reason": "observed unserved external requests"}, {"role": "shop", "field": "inventory_target_units", "direction": 1, "reason": "limited breadth with deployable capital"}, {"role": "buyer", "field": "buyer_food_time_seconds", "direction": -1, "reason": "avoid repeated costly unsuitable food searches"}]}
+17:29:19 [order o-dc656faf7f91] 소파/의자/스툴, budget 974400, round 3
+17:29:34 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:29:37 [buyer] {"buy": [], "bankrupt": false}
+17:29:39 [market] ledger #2848129: verified False; result submitted once
+17:29:42 [order o-f8b6757cb9c6] 침대/매트리스, budget 727380, round 3
+17:29:51 [control] {"status": "defensive", "book": 7369579, "leader_gap": 0.629, "reasons": ["transport_unhealthy", "market_shop_not_discoverable"], "suggestions": [{"role": "shop", "field": "assortment_coverage_fraction", "direction": 1, "reason": "observed unserved external requests"}, {"role": "shop", "field": "inventory_target_units", "direction": 1, "reason": "limited breadth with deployable capital"}, {"role": "buyer", "field": "buyer_food_time_seconds", "direction": -1, "reason": "avoid repeated costly unsuitable food searches"}]}
+[runtime] graceful shutdown requested
+17:30:07 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+17:30:07 [kit] leaving the market

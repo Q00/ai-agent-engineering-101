@@ -1,0 +1,187 @@
+{
+  "audit": "logs/agent-system-audit-20261110T043032470360Z.json",
+  "route_feedback_reset": {
+    "sampled_predictions": 2000,
+    "candidate_occurrences": 0,
+    "above_cap": 0,
+    "above_cap_reset_to_quarter": 0,
+    "examples": [],
+    "note": "Candidate occurrences, not unique orders. A fresh quote may update beliefs; fixed .25 does not calibrate observed failure history."
+  },
+  "customer_identity_in_quote_contexts": {
+    "anonymous": 694
+  },
+  "evaluation_latest": {
+    "shop": {
+      "actions": {
+        "hold": 22,
+        "trial_started": 1,
+        "rollback": 1
+      },
+      "reasons": {
+        "insufficient_mature_evidence": 22,
+        "observed unserved external requests": 1,
+        "Cash loss, degraded observed flow, or trial expired without evidence of improvement": 1
+      },
+      "latest": [
+        {
+          "action": "hold",
+          "reason": "insufficient_mature_evidence",
+          "evidence": {
+            "samples": 1209,
+            "paid": 265,
+            "success_rate": 0.21918941273779982,
+            "categories": {
+              "가구/침구>가구>침대/매트리스": 170,
+              "가구/침구>가구>소파/의자/스툴": 55,
+              "가구/침구>가구>수납/장식 가구": 3,
+              "식품>야채/과일>신선과일(부패주의)": 10,
+              "식품>시리얼/곡물/콩류>곡물": 8,
+              "가구/침구>침구/홈데코>침구": 4,
+              "식품>김치/반찬/즉석요리>즉석조리식품": 3,
+              "식품>김치/반찬/즉석요리>김치": 10,
+              "컴퓨터/비디오게임>컴퓨터/비디오게임>컴퓨터": 1,
+              "컴퓨터/비디오게임>컴퓨터/비디오게임>스캐너/프린터/PC소품": 1
+            },
+            "note": "unpaid opportunities are censored observations, not proven price rejections"
+          }
+        },
+        {
+          "action": "hold",
+          "reason": "insufficient_mature_evidence",
+          "evidence": {
+            "samples": 1486,
+            "paid": 326,
+            "success_rate": 0.2193808882907133,
+            "categories": {
+              "가구/침구>가구>침대/매트리스": 214,
+              "가구/침구>가구>소파/의자/스툴": 67,
+              "컴퓨터/비디오게임>컴퓨터/비디오게임>스캐너/프린터/PC소품": 2,
+              "식품>야채/과일>신선과일(부패주의)": 14,
+              "가구/침구>가구>수납/장식 가구": 3,
+              "식품>시리얼/곡물/콩류>곡물": 8,
+              "가구/침구>침구/홈데코>침구": 4,
+              "식품>김치/반찬/즉석요리>즉석조리식품": 3,
+              "식품>김치/반찬/즉석요리>김치": 10,
+              "컴퓨터/비디오게임>컴퓨터/비디오게임>컴퓨터": 1
+            },
+            "note": "unpaid opportunities are censored observations, not proven price rejections"
+          }
+        }
+      ]
+    },
+    "buyer": {
+      "actions": {
+        "hold": 24
+      },
+      "reasons": {
+        "insufficient_mature_evidence": 10,
+        "No supported untried bounded change": 14
+      },
+      "latest": [
+        {
+          "action": "hold",
+          "reason": "No supported untried bounded change",
+          "evidence": {
+            "samples": 2040,
+            "paid": 1329,
+            "bad": 0,
+            "counter_moves": 3732,
+            "no_agreement": 2843,
+            "success_rate": 0.6514705882352941
+          }
+        },
+        {
+          "action": "hold",
+          "reason": "No supported untried bounded change",
+          "evidence": {
+            "samples": 2205,
+            "paid": 1407,
+            "bad": 0,
+            "counter_moves": 4185,
+            "no_agreement": 3217,
+            "success_rate": 0.638095238095238
+          }
+        }
+      ]
+    }
+  },
+  "states": {
+    "shop": {
+      "version": 17,
+      "status": "stable",
+      "since": 1794244464.9473217,
+      "cooldown_until": 1794330864.9473217,
+      "patch": {
+        "category_weights": {
+          "가구/침구>가구>침대/매트리스": 1.1
+        }
+      }
+    },
+    "buyer": {
+      "version": 15,
+      "status": "stable",
+      "since": 1794214651.2886748,
+      "cooldown_until": 1794236251.2886748,
+      "patch": {}
+    }
+  },
+  "event_sizes": [
+    {
+      "kind": "prediction",
+      "n": 115506,
+      "json_bytes": 1210672349
+    },
+    {
+      "kind": "public_settle",
+      "n": 437011,
+      "json_bytes": 177784387
+    },
+    {
+      "kind": "buyer_order",
+      "n": 19375,
+      "json_bytes": 25087848
+    },
+    {
+      "kind": "market_control",
+      "n": 2868,
+      "json_bytes": 20002195
+    },
+    {
+      "kind": "decision",
+      "n": 115504,
+      "json_bytes": 15171575
+    },
+    {
+      "kind": "buyer_quote_wire",
+      "n": 18007,
+      "json_bytes": 11947888
+    },
+    {
+      "kind": "shop_quote",
+      "n": 56651,
+      "json_bytes": 9049232
+    },
+    {
+      "kind": "quote_comparison",
+      "n": 17012,
+      "json_bytes": 8811785
+    },
+    {
+      "kind": "shop_fast_execution",
+      "n": 51553,
+      "json_bytes": 8072072
+    },
+    {
+      "kind": "model_reason",
+      "n": 18637,
+      "json_bytes": 6657903
+    }
+  ],
+  "customer_retained_now": {
+    "oldest": 1794272469.7037566,
+    "newest": 1794284913.5438874,
+    "n": 1000,
+    "span_hours": 3.4566222585572137
+  }
+}
