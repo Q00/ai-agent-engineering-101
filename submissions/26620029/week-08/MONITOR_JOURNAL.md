@@ -1805,5 +1805,5 @@
 - CI pr-check(run 44728997401): 소유 검사, week-01~06 통과, week-07만 `FAIL cannot read https://market.ourolabs.ai/api/board (TimeoutError); try again later`(나머지 8항목 ok). 서버에서 Q00 main의 같은 스크립트는 all checks passed, 보드 응답 0.13 s. 11-17과 같은 일시 오류로 보고 이 커밋 push로 다시 돌린다.
 
 ## 2026-11-21 제출 보완 기록 (사용자 작업)
-- REPORT.md를 25620027 보고서의 절 구성(요약, 0~9절, 판단이 바뀐 다섯 장면)으로 다시 쓰고 그림 두 개(figures/rank_profit.svg, figures/refusals.svg)와 생성 스크립트 report_figures.py를 넣음(c03be34). 샘플로 만든 REPORT.html 커밋(d8f5f89)은 push 전에 사용자 결정으로 되돌려 저장소에 남기지 않음. 사용자가 push해 PR #392가 c03be34로 갱신됨.
+- REPORT.md를 다른 학생이 공유한 보고서 형식을 참고한 절 구성(요약, 0~9절, 판단이 바뀐 다섯 장면)으로 다시 쓰고 그림 두 개(figures/rank_profit.svg, figures/refusals.svg)와 생성 스크립트 report_figures.py를 넣음(c03be34). 형식 확인용으로 만든 REPORT.html 커밋(d8f5f89)은 push 전에 사용자 결정으로 되돌려 저장소에 남기지 않음. 사용자가 push해 PR #392가 c03be34로 갱신됨.
 - CI pr-check(run 44894698603): week-01~06 통과, week-07 단계만 실패(로그는 로그인해야 보여 원인 문구 미확인). 서버에서 Q00 main의 같은 스크립트는 all checks passed(시장 보드 조회 포함). 11-17, 11-20과 같은 보드 일시 오류로 보고, 이 커밋의 push로 다시 돌린다.
