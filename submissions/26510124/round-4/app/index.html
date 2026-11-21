@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+  <meta name="theme-color" content="#f5f7fb">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <title>덕용상점 · 나의 마켓 에이전트</title>
+  <script src="/miniapp.js" defer></script>
+  <script src="/brief.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#message">대화 입력으로 이동</a>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#conversation" aria-label="덕용상점 대화">
+        <span class="brand-mark" aria-hidden="true">덕</span>
+        <span><strong>덕용상점</strong><small>나의 마켓 에이전트</small></span>
+      </a>
+      <nav aria-label="앱 메뉴"><a href="#conversation">대화</a><a href="#brief-panel">구매 조건</a><a href="#activity">활동</a></nav>
+      <span class="connection" id="connection" role="status">연결 확인 중</span>
+    </header>
+
+    <div class="mode-bar" id="mode-bar" role="status">에이전트 연결을 확인하고 있습니다.</div>
+    <main class="layout">
+      <section class="conversation panel" id="conversation" aria-labelledby="chat-title">
+        <div class="panel-heading"><div><span class="eyebrow">YOUR AGENT</span><h1 id="chat-title">무엇을 찾고 계세요?</h1><p>필요한 상품과 예산부터 함께 살펴봐요.</p></div><span class="model-label">Claude · Opus</span></div>
+        <div class="chat-scroll" id="chat-scroll">
+          <div class="welcome" id="welcome">
+            <div class="welcome-mark" aria-hidden="true">덕</div>
+            <h2>좋은 거래는, 필요한 것을 아는 데서.</h2>
+            <p>구매 조건을 저장하고 말을 걸어보세요.<br>에이전트가 필요할 때 조건을 읽어 참고합니다.</p>
+            <div class="suggestions"><button type="button" data-prompt="내 구매 조건을 읽고 어떤 상품을 찾으면 좋을지 알려줘.">구매 조건 함께 보기</button><button type="button" data-prompt="지금 할 수 있는 일과 아직 확인하지 못한 일을 알려줘.">할 수 있는 일 물어보기</button></div>
+          </div>
+          <div id="messages" role="log" aria-label="대화 기록" aria-live="polite" aria-relevant="additions"></div>
+        </div>
+        <form id="chat-form" class="composer">
+          <label class="sr-only" for="message">에이전트에게 보낼 메시지</label>
+          <textarea id="message" rows="2" maxlength="2000" placeholder="찾는 상품이나 궁금한 점을 적어주세요" required></textarea>
+          <div class="composer-footer"><span id="chat-feedback" role="status">Enter로 전송 · Shift+Enter로 줄바꿈</span><button class="primary" id="send" type="submit">보내기</button></div>
+        </form>
+      </section>
+
+      <aside class="sidebar">
+        <section class="panel brief" id="brief-panel" aria-labelledby="brief-title">
+          <div class="section-heading"><div><span class="eyebrow">SHOPPING BRIEF</span><h2 id="brief-title">나의 구매 조건</h2></div><span class="tag" id="brief-status">미설정</span></div>
+          <p class="muted">저장한 조건을 에이전트에게 전달합니다.</p>
+          <form id="brief-form">
+            <label for="budget">구매 예산 <span class="unit">크레딧</span></label>
+            <input id="budget" type="number" min="0" max="100000000" step="1" inputmode="numeric" placeholder="예: 30000" required>
+            <label for="interests">관심 상품</label>
+            <input id="interests" type="text" maxlength="120" placeholder="예: 우유, 생활용품" autocomplete="off">
+            <label for="priority">선택 기준</label>
+            <select id="priority"><option value="balanced">가격과 품질을 함께</option><option value="price">가격 우선</option><option value="quality">품질 우선</option></select>
+            <div class="form-actions"><button class="primary" type="submit">조건 저장</button><button class="text-button" id="reset-brief" type="button">초기화</button></div>
+            <p class="feedback" id="brief-feedback" role="status">아직 저장한 조건이 없습니다.</p>
+          </form>
+          <div class="info-note">구매 조건은 참고 정보입니다.<br>저장해도 주문이나 송금이 실행되지 않습니다.</div>
+          <span class="tool-status" id="tool-status" role="status">구매 조건 기능 연결 중</span>
+        </section>
+
+        <section class="panel activity" id="activity" aria-labelledby="activity-title">
+          <div class="section-heading"><h2 id="activity-title">에이전트 활동</h2><span class="tag" id="tool-count">도구 0개</span></div>
+          <h3>만든 도구</h3><ul id="tools" class="tool-list"><li class="empty">아직 생성한 도구가 없습니다.</li></ul>
+          <h3>최근 행동</h3><ol id="moves" class="move-list"><li class="empty">활동이 생기면 여기에 표시됩니다.</li></ol>
+        </section>
+      </aside>
+    </main>
+    <footer>ROUND 4 <span>·</span> 대화하고, 판단하고, 필요한 도구를 만드는 에이전트</footer>
+  </div>
+  <dialog id="consent-dialog" aria-labelledby="consent-title" aria-describedby="consent-note">
+    <span class="eyebrow">PERMISSION REQUEST</span><h2 id="consent-title">외부 앱 실행을 허용할까요?</h2>
+    <p id="consent-note">요청 내용과 전달할 정보를 확인해 주세요.</p>
+    <strong id="consent-name"></strong><pre id="consent-args"></pre>
+    <p id="consent-feedback" role="status"></p>
+    <div class="form-actions"><button class="secondary" id="deny-consent" type="button">거절</button><button class="primary" id="allow-consent" type="button">허용</button></div>
+  </dialog>
+</body>
+</html>

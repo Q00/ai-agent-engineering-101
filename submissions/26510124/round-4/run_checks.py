@@ -17,6 +17,8 @@ def main():
     env["PYTHONUNBUFFERED"] = "1"
     commands = [[sys.executable, "run_local.py", "check"],
                 [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
+                ["node", "--test", "tests/test_app.cjs"],
+                ["node", "--check", "app/app.js"],
                 [sys.executable, "run_local.py", "demo"]]
     with path.open("x", encoding="utf-8") as out:
         for command in commands:

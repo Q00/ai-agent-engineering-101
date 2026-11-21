@@ -1,0 +1,86 @@
+COMMAND: ['/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/round-4/.venv/bin/python', 'run_local.py', 'check']
+Official source files verified: 6
+a2a-sdk: 1.3.0
+uvicorn: 0.54.0
+httpx: 0.28.1
+eth-account: 0.14.0
+coincurve: 21.0.0
+Kit: v5
+Fixed actions: forge_tool, read_tool, reply, write_note, sleep
+Model configured: Claude CLI / claude-opus-5-5
+Claude installed: True
+cloudflared installed: True
+Model/market execution: not performed; run run_agent.py probe for a model-only check
+EXIT: 0
+COMMAND: ['/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/round-4/.venv/bin/python', '-m', 'unittest', 'discover', '-s', 'tests', '-v']
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/round-4/tests/test_miniapp.py:7: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+test_failed_replacement_keeps_working_tool_and_logs_failure (test_local.ForgeTests.test_failed_replacement_keeps_working_tool_and_logs_failure) ... 22:06:37 [forge] count_fixture v1 passed its test and is ready
+22:06:37 [forge] count_fixture v2: test failed: AssertionError: 
+ok
+test_offline_context_cannot_grant_wallet_or_identity (test_local.ForgeTests.test_offline_context_cannot_grant_wallet_or_identity) ... ok
+test_parent_path_is_not_a_valid_write_permission (test_local.ForgeTests.test_parent_path_is_not_a_valid_write_permission) ... ok
+test_sandbox_blocks_network_process_and_undeclared_write (test_local.ForgeTests.test_sandbox_blocks_network_process_and_undeclared_write) ... 22:06:37 [forge] count_fixture v1: test failed: PermissionError: network: example.com is not in permission.network []
+22:06:37 [forge] count_fixture v1: test failed: PermissionError: starting programs needs permission.exec: true
+22:06:37 [forge] count_fixture v1: test failed: PermissionError: write: /Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/round-4/.local/outside.txt is not in permission.write
+ok
+test_verified_source (test_local.ForgeTests.test_verified_source) ... ok
+test_version_reload_and_tamper_rejection (test_local.ForgeTests.test_version_reload_and_tamper_rejection) ... 22:06:37 [forge] count_fixture v1 passed its test and is ready
+22:06:37 [forge] count_fixture v2 passed its test and is ready (replaces v1)
+22:06:37 [forge] loaded 1 tools: count_fixture
+22:06:37 [forge] count_fixture: not loaded (no forge record that matches its files; tools come from forge_tool)
+ok
+test_eip191_signature_verifies_only_original_payload (test_local.PaymentBoundaryTests.test_eip191_signature_verifies_only_original_payload) ... ok
+test_excess_negative_wrong_role_and_expired_cap_are_denied (test_local.PaymentBoundaryTests.test_excess_negative_wrong_role_and_expired_cap_are_denied) ... ok
+test_round4_documented_fee_example (test_local.PaymentBoundaryTests.test_round4_documented_fee_example) ... ok
+test_sent_transfer_is_recoverable_when_capability_is_revoked (test_local.PaymentBoundaryTests.test_sent_transfer_is_recoverable_when_capability_is_revoked) ... 22:06:37 [maroo] fixture sent 0.5 tOKRW from the buyer wallet: https://explorer-testnet.maroo.io/tx/0x1111111111111111111111111111111111111111111111111111111111111111
+ok
+test_test_mode_never_sends_money (test_local.PaymentBoundaryTests.test_test_mode_never_sends_money) ... ok
+test_assets_and_mobile_manifest (test_miniapp.AppTests.test_assets_and_mobile_manifest) ... ok
+test_blank_chat_rejected_and_unknown_call_not_accepted (test_miniapp.AppTests.test_blank_chat_rejected_and_unknown_call_not_accepted) ... ok
+test_page_tool_round_trip_through_official_sdk_protocol (test_miniapp.AppTests.test_page_tool_round_trip_through_official_sdk_protocol) ... ok
+test_real_chat_path_uses_model_interface_without_market (test_miniapp.AppTests.test_real_chat_path_uses_model_interface_without_market) ... ok
+test_real_chat_rejects_market_and_forge_actions (test_miniapp.AppTests.test_real_chat_rejects_market_and_forge_actions) ... ok
+test_decision_and_fenced_json (test_model.ModelTests.test_decision_and_fenced_json) ... ok
+test_market_is_gated_until_open_and_uses_only_round4 (test_model.ModelTests.test_market_is_gated_until_open_and_uses_only_round4) ... ok
+test_model_fallback_and_tool_use_fail_closed (test_model.ModelTests.test_model_fallback_and_tool_use_fail_closed) ... ok
+test_transport_disables_cli_tools_and_api_billing (test_model.ModelTests.test_transport_disables_cli_tools_and_api_billing) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 0.849s
+
+OK
+EXIT: 0
+COMMAND: ['node', '--test', 'tests/test_app.cjs']
+✔ page tool returns saved conditions without authorizing payments (1.494958ms)
+✔ reject invalid budgets and preferences; zero is valid (5.892292ms)
+✔ restore validates saved input and never restores payment authorization (0.983042ms)
+✔ page keeps required SDK and mobile install metadata (0.795667ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 86.003959
+EXIT: 0
+COMMAND: ['node', '--check', 'app/app.js']
+EXIT: 0
+COMMAND: ['/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/round-4/.venv/bin/python', 'run_local.py', 'demo']
+22:06:38 [forge] count_fixture v1: test failed: AssertionError: 
+22:06:38 [mind] forge_tool | SCRIPTED FIXTURE: infrastructure verification, no LLM decision
+22:06:39 [forge] count_fixture v1 passed its test and is ready
+22:06:39 [mind] forge_tool | SCRIPTED FIXTURE: infrastructure verification, no LLM decision
+22:06:39 [mind] count_fixture | SCRIPTED FIXTURE: infrastructure verification, no LLM decision
+22:06:39 [forge] count_fixture v2 passed its test and is ready (replaces v1)
+22:06:39 [mind] forge_tool | SCRIPTED FIXTURE: infrastructure verification, no LLM decision
+22:06:39 [mind] write_note | SCRIPTED FIXTURE: infrastructure verification, no LLM decision
+22:06:39 [mind] sleeps 30 s: fixture finished; no real sleep loop
+22:06:39 [forge] loaded 1 tools: count_fixture
+22:06:39 [mind] count_fixture | SCRIPTED FIXTURE: infrastructure verification, no LLM decision
+22:06:39 [mind] sleeps 30 s: reuse verified
+PASS: expected failure, forge, call, version replacement, reload and reuse
+SCRIPTED FIXTURE ONLY: no model, market, wallet or payment was used
+Evidence: logs/scripted-demo-20261121T130638Z-f466b869
+EXIT: 0
