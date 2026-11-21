@@ -1,0 +1,143 @@
+% Week 08 architecture: our shop and buyer at the close of Round 3. Build: xelatex architecture.tex
+\documentclass[11pt]{article}
+\usepackage[a4paper,landscape,margin=10mm]{geometry}
+\usepackage{kotex}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc}
+\pagestyle{empty}
+
+\definecolor{llm}{HTML}{E8833A}     % LLM
+\definecolor{code}{HTML}{3A7BD5}    % code and probability models
+\definecolor{mem}{HTML}{2E9E6B}     % context and memory
+\definecolor{tool}{HTML}{8E5CC2}    % tools
+\definecolor{mkt}{HTML}{6B6B6B}
+
+% one text size in every box (\small), one for arrow labels (\footnotesize)
+\tikzset{
+  box/.style={draw=#1, very thick, rounded corners=3pt, fill=#1!8, align=left,
+              inner sep=6pt, anchor=north west, font=\small},
+  hero/.style={box=code, line width=2.2pt, fill=code!14, inner sep=7pt},
+  arr/.style={-{Stealth[length=2.8mm]}, thick},
+  fast/.style={-{Stealth[length=3.4mm]}, line width=1.8pt, draw=code},
+  slow/.style={-{Stealth[length=3.4mm]}, line width=1.8pt, draw=llm},
+  lbl/.style={font=\footnotesize, fill=white, inner sep=1.5pt},
+  side/.style={font=\bfseries\small, text=mkt},
+}
+\newcommand{\when}[1]{\hfill{\footnotesize\color{mkt}#1}}
+\newcommand{\haiku}{\textcolor{llm}{\textbf{haiku}}}
+
+\begin{document}
+\centering
+{\large\bfseries LLM은 말하고, 결정은 코드가 한다}\par\vspace{1mm}
+{\small 파란 화살표: 시장 원장 사본에서 매번 다시 계산한 사후분포가 가게와 buyer의 결정에 들어간다.\quad
+주황 화살표: manager가 한 시간마다 원장을 읽고 정책 숫자를 고친다.}\par\vspace{5mm}
+
+\begin{tikzpicture}
+% columns (cm): shop 0.6-10.1 | shared 10.7-15.2 | buyer 16.0-25.5 ; gutters at 0.15 and 25.95
+
+% ---- market
+\node[box=mkt, minimum width=24.9cm, align=center] (market) at (0.6,0) {%
+  \textbf{Round 3 시장}\qquad supply 창(20분마다 3분)\quad$\cdot$\quad
+  흥정(A2A) $\to$ ACP checkout $\to$ AP2 정산\quad$\cdot$\quad 공개 장부(ledger)};
+
+\node[side, anchor=south west] at (0.6,-1.95) {가게(seller)};
+\node[side, anchor=south east] at (25.5,-1.95) {buyer};
+
+% ---- row 1: the two heroes and the ledger copy
+\node[hero, text width=9.0cm] (nv) at (0.6,-2.0) {%
+  \textbf{현금 제약 newsvendor 매입} (restock.py) \when{supply 창마다}\\[3pt]
+  다음 supply 창까지 몇 개가 팔릴지(사후분포)를 보고\\
+  재고가 모자랄 때의 손실과 남을 때의 보관 손실을\\
+  맞바꿔 SKU마다 매입량을 정함\\[3pt]
+  \textbf{1원당 기대 이익}이 큰 개부터, 현금이 남는 만큼};
+
+\node[hero, text width=9.0cm] (pick) at (16.0,-2.0) {%
+  \textbf{기대 Saved 최대 가게$\times$SKU + 등급별 상한} \when{주문마다}\\[3pt]
+  가게마다 응할 확률, 상한 안에서 살 확률,\\
+  고장률을 뺀 물건 가치를 곱한 기대 Saved로 순위\\[3pt]
+  상위 3곳에 동시에 묻고, 첫 호가로 흥정할 곳을 정함\\
+  상한: 그 등급 가게 마진의 \texttt{min\_share} 이상을 깎는 값};
+
+\node[box=mem, text width=4.0cm] (ledger) at (10.7,-2.0) {%
+  \textbf{시장 원장 사본}\\[2pt]
+  시장 전체 기록을\\ 라운드 처음부터 복사\\ + 우리 기록\\
+  (collector.py)};
+
+% ---- shared posteriors
+\node[box=code, text width=4.0cm] (post) at (10.7,-5.0) {%
+  \textbf{사후분포} (model.py)\\[2pt]
+  카테고리 수요\\ (감마-포아송, 사전은\\ \ 시장 전체)\\
+  가게별 체결가 비율\\
+  등급별 고장률};
+
+% ---- row 2: per-talk code with haiku
+\node[box=code, text width=9.0cm] (seller) at (0.6,-7.2) {%
+  \textbf{seller.py} \when{매 흥정}\\[2pt]
+  호가: 하한과 시장가 중 큰 값, 식품은 Thompson 밴딧\\
+  하한 아래는 거절.\ \ \haiku 는 답장 문장만 씀};
+
+\node[box=code, text width=9.0cm] (review) at (16.0,-7.2) {%
+  \textbf{market\_buyer.py 흥정 + review.py} \when{매 주문}\\[2pt]
+  제안은 상한까지만 오름.\ \ \haiku 는 문장만 씀\\
+  별점: 영수증 사실로 잰 Saved를 목표와 비교};
+
+% ---- row 3: hourly managers and their tools
+\node[box=llm, text width=9.0cm] (mgr) at (0.6,-9.8) {%
+  \textbf{manager: opus} \when{1시간마다}\\[2pt]
+  지난 한 시간을 복기하고 재고 상한·하한 등 숫자를\\
+  허용 범위 안에서 고침, 교훈 메모를 다시 씀};
+
+\node[box=tool, text width=4.0cm] (tools) at (10.7,-9.8) {%
+  \textbf{툴} (tools.py)\\[2pt]
+  sql, lookup\_hour,\\ save\_tool\\
+  모두 원장을 읽기만 함};
+
+\node[box=llm, text width=9.0cm] (bmgr) at (16.0,-9.8) {%
+  \textbf{buyer manager: opus} \when{1시간마다}\\[2pt]
+  지난 주문·흥정·별점을 복기하고 \texttt{min\_share} 등을\\
+  허용 범위 안에서 고침, 교훈 메모를 다시 씀};
+
+% ---- fast loop
+\draw[fast] (5.4,0 |- nv.north) -- node[lbl,right]{매입} (5.4,0 |- market.south);
+\draw[fast, <->] (20.8,0 |- pick.north) -- node[lbl,right]{흥정·결제} (20.8,0 |- market.south);
+\draw[fast] (market.south -| ledger.north) -- node[lbl,right]{전부 복사} (ledger.north);
+\draw[fast] (ledger.south) -- (post.north);
+\draw[fast] (post.west) -| node[lbl,pos=0.75,left]{팔릴 확률·체결가} ($(nv.south east)+(-0.9,0)$);
+\draw[fast] (post.east) -| node[lbl,pos=0.75,right]{가격·고장률} ($(pick.south west)+(0.9,0)$);
+
+% ---- slow loop
+\draw[slow] (ledger.east) -- ++(0.35,0) |- ($(tools.north east)+(-0.6,0.35)$) -- ($(tools.north east)+(-0.6,0)$);
+\draw[slow, <->] (mgr.east) -- (tools.west |- mgr.east);
+\draw[slow, <->] (bmgr.west) -- (tools.east |- bmgr.west);
+\draw[slow] (mgr.west) -- (0.15,0 |- mgr.west) |- node[lbl,pos=0.25,rotate=90,above]{상한·정책 숫자} ([yshift=-5mm]nv.west);
+\draw[slow] (bmgr.east) -- (25.95,0 |- bmgr.east) |- node[lbl,pos=0.25,rotate=90,below]{\texttt{min\_share} 등} ([yshift=-5mm]pick.east);
+
+% ---- buyer forum
+\node[box=code, text width=9.0cm] (forum) at (16.0,-12.3) {%
+  \textbf{buyer\_forum.py} \when{5분마다}\\[2pt]
+  우리 구매를 장부 refs와 함께 사실로만 게시\\
+  좋아요를 가장 많이 받은 글 형식을 고름};
+\draw[slow] (bmgr.south) -- node[lbl,right]{글 지침(playbook)} (bmgr.south |- forum.north);
+\draw[arr] ([yshift=-4mm]ledger.east) ++(0.6,0) |- ($(forum.west)+(0,0)$);
+
+% ---- the second meta-harness layer: the owner and Claude Code
+\node[box=mkt, text width=9.0cm] (owner) at (0.6,-12.3) {%
+  \textbf{사람 + Claude Code} \when{수시}\\[2pt]
+  두 manager의 보고를 텔레그램으로 받아 검토하고,\\
+  필요하면 코드 자체를 고침(JOURNAL.md에 기록)};
+\draw[arr] (mgr.south) -- node[lbl,right]{텔레그램 보고} (mgr.south |- owner.north);
+
+\end{tikzpicture}
+
+\vfill
+\begin{minipage}{24.9cm}\footnotesize
+\textcolor{llm}{\rule{3mm}{3mm}} LLM \quad
+\textcolor{code}{\rule{3mm}{3mm}} 코드·확률 모델 \quad
+\textcolor{mem}{\rule{3mm}{3mm}} 컨텍스트·메모리 \quad
+\textcolor{tool}{\rule{3mm}{3mm}} 툴\\[2pt]
+키트 기본형: 가게는 haiku가 매 수를 정하고(원가 아래만 금지) restock은 재고가 20개 아래면 무작위 SKU를 산다.
+buyer는 재고가 있는 가게 중 무작위 한 곳에서 haiku가 매 제안을 정한다. 원장 사본·사후분포·manager·툴은 없다.
+\end{minipage}
+
+\end{document}
