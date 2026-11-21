@@ -19,7 +19,7 @@ def main():
                "-output-directory=" + str(build), str(ROOT / "architecture.tex")]
     result = subprocess.run(command, cwd=ROOT, capture_output=True)
     console = result.stdout.decode("utf-8", "replace") + result.stderr.decode("utf-8", "replace")
-    with log.open("x", encoding="utf-8") as stream:
+    with log.open("x", encoding="utf-8", newline="") as stream:
         stream.write("Command: " + repr(command) + "\n" + console)
     print("Build console:", log)
     if result.returncode:
