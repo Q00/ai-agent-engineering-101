@@ -1,0 +1,39 @@
+<meta charset="utf-8"><style>/* Portable host defaults: scoped so charts also work without a Visualize host. */
+[data-data-chart] {
+  color-scheme: light dark;
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--foreground, light-dark(#242424, #ececec));
+  --foreground: light-dark(#242424, #ececec);
+  --muted-foreground: light-dark(#6b6b6b, #aaa);
+  --card: light-dark(#fff, #202020);
+  --muted: light-dark(#f3f3f3, #303030);
+  --popover: light-dark(#fff, #292929);
+  --popover-foreground: var(--foreground);
+  --border: light-dark(#e7e7e7, #454545);
+  --ring: light-dark(#176bb8, #83c3ff);
+  --green: light-dark(#22794d, #74d58b);
+  --red: light-dark(#bc4760, #ed7891);
+  --viz-series-1: light-dark(#339cff, #83c3ff);
+  --viz-series-2: light-dark(#f3883b, #f59a56);
+  --viz-series-3: light-dark(#5dc977, #74d58b);
+  --viz-series-4: light-dark(#eb77b1, #f08fc0);
+  --viz-series-5: light-dark(#9b79ec, #aa91ef);
+  --viz-series-6: light-dark(#3ab9b1, #5acbc2);
+  min-width: 0;
+  width: 100%;
+}
+[data-data-chart][data-appearance="light"] { color-scheme: light; }
+[data-data-chart][data-appearance="dark"] { color-scheme: dark; }
+[data-data-chart] > [data-chart-error] { margin: 8px 0; color: var(--foreground); }
+@media print { [data-data-chart] { color-scheme: light; break-inside: avoid; } }
+</style>
+<section id="data-chart-91946e22-d217-4d3d-800f-53589f38bfa3" data-data-chart data-viz-composition data-appearance="auto">
+<div data-viz-container style="min-width:0;min-height:370px"></div>
+</section>
+<script type="module">
+const {mountChart}=await import("https://persistent.oaistatic.com/plugins/visualize/charts/data-analytics-plugin/1.2.1/charts/element.js");
+const root=document.getElementById("data-chart-91946e22-d217-4d3d-800f-53589f38bfa3");
+const target=root.querySelector("[data-viz-container]");
+const config={"id":"evening-progress-20261110-2007","title":"Buyer가 회복했지만 1위와의 격차는 줄지 않음","description":"11월 10일 KST 공식 보드 4개 관측. 합계 축 1.55–1.80으로 확대. 관측점 사이 선은 추세 표시이며 인과 효과나 예측이 아닙니다.","height":270,"spec":{"type":"line","x":"시각","y":["우리 합계","1위 합계"],"yLabel":"전체 시장 합계 점수","yDomain":[1.55,1.8],"startAtZero":false,"showValues":true,"showLegend":true,"valueFormat":{"style":"decimal","maximumFractionDigits":3},"colors":{"우리 합계":"#167D9A","1위 합계":"#B55D22"}},"rows":[{"시각":"2026-11-10T08:58:00.856118+09:00","우리 합계":1.628,"1위 합계":1.735},{"시각":"2026-11-10T13:26:21.820021+09:00","우리 합계":1.609,"1위 합계":1.743},{"시각":"2026-11-10T16:18:22.185482+09:00","우리 합계":1.622,"1위 합계":1.746},{"시각":"2026-11-10T20:07:22.505421+09:00","우리 합계":1.63,"1위 합계":1.739}]};
+mountChart(target,config);
+</script>

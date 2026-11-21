@@ -1,0 +1,926 @@
+{
+  "at": "2026-11-09T09:00:08.955151+00:00",
+  "runtime": {
+    "pid": 23592,
+    "session": "b52b0cbb3cca4a6ebe165b8515487575",
+    "started_at": 1794214575.8963592,
+    "launch_id": "auto-join-20261109T085615462183Z"
+  },
+  "minutes_since_restart": 3.884313189983368,
+  "policy": {
+    "version": "r3-market-observer-book-v6",
+    "market_control_enabled": true,
+    "tunnel_provider": "cloudflare",
+    "market_control_interval_seconds": 300,
+    "shop_growth_v5": true,
+    "shop_strategy_revision": "shop-v10-patch35-terms",
+    "shop_championship_enabled": true,
+    "shop_championship_allocation_enabled": true,
+    "shop_inventory_ceiling": 180,
+    "shop_velocity_enabled": true,
+    "shop_velocity_allocation_enabled": true,
+    "shop_fast_execution_enabled": true,
+    "shop_stock_service_level": 0.9,
+    "shop_supply_slot_capital": 100000,
+    "shop_warranty_liquidity_penalty": 0.02,
+    "warranty_menu_enabled": true,
+    "checkout_recovery_enabled": true,
+    "buyer_patch34_enabled": true,
+    "buyer_strategy_revision": "buyer-v12-saved-throughput",
+    "buyer_forum_metric": "raw",
+    "buyer_championship_enabled": true,
+    "buyer_saved_target_margin": 0.002,
+    "buyer_rank_scope": "everyone",
+    "buyer_forum_post_interval_seconds": 300,
+    "checkout_max_attempts": 2,
+    "buyer_fast_food_enabled": true,
+    "buyer_food_time_seconds": 22,
+    "buyer_goods_time_seconds": 32,
+    "planning_horizon_hours": 6,
+    "storage_reserve_hours": 48,
+    "market_end_at": null,
+    "assortment_coverage_fraction": 0.35,
+    "shop_margin_fraction": 0.02,
+    "food_clearance_hours": 6,
+    "goods_clearance_hours": 96,
+    "actor_model": "gpt-6-luna",
+    "critic_model": "gpt-6-luna",
+    "daily_api_budget_usd": null,
+    "model_timeout_seconds": 18,
+    "critic_cash_fraction": 0.1,
+    "cash_reserve_fraction": 0.2,
+    "cash_floor": 750000,
+    "forum_post_interval_seconds": 600,
+    "supply_cycle_seconds": 1200,
+    "inventory_target_units": 60,
+    "restock_max_lines": 10,
+    "restock_max_qty": 20,
+    "max_sku_capital_fraction": 0.35,
+    "goods_warranty_by_grade": {
+      "A": 3,
+      "B": 3,
+      "C": 6
+    },
+    "quote_compare_min_budget": 100000,
+    "exploration_fraction": 0.1,
+    "max_shop_candidates": 3,
+    "max_negotiation_turns": 4,
+    "checkout_buffer_seconds": 30,
+    "unknown_goods_failure_stress": 0.3,
+    "session_ttl_seconds": 180,
+    "end_at": null,
+    "prices_usd_per_million": {
+      "gpt-6-luna": [
+        0.1,
+        0.5
+      ],
+      "gpt-6.1-terra": [
+        1.0,
+        5.0
+      ]
+    },
+    "buyer_market_quality_enabled": true,
+    "buyer_contract_routing_enabled": true,
+    "buyer_negotiation_turns": 3,
+    "buyer_throughput_enabled": true,
+    "buyer_route_candidates": 4,
+    "buyer_rpc_timeout_seconds": 4,
+    "buyer_rfq_food_seconds": 3,
+    "buyer_rfq_goods_seconds": 5,
+    "buyer_compare_grace_seconds": 0.35,
+    "buyer_fast_accept_margin": 0.04
+  },
+  "revisions": {
+    "shop": "shop-v10-patch35-terms",
+    "buyer": "buyer-v12-saved-throughput"
+  },
+  "rules": {
+    "at": 1794214752.3883753,
+    "sha256": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "compatible": true,
+    "expected": "book/revenue/stars; surge<=1.5",
+    "source": "/agent.md",
+    "buyer_metric": "saved",
+    "buyer_compatible": true,
+    "buyer_forum_metric": "raw",
+    "paid_dislike_power": true,
+    "paid_dislike_contract_known": true,
+    "forum_vote_min_deals": 50,
+    "stance_scoring": true,
+    "dislike_costs_shop_cash": true
+  },
+  "buyer_context": {
+    "buyer_metric": "saved",
+    "buyer_forum_metric": "raw",
+    "buyer_rank_scope": "everyone",
+    "rank_note": "percentile components use midrank/continuous surrogates; Patch 3.5 forum uses its raw 0..1 rating"
+  },
+  "strategies": {
+    "shop": {
+      "version": 15,
+      "patch": {
+        "category_weights": {
+          "가구/침구>가구>침대/매트리스": 1.1
+        }
+      },
+      "status": "stable",
+      "since": 1794193764.460078,
+      "cooldown_until": 1794215364.460078
+    },
+    "buyer": {
+      "version": 15,
+      "patch": {},
+      "status": "stable",
+      "since": 1794214651.2886748,
+      "cooldown_until": 1794236251.2886748
+    }
+  },
+  "health": {
+    "checked_at": 1794214807.8546116,
+    "status": "healthy",
+    "url": "https://dependent-womens-diagnosis-reaction.trycloudflare.com",
+    "pending_registration": false,
+    "consecutive_probe_failures": 0,
+    "market_visibility": "present",
+    "registry_misses": 0,
+    "board_offline_checks": 0,
+    "board_global_outage": false,
+    "probe_interval_seconds": 15,
+    "renewal_seconds": null
+  },
+  "control": {
+    "at": 1794214693.2236185,
+    "epoch": 1793854431.985112,
+    "status": "observe_and_trade",
+    "book": 566517166,
+    "book_peak": 566517166,
+    "book_drawdown": 0,
+    "drawdown_brake_until": 0,
+    "brake_drawdown": 0,
+    "capital_fraction": 1,
+    "cash_capacity": {
+      "spendable": 282889648.2,
+      "refund_liability": 133708025,
+      "storage_to_end": 990635.6,
+      "cash_floor": 104397077.2,
+      "remaining_days": 2.0,
+      "reserve_release_schedule": [
+        {
+          "at": 1794216000,
+          "amount": 5670875
+        },
+        {
+          "at": 1794217200,
+          "amount": 5031234
+        },
+        {
+          "at": 1794218400,
+          "amount": 1647200
+        },
+        {
+          "at": 1794219600,
+          "amount": 9267606
+        },
+        {
+          "at": 1794220800,
+          "amount": 13944617
+        },
+        {
+          "at": 1794222000,
+          "amount": 10972198
+        },
+        {
+          "at": 1794223200,
+          "amount": 19898820
+        },
+        {
+          "at": 1794224400,
+          "amount": 10053823
+        },
+        {
+          "at": 1794225600,
+          "amount": 7715865
+        },
+        {
+          "at": 1794226800,
+          "amount": 3776143
+        },
+        {
+          "at": 1794228000,
+          "amount": 2438248
+        },
+        {
+          "at": 1794229200,
+          "amount": 6594109
+        },
+        {
+          "at": 1794230400,
+          "amount": 546624
+        },
+        {
+          "at": 1794231600,
+          "amount": 10940670
+        },
+        {
+          "at": 1794232800,
+          "amount": 8364892
+        },
+        {
+          "at": 1794234000,
+          "amount": 3893838
+        },
+        {
+          "at": 1794235200,
+          "amount": 4741662
+        },
+        {
+          "at": 1794236400,
+          "amount": 8209601
+        }
+      ],
+      "discharged_refund_reserve": 795216,
+      "reserve_release_before_next_supply": 0
+    },
+    "pause_restock": false,
+    "reasons": [],
+    "own_all": 1.616,
+    "leader_total": 1.742,
+    "leader_gap": 0.126,
+    "sold_known_cost": 235,
+    "below_cost_sales": 0,
+    "shop_evidence_since": 1794193764.460078,
+    "current_shop_known_cost": 233,
+    "current_shop_below_cost": 0,
+    "buyer_payment_failures": {
+      "other": 3,
+      "shelf_life": 17,
+      "stockout": 3
+    },
+    "opportunities": [
+      {
+        "sku": "G19a70f63",
+        "arrival_rate_scenario": 9.161092132601429,
+        "competition_sellers_plus_us": 15,
+        "lost_exact_requests": 1,
+        "available_hours_observed": 1.0593841558694839
+      },
+      {
+        "sku": "G021aae64",
+        "arrival_rate_scenario": 9.029203804944634,
+        "competition_sellers_plus_us": 31,
+        "lost_exact_requests": 5,
+        "available_hours_observed": 3.043025301761095
+      },
+      {
+        "sku": "G8ec51935",
+        "arrival_rate_scenario": 8.529145503673908,
+        "competition_sellers_plus_us": 21,
+        "lost_exact_requests": 1,
+        "available_hours_observed": 4.410403077337473
+      },
+      {
+        "sku": "G00327e80",
+        "arrival_rate_scenario": 8.335541820188585,
+        "competition_sellers_plus_us": 14,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0.8996533038881093
+      },
+      {
+        "sku": "G03d0199f",
+        "arrival_rate_scenario": 5.184269179740886,
+        "competition_sellers_plus_us": 20,
+        "lost_exact_requests": 1,
+        "available_hours_observed": 3.787475471165442
+      },
+      {
+        "sku": "G1515d951",
+        "arrival_rate_scenario": 5.130169979805735,
+        "competition_sellers_plus_us": 21,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 2.0469269590245363
+      },
+      {
+        "sku": "G53b150b5",
+        "arrival_rate_scenario": 4.510190317175615,
+        "competition_sellers_plus_us": 16,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 4.607690867450497
+      },
+      {
+        "sku": "G07ec17d5",
+        "arrival_rate_scenario": 4.006326363026712,
+        "competition_sellers_plus_us": 17,
+        "lost_exact_requests": 1,
+        "available_hours_observed": 1.8497223991155634
+      },
+      {
+        "sku": "G022ce883",
+        "arrival_rate_scenario": 3.361111111111111,
+        "competition_sellers_plus_us": 9,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G67efbcf0",
+        "arrival_rate_scenario": 3.0357142857142856,
+        "competition_sellers_plus_us": 7,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G74e686be",
+        "arrival_rate_scenario": 3.0277777777777777,
+        "competition_sellers_plus_us": 9,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G429bd69e",
+        "arrival_rate_scenario": 2.7693949394054274,
+        "competition_sellers_plus_us": 18,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 1.0079072510533869
+      },
+      {
+        "sku": "G66ded25b",
+        "arrival_rate_scenario": 2.7447916666666665,
+        "competition_sellers_plus_us": 16,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G622031be",
+        "arrival_rate_scenario": 2.5833333333333335,
+        "competition_sellers_plus_us": 2,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "Gb2392fa9",
+        "arrival_rate_scenario": 2.476190476190476,
+        "competition_sellers_plus_us": 7,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G16dcdc73",
+        "arrival_rate_scenario": 2.3685898508153977,
+        "competition_sellers_plus_us": 13,
+        "lost_exact_requests": 7,
+        "available_hours_observed": 0.8198916971683503
+      },
+      {
+        "sku": "Gef4d3036",
+        "arrival_rate_scenario": 2.2416666666666667,
+        "competition_sellers_plus_us": 20,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G0667d440",
+        "arrival_rate_scenario": 2.2259453743142643,
+        "competition_sellers_plus_us": 18,
+        "lost_exact_requests": 10,
+        "available_hours_observed": 1.291327887243695
+      },
+      {
+        "sku": "G200e39a3",
+        "arrival_rate_scenario": 2.1635802469135803,
+        "competition_sellers_plus_us": 27,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G85a1a856",
+        "arrival_rate_scenario": 2.0671581074282948,
+        "competition_sellers_plus_us": 15,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 1.6998051653967967
+      }
+    ],
+    "suggestions": [
+      {
+        "role": "shop",
+        "field": "assortment_coverage_fraction",
+        "direction": 1,
+        "reason": "observed unserved external requests"
+      }
+    ],
+    "market_summary": {
+      "tracked_skus": 1500,
+      "observed_baskets": 100,
+      "top_unserved_categories": [
+        [
+          "식품>김치/반찬/즉석요리>김치",
+          9.737933324488287
+        ],
+        [
+          "식품>음료>주스/코코아/생수",
+          9.401143091936113
+        ],
+        [
+          "식품>야채/과일>신선과일(부패주의)",
+          8.813998919568908
+        ],
+        [
+          "가구/침구>가구>침대/매트리스",
+          6.101096165214357
+        ],
+        [
+          "식품>시리얼/곡물/콩류>곡물",
+          4.008904252358227
+        ],
+        [
+          "가구/침구>가구>소파/의자/스툴",
+          2.0573219893401964
+        ],
+        [
+          "식품>기타 가공식품>디저트",
+          1.8238430567608563
+        ],
+        [
+          "식품>계란/유제품>우유/두유",
+          1.2771562480030154
+        ],
+        [
+          "식품>김치/반찬/즉석요리>즉석조리식품",
+          1.190033600294362
+        ],
+        [
+          "식품>기타 가공식품>과자",
+          1.1192892384968798
+        ]
+      ],
+      "exposure_started_at": 1794193222.9188812,
+      "context_note": "own buyer baskets have zero demand weight; external settlements only"
+    },
+    "note": "observational diagnosis; policy trials require mature own evidence and rollback checks",
+    "championship": {
+      "at": 1794214693.2236185,
+      "ranks": {
+        "shop": {
+          "rank": 7,
+          "population": 61
+        },
+        "buyer": {
+          "rank": 15,
+          "population": 59
+        }
+      },
+      "next_thresholds": {
+        "shop": {
+          "book": {
+            "current": 566517166,
+            "next_value": 708982867,
+            "gap": 142465701,
+            "weight": 0.5,
+            "cohort_size": 61,
+            "scale": "percentile"
+          },
+          "revenue": {
+            "current": 3438509287,
+            "next_value": 4318419143,
+            "gap": 879909856,
+            "weight": 0.3,
+            "cohort_size": 61,
+            "scale": "percentile"
+          },
+          "stars_rank": {
+            "current": 4.33,
+            "next_value": 4.34,
+            "gap": 0.009999999999999787,
+            "weight": 0.2,
+            "cohort_size": 61,
+            "scale": "percentile"
+          }
+        },
+        "buyer": {
+          "saved": {
+            "current": 0.2978,
+            "next_value": 0.2979,
+            "gap": 9.999999999998899e-05,
+            "weight": 0.5,
+            "cohort_size": 59,
+            "scale": "percentile"
+          },
+          "forum": {
+            "current": 0.897,
+            "next_value": 0.898,
+            "gap": 0.0010000000000000009,
+            "weight": 0.3,
+            "cohort_size": 59,
+            "scale": "raw",
+            "all_gain_per_0_01": 0.003,
+            "next_value_is": "peer benchmark, not a percentile threshold"
+          },
+          "deals": {
+            "current": 8484,
+            "next_value": 8655,
+            "gap": 171,
+            "weight": 0.1,
+            "cohort_size": 59,
+            "scale": "percentile"
+          },
+          "posts": {
+            "current": 1217,
+            "next_value": 1240,
+            "gap": 23,
+            "weight": 0.1,
+            "cohort_size": 59,
+            "scale": "percentile"
+          }
+        }
+      },
+      "pace": {
+        "shop": {
+          "metric": "book",
+          "hours": 5.9502743842204415,
+          "own_per_hour": 5613488.697021834,
+          "fastest_matched": [
+            {
+              "name": "25620027",
+              "per_hour": 4890107.93807488
+            },
+            {
+              "name": "yms979",
+              "per_hour": 4473992.169268298
+            },
+            {
+              "name": "psyoung82",
+              "per_hour": 2823872.802329833
+            }
+          ],
+          "note": "observational pace, not a forecast or causal estimate"
+        },
+        "buyer": {
+          "metric": "saved",
+          "hours": 5.9502743842204415,
+          "own_per_hour": 0.00042014869207204346,
+          "fastest_matched": [
+            {
+              "name": "26512076",
+              "per_hour": 0.003092294373650237
+            },
+            {
+              "name": "dariaklt",
+              "per_hour": 0.0017646245067025825
+            },
+            {
+              "name": "kcwarni",
+              "per_hour": 0.001562953134507996
+            }
+          ],
+          "note": "observational pace, not a forecast or causal estimate"
+        }
+      },
+      "idle_spendable_fraction": 0.5419493644597935,
+      "stock_cost": 49531780,
+      "scope": "everyone; student ranks remain separate in official board"
+    }
+  },
+  "progress": {
+    "at": 1794214693.2236185,
+    "ranks": {
+      "shop": {
+        "rank": 7,
+        "population": 61
+      },
+      "buyer": {
+        "rank": 15,
+        "population": 59
+      }
+    },
+    "next_thresholds": {
+      "shop": {
+        "book": {
+          "current": 566517166,
+          "next_value": 708982867,
+          "gap": 142465701,
+          "weight": 0.5,
+          "cohort_size": 61,
+          "scale": "percentile"
+        },
+        "revenue": {
+          "current": 3438509287,
+          "next_value": 4318419143,
+          "gap": 879909856,
+          "weight": 0.3,
+          "cohort_size": 61,
+          "scale": "percentile"
+        },
+        "stars_rank": {
+          "current": 4.33,
+          "next_value": 4.34,
+          "gap": 0.009999999999999787,
+          "weight": 0.2,
+          "cohort_size": 61,
+          "scale": "percentile"
+        }
+      },
+      "buyer": {
+        "saved": {
+          "current": 0.2978,
+          "next_value": 0.2979,
+          "gap": 9.999999999998899e-05,
+          "weight": 0.5,
+          "cohort_size": 59,
+          "scale": "percentile"
+        },
+        "forum": {
+          "current": 0.897,
+          "next_value": 0.898,
+          "gap": 0.0010000000000000009,
+          "weight": 0.3,
+          "cohort_size": 59,
+          "scale": "raw",
+          "all_gain_per_0_01": 0.003,
+          "next_value_is": "peer benchmark, not a percentile threshold"
+        },
+        "deals": {
+          "current": 8484,
+          "next_value": 8655,
+          "gap": 171,
+          "weight": 0.1,
+          "cohort_size": 59,
+          "scale": "percentile"
+        },
+        "posts": {
+          "current": 1217,
+          "next_value": 1240,
+          "gap": 23,
+          "weight": 0.1,
+          "cohort_size": 59,
+          "scale": "percentile"
+        }
+      }
+    },
+    "pace": {
+      "shop": {
+        "metric": "book",
+        "hours": 5.9502743842204415,
+        "own_per_hour": 5613488.697021834,
+        "fastest_matched": [
+          {
+            "name": "25620027",
+            "per_hour": 4890107.93807488
+          },
+          {
+            "name": "yms979",
+            "per_hour": 4473992.169268298
+          },
+          {
+            "name": "psyoung82",
+            "per_hour": 2823872.802329833
+          }
+        ],
+        "note": "observational pace, not a forecast or causal estimate"
+      },
+      "buyer": {
+        "metric": "saved",
+        "hours": 5.9502743842204415,
+        "own_per_hour": 0.00042014869207204346,
+        "fastest_matched": [
+          {
+            "name": "26512076",
+            "per_hour": 0.003092294373650237
+          },
+          {
+            "name": "dariaklt",
+            "per_hour": 0.0017646245067025825
+          },
+          {
+            "name": "kcwarni",
+            "per_hour": 0.001562953134507996
+          }
+        ],
+        "note": "observational pace, not a forecast or causal estimate"
+      }
+    },
+    "idle_spendable_fraction": 0.5419493644597935,
+    "stock_cost": 49531780,
+    "scope": "everyone; student ranks remain separate in official board"
+  },
+  "shop_quality_cohorts": {
+    "at": 1794214706.524364,
+    "grades": {
+      "C": {
+        "n": 164,
+        "broken": 56,
+        "within3": 23,
+        "unknown_time": 0
+      },
+      "A": {
+        "n": 1036,
+        "broken": 36,
+        "within3": 16,
+        "unknown_time": 0
+      },
+      "B": {
+        "n": 289,
+        "broken": 35,
+        "within3": 16,
+        "unknown_time": 0
+      }
+    }
+  },
+  "own_sales": {
+    "count": 3,
+    "revenue": 3187421,
+    "gross_margin_before_later_costs": 307208,
+    "below_cost_count": 0,
+    "events": [
+      {
+        "task": "5715ddfc-5057-45d8-ab74-3e5503c48c6e",
+        "unit": "u-e91b2cfdedf2",
+        "sku": "G19a70f63",
+        "price": 1338240,
+        "warranty_hours": 6.0,
+        "paid_at": 1794214738.75184,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1220445,
+        "grade": "A",
+        "_ts": 1794214738.7530174
+      },
+      {
+        "task": "57e8d07d-e897-4962-8513-d5bae2990d75",
+        "unit": "u-d4b98ddd8975",
+        "sku": "G85a1a856",
+        "price": 680000,
+        "warranty_hours": 6.0,
+        "paid_at": 1794214784.461046,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 620709,
+        "grade": "A",
+        "_ts": 1794214784.462324
+      },
+      {
+        "task": "2a3699f4-216c-47c0-a1e9-637f1dcc0048",
+        "unit": "u-6b7bdb3cf11e",
+        "sku": "G19a70f63",
+        "price": 1169181,
+        "warranty_hours": 0,
+        "paid_at": 1794214787.3174312,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1039059,
+        "grade": "A",
+        "_ts": 1794214787.3240523
+      }
+    ]
+  },
+  "buyer_purchases": {
+    "count": 6,
+    "events": [
+      {
+        "order": "o-62c9c337d456",
+        "sku": "G66ded25b",
+        "unit": "u-a703f8f4e52f",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "kind": "food",
+        "price": 10238,
+        "value": 17900,
+        "paid_at": 1794214654.7372665,
+        "grade": "B",
+        "list_price": 17900,
+        "expires_at": 1794661873.0,
+        "initial_saved_contribution": 0.4280446927374302,
+        "warranty_hours": 0,
+        "ledger": 4419805,
+        "strategy_version": 15,
+        "_ts": 1794214654.7416847
+      },
+      {
+        "order": "o-d91a40ad95e5",
+        "sku": "G66ded25b",
+        "unit": "u-66454545a595",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "kind": "food",
+        "price": 11318,
+        "value": 17900,
+        "paid_at": 1794214676.0168886,
+        "grade": "B",
+        "list_price": 17900,
+        "expires_at": 1794681826.0,
+        "initial_saved_contribution": 0.36770949720670393,
+        "warranty_hours": 0,
+        "ledger": 4419894,
+        "strategy_version": 15,
+        "_ts": 1794214676.0209508
+      },
+      {
+        "order": "o-cbe23e375ec3",
+        "sku": "G333ba825",
+        "unit": "u-415e109c4312",
+        "shop": "https://excluding-desirable-sociology-proportion.trycloudflare.com",
+        "shop_identity": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+        "name": "[안동맛자반] 순살 간고등어 반마리 140g x 10팩",
+        "kind": "food",
+        "price": 18540,
+        "value": 30900,
+        "paid_at": 1794214697.349869,
+        "grade": "B",
+        "list_price": 30900,
+        "expires_at": 1794264108.0,
+        "initial_saved_contribution": 0.4,
+        "warranty_hours": 0,
+        "ledger": 4419962,
+        "strategy_version": 15,
+        "_ts": 1794214697.3649805
+      },
+      {
+        "order": "o-025d3916814a",
+        "sku": "G022ce883",
+        "unit": "u-0937232fc554",
+        "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+        "shop_identity": "3lBHsp2Xwi48oVLvuqKi/8UH2HbUDqkUMGY/s4Pjj30=",
+        "name": "[양지촌농원] 26년산 보은건대추 1kg 26mm",
+        "kind": "food",
+        "price": 12258,
+        "value": 19900,
+        "paid_at": 1794214722.976483,
+        "grade": "B",
+        "list_price": 19900,
+        "expires_at": 1794305872.0,
+        "initial_saved_contribution": 0.38402010050251256,
+        "warranty_hours": 0,
+        "ledger": 4420044,
+        "strategy_version": 15,
+        "_ts": 1794214722.976483
+      },
+      {
+        "order": "o-78ad4e363050",
+        "sku": "G7fa48eaa",
+        "unit": "u-56ea0552d8bf",
+        "shop": "https://excluding-desirable-sociology-proportion.trycloudflare.com",
+        "shop_identity": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+        "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+        "kind": "food",
+        "price": 3781,
+        "value": 5400,
+        "paid_at": 1794214744.3376827,
+        "grade": "A",
+        "list_price": 5400,
+        "expires_at": 1796310520.0,
+        "initial_saved_contribution": 0.2998148148148148,
+        "warranty_hours": 0,
+        "ledger": 4420145,
+        "strategy_version": 15,
+        "_ts": 1794214744.3376827
+      },
+      {
+        "order": "o-d3cb6acd3c49",
+        "sku": "G1831f2c0",
+        "unit": "u-4157fecb1c79",
+        "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+        "shop_identity": "i4jK4hcpby3UTBgs4etimCq3HhGoY1aCedRDvgbZ0QE=",
+        "name": "켈로그 프링글스 2+2+2+1 골라담기 GS단독",
+        "kind": "food",
+        "price": 7482,
+        "value": 12900,
+        "paid_at": 1794214800.6823556,
+        "grade": "C",
+        "list_price": 12900,
+        "expires_at": 1794772523.0,
+        "initial_saved_contribution": 0.42,
+        "warranty_hours": 0,
+        "ledger": 4420368,
+        "strategy_version": 15,
+        "_ts": 1794214800.6823556
+      }
+    ]
+  },
+  "restock_plans": [],
+  "successful_supplies": [],
+  "actual_supply_units": 0,
+  "actual_supply_cost": 0,
+  "forum_deliveries": [
+    {
+      "key": "stock-announcement:2990357",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794214697.349869
+    },
+    {
+      "key": "buyer-insight:5980715",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794214753.1248283
+    }
+  ],
+  "post_restart_errors": {
+    "market_control_error": [],
+    "forum_error": [],
+    "strategy_error": []
+  },
+  "limits": [
+    "Short post-release observation, not proof of improved ranks or durable profit.",
+    "Supply success is parsed only from this launch console; plans are separate.",
+    "Gross margin excludes subsequent refunds, storage and expiration."
+  ]
+}

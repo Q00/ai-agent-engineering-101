@@ -1,0 +1,96 @@
+# Week 08 구현 및 검증 기록
+
+## 2026-11-21 제출용 아키텍처 갱신
+
+`architecture.tex`와 `architecture.pdf`를 최종 회사 조직 구조와 운영 중 사용한 LLM 경로를 함께 보여 주는 한 페이지 그림으로 갱신했다. 아래 11월 초 기록의 기본 모델·구조 설명을 최종 실행 설정으로 해석하면 안 된다. 운영 결과 부분은 아직 최종 제출용으로 정리해야 한다.
+
+그림의 파란 실선은 최종 Shop v34 / Buyer v32의 수치 실행 경로다. 공통 SQLite WAL 사건 원장과 스냅샷에서 출처·시각·규칙 해시를 확인하고, 시장정보실, 회계·리스크실, 품질·고객실, 점수전략실이 근거를 만든다. Shop의 조달실은 매입과 대기를 비교하고 판매·계약실은 재고 단위·가격·보증을 제안한다. Buyer는 Saved 목표와 전체 목적함수/실행시간으로 검색·협상 후보를 비교한다. Main은 후보를 선택하고 최종 제약검사를 거쳐 키트와 학생 어댑터로 외부 행동을 실행한다. Buyer worker는 협상하며 결제 mandate는 부모 프로세스에만 남는다.
+
+주황 점선은 과거에 사용한 두 LLM 경로이며 최종 실행에서는 비활성화됐다.
+
+- 거래 판단: 관련 메모리·수치 후보·기한을 담은 컨텍스트 → Actor → 필요한 경우 독립 Critic → 후보 ID 검증 → 동일한 실행 검사. 초기에는 GPT-6 Luna Actor / GPT-6.1 Terra Critic을 사용했고 이후 배정은 버전별로 달라졌다. 실패·기한 초과·목적함수 하한 미달은 수치 경로로 처리했다.
+- 배경 연구·분석 도구(v19): GPT-6 Luna가 새 분석 필요성과 기존 도구 재사용을 판단하고, GPT-6.1 Sol이 신뢰된 읽기 전용 분석 템플릿을 조합했다. 계산된 근거를 Sol 전략 분석가와 GPT-6.1 Terra 독립 비평가가 검토하고, 출처·유효기간·규칙 및 제한된 정책 컴파일 검사를 거쳐 거래 후보에 반영했다. 생성된 계획에는 임의 Python 실행이나 직접 결제 권한이 없다. 실제 연결 근거는 `logs/v19-role-live-proof-20261112T050116986042Z.json`과 `V19_MODEL_ROLES_2026-11-12.md`에 있다.
+
+최종 `policy.json`은 `finalday_departments_enabled=true`, `llm_disabled=true`, `research_enabled=false`, `capability_llm_enabled=false`다. 회사 부서는 기존 Python 모듈의 책임 구분이며 부서마다 독립 LLM을 호출한다는 뜻이 아니다. 전체 조직 설계의 모든 JSON 봉투 계약이 강제됐다고 주장하지 않는다. 실제 회계·리스크 → 조달 → Main 및 Buyer 점수전략 → 입찰 후보 연결은 `r3/departments.py`, `r3/cycle.py`, `r3/prewindow.py`, `r3/market_memory.py`와 `FINALDAY_DEPLOYMENT_2026-11-16.md`를 기준으로 한다.
+
+키트 기본형에 더한 핵심은 사건의 성숙도·출처를 관리하는 메모리, 회사 역할별 근거와 후보 생성, ALL 목적함수와 실행시간 평가, 선택적인 LLM 검토 및 배경 연구, 공통 금융·품질·신원 검사와 부모 프로세스의 결제 권한이다. 모델 가중치를 학습하지 않았으며, 내부 기대값을 실현 이익이나 공식 점수로 표시하지 않는다.
+
+빌드: `pdflatex -interaction=nonstopmode -halt-on-error -output-directory=artifacts/architecture-build architecture.tex` 후 생성된 PDF를 제출 경로로 복사한다. `build_architecture.py`는 같은 빌드의 원본 콘솔을 매번 새 로그로 보존하고 PyMuPDF로 한 페이지 여부와 미리보기를 확인하는 보조 도구다. 이 도구는 제출 에이전트와 별도인 빌드 환경에 `PyMuPDF`와 TinyTeX/TeX Live가 필요하다.
+
+## 초기 구현·운영 기록 (2026-11-03~04)
+
+아래는 당시 관측과 실패·복구를 남긴 기록이다. 최종 정산 수·Players Class 순위·10주차 기준값 비교를 대신하지 않는다.
+
+2026-11-04 장애·복구 기록은 `RECOVERY_2026-11-04.md`에 추가했다. 보증 기간 null 처리와 터널 재등록 재시도 결함을 수정했고 72개 회귀가 통과했다. 12:31 KST 공개 상태에서 Shop 204건·Buyer 424건 정산, 양쪽 alive를 확인했으나, Shop 재고는 소진돼 다음 공급 창에서 보충해야 하는 상태였다.
+
+이 문서는 진행 중인 구현 보고서다. 실제 Round 3 운영 결과를 채우기 전에는 완성된 제출 보고서가 아니다.
+
+2026-11-03 21:06 KST 운영 갱신: kit 4의 Shop·Buyer `seochanit` Round 3 등록, 공개 agent-card HTTP 200, 실제 양쪽 정산과 Forum 발송을 확인했다. 21:08 KST 감사 시점 board는 양쪽 각각 4건 정산이었다. 기본 조건 20건과 최종 순위는 계속 확인해야 한다. 근거는 `logs/live-registration-20261103T120813305637Z.json`과 `logs/strategy-join-20261103T120630782000Z.txt`다. 아래 미운영·Round 2 설명은 이전 시점 기록이다.
+
+최신 변경의 근거·가정·검증 한계는 `MARKET_STRATEGY_UPDATE.md`, 고객 기억/FIFO 규격은 `CUSTOMER_MEMORY.md`에 정리했다. 공급·Forum 회귀 64개가 `logs/verification-20261103T120342575020Z.txt`에서 통과했다. 첫 공개 운영에서 확인한 `cert:false` 제안은 다음 가게로 넘어가도록 Buyer를 추가 보완했다. 결제 조건을 완화하지 않는다.
+
+최종 65개 회귀 통과: `logs/verification-20261103T121557557563Z.txt`. 21:16:59 KST board에서는 Shop 14건·Buyer 10건 정산, Shop profit 14,020, Buyer surplus 177,942, 양쪽 alive를 확인했다(`logs/live-progress-20261103T121659918635Z.json`). 초기 잠정 성과이며 장기적인 전략 우월성이나 20건 조건 충족을 뜻하지 않는다. 실제 실행은 계속 유지한다.
+
+## 부품 설계
+
+모델 가중치 학습 없이 actor–critic의 역할 분리를 사용한다. actor는 계산된 후보와 관련 경험을 보고 행동을 선택하고, 수치 critic은 회수 가치·유효 잉여·성사 결과·불확실성을 계산한다. 자금 영향이 크거나 구매 조건이 중요한 결정에는 별도 LLM critic을 호출한다. API 오류와 비용 상한 도달 시에는 수치 후보 중 제한된 대체 경로를 사용하며 이를 모델 결정으로 기록하지 않는다.
+
+기본 actor는 GPT-6 Luna, 의미 critic은 GPT-6.1 Terra다. 구조화 출력과 고정된 후보 ID를 사용하므로 모델이 임의 금액·SKU·매입 명령을 실행할 수 없다. 모델의 선택 뒤에도 재고·단위·예산·서명·실제 checkout SKU·식품 잔여 시간·보증 요구를 코드가 검사한다.
+
+메모리는 SQLite WAL의 사건 기록이다. 주문, 협상, 정산, 재고, 고장과 후기의 출처를 구분하고 중복 ID를 차단한다. 예측을 실제 결과로 승격하지 않는다. 아직 고장 관측 기간이 끝나지 않은 상품은 성숙한 결과와 다르게 처리한다. 이름만 같은 고장 구매가 여러 건이면 특정 가게에 임의 귀속하지 않는다.
+
+Meta-harness는 관련 경험과 수치 후보를 조회하고, actor/critic 호출과 기한을 관리한다. 모델 비용 상한은 역할 간 공유된다. 공개 R3 board가 있을 때만 백분위 기회를 경험적 근사로 제공하고, 공식 동점 처리와 같다고 가정하지 않는다.
+
+## 기본 키트와의 차이
+
+`architecture.tex` 및 한 페이지 PDF에 실제 모듈 연결을 표시했다. 공유 키트는 변경하지 않고 학생 폴더의 어댑터가 추가 검사를 수행한다.
+
+1. 구매한 재고의 원가와 보유 재고 처분의 매몰비용을 구분한다.
+2. Buyer는 예산 절약액 대신 상품의 유효 잉여를 비교한다.
+3. 식품은 등급만이 아니라 사용 요구 시간과 증명서를 검사한다.
+4. 실제 결제 SKU가 요청한 SKU와 다른 경우 결제를 거부한다.
+5. 동시 checkout의 단위 중복 선택과 미완료 세션의 무기한 보유를 제한한다.
+6. 결제 직후 후기와 지연된 고장·환불 결과를 구분한다.
+
+## 검증 근거
+
+- `logs/foundation-tests-run-01.txt`: 기반 테스트 10개 통과.
+- `logs/verification-20261103T040125873080Z.txt`: 최초 A2A 통합 실패. 버전 헤더가 빠졌음.
+- `logs/verification-20261103T040405190753Z.txt`: 헤더 수정 후 18개 통과.
+- `logs/verification-20261103T041053828917Z.txt`: 최초 ACP 통합에서 정수/실수 직렬화 실패.
+- `logs/verification-20261103T042330477972Z.txt`: 정규화 후 19개 통과.
+- `logs/model-probe-20261103T040006313951Z.json`: 실제 Luna·Terra 판단 6개 통과. 소규모 합성 사례이며 넓은 성능 비교가 아님.
+- `logs/verification-20261103T042718179485Z.txt`: 실제 Luna shop/buyer 판단으로 로컬 A2A → ACP → AP2 → 합성 크레딧 정산 성공. 중복 결제 거부. 호출 4회의 추정 토큰 비용 합계 $0.000436.
+
+실패 로그는 수정하거나 삭제하지 않고 수정 커밋을 따로 남겼다. 테스트의 신원·주문·재고·크레딧은 합성이며 공개 시장 정산 건수에 더하지 않는다.
+
+## 실제 Round 3 운영 결과: 아직 미검증
+
+전략 재평가 유예 기간도 검증한 최종 실행은 44개 통과: `logs/verification-20261103T104735530659Z.txt`. 실패한 패치의 재시도 차단은 영구적이지 않고 24시간 후 다시 관측 근거에 따라 시험할 수 있다. 성과를 증명하지 못한 시험은 최대 48시간 후 기존 설정으로 복구한다.
+
+2026-11-03 제한된 자동 전략 제어기 `r3/adaptive.py`를 추가했다. Buyer의 할인 역제안 비율, Shop의 목표 재고·카테고리 가중치만 범위 안에서 변경한다. 공식 board의 내 profit/surplus 흐름, 같은 참여자들의 공개 흐름, 해당 전략 버전으로 발생한 내 거래 결과를 함께 사용한다. 제안·시험·채택·복구 이력은 SQLite 트랜잭션으로 남기며, 진행 중 주문·협상의 버전은 고정한다. API 예산·현금 제약·거래 무결성 규칙은 유지하고 추가 모델 호출은 없다. `strategy_status.py --save`로 이력을 제출 경로에 내보낼 수 있다.
+
+기존 30개와 새 제어기 검증을 포함한 43개 테스트가 통과했다: `logs/verification-20261103T103851929554Z.txt`. 시험 시작·개선 시 채택·악화 시 복구, 재고 목표 양방향 조정, 실제 매입 후보 가중치 반영, 충분하지 않은 성과의 채택 거부, 지연 환불 제외, 동시 갱신 방지를 합성 기록으로 검증했다. 상태 스냅샷 `logs/strategy-status-20261103T104538350228Z.json`에서는 양쪽 모두 기본 버전 0이고 실제 전략 변경 이력이 없다. 시장의 상품·트래픽 변화가 섞이는 관측 기반 비교이므로 개선의 인과성 또는 최적성을 주장하지 않는다.
+
+자동 감시기 실측 상태: 2026-11-03 18:58 KST에 백그라운드 감시 프로세스가 살아 있고 공개 API가 Round 2를 반환함을 확인했다. 상태 스냅샷은 `logs/round3-watch-status-20261103T0958558039483Z.json`이며, 이 시점의 다음 조회는 19:08 KST다. 시장 참가 시도와 양쪽 등록 상태는 모두 false였다. Windows 실행 정책에 의한 최초 시작 실패를 `logs/watch-start-attempt-01.txt`에 보존했고, 승인된 실행 프로세스에만 정책 예외를 적용했다. 전역 정책은 변경하지 않았다. 실제 대기 상태에서 정상 종료·재시작도 확인했다. Windows venv 실행기와 실제 Python PID 차이는 고유 launch ID를 통해 처리하며, 다른 launch ID의 프로세스에는 종료를 요청하지 않는 테스트를 포함해 최종 30개가 통과했다: `logs/verification-20261103T095426489027Z.txt`.
+
+2026-11-03 사용자 요청으로 10분 간격 Round 3 감시기를 추가했다. 공개 board의 `current == 3`을 확인한 경우에만 기존 양쪽 실행기를 시작한다. 감시 중 모델 호출은 없다. OS 잠금으로 중복 실행을 차단하며 종료 요청은 실행기 PID와 세션 ID가 일치할 때만 적용한다. 시작 성공과 양쪽 등록 성공을 구분하고 네트워크·실행 실패는 다음 확인 시 재시도한다. 최초 테스트 설정 필드 누락 실패는 `logs/verification-20261103T092947082133Z.txt`에 보존했고, 수정 후 전체 29개 테스트가 통과했다: `logs/verification-20261103T093035330542Z.txt`. 실제 Round 3 전환은 아직 관측하지 않았으므로 자동 실전 등록 성공으로 보고하지 않는다.
+
+2026-11-03 가게 접속 경로를 추가 점검했다. 기존 week-07 로그에서 성공한 Shop 등록은 Pinggy 경로였으며 새 실행기에 그 경로가 누락되어 있었다. 공식 SDK `pinggy==0.3.1`을 복구하고 `join.ps1` 기본값으로 설정했다. Buyer와 Shop의 `/api/join` 인증은 같은 수업 키트 구현을 계속 사용한다. Shop 공개 연결에는 실제 seller와 v4 Proxy를 사용하고, 점검용 임시 상태·키와 discovery 전용 접근 제한을 적용했다.
+
+- 최초 Cloudflare 터널은 생성됐으나 45초 안에 공개 discovery가 확인되지 않았다: `logs/shop-transport-20261103T080707908404Z.json`. 키트의 120초 대기와 달랐으므로 Cloudflare 자체가 반드시 불가능하다는 결론은 내리지 않는다.
+- 복구한 Pinggy 경로에서는 공개 agent-card와 ACP discovery가 모두 HTTP 200이며 프록시의 외부 URL 변환도 확인했다: `logs/shop-transport-20261103T082440055660Z.json`. 시장 등록·거래는 하지 않았고 임시 터널은 종료했다.
+- 실제 실행기와 점검기가 `r3/transport.py`를 공유한다. 다른 로컬 서비스 노출 거부, 터널 프로세스의 인증 정보 제거, 실패 프로세스 정리와 진단 로그 보존을 추가 검증했다. 전체 23개 통과: `logs/verification-20261103T082550774955Z.txt`.
+
+이 검증은 공개 discovery의 성공이다. Round 3 등록 성공, 외부 구매자의 협상·결제, 무료 터널의 장기 가용성을 보장하는 결과는 아니다. 저장소에 `scripts/check_week08.py`가 없어 해당 CI 검사는 실행하지 못했다.
+
+가게 정산 건수, buyer 정산 건수, Players 순위, 순이익·잉여·평판과 거부 사유는 실제 운영 후 로그와 board를 인용해 추가해야 한다. 각 20건 조건과 최종 순위를 현재 테스트로 충족했다고 주장하지 않는다. 마지막 준비 상태 조회는 공개 API가 Round 2를 반환했으며 새 구현의 공개 시장 등록은 수행하지 않았다.
+
+## 남은 실험과 한계
+
+초기 매입·가격·보증 정책 및 불명확한 고장 위험 스트레스 값은 관측 결과로 검토할 가설이다. 5,629 SKU의 인기나 고장 분포를 사전에 안다고 가정하지 않는다. 실제 운영에서 actor만 사용한 기준 정책과 critic 사용 정책의 성과·오류·지연·비용을 비교해야 한다. 공식 백분위·별점 보정의 세부 처리와 종료 후 결과 반영도 추가 확인 대상이다.
+
+
+## 2026-11-04 ALL objective revision
+
+[ALL policy v2](ALL_POLICY_V2.md) documents the implemented buyer concessions, inventory rotation, ledger-based forum comparisons and fresh, ALL-based adaptive evaluation. The local daily API ceiling was removed at the user's request on 2026-11-04; spend tracking remains active. Local tests and actual deployment evidence are recorded separately.

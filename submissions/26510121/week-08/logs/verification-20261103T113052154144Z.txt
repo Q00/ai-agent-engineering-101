@@ -1,0 +1,118 @@
+Local contract and integration tests; no public market actions.
+...................F................................                     [100%]
+================================== FAILURES ===================================
+__________ test_verified_customer_summary_reaches_real_a2a_decision ___________
+
+tmp_path = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-68/test_verified_customer_summary0')
+
+    def test_verified_customer_summary_reaches_real_a2a_decision(tmp_path):
+        j, u = setup(tmp_path)
+        buyer_key, shop_key = Ed25519PrivateKey.generate(), Ed25519PrivateKey.generate()
+        subject = 'key:' + hashlib.sha256(base64.b64decode(pub(buyer_key))).hexdigest()
+        for n in range(3):
+            task = f'past-{n}'
+            memory.visit(j, task, 'G111', u, signer=subject)
+            memory.incoming(j, task, 'm-' + task, '8000', last_ask=9000, turn=1)
+            memory.paid(j, task, 8000, 'G111', 100 + n)
+        keypath = tmp_path / 'synthetic-shop.pem'
+        keypath.write_bytes(shop_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                                  serialization.NoEncryption()))
+        contexts = []
+        class Capture:
+            def choose(self, role, candidates, context, **kwargs):
+                contexts.append(context)
+                return max(candidates, key=lambda c: c['score'])
+        text, mid, now = 'G111 certificate and warranty', 'returning-visit', int(time.time())
+        with TestClient(build(9999, Seller(j, chooser=Capture(), key_path=keypath))) as client:
+            response = client.post('/', headers={'A2A-Version': '1.0'}, json={
+                'jsonrpc': '2.0', 'id': '1', 'method': 'SendMessage', 'params': {'message': {
+                    'role': 'ROLE_USER', 'messageId': mid, 'parts': [{'text': text}],
+                    'metadata': proof(buyer_key, pub(shop_key), mid, text, now)}}})
+>       assert response.status_code == 200 and contexts
+E       assert (200 == 200 and [])
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests\test_customer_memory.py:121: AssertionError
+------------------------------ Captured log call ------------------------------
+ERROR    a2a.server.agent_execution.active_task:active_task.py:629 Producer[d05f225f-8de5-44a5-a7fe-c9b0be976360]: Execution failed
+Traceback (most recent call last):
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 59, in execute
+    await self._execute(task, context, event_queue)
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 71, in _execute
+    if metadata.get('buyer_memory_proof'):
+       ^^^^^^^^^^^^
+AttributeError: get
+ERROR    a2a.server.agent_execution.active_task:active_task.py:277 Task d05f225f-8de5-44a5-a7fe-c9b0be976360 already exists. Ignoring task replacement.
+ERROR    a2a.server.agent_execution.active_task:active_task.py:144 Consumer[d05f225f-8de5-44a5-a7fe-c9b0be976360]: Failed
+Traceback (most recent call last):
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 59, in execute
+    await self._execute(task, context, event_queue)
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 71, in _execute
+    if metadata.get('buyer_memory_proof'):
+       ^^^^^^^^^^^^
+AttributeError: get
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:348 Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+    raise event
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+    await self._process_event(event)
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+    raise event
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 59, in execute
+    await self._execute(task, context, event_queue)
+  File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 71, in _execute
+    if metadata.get('buyer_memory_proof'):
+       ^^^^^^^^^^^^
+AttributeError: get
+ERROR    a2a.server.routes.jsonrpc_dispatcher:jsonrpc_dispatcher.py:198 Request Error (ID: 1): Code=-32603, Message='get'
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:206 Dispatcher task was cancelled or finished. Events may be lost.
+============================== warnings summary ===============================
+tests\test_customer_memory.py:10
+  C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\tests\test_customer_memory.py:10: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_customer_memory.py::test_verified_customer_summary_reaches_real_a2a_decision
+1 failed, 51 passed, 1 warning in 14.61s

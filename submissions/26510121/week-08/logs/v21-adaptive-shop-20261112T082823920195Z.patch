@@ -1,0 +1,580 @@
+--- a/r3/demand_policy.py
++++ b/r3/demand_policy.py
+@@ -0,0 +1,143 @@
++"""Background empirical demand shrinkage and supply-access protection periods.
++
++All rates and geometric windows are planning scenarios. No purchase, payment,
++price-cap change, or inference of hidden orders is authorized by this packet.
++"""
++from collections import Counter,defaultdict
++from bisect import bisect_right
++import math
++import time
++from .state import identity
++
++KEY='shop-demand-policy:v21'
++REVISION='adaptive-public-prior-and-replenishment-v21-1'
++
++
++def coverage_hours(inv, probability, config, now):
++    cycle=max(1,config.get('supply_cycle_seconds',1200))
++    level=config.get('shop_replenishment_service_level',.9)
++    if not .5<=level<1 or not 0<probability<=1:raise ValueError('invalid_supply_probability')
++    windows=1 if probability==1 else max(1,math.ceil(math.log1p(-level)/math.log1p(-probability)))
++    opens=(inv.get('restock') or {}).get('opens_at')
++    wait=max(cycle,opens-now) if type(opens) in (int,float) and math.isfinite(opens) else cycle
++    protection=(wait+(windows-1)*cycle+config.get('shop_supply_delivery_seconds',30))/3600
++    # The economic model cannot justify units beyond its evaluated time horizon.
++    return min(max(1,config.get('planning_horizon_hours',6)),max(cycle/3600,protection))
++
++
++def supply_access(events,now):
++    windows=defaultdict(lambda:defaultdict(set))
++    for r in events:
++        at=r.get('_ts',r.get('finished_at',0));window=r.get('window');sku=r.get('sku')
++        if (type(window) not in (int,float) or not isinstance(sku,str) or not 0<=now-at<=21600
++                or r.get('status') not in ('complete','retryable','uncertain')):continue
++        # An unfinished/uncertain call is not a confirmed supply failure.
++        windows[window][sku].add(r['status'])
++    own={};global_success=global_failure=0
++    for window,skus in windows.items():
++        any_complete=False;any_failure=False
++        for sku,status in skus.items():
++            s,f=own.get(sku,(0,0))
++            if 'complete' in status:s+=1;any_complete=True
++            elif window+180<=now and 'retryable' in status and 'uncertain' not in status:f+=1;any_failure=True
++            own[sku]=(s,f)
++        if any_complete:global_success+=1
++        elif window+180<=now and any_failure:global_failure+=1
++    global_p=(2+global_success)/(3+global_success+global_failure)
++    return global_p,own,{'successful_attempted_windows':global_success,'failed_attempted_windows':global_failure,
++        'unknown_and_unattempted_windows_are_not_failures':True}
++
++
++def fit(catalog, public, timeline, sales, supply, competition, inv, config, now):
++    half=max(.25,config.get('shop_demand_half_life_hours',1))
++    decay=math.log(2)/(half*3600)
++    exposure=Counter();clean_exposure=Counter();intervals=defaultdict(list)
++    timeline=sorted((r for r in timeline if 0<=now-r.get('at',0)<=21600),key=lambda r:r['at'])
++    for index,row in enumerate(timeline):
++        finish=min(now,timeline[index+1]['at'] if index+1<len(timeline) else now,row['at']+60)
++        if finish<=row['at'] or row.get('reachable') is False:continue
++        hours=(math.exp(-decay*(now-finish))-math.exp(-decay*(now-row['at'])))/(decay*3600)
++        for sku,qty in row.get('counts',{}).items():
++            if qty>0 and sku in catalog:
++                exposure[sku]+=hours;intervals[sku].append((row['at'],finish))
++                if row.get('reachable') is True:clean_exposure[sku]+=hours
++    paid=Counter();seen=set()
++    for sale in sales:
++        sku=sale.get('sku');at=sale.get('paid_at',sale.get('_ts',0));key=sale.get('unit') or sale.get('task') or sale.get('_event_id')
++        if (sku not in intervals or not key or key in seen or not 0<=now-at<=21600
++                or type(sale.get('price')) not in (int,float) or type(sale.get('cost')) not in (int,float)
++                or sale['price']<=sale['cost']):continue
++        seen.add(key);bounds=intervals[sku];i=bisect_right(bounds,(at,float('inf')))-1
++        if i>=0 and bounds[i][0]<=at<=bounds[i][1]:paid[sku]+=math.exp(-decay*(now-at))
++    current=competition.get('counts',{}) if 0<=now-competition.get('at',0)<120 else {}
++    raw={};groups=defaultdict(lambda:[0.,0.,0]);kinds=defaultdict(lambda:[0.,0.,0])
++    for sku in set(public)|set(exposure):
++        if sku not in catalog:continue
++        p=public.get(sku,{})
++        competitors=max(1,current.get(sku,p.get('sellers',0))+1)
++        samples=p.get('external_samples',p.get('samples',0))
++        raw[sku]=max(0,samples)/6/competitors
++        cat=(catalog[sku].get('kind'),catalog[sku].get('category'))
++        for aggregate in (groups[cat],kinds[catalog[sku].get('kind')]):
++            aggregate[0]+=paid[sku];aggregate[1]+=raw[sku]*exposure[sku];aggregate[2]+=exposure[sku]>0
++    global_p,access,access_facts=supply_access(supply,now)
++    prior_events=max(1,config.get('shop_demand_calibration_prior_events',5))
++    prior_hours=max(.01,config.get('shop_demand_prior_hours',.25))
++    rows={};factors=[]
++    for sku,base in raw.items():
++        cat=(catalog[sku].get('kind'),catalog[sku].get('category'))
++        aggregate=groups[cat] if groups[cat][2]>=3 else kinds[catalog[sku].get('kind')]
++        # Leave this SKU out of the group prior, then update it exactly once.
++        other_paid=max(0,aggregate[0]-paid[sku]);other_expected=max(0,aggregate[1]-base*exposure[sku])
++        group_factor=(other_paid+prior_events)/(other_expected+prior_events)
++        proxy=1-clean_exposure[sku]/exposure[sku] if exposure[sku]>0 else 1
++        strength=prior_hours*(1+proxy)
++        rate=(paid[sku]+strength*base*group_factor)/(exposure[sku]+strength)
++        successes,failures=access.get(sku,(0,0))
++        probability=(2+successes)/(3+successes+failures) if successes+failures>=3 else global_p
++        hours=coverage_hours(inv,probability,config,now)
++        if catalog[sku].get('kind')=='food' and type(catalog[sku].get('shelf_hours')) in (int,float):
++            hours=min(hours,max(0,catalog[sku]['shelf_hours']))
++        if not all(math.isfinite(v) and v>=0 for v in (base,rate,group_factor,hours)):continue
++        factor=rate/base if base>0 else None
++        if factor is not None:factors.append(factor)
++        rows[sku]={'rate_per_hour':rate,'raw_public_rate':base,'posterior_multiplier':factor,
++            'group_multiplier':group_factor,'weighted_paid':paid[sku],'weighted_exposure_hours':exposure[sku],
++            'proxy_exposure_fraction':proxy,'supply_success_scenario':probability,'coverage_hours':hours,
++            'supply_success_windows':successes,'supply_failed_windows':failures}
++    ordered=sorted(factors)
++    return {'schema':1,'revision':REVISION,'at':now,'expires_at':now+180,'skus':rows,
++        'summary':{'tracked_skus':len(rows),'calibration_multiplier_is_fixed':False,
++            'median_posterior_multiplier':ordered[len(ordered)//2] if ordered else None,
++            'observed_supply_access':access_facts,'default_supply_success_scenario':global_p,
++            'coverage_hours_default':coverage_hours(inv,global_p,config,now),
++            'rate_method':'leave-one-SKU-out group shrinkage, then time-decayed own positive payments/exposure',
++            'availability_limit':'Older exposure is physical-stock proxy; reachable telemetry improves future evidence.',
++            'uncertainty':'Conditional sales and geometric supply scenarios; not latent-demand identification.'}}
++
++
++def context(journal,config,now=None):
++    if not config.get('shop_adaptive_demand_enabled'):return None
++    now=time.time() if now is None else now
++    row=journal.get(KEY,{})
++    if (row.get('revision')!=REVISION or not 0<=now-row.get('at',0)<180 or now>=row.get('expires_at',0)
++            or row.get('rules_hash')!=journal.get('market_rules',{}).get('sha256')):return None
++    return row
++
++
++def update(journal,config,now=None):
++    if not config.get('shop_adaptive_demand_enabled'):return None
++    now=time.time() if now is None else now
++    old=context(journal,config,now)
++    if old and now-old['at']<60:return old
++    rules=journal.get('market_rules',{})
++    if (not rules.get('compatible') or not 0<=now-journal.get('public_feed_caught_up_at',0)<180
++            or not 0<=now-journal.get('board_checked_at',0)<180):return None
++    from .market_memory import market_book
++    catalog=journal.snapshot('catalog.json',{});inv=journal.snapshot('inventory.json',{})
++    row=fit(catalog,market_book(journal,catalog,now),journal.get('merchant_stock_timeline',[]),
++        journal.events('shop_settled',10000),journal.events('supply_execution_status',10000),
++        journal.snapshot('market_stock_counts.json',{}),inv,config,now)
++    row['rules_hash']=rules['sha256'];row['id']=identity(row)
++    journal.put(KEY,row);journal.add('shop_demand_calibrated',{'at':now,'id':row['id'],'summary':row['summary']})
++    return row
+--- a/r3/merchant.py
++++ b/r3/merchant.py
+@@ -18,11 +18,14 @@
+         return
+     counts = dict(Counter(u['sku'] for u in inv.get('units', []) if
+                           not u.get('expires_at') or u['expires_at'] > now))
++    health=journal.snapshot('shop-health.json',{})
++    reachable=(health.get('status')=='healthy' and health.get('market_board_alive') is True
++               and not health.get('pending_registration') and 0<=now-health.get('checked_at',0)<45)
+     history = journal.get('merchant_stock_timeline', [])
+-    if history and history[-1]['counts'] == counts and now-history[-1]['at'] < 30:
++    if history and history[-1]['counts'] == counts and history[-1].get('reachable')==reachable and now-history[-1]['at'] < 30:
+         return
+     history = [r for r in history if now-HORIZON <= r['at'] <= now]
+-    history.append({'at': now, 'counts': counts})
++    history.append({'at': now, 'counts': counts,'reachable':reachable})
+     journal.put('merchant_stock_timeline', history[-1024:])
+ 
+ 
+@@ -33,10 +36,14 @@
+         key for key, row in baskets.items() if sku in row['skus']]
+ 
+ 
+-def context(journal, catalog, now=None):
++def context(journal, catalog, now=None, config=None):
+     now = time.time() if now is None else now
++    config=config or {}
++    from .demand_policy import context as demand_context
++    adaptive=demand_context(journal,config,now)
++    demand_id=adaptive.get('id') if adaptive else 'uncalibrated-neutral' if config.get('shop_adaptive_demand_enabled') else None
+     cached = journal.get('merchant_context_v5', {})
+-    if 0 <= now-cached.get('at', -1000) < 30:
++    if 0 <= now-cached.get('at', -1000) < 30 and cached.get('demand_policy_id')==demand_id:
+         return cached
+     book = {s: dict(row, samples=row.get('external_samples', row['samples']))
+             for s,row in market_book(journal, catalog, now).items()}
+@@ -139,10 +146,19 @@
+                      'coverage_keys': keys,
+                      'competition_sellers_plus_us': competitors,
+                      'rate_note': 'equal-share prior x0.5, shrunk available-time requests; not a causal demand estimate'}
++        if config.get('shop_adaptive_demand_enabled'):
++            calibrated=(adaptive or {}).get('skus',{}).get(sku)
++            raw=public.get('samples',0)/6/competitors
++            fallback=((len(positive_paid[sku])+.25*raw)/(observed_hours+.25)
++                      if observed_hours>=2/60 else raw)
++            selected=calibrated['rate_per_hour'] if calibrated else fallback
++            rows[sku].update(arrival_rate_scenario=selected,paid_arrival_rate_scenario=selected,
++                demand_calibration=calibrated,
++                rate_note='data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable')
+     # Persist compact aggregates; never grow an unbounded stream of raw chats.
+     selected = sorted(rows, key=lambda s: (rows[s]['lost_exact_requests'], rows[s]['public'].get('samples', 0),
+                                            rows[s]['available_requests'], s), reverse=True)[:1500]
+-    result = {'at': now, 'skus': {s: rows[s] for s in selected}, 'coverage_weights': dict(weights),
++    result = {'at': now,'demand_policy_id':demand_id, 'skus': {s: rows[s] for s in selected}, 'coverage_weights': dict(weights),
+               'summary': {'tracked_skus': len(selected), 'observed_baskets': len(baskets),
+                           'top_unserved_categories': category_lost.most_common(10),
+                           'exposure_started_at': coverage_start,
+--- a/r3/economy.py
++++ b/r3/economy.py
+@@ -345,7 +345,7 @@
+     merchant = {}
+     if config.get('shop_growth_v5'):
+         from .merchant import context
+-        merchant = context(journal, catalog, now)
++        merchant = context(journal, catalog, now,config=config)
+     signals = {}
+     for e in journal.events("public_settle", 20000):
+         if e.get('buyer') == 'seochanit' or not 0 <= now-e['_ts'] <= 21600:
+@@ -394,15 +394,21 @@
+         growth = merchant.get('skus', {}).get(sku, {})
+         rate = (growth.get('arrival_rate_scenario', 0) if merchant else
+                 max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0)))
+-        trend=config.get('shop_sku_trend_factors',{}).get(sku,1) if config.get('objective_feedback_enabled') else 1
++        trend=config.get('shop_sku_trend_factors',{}).get(sku,1) if config.get('objective_feedback_enabled') and not config.get('shop_adaptive_demand_enabled') else 1
+         rate*=trend
+         if velocity:
+             from .shop_growth import target_stock
+             paid=growth.get('positive_paid_while_available',0)
+             if paid>=3:rate=max(.01,growth.get('paid_arrival_rate_scenario',rate/max(.01,trend))*trend)
+             public_qualified=config.get('objective_feedback_enabled') and sku in config.get('shop_public_demand_skus',[])
++            coverage=None
++            if config.get('shop_adaptive_demand_enabled'):
++                from .demand_policy import coverage_hours
++                probability=(growth.get('demand_calibration') or {}).get('supply_success_scenario',2/3)
++                coverage=coverage_hours(inv,probability,config,now)
++                if p.get('kind')=='food':coverage=min(coverage,p.get('shelf_hours') or coverage)
+             desired=target_stock(rate,paid,config,public_qualified=public_qualified,
+-                public_limit=config.get('shop_public_demand_caps',{}).get(sku,6))
++                public_limit=config.get('shop_public_demand_caps',{}).get(sku,6),coverage_hours=coverage)
+         else:
+             desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
+         needed=desired-count.get(sku,0)
+@@ -486,6 +492,7 @@
+                                         "adaptive_category_weight": weight}})
+         candidates[-1]['evidence'].update(kind=p.get('kind'), list_price=p['list_price'],
+                                            uncapped_inventory=not stock_caps_enabled(config),
++                                           adaptive_coverage_hours=coverage if velocity else None,
+                                            growth=growth, arrival_rate_scenario=rate,
+                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
+                                            resale_price_scenario=price,resale_terms_scenario=terms)
+--- a/r3/shop_growth.py
++++ b/r3/shop_growth.py
+@@ -39,10 +39,13 @@
+     return low
+ 
+ 
+-def target_stock(rate, paid, config, public_qualified=False, public_limit=6):
++def target_stock(rate, paid, config, public_qualified=False, public_limit=6,coverage_hours=None):
+     arrivals=max(0,rate)*config.get('supply_cycle_seconds',1200)/3600
+     supported=paid>=3 or public_qualified and config.get('objective_feedback_enabled')
+-    if supported and config.get('objective_feedback_enabled'):
++    if config.get('shop_adaptive_demand_enabled'):
++        hours=coverage_hours if type(coverage_hours) in (int,float) and math.isfinite(coverage_hours) and coverage_hours>0 else config.get('supply_cycle_seconds',1200)/3600
++        arrivals=max(0,rate)*hours
++    elif supported and config.get('objective_feedback_enabled'):
+         arrivals*=max(1,min(3 if paid>=3 else 2,config.get('shop_demand_horizon_cycles',1)))
+     # Proven repeat demand can use the legal 20-unit lot capacity. A raw
+     # request or peer announcement alone never qualifies as paid evidence.
+@@ -195,25 +198,29 @@
+     for sku,held in counts.items():
+         g=merchant.get('skus',{}).get(sku,{})
+         paid=g.get('positive_paid_while_available',0)
+-        trend=config.get('shop_sku_trend_factors',{}).get(sku,1)
++        trend=config.get('shop_sku_trend_factors',{}).get(sku,1) if not config.get('shop_adaptive_demand_enabled') else 1
+         rate=g.get('paid_arrival_rate_scenario',0) if paid>=3 else g.get('arrival_rate_scenario',0)
+         rate=max(.01,rate*trend) if paid>=3 else max(0,rate*trend)
+         public=sku in config.get('shop_public_demand_skus',[])
+-        target=target_stock(rate,paid,config,public,config.get('shop_public_demand_caps',{}).get(sku,6))
++        calibration=g.get('demand_calibration') or {}
++        coverage=calibration.get('coverage_hours')
++        target=target_stock(rate,paid,config,public,config.get('shop_public_demand_caps',{}).get(sku,6),coverage_hours=coverage)
+         low+=target<=2;repeat+=paid>=3;shortfall+=max(0,target-held)
+         rows.append({'sku':sku,'held':held,'target_scenario':target,'rate_per_hour_scenario':rate,
+             'rate_source':'own_positive_paid' if paid>=3 else 'public_prior_or_request_conversion',
+             'own_positive_paid':paid,'public_qualified':public,
+             'observed_availability_hours':g.get('available_hours_observed'),
++            'adaptive_calibration':calibration,
+             'lost_exact_requests_not_directly_added_to_rate':g.get('lost_exact_requests',0)})
+     return {'inventory_unit_caps_enabled':stock_caps_enabled(config),
+         'total_unit_ceiling':inventory_limit(config),'held_skus':len(counts),
+         'held_skus_target_at_most_two':low,'held_skus_with_repeat_paid_evidence':repeat,
+         'target_shortfall_units_scenario':shortfall,'merchant_context_at':merchant.get('at'),
+         'supply_cycle_seconds':config.get('supply_cycle_seconds',1200),
+-        'repeat_coverage_cycles':max(1,min(3,config.get('shop_demand_horizon_cycles',1))),
+-        'public_only_coverage_cycles':max(1,min(2,config.get('shop_demand_horizon_cycles',1))),
+-        'public_equal_share_prior_multiplier':.5,
++        'repeat_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') else max(1,min(3,config.get('shop_demand_horizon_cycles',1))),
++        'public_only_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') else max(1,min(2,config.get('shop_demand_horizon_cycles',1))),
++        'public_equal_share_prior_multiplier':'data-derived' if config.get('shop_adaptive_demand_enabled') else .5,
++        'demand_policy_id':merchant.get('demand_policy_id'),
+         'examples':sorted(rows,key=lambda r:r['target_scenario']-r['held'],reverse=True)[:4],
+         'interpretation':'Low rate/coverage can retain small targets without a unit cap. Prior and Poisson arrivals are scenarios, not identified hidden demand. Lost requests require feasibility attribution before adding demand.'}
+ 
+--- a/r3/control.py
++++ b/r3/control.py
+@@ -62,7 +62,7 @@
+         return {'status': 'waiting_for_round3'}
+     catalog = journal.snapshot('catalog.json', {})
+     from .merchant import context
+-    market = context(journal, catalog, now)
++    market = context(journal, catalog, now,config=cfg)
+     own = next((r for r in board.get('shops', []) if r.get('name')=='seochanit'), {})
+     buyer = next((r for r in board.get('buyers', []) if r.get('name')=='seochanit'), {})
+     current_book = book_row(own)
+--- a/r3/adapter.py
++++ b/r3/adapter.py
+@@ -335,7 +335,7 @@
+         if cfg.get('shop_growth_v5'):
+             try:
+                 from .merchant import context
+-                context(j, j.snapshot('catalog.json', {}))
++                context(j, j.snapshot('catalog.json', {}),config=cfg)
+             except Exception as exc:
+                 j.add('merchant_context_error', {'error_type': type(exc).__name__})
+         if cfg.get('autonomy_v14_enabled'):
+--- a/r3/cycle.py
++++ b/r3/cycle.py
+@@ -67,6 +67,9 @@
+         if now-self.last_analysis>=60:
+             self.last_analysis=now
+             roles={'market_observer':lambda:analytics(self.j,time.time())}
++            if self.cfg.get('shop_adaptive_demand_enabled'):
++                from .demand_policy import update as demand_update
++                roles['shop_demand_observer']=lambda:demand_update(self.j,self.cfg,time.time())
+             if self.cfg.get('objective_decision_enabled'):
+                 from .objective_context import observe_forum
+                 roles['forum_objective_observer']=lambda:observe_forum(self.j,time.time())
+--- a/r3/prewindow.py
++++ b/r3/prewindow.py
+@@ -35,9 +35,13 @@
+             or not opens - 310 <= now < closes - 20):
+         return None
+     old = journal.snapshot('shop-plan-v15.json', {})
++    from .demand_policy import context as demand_context
++    demand=demand_context(journal,config,now)
++    demand_id=demand.get('id') if demand else None
+     phase = 'early' if now < opens - 90 else 'checked' if now < opens - 15 else 'ready'
+     if (old.get('window') == [opens, closes] and old.get('phase') == phase
+-            and old.get('policy_hash') == config_hash(config) and 0 <= now - old.get('at', 0) < 45):
++            and old.get('policy_hash') == config_hash(config) and old.get('demand_policy_id')==demand_id
++            and 0 <= now - old.get('at', 0) < 45):
+         return old
+     from .economy import restock_candidates, cash_capacity
+     from .model import Chooser
+@@ -58,7 +62,7 @@
+     summaries = [{k: c.get(k) for k in ('id', 'buy', 'score', 'capital_commitment', 'expected_delta', 'objective_utility')}
+                  for c in options]
+     packet = {'schema': 1, 'at': now, 'expires_at': closes - 15, 'window': [opens, closes], 'phase': phase,
+-              'rules_hash': rules['sha256'], 'policy_hash': config_hash(config), 'strategy_version': strategy['version'],
++              'rules_hash': rules['sha256'], 'policy_hash': config_hash(config),'demand_policy_id':demand_id, 'strategy_version': strategy['version'],
+               'selected': chosen['id'], 'options': summaries,
+               'held': dict(Counter(u['sku'] for u in virtual['units'])),
+               'unit_commitments': {c['sku']: c['capital_commitment'] / c['qty'] for c in candidates},
+@@ -84,10 +88,14 @@
+     if packet.get('checksum') != identity({k:v for k,v in packet.items() if k!='checksum'}):
+         return None
+     window = inv.get('restock') or {}
++    from .demand_policy import context as demand_context
++    demand=demand_context(journal,config,now)
++    demand_id=demand.get('id') if demand else None
+     if (not supply_open(inv, now) or packet.get('schema') != 1
+             or packet.get('window') != [window.get('opens_at'), window.get('closes_at')]
+             or packet.get('rules_hash') != journal.get('market_rules', {}).get('sha256')
+             or packet.get('policy_hash') != config_hash(config)
++            or packet.get('demand_policy_id')!=demand_id
+             or packet.get('strategy_version') != strategy['version']
+             or not 0 <= now - packet.get('at', 0) <= 90 or now >= packet.get('expires_at', 0)):
+         return None
+--- a/r3/research.py
++++ b/r3/research.py
+@@ -180,6 +180,12 @@
+             'Quantity follows finite demand quantiles, marginal Book, available cash, storage/refund reserves '
+             'and executable supply time. Probe-unit probability decreases with existing inventory and depth. '
+             'Distinguish estimated low demand from a quantity ceiling; do not request buying just to fill space.')
++    if config.get('shop_adaptive_demand_enabled'):
++        instructions+=(' Shop demand now uses an evidence-derived posterior multiplier, not a fixed 0.5. '
++            'The protection period uses observed attempted supply-window reliability and current time to supply, '
++            'limited by evaluated economics and shelf life, not fixed 1/2/3 cycle ceilings. Legacy cover_cycles '
++            'has no horizon authority in this mode. Inspect demand_diagnostics and calibration quality before '
++            'approving operating intents. Physical-availability proxy and geometric supply assumptions remain uncertain.')
+     from .objective_context import curate
+     try:
+         facts, compacted = curate(facts)
+@@ -334,7 +340,7 @@
+     facts={'observed_at':now,'market':market,'control':{k:control.get(k) for k in ('status','reasons','leader_gap','suggestions')},
+            'framework':{k:framework.get(k) for k in ('issues','evaluation','segments')},
+            'supply_plan':{k:plan.get(k) for k in ('window','phase','selected','options')},
+-           'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level','shop_inventory_caps_enabled')},
++           'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level','shop_inventory_caps_enabled','shop_adaptive_demand_enabled')},
+            'meta':journal.get('cycle-meta-state',{}),
+            'evidence_ids':evidence}
+     if capability_brief:
+--- a/r3/objective_context.py
++++ b/r3/objective_context.py
+@@ -169,6 +169,10 @@
+     unreserved = sum(u.get('unit') not in reserved for u in units)
+     from .shop_growth import demand_diagnostics
+     diagnostic=demand_diagnostics(dict(inv,units=units),shadow.get('merchant_context_v5',{}),cfg)
++    if config.get('shop_adaptive_demand_enabled'):
++        from .demand_policy import context as demand_context
++        learned=demand_context(journal,config,now)
++        diagnostic['calibration_summary']=(learned or {}).get('summary',{'status':'no_fresh_calibration_neutral_prior'})
+     return {'at':now, 'rules_hash':journal.get('market_rules',{}).get('sha256'),
+         'physical_live_units':len(units),'unreserved_live_units':unreserved,'inventory_ceiling':inventory_limit(cfg),
+         'food_under_2h_units':sum(u.get('kind')=='food' and remaining(u,now)<2 for u in units),
+--- a/policy.json
++++ b/policy.json
+@@ -116,7 +116,7 @@
+   "buyer_contract_probe_percent": 8,
+   "autonomy_v14_enabled": true,
+   "buyer_worker_enabled": true,
+-  "execution_revision": "v20-demand-without-held-unit-caps-1",
++  "execution_revision": "v21-adaptive-shop-demand-and-replenishment-1",
+   "objective_feedback_enabled": true,
+   "agent_policy_selection_enabled": true,
+   "discovery_priority_enabled": true,
+@@ -151,5 +151,11 @@
+       "response_mode": "function"
+     }
+   },
+-  "shop_inventory_caps_enabled": false
++  "shop_inventory_caps_enabled": false,
++  "shop_adaptive_demand_enabled": true,
++  "shop_demand_half_life_hours": 1,
++  "shop_demand_calibration_prior_events": 5,
++  "shop_demand_prior_hours": 0.25,
++  "shop_replenishment_service_level": 0.9,
++  "shop_supply_delivery_seconds": 30
+ }
+--- a/verify_market_cycle_live.py
++++ b/verify_market_cycle_live.py
+@@ -46,7 +46,7 @@
+     try:
+         with lease(ROOT/'.market/shop-recovery-guard.lock'):guard_active=False
+     except RuntimeError:guard_active=True
+-    release='v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
++    release='v21' if cfg.get('shop_adaptive_demand_enabled') else 'v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
+     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
+     manifest=read_json(promotion,{})
+     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]
+--- a/tests/test_adaptive_demand.py
++++ b/tests/test_adaptive_demand.py
+@@ -0,0 +1,98 @@
++import copy
++import math
++import time
++from r3.state import policy,atomic_json
++from r3 import demand_policy,merchant,prewindow
++from r3.shop_growth import target_stock
++from test_market_cycle import fixture
++
++
++def data(now):
++    catalog={'G1':{'kind':'food','category':'fruit','shelf_hours':24,'list_price':1000},
++             'G2':{'kind':'food','category':'fruit','shelf_hours':24,'list_price':1000},
++             'G3':{'kind':'food','category':'fruit','shelf_hours':24,'list_price':1000}}
++    public={s:{'external_samples':60,'samples':60,'sellers':1} for s in catalog}
++    timeline=[{'at':now-60*i,'counts':{'G1':1,'G2':1,'G3':1},'reachable':True} for i in reversed(range(1,61))]
++    sales=[{'unit':'u'+str(i),'sku':'G1','paid_at':now-20-i*100,'price':900,'cost':500} for i in range(12)]
++    return catalog,public,timeline,sales
++
++
++def fit(now,sales=None,timeline=None,supply=None):
++    c,p,t,s=data(now)
++    return demand_policy.fit(c,p,t if timeline is None else timeline,s if sales is None else sales,
++        supply or [],{}, {'restock':{'opens_at':now+1200}},policy(),now)
++
++
++def test_posterior_changes_with_observed_payments_instead_of_fixed_half():
++    now=time.time();a=fit(now);b=fit(now,sales=[])
++    assert a['summary']['calibration_multiplier_is_fixed'] is False
++    assert a['skus']['G1']['rate_per_hour']>b['skus']['G1']['rate_per_hour']
++    assert a['skus']['G1']['posterior_multiplier']!=.5
++    assert all(math.isfinite(r['rate_per_hour']) and r['rate_per_hour']>=0 for r in a['skus'].values())
++
++
++def test_cold_start_is_neutral_without_inventing_observed_demand():
++    now=time.time();a=fit(now,sales=[],timeline=[])
++    assert a['skus']['G1']['posterior_multiplier']==1
++    assert a['skus']['G1']['weighted_paid']==0 and a['skus']['G1']['weighted_exposure_hours']==0
++
++
++def test_known_offline_exposure_and_future_sales_do_not_train_rates():
++    now=time.time();c,p,t,s=data(now)
++    for row in t:row['reachable']=False
++    a=demand_policy.fit(c,p,t,s,[],{}, {},policy(),now)
++    assert a['skus']['G1']['weighted_paid']==0 and a['skus']['G1']['weighted_exposure_hours']==0
++    x=fit(now);s.append({'unit':'future','sku':'G1','paid_at':now+5,'price':900,'cost':500})
++    y=demand_policy.fit(c,p,data(now)[2],s,[],{}, {'restock':{'opens_at':now+1200}},policy(),now)
++    assert x['skus']['G1']['rate_per_hour']==y['skus']['G1']['rate_per_hour']
++
++
++def test_duplicate_units_are_not_double_paid_evidence():
++    now=time.time();s=data(now)[3]
++    a=fit(now,sales=s);b=fit(now,sales=s+s)
++    assert a['skus']['G1']['weighted_paid']==b['skus']['G1']['weighted_paid']
++
++
++def test_supply_failures_are_window_scoped_and_uncertainty_is_not_failure():
++    now=time.time();w=now-1200
++    events=[{'window':w,'sku':'G1','status':'retryable','_ts':w+10},
++            {'window':w,'sku':'G1','status':'complete','_ts':w+20},
++            {'window':w-1200,'sku':'G1','status':'uncertain','_ts':w-1100}]
++    p,own,facts=demand_policy.supply_access(events,now)
++    assert own['G1']==(1,0) and facts['failed_attempted_windows']==0
++    assert p>.66
++
++
++def test_measured_supply_risk_can_extend_coverage_beyond_old_hour_ceiling():
++    now=time.time();cfg=policy();inv={'restock':{'opens_at':now+1200}}
++    reliable=demand_policy.coverage_hours(inv,.95,cfg,now)
++    unreliable=demand_policy.coverage_hours(inv,.25,cfg,now)
++    assert reliable<1 and unreliable>1
++    assert target_stock(8,10,cfg,coverage_hours=unreliable)>target_stock(8,10,cfg,coverage_hours=reliable)
++    assert unreliable<=cfg['planning_horizon_hours']
++
++
++def test_background_policy_expires_and_rebinds_to_rules(tmp_path):
++    j,cfg,now=fixture(tmp_path);cfg=dict(cfg,shop_adaptive_demand_enabled=True)
++    j.put('board_checked_at',now);j.put('public_feed_caught_up_at',now)
++    j.put('merchant_stock_timeline',data(now)[2])
++    packet=demand_policy.update(j,cfg,now)
++    assert packet and demand_policy.context(j,cfg,now)['id']==packet['id']
++    assert demand_policy.context(j,cfg,now+181) is None
++    j.put('market_rules',{'sha256':'other'})
++    assert demand_policy.context(j,cfg,now) is None
++
++
++def test_merchant_and_prepared_plan_use_same_fresh_calibration_generation(tmp_path):
++    j,cfg,now=fixture(tmp_path);cfg=dict(cfg,shop_adaptive_demand_enabled=True)
++    j.put('board_checked_at',now);j.put('public_feed_caught_up_at',now)
++    packet=demand_policy.update(j,cfg,now)
++    m=merchant.context(j,j.snapshot('catalog.json'),now,config=cfg)
++    assert m['demand_policy_id']==packet['id']
++    row=m['skus']['G111'];assert row['arrival_rate_scenario']==packet['skus']['G111']['rate_per_hour']
++    inv=j.snapshot('inventory.json');inv['restock']={'open':True,'opens_at':now-1,'closes_at':now+180}
++    atomic_json(j.md/'inventory.json',inv)
++    p=prewindow.prepare(j,cfg,{'version':1},now)
++    assert p['demand_policy_id']==packet['id']
++    changed=copy.deepcopy(packet);changed['id']='new-generation';j.put(demand_policy.KEY,changed)
++    assert prewindow.consume(j,cfg,{'version':1},inv,now) is None
+--- a/tests/test_market_cycle.py
++++ b/tests/test_market_cycle.py
+@@ -12,7 +12,7 @@
+ 
+ def fixture(tmp_path):
+     now=time.time(); j=Journal(tmp_path); cfg=policy()
+-    cfg=dict(cfg,market_cycle_enabled=True,research_enabled=True,daily_api_budget_usd=5)
++    cfg=dict(cfg,market_cycle_enabled=True,research_enabled=True,daily_api_budget_usd=5,shop_adaptive_demand_enabled=False)
+     j.put('market_rules',{'sha256':'official','compatible':True,'buyer_compatible':True})
+     j.put('public_feed_caught_up_at',now);j.put('public_ledger_seq',100)
+     j.put('market_control',{'at':now,'pause_restock':False,'status':'observe_and_trade'})
+--- a/tests/test_objective_feedback.py
++++ b/tests/test_objective_feedback.py
+@@ -8,7 +8,7 @@
+ 
+ 
+ def market(tmp_path):
+-    now=time.time();j=Journal(tmp_path);cfg=dict(policy(),objective_feedback_enabled=True,shop_inventory_caps_enabled=True)
++    now=time.time();j=Journal(tmp_path);cfg=dict(policy(),objective_feedback_enabled=True,shop_inventory_caps_enabled=True,shop_adaptive_demand_enabled=False)
+     j.put('market_rules',{'sha256':'rules','compatible':True,'buyer_compatible':True})
+     j.put('board_checked_at',now);j.put('public_feed_caught_up_at',now)
+     atomic_json(j.md/'board.json',{'round':3,'shops':[
+--- a/tests/test_all_objective.py
++++ b/tests/test_all_objective.py
+@@ -96,7 +96,7 @@
+     assert {'G1', 'G3'} <= {c['sku'] for c in candidates}  # Same category need not exclude another SKU.
+     capacity = cash_capacity(inv, j, policy(), now)
+     assert sum(c['capital_commitment'] for c in candidates) <= capacity['spendable']
+-    assert all(c['capital_commitment'] <= .15 * inv['balance'] for c in candidates)
++    assert all(c['capital_commitment'] <= policy()['max_sku_capital_fraction'] * inv['balance'] for c in candidates)
+     assert all(c['evidence']['expected_holding_hours'] < capacity['remaining_days'] * 24 for c in candidates)
+ 
+ 

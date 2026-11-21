@@ -1,0 +1,365 @@
+09:15:16 [kit] market_kit 4, C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08
+09:15:22 [tunnel] https://ours-bone-equal-meetup.trycloudflare.com, waiting until it answers
+09:16:23 [shop] your seller on port 63864; others reach it through the kit at https://ours-bone-equal-meetup.trycloudflare.com
+09:16:26 [market] shop registered as seochanit, round 3
+09:16:27 [market] buyer registered as seochanit, round 3
+09:16:27 [order o-88ac85a51781] 김치, budget 22450, round 3
+09:16:39 [buyer] {"shop": "https://ax-week07.treasuresky.xyz", "receipt": {"sig_seller": "GtaJ8r4oRaQOTlcEFEKpq7lUELzXrSL92s5vxsv2VDMztC7HjAsyxCBCd9Hk6P0oyWI+6JcAyvAlhYZCLmbvAg==", "task": "6b2a1409-3bc5-4a1d-9503-4b216e217b46", "price": 12716, "shop": "Sungjin Shop", "item": "G7e48d0d9", "claim": "B", "unit": "u-b57d9fb85df0"}, "stars": 3, "review": "Pending checkout; settled quality will determine review.", "accept": {"cert": true, "expected_sku": "G7e48d0d9", "min_hours_left": 84.00833333333334, "grades": ["B"]}}
+09:16:41 [acp] checkout ships unit u-b57d9fb85df0, claim B, certificate attached
+09:16:42 [acp] paid 12716 through https://ax-week07.treasuresky.xyz/acp, settled at ledger #7159748: 홍진경 더김치 백김치 3kg, grade B, 90.4 h of shelf life left
+09:16:44 [market] ledger #7159760: verified True; result submitted once
+09:16:47 [order o-596883fa814a] 김치, budget 50270, round 3
+09:16:58 [buyer] {"buy": [], "bankrupt": false}
+09:16:59 [acp] settled [더싱싱] 총각김치/알타리김치 2kg / 익을수록 시원한 감칠맛 at 6837, ledger #7159828, unit u-e4f5cc36e459 grade C
+09:17:22 [control] {"status": "defensive", "book": 811461658, "leader_gap": 0.24399999999999988, "reasons": ["ledger_lag_or_unverified", "transport_unhealthy"], "suggestions": [{"role": "shop", "field": "assortment_coverage_fraction", "direction": 1, "reason": "observed unserved external requests"}]}
+09:17:23 [market] ledger #7159940: verified False; result submitted once
+09:17:23 [order o-3fd18b847915] 주스/코코아/생수, budget 16900, round 3
+09:17:55 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+09:17:56 [market] ledger #7160107: verified False; result submitted once
+09:17:56 [order o-edfaa45dd10a] 김치, budget 72370, round 3
+09:18:23 [seller] Producer[f8fb0603-cf12-4d47-bb37-45586c44efe0]: Execution failed
+09:18:23 [seller] Traceback (most recent call last):
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+09:18:23 [seller]     await self._agent_executor.execute(
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 118, in execute
+09:18:23 [seller]     await self._execute(task, context, event_queue)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 139, in _execute
+09:18:23 [seller]     unit = await self.reserve_unit(text, task.id)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 123, in reserve_unit
+09:18:23 [seller]     return await asyncio.shield(pending)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\asyncio\threads.py", line 25, in to_thread
+09:18:23 [seller]     return await loop.run_in_executor(None, func_call)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\thread.py", line 58, in run
+09:18:23 [seller]     result = self.fn(*self.args, **self.kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 98, in select_unit
+09:18:23 [seller]     if spec:record(self.j,task,dict(spec,sku=u['sku']),u)
+09:18:23 [seller]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\service_contracts.py", line 71, in record
+09:18:23 [seller]     journal.add('shop_service_need',row,eid='shop-need:'+identity({k:v for k,v in row.items() if k not in ('remaining_hours','grade')}),role='shop',ts=now)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\state.py", line 85, in add
+09:18:23 [seller]     cur = c.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)",
+09:18:23 [seller]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller] sqlite3.OperationalError: database is locked
+09:18:23 [seller] Consumer[f8fb0603-cf12-4d47-bb37-45586c44efe0]: Failed
+09:18:23 [seller] Traceback (most recent call last):
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+09:18:23 [seller]     await self._process_event(event)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+09:18:23 [seller]     await self._process_event_inner(event)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+09:18:23 [seller]     raise event
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+09:18:23 [seller]     await self._agent_executor.execute(
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 118, in execute
+09:18:23 [seller]     await self._execute(task, context, event_queue)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 139, in _execute
+09:18:23 [seller]     unit = await self.reserve_unit(text, task.id)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 123, in reserve_unit
+09:18:23 [seller]     return await asyncio.shield(pending)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\asyncio\threads.py", line 25, in to_thread
+09:18:23 [seller]     return await loop.run_in_executor(None, func_call)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\thread.py", line 58, in run
+09:18:23 [seller]     result = self.fn(*self.args, **self.kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 98, in select_unit
+09:18:23 [seller]     if spec:record(self.j,task,dict(spec,sku=u['sku']),u)
+09:18:23 [seller]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\service_contracts.py", line 71, in record
+09:18:23 [seller]     journal.add('shop_service_need',row,eid='shop-need:'+identity({k:v for k,v in row.items() if k not in ('remaining_hours','grade')}),role='shop',ts=now)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\state.py", line 85, in add
+09:18:23 [seller]     cur = c.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)",
+09:18:23 [seller]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller] sqlite3.OperationalError: database is locked
+09:18:23 [seller] Unhandled exception
+09:18:23 [seller] Traceback (most recent call last):
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+09:18:23 [seller]     raw_result = await self._process_non_streaming_request(
+09:18:23 [seller]                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+09:18:23 [seller]     result = await func(*args, **kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+09:18:23 [seller]     return await func(*args, **kwargs)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+09:18:23 [seller]     return await self._handle_send_message(request_obj, context)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+09:18:23 [seller]     result = await func(*args, **kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+09:18:23 [seller]     task_or_message = await self.request_handler.on_message_send(
+09:18:23 [seller]                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+09:18:23 [seller]     result = await func(*args, **kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+09:18:23 [seller]     return await method(self, params, context, *args, **kwargs)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+09:18:23 [seller]     async for raw_event in active_task.subscribe(
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+09:18:23 [seller]     raise event
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+09:18:23 [seller]     await self._process_event(event)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+09:18:23 [seller]     await self._process_event_inner(event)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+09:18:23 [seller]     raise event
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+09:18:23 [seller]     await self._agent_executor.execute(
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 118, in execute
+09:18:23 [seller]     await self._execute(task, context, event_queue)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 139, in _execute
+09:18:23 [seller]     unit = await self.reserve_unit(text, task.id)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 123, in reserve_unit
+09:18:23 [seller]     return await asyncio.shield(pending)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\asyncio\threads.py", line 25, in to_thread
+09:18:23 [seller]     return await loop.run_in_executor(None, func_call)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\thread.py", line 58, in run
+09:18:23 [seller]     result = self.fn(*self.args, **self.kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 98, in select_unit
+09:18:23 [seller]     if spec:record(self.j,task,dict(spec,sku=u['sku']),u)
+09:18:23 [seller]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\service_contracts.py", line 71, in record
+09:18:23 [seller]     journal.add('shop_service_need',row,eid='shop-need:'+identity({k:v for k,v in row.items() if k not in ('remaining_hours','grade')}),role='shop',ts=now)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\state.py", line 85, in add
+09:18:23 [seller]     cur = c.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)",
+09:18:23 [seller]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller] sqlite3.OperationalError: database is locked
+09:18:23 [seller] Request Error (ID: 3871d50e-6c61-40b5-83ec-81fad2631660): Code=-32603, Message='database is locked'
+09:18:23 [seller] Dispatcher task was cancelled or finished. Events may be lost.
+09:18:23 [seller] Producer[88dc189b-963c-4307-a474-a987b0a32781]: Execution failed
+09:18:23 [seller] Traceback (most recent call last):
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+09:18:23 [seller]     await self._agent_executor.execute(
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 118, in execute
+09:18:23 [seller]     await self._execute(task, context, event_queue)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 229, in _execute
+09:18:23 [seller]     selected = await asyncio.to_thread(self.chooser.choose, "shop", candidates,
+09:18:23 [seller]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\asyncio\threads.py", line 25, in to_thread
+09:18:23 [seller]     return await loop.run_in_executor(None, func_call)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\thread.py", line 58, in run
+09:18:23 [seller]     result = self.fn(*self.args, **self.kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\model.py", line 150, in choose
+09:18:23 [seller]     self.j.add("prediction", {"decision": decision_id, "role": role, "candidates": candidates,
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\state.py", line 85, in add
+09:18:23 [seller]     cur = c.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)",
+09:18:23 [seller]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller] sqlite3.OperationalError: database is locked
+09:18:23 [seller] Consumer[88dc189b-963c-4307-a474-a987b0a32781]: Failed
+09:18:23 [seller] Traceback (most recent call last):
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+09:18:23 [seller]     await self._process_event(event)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+09:18:23 [seller]     await self._process_event_inner(event)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+09:18:23 [seller]     raise event
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+09:18:23 [seller]     await self._agent_executor.execute(
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 118, in execute
+09:18:23 [seller]     await self._execute(task, context, event_queue)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 229, in _execute
+09:18:23 [seller]     selected = await asyncio.to_thread(self.chooser.choose, "shop", candidates,
+09:18:23 [seller]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\asyncio\threads.py", line 25, in to_thread
+09:18:23 [seller]     return await loop.run_in_executor(None, func_call)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\thread.py", line 58, in run
+09:18:23 [seller]     result = self.fn(*self.args, **self.kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\model.py", line 150, in choose
+09:18:23 [seller]     self.j.add("prediction", {"decision": decision_id, "role": role, "candidates": candidates,
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\state.py", line 85, in add
+09:18:23 [seller]     cur = c.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)",
+09:18:23 [seller]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller] sqlite3.OperationalError: database is locked
+09:18:23 [seller] Unhandled exception
+09:18:23 [seller] Traceback (most recent call last):
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+09:18:23 [seller]     raw_result = await self._process_non_streaming_request(
+09:18:23 [seller]                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+09:18:23 [seller]     result = await func(*args, **kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+09:18:23 [seller]     return await func(*args, **kwargs)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+09:18:23 [seller]     return await self._handle_send_message(request_obj, context)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+09:18:23 [seller]     result = await func(*args, **kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+09:18:23 [seller]     task_or_message = await self.request_handler.on_message_send(
+09:18:23 [seller]                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+09:18:23 [seller]     result = await func(*args, **kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+09:18:23 [seller]     return await method(self, params, context, *args, **kwargs)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+09:18:23 [seller]     async for raw_event in active_task.subscribe(
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+09:18:23 [seller]     raise event
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+09:18:23 [seller]     await self._process_event(event)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+09:18:23 [seller]     await self._process_event_inner(event)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+09:18:23 [seller]     raise event
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+09:18:23 [seller]     await self._agent_executor.execute(
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 118, in execute
+09:18:23 [seller]     await self._execute(task, context, event_queue)
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 229, in _execute
+09:18:23 [seller]     selected = await asyncio.to_thread(self.chooser.choose, "shop", candidates,
+09:18:23 [seller]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\asyncio\threads.py", line 25, in to_thread
+09:18:23 [seller]     return await loop.run_in_executor(None, func_call)
+09:18:23 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\thread.py", line 58, in run
+09:18:23 [seller]     result = self.fn(*self.args, **self.kwargs)
+09:18:23 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\model.py", line 150, in choose
+09:18:23 [seller]     self.j.add("prediction", {"decision": decision_id, "role": role, "candidates": candidates,
+09:18:23 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\state.py", line 85, in add
+09:18:23 [seller]     cur = c.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)",
+09:18:23 [seller]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:18:23 [seller] sqlite3.OperationalError: database is locked
+09:18:23 [seller] Request Error (ID: 1d223d73-f5ca-4eac-99ea-401c90eeb7dd): Code=-32603, Message='database is locked'
+09:18:23 [seller] Dispatcher task was cancelled or finished. Events may be lost.
+09:18:34 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+09:18:37 [buyer] {"buy": [], "bankrupt": false}
+09:18:37 [market] ledger #7160278: verified False; result submitted once
+09:18:38 [order o-e3287a40488b] 주스/코코아/생수, budget 30250, round 3
+09:18:55 [control] {"status": "observe_and_trade", "book": 811462656, "leader_gap": 0.24399999999999988, "reasons": [], "suggestions": [{"role": "shop", "field": "assortment_coverage_fraction", "direction": 1, "reason": "observed unserved external requests"}]}
+09:19:13 [market] ledger #7160397: verified False; result submitted once
+09:19:14 [order o-43ceae3657a5] 주스/코코아/생수, budget 11150, round 3
+09:19:33 [seller] Producer[69c8a5fb-2886-489d-9a8c-9a155cf48fc3]: Execution failed
+09:19:33 [seller] Traceback (most recent call last):
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+09:19:33 [seller]     await self._agent_executor.execute(
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 118, in execute
+09:19:33 [seller]     await self._execute(task, context, event_queue)
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 229, in _execute
+09:19:33 [seller]     selected = await asyncio.to_thread(self.chooser.choose, "shop", candidates,
+09:19:33 [seller]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\asyncio\threads.py", line 25, in to_thread
+09:19:33 [seller]     return await loop.run_in_executor(None, func_call)
+09:19:33 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\thread.py", line 58, in run
+09:19:33 [seller]     result = self.fn(*self.args, **self.kwargs)
+09:19:33 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\model.py", line 150, in choose
+09:19:33 [seller]     self.j.add("prediction", {"decision": decision_id, "role": role, "candidates": candidates,
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\state.py", line 85, in add
+09:19:33 [seller]     cur = c.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)",
+09:19:33 [seller]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller] sqlite3.OperationalError: database is locked
+09:19:33 [seller] Consumer[69c8a5fb-2886-489d-9a8c-9a155cf48fc3]: Failed
+09:19:33 [seller] Traceback (most recent call last):
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+09:19:33 [seller]     await self._process_event(event)
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+09:19:33 [seller]     await self._process_event_inner(event)
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+09:19:33 [seller]     raise event
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+09:19:33 [seller]     await self._agent_executor.execute(
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 118, in execute
+09:19:33 [seller]     await self._execute(task, context, event_queue)
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 229, in _execute
+09:19:33 [seller]     selected = await asyncio.to_thread(self.chooser.choose, "shop", candidates,
+09:19:33 [seller]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\asyncio\threads.py", line 25, in to_thread
+09:19:33 [seller]     return await loop.run_in_executor(None, func_call)
+09:19:33 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\thread.py", line 58, in run
+09:19:33 [seller]     result = self.fn(*self.args, **self.kwargs)
+09:19:33 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\model.py", line 150, in choose
+09:19:33 [seller]     self.j.add("prediction", {"decision": decision_id, "role": role, "candidates": candidates,
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\state.py", line 85, in add
+09:19:33 [seller]     cur = c.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)",
+09:19:33 [seller]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller] sqlite3.OperationalError: database is locked
+09:19:33 [seller] Unhandled exception
+09:19:33 [seller] Traceback (most recent call last):
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 325, in handle_requests
+09:19:33 [seller]     raw_result = await self._process_non_streaming_request(
+09:19:33 [seller]                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+09:19:33 [seller]     result = await func(*args, **kwargs)
+09:19:33 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\version_validator.py", line 126, in async_wrapper
+09:19:33 [seller]     return await func(*args, **kwargs)
+09:19:33 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 522, in _process_non_streaming_request
+09:19:33 [seller]     return await self._handle_send_message(request_obj, context)
+09:19:33 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+09:19:33 [seller]     result = await func(*args, **kwargs)
+09:19:33 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\routes\jsonrpc_dispatcher.py", line 414, in _handle_send_message
+09:19:33 [seller]     task_or_message = await self.request_handler.on_message_send(
+09:19:33 [seller]                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:33 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+09:19:34 [seller]     result = await func(*args, **kwargs)
+09:19:34 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:34 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\request_handlers\request_handler.py", line 285, in async_wrapper
+09:19:34 [seller]     return await method(self, params, context, *args, **kwargs)
+09:19:34 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:34 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\request_handlers\default_request_handler_v2.py", line 399, in on_message_send
+09:19:34 [seller]     async for raw_event in active_task.subscribe(
+09:19:34 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 739, in subscribe
+09:19:34 [seller]     raise event
+09:19:34 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 136, in run
+09:19:34 [seller]     await self._process_event(event)
+09:19:34 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 179, in _process_event
+09:19:34 [seller]     await self._process_event_inner(event)
+09:19:34 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 221, in _process_event_inner
+09:19:34 [seller]     raise event
+09:19:34 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\.venv\Lib\site-packages\a2a\server\agent_execution\active_task.py", line 610, in _run_producer
+09:19:34 [seller]     await self._agent_executor.execute(
+09:19:34 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 118, in execute
+09:19:34 [seller]     await self._execute(task, context, event_queue)
+09:19:34 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\seller_r3.py", line 229, in _execute
+09:19:34 [seller]     selected = await asyncio.to_thread(self.chooser.choose, "shop", candidates,
+09:19:34 [seller]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:34 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\asyncio\threads.py", line 25, in to_thread
+09:19:34 [seller]     return await loop.run_in_executor(None, func_call)
+09:19:34 [seller]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:34 [seller]   File "C:\Users\kenjin\AppData\Local\Programs\Python\Python311\Lib\concurrent\futures\thread.py", line 58, in run
+09:19:34 [seller]     result = self.fn(*self.args, **self.kwargs)
+09:19:34 [seller]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:34 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\model.py", line 150, in choose
+09:19:34 [seller]     self.j.add("prediction", {"decision": decision_id, "role": role, "candidates": candidates,
+09:19:34 [seller]   File "C:\Users\kenjin\ai-agent-engineering-101\submissions\26510121\week-08\r3\state.py", line 85, in add
+09:19:34 [seller]     cur = c.execute("INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)",
+09:19:34 [seller]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+09:19:34 [seller] sqlite3.OperationalError: database is locked
+09:19:34 [seller] Request Error (ID: b6587a83-9145-4f36-8ea0-7f8d9c00c7d0): Code=-32603, Message='database is locked'
+09:19:34 [seller] Dispatcher task was cancelled or finished. Events may be lost.
+09:19:43 [buyer] {"shop": "", "receipt": null, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+09:19:44 [market] ledger #7160571: verified False; result submitted once
+09:19:44 [order o-b8e09354f2e5] 시리얼/곡물/콩류세트, budget 13540, round 3
+[runtime] graceful shutdown requested
+09:19:51 [kit] leaving the market
+09:19:51 [buyer] {"buy": [], "bankrupt": false}

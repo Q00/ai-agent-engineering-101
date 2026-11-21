@@ -1,0 +1,169 @@
+--- a/policy.json
++++ b/policy.json
+@@ -116,7 +116,7 @@
+   "buyer_contract_probe_percent": 8,
+   "autonomy_v14_enabled": true,
+   "buyer_worker_enabled": true,
+-  "execution_revision": "v28-mature-risk-and-contract-progress-1",
++  "execution_revision": "v28.1-noop-critic-gate-1",
+   "objective_feedback_enabled": true,
+   "agent_policy_selection_enabled": true,
+   "discovery_priority_enabled": true,
+@@ -174,5 +174,6 @@
+   "service_contract_v26_enabled": true,
+   "buyer_terms_clarify_seconds": 2,
+   "inventory_portfolio_v27_enabled": true,
+-  "reversal_v28_enabled": true
++  "reversal_v28_enabled": true,
++  "research_noop_gate_enabled": true
+ }
+--- a/r3/research_gate.py
++++ b/r3/research_gate.py
+@@ -0,0 +1,37 @@
++"""Avoid a paid re-review of the same non-trial proposal for one hour.
++
++Cache identity is operational content plus rule/guard/issue regime. A cache
++hit never publishes, extends a policy expiry, or authorizes a transaction.
++"""
++import math
++from .state import identity
++
++KEY='research-reviewed-proposals:v281'
++FIELDS=('buyer_probe_percent','buyer_gap_power','buyer_diverse_quotes','shop_service_level',
++    'shop_plan','forum_focus','operating_actions','operating_policy','skills','skill_steps')
++TTL=3600
++
++def fingerprint(journal,facts,proposal):
++    control=facts.get('control') or {};framework=facts.get('framework') or {}
++    gap=control.get('leader_gap')
++    band=math.floor(gap/.05) if type(gap) in (int,float) and math.isfinite(gap) else None
++    regime={'rules':journal.get('market_rules',{}).get('sha256'),
++        'control':control.get('status'),'reasons':sorted(control.get('reasons') or []),
++        'issues':sorted(framework.get('issues') or []),'gap_band':band,
++        'parameters':facts.get('parameters') or {}}
++    return identity([regime,{k:proposal.get(k) for k in FIELDS}])
++
++def reviewed(journal,config,facts,proposal,now):
++    if not config.get('research_noop_gate_enabled') or proposal.get('approve_trial') is not False:return None
++    digest=fingerprint(journal,facts,proposal)
++    row=journal.get(KEY,{}).get(digest,{})
++    if row and row.get('no_trial_approved') and -2<=now-row.get('reviewed_at',0)<TTL:
++        return {'proposal_id':digest,'reviewed_at':row['reviewed_at'],'expires_at':row['reviewed_at']+TTL}
++    return None
++
++def remember(journal,facts,proposal,critic,now):
++    if proposal.get('approve_trial') is not False:return
++    digest=fingerprint(journal,facts,proposal);rows=journal.get(KEY,{})
++    rows[digest]={'reviewed_at':now,'no_trial_approved':not(proposal['approve_trial'] and critic['approve_trial'])}
++    rows={k:v for k,v in rows.items() if -2<=now-v.get('reviewed_at',0)<TTL}
++    journal.put(KEY,dict(sorted(rows.items(),key=lambda p:-p[1]['reviewed_at'])[:64]))
+--- a/r3/research.py
++++ b/r3/research.py
+@@ -425,8 +425,21 @@
+     try:
+         if config.get('reversal_v28_enabled'):journal.put('research-ready-status',{'at':time.time(),'status':'running'})
+         analyst=call(journal,config,facts,evidence,'analyst',client=client,key=key)
++        if config.get('research_noop_gate_enabled'):
++            from .research_gate import reviewed
++            previous_review=reviewed(journal,config,facts,analyst,time.time())
++            if previous_review:
++                journal.add('research_critic_skipped',dict(previous_review,
++                    reason='same_recently_reviewed_non_trial_proposal',
++                    new_policy_published=False,policy_expiry_extended=False))
++                journal.put('research-ready-status',{'at':time.time(),'status':'no_new_executable_proposal',
++                    'previous_review_at':previous_review['reviewed_at']})
++                return None
+         critic=call(journal,config,facts,evidence,'critic',proposal=analyst,client=client,key=key)
+         result=publish(journal,config,facts,analyst,critic,rules['sha256'],time.time())
++        if result and config.get('research_noop_gate_enabled'):
++            from .research_gate import remember
++            remember(journal,facts,analyst,critic,time.time())
+         if config.get('reversal_v28_enabled'):journal.put('research-ready-status',{'at':time.time(),'status':'published' if result else 'not_published'})
+         return result
+     except ModelError as exc:
+--- a/tests/test_research_gate.py
++++ b/tests/test_research_gate.py
+@@ -0,0 +1,65 @@
++import copy
++import pytest
++from r3 import research_gate as gate
++from test_market_cycle import fixture,opinion
++
++def example(tmp_path):
++    j,cfg,now=fixture(tmp_path);cfg=dict(cfg,research_noop_gate_enabled=True)
++    facts={'control':{'status':'observe_and_trade','reasons':[],'leader_gap':.2},
++        'framework':{'issues':['stock_coverage']},'parameters':{'shop_inventory_caps_enabled':False}}
++    p=opinion(['one']);p['approve_trial']=False
++    return j,cfg,now,facts,p
++
++def test_identical_proposal_has_one_hour_expiry_and_never_renews_policy(tmp_path):
++    j,cfg,now,f,p=example(tmp_path);j.put('research-last-result',{'at':now-10,'expires_at':now+100})
++    before=j.get('research-last-result');assert gate.reviewed(j,cfg,f,p,now) is None
++    gate.remember(j,f,p,p,now)
++    assert gate.reviewed(j,cfg,f,p,now+100) and gate.reviewed(j,cfg,f,p,now+3600) is None
++    assert j.get('research-last-result')==before
++
++@pytest.mark.parametrize('change',['rules','guard','issues','parameter','proposal','trial','gap'])
++def test_new_material_condition_or_executable_proposal_requires_critic(tmp_path,change):
++    j,cfg,now,f,p=example(tmp_path);gate.remember(j,f,p,p,now)
++    f,p=copy.deepcopy(f),copy.deepcopy(p)
++    if change=='rules':j.put('market_rules',{'sha256':'changed'})
++    if change=='guard':f['control']['status']='defensive';f['control']['reasons']=['feed_stale']
++    if change=='issues':f['framework']['issues'].append('buyer_price_gap')
++    if change=='parameter':f['parameters']['shop_inventory_caps_enabled']=True
++    if change=='proposal':p['operating_policy']['cover_cycles']=3
++    if change=='trial':p['approve_trial']=True
++    if change=='gap':f['control']['leader_gap']=.5
++    assert gate.reviewed(j,cfg,f,p,now+100) is None
++
++def test_presentation_and_clock_changes_do_not_trigger_paid_review(tmp_path):
++    j,cfg,now,f,p=example(tmp_path);gate.remember(j,f,p,p,now)
++    f['observed_at']=now+100;p['summary']='Different explanation, same executable proposal.'
++    p['evidence_ids']=['new_current_reference']
++    assert gate.reviewed(j,cfg,f,p,now+100)
++
++def test_gate_is_opt_in_and_does_not_cache_trial_authority(tmp_path):
++    j,cfg,now,f,p=example(tmp_path);p['approve_trial']=True
++    gate.remember(j,f,p,p,now);assert not j.get(gate.KEY,{})
++    p['approve_trial']=False;gate.remember(j,f,p,p,now)
++    cfg['research_noop_gate_enabled']=False
++    assert gate.reviewed(j,cfg,f,p,now) is None
++
++def test_research_skips_only_critic_and_does_not_republish_on_same_proposal(tmp_path,monkeypatch):
++    from r3 import research
++    j,cfg,now=fixture(tmp_path)
++    cfg=dict(cfg,research_noop_gate_enabled=True,agent_policy_selection_enabled=False,
++        objective_decision_enabled=False,capability_llm_enabled=False,objective_feedback_enabled=False)
++    research.analytics(j,now);calls=[];cycles=[2]
++    def call(journal,config,facts,evidence,role,**kw):
++        calls.append(role);value=opinion(evidence);value['approve_trial']=False
++        value['operating_policy']['cover_cycles']=cycles[0]
++        return value
++    monkeypatch.setattr(research,'call',call)
++    first=research.update(j,cfg,now)
++    assert first and calls==['analyst','critic']
++    j.put('research-last-attempt',{})
++    assert research.update(j,cfg,now) is None
++    assert calls==['analyst','critic','analyst'] and len(j.events('market_research_published'))==1
++    assert j.get('research-last-result')==first and j.events('research_critic_skipped')
++    cycles[0]=3;j.put('research-last-attempt',{})
++    assert research.update(j,cfg,now)
++    assert calls[-2:]==['analyst','critic']
+--- a/verify_market_cycle_live.py
++++ b/verify_market_cycle_live.py
+@@ -40,6 +40,7 @@
+                 'buyer_terms_confirmation','buyer_counter_route','buyer_negotiation_step','buyer_route_terminal']
+         if cfg.get('inventory_portfolio_v27_enabled'):kinds+=['inventory_portfolio_prepared']
+         if cfg.get('reversal_v28_enabled'):kinds+=['reversal_policy_prepared','buyer_economic_skip_v28','buyer_economic_routes_paused']
++        if cfg.get('research_noop_gate_enabled'):kinds+=['research_critic_skipped']
+         if cfg.get('objective_decision_enabled'):
+             kinds+=['objective_alternatives_prepared','objective_context_error','research_context_prepared',
+                     'buyer_forum_policy_choice','forum_objective_observation']
+@@ -55,6 +56,7 @@
+     if cfg.get('inventory_portfolio_v27_enabled'):release='v27'
+     if cfg.get('execution_revision','').startswith('v27.1-'):release='v271'
+     if cfg.get('reversal_v28_enabled'):release='v28'
++    if cfg.get('research_noop_gate_enabled'):release='v281'
+     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
+     manifest=read_json(promotion,{})
+     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]

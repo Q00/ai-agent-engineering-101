@@ -1,0 +1,275 @@
+{
+  "sources": [
+    "logs/autonomous-deploy-before-20261114T055614486450Z.json",
+    "logs/v28-progress-source-20261115T073129572389Z.json",
+    "logs/progress-diagnosis-20261115T073634434694Z.json",
+    "logs/autonomous-deploy-before-20261115T024506256434Z.json",
+    "logs/v28-progress-source-20261115T022256766670Z.json"
+  ],
+  "cutoff": 1794727889.4263058,
+  "window": {
+    "start": "2026-11-14T14:56:14.487025+09:00",
+    "end": "2026-11-15T16:31:29.426306+09:00",
+    "hours": 25.587483133607442
+  },
+  "official": {
+    "before": {
+      "book": 812515473,
+      "revenue": 5136937516,
+      "deals": 13799,
+      "stars_rank": 4.3,
+      "stock_units": 967,
+      "stock_cost": 113032560,
+      "all": 0.787
+    },
+    "after": {
+      "book": 810831525,
+      "revenue": 5205260812,
+      "deals": 15708,
+      "stars_rank": 4.32,
+      "stock_units": 959,
+      "stock_cost": 117529108,
+      "all": 0.778
+    },
+    "rank_before": 11,
+    "rank_after": 12
+  },
+  "book_bridge": {
+    "official_book_delta": -1683948,
+    "official_net_revenue_delta": 68323296,
+    "recorded_gross_margin": 10195242,
+    "observed_refunds": 7288073,
+    "unattributed_book_deductions": 4591117,
+    "gross_minus_official_net_revenue": 7219806,
+    "limitations": "Residual includes unrecorded refunds, expiry, storage, fees, timestamp/coverage mismatch; not classified wholly as waste."
+  },
+  "thresholds": {
+    "book": {
+      "own": 810831525,
+      "raw_rank": 6,
+      "registered_numeric_population": 92,
+      "next": [
+        {
+          "name": "moss-and-oak",
+          "value": 902487411,
+          "gap": 91655886
+        },
+        {
+          "name": "sergiobuilds",
+          "value": 914404194,
+          "gap": 103572669
+        }
+      ]
+    },
+    "revenue": {
+      "own": 5205260812,
+      "raw_rank": 10,
+      "registered_numeric_population": 92,
+      "next": [
+        {
+          "name": "ddolcom",
+          "value": 5449517253,
+          "gap": 244256441
+        },
+        {
+          "name": "Kiro729",
+          "value": 6669161824,
+          "gap": 1463901012
+        }
+      ]
+    },
+    "deals": {
+      "own": 15708,
+      "raw_rank": 25,
+      "registered_numeric_population": 92,
+      "next": [
+        {
+          "name": "YAHO1212",
+          "value": 16006,
+          "gap": 298
+        },
+        {
+          "name": "gom31-certified-goods",
+          "value": 17142,
+          "gap": 1434
+        }
+      ]
+    },
+    "stars_rank": {
+      "own": 4.32,
+      "raw_rank": 49,
+      "registered_numeric_population": 92,
+      "next": [
+        {
+          "name": "gom31-certified-goods",
+          "value": 4.33,
+          "gap": 0.009999999999999787
+        },
+        {
+          "name": "fair-furniture",
+          "value": 4.33,
+          "gap": 0.009999999999999787
+        }
+      ]
+    }
+  },
+  "review_quality": {
+    "food:B": {
+      "n": 927,
+      "mean": 4.683926645091693,
+      "low": 66
+    },
+    "food:C": {
+      "n": 402,
+      "mean": 4.0945273631840795,
+      "low": 108
+    },
+    "goods:A": {
+      "n": 106,
+      "mean": 4.867924528301887,
+      "low": 2
+    },
+    "food:A": {
+      "n": 452,
+      "mean": 4.900442477876106,
+      "low": 7
+    },
+    "goods:B": {
+      "n": 8,
+      "mean": 5.0,
+      "low": 0
+    },
+    "goods:C": {
+      "n": 6,
+      "mean": 4.833333333333333,
+      "low": 0
+    }
+  },
+  "review_reasons": {
+    "shelf_life": 158,
+    "failure_or_warranty": 2,
+    "unclassified": 23
+  },
+  "sale_cohorts": {
+    "food": {
+      "sales": 1782,
+      "gross_margin": 4307201,
+      "known_refunds_from_this_sale_cohort": 0,
+      "gross_less_known_refund": 4307201,
+      "sold_at_least_6h10m_ago": 1442
+    },
+    "goods": {
+      "sales": 120,
+      "gross_margin": 5888041,
+      "known_refunds_from_this_sale_cohort": 7013337,
+      "gross_less_known_refund": -1125296,
+      "sold_at_least_6h10m_ago": 91
+    }
+  },
+  "idle_mechanical_scenario": {
+    "starting_goods_cost": 101928339,
+    "goods_storage": 1086704.0229163005,
+    "food_expired_units": 187,
+    "food_expired_cost": 2532924,
+    "legacy_refunds": 274736,
+    "ending_book": 808621108.9770837,
+    "actual_book_minus_idle_book": 2210416.022916317,
+    "baseline_inventory_units": 966,
+    "baseline_board_stock_units": 967,
+    "baseline_inventory_cost": 113024375,
+    "baseline_board_stock_cost": 113032560,
+    "scope": "Mechanical Book scenario, not causal estimate or ALL: no new supply, no sales, no votes; static known rules; baseline public/private timestamp mismatch retained."
+  },
+  "v28_to_cutoff": {
+    "hours": 25.587483133607442,
+    "llm_roles": {
+      "capability_triage/gpt-6-luna": {
+        "calls": 185,
+        "usd_estimate": 0.08329824999999992,
+        "seconds": 804.970000000063
+      },
+      "capability_designer/gpt-6-luna": {
+        "calls": 73,
+        "usd_estimate": 0.035167000000000004,
+        "seconds": 290.7220000000161
+      },
+      "market_research_analyst/gpt-6-luna": {
+        "calls": 172,
+        "usd_estimate": 0.2558397500000001,
+        "seconds": 1499.595000000052
+      },
+      "market_research_critic/gpt-6.1-terra": {
+        "calls": 171,
+        "usd_estimate": 3.085254999999999,
+        "seconds": 2749.1870000000454
+      }
+    },
+    "estimated_usd": 3.4595599999999993,
+    "calls": 601,
+    "research_publications": 170,
+    "approved_trials": 0,
+    "critic_cache_skips": 0,
+    "framework_actions": {
+      "expired_without_verified_improvement": 1,
+      "restarted_after_cooldown": 1
+    }
+  },
+  "v281_to_cutoff": {
+    "hours": 4.773102741903729,
+    "llm_roles": {
+      "market_research_analyst/gpt-6-luna": {
+        "calls": 38,
+        "usd_estimate": 0.056151250000000014,
+        "seconds": 349.98300000009476
+      },
+      "market_research_critic/gpt-6.1-terra": {
+        "calls": 38,
+        "usd_estimate": 0.6834787499999999,
+        "seconds": 622.7359999999899
+      },
+      "capability_triage/gpt-6-luna": {
+        "calls": 38,
+        "usd_estimate": 0.017011625000000002,
+        "seconds": 219.02300000003015
+      },
+      "capability_designer/gpt-6-luna": {
+        "calls": 12,
+        "usd_estimate": 0.005566499999999999,
+        "seconds": 78.55900000002293
+      }
+    },
+    "estimated_usd": 0.7622081249999999,
+    "calls": 126,
+    "research_publications": 37,
+    "approved_trials": 0,
+    "critic_cache_skips": 0,
+    "framework_actions": {}
+  },
+  "logging": {
+    "sqlite_bytes": 8785190912,
+    "latest_prediction_samples": 500,
+    "prediction_mean_json_characters": 22215.096,
+    "prediction_max_json_characters": 232155,
+    "limit": "Storage/log payload size; not a measured causal latency improvement."
+  },
+  "since_morning": {
+    "book": 545531,
+    "revenue": 10690313,
+    "all": 0.0020000000000000018,
+    "stars_rank": 0.0
+  },
+  "terminal_hold_scenario": {
+    "remaining_hours_at_cutoff": 55.458492692841425,
+    "private_snapshot_at": "2026-11-15T07:38:24.144780+00:00",
+    "current_goods_cost": 107724403,
+    "goods_storage_if_all_held_to_end": 2489263.756923419,
+    "scope": "No sale/new supply; does not assume every existing unit should be held."
+  },
+  "limits": [
+    "No randomized LLM on/off experiment; no proven causal LLM trading uplift.",
+    "LLM dollars use configured prices, exclude other applications, and are not the provider invoice.",
+    "Known refund cohorts can still mature; unsold/new inventory expiry and storage are not allocated to sale cohorts.",
+    "Published rounded ratings and public eligible cohort cannot exactly reproduce official ALL.",
+    "Inventory and DB are read after the frozen official board cutoff."
+  ]
+}

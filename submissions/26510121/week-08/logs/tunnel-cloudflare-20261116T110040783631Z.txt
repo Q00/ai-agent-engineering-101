@@ -1,0 +1,224 @@
+2026-11-16T11:00:40Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+2026-11-16T11:00:40Z INF Requesting new quick Tunnel on trycloudflare.com...
+2026-11-16T11:00:45Z INF +--------------------------------------------------------------------------------------------+
+2026-11-16T11:00:45Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+2026-11-16T11:00:45Z INF |  https://tension-sep-talent-camcorders.trycloudflare.com                                   |
+2026-11-16T11:00:45Z INF +--------------------------------------------------------------------------------------------+
+2026-11-16T11:00:45Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp]
+2026-11-16T11:00:45Z INF Version 2026.10.7 (Checksum 2493dbc168923bb3e59e5e7716f71deced92992eea9acd6e9d74f84ac7751343)
+2026-11-16T11:00:45Z INF GOOS: windows, GOVersion: go1.27.3, GoArch: amd64
+2026-11-16T11:00:45Z INF Settings: map[edge-ip-version:4 ha-connections:1 no-autoupdate:true p:http2 protocol:http2 url:http://127.0.0.1:60505]
+2026-11-16T11:00:45Z INF Environmental variables map[MARKET_TUNNEL_PROVIDER:cloudflare]
+2026-11-16T11:00:45Z INF cloudflared will not automatically update on Windows systems.
+2026-11-16T11:00:45Z INF Generated Connector ID: 568a9217-152e-472a-a3b5-88e9b38f8a91
+2026-11-16T11:00:45Z INF Initial protocol http2
+2026-11-16T11:00:45Z INF ICMP proxy will use 192.168.0.228 as source for IPv4
+2026-11-16T11:00:45Z INF ICMP proxy will use fe80::8cf2:9cfc:bff7:103a in zone 이더넷 as source for IPv6
+2026-11-16T11:00:45Z INF cloudflared does not support loading the system root certificate pool on Windows. Please use --origin-ca-pool <PATH> to specify the path to the certificate pool
+2026-11-16T11:00:45Z INF ICMP proxy will use 192.168.0.228 as source for IPv4
+2026-11-16T11:00:45Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.192.27
+2026-11-16T11:00:45Z INF ICMP proxy will use fe80::8cf2:9cfc:bff7:103a in zone 이더넷 as source for IPv6
+2026-11-16T11:00:45Z INF Starting metrics server on 127.0.0.1:20241/metrics
+2026-11-16T11:00:45Z INF +--------------------------------------------------------------------------------------+
+2026-11-16T11:00:45Z INF |                               CONNECTIVITY PRE-CHECKS                                |
+2026-11-16T11:00:45Z INF +--------------------------------------------------------------------------------------+
+2026-11-16T11:00:45Z INF |  COMPONENT         TARGET                     STATUS  DETAILS                        |
+2026-11-16T11:00:45Z INF |  DNS Resolution    region1.v2.argotunnel.com  PASS    DNS Resolved successfully      |
+2026-11-16T11:00:45Z INF |  DNS Resolution    region2.v2.argotunnel.com  PASS    DNS Resolved successfully      |
+2026-11-16T11:00:45Z INF |  UDP Connectivity  region1.v2.argotunnel.com  PASS    QUIC connection successful     |
+2026-11-16T11:00:45Z INF |  UDP Connectivity  region2.v2.argotunnel.com  PASS    QUIC connection successful     |
+2026-11-16T11:00:45Z INF |  TCP Connectivity  region1.v2.argotunnel.com  PASS    HTTP/2 connection successful   |
+2026-11-16T11:00:45Z INF |  TCP Connectivity  region2.v2.argotunnel.com  PASS    HTTP/2 connection successful   |
+2026-11-16T11:00:45Z INF |  Cloudflare API    api.cloudflare.com:443     PASS    API is reachable               |
+2026-11-16T11:00:45Z INF |                                                                                      |
+2026-11-16T11:00:45Z INF |  SUMMARY: Environment is healthy. cloudflared will use 'http2' as primary protocol.  |
+2026-11-16T11:00:45Z INF +--------------------------------------------------------------------------------------+
+2026-11-16T11:00:45Z INF precheck component="DNS Resolution" details="DNS Resolved successfully" run_id=ae07ea10-8b43-4e4b-968b-db2387e12c77 status=pass target=region1.v2.argotunnel.com
+2026-11-16T11:00:45Z INF precheck component="DNS Resolution" details="DNS Resolved successfully" run_id=ae07ea10-8b43-4e4b-968b-db2387e12c77 status=pass target=region2.v2.argotunnel.com
+2026-11-16T11:00:45Z INF precheck component="UDP Connectivity" details="QUIC connection successful" run_id=ae07ea10-8b43-4e4b-968b-db2387e12c77 status=pass target=region1.v2.argotunnel.com
+2026-11-16T11:00:45Z INF precheck component="UDP Connectivity" details="QUIC connection successful" run_id=ae07ea10-8b43-4e4b-968b-db2387e12c77 status=pass target=region2.v2.argotunnel.com
+2026-11-16T11:00:45Z INF precheck component="TCP Connectivity" details="HTTP/2 connection successful" run_id=ae07ea10-8b43-4e4b-968b-db2387e12c77 status=pass target=region1.v2.argotunnel.com
+2026-11-16T11:00:45Z INF precheck component="TCP Connectivity" details="HTTP/2 connection successful" run_id=ae07ea10-8b43-4e4b-968b-db2387e12c77 status=pass target=region2.v2.argotunnel.com
+2026-11-16T11:00:45Z INF precheck component="Cloudflare API" details="API is reachable" run_id=ae07ea10-8b43-4e4b-968b-db2387e12c77 status=pass target=api.cloudflare.com:443
+2026-11-16T11:00:45Z INF precheck complete hard_fail=false run_id=ae07ea10-8b43-4e4b-968b-db2387e12c77 suggested_protocol=http2
+2026-11-16T11:00:46Z INF Registered tunnel connection connIndex=0 connection=c159d449-7dfe-46f9-b0e5-281a106c318f event=0 ip=198.41.192.27 location=icn06 protocol=http2
+2026-11-16T11:51:49Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T11:51:49Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T11:51:49Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T11:51:49Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T12:07:35Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T12:07:35Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T12:29:31Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T12:29:31Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T13:15:28Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T13:15:28Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T14:09:40Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T14:09:40Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T14:17:17Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T14:17:17Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T14:19:29Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T14:19:29Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T14:32:49Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T14:32:49Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T14:37:52Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T14:37:52Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T14:43:36Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T14:43:36Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T14:44:10Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T14:44:10Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T14:44:10Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T14:44:10Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T15:07:25Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T15:07:25Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T15:31:06Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T15:31:06Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T15:31:06Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T15:31:06Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T15:41:06Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: read tcp 127.0.0.1:52464->127.0.0.1:60505: wsarecv: An existing connection was forcibly closed by the remote host." connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T15:41:06Z ERR failed to serve incoming request error="failed to proxy HTTP: Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: read tcp 127.0.0.1:52464->127.0.0.1:60505: wsarecv: An existing connection was forcibly closed by the remote host."
+2026-11-16T15:53:40Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T15:53:40Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T15:58:23Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T15:58:23Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T16:00:23Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T16:00:23Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T16:28:24Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: read tcp 127.0.0.1:59110->127.0.0.1:60505: wsarecv: An existing connection was forcibly closed by the remote host." connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T16:28:24Z ERR failed to serve incoming request error="failed to proxy HTTP: Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: read tcp 127.0.0.1:59110->127.0.0.1:60505: wsarecv: An existing connection was forcibly closed by the remote host."
+2026-11-16T17:13:48Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T17:13:48Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T17:17:16Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T17:17:16Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T17:23:29Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: read tcp 127.0.0.1:53602->127.0.0.1:60505: wsarecv: An existing connection was forcibly closed by the remote host." connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T17:23:29Z ERR failed to serve incoming request error="failed to proxy HTTP: Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: read tcp 127.0.0.1:53602->127.0.0.1:60505: wsarecv: An existing connection was forcibly closed by the remote host."
+2026-11-16T17:38:01Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T17:38:01Z ERR failed to serve incoming request error="failed to proxy HTTP: Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF"
+2026-11-16T17:44:27Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T17:44:27Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T18:09:51Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T18:09:51Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T18:16:10Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T18:16:10Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T18:31:15Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T18:31:15Z ERR failed to serve incoming request error="failed to proxy HTTP: Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF"
+2026-11-16T18:51:46Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T18:51:46Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T18:51:46Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T18:51:46Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T18:51:46Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T18:51:46Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T19:13:05Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T19:13:05Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T19:13:05Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T19:13:05Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T19:13:24Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T19:13:24Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T19:27:34Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T19:27:34Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T19:41:37Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T19:41:37Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T19:53:01Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T19:53:01Z ERR failed to serve incoming request error="failed to proxy HTTP: Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF"
+2026-11-16T20:04:24Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:04:24Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:04:24Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T20:04:24Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T20:09:13Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:09:13Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T20:09:13Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:09:13Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T20:21:13Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:21:13Z ERR failed to serve incoming request error="failed to proxy HTTP: Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF"
+2026-11-16T20:34:36Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:34:36Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T20:38:36Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:38:36Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T20:38:47Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:38:47Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T20:47:43Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:47:43Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T20:47:43Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:47:43Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T20:48:50Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:48:50Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T20:51:00Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:51:00Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T20:53:20Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T20:53:20Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T21:19:34Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T21:19:34Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T21:26:32Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T21:26:32Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:01:09Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:01:09Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:24:07Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:24:07Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:24:24Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:24:24Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:24:24Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:24:24Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:30:20Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:30:20Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:30:20Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:30:20Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:32:39Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:32:39Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:33:31Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:33:31Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:33:31Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:33:31Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:33:52Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:33:52Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:39:30Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:39:30Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:39:30Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:39:30Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:40:24Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:40:24Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:40:40Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:40:40Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:40:44Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:40:44Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:40:44Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:40:44Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:40:53Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:40:53Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:40:55Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:40:55Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:40:57Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:40:57Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:40:59Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:40:59Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:41:03Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:41:03Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:42:20Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:42:20Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:47:43Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:47:43Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:47:43Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:47:43Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:48:21Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:48:21Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:54:56Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:54:56Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:54:56Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:54:56Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:55:18Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:55:18Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T22:59:38Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T22:59:38Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T23:22:18Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T23:22:18Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T23:22:18Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T23:22:18Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T23:28:54Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T23:28:54Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T23:33:51Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T23:33:51Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T23:33:51Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T23:33:51Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T23:33:51Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T23:33:51Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-16T23:47:50Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-16T23:47:50Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"
+2026-11-17T00:03:06Z ERR  error="Incoming request ended abruptly: context canceled" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:60505
+2026-11-17T00:03:06Z ERR failed to serve incoming request error="failed to proxy HTTP: Incoming request ended abruptly: context canceled"

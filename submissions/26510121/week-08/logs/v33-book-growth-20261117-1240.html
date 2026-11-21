@@ -1,0 +1,20 @@
+<section id="v33-book-growth-1240" data-viz-composition>
+  <div data-viz-container></div>
+  <script type="application/json" data-viz-chart>
+    {
+      "id":"v33-book-growth-1240",
+      "title":"같은 기간의 Book 증가: 우리와 Shop ALL 상위 5곳",
+      "description":"11월 17일 09:06–12:40 KST · 백만 크레딧 · 정책 효과를 분리한 비교는 아닙니다.",
+      "height":260,
+      "spec":{"type":"horizontalBar","y":"shop","x":"growth","xLabel":"Book 증가 (백만 크레딧)","showValues":true,"showLegend":false,"sortOrder":"original","valueFormat":{"style":"decimal","maximumFractionDigits":3}},
+      "columns":["shop","growth"],
+      "rows":[["우리 · seochanit",0.337529],["yms979",0.069683],["inextro",14.091960],["sergiobuilds",7.142639],["25620027",19.843203],["nocha12",5.704047]]
+    }
+  </script>
+</section>
+<script type="module">
+  import {mountChart} from "https://persistent.oaistatic.com/plugins/visualize/charts/1.2.3/element.js";
+  const root=document.getElementById("v33-book-growth-1240");
+  const config=JSON.parse(root.querySelector("[data-viz-chart]").textContent);
+  mountChart(root.querySelector("[data-viz-container]"),config);
+</script>

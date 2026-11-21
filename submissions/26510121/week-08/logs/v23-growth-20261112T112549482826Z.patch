@@ -1,0 +1,932 @@
+--- a/market_buyer.py
++++ b/market_buyer.py
+@@ -275,7 +275,9 @@
+                                               cfg['buyer_counter_ratio'], turn,
+                                               max_turns, previous_offer,
+                                               stress, required_warranty >= 6, assessment['covered_failure'],
+-                                              assessment['saved_state'] if assessment['saved_state']['metric']=='saved' else None)
++                                              assessment['saved_state'] if assessment['saved_state']['metric']=='saved' else None,
++                                              counter_model=assessment.get('negotiation_model'),
++                                              target_saved=cfg.get('buyer_saved_bid_targets') if cfg.get('buyer_frontier_v23_enabled') else None)
+                 if not actions:
+                     break
+                 if cfg.get('buyer_throughput_enabled'):
+@@ -284,7 +286,7 @@
+                 if cfg.get('system_framework_enabled'):
+                     from r3.contracts import probability
+                     for action in actions:
+-                        if action['id']!='counter':continue
++                        if action.get('action',action['id'])!='counter':continue
+                         old_probability=action.get('completion_probability',1)
+                         calibrated=probability(journal,order,c,assessment,ask,old_probability)
+                         factor=calibrated/max(.000001,old_probability)
+@@ -306,9 +308,10 @@
+                     break
+                 agreed = move["price"]
+                 previous_offer = agreed
+-                if move['id'] == 'counter':
++                if move.get('action',move['id']) == 'counter':
+                     journal.add('buyer_counter', {'order': order['order'], 'shop': c['shop'], 'ask': ask,
+-                                'price': agreed, 'strategy_version': strategy['version']}, role='buyer')
++                                'price': agreed, 'sku':c['sku'],'score_formula':formula(journal),
++                                'strategy_version': strategy['version']}, role='buyer')
+                 if cfg.get('buyer_throughput_enabled') and hasattr(peer,'deadline'):
+                     peer.deadline=min(deadline,time.time()+cfg.get('buyer_rpc_timeout_seconds',4))
+                 task = peer.send(str(agreed), task["id"])
+--- a/policy.json
++++ b/policy.json
+@@ -5,7 +5,7 @@
+   "shop_recovery_v15_enabled": true,
+   "market_control_interval_seconds": 300,
+   "shop_growth_v5": true,
+-  "shop_strategy_revision": "shop-v11-contract-memory",
++  "shop_strategy_revision": "shop-v23-service-slot-and-contract",
+   "shop_championship_enabled": true,
+   "shop_championship_allocation_enabled": true,
+   "shop_inventory_ceiling": 180,
+@@ -18,7 +18,7 @@
+   "warranty_menu_enabled": true,
+   "checkout_recovery_enabled": true,
+   "buyer_patch34_enabled": true,
+-  "buyer_strategy_revision": "buyer-v22-margin-share-v36",
++  "buyer_strategy_revision": "buyer-v23-empirical-counter-frontier",
+   "buyer_forum_metric": "raw",
+   "buyer_championship_enabled": true,
+   "buyer_saved_target_margin": 0.002,
+@@ -116,7 +116,7 @@
+   "buyer_contract_probe_percent": 8,
+   "autonomy_v14_enabled": true,
+   "buyer_worker_enabled": true,
+-  "execution_revision": "v22-buyer-cost-scenarios-and-scoring-isolation-1",
++  "execution_revision": "v23-book-throughput-and-buyer-frontier-1",
+   "objective_feedback_enabled": true,
+   "agent_policy_selection_enabled": true,
+   "discovery_priority_enabled": true,
+@@ -159,5 +159,12 @@
+   "shop_replenishment_service_level": 0.9,
+   "shop_supply_delivery_seconds": 30,
+   "buyer_patch36_enabled": true,
+-  "buyer_joint_objective_enabled": true
++  "buyer_joint_objective_enabled": true,
++  "book_growth_v23_enabled": true,
++  "buyer_frontier_v23_enabled": true,
++  "research_event_driven_enabled": true,
++  "buyer_saved_bid_targets": [
++    0.8,
++    0.9
++  ]
+ }
+--- a/r3/control.py
++++ b/r3/control.py
+@@ -40,6 +40,8 @@
+               'forum_vote_min_deals':50 if 'at least 50 settled deals' in text else 5,
+               'stance_scoring':'one stance per' in text,'dislike_costs_shop_cash':'next_dislike_fee' in text}
+     previous = journal.get('market_rules', {})
++    result['buyer_score_epoch']=(previous.get('buyer_score_epoch',now) if
++        previous.get('buyer_saved_formula')==score_formula else now)
+     journal.put('market_rules', result)
+     if previous.get('sha256') != result['sha256']:
+         journal.add('market_rules_observed', result)
+--- a/r3/customer_memory.py
++++ b/r3/customer_memory.py
+@@ -174,7 +174,8 @@
+ 
+ def profile(journal, subject, category=None):
+     """Compact history for a verified signing key or market-confirmed payer label."""
+-    visits = journal.events('customer_visit', LIMIT)
++    epoch=journal.get('market_rules',{}).get('buyer_score_epoch',0)
++    visits = [r for r in journal.events('customer_visit', LIMIT) if r['_ts']>=epoch]
+     payers = {e['task']: e['payer'] for e in journal.events('customer_identity', LIMIT)}
+     tasks = {e['task'] for e in visits if e.get('signer') == subject or payers.get(e['task']) == subject}
+     purchases = [e for e in journal.events('customer_paid', LIMIT) if e['task'] in tasks]
+@@ -198,7 +199,8 @@
+ 
+ 
+ def summary(journal, task, unit):
+-    visits = {e['task']: e for e in journal.events('customer_visit', LIMIT)}
++    epoch=journal.get('market_rules',{}).get('buyer_score_epoch',0)
++    visits = {e['task']: e for e in journal.events('customer_visit', LIMIT) if e['_ts']>=epoch}
+     current = journal.get('customer-visit:' + task, {})
+     turns = journal.events('customer_turn', LIMIT)
+     recent = sorted((e for e in turns if e['task'] == task), key=lambda e: e['_ts'])
+--- a/r3/cycle.py
++++ b/r3/cycle.py
+@@ -67,6 +67,9 @@
+         if now-self.last_analysis>=60:
+             self.last_analysis=now
+             roles={'market_observer':lambda:analytics(self.j,time.time())}
++            if self.cfg.get('book_growth_v23_enabled'):
++                from .policy_learning import update as learning_update
++                roles['policy_learning_observer']=lambda:learning_update(self.j,self.cfg,time.time())
+             if self.cfg.get('buyer_joint_objective_enabled'):
+                 from .buyer_costs import update as buyer_cost_update
+                 roles['buyer_cost_observer']=lambda:buyer_cost_update(self.j,self.cfg,time.time())
+--- a/r3/economy.py
++++ b/r3/economy.py
+@@ -39,8 +39,9 @@
+ 
+ 
+ def shop_statistics(journal, sku, category=None):
+-    visits = [e for e in history(journal, 'shop_opportunity', 10000) if e.get('sku') == sku]
+-    paid = [e for e in history(journal, 'shop_settled', 10000) if e.get('sku') == sku]
++    cut=journal.get('market_rules',{}).get('buyer_score_epoch',0)
++    visits = [e for e in history(journal, 'shop_opportunity', 10000) if e.get('sku') == sku and e['_ts']>=cut]
++    paid = [e for e in history(journal, 'shop_settled', 10000) if e.get('sku') == sku and e['_ts']>=cut]
+     return {"opportunities": len(visits), "settled": len(paid),
+             "settlement_rate": (len(paid) + 1) / (len(visits) + 2),
+             "prices": [e["price"] for e in paid[:20]],
+@@ -112,6 +113,11 @@
+         recovery_floor = max(1, math.ceil(cost*.98/max(.01,1-stress_refund)))
+     ceiling = previous_ask or int(1.05 * L)
+     prices = {max(recovery_floor, int(reference * f)) for f in (.9, 1, 1.1)}
++    saved_risk=None
++    if config.get('book_growth_v23_enabled') and journal.get('market_rules',{}).get('buyer_saved_formula')=='margin_share_v36':
++        from .shop_offer import target_prices
++        saved_risk=goods_risk(journal,unit.get('grade'),warranty,config,now) if unit.get('kind')=='goods' else {'failure_upper':0,'covered_lower':0}
++        prices.update(p for p in target_prices(unit,saved_risk,journal) if recovery_floor<=p<=ceiling)
+     long_contract=None;rating=None
+     if config.get('system_framework_enabled'):
+         from .long_memory import contract_summary,rating_summary
+@@ -150,10 +156,15 @@
+             completion=dict(completion,completion=(completion['paid']+2*prior)/(completion['samples']+2),
+                             price_response_prior=prior,reference_price=reference,
+                             scenario='shrunk observed completion plus monotone price response')
++        saved_evidence={}
++        if saved_risk:
++            from .shop_offer import completion as contract_completion
++            probability,saved_evidence=contract_completion(completion['completion'],unit,p,saved_risk,journal,completion['samples'])
++            completion=dict(completion,completion=probability)
+         result.append({"id": "quote:" + str(p), "action": "counter", "price": p,
+                        "warranty_hours": warranty, "score": sale_delta(p, cost, completion['completion'], stress_refund)['book'],
+                        "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence,
+-                                        long_contract_memory=long_contract,rating_shadow=rating),
++                                        long_contract_memory=long_contract,rating_shadow=rating,buyer_saved_contract=saved_evidence),
+                        'expected_delta': sale_delta(p, cost, completion['completion'], stress_refund),
+                        "recovery_floor": recovery_floor,
+                            "risk": "conservative grade risk; full gross reserve remains required" if warranty else "food expiry or uninsured goods"})
+@@ -335,6 +346,12 @@
+     count = {}
+     for u in units:
+         count[u["sku"]] = count.get(u["sku"], 0) + 1
++    reserved_counts={}
++    if config.get('book_growth_v23_enabled'):
++        with journal.connect() as db:
++            reserved={r[0] for r in db.execute('SELECT unit FROM reservations WHERE until>?',(now,))}
++        from collections import Counter
++        reserved_counts=Counter(u['sku'] for u in units if u.get('unit') in reserved)
+     from .shop_growth import inventory_limit,stock_caps_enabled
+     target = inventory_limit(config)
+     if target is not None and len(units) >= target:
+@@ -418,7 +435,8 @@
+                 public_limit=config.get('shop_public_demand_caps',{}).get(sku,6),coverage_hours=coverage)
+         else:
+             desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
+-        needed=desired-count.get(sku,0)
++        buffer=reserved_counts.get(sku,0) if (growth.get('service_loss_adjustment') or {}).get('qualified') else 0
++        needed=desired+buffer-count.get(sku,0)
+         if needed<=0:
+             continue
+         held_room=config['restock_max_qty']-count.get(sku,0) if stock_caps_enabled(config) else 20
+@@ -501,6 +519,7 @@
+                                            uncapped_inventory=not stock_caps_enabled(config),
+                                            adaptive_coverage_hours=coverage if velocity else None,
+                                            growth=growth, arrival_rate_scenario=rate,
++                                           reserved_pipeline_buffer=buffer,
+                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
+                                            resale_price_scenario=price,resale_terms_scenario=terms)
+         if config.get('objective_feedback_enabled'):candidates[-1]['evidence']['trend_factor_scenario']=trend
+--- a/r3/evolution.py
++++ b/r3/evolution.py
+@@ -12,7 +12,7 @@
+ PROFILES={'contract_frontier':{'buyer_contract_probe_percent':8,'buyer_contract_gap_power':2,'buyer_contract_diverse_quotes':False},
+           'coverage_probe':{'buyer_contract_probe_percent':15,'buyer_contract_gap_power':1,'buyer_contract_diverse_quotes':True},
+           'selective_contracts':{'buyer_contract_probe_percent':4,'buyer_contract_gap_power':3,'buyer_contract_diverse_quotes':False}}
+-REVISION='system-v13-contract-frontier'
++REVISION='system-v23-regime-counter-frontier'
+ 
+ 
+ def assign(journal,order,config):
+@@ -40,7 +40,9 @@
+ 
+ 
+ def summarize(journal,now):
+-    orders={r['order']:r for r in journal.events('buyer_order',4000) if 0<=now-r['_ts']<=14400}
++    from .policy_learning import epoch
++    cutoff=max(now-14400,epoch(journal))
++    orders={r['order']:r for r in journal.events('buyer_order',4000) if cutoff<=r['_ts']<=now}
+     results={r['order']:r for r in journal.events('market_result',4000) if r.get('order') in orders}
+     paid={r['order']:r for r in journal.events('purchase',4000) if r.get('order') in orders}
+     quotes=journal.events('quote_comparison',6000);segments={}
+@@ -49,7 +51,8 @@
+         rows=[r for r in quotes if r.get('order') in ids]
+         segments[kind]={'orders':len(ids),'closed':len(closed),'paid':len(ids&paid.keys()),
+                         'conversion':len(ids&paid.keys())/max(1,len(closed)),
+-                        'quotes':len(rows),'above_cap':sum(r['ask']>r['assessment']['cap'] for r in rows)}
++                        'quotes':len(rows),'above_cap':sum(r['ask']>r['assessment']['cap'] for r in rows),
++                        'diagnostic_since':cutoff}
+     return segments
+ 
+ 
+--- a/r3/feedback.py
++++ b/r3/feedback.py
+@@ -11,7 +11,7 @@
+ import time
+ from .state import atomic_json, identity
+ 
+-REVISION = 'objective-feedback-v16-1'
++REVISION = 'objective-feedback-v23-1'
+ FILE = 'operating-policy-v16.json'
+ LIMITS = {'shop': {'shop_demand_horizon_cycles': (1., 3.), 'shop_inventory_ceiling': (120, 240),
+                     'shop_sku_trend_factors': None,'shop_public_demand_skus':None,'shop_public_demand_caps':None},
+@@ -67,7 +67,8 @@
+         sales = list({r['unit']: r for r in rows('shop_settled')}.values())
+         blocks = rows('restock_blocked')
+         shortages = rows('stockout')
+-        orders = {r['order']: r for r in rows('buyer_order')}
++        from .policy_learning import epoch
++        orders = {r['order']: r for r in rows('buyer_order') if r['_ts']>=epoch(journal)}
+         results = {r['order']: r for r in rows('market_result') if r.get('order') in orders}
+         purchases = {r['order']: r for r in rows('purchase')}
+         attempts = rows('attempt')
+@@ -168,7 +169,7 @@
+                 qualified.append(sku['sku'])
+                 if agent_selected and config.get('shop_inventory_caps_enabled',True):
+                     caps[sku['sku']]=min(selected['initial_batch_limit'],20 if current>=50 and sku.get('buyers20',0)>=5 else 6)
+-        if factors:patches['shop']['shop_sku_trend_factors']=factors
++        if factors and not config.get('book_growth_v23_enabled'):patches['shop']['shop_sku_trend_factors']=factors
+         if qualified:patches['shop']['shop_public_demand_skus']=sorted(qualified)
+         if caps:patches['shop']['shop_public_demand_caps']=caps
+     if not evidence_ok: reasons.append('facts_stale_or_rules_unverified')
+--- a/r3/long_memory.py
++++ b/r3/long_memory.py
+@@ -28,16 +28,18 @@
+             selected={k:sale.get(k) for k in ('task','unit','sku','category','grade','warranty_hours','price','cost','paid_at','strategy_version')}
+             c.execute('INSERT OR IGNORE INTO memory_episodes VALUES(?,?,?,?,?)',
+                 ('sale:'+eid,'shop_sale',at,None,json.dumps(selected)))
+-        saved=c.execute("SELECT body FROM memory_episodes WHERE kind='shop_sale' AND at>=?",(now-172800,)).fetchall()
++        saved=c.execute("SELECT body,at FROM memory_episodes WHERE kind='shop_sale' AND at>=?",(now-172800,)).fetchall()
+     if rows:journal.put('memory-sale-watermark',rows[-1][1])
+     catalog=journal.snapshot('catalog.json',{});groups=defaultdict(list)
+-    for (body,) in saved:
++    score_epoch=journal.get('market_rules',{}).get('buyer_score_epoch',0)
++    for body,episode_at in saved:
+         sale=json.loads(body);product=catalog.get(sale.get('sku'),{})
++        if (sale.get('paid_at') if type(sale.get('paid_at')) in (int,float) else episode_at)<score_epoch:continue
+         value=product.get('list_price');price=sale.get('price')
+         if type(value) not in (int,float) or value<=0 or type(price) not in (int,float):continue
+         key=identity([sale.get('category'),sale.get('grade'),sale.get('warranty_hours') or 0])
+         groups[key].append(price/value)
+-    journal.put('memory-contract-facts:v2',{'at':now,'groups':{k:{'samples':len(v),
++    journal.put('memory-contract-facts:v2',{'at':now,'score_epoch':score_epoch,'groups':{k:{'samples':len(v),
+         'median_paid_to_list_ratio':statistics.median(v)} for k,v in groups.items()}})
+     # Reviews are linked only through explicit market ledger references. Missing
+     # authors are retained as observations, never guessed account means.
+@@ -93,13 +95,14 @@
+ def contract_summary(journal,unit,warranty=None,now=None):
+     now=time.time() if now is None else now
+     category=unit.get('category');grade=unit.get('grade')
+-    version=journal.get('memory-refreshed-at',0);cache_key=(str(getattr(journal,'md',id(journal))),version)
++    epoch=journal.get('market_rules',{}).get('buyer_score_epoch',0)
++    version=journal.get('memory-refreshed-at',0);cache_key=(str(getattr(journal,'md',id(journal))),version,epoch)
+     facts=_FACT_CACHE.get(cache_key)
+     if facts is None:
+         facts=journal.get('memory-contract-facts:v2',{})
+         if len(_FACT_CACHE)>8:_FACT_CACHE.clear()
+         _FACT_CACHE[cache_key]=facts
+-    row=facts.get('groups',{}).get(identity([category,grade,warranty or 0]),{}) if 0<=now-facts.get('at',0)<=600 else {}
++    row=facts.get('groups',{}).get(identity([category,grade,warranty or 0]),{}) if 0<=now-facts.get('at',0)<=600 and facts.get('score_epoch',0)==epoch else {}
+     return {'schema':SCHEMA,'samples':row.get('samples',0),'median_paid_to_list_ratio':row.get('median_paid_to_list_ratio'),
+             'grade':grade,'warranty_hours':warranty,'source':'own settled contracts; 48h; exact category/grade/warranty',
+             'not_a_conversion_probability':True}
+--- a/r3/market_memory.py
++++ b/r3/market_memory.py
+@@ -15,14 +15,15 @@
+ def market_book(journal, catalog, now=None):
+     now = time.time() if now is None else now
+     seq=journal.get('public_ledger_seq')
+-    cache_key=(str(getattr(journal,'md',id(journal))),len(catalog),seq,int(now//15))
++    cut=journal.get('market_rules',{}).get('buyer_score_epoch',0)
++    cache_key=(str(getattr(journal,'md',id(journal))),len(catalog),seq,int(now//15),cut)
+     if seq is not None and cache_key in _BOOK_CACHE:
+         return _BOOK_CACHE[cache_key]
+     grouped = {}
+     for e in journal.events('public_settle', 20000):
+         sku = e.get('sku') or e.get('item')
+         price = e.get('amount', e.get('price'))
+-        if (sku not in catalog or not 0 <= now - e['_ts'] <= HORIZON or
++        if (sku not in catalog or e['_ts']<cut or not 0 <= now - e['_ts'] <= HORIZON or
+                 type(price) not in (int, float) or not math.isfinite(price) or price <= 0):
+             continue
+         row = grouped.setdefault(sku, {'prices': [], 'external_prices': [], 'buyers': Counter(),
+@@ -70,7 +71,8 @@
+ 
+ 
+ def buyer_price_actions(ask, cap, product, reference, ratio, turn, max_turns, previous_offer=None,
+-                        failure_stress=0, covered=False, covered_failure=None, saved_state=None):
++                        failure_stress=0, covered=False, covered_failure=None, saved_state=None,
++                        counter_model=None,target_saved=None):
+     """Monotone concessions with a final feasible acceptance; no repeated bids.
+ 
+     Completion priors below are explicit engineering scenarios. They are not
+@@ -105,13 +107,27 @@
+         # repeat our previous bid even when the peer repeats/decreases its ask.
+         destination = min(ask, cap)
+         bid = min(cap, max(previous_offer + 1, math.ceil((previous_offer + destination) / 2)))
+-    if bid < ask and (previous_offer is None or bid > previous_offer):
++    opening_bid=bid;bids={bid}
++    if target_saved and saved_state and saved_state.get('score_formula')=='margin_share_v36':
++        from .buyer_scoring import saved_price_cap
++        recovery=(failure_stress if covered else 0) if covered_failure is None else covered_failure
++        for target in target_saved:
++            if type(target) not in (int,float) or not 0<target<1:continue
++            ceiling,_=saved_price_cap(L,dict(saved_state,saved=target),failure_stress,recovery,margin=0)
++            if 0<ceiling<=cap and (previous_offer is None or ceiling>previous_offer):bids.add(ceiling)
++    for bid in sorted(bids):
++        if not (bid<ask and (previous_offer is None or bid>previous_offer)):continue
+         probability = min(.85, .55 + .1 * turn)
++        if counter_model is not None:
++            from .policy_learning import counter_probability
++            probability=counter_probability(counter_model,bid/max(1,ask),probability)
+         score,change = expected(bid,probability)
+-        actions.append({'id': 'counter', 'price': bid, 'score': score,
++        actions.append({'id': 'counter' if bid==opening_bid else 'counter:'+str(bid),
++                        'action':'counter','price': bid, 'score': score,
+                         'completion_probability': probability,
+                         'expected_delta': change,
+-                        'success_prior': 'engineering scenario, not an empirical success estimate'})
++                        'success_prior': 'shrunk observed first-counter completion; selected cohort' if counter_model is not None else
++                            'engineering scenario, not an empirical success estimate'})
+     return actions
+ 
+ 
+@@ -154,7 +170,12 @@
+                                                config.get('buyer_saved_target_margin',.002))
+         if not (config.get('buyer_joint_objective_enabled') and current.get('score_formula')==MARGIN):
+             cap=min(cap,normalized_cap)
++    negotiation=None
++    if config.get('buyer_frontier_v23_enabled'):
++        from .policy_learning import packet
++        negotiation=packet(journal).get('counter_completion_by_kind',{}).get(product.get('kind'),{})
+     return {'cap': cap, 'required_warranty': required, 'failure': stress,
++            'negotiation_model':negotiation,
+             'required_grade':declared,'conditional_terms':conditional,
+             'covered_failure': covered, 'risk_evidence': risk,'saved_state':current,'target_contribution':target,
+             'cost_scenario':cost,'saved_reference_cap':normalized_cap,
+--- a/r3/merchant.py
++++ b/r3/merchant.py
+@@ -18,14 +18,18 @@
+         return
+     counts = dict(Counter(u['sku'] for u in inv.get('units', []) if
+                           not u.get('expires_at') or u['expires_at'] > now))
++    with journal.connect() as db:
++        reserved={r[0] for r in db.execute('SELECT unit FROM reservations WHERE until>?',(now,))}
++    offerable=dict(Counter(u['sku'] for u in inv.get('units',[]) if u.get('unit') not in reserved and
++                          (not u.get('expires_at') or u['expires_at']>now)))
+     health=journal.snapshot('shop-health.json',{})
+     reachable=(health.get('status')=='healthy' and health.get('market_board_alive') is True
+                and not health.get('pending_registration') and 0<=now-health.get('checked_at',0)<45)
+     history = journal.get('merchant_stock_timeline', [])
+-    if history and history[-1]['counts'] == counts and history[-1].get('reachable')==reachable and now-history[-1]['at'] < 30:
++    if history and history[-1]['counts'] == counts and history[-1].get('offerable_counts')==offerable and history[-1].get('reachable')==reachable and now-history[-1]['at'] < 30:
+         return
+     history = [r for r in history if now-HORIZON <= r['at'] <= now]
+-    history.append({'at': now, 'counts': counts,'reachable':reachable})
++    history.append({'at': now, 'counts': counts,'offerable_counts':offerable,'reachable':reachable})
+     journal.put('merchant_stock_timeline', history[-1024:])
+ 
+ 
+@@ -41,9 +45,14 @@
+     config=config or {}
+     from .demand_policy import context as demand_context
+     adaptive=demand_context(journal,config,now)
++    learning={}
+     demand_id=adaptive.get('id') if adaptive else 'uncalibrated-neutral' if config.get('shop_adaptive_demand_enabled') else None
++    if config.get('book_growth_v23_enabled'):
++        from .policy_learning import packet
++        learning=packet(journal,now)
+     cached = journal.get('merchant_context_v5', {})
+-    if 0 <= now-cached.get('at', -1000) < 30 and cached.get('demand_policy_id')==demand_id:
++    if (0 <= now-cached.get('at', -1000) < 30 and cached.get('demand_policy_id')==demand_id
++            and cached.get('service_policy_at')==learning.get('at')):
+         return cached
+     book = {s: dict(row, samples=row.get('external_samples', row['samples']))
+             for s,row in market_book(journal, catalog, now).items()}
+@@ -152,13 +161,18 @@
+             fallback=((len(positive_paid[sku])+.25*raw)/(observed_hours+.25)
+                       if observed_hours>=2/60 else raw)
+             selected=calibrated['rate_per_hour'] if calibrated else fallback
++            service={}
++            if config.get('book_growth_v23_enabled'):
++                from .policy_learning import service_adjust
++                selected,service=service_adjust(journal,sku,selected,raw,config,now,learning=learning)
+             rows[sku].update(arrival_rate_scenario=selected,paid_arrival_rate_scenario=selected,
++                service_loss_adjustment=service,
+                 demand_calibration=calibrated,
+                 rate_note='data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable')
+     # Persist compact aggregates; never grow an unbounded stream of raw chats.
+     selected = sorted(rows, key=lambda s: (rows[s]['lost_exact_requests'], rows[s]['public'].get('samples', 0),
+                                            rows[s]['available_requests'], s), reverse=True)[:1500]
+-    result = {'at': now,'demand_policy_id':demand_id, 'skus': {s: rows[s] for s in selected}, 'coverage_weights': dict(weights),
++    result = {'at': now,'demand_policy_id':demand_id,'service_policy_at':learning.get('at'), 'skus': {s: rows[s] for s in selected}, 'coverage_weights': dict(weights),
+               'summary': {'tracked_skus': len(selected), 'observed_baskets': len(baskets),
+                           'top_unserved_categories': category_lost.most_common(10),
+                           'exposure_started_at': coverage_start,
+--- a/r3/meta.py
++++ b/r3/meta.py
+@@ -137,7 +137,9 @@
+     from .decision_view import fact, history
+     paid = fact(journal, 'completion-paid-tasks', lambda: {x.get('task') for x in history(journal, 'shop_settled', 10000)})
+     comparable = {}
++    cut=journal.get('market_rules',{}).get('buyer_score_epoch',0)
+     for e in history(journal, 'shop_quote', 10000):
++        if e['_ts']<cut:continue
+         if grade is not None and e.get('grade')!=grade:continue
+         if warranty is not None and e.get('warranty_hours')!=warranty:continue
+         if e.get("sku") == sku and abs(e["price"] - price) <= max(1, price * .1):
+--- a/r3/objective_context.py
++++ b/r3/objective_context.py
+@@ -53,7 +53,9 @@
+ def buyer_evidence(journal, now):
+     from .buyer_scoring import formula,same_formula,MARGIN
+     version=formula(journal)
+-    orders = {r['order']: r for r in journal.events('buyer_order', 4000) if 0 <= now-r['_ts'] <= 3600}
++    from .policy_learning import epoch
++    diagnostic_start=max(now-3600,epoch(journal))
++    orders = {r['order']: r for r in journal.events('buyer_order', 4000) if diagnostic_start<=r['_ts']<=now}
+     results = {r['order']: r for r in journal.events('market_result', 4000) if r.get('order') in orders}
+     purchases = {r['order']: r for r in journal.events('purchase', 10000)}
+     canonical = {}
+@@ -87,10 +89,14 @@
+                    and canonical[p['order']].get('matured')
+                    and canonical[p['order']].get('refund_status')!='expected_by_warranty_rule'
+                    and type(canonical[p['order']].get('saved_contribution')) in (int,float)]
++        exact_complete=len(confirmed)==len(eligible) and bool(eligible)
+         mature_cohorts[kind]={'age_window_hours':[6,48],'eligible_paid':len(eligible),
+             'confirmed_paid':len(confirmed),'pending':len(eligible)-len(confirmed),
+             'sum_confirmed_saved_contribution':sum(r['saved_contribution'] for r in confirmed),
+-            'confirmed_saved_paid_mean':sum(r['saved_contribution'] for r in confirmed)/len(confirmed) if confirmed else None}
++            'confirmed_saved_paid_mean':sum(r['saved_contribution'] for r in confirmed)/len(confirmed) if exact_complete else None,
++            'known_subset_saved_mean':sum(r['saved_contribution'] for r in confirmed)/len(confirmed) if confirmed else None,
++            'exact_reward_coverage':len(confirmed)/len(eligible) if eligible else None,
++            'incomplete_subset_is_not_cohort_quality':not exact_complete}
+     scored = {}
+     for row in journal.events('forum_objective_observation', 3000):
+         if row.get('post_id') not in scored and 0 <= now-row.get('post_at', 0) <= 86400:
+@@ -112,6 +118,7 @@
+         'objective_weights':{'saved_percentile':.5,'forum_raw':.3,'deals_percentile':.1,'posts_percentile':.1},
+         'decision_contract':'joint expected ALL progress per execution second; compare purchase/counter/outside option',
+         'saved_average_is_not_a_purchase_veto':True,
++        'diagnostic_since':diagnostic_start,
+         'current_saved':own.get('saved'), 'current_deals':own.get('deals'), 'current_forum':own.get('forum'),
+         'forum_raw_all_gain_per_0_01':.003 if journal.get('market_rules',{}).get('buyer_forum_metric')=='raw' else None,
+         'segments_60min':segments,'mature_quality_cohorts':mature_cohorts,
+--- a/r3/policy_learning.py
++++ b/r3/policy_learning.py
+@@ -0,0 +1,88 @@
++"""Small background service-loss and negotiation observations, never payment authority."""
++from collections import Counter,defaultdict
++import math
++import time
++
++KEY='policy-learning:v23'
++
++
++def epoch(journal,role='buyer'):
++    rules=journal.get('market_rules',{})
++    scoring=rules.get('buyer_score_epoch',0)
++    return max(scoring,journal.get('buyer_revision_epoch',0) if role=='buyer' else 0)
++
++
++def packet(journal,now=None):
++    now=time.time() if now is None else now;r=journal.get(KEY,{})
++    if (not -2<=now-r.get('at',-1000)<180 or now>=r.get('expires_at',0) or
++            r.get('rules_hash')!=journal.get('market_rules',{}).get('sha256')):return {}
++    return r
++
++
++def counter_probability(model,ratio,base):
++    bucket=str(min(19,max(0,int(ratio*20))))
++    row=(model or {}).get(bucket,{})
++    n=row.get('n',0);paid=row.get('paid',0)
++    if type(n) is not int or type(paid) is not int or not 0<=paid<=n:return base
++    return max(.03,min(.95,(paid+4*base)/(n+4)))
++
++
++def update(journal,config,now=None):
++    now=time.time() if now is None else now;rules=journal.get('market_rules',{})
++    cut=max(now-3600,epoch(journal,'shop'))
++    visits={r['task']:r for r in journal.events('customer_visit',8000) if cut<=r['_ts']<=now}
++    sales={r['task']:r for r in journal.events('shop_settled',10000) if r.get('task') and cut<=r['_ts']<=now}
++    offered={r['task']:r for r in journal.events('shop_opportunity',10000) if cut<=r['_ts']<=now-300}
++    observed=Counter();success=Counter()
++    for task,row in offered.items():
++        sku=row.get('sku')
++        if sku:observed[sku]+=1;success[sku]+=task in sales
++    blocked=defaultdict(dict)
++    for r in journal.events('stockout',4000):
++        if not cut<=r['_ts']<=now or r.get('reason')!='reserved_stock':continue
++        if r.get('task') in sales or r.get('eligible_units',0)<=0:continue
++        sku=r.get('sku');visit=visits.get(r.get('task'),{})
++        # Anonymous bursts are not evidence of unlimited profitable demand.
++        identity=visit.get('signer') or 'anonymous'
++        key=(str(identity),int(r['_ts']//60))
++        if sku:blocked[sku].setdefault(key,r)
++    service={}
++    for sku,values in blocked.items():
++        minutes={int(r['_ts']//60) for r in values.values()}
++        probability=(success[sku]+1)/(observed[sku]+4)
++        service[sku]={'blocked_minutes':len(minutes),'deduplicated_requests':len(values),
++            'paid':success[sku],'offered_mature':observed[sku],
++            'completion_scenario':probability,
++            'incremental_paid_rate_scenario':sum(math.exp(-(now-r['_ts'])/3600) for r in values.values())*probability,
++            'qualified':len(minutes)>=3 and success[sku]>=2,
++            'not_proven_lost_sales':True}
++    cut=max(now-21600,rules.get('buyer_score_epoch',0))
++    orders={r['order']:r for r in journal.events('buyer_order',5000) if cut<=r['_ts']<=now}
++    paid={r['order']:r for r in journal.events('purchase',10000) if cut<=r['_ts']<=now}
++    failed={(r.get('order'),r.get('shop')) for r in journal.events('attempt',6000)
++            if cut<=r['_ts']<=now and r.get('kind')=='no_agreement'}
++    first={}
++    for r in reversed(journal.events('buyer_counter',6000)):
++        if cut<=r['_ts']<=now-30 and r.get('order') in orders and r.get('ask',0)>0:
++            first.setdefault((r['order'],r['shop']),r)
++    negotiations=defaultdict(lambda:defaultdict(lambda:{'n':0,'paid':0}))
++    for key,r in first.items():
++        purchase=paid.get(key[0]);same=bool(purchase and purchase.get('shop')==key[1])
++        if not same and key not in failed:continue  # Pending/transport ambiguity is not a price failure.
++        kind=orders[key[0]].get('kind');bucket=str(min(19,max(0,int(r['price']/r['ask']*20))))
++        row=negotiations[kind][bucket];row['n']+=1
++        row['paid']+=bool(same and purchase['price']<=r['price'])
++    result={'at':now,'expires_at':now+180,'rules_hash':rules.get('sha256'),
++        'service':service,'counter_completion_by_kind':{k:dict(v) for k,v in negotiations.items()},
++        'limits':'Selected observational cohorts, not causal uplift or hidden demand; no peer text instructions.'}
++    journal.put(KEY,result)
++    journal.add('policy_learning_prepared',{'at':now,'service_skus':len(service),
++        'qualified_service_skus':sum(r['qualified'] for r in service.values()),
++        'counter_samples':sum(r['n'] for group in negotiations.values() for r in group.values())})
++    return result
++
++
++def service_adjust(journal,sku,base,raw,config,now,learning=None):
++    row=(packet(journal,now) if learning is None else learning).get('service',{}).get(sku,{})
++    extra=min(max(base,raw),max(0,row.get('incremental_paid_rate_scenario',0))) if row.get('qualified') else 0
++    return base+extra,dict(row,increment_applied=extra)
+--- a/r3/prepared.py
++++ b/r3/prepared.py
+@@ -15,7 +15,8 @@
+                            (kind,)).fetchone() for kind in KINDS]
+     return identity([row[0] if row else 0 for row in rows] + [journal.get('buyer_revision_epoch', 0),
+                     journal.get('market_rules',{}).get('buyer_saved_formula'),
+-                    journal.get('buyer-cost-scenarios:v22',{}).get('id')])
++                    journal.get('buyer-cost-scenarios:v22',{}).get('id'),
++                    journal.get('policy-learning:v23',{}).get('at')])
+ 
+ 
+ def pack_execution(row):
+--- a/r3/prewindow.py
++++ b/r3/prewindow.py
+@@ -38,9 +38,11 @@
+     from .demand_policy import context as demand_context
+     demand=demand_context(journal,config,now)
+     demand_id=demand.get('id') if demand else None
++    from .policy_learning import packet as learning_packet
++    learning_at=learning_packet(journal,now).get('at') if config.get('book_growth_v23_enabled') else None
+     phase = 'early' if now < opens - 90 else 'checked' if now < opens - 15 else 'ready'
+     if (old.get('window') == [opens, closes] and old.get('phase') == phase
+-            and old.get('policy_hash') == config_hash(config) and old.get('demand_policy_id')==demand_id
++            and old.get('policy_hash') == config_hash(config) and old.get('demand_policy_id')==demand_id and old.get('service_policy_at')==learning_at
+             and 0 <= now - old.get('at', 0) < 45):
+         return old
+     from .economy import restock_candidates, cash_capacity
+@@ -62,7 +64,7 @@
+     summaries = [{k: c.get(k) for k in ('id', 'buy', 'score', 'capital_commitment', 'expected_delta', 'objective_utility')}
+                  for c in options]
+     packet = {'schema': 1, 'at': now, 'expires_at': closes - 15, 'window': [opens, closes], 'phase': phase,
+-              'rules_hash': rules['sha256'], 'policy_hash': config_hash(config),'demand_policy_id':demand_id, 'strategy_version': strategy['version'],
++              'rules_hash': rules['sha256'], 'policy_hash': config_hash(config),'demand_policy_id':demand_id,'service_policy_at':learning_at, 'strategy_version': strategy['version'],
+               'selected': chosen['id'], 'options': summaries,
+               'held': dict(Counter(u['sku'] for u in virtual['units'])),
+               'unit_commitments': {c['sku']: c['capital_commitment'] / c['qty'] for c in candidates},
+@@ -91,11 +93,14 @@
+     from .demand_policy import context as demand_context
+     demand=demand_context(journal,config,now)
+     demand_id=demand.get('id') if demand else None
++    from .policy_learning import packet as learning_packet
++    learning_at=learning_packet(journal,now).get('at') if config.get('book_growth_v23_enabled') else None
+     if (not supply_open(inv, now) or packet.get('schema') != 1
+             or packet.get('window') != [window.get('opens_at'), window.get('closes_at')]
+             or packet.get('rules_hash') != journal.get('market_rules', {}).get('sha256')
+             or packet.get('policy_hash') != config_hash(config)
+             or packet.get('demand_policy_id')!=demand_id
++            or packet.get('service_policy_at')!=learning_at
+             or packet.get('strategy_version') != strategy['version']
+             or not 0 <= now - packet.get('at', 0) <= 90 or now >= packet.get('expires_at', 0)):
+         return None
+--- a/r3/research.py
++++ b/r3/research.py
+@@ -189,7 +189,14 @@
+             'Quantity follows finite demand quantiles, marginal Book, available cash, storage/refund reserves '
+             'and executable supply time. Probe-unit probability decreases with existing inventory and depth. '
+             'Distinguish estimated low demand from a quantity ceiling; do not request buying just to fill space.')
+-    if config.get('shop_adaptive_demand_enabled'):
++    if config.get('book_growth_v23_enabled'):
++        instructions+=(' The cover_cycles operating control is active: it multiplies the empirical supply-protection '
++            'period within the finite planning horizon. Compare actual alternative lots and Book stress. '
++            'Service-loss increments are qualified, deduplicated reservation scenarios, not guaranteed lost sales. '
++            'When all legal line portfolios fit cash, supply slots/time are scarce: maximize conservative absolute '
++            'Book per supply opportunity rather than Book per credit. Never use missing healthy exact rewards '
++            'as evidence of a poor cohort; inspect exact_reward_coverage and diagnostic_since. ')
++    elif config.get('shop_adaptive_demand_enabled'):
+         instructions+=(' Shop demand now uses an evidence-derived posterior multiplier, not a fixed 0.5. '
+             'The protection period uses observed attempted supply-window reliability and current time to supply, '
+             'limited by evaluated economics and shelf life, not fixed 1/2/3 cycle ceilings. Legacy cover_cycles '
+@@ -337,6 +344,8 @@
+             or capability_plan_id is not None and previous.get('capability_plan_id')!=capability_plan_id)
+     interval=config.get('research_interval_seconds',1200)
+     changed_revision=previous.get('execution_revision')!=config.get('execution_revision')
++    if config.get('research_event_driven_enabled'):
++        urgent=operating_state is not None and previous.get('operating_state')!=operating_state
+     if now-previous.get('at',0)<(300 if urgent or preopen or changed_revision or previous.get('rules_hash')!=rules['sha256'] else interval):
+         return None
+     journal.put('research-last-attempt',{'at':now,'window':window if preopen else previous.get('window'),'rules_hash':rules['sha256'],
+--- a/r3/shop_growth.py
++++ b/r3/shop_growth.py
+@@ -44,6 +44,8 @@
+     supported=paid>=3 or public_qualified and config.get('objective_feedback_enabled')
+     if config.get('shop_adaptive_demand_enabled'):
+         hours=coverage_hours if type(coverage_hours) in (int,float) and math.isfinite(coverage_hours) and coverage_hours>0 else config.get('supply_cycle_seconds',1200)/3600
++        if config.get('book_growth_v23_enabled'):
++            hours=min(config.get('planning_horizon_hours',6),hours*max(1,min(3,config.get('shop_demand_horizon_cycles',1))))
+         arrivals=max(0,rate)*hours
+     elif supported and config.get('objective_feedback_enabled'):
+         arrivals*=max(1,min(3 if paid>=3 else 2,config.get('shop_demand_horizon_cycles',1)))
+@@ -125,6 +127,11 @@
+ 
+ def allocate_velocity(candidates,inv,capacity,config,existing,merchant):
+     total=capacity['spendable'];slots=planning_slots(config,existing,candidates)
++    # If even the most expensive legal set of lines fits, scarce resources
++    # are supply lines/time, not cash. Do not optimize pennies per credit then.
++    lines=min(10,config['restock_max_lines'])
++    cash_abundant=bool(config.get('book_growth_v23_enabled') and
++        sum(sorted((c['capital_commitment'] for c in candidates),reverse=True)[:lines])<=total)
+     held={};coverage=set();weights=merchant.get('coverage_weights',{})
+     for unit in existing:
+         held[unit['sku']]=held.get(unit['sku'],0)+1
+@@ -150,12 +157,22 @@
+         coverage.update(c['evidence'].get('growth',{}).get('coverage_keys',[]))
+     breadth=total*config.get('assortment_coverage_fraction',.35)
+     while True:
++        if cash_abundant:break
+         available=[c for c in candidates if feasible(c) and c['sku'] not in selected and gain(c)>0 and
+                    len(selected)<max(1,config['restock_max_lines']//3) and used+unit_cost(c)<=breadth]
+         if not available:break
+         add(max(available,key=lambda c:(gain(c)/max(1,unit_cost(c))**.5,marginal_row(c)['book'])))
+     def priority(c):
+         delta=marginal_row(c)
++        if cash_abundant:
++            # A new line is valued as its feasible positive-margin lot. One
++            # tiny unit must not crowd out a valuable multi-unit supply slot.
++            if c['sku'] not in selected:
++                lot=[marginal(c,q,held.get(c['sku'],0)) for q in range(1,c['qty']+1)]
++                value=sum(max(0,r['book']) for r in lot)
++                duration=max(1/3,max(r['holding'] for r in lot))
++            else:value=delta['book'];duration=delta['holding']
++            return (value/max(1/3,duration),delta['book']/max(1/3,delta['holding']),delta['book'])
+         slot_cost=0 if c['sku'] in selected else config.get('shop_supply_slot_capital',100000)
+         capital_time=(unit_cost(c)+slot_cost)*delta['holding']
+         scaled=(c.get('rank_progress_surrogate') or 0)*delta['book']/max(1,c['expected_delta']['book'])
+@@ -172,6 +189,7 @@
+             score=sum(d['book'] for d in deltas),
+             expected_delta={key:sum(d[key] for d in deltas) for key in ['book','profit','revenue']},
+             allocation_book='capital_velocity',evidence=dict(c['evidence'],
++                scarce_resource='supply_lines_and_time' if cash_abundant else 'capital_and_time',
+                 marginal_units=deltas,portfolio_used=used,
+                 capital_velocity_scenario=sum(d['book']/d['holding'] for d in deltas)/max(1,unit_cost(c)*qty))))
+     return sorted(result,key=lambda c:(c['expected_delta']['book']/
+@@ -217,7 +235,7 @@
+         'held_skus_target_at_most_two':low,'held_skus_with_repeat_paid_evidence':repeat,
+         'target_shortfall_units_scenario':shortfall,'merchant_context_at':merchant.get('at'),
+         'supply_cycle_seconds':config.get('supply_cycle_seconds',1200),
+-        'repeat_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') else max(1,min(3,config.get('shop_demand_horizon_cycles',1))),
++        'repeat_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') and not config.get('book_growth_v23_enabled') else max(1,min(3,config.get('shop_demand_horizon_cycles',1))),
+         'public_only_coverage_cycles':None if config.get('shop_adaptive_demand_enabled') else max(1,min(2,config.get('shop_demand_horizon_cycles',1))),
+         'public_equal_share_prior_multiplier':'data-derived' if config.get('shop_adaptive_demand_enabled') else .5,
+         'demand_policy_id':merchant.get('demand_policy_id'),
+--- a/r3/shop_offer.py
++++ b/r3/shop_offer.py
+@@ -0,0 +1,34 @@
++"""Known-cost Buyer Saved scenarios for seller candidates, not promised rewards."""
++import math
++from .buyer_scoring import contribution,MARGIN
++
++
++def benchmark(journal):
++    from .decision_view import fact
++    return fact(journal,'shop-buyer-score-benchmark-v23',lambda:_benchmark(journal))
++
++
++def _benchmark(journal):
++    values=sorted(r['saved'] for r in journal.snapshot('board.json',{}).get('buyers',[])
++        if r.get('deals',0)>=50 and type(r.get('saved')) in (int,float) and 0<=r['saved']<=1)
++    return values[len(values)//2] if values else .7
++
++
++def target_prices(unit,risk,journal):
++    L,C=unit['list_price'],unit['cost'];f=risk['failure_upper'];covered=risk['covered_lower']
++    if not 0<=C<L or f>=1:return []
++    targets={benchmark(journal),.8,.9}
++    return [math.floor(L-(t+f-covered)/(1-f)*(L-C)) for t in targets if 0<=(t+f-covered)/(1-f)<=1]
++
++
++def completion(base,unit,price,risk,journal,samples):
++    L,C=unit['list_price'],unit['cost']
++    if not 0<=C<L:return base,{'cost_domain':'unsupported_nonpositive_margin'}
++    saved=contribution(price,L,risk['failure_upper'],risk['covered_lower'],score_formula=MARGIN,unit_cost=C)
++    threshold=benchmark(journal)
++    # A structural prior reacts to new incentives. Mature own quote outcomes
++    # dominate it; neither the public median nor this logistic is a guarantee.
++    prior=.08+.84/(1+math.exp(max(-30,min(30,-10*(saved-threshold)))))
++    value=(max(0,samples)*base+4*prior)/(max(0,samples)+4)
++    return value,{'expected_buyer_saved_scenario':saved,'market_saved_benchmark':threshold,
++        'structural_completion_prior':prior,'own_quote_samples':samples,'not_causal_or_exact_reward':True}
+--- a/tests/test_championship.py
++++ b/tests/test_championship.py
+@@ -18,7 +18,7 @@
+ def test_call_slot_prefers_absolute_growth_when_cash_is_abundant():
+     cheap=candidate('cheap',10000,5000,rate=8,qty=12)
+     goods=candidate('goods',1200000,100000,rate=1,qty=1)
+-    config=cfg(restock_max_lines=1)
++    config=cfg(restock_max_lines=1,book_growth_v23_enabled=False)
+     old=allocate_velocity([cheap,goods],{}, {'spendable':3000000},config,[],{})
+     new=allocate_championship([cheap,goods],{}, {'spendable':3000000},config,[],{})
+     assert old[0]['sku']=='cheap'
+--- a/tests/test_v23_policy_learning.py
++++ b/tests/test_v23_policy_learning.py
+@@ -0,0 +1,156 @@
++import time
++import pytest
++from r3.state import Journal,policy,atomic_json
++from r3.policy_learning import update,packet,service_adjust,counter_probability
++from r3.shop_growth import target_stock,allocate_velocity
++from r3.market_memory import buyer_price_actions
++
++
++def test_adaptive_horizon_control_changes_real_quantity():
++    cfg=dict(policy(),shop_adaptive_demand_enabled=True,shop_inventory_caps_enabled=False)
++    small=target_stock(10,4,dict(cfg,shop_demand_horizon_cycles=1),coverage_hours=.34)
++    large=target_stock(10,4,dict(cfg,shop_demand_horizon_cycles=3),coverage_hours=.34)
++    assert large>small
++
++
++def test_service_loss_is_deduplicated_and_requires_paid_evidence(tmp_path):
++    j=Journal(tmp_path);now=time.time();j.put('market_rules',{'sha256':'r'})
++    for n in range(3):
++        j.add('shop_opportunity',{'task':'paid'+str(n),'sku':'G1'},ts=now-500)
++        j.add('shop_settled',{'task':'paid'+str(n),'sku':'G1'},ts=now-400)
++    for minute in range(3):
++        for n in range(30):
++            j.add('stockout',{'sku':'G1','task':str(minute)+':'+str(n),'reason':'reserved_stock','eligible_units':1},ts=now-60*minute-1)
++    p=update(j,policy(),now)
++    assert p['service']['G1']['deduplicated_requests']==3
++    assert p['service']['G1']['qualified']
++    rate,evidence=service_adjust(j,'G1',.8,3.5,policy(),now)
++    assert .8<rate<=4.3 and evidence['not_proven_lost_sales']
++    assert service_adjust(j,'G1',.8,3.5,policy(),now+181)[0]==.8
++    j.put('market_rules',{'sha256':'changed'})
++    assert not packet(j,now)
++
++
++def test_anonymous_burst_cannot_create_unlimited_demand(tmp_path):
++    j=Journal(tmp_path);now=time.time()
++    for n in range(200):j.add('stockout',{'sku':'G1','task':str(n),'reason':'reserved_stock','eligible_units':1},ts=now-1)
++    row=update(j,policy(),now)['service']['G1']
++    assert row['deduplicated_requests']==1 and not row['qualified']
++
++
++def test_counter_learning_uses_completed_same_route_price_outcomes_only(tmp_path):
++    j=Journal(tmp_path);now=time.time()
++    for oid in ('paid','failed','transport','pending'):
++        j.add('buyer_order',{'order':oid,'kind':'goods'},ts=now-100)
++        j.add('buyer_counter',{'order':oid,'shop':'s','ask':1000,'price':800},ts=now-80)
++    j.add('purchase',{'order':'paid','shop':'s','price':800},ts=now-60)
++    j.add('attempt',{'order':'failed','shop':'s','kind':'no_agreement'},ts=now-60)
++    j.add('attempt',{'order':'transport','shop':'s','kind':'ReadTimeout'},ts=now-60)
++    model=update(j,policy(),now)['counter_completion_by_kind']['goods']
++    assert model['16']=={'n':2,'paid':1}
++    assert counter_probability(model,.8,.6)==pytest.approx(3.4/6)
++
++
++def test_saved_bid_frontier_is_unique_monotone_and_never_a_cap():
++    state={'metric':'saved','score_formula':'margin_share_v36','unit_cost':6500,'saved':.7,'deals':100}
++    actions=buyer_price_actions(8000,10000,{'list_price':10000},8000,.92,0,4,
++        saved_state=state,counter_model={},target_saved=[.8,.9])
++    assert len({a['id'] for a in actions})==len(actions)
++    assert any(a['id']=='accept' and a['price']==8000 for a in actions)
++    assert {6850,7200}<=set(a['price'] for a in actions)
++    later=buyer_price_actions(8000,10000,{'list_price':10000},8000,.92,1,4,previous_offer=7500,
++        saved_state=state,counter_model={},target_saved=[.8,.9])
++    assert all(a['price']>7500 for a in later)
++
++
++def candidate(sku,cost,price):
++    return {'sku':sku,'qty':1,'capital_commitment':cost,'max_cost':cost,'category':sku,
++        'expected_delta':{'book':price-cost,'profit':price,'revenue':price},'score':price-cost,
++        'evidence':{'arrival_rate_scenario':3,'planning_hours':6,'resale_price_scenario':price,
++            'scenario_unit_cost':cost,'refund_stress':0,'kind':'goods','exploration':False,
++            'growth':{},'expected_holding_hours':1}}
++
++
++def test_abundant_cash_optimizes_supply_slot_book_instead_of_per_credit():
++    cfg=dict(policy(),restock_max_lines=1,shop_inventory_caps_enabled=False)
++    offers=[candidate('cheap',10,30),candidate('valuable',1000000,1000300)]
++    old=allocate_velocity(offers,{}, {'spendable':10000000},dict(cfg,book_growth_v23_enabled=False),[],{})
++    new=allocate_velocity(offers,{}, {'spendable':10000000},cfg,[],{})
++    assert old[0]['sku']=='cheap' and new[0]['sku']=='valuable'
++    assert new[0]['expected_delta']['book']>old[0]['expected_delta']['book']
++    assert new[0]['evidence']['scarce_resource']=='supply_lines_and_time'
++    constrained=allocate_velocity(offers,{}, {'spendable':500},cfg,[],{})
++    assert sum(c['capital_commitment'] for c in constrained)<=500
++
++
++def test_diagnostics_do_not_mix_old_failed_orders_with_current_policy(tmp_path):
++    from r3.evolution import summarize
++    j=Journal(tmp_path);now=time.time();j.put('buyer_revision_epoch',now-60)
++    for n in range(20):
++        j.add('buyer_order',{'order':str(n),'kind':'goods'},ts=now-100)
++        j.add('market_result',{'order':str(n),'verified':False},ts=now-99)
++    j.add('buyer_order',{'order':'new','kind':'goods'},ts=now-50)
++    j.add('market_result',{'order':'new','verified':True},ts=now-40)
++    j.add('purchase',{'order':'new'},ts=now-40)
++    assert summarize(j,now)['goods']['conversion']==1
++    assert summarize(j,now)['goods']['closed']==1
++
++
++def test_offerable_inventory_does_not_count_reserved_units(tmp_path):
++    from r3.merchant import observe_inventory
++    j=Journal(tmp_path);now=time.time();j.reserve('u','task',180,now)
++    observe_inventory(j,{'round':3,'units':[{'unit':'u','sku':'G1'}]},now)
++    row=j.get('merchant_stock_timeline')[-1]
++    assert row['counts']=={'G1':1} and row['offerable_counts']=={}
++
++
++def test_shop_contract_model_values_full_refund_without_forcing_unprofitable_sale(tmp_path):
++    from r3.shop_offer import target_prices,completion
++    j=Journal(tmp_path)
++    atomic_json(j.md/'board.json',{'buyers':[{'saved':.7,'deals':100}]})
++    unit={'list_price':10000,'cost':6000}
++    short={'failure_upper':.2,'covered_lower':.05};full={'failure_upper':.2,'covered_lower':.2}
++    a,ea=completion(.5,unit,7000,short,j,0)
++    b,eb=completion(.5,unit,7000,full,j,0)
++    assert b>a and eb['expected_buyer_saved_scenario']>ea['expected_buyer_saved_scenario']
++    assert target_prices(unit,full,j)
++
++
++def test_incomplete_exact_rewards_are_not_reported_as_cohort_mean(tmp_path):
++    from r3.objective_context import buyer_evidence
++    j=Journal(tmp_path);now=time.time()
++    j.put('market_rules',{'buyer_saved_formula':'margin_share_v36'})
++    for oid in ('healthy','refunded'):
++        j.add('purchase',{'order':oid,'kind':'goods','paid_at':now-25000,'score_formula':'margin_share_v36'},ts=now-25000)
++        j.add('outcome',{'order':oid,'canonical':True,'matured':True,'refund_status':'confirmed',
++            'score_formula':'margin_share_v36','saved_contribution':0 if oid=='refunded' else None})
++    cohort=buyer_evidence(j,now)['mature_quality_cohorts']['goods']
++    assert cohort['confirmed_saved_paid_mean'] is None
++    assert cohort['known_subset_saved_mean']==0 and cohort['exact_reward_coverage']==.5
++
++
++def test_customer_price_memory_is_scoped_to_scoring_regime(tmp_path):
++    from r3.customer_memory import profile
++    j=Journal(tmp_path);now=time.time();j.put('market_rules',{'buyer_score_epoch':now-50})
++    for task,at,price in [('old',now-100,900),('new',now-10,600)]:
++        j.add('customer_visit',{'task':task,'signer':'key:peer'},ts=at)
++        j.add('customer_paid',{'task':task,'price':price,'list_price':1000,'category':'x'},ts=at+1)
++    row=profile(j,'key:peer','x')
++    assert row['paid_visits']==1 and row['median_paid_to_list_ratio']==.6
++
++
++def test_qualified_reserved_pipeline_can_replenish_one_held_unit(tmp_path):
++    from test_market_cycle import fixture
++    from r3.economy import restock_candidates
++    j,cfg,now=fixture(tmp_path);cfg=dict(cfg,shop_adaptive_demand_enabled=True)
++    inv=j.snapshot('inventory.json');inv.update(restock={'open':True,'opens_at':now-1,'closes_at':now+180},
++        units=[{'unit':'u','sku':'G111','kind':'food','cost':500,'expires_at':now+86400}])
++    j.reserve('u','busy',180,now)
++    j.put('policy-learning:v23',{'at':now,'expires_at':now+180,'rules_hash':'official',
++        'service':{'G111':{'qualified':True,'incremental_paid_rate_scenario':0}}})
++    j.put('merchant_context_v5',{'at':now,'demand_policy_id':'uncalibrated-neutral','service_policy_at':now,
++        'coverage_weights':{},'skus':{'G111':{'arrival_rate_scenario':1,'paid_arrival_rate_scenario':1,
++            'positive_paid_while_available':3,'service_loss_adjustment':{'qualified':True}}}})
++    rows=restock_candidates(inv,j.snapshot('catalog.json'),[],j,cfg,now)
++    assert rows and rows[0]['evidence']['reserved_pipeline_buffer']==1
++    assert rows[0]['qty']>=1 and rows[0]['expected_delta']['book']>0
+--- a/verify_market_cycle_live.py
++++ b/verify_market_cycle_live.py
+@@ -46,7 +46,7 @@
+     try:
+         with lease(ROOT/'.market/shop-recovery-guard.lock'):guard_active=False
+     except RuntimeError:guard_active=True
+-    release='v22' if cfg.get('buyer_patch36_enabled') else 'v21' if cfg.get('shop_adaptive_demand_enabled') else 'v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
++    release='v23' if cfg.get('book_growth_v23_enabled') else 'v22' if cfg.get('buyer_patch36_enabled') else 'v21' if cfg.get('shop_adaptive_demand_enabled') else 'v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
+     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
+     manifest=read_json(promotion,{})
+     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]

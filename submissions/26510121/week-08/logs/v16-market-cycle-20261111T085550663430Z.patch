@@ -1,0 +1,1131 @@
+--- a/r3/feedback.py
++++ b/r3/feedback.py
+@@ -0,0 +1,256 @@
++"""Expiring, evidence-bound operating policies and execution/outcome feedback.
++
++Background roles measure the market; Main reads a small typed packet before
++building candidates. Reviewed intents can select bounded operating responses.
++They cannot change payment/quality/price caps or authorize a supply purchase.
++"""
++from collections import Counter
++import json
++import math
++import statistics
++import time
++from .state import atomic_json, identity
++
++REVISION = 'objective-feedback-v16-1'
++FILE = 'operating-policy-v16.json'
++LIMITS = {'shop': {'shop_demand_horizon_cycles': (1., 3.), 'shop_inventory_ceiling': (120, 240),
++                    'shop_sku_trend_factors': None,'shop_public_demand_skus':None},
++          'buyer': {'buyer_frontier_category_enabled': (False, True)}}
++
++
++def valid_patch(role, patch):
++    if not isinstance(patch, dict) or set(patch)-LIMITS[role].keys():
++        return False
++    for key, value in patch.items():
++        if key=='shop_public_demand_skus':
++            if not isinstance(value,list) or len(value)>20 or any(not isinstance(s,str) or not s.startswith('G') or len(s)>64 for s in value):return False
++        elif key=='shop_sku_trend_factors':
++            if (not isinstance(value,dict) or len(value)>20 or any(not isinstance(sku,str) or not sku.startswith('G') or len(sku)>64
++                or type(factor) not in (int,float) or not math.isfinite(factor) or not .75<=factor<=1.5 for sku,factor in value.items())):return False
++        elif key.endswith('_enabled'):
++            if type(value) is not bool: return False
++        elif type(value) not in (int, float) or not math.isfinite(value) or not LIMITS[role][key][0] <= value <= LIMITS[role][key][1]:
++            return False
++        elif key == 'shop_inventory_ceiling' and type(value) is not int:
++            return False
++    return True
++
++
++def fresh(journal, now):
++    rules = journal.get('market_rules', {})
++    return bool(rules.get('compatible') and rules.get('buyer_compatible') and rules.get('sha256')
++        and 0 <= now-rules.get('at', now) < 7200
++        and 0 <= now-journal.get('board_checked_at', 0) < 180
++        and 0 <= now-journal.get('public_feed_caught_up_at', 0) < 180)
++
++
++def update(journal, config, now=None):
++    if not config.get('objective_feedback_enabled'): return None
++    now = time.time() if now is None else now
++    previous = journal.snapshot(FILE, {})
++    if 0 <= now-previous.get('at', 0) < 45: return previous
++    board = journal.snapshot('board.json', {})
++    market = journal.get('cycle-market-analytics', {})
++    rules = journal.get('market_rules', {})
++    own = next((r for r in board.get('shops', []) if r.get('name') == 'seochanit'), {})
++    with journal.connect() as db:
++        def rows(kind, lo=now-3600):
++            return [dict(json.loads(raw), _ts=at) for at, raw in db.execute(
++                'SELECT ts,data FROM events WHERE kind=? AND ts>=? AND ts<=? ORDER BY ts,rowid', (kind, lo, now))]
++        sales = list({r['unit']: r for r in rows('shop_settled')}.values())
++        blocks = rows('restock_blocked')
++        shortages = rows('stockout')
++        orders = {r['order']: r for r in rows('buyer_order')}
++        results = {r['order']: r for r in rows('market_result') if r.get('order') in orders}
++        purchases = {r['order']: r for r in rows('purchase')}
++        attempts = rows('attempt')
++        quotes = rows('quote_comparison')
++        canonical_latest={r['order']:r for r in rows('outcome') if r.get('canonical')}
++        mature_outcomes = {oid:r for oid,r in canonical_latest.items() if r.get('matured')
++                           and r.get('refund_status')!='expected_by_warranty_rule'}
++        mature_policy_rows = {}
++        for oid in mature_outcomes:
++            frozen = db.execute('SELECT value FROM kv WHERE key=?', ('feedback-order:'+oid,)).fetchone()
++            if frozen: mature_policy_rows[oid] = json.loads(frozen[0])
++        choices = rows('feedback_main_choice')
++        prior_rows = db.execute('SELECT ts,data FROM events WHERE kind=? AND ts<=? AND ts>=? ORDER BY ts DESC LIMIT 1',
++                                ('feedback_market_observation', now-1200, now-3900)).fetchall()
++    segments = {}
++    for kind in ('food', 'goods'):
++        closed = {oid for oid in results if orders[oid].get('kind') == kind}
++        segments[kind] = {'closed': len(closed), 'paid': len(closed & purchases.keys()),
++                         'conversion': len(closed & purchases.keys())/max(1, len(closed)),
++                         'quotes':sum(orders.get(r.get('order'),{}).get('kind')==kind for r in quotes),
++                         'above_cap':sum(orders.get(r.get('order'),{}).get('kind')==kind and r.get('ask',0)>r.get('assessment',{}).get('cap',float('inf')) for r in quotes)}
++    peers = {}
++    for role in ('shops', 'buyers'):
++        peers[role] = [{k: r.get(k) for k in ('name', 'all', 'book', 'revenue', 'deals', 'saved', 'forum', 'stock_units', 'alive')}
++                      for r in board.get(role, []) if type(r.get('all')) in (int, float)]
++    observation = {'at': now, 'board_at': journal.get('board_checked_at'), 'peers': peers}
++    trends = {}
++    if prior_rows:
++        old = json.loads(prior_rows[0][1]); hours = (now-prior_rows[0][0])/3600
++        for role in peers:
++            baseline = {r['name']: r for r in old['peers'][role]}
++            compared = []
++            for row in peers[role]:
++                p = baseline.get(row['name'])
++                if not p: continue
++                compared.append({'name': row['name'], **{f+'_per_hour': (row[f]-p[f])/hours
++                    for f in ('book', 'deals', 'saved') if type(row.get(f)) in (int, float) and type(p.get(f)) in (int, float)}})
++            metric = 'book_per_hour' if role == 'shops' else 'saved_per_hour'
++            top = sorted(compared, key=lambda r: r.get(metric, 0), reverse=True)[:5]
++            ours = [r for r in compared if r['name'] == 'seochanit']
++            trends[role] = top + [r for r in ours if r not in top]
++    windows = market.get('windows', {})
++    recent = windows.get('20', {}).get('trades', 0)
++    preceding = max(0, windows.get('60', {}).get('trades', 0)-recent)
++    shift_ratio = (recent+10)/(preceding/2+10)
++    regime = 'unverified' if not fresh(journal, now) else ('shock' if recent+preceding >= 60 and (shift_ratio > 2 or shift_ratio < .5) else 'normal')
++    inv = journal.snapshot('inventory.json', {})
++    cap = journal.get('market_control', {}).get('cash_capacity', {})
++    positive = sum(r['price']-r['cost'] for r in sales)
++    live_peer_stock = [r['stock_units'] for r in peers['shops'] if r['name'] != 'seochanit'
++                       and r.get('alive') is True and type(r.get('stock_units')) is int and r['stock_units'] > 0]
++    median_stock = statistics.median(live_peer_stock) if live_peer_stock else None
++    issued = journal.get('research-last-result', {})
++    reviewed = ((issued.get('operating_actions_reviewed') is True or issued.get('trial_review_approved') is True)
++                and issued.get('rules_hash') == rules.get('sha256')
++                and 0 <= now-issued.get('at', 0) < 1200 and now < issued.get('expires_at', 0))
++    intents = issued.get('operating_intents', []) if reviewed else []
++    patches = {'shop': {}, 'buyer': {}}
++    reasons = []
++    evidence_ok = fresh(journal, now) and 0 <= now-market.get('at', 0) < 180 and board.get('round') == 3
++    if evidence_ok and positive > 0 and len(sales) >= 5 and (len(blocks)>=2 or len(shortages) >= 3) and cap.get('spendable', 0) > 1000000:
++        # Supply failures justify a larger coverage horizon only for SKUs with
++        # repeat own paid demand. Candidate economics still reject bad units.
++        cycles = min(3., 1.25 + min(1.75, len(blocks)/4))
++        if regime == 'shock': cycles = min(cycles, 1.5)
++        if 'stock_coverage' in intents:
++            patches['shop']['shop_demand_horizon_cycles'] = cycles
++            if len(inv.get('units', [])) >= .8*config.get('shop_inventory_ceiling', 180):
++                patches['shop']['shop_inventory_ceiling'] = min(240, config.get('shop_inventory_ceiling', 180)+30)
++        else: reasons.append('stock_coverage_review_pending')
++    if evidence_ok and segments['goods']['closed'] >= 20 and segments['goods']['conversion'] < .3:
++        if 'buyer_price_gap' in intents:
++            patches['buyer']['buyer_frontier_category_enabled'] = True
++        else: reasons.append('buyer_frontier_review_pending')
++    if evidence_ok and 'stock_coverage' in intents:
++        factors={}
++        qualified=[]
++        for sku in market.get('top_skus',[])[:20]:
++            n=sku.get('recent60',0);current=sku.get('recent20',0)
++            if n>=12:
++                ratio=(current+5)/(max(0,n-current)/2+5)
++                factors[sku['sku']]=round(max(.75,min(1.5,1+(ratio-1)*.5))*20)/20
++            if n>=20 and current>=10 and sku.get('buyers20',0)>=3:qualified.append(sku['sku'])
++        if factors:patches['shop']['shop_sku_trend_factors']=factors
++        if qualified:patches['shop']['shop_public_demand_skus']=sorted(qualified)
++    if not evidence_ok: reasons.append('facts_stale_or_rules_unverified')
++    if journal.get('market_control', {}).get('pause_restock'): reasons.append('fresh_supply_guards_still_required')
++    # This semantic ID is stable when the policy is unchanged. Merely observing
++    # another minute must not invalidate every prepared supply plan.
++    policy_id = identity([REVISION, rules.get('sha256'), regime, patches])
++    choice_counts = Counter(r.get('policy_id') or 'unattributed' for r in choices)
++    linked_orders = {r.get('order'): r.get('policy_id') or 'unattributed' for r in choices if r.get('order')}
++    linked_tasks = {r['task']: r.get('policy_id') for r in choices if r.get('task') and not r.get('preview')}
++    outcomes = {}
++    for oid, pid in linked_orders.items():
++        if oid not in results: continue
++        out = outcomes.setdefault(pid, {'closed_orders': 0, 'paid': 0})
++        out['closed_orders'] += 1; out['paid'] += oid in purchases
++    shop_outcomes = {}
++    for sale in sales:
++        pid = linked_tasks.get(sale.get('task'))
++        if pid is None: continue
++        out = shop_outcomes.setdefault(pid, {'paid': 0, 'gross_revenue': 0, 'gross_margin': 0})
++        out['paid'] += 1; out['gross_revenue'] += sale['price']; out['gross_margin'] += sale['price']-sale['cost']
++    canonical = {}
++    for oid,frozen in mature_policy_rows.items():
++        value=mature_outcomes[oid].get('saved_contribution')
++        if type(value) not in (int,float):continue
++        row=canonical.setdefault(frozen['id'], {'mature_paid':0,'broken':0,'sum_final_saved_contribution':0,'saved_delta_at_assignment_sum':0})
++        row['mature_paid']+=1;row['broken']+=bool(mature_outcomes[oid].get('broken'))
++        row['sum_final_saved_contribution']+=value
++        if type(frozen.get('saved_at_assignment')) in (int,float):
++            row['saved_delta_at_assignment_sum']+=(value-frozen['saved_at_assignment'])/(frozen.get('deals_at_assignment',0)+101)
++    from .meta import rank_targets
++    scoring_board=dict(board,buyer_metric=rules.get('buyer_metric','saved'),buyer_forum_metric=rules.get('buyer_forum_metric','raw'))
++    packet = {'schema': 1, 'revision': REVISION, 'id': policy_id, 'at': now, 'expires_at': now+150,
++        'rules_hash': rules.get('sha256'), 'status': 'active' if evidence_ok else 'deferred', 'regime': regime,
++        'patches': patches, 'reasons': reasons, 'objective': 'maximize official Shop ALL + Buyer ALL',
++        'facts': {'external_20min_vs_prior40_rate_ratio': shift_ratio, 'external_trades_20min': recent,
++            'stock_units': len(inv.get('units', [])), 'median_online_peer_stock': median_stock,
++            'own_paid_sales_60min': len(sales), 'own_gross_margin_60min': positive,
++            'restock_block_reasons': dict(Counter(r.get('reason') for r in blocks)), 'stockouts_60min': len(shortages),
++            'buyer_segments_60min': segments, 'technical_attempts_60min': sum(r.get('kind') in ('ReadTimeout','ConnectTimeout','ConnectError') for r in attempts)},
++        'peer_trends': trends, 'research_at': issued.get('at'), 'reviewed_intents': intents,
++        'objective_targets':{'shop':rank_targets(scoring_board,'shop'),'buyer':rank_targets(scoring_board,'buyer')},
++        'execution_feedback': {'main_choices_by_policy': dict(choice_counts), 'buyer_closed_results_by_policy': outcomes,
++            'buyer_canonical_mature_results_by_policy':canonical,
++            'shop_paid_results_by_policy': shop_outcomes, 'shop_unlinked_paid': len(sales)-sum(r['paid'] for r in shop_outcomes.values()),
++            'note': 'Observed results, not randomized causal improvement. Gross margins precede future refunds/storage; no maturity claim.'},
++        'mature_promotion': journal.get('framework-plan', {}).get('evaluation', {}),
++        'constraints': ['no_price_cap_change', 'full_refund_reserve', 'live_supply_checks', 'no_unverified_profile_promotion']}
++    packet['checksum'] = identity(packet)
++    atomic_json(journal.md/FILE, packet)
++    journal.add('feedback_policy_created', packet)
++    if evidence_ok: journal.add('feedback_market_observation', observation)
++    journal.put('feedback-last-policy', packet)
++    return packet
++
++
++def get(journal, config, now=None):
++    if not config.get('objective_feedback_enabled'): return None
++    now = time.time() if now is None else now
++    from .decision_view import fact
++    row = fact(journal, 'operating-policy-v16', lambda: journal.snapshot(FILE, {}))
++    if (row.get('schema') != 1 or row.get('revision') != REVISION or row.get('status') != 'active'
++            or row.get('checksum') != identity({k:v for k,v in row.items() if k != 'checksum'})
++            or not 0 <= now-row.get('at', 0) < 150 or now >= row.get('expires_at', 0)
++            or row.get('rules_hash') != journal.get('market_rules', {}).get('sha256')
++            or not fresh(journal, now) or any(not valid_patch(role, row.get('patches', {}).get(role)) for role in LIMITS)):
++        return None
++    return row
++
++
++def apply(journal, config, role, order=None, now=None):
++    now = time.time() if now is None else now
++    if not config.get('objective_feedback_enabled'): return config
++    key = 'feedback-order:'+str(order) if order else None
++    frozen = journal.get(key) if key else None
++    row = frozen if frozen and frozen.get('rules_hash') == journal.get('market_rules', {}).get('sha256') else get(journal, config, now)
++    if row is None: return config
++    if key and (frozen is None or frozen.get('rules_hash')!=row.get('rules_hash')):
++        # Freeze one small decision policy for all checkout-recovery calls on
++        # the same order; the actual economic and payment guards stay fresh.
++        row = {k:row[k] for k in ('id','rules_hash','patches','at','regime')}
++        buyer=next((r for r in journal.snapshot('board.json',{}).get('buyers',[]) if r.get('name')=='seochanit'),{})
++        row.update(saved_at_assignment=buyer.get('saved'),deals_at_assignment=buyer.get('deals',0))
++        journal.put(key, row)
++    patch = row.get('patches', {}).get(role, {})
++    if not valid_patch(role, patch): return config
++    return dict(config, **patch, _feedback_policy_id=row['id'])
++
++
++def context(journal, config):
++    row = get(journal, config)
++    if not row: return {'status': 'no_fresh_operating_policy', 'applied_policy_id': config.get('_feedback_policy_id')}
++    return {'id': row['id'], 'applied_policy_id': config.get('_feedback_policy_id'), 'regime': row['regime'],
++            'patches': row['patches'], 'reasons': row['reasons'], 'research_at': row['research_at'],
++            'objective': row['objective']}
++
++
++def record_choice(journal, config, role, decision, selected, context):
++    if not config.get('objective_feedback_enabled'): return
++    try:
++        row = {'decision': decision, 'policy_id': config.get('_feedback_policy_id'), 'role': role,
++            'order': (context.get('order') or {}).get('order'), 'task': context.get('task'),
++            'operation': context.get('operation', 'quote' if role=='shop' else None),
++            'chosen': selected['id'], 'expected_delta': selected.get('expected_delta'),
++            'objective_utility': selected.get('objective_utility'), 'preview': bool(context.get('preview')),
++            'reason': 'selected_by_official_objective_surrogate_after_operating_policy'}
++        if context.get('_feedback_policy_id'):row['policy_id']=context['_feedback_policy_id']
++        journal.add('feedback_main_choice', row, role=role)
++    except Exception:
++        pass  # Telemetry cannot change the selected trade.
+--- a/r3/quality.py
++++ b/r3/quality.py
+@@ -0,0 +1,116 @@
++"""Temporal holdout gating for account-linked paid-review predictions.
++
++This is a predictive planning surrogate, never a causal effect of a price or
++warranty, and never an exact reconstruction of the official stars_rank formula.
++Failed/unsupported models remain shadow and cannot alter a quote's objective.
++"""
++from collections import defaultdict
++import statistics
++import time
++from .state import atomic_json, identity
++
++FILE = 'quality-model-v16.json'
++
++
++def bucket(grade, warranty, ratio):
++    return str(grade)+':'+('insured' if warranty >= 6 else 'short' if warranty > 0 else 'none')+':'+str(min(15,max(0,int(ratio*10))))
++
++
++def fit(rows):
++    accounts = defaultdict(list); groups = defaultdict(lambda: defaultdict(list))
++    for r in rows:
++        accounts[r['author']].append(r['stars']); groups[r['bucket']][r['author']].append(r['stars'])
++    baseline = statistics.mean(statistics.mean(v) for v in accounts.values()) if accounts else 3
++    models = {}
++    for key, users in groups.items():
++        n = sum(map(len, users.values()))
++        if n < 8 or len(users) < 3: continue
++        mean = statistics.mean(statistics.mean(v) for v in users.values())
++        models[key] = {'mean': (mean*len(users)+baseline*3)/(len(users)+3), 'accounts': len(users), 'reviews': n}
++    return {'baseline': baseline, 'groups': models, 'accounts': len(accounts)}
++
++
++def predict(model, row):
++    return model['groups'].get(row['bucket'], {}).get('mean', model['baseline'])
++
++
++def account_loss(rows, model, baseline=False):
++    errors = defaultdict(list)
++    for r in rows:
++        expected = model['baseline'] if baseline else predict(model, r)
++        errors[r['author']].append((r['stars']-expected)**2)
++    return statistics.mean(statistics.mean(v) for v in errors.values()) if errors else None
++
++
++def update(journal, config, now=None):
++    if not config.get('objective_feedback_enabled'): return None
++    now = time.time() if now is None else now
++    old = journal.snapshot(FILE, {})
++    if 0 <= now-old.get('at', 0) < 60: return old
++    catalog = journal.snapshot('catalog.json', {})
++    sales = {r['_event_id'].partition('settlement:')[2]: r for r in journal.events('shop_settled', 10000)}
++    deduplicated = {}
++    for review in journal.events('shop_review_observed', 10000):
++        if (review.get('source') != 'verified_market_result_and_accepted_own_task'
++                or not review.get('identity_known') or not review.get('author') or not 0 <= now-review['_ts'] <= 172800):
++            continue
++        sale = sales.get(str(review.get('ledger')))
++        value = catalog.get((sale or {}).get('sku'), {}).get('list_price')
++        if not sale or type(value) not in (int, float) or value <= 0: continue
++        stars = review.get('stars')
++        if type(stars) not in (int, float) or not 1 <= stars <= 5: continue
++        deduplicated.setdefault(str(review['ledger']), {'author': review['author'], 'stars': stars, 'at': review['_ts'],
++            'bucket': bucket(sale.get('grade'), sale.get('warranty_hours') or 0, sale['price']/value)})
++    rows = sorted(deduplicated.values(), key=lambda r:r['at'])
++    split = int(len(rows)*.7); train, test = rows[:split], rows[split:]
++    model = fit(train)
++    mse, baseline = account_loss(test, model), account_loss(test, model, True)
++    test_accounts = len({r['author'] for r in test})
++    covered = sum(r['bucket'] in model['groups'] for r in test)
++    ready = (len(train) >= 50 and len(test) >= 20 and model['accounts'] >= 8 and test_accounts >= 5
++             and covered >= len(test)*.7 and mse is not None and baseline > 0 and mse < baseline*.95)
++    summary = {'at': now, 'mode': 'validated_predictive_surrogate' if ready else 'shadow',
++        'train_reviews': len(train), 'holdout_reviews': len(test), 'train_accounts': model['accounts'],
++        'holdout_accounts': test_accounts, 'covered_holdout_reviews': covered,
++        'holdout_mse': mse, 'baseline_mse': baseline, 'temporal_split': .7,
++        'official_stars_rank_mapping_verified': False, 'not_causal': True}
++    full = fit(rows)
++    result = {'schema': 1, 'at': now, 'expires_at': now+300, 'rules_hash': journal.get('market_rules', {}).get('sha256'),
++        'summary': summary, 'model': full, 'uncertainty_stars': (mse**.5 if mse is not None else 5)}
++    result['checksum'] = identity(result)
++    atomic_json(journal.md/FILE, result); journal.put('quality-holdout-summary', summary)
++    journal.add('quality_holdout_evaluation', summary)
++    return result
++
++
++def augment(journal, config, unit, candidates, now=None):
++    if not config.get('objective_feedback_enabled'): return candidates
++    now = time.time() if now is None else now
++    from .decision_view import fact
++    row = fact(journal, 'quality-model-v16', lambda: journal.snapshot(FILE, {}))
++    if (row.get('schema') != 1 or row.get('summary', {}).get('mode') != 'validated_predictive_surrogate'
++            or not 0<=now-journal.get('board_checked_at',0)<180
++            or row.get('rules_hash') != journal.get('market_rules', {}).get('sha256')
++            or not 0 <= now-row.get('at', 0) < 300 or now >= row.get('expires_at', 0)
++            or row.get('checksum') != identity({k:v for k,v in row.items() if k != 'checksum'})):
++        return candidates
++    own = next((r for r in journal.snapshot('board.json', {}).get('shops', []) if r.get('name') == 'seochanit'), {})
++    current = own.get('stars')
++    if type(current) not in (int, float): return candidates
++    for candidate in candidates:
++        if candidate.get('action') == 'hold': continue
++        key = bucket(unit.get('grade'), candidate.get('warranty_hours') or 0, candidate['price']/max(1,unit['list_price']))
++        model = row['model']['groups'].get(key)
++        if model is None: continue
++        difference = model['mean']-current
++        # Refuse to monetize a point estimate smaller than its observed RMS
++        # error. Use the large published review count to avoid assuming every
++        # new review is an independent new voting account.
++        conservative = (1 if difference >= 0 else -1)*max(0, abs(difference)-row['uncertainty_stars'])
++        completion = candidate.get('evidence', {}).get('quote_completion', {}).get('completion', 1)
++        delta = max(-.001, min(.001, completion*conservative/max(20, own.get('reviews', 0)+1)))
++        candidate['expected_delta']['stars_rank'] = delta
++        candidate['evidence']['rating_model'] = {'prediction': model['mean'], 'holdout_mse': row['summary']['holdout_mse'],
++            'baseline_mse': row['summary']['baseline_mse'], 'planning_stars_rank_delta': delta,
++            'official_mapping_verified': False, 'not_causal': True}
++    return candidates
+--- a/r3/cycle.py
++++ b/r3/cycle.py
+@@ -62,15 +62,20 @@
+         from .prewindow import prepare
+         from .research import analytics
+         started=time.monotonic()
++        now=time.time()
++        if now-self.last_analysis>=60:
++            analytics(self.j,now);self.last_analysis=now
++            if self.cfg.get('objective_feedback_enabled'):
++                from .quality import update as quality_update
++                from .feedback import update as feedback_update
++                quality_update(self.j,self.cfg,now)
++                feedback_update(self.j,self.cfg,now)
++            self.meta(now)
++            from .usage import report
++            report(self.j,self.cfg,now)
+         update(self.j,self.cfg)
+         cfg,strategy=effective(self.j,'shop',base=self.cfg)
+         prepare(self.j,cfg,strategy)
+-        now=time.time()
+-        if now-self.last_analysis>=60:
+-            analytics(self.j,now);self.last_analysis=now
+-            self.meta(now)
+-            from .usage import report
+-            report(self.j,self.cfg,now)
+         self.j.put('cycle-last-preparation',{'at':time.time(),'seconds':time.monotonic()-started})
+ 
+     def meta(self,now):
+@@ -88,6 +93,11 @@
+                  'skills_executed':state.get('executed_skills',0),'research_at':research.get('at'),
+                  'next_actions':['retain_mature_gates','prepare_before_window','research_new_bounded_profiles'],
+                  'promotion_authority':'mature_evaluators_only'}
++        if self.cfg.get('objective_feedback_enabled'):
++            feedback=self.j.get('feedback-last-policy',{})
++            summary['operating_policy']={k:feedback.get(k) for k in ('id','at','status','regime','patches','reasons','execution_feedback')}
++            summary['next_actions']=[{'issue':reason,'action':'restore_or_refresh_facts' if 'stale' in reason or 'guards' in reason else 'independent_research_review'} for reason in feedback.get('reasons',[])]
++            summary['quality_holdout']=self.j.get('quality-holdout-summary',{})
+         self.j.put('cycle-meta-state',summary);self.j.add('cycle_meta_evaluation',summary)
+ 
+     def tick(self,now=None):
+--- a/r3/research.py
++++ b/r3/research.py
+@@ -23,9 +23,25 @@
+     'buyer_diverse_quotes': {'type': 'boolean'},
+     'shop_service_level': {'type': 'number', 'minimum': .85, 'maximum': .95},
+     'shop_plan': {'type': 'string', 'enum': ['diversified', 'breadth', 'cautious', 'wait']},
++    'operating_actions': {'type':'array','items':{'type':'string','enum':['stock_coverage','buyer_price_gap']},'maxItems':2},
+     'approve_trial': {'type': 'boolean'}}, 'required': [
+         'summary','hypotheses','evidence_ids','skills','skill_steps','buyer_probe_percent','buyer_gap_power',
+-        'buyer_diverse_quotes','shop_service_level','shop_plan','approve_trial']}
++        'buyer_diverse_quotes','shop_service_level','shop_plan','operating_actions','approve_trial']}
++
++
++def execution_projection(feedback):
++    """Keep totals plus four policy cohorts; full evidence stays in the journal."""
++    result={}
++    choices=feedback.get('main_choices_by_policy',{})
++    result['main_choices_total']=sum(choices.values())
++    result['main_choices_by_policy']=dict(sorted(choices.items(),key=lambda p:p[1],reverse=True)[:4])
++    for name,field in [('buyer_closed_results_by_policy','closed_orders'),
++                       ('shop_paid_results_by_policy','paid'),('buyer_canonical_mature_results_by_policy','mature_paid')]:
++        rows=feedback.get(name,{})
++        result[name]=dict(sorted(rows.items(),key=lambda p:p[1].get(field,0),reverse=True)[:4])
++        result[name+'_total']=sum(r.get(field,0) for r in rows.values())
++    result['note']='Bounded observed cohorts, not causal lift; final quality uses canonical mature outcomes only.'
++    return result
+ 
+ 
+ def analytics(journal, now=None):
+@@ -40,7 +56,7 @@
+     same_owner = {name for name, row in buyers.items() if owner and owner_of(row) == owner}
+     same_owner.add('seochanit')
+     windows = {str(minutes): {'trades': 0, 'amount': 0} for minutes in (5,20,60,360)}
+-    sku_rows, preferences = {}, defaultdict(Counter)
++    sku_rows, preferences, recent_buyers = {}, defaultdict(Counter), defaultdict(set)
+     with journal.connect() as db:
+         records = db.execute('SELECT id,ts,data FROM events WHERE kind=? AND ts>=? AND ts<=? ORDER BY ts',
+                              ('public_settle', now-21600, now)).fetchall()
+@@ -56,14 +72,19 @@
+             if now-at <= minutes*60:
+                 windows[str(minutes)]['trades'] += 1; windows[str(minutes)]['amount'] += price
+         entry = sku_rows.setdefault(sku, {'sku': sku, 'category': product.get('category'), 'trades': 0,
+-                                         'recent20': 0, 'amount': 0, 'last_at': at})
+-        entry['trades'] += 1; entry['amount'] += price; entry['recent20'] += now-at <= 1200; entry['last_at'] = at
++                                         'recent20': 0, 'recent60': 0, 'amount': 0, 'last_at': at})
++        entry['trades'] += 1; entry['amount'] += price; entry['recent20'] += now-at <= 1200; entry['recent60'] += now-at <= 3600; entry['last_at'] = at
++        if now-at<=1200 and isinstance(row.get('buyer'),str):recent_buyers[sku].add(row['buyer'])
+         preferences[str(row.get('buyer', 'unknown'))][product.get('category', 'unknown')] += 1
+     peers = {}
+     for role in ('shops','buyers'):
+         peers[role] = [{k: row.get(k) for k in ('name','all','deals','book','revenue','saved','forum','alive')}
+                        for row in sorted(board.get(role,[]), key=lambda r:r.get('all') or 0,reverse=True)[:6]]
+-    result = {'at': now, 'windows': windows, 'top_skus': sorted(sku_rows.values(),key=lambda r:r['trades'],reverse=True)[:15],
++    leaders=sorted(sku_rows.values(),key=lambda r:r['trades'],reverse=True)[:10]
++    emerging=sorted(sku_rows.values(),key=lambda r:r['recent20'],reverse=True)[:10]
++    selected={r['sku']:r for r in leaders+emerging}
++    for sku,row in selected.items():row['buyers20']=len(recent_buyers[sku])
++    result = {'at': now, 'windows': windows, 'top_skus': list(selected.values()),
+               'buyer_preferences': [{'buyer':name, 'categories':counts.most_common(3), 'observational_only': True}
+                                     for name,counts in sorted(preferences.items(),key=lambda p:sum(p[1].values()),reverse=True)[:8]],
+               'competitors': peers, 'feed_at': journal.get('public_feed_caught_up_at'),
+@@ -83,6 +104,8 @@
+     return (validate_buyer(patch) and type(value['shop_service_level']) in (int,float)
+             and math.isfinite(value['shop_service_level']) and .85 <= value['shop_service_level'] <= .95
+             and value['shop_plan'] in ('diversified','breadth','cautious','wait') and type(value['approve_trial']) is bool
++            and isinstance(value['operating_actions'],list) and len(value['operating_actions'])<=2
++            and all(x in ('stock_coverage','buyer_price_gap') for x in value['operating_actions'])
+             and isinstance(value['summary'],str) and len(value['summary']) <= 800
+             and isinstance(value['hypotheses'],list) and len(value['hypotheses']) <= 4
+             and all(isinstance(x,str) and len(x)<=400 for x in value['hypotheses'])
+@@ -109,6 +132,13 @@
+         'Buyer optimizes Saved/forum/deals/posts; their account total is the objective. Supply is about every '
+         '20 minutes for 3 minutes; plan before opening. Skills are bounded diagnostic tools. '
+         'Return current parameters if no supported change. New parameters are TRIAL PROPOSALS, not promotions. '
++        'When operating_feedback is present, operating_actions are separately reviewed OPERATING INTENTS: '
++        'stock_coverage permits the supplied bounded repeat-demand coverage response; buyer_price_gap permits '
++        'same-owner/category failed-contract routing with recovery probes. These do not relax a price cap or guarantee improvement. '
++        'operating_actions is independent of approve_trial: insufficient mature challenger samples block economic '
++        'promotion, not measurement-based routing responses. Shop transport failures do not block Buyer actions. '
++        'Approve only operating actions justified by the supplied fresh facts; an empty list is valid. '
++        'Inspect Main execution_feedback, peer trends, inventory, supply blocks and regime changes; explain why to act or wait. '
+         'Use <=3 short hypotheses and a concise summary. '
+         + ('Independently challenge the proposed explanation; approve_trial only if evidence supports a bounded test, '
+            'not because the analyst agreed. Check counterexamples, price frontier, maturity and data gaps.'
+@@ -192,6 +222,9 @@
+               'skill_ids':[t['skill']['id'] for t in tools], 'queued_buyer_profile':profile,
+               'trial_review_approved':approved, 'economic_superiority_verified':False,
+               'shop_plan_recommendation':critic['shop_plan']}
++    if config.get('objective_feedback_enabled'):
++        packet['operating_intents']=sorted(set(analyst['operating_actions']) & set(critic['operating_actions']))
++        packet['operating_actions_reviewed']=True
+     atomic_json(journal.md/'market-research-v15.json',packet)
+     journal.put('research-last-result',packet)
+     journal.add('market_research_published',packet)
+@@ -222,20 +255,38 @@
+     previous=journal.get('research-last-attempt',{})
+     window=(journal.snapshot('inventory.json',{}).get('restock') or {}).get('opens_at')
+     preopen=type(window) in (int,float) and 0<=window-now<=300 and previous.get('window')!=window
++    operating=journal.get('feedback-last-policy',{})
++    operating_state=identity([operating.get('regime'), sorted(operating.get('reasons',[]))]) if config.get('objective_feedback_enabled') else None
++    urgent=operating_state is not None and previous.get('operating_state')!=operating_state
+     interval=config.get('research_interval_seconds',1200)
+-    if now-previous.get('at',0)<(300 if preopen or previous.get('rules_hash')!=rules['sha256'] else interval):
+-        return None
+-    journal.put('research-last-attempt',{'at':now,'window':window if preopen else previous.get('window'),'rules_hash':rules['sha256']})
++    changed_revision=previous.get('execution_revision')!=config.get('execution_revision')
++    if now-previous.get('at',0)<(300 if urgent or preopen or changed_revision or previous.get('rules_hash')!=rules['sha256'] else interval):
++        return None
++    journal.put('research-last-attempt',{'at':now,'window':window if preopen else previous.get('window'),'rules_hash':rules['sha256'],
++                                      'execution_revision':config.get('execution_revision'),'operating_state':operating_state})
+     plan=journal.snapshot('shop-plan-v15.json',{})
+     control=journal.get('market_control',{})
+     framework=journal.get('framework-plan',{})
+     evidence=['rules:'+rules['sha256'],'ledger:'+str(market.get('ledger_seq')),'kv:framework-plan','kv:market_control','kv:cycle-meta-state','snapshot:shop-plan-v15.json']
+     facts={'market':market,'control':{k:control.get(k) for k in ('status','reasons','leader_gap','suggestions')},
+-           'framework':{k:framework.get(k) for k in ('issues','evaluation')},
++           'framework':{k:framework.get(k) for k in ('issues','evaluation','segments')},
+            'supply_plan':{k:plan.get(k) for k in ('window','phase','selected','options')},
+            'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level')},
+            'meta':journal.get('cycle-meta-state',{}),
+            'evidence_ids':evidence}
++    if config.get('objective_feedback_enabled'):
++        operating=journal.get('feedback-last-policy',{})
++        facts['operating_feedback']={k:operating.get(k) for k in ('at','regime','facts','peer_trends','objective_targets','patches','reasons','execution_feedback','constraints')}
++        facts['operating_feedback']['execution_feedback']=execution_projection(operating.get('execution_feedback',{}))
++        facts['quality_holdout']=journal.get('quality-holdout-summary',{})
++        arena=journal.get('framework-arena',{})
++        facts['profile_dispatch']={k:arena.get(k) for k in ('champion','challenger','since','active','challenger_percent')}
++        from .evolution import PROFILES
++        from .strategy_lab import profiles
++        facts['profile_dispatch']['catalog']=dict(PROFILES,**profiles(journal))
++        facts['parameters'].update({k:config.get(k) for k in ('buyer_contract_gap_power','buyer_contract_diverse_quotes',
++            'shop_inventory_ceiling','shop_demand_horizon_cycles')})
++        evidence.extend(['kv:feedback-last-policy','kv:quality-holdout-summary'])
+     try:
+         analyst=call(journal,config,facts,evidence,'analyst',client=client,key=key)
+         critic=call(journal,config,facts,evidence,'critic',proposal=analyst,client=client,key=key)
+--- a/r3/adaptive.py
++++ b/r3/adaptive.py
+@@ -91,6 +91,9 @@
+     cfg.setdefault('category_weights', {})
+     cfg.update(validate(role, selected['patch']))
+     cfg['strategy_version'] = selected['version']
++    if role=='shop' and cfg.get('objective_feedback_enabled'):
++        from .feedback import apply
++        cfg=apply(journal,cfg,role)
+     return cfg, selected
+ 
+ 
+@@ -105,6 +108,9 @@
+     if cfg.get('system_framework_enabled'):
+         from .evolution import assign
+         cfg.update(assign(journal,order,cfg))
++    if cfg.get('objective_feedback_enabled'):
++        from .feedback import apply
++        cfg=apply(journal,cfg,'buyer',order=order['order'])
+     if frozen is None:
+         journal.put(key, selected)
+         journal.add('buyer_order', {'order': order['order'], 'budget': order['budget'],
+--- a/r3/shop_growth.py
++++ b/r3/shop_growth.py
+@@ -15,16 +15,22 @@
+     return max(0.0,min(1.0,1-cdf))
+ 
+ 
+-def target_stock(rate, paid, config):
++def target_stock(rate, paid, config, public_qualified=False):
+     maximum=min(20,config['restock_max_qty'])
+     arrivals=max(0,rate)*config.get('supply_cycle_seconds',1200)/3600
++    supported=paid>=3 or public_qualified and config.get('objective_feedback_enabled')
++    if supported and config.get('objective_feedback_enabled'):
++        arrivals*=max(1,min(3 if paid>=3 else 2,config.get('shop_demand_horizon_cycles',1)))
+     # Proven repeat demand can use the legal 20-unit lot capacity. A raw
+     # request or peer announcement alone never qualifies as paid evidence.
+-    service=config.get('shop_stock_service_level',.9) if paid>=3 else .65
++    service=config.get('shop_stock_service_level',.9) if paid>=3 else .8 if supported else .65
+     target=1
+     while target<maximum and poisson_tail(arrivals,target+1)>1-service:
+         target+=1
+-    return min(maximum,target if paid>=3 else min(2,target))
++    # Diverse, recent external payments can fund a measured first batch even
++    # before our own stock was visible. Public activity alone is capped at six;
++    # repeated own paid demand can use all twenty legal units per supply call.
++    return min(maximum,target if paid>=3 else min(6 if supported else 2,target))
+ 
+ 
+ def resale_terms(product,public,journal,config,now):
+--- a/r3/economy.py
++++ b/r3/economy.py
+@@ -170,6 +170,9 @@
+                    'evidence': {'cost': cost, 'hours_left': left if math.isfinite(left) else None,
+                                 'clearance': liquidation, 'alternative': 'retain inventory; expiry is a loss'},
+                    'recovery_floor': recovery_floor})
++    if config.get('objective_feedback_enabled'):
++        from .quality import augment
++        augment(journal,config,dict(unit,grade=grade(unit,catalog,now)),result,now)
+     return result
+ 
+ 
+@@ -391,11 +394,14 @@
+         growth = merchant.get('skus', {}).get(sku, {})
+         rate = (growth.get('arrival_rate_scenario', 0) if merchant else
+                 max(own.get(sku, 0), .35 * observed.get('per_seller_per_hour', 0)))
++        trend=config.get('shop_sku_trend_factors',{}).get(sku,1) if config.get('objective_feedback_enabled') else 1
++        rate*=trend
+         if velocity:
+             from .shop_growth import target_stock
+             paid=growth.get('positive_paid_while_available',0)
+-            if paid>=3:rate=max(.01,growth.get('paid_arrival_rate_scenario',rate))
+-            desired=target_stock(rate,paid,config)
++            if paid>=3:rate=max(.01,growth.get('paid_arrival_rate_scenario',rate/max(.01,trend))*trend)
++            public_qualified=config.get('objective_feedback_enabled') and sku in config.get('shop_public_demand_skus',[])
++            desired=target_stock(rate,paid,config,public_qualified=public_qualified)
+         else:
+             desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
+         needed=desired-count.get(sku,0)
+@@ -480,6 +486,7 @@
+                                            growth=growth, arrival_rate_scenario=rate,
+                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
+                                            resale_price_scenario=price,resale_terms_scenario=terms)
++        if config.get('objective_feedback_enabled'):candidates[-1]['evidence']['trend_factor_scenario']=trend
+     from .meta import rank_progress
+     board = journal.snapshot('board.json', {})
+     if now - journal.get('board_checked_at', 0) > 300:
+--- a/r3/model.py
++++ b/r3/model.py
+@@ -80,6 +80,11 @@
+                 return (candidate.get('objective_utility',0)/seconds,candidate.get('score',0)/seconds)
+             return (candidate.get('objective_utility', 0), candidate.get('score', 0))
+         best = max(candidates, key=utility)
++        def finish(selected):
++            if self.config.get('objective_feedback_enabled'):
++                from .feedback import record_choice
++                record_choice(self.j,self.config,role,decision_id,selected,context)
++            return selected
+         context = dict(context, objective='maximize Shop ALL + Buyer ALL; score each component by its current rule',
+                        next_rank_thresholds=rank_targets(board, role),
+                        numerical_recommendation=best['id'],
+@@ -105,6 +110,9 @@
+                 context['market_research']=advice
+                 self.j.add('research_main_feedback',{'role':role,'research_at':advice['at'],
+                     'operation':context.get('operation'),'candidates':len(candidates)},role=role)
++        if self.config.get('objective_feedback_enabled'):
++            from .feedback import context as feedback_context
++            context['operating_policy']=feedback_context(self.j,self.config)
+         diagnosis=self.j.get('market_control',{})
+         if 0<=time.time()-diagnosis.get('at',0)<900:
+             context['market_state']={k:diagnosis.get(k) for k in
+@@ -120,7 +128,7 @@
+             self.j.add('decision',{'decision':decision_id,'chosen':best['id'],'mode':'fast_buyer_saved'},role=role)
+             self.j.add('buyer_saved_execution',{'decision':decision_id,'chosen':best['id'],
+                 'operation':context.get('operation'),'seconds':time.monotonic()-started},role=role)
+-            return best
++            return finish(best)
+         if (role=='shop' and context.get('shop_execution') and
+                 self.config.get('shop_fast_execution_enabled') and (not critical or bounded_restock)):
+             self.j.add('decision',{'decision':decision_id,'chosen':best['id'],
+@@ -128,11 +136,11 @@
+             self.j.add('shop_fast_execution',{'decision':decision_id,'chosen':best['id'],
+                 'operation':context.get('operation','quote'),'seconds':time.monotonic()-started,
+                 'bounded_restock':bounded_restock},role=role)
+-            return best
++            return finish(best)
+         if os.environ.get("R3_MODEL_MODE") == "offline" or len(candidates) == 1:
+             self.j.add("decision", {"decision": decision_id, "chosen": best["id"],
+                                     "mode": 'explicit_offline' if os.environ.get('R3_MODEL_MODE') == 'offline' else 'single_feasible'}, role=role)
+-            return best
++            return finish(best)
+         try:
+             selected = self._call(role + "_actor", candidates, context, deadline=deadline)
+             if critical and (deadline is None or deadline - time.time() > 8):
+@@ -148,11 +156,11 @@
+                            'chosen': best['id'], 'reason': 'below numerical objective floor'}, role=role)
+                 selected = best
+             self.j.add("decision", {"decision": decision_id, "chosen": selected["id"], "mode": "model"}, role=role)
+-            return selected
++            return finish(selected)
+         except ModelError as exc:
+             self.j.add("decision", {"decision": decision_id, "chosen": best["id"], "mode": "numeric_fallback",
+                                     "error": str(exc)}, role=role)
+-            return best
++            return finish(best)
+ 
+     def _call(self, role, candidates, context, *, critic=False, deadline=None):
+         cfg = self.config
+--- a/r3/contracts.py
++++ b/r3/contracts.py
+@@ -34,7 +34,12 @@
+         if 0<=now-at<=3600:
+             key=(shop_identity(journal,p.get('shop','')),p.get('sku'),p.get('kind'))
+             paid[key]=max(paid.get(key,0),at)
+-    result={'groups':{key:list(rows.values()) for key,rows in groups.items()},'paid':paid,'now':now}
++    category_groups=defaultdict(list)
++    for key,values in groups.items():
++        for row in values.values():
++            if row.get('category'):category_groups[(key[0],row['category'])].append(row)
++    result={'groups':{key:list(rows.values()) for key,rows in groups.items()},'paid':paid,'now':now,
++            'category_groups':dict(category_groups)}
+     if len(_HISTORY)>16:_HISTORY.clear()
+     _HISTORY[cache_key]=result
+     return result
+@@ -48,7 +53,10 @@
+         key=(shop_identity(journal,candidate['shop']),candidate['sku'],'goods')
+         rows=[r for r in context['groups'].get(key,[]) if r.get('class') in ('price','contract')]
+         rows.sort(key=lambda r:r['_ts'],reverse=True)
+-        if not rows:kept.append(candidate);continue
++        if not rows:
++            if not category_paused(candidate,order,journal,config,context,now): kept.append(candidate)
++            else: paused.append(candidate)
++            continue
+         recent=[r for r in rows if r.get('signature')==rows[0].get('signature')]
+         burst=len(recent)>=3 and recent[0]['_ts']-recent[2]['_ts']<=600
+         seconds=min(3600,600*2**min(2,max(0,len(recent)//3-1)))
+@@ -57,10 +65,18 @@
+         candidate['evidence']['contract_route']={'failed_orders':len(recent),'paused':blocked,'probe':probe,
+             'until':recent[0]['_ts']+seconds if blocked else None,'stable_identity':key[0]}
+         if blocked and not probe:paused.append(candidate)
++        elif category_paused(candidate,order,journal,config,context,now):paused.append(candidate)
+         else:kept.append(candidate)
+     if not kept and paused:
+-        # One bounded recovery probe, never bypass a certificate or safe cap.
+-        kept=[paused[0]];kept[0]['evidence']['contract_route']['probe']=True
++        # Category-wide rejection cannot justify retrying every sibling SKU on
++        # every order. Retain a timed recovery probe, even if all paths paused.
++        candidate=paused[0]
++        category=candidate.get('evidence',{}).get('category_frontier',{})
++        key='frontier-last-probe:'+identity([shop_identity(journal,candidate['shop']),candidate['product'].get('category')])
++        if not category.get('paused') or now-journal.get(key,0)>=120:
++            kept=[candidate]
++            kept[0].setdefault('evidence',{}).setdefault('contract_route',{})['probe']=True
++            if category.get('paused'):journal.put(key,now)
+     if config.get('buyer_contract_diverse_quotes'):
+         unique=[];repeated=[];seen=set()
+         for candidate in kept:
+@@ -69,6 +85,34 @@
+         kept=unique+repeated
+     if paused:journal.add('buyer_contract_pause',{'order':order['order'],'paused':len(paused),'kept':len(kept)},role='buyer')
+     return kept
++
++
++def category_paused(candidate,order,journal,config,context,now):
++    if not config.get('buyer_frontier_category_enabled'): return False
++    owner=shop_identity(journal,candidate['shop']);category=candidate['product'].get('category')
++    if not category: return False
++    rows=[r for r in context.get('category_groups',{}).get((owner,category),[]) if r.get('kind')=='goods' and r.get('class')=='price'
++                    and 0<=now-r['_ts']<1200 and r.get('ask',0)>r.get('cap',float('inf'))
++                    and type(r.get('list_price')) in (int,float) and r['list_price']>0]
++    orders={r['order'] for r in rows};skus={r['sku'] for r in rows}
++    if len(orders)<8 or len(skus)<3: return False
++    term=candidate.get('evidence',{}).get('seller_term_prior',{})
++    comparable=[r for r in rows if r.get('grade')==term.get('grade') and r.get('warranty_hours')==term.get('warranty_hours')]
++    if len({r['order'] for r in comparable})<8: return False
++    worst_ratio=min(r['ask']/r['list_price'] for r in comparable)
++    improved=candidate['reference_price']/max(1,candidate['product']['list_price'])<worst_ratio*.95
++    probe=int(identity([order['order'],owner,category])[:8],16)%100<config.get('buyer_contract_probe_percent',8)
++    blocked=not improved and not probe
++    # Actual paid recovery, including a sibling SKU, invalidates category-wide
++    # negative evidence. Only term-comparable explicit refusals qualify above.
++    last=max(r['_ts'] for r in comparable)
++    for key,at in context['paid'].items():
++        if key[0]==owner and key[2]=='goods' and at>=last:
++            blocked=False
++    candidate['evidence']['category_frontier']={'paused':blocked,'failed_orders':len(orders),'distinct_skus':len(skus),
++        'probe':probe,'public_terms_improved':improved,'stable_identity':owner,
++        'source':'same owner/category/grade/warranty; explicit above-cap no-agreement; 20 minutes'}
++    return blocked
+ 
+ 
+ def observe(journal,order,candidate,terms,assessment,ask):
+@@ -106,5 +150,6 @@
+     else:return  # Outages, local deadlines and unknown payments are not price evidence.
+     row={'order':order['order'],'kind':'goods','shop':candidate['shop'],
+          'shop_identity':shop_identity(journal,candidate['shop']),'sku':candidate['sku'],
++         'category':candidate['product'].get('category'),'list_price':candidate['product'].get('list_price'),
+          'task':task,'class':category,'reason':reason,**contract}
+     journal.add('buyer_contract_result',row,eid='contract-result:'+identity([order['order'],row['shop_identity'],candidate['sku']]),role='buyer')
+--- a/r3/evolution.py
++++ b/r3/evolution.py
+@@ -21,14 +21,16 @@
+     if frozen is None:
+         arena=journal.get('framework-arena',{})
+         profile=arena.get('champion','contract_frontier');arm='champion'
+-        if order.get('kind')=='goods' and arena.get('active') and int(identity(order['order'])[:8],16)%100<10:
++        fraction=arena.get('challenger_percent',10) if config.get('objective_feedback_enabled') else 10
++        fraction=max(10,min(30,fraction))
++        if order.get('kind')=='goods' and arena.get('active') and int(identity(order['order'])[:8],16)%100<fraction:
+             profile=arena.get('challenger','coverage_probe');arm='challenger'
+         if profile not in available:profile='contract_frontier'
+         board=journal.snapshot('board.json',{})
+         own=next((r for r in board.get('buyers',[]) if r.get('name')=='seochanit'),{})
+         frozen={'order':order['order'],'kind':order.get('kind'),'profile':profile,'arm':arm,
+                 'experiment':arena.get('experiment'),'revision':REVISION,'saved_at_assignment':own.get('saved',0),
+-                'rules_sha256':journal.get('market_rules',{}).get('sha256')}
++                'rules_sha256':journal.get('market_rules',{}).get('sha256'), 'challenger_percent':fraction}
+         if profile not in PROFILES:
+             frozen['profile_patch']=available[profile]
+         journal.put(key,frozen);journal.add('framework_order',frozen,eid=key,role='buyer')
+@@ -56,7 +58,7 @@
+     results={r['order']:r for r in journal.events('market_result',10000)}
+     outcomes=latest(journal);stats={}
+     for arm in ('champion','challenger'):
+-        rewards=[];durations=[];npaid=0;pending=0
++        rewards=[];durations=[];weights=[];npaid=0;pending=0
+         for row in assignments:
+             if row['arm']!=arm:continue
+             oid=row['order'];result=results.get(oid)
+@@ -69,20 +71,24 @@
+                 reward=outcome.get('saved_contribution',0)-row.get('saved_at_assignment',0);npaid+=1
+             rewards.append(reward)
+             durations.append(max(1,result['_ts']-row['_ts'])+15)
+-        n=len(rewards);avg=statistics.mean(rewards) if n else 0
+-        se=math.sqrt(statistics.variance(rewards)/n) if n>1 else 1
++            p=max(.1,min(.3,row.get('challenger_percent',10)/100))
++            weights.append(1/(p if arm=='challenger' else 1-p))
++        n=len(rewards);total=sum(weights);effective=total**2/sum(w*w for w in weights) if weights else 0
++        avg=sum(w*r for w,r in zip(weights,rewards))/total if total else 0
++        seconds=sum(w*d for w,d in zip(weights,durations))/total if total else None
++        se=math.sqrt(sum(w*w*(r-avg)**2 for w,r in zip(weights,rewards))/total**2*effective/(effective-1)) if effective>1 else 1
+         stats[arm]={'closed':n,'paid':npaid,'pending':pending,'reward':avg,'standard_error':se,
+-                    'seconds':statistics.mean(durations) if durations else None,
+-                    'score_per_second':avg/statistics.mean(durations) if durations else 0}
++                    'effective_samples':effective,'seconds':seconds,
++                    'score_per_second':avg/seconds if seconds else 0}
+     a,b=stats['champion'],stats['challenger']
+-    ready=min(a['closed'],b['closed'])>=50 and min(a['paid'],b['paid'])>=20
++    ready=min(a['closed'],b['closed'])>=50 and min(a['effective_samples'],b['effective_samples'])>=49.999 and min(a['paid'],b['paid'])>=20
+     better=ready and b['reward']-1.96*b['standard_error']>a['reward']+1.96*a['standard_error'] and b['score_per_second']>a['score_per_second']
+     faster=ready and b['seconds']<=a['seconds']*1.2
+     from .risk import wilson
+     worse=min(a['closed'],b['closed'])>=50 and (wilson(b['paid'],b['closed'])<wilson(a['paid'],a['closed'],False) or
+         ready and b['reward']+1.96*b['standard_error']<a['reward']-1.96*a['standard_error'])
+     return {'at':now,'stats':stats,'ready':ready,'promote':bool(better and faster),'rollback':bool(worse),
+-            'note':'Saved uplift over assignment baseline; completed 6h+10m cohorts, minimum samples and latency guard.'}
++            'note':'Saved uplift over assignment baseline; inverse assignment propensity weighting; completed 6h+10m cohorts, minimum effective samples and latency guard.'}
+ 
+ 
+ def update(journal,config,now=None):
+@@ -105,6 +111,11 @@
+             arena['challenger']=next_candidate(journal,arena['champion'],arena.get('challenger'))
+         journal.add('framework_experiment',dict(arena,action='restarted_after_cooldown'),role='buyer')
+     evaluation=evaluate(journal,arena,now)
++    if config.get('objective_feedback_enabled') and arena.get('active'):
++        challenger=evaluation.get('stats',{}).get('challenger',{})
++        # Increase future randomized exposure, not the confidence of sparse
++        # evidence. Already assigned orders and mature promotion gates persist.
++        arena=dict(arena,challenger_percent=30 if challenger.get('closed',0)>=50 and challenger.get('paid',0)<20 else 10)
+     if arena.get('active') and evaluation['promote']:
+         alternatives=[name for name in PROFILES if name not in (arena['champion'],arena['challenger'])]
+         if config.get('market_cycle_enabled'):
+--- a/seller_r3.py
++++ b/seller_r3.py
+@@ -173,6 +173,7 @@
+                                           {"task": task.id, "unit": unit, "turn": deal["turns"], "offer": offer,
+                                            "balance": inv.get("balance"), "previous_ask": deal["ask"],
+                                            "strategy": deal['strategy'], "customer_memory": memory,
++                                           '_feedback_policy_id':deal['config'].get('_feedback_policy_id'),
+                                            'shop_execution':True},
+                                           critical=unit["cost"] > inv.get("balance", 1) * self.cfg["critic_cash_fraction"],
+                                           deadline=deal["until"] - 5)
+--- a/policy.json
++++ b/policy.json
+@@ -43,7 +43,12 @@
+   "research_enabled": true,
+   "research_model": "gpt-6-luna",
+   "research_interval_seconds": 1200,
+-  "cache_prices_usd_per_million": {"gpt-6-luna": [0.01, 0.125]},
++  "cache_prices_usd_per_million": {
++    "gpt-6-luna": [
++      0.01,
++      0.125
++    ]
++  },
+   "model_timeout_seconds": 18,
+   "critic_cash_fraction": 0.1,
+   "cash_reserve_fraction": 0.2,
+@@ -92,5 +97,6 @@
+   "buyer_contract_probe_percent": 8,
+   "autonomy_v14_enabled": true,
+   "buyer_worker_enabled": true,
+-  "execution_revision": "v15-market-cycle-1"
++  "execution_revision": "v16-objective-feedback-1",
++  "objective_feedback_enabled": true
+ }
+--- a/tests/test_objective_feedback.py
++++ b/tests/test_objective_feedback.py
+@@ -0,0 +1,175 @@
++import copy
++import time
++import pytest
++from r3.state import Journal, atomic_json, identity, policy
++from r3 import feedback, contracts, quality
++from r3.model import Chooser
++from r3.shop_growth import target_stock
++
++
++def market(tmp_path):
++    now=time.time();j=Journal(tmp_path);cfg=dict(policy(),objective_feedback_enabled=True)
++    j.put('market_rules',{'sha256':'rules','compatible':True,'buyer_compatible':True})
++    j.put('board_checked_at',now);j.put('public_feed_caught_up_at',now)
++    atomic_json(j.md/'board.json',{'round':3,'shops':[
++        {'name':'seochanit','all':.5,'book':2000000,'deals':100,'revenue':4000000,'stars':3,'stars_rank':3,'reviews':100,'stock_units':2,'alive':True},
++        {'name':'peer','all':.7,'book':3000000,'deals':200,'stock_units':100,'alive':True}],
++        'buyers':[{'name':'seochanit','all':.5,'saved':.3,'deals':100,'posts':10,'forum':.8}]})
++    atomic_json(j.md/'inventory.json',{'round':3,'balance':5000000,'units':[{'unit':'u','sku':'G1'}]})
++    j.put('market_control',{'pause_restock':False,'cash_capacity':{'spendable':4000000}})
++    j.put('cycle-market-analytics',{'at':now,'windows':{'20':{'trades':100},'60':{'trades':300}}})
++    j.put('research-last-result',{'at':now,'expires_at':now+1200,'rules_hash':'rules','trial_review_approved':True,
++        'operating_intents':['stock_coverage','buyer_price_gap']})
++    for n in range(8):
++        j.add('shop_settled',{'unit':'sold'+str(n),'task':'task'+str(n),'sku':'G1','price':900,'cost':500},ts=now-100+n)
++    for n in range(3):j.add('restock_blocked',{'reason':'market_shop_not_discoverable'},ts=now-60+n)
++    for n in range(30):
++        j.add('buyer_order',{'order':str(n),'kind':'goods'},ts=now-80+n)
++        j.add('market_result',{'order':str(n),'verified':False},ts=now-60+n)
++    return j,cfg,now
++
++
++def test_reviewed_analysis_changes_candidate_parameters_before_main_decides(tmp_path):
++    j,cfg,now=market(tmp_path);packet=feedback.update(j,cfg,now)
++    shop=feedback.apply(j,cfg,'shop',now=now);buyer=feedback.apply(j,cfg,'buyer',order='new',now=now)
++    assert shop['shop_demand_horizon_cycles']>1 and buyer['buyer_frontier_category_enabled']
++    assert target_stock(12,8,shop)>target_stock(12,8,cfg)
++    assert buyer['buyer_saved_target_margin']==cfg['buyer_saved_target_margin']
++    assert shop['restock_max_qty']==20 and shop['daily_api_budget_usd'] is None
++    candidates=[{'id':'safe','score':1,'expected_delta':{'saved':.01,'deals':1}},
++                {'id':'bad','score':-1,'expected_delta':{'saved':-.01,'deals':0}}]
++    selected=Chooser(j,buyer).choose('buyer',candidates,{'order':{'order':'new'},'buyer_execution':True,'operation':'offer_selection'})
++    assert selected['id']=='safe'
++    receipt=j.events('feedback_main_choice')[0]
++    assert receipt['policy_id']==packet['id'] and receipt['chosen']=='safe' and receipt['order']=='new'
++    j.add('purchase',{'order':'new'},ts=now+1);j.add('market_result',{'order':'new','verified':True},ts=now+1)
++    # Its order belongs to the next measurement window, not an invented result.
++    j.add('buyer_order',{'order':'new','kind':'goods'},ts=now)
++    j.put('board_checked_at',now+61);j.put('public_feed_caught_up_at',now+61)
++    result=feedback.update(j,cfg,now+61)
++    assert result['execution_feedback']['buyer_closed_results_by_policy'][packet['id']]['paid']==1
++
++
++@pytest.mark.parametrize('fault',['stale','future','rules','corrupt','feed','forbidden_patch'])
++def test_stale_forged_and_unsafe_policies_never_actuate(tmp_path,fault):
++    j,cfg,now=market(tmp_path);feedback.update(j,cfg,now)
++    p=j.snapshot(feedback.FILE)
++    if fault=='stale':p['at']=now-151
++    if fault=='future':p['at']=now+1
++    if fault=='rules':j.put('market_rules',{'sha256':'changed'})
++    if fault=='corrupt':p['checksum']='bad'
++    if fault=='feed':j.put('public_feed_caught_up_at',now-200)
++    if fault=='forbidden_patch':p['patches']['buyer']['buyer_saved_target_margin']=-1
++    if fault!='corrupt':p['checksum']=identity({k:v for k,v in p.items() if k!='checksum'})
++    atomic_json(j.md/feedback.FILE,p)
++    assert feedback.apply(j,cfg,'shop',now=now)==cfg
++
++
++def test_operating_policy_freezes_per_order_and_semantic_id_does_not_churn(tmp_path):
++    j,cfg,now=market(tmp_path);first=feedback.update(j,cfg,now)
++    a=feedback.apply(j,cfg,'buyer',order='one',now=now)
++    j.put('board_checked_at',now+61);j.put('public_feed_caught_up_at',now+61)
++    second=feedback.update(j,cfg,now+61)
++    assert first['id']==second['id']
++    j.put('research-last-result',{})
++    j.put('board_checked_at',now+122);j.put('public_feed_caught_up_at',now+122)
++    feedback.update(j,cfg,now+122)
++    assert feedback.apply(j,cfg,'buyer',order='one',now=now+122)==a
++    assert not feedback.apply(j,cfg,'buyer',order='two',now=now+122).get('buyer_frontier_category_enabled')
++
++
++def test_new_market_shock_reduces_coverage_and_peer_trends_are_numeric(tmp_path):
++    j,cfg,now=market(tmp_path);feedback.update(j,cfg,now-1201)
++    old=j.snapshot('board.json');old['shops'][1]['book']=1000000
++    j.add('feedback_market_observation',{'peers':{'shops':old['shops'],'buyers':old['buyers']}},ts=now-1201)
++    j.put('cycle-market-analytics',{'at':now,'windows':{'20':{'trades':1000},'60':{'trades':1100}}})
++    packet=feedback.update(j,cfg,now)
++    assert packet['regime']=='shock' and packet['patches']['shop']['shop_demand_horizon_cycles']<=1.5
++    assert packet['peer_trends']['shops'][0]['book_per_hour']>0
++
++
++def failed_frontier(j,now):
++    j.put('market-shop-identities',{'old':{'owner':'same'},'new':{'owner':'same'},'other':{'owner':'other'}})
++    for n in range(8):
++        j.add('buyer_contract_result',{'order':str(n),'kind':'goods','shop_identity':'owner:same',
++            'sku':'G'+str(n%3),'category':'goods>chairs','class':'price','ask':900,'cap':500,
++            'list_price':1000,'grade':'A','warranty_hours':6,'signature':str(n)},ts=now-60+n)
++    contracts._HISTORY.clear();contracts._IDENTITIES.clear()
++
++
++def route(shop='new',price=900):
++    return {'shop':shop,'sku':'G9','reference_price':price,'product':{'list_price':1000,'category':'goods>chairs'},
++        'evidence':{'seller_term_prior':{'grade':'A','warranty_hours':6}}}
++
++
++def test_category_frontier_remembers_across_skus_and_urls_without_starving_recovery(tmp_path):
++    j,cfg,now=market(tmp_path);failed_frontier(j,now)
++    cfg=dict(cfg,system_framework_enabled=True,buyer_frontier_category_enabled=True,buyer_contract_probe_percent=0)
++    assert len(contracts.prepare([route()],{'order':'probe','kind':'goods'},j,cfg))==1
++    assert contracts.prepare([route()],{'order':'next','kind':'goods'},j,cfg)==[]
++    assert len(contracts.prepare([route(price=600)],{'order':'lower-price','kind':'goods'},j,cfg))==1
++    assert len(contracts.prepare([route(shop='other')],{'order':'other-owner','kind':'goods'},j,cfg))==1
++    j.add('purchase',{'order':'recovered','shop':'old','sku':'G0','kind':'goods'},ts=now-.001)
++    contracts._HISTORY.clear()
++    assert len(contracts.prepare([route()],{'order':'after-paid','kind':'goods'},j,cfg))==1
++
++
++def test_quality_model_needs_verified_holdout_and_never_changes_price_guards(tmp_path):
++    j,cfg,now=market(tmp_path);atomic_json(j.md/'catalog.json',{'G1':{'list_price':1000}})
++    for n in range(180):
++        cheap=n%2==0
++        j.add('shop_settled',{'unit':'q'+str(n),'sku':'G1','grade':'A','warranty_hours':6,
++            'price':500 if cheap else 950,'cost':400},eid='settlement:'+str(n),ts=now-1000+n)
++        j.add('shop_review_observed',{'ledger':n,'stars':5 if cheap else 1,'author':'owner:'+str(n%13),
++            'source':'verified_market_result_and_accepted_own_task','identity_known':True},ts=now-990+n)
++    model=quality.update(j,cfg,now)
++    assert model['summary']['mode']=='validated_predictive_surrogate'
++    options=[{'id':'q','action':'counter','price':500,'warranty_hours':6,'recovery_floor':450,'expected_delta':{'book':100},'evidence':{}},
++        {'id':'hold','action':'hold','price':0,'expected_delta':{'book':0},'evidence':{}}]
++    quality.augment(j,cfg,{'grade':'A','list_price':1000},options,now)
++    assert options[0]['expected_delta']['stars_rank']>0 and options[0]['price']==500 and options[0]['recovery_floor']==450
++    assert 'stars_rank' not in options[1]['expected_delta']
++    j.put('board_checked_at',now-200)
++    fresh=copy.deepcopy(options);fresh[0]['expected_delta'].pop('stars_rank')
++    quality.augment(j,cfg,{'grade':'A','list_price':1000},fresh,now)
++    assert 'stars_rank' not in fresh[0]['expected_delta']
++
++
++def test_nonpredictive_reviews_stay_shadow(tmp_path):
++    j,cfg,now=market(tmp_path)
++    assert quality.update(j,cfg,now)['summary']['mode']=='shadow'
++
++
++def test_external_paid_demand_breaks_the_no_stock_no_sales_cold_start_loop(tmp_path):
++    j,cfg,now=market(tmp_path)
++    m=j.get('cycle-market-analytics');m['top_skus']=[{'sku':'Gnew','recent20':30,'recent60':50,'buyers20':5}]
++    j.put('cycle-market-analytics',m)
++    packet=feedback.update(j,cfg,now);effective=feedback.apply(j,cfg,'shop',now=now)
++    assert packet['patches']['shop']['shop_public_demand_skus']==['Gnew']
++    # Same estimated obtainable arrival rate; no competition stock copying.
++    assert target_stock(18,0,effective,public_qualified=True)>target_stock(18,0,cfg)
++    assert target_stock(1000,0,effective,public_qualified=True)==6
++    assert target_stock(1000,8,effective)==20
++
++
++def test_operating_response_is_separate_from_unproven_economic_trial(tmp_path):
++    from r3.research import publish
++    from test_market_cycle import opinion
++    j,cfg,now=market(tmp_path)
++    evidence=['rules:rules','kv:feedback-last-policy']
++    analyst=opinion(evidence);critic=opinion(evidence)
++    analyst['approve_trial']=False;critic['approve_trial']=False
++    result=publish(j,cfg,{'evidence_ids':evidence},analyst,critic,'rules',now)
++    assert result['trial_review_approved'] is False and result['queued_buyer_profile'] is None
++    assert result['operating_intents']==['buyer_price_gap','stock_coverage']
++    assert feedback.update(j,cfg,now)['patches']['buyer']['buyer_frontier_category_enabled']
++
++
++def test_execution_context_is_bounded_without_losing_observed_totals():
++    from r3.research import execution_projection
++    rows={str(n):n for n in range(1000)}
++    result=execution_projection({'main_choices_by_policy':rows,
++        'buyer_closed_results_by_policy':{k:{'closed_orders':v,'paid':v//2} for k,v in rows.items()}})
++    assert result['main_choices_total']==sum(rows.values())
++    assert len(result['main_choices_by_policy'])==4
++    assert len(result['buyer_closed_results_by_policy'])==4
+--- a/tests/test_market_cycle.py
++++ b/tests/test_market_cycle.py
+@@ -29,7 +29,8 @@
+ def opinion(evidence):
+     return {'summary':'Use bounded experiments; keep checkout guards.', 'hypotheses':['Demand may have shifted.'],
+         'evidence_ids':evidence[:2],'skills':['stock_coverage'],'skill_steps':['measure','diagnose','propose','validate_facts'], 'buyer_probe_percent':12,'buyer_gap_power':2,
+-        'buyer_diverse_quotes':True,'shop_service_level':.95,'shop_plan':'diversified','approve_trial':True}
++        'buyer_diverse_quotes':True,'shop_service_level':.95,'shop_plan':'diversified',
++        'operating_actions':['stock_coverage','buyer_price_gap'],'approve_trial':True}
+ 
+ 
+ def test_plan_prepared_while_closed_then_consumed_only_in_correct_window(tmp_path):
+--- a/verify_market_cycle_live.py
++++ b/verify_market_cycle_live.py
+@@ -32,14 +32,18 @@
+         kinds=['market_research_published','market_research_deferred','research_skill_execution','research_strategy_queued',
+                'research_main_feedback','buyer_prepared_published','buyer_prepared_used','shop_plan_prepared','shop_prepared_plan_used',
+                'cycle_supervisor_error','cycle_supply_error','buyer_worker_error','shop_settled','purchase','model_usage']
++        if cfg.get('objective_feedback_enabled'):
++            kinds+=['feedback_policy_created','feedback_main_choice','quality_holdout_evaluation']
+         counts={kind:db.execute('SELECT count(*) FROM events WHERE kind=? AND ts>=?',(kind,runtime.get('started_at',now))).fetchone()[0] for kind in kinds}
+         models=[json.loads(raw) for raw, in db.execute('SELECT data FROM events WHERE kind=? AND ts>=?',('model_usage',runtime.get('started_at',now)))]
+         heartbeat=kv('cycle-heartbeat');meta=kv('cycle-meta-state');last_research=kv('research-last-result')
+         stats=kv('cycle-last-preparation')
++        operating=kv('feedback-last-policy');quality=kv('quality-holdout-summary')
+     try:
+         with lease(ROOT/'.market/shop-recovery-guard.lock'):guard_active=False
+     except RuntimeError:guard_active=True
+-    promotion=sorted((ROOT/'logs').glob('v15-source-promotion-*.json'))[-1]
++    release='v16' if cfg.get('objective_feedback_enabled') else 'v15'
++    promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
+     manifest=read_json(promotion,{})
+     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]
+     report={'at_utc':datetime.now(timezone.utc).isoformat(),'runtime':runtime,'url':url,
+@@ -47,12 +51,15 @@
+             'listed':listed,'online':online,'own':{role:{k:r.get(k) for k in ('alive','all','book','saved','deals','forum')} for role,r in own.items()},
+             'source_mismatches':mismatches,'counts_since_restart':counts,'cycle_heartbeat':heartbeat,'last_preparation':stats,
+             'meta':meta,'last_research':last_research,'model_usage':[{'role':r.get('role'),'model':r.get('model'),'usage':r.get('usage'),'estimated_usd':r.get('estimated_usd')} for r in models],
++            'operating_policy':{k:operating.get(k) for k in ('at','id','status','regime','patches','reasons','execution_feedback')},
++            'quality_holdout':quality,
++            'market_status_verified':all(r.get('status')==200 for r in results[2:]),
+             'independent_recovery_guard_active':guard_active,'primary_recovery':health,
+             'cost_cap_usd':cfg.get('daily_api_budget_usd'),'budget_mode':cfg.get('research_budget_mode'),
+             'daily_usage':read_json(ROOT/'.market/model-usage-daily.json',{}),
+             'limits':['Short observations are not causal economic improvement or a first-place guarantee.',
+                       'A registry/board snapshot is not sustained availability proof.']}
+-    path=ROOT/'logs'/('v15-live-verification-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.json')
++    path=ROOT/'logs'/(release+'-live-verification-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.json')
+     path.open('x',encoding='utf-8').write(json.dumps(report,ensure_ascii=False,indent=2))
+     print('SOURCE',path)
+     print(json.dumps({k:v for k,v in report.items() if k not in ('limits','daily_usage','meta','last_research')},ensure_ascii=True,indent=2))

@@ -1,0 +1,355 @@
+{
+  "at": "2026-11-13T02:04:28.806433+00:00",
+  "model_summary": {
+    "mode": "shadow",
+    "train": 1483,
+    "tune": 494,
+    "test": 495,
+    "test_owners": 30,
+    "test_mse": 0.00023573224500118544,
+    "baseline_test_mse": 0.00022751592917522935,
+    "zero_change_test_mse": 0.00022849394264706015,
+    "covered_test": 495,
+    "fields": [
+      "grade"
+    ],
+    "prior": 30,
+    "split": [
+      0.6,
+      0.2,
+      0.2
+    ],
+    "selection_uses_tune_only": true,
+    "official_account_count_complete": false,
+    "target": "next change in observed reviewer account mean; first three observations excluded"
+  },
+  "reviews": 2472,
+  "observed_accounts": 41,
+  "downside_contract_cells": {
+    "food|B|False": {
+      "mean": -0.001360220978714173,
+      "empirical_mean": -0.001360220978714173,
+      "upper90": 0.00370241831438628,
+      "owners": 35,
+      "reviews": 1170
+    },
+    "food|A|False": {
+      "mean": 0.00524286050633552,
+      "empirical_mean": 0.00524286050633552,
+      "upper90": 0.017363362960370603,
+      "owners": 28,
+      "reviews": 316
+    },
+    "goods|B|True": {
+      "mean": 0.0006547640737234957,
+      "empirical_mean": 0.0006547640737234957,
+      "upper90": 0.0068458546783910605,
+      "owners": 15,
+      "reviews": 40
+    },
+    "food|C|False": {
+      "mean": -0.006318489424062697,
+      "empirical_mean": -0.006318489424062697,
+      "upper90": 0.0008742256889367273,
+      "owners": 31,
+      "reviews": 650
+    },
+    "goods|A|True": {
+      "mean": 0.004195888596930544,
+      "empirical_mean": 0.004195888596930544,
+      "upper90": 0.00998406585870016,
+      "owners": 17,
+      "reviews": 68
+    },
+    "goods|A|False": {
+      "mean": 0.003402841448706002,
+      "empirical_mean": 0.003402841448706002,
+      "upper90": 0.008200052373098277,
+      "owners": 18,
+      "reviews": 173
+    },
+    "goods|B|False": {
+      "mean": 0.00028012301698011937,
+      "empirical_mean": 0.00028012301698011937,
+      "upper90": 0.0023508742087101062,
+      "owners": 10,
+      "reviews": 37
+    },
+    "goods|C|False": {
+      "mean": -0.0040593457555059605,
+      "empirical_mean": -0.0040593457555059605,
+      "upper90": 0.002618278012301343,
+      "owners": 5,
+      "reviews": 17
+    }
+  },
+  "capacity": {
+    "spendable": 702110762.26,
+    "refund_liability": 10462335,
+    "storage_to_end": 1708947.74,
+    "cash_floor": 0,
+    "remaining_days": 2.0,
+    "reserve_release_schedule": [
+      {
+        "at": 1794536400,
+        "amount": 1102721
+      },
+      {
+        "at": 1794540000,
+        "amount": 719200
+      },
+      {
+        "at": 1794542400,
+        "amount": 2492595
+      },
+      {
+        "at": 1794544800,
+        "amount": 1552498
+      },
+      {
+        "at": 1794546000,
+        "amount": 1386480
+      },
+      {
+        "at": 1794549600,
+        "amount": 506880
+      },
+      {
+        "at": 1794550800,
+        "amount": 226849
+      },
+      {
+        "at": 1794552000,
+        "amount": 1508000
+      },
+      {
+        "at": 1794553200,
+        "amount": 112282
+      },
+      {
+        "at": 1794556800,
+        "amount": 389522
+      },
+      {
+        "at": 1794558000,
+        "amount": 465308
+      }
+    ],
+    "discharged_refund_reserve": 0
+  },
+  "examples": [
+    {
+      "sku": "Gbec2b68f",
+      "kind": "goods",
+      "grade": "C",
+      "choices": 10,
+      "selected": {
+        "id": "quote:2971515:w6",
+        "price": 2971515,
+        "warranty_hours": 6,
+        "expected_delta": {
+          "book": 41643.64031638499,
+          "revenue": 205723.67674722977,
+          "profit": 205723.67674722977
+        },
+        "objective_utility": 1.2453385822408502e-05
+      },
+      "reputation_candidates": 0,
+      "warranty_choices": [
+        6,
+        24,
+        72
+      ],
+      "downside_examples": []
+    },
+    {
+      "sku": "G56b7eae7",
+      "kind": "food",
+      "grade": "C",
+      "choices": 8,
+      "selected": {
+        "id": "quote:48213",
+        "price": 48213,
+        "warranty_hours": 0,
+        "expected_delta": {
+          "book": 2983.7909787574754,
+          "revenue": 25497.6097941925,
+          "profit": 25497.6097941925
+        },
+        "objective_utility": 1.1225517217772206e-06
+      },
+      "reputation_candidates": 0,
+      "warranty_choices": [
+        0
+      ],
+      "downside_examples": []
+    },
+    {
+      "sku": "Gbec2b68f",
+      "kind": "goods",
+      "grade": "A",
+      "choices": 16,
+      "selected": {
+        "id": "quote:2689355:w6",
+        "price": 2689355,
+        "warranty_hours": 6,
+        "expected_delta": {
+          "book": 164382.5407819047,
+          "revenue": 1331601.4487020809,
+          "profit": 1331601.4487020809
+        },
+        "objective_utility": 6.0255928613952205e-05
+      },
+      "reputation_candidates": 0,
+      "warranty_choices": [
+        6,
+        24,
+        72
+      ],
+      "downside_examples": []
+    },
+    {
+      "sku": "Gbec2b68f",
+      "kind": "goods",
+      "grade": "B",
+      "choices": 4,
+      "selected": {
+        "id": "quote:2851344:w6",
+        "price": 2851344,
+        "warranty_hours": 6,
+        "expected_delta": {
+          "book": 6315.351218905998,
+          "revenue": 322078.8023683847,
+          "profit": 322078.8023683847
+        },
+        "objective_utility": 8.100794060148093e-06
+      },
+      "reputation_candidates": 0,
+      "warranty_choices": [
+        6,
+        24,
+        72
+      ],
+      "downside_examples": []
+    },
+    {
+      "sku": "G56b7eae7",
+      "kind": "food",
+      "grade": "B",
+      "choices": 8,
+      "selected": {
+        "id": "quote:61974",
+        "price": 61974,
+        "warranty_hours": 0,
+        "expected_delta": {
+          "book": 5289.283837998199,
+          "revenue": 44574.119741106886,
+          "profit": 44574.119741106886
+        },
+        "objective_utility": 1.9765671701810207e-06
+      },
+      "reputation_candidates": 0,
+      "warranty_choices": [
+        0
+      ],
+      "downside_examples": []
+    },
+    {
+      "sku": "G56b7eae7",
+      "kind": "food",
+      "grade": "A",
+      "choices": 6,
+      "selected": {
+        "id": "quote:76973",
+        "price": 76973,
+        "warranty_hours": 0,
+        "expected_delta": {
+          "book": 3414.5523557263077,
+          "revenue": 47734.896200021954,
+          "profit": 47734.896200021954
+        },
+        "objective_utility": 1.6810851232951228e-06
+      },
+      "reputation_candidates": 0,
+      "warranty_choices": [
+        0
+      ],
+      "downside_examples": []
+    }
+  ],
+  "elapsed_seconds": [
+    0.6526605000253767,
+    0.3995977998711169,
+    0.47124819993041456,
+    0.34718629997223616,
+    0.3682472000364214,
+    0.3473569001071155
+  ],
+  "guards_verified": true,
+  "source_hashes": {
+    "r3/adapter.py": "b841f6edf37ae75579a2ddf32548c555bb819c452f95fde3b28c8bf70b196240",
+    "r3/adaptive.py": "02dbd25755e67579ce2acee1a9401aa8936675dd4cf8a63397a238ef63e8226d",
+    "r3/autonomy.py": "53d4c62507043cef3e0d18ba6e88251274ce5a89259837e4114e4bb78485de3d",
+    "r3/buyer_costs.py": "8b9881ec8f914a39c1d98ca1a6c4949b8d0b3f07974429fa4c5846ff5ca8ea84",
+    "r3/buyer_execution.py": "890ae3df3700b39ac82894b2caa639cd1ecf985a0249babc807df499bad330bd",
+    "r3/buyer_forum.py": "065cf1a078f841191d4ebf84d8b189b7aaaf003264b8dad59e4e2bc4fe9f5911",
+    "r3/buyer_insights.py": "60f1f9c312fbfaf01c9eb1f6184d684b5d261f155bf727d98bde2fe4089c6a6b",
+    "r3/buyer_quality.py": "5e0cfdd98c629c11387c1bf206b80c87f53c25242230884f4a8105d87cec31c8",
+    "r3/buyer_routes.py": "39f7c832be45e650bff6f95dabf6addf94bd11902c4213510be803c57c07adcb",
+    "r3/buyer_scoring.py": "9d44e5db8bea0841c2471158844126621e60b1070f900c70f91f21102e22d2d7",
+    "r3/buyer_worker.py": "06fb06e9e83e3181bee2eb2f747a573c760d166cdaa39d1ba16af78b392d3428",
+    "r3/capability.py": "c9d54493a5085a59929e9e992ac89416aa813d84c155df308176558b0445a353",
+    "r3/checkout.py": "8e8cdc79383866a627e56354f6c1701dfae128d74c321b0c2a00e614b3088533",
+    "r3/contracts.py": "439f8a6776b905885dd3d363f8d2756e934202e64e95e5a5a35fc6f958fc0cbc",
+    "r3/control.py": "f5a4375e37b6843745f86ceb76acbaa9e9d4c0ed646d4ccf9869dc7db6fb4353",
+    "r3/customer_memory.py": "756a615136826254a0bdba5e90b19b2837518178ed6916580d431724d19c6bcb",
+    "r3/cycle.py": "6d2cbf38c20bd8b6a6e0dfa44b3dc2071b2f45d97621400a5ae35ac143e43cb9",
+    "r3/decision_view.py": "b97d5690fc0041497fb8029cf86c43065e5f0795ef2b4873c6bae0562cf5a127",
+    "r3/demand_policy.py": "97a3b6b9b3c2fa29cc2f774cff457ae1436051e771653da6805f9d21d1f77b90",
+    "r3/discovery.py": "59852dece7d42ff0aef69258794416be4da9305fc91301991141bf258ed3953d",
+    "r3/economy.py": "fd8d7d2be15810d7a80e467416758826321cf185ff606a7f0fea3d0e6ce3087c",
+    "r3/evolution.py": "f48ed745a1178896e2bb2061d2e61771e1e9090415e44db93cf8ec9825cdde11",
+    "r3/feedback.py": "03dd51b610b58d4c4fe4d647fcea57cffeb885c28b32b4221a20c61f8ceaf111",
+    "r3/finance.py": "abc5c8e4413dcc4877508fe70d1bd2f90a5310625eb0a4eeb36f04ddec5dc9af",
+    "r3/forum.py": "a5105d0cc4f190c1cb06f2cebaaf970cf20ebb793d1a0aeec01b71471767e7eb",
+    "r3/lifecycle.py": "e6744ad667040e1fbba0816f8527b6bce16b5eeb0e14a0bb0e4560324b3cec7b",
+    "r3/limits.py": "5d5ac57974926640e1d8026ffb390a6751ab8f66a1297e1ddfefb4d22f16c081",
+    "r3/llm_roles.py": "a74e06dc12aeb597e688900255a995807cf389a9670f3596a99a8e6e85b9a396",
+    "r3/long_memory.py": "9dbcd6aa6e261bc52b388239b0c9580e69380a249a732c6ac3109de48bb1dce3",
+    "r3/market_memory.py": "41a6eab2b4e9e8b24a330f535528f1f84944bf61ea1f7e3bdffae765043b71d9",
+    "r3/merchant.py": "99d58c3bdcff54cf2fd9844b2f3767a376eaeecabe5954c9f42c5a1646555707",
+    "r3/meta.py": "f6c31896a6871f3c43ed243f1c8467780fa16b3ddeaa30d3dc27ffd81512c857",
+    "r3/model.py": "24b6ec44d4cb1bffa464d20fcdf9ed34e08ec2c1c756c57080b1c5213aaad8e5",
+    "r3/objective_context.py": "80139bcaa6ab41a0503015f1f6fcaa31a61ead628ffa75c106f99af9563afb61",
+    "r3/outcomes.py": "bdc605bdf53ec1548fd9174407ed0c00a5d08befb8511afa2e62261133de07a3",
+    "r3/pinggy_tunnel.py": "02ff91f337fdb34795bd282977afcd1feac43c780c70c7ff595082d56cf9d3c6",
+    "r3/policy_learning.py": "516abadee9a4e9fcf96ef0bc4953f571243342b69ac27a0ed5eafc88f71095bf",
+    "r3/portfolio.py": "6a3f016d62c47567c79a2597911214b40668481a133a2d1808495f318dfffa38",
+    "r3/prepared.py": "2a64b258d80126405d70caa9dd0b3d932a3a5a8a53e907db90f99953ef41bd70",
+    "r3/prewindow.py": "7d9a61e53f7e7f78ae5b8623a7b7d49ea49285a16c752cfb78bb4ae83011197c",
+    "r3/progress.py": "9754a578ff42575d7564c65e919eb9392d8097950e6a16646b9f2fd3ad9dfdc7",
+    "r3/protocol.py": "528fb67b2dde2db5cf68354e57763b6b718d0f1a19bcb07eede9b01a9d830a39",
+    "r3/quality.py": "0a5ec96a8a4c3095247f356689e547e56af2f99f72362635e71191d0d4354e44",
+    "r3/quote_market.py": "bcacc09705d0bc73f06fda25249c1a9ac3be54eb964d46800c84446a71c4dda6",
+    "r3/recovery.py": "8fad24b5652955660a5a7d552543d0fbe49fd3acaf363adb7709fe400c9a493e",
+    "r3/reputation.py": "712fb378fe6dd56e04fa66c27a6ff0918b7a9295131121186f2981f36a04270a",
+    "r3/research.py": "2d9937b9b7620adc19700810342bfa9827c23e9ba80ab9cd47f47dac11f471eb",
+    "r3/risk.py": "63d500eddfd3d91822b205211203d3aa49193418ccc866c152e2afbbe9a9f54e",
+    "r3/shop_growth.py": "d72c957e8732a2cf11c2fe85e6da4ab8f3bb09bf0adbd7a66fafd054dd57b72b",
+    "r3/shop_offer.py": "a53b87be2c438b3b090caf95ca1dc56752a23d0473a8bfc17073c26af7abbd18",
+    "r3/state.py": "df36b882bc25665112033cdcad1bb4a37cf303b8f4eb50edcf558a044c78f473",
+    "r3/strategy_lab.py": "207ee865ff337543f0188da7a134c164b1e55c15b8a891ebee2d95b6f1d14f92",
+    "r3/transport.py": "419329d1277d7da5ef4aeeaeff4cdd8b8f7211f92ae75092e5303ad4ec0c9989",
+    "r3/transport_health.py": "161019cdfa9bb51ef7763aad4324b1d4ff135ac79738a26063dee20664dd0f10",
+    "r3/usage.py": "4f56c1d1f37c2aabe397568848ccd173d3e477db3e5118aec15de6bbc52f29e1",
+    "r3/worker_bridge.py": "5be65dbfb8c6890f3451c5d5824da7cf08142873ec4849535ddd679c3cf7f89c",
+    "r3/__init__.py": "c443fdecf805b4d8533b7c6a58209296f4938fff885e74e6abaf6e529d2b9c60",
+    "seller_r3.py": "bec8a4e83a63f104f55396c806240a43880e893350a65f809effc8cb296f6d75",
+    "policy.json": "5e2e8925c68083fdfd88b7f149e7bbbc2a5a627366991132f4dfbd0df3fb4c6d"
+  },
+  "market_transactions": 0,
+  "model_calls": 0,
+  "shared_state_writes": 0,
+  "economic_superiority_proven": false,
+  "future_ratings_or_rank_guaranteed": false
+}

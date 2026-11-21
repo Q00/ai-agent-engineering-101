@@ -1,0 +1,154 @@
+% Compile: xelatex -no-shell-escape -interaction=nonstopmode -halt-on-error framework.tex
+% Source of truth: ../../AUTONOMY_V14_DESIGN.md
+% This diagram documents a proposal; it does not deploy or validate that proposal.
+\documentclass[10pt]{article}
+\usepackage[a3paper,landscape,margin=12mm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Malgun Gothic}
+\setsansfont{Malgun Gothic}
+\XeTeXlinebreaklocale "ko"
+\XeTeXlinebreakskip=0pt plus 1pt
+\usepackage{tikz}
+\usepackage{graphicx}
+\usetikzlibrary{arrows.meta,calc}
+\usepackage{hyperref}
+\hypersetup{pdftitle={Round 3 Shop Buyer Autonomous Framework v14 Proposal},pdfauthor={26510121},colorlinks=true,urlcolor=blue}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\definecolor{ink}{HTML}{162C43}
+\definecolor{blue}{HTML}{176897}
+\definecolor{bluebg}{HTML}{EDF5FA}
+\definecolor{purple}{HTML}{7551A2}
+\definecolor{purplebg}{HTML}{F3EFF8}
+\definecolor{teal}{HTML}{087F75}
+\definecolor{tealbg}{HTML}{EDF7F3}
+\definecolor{amber}{HTML}{AC6511}
+\definecolor{amberbg}{HTML}{FFF6E6}
+\definecolor{graybg}{HTML}{F3F5F7}
+\definecolor{muted}{HTML}{526477}
+\begin{document}
+{\sffamily\fontsize{24}{29}\selectfont\bfseries\color{ink} Shop / Buyer 자율 개선 프레임워크}\hfill
+{\sffamily\fontsize{12}{16}\selectfont\color{purple} Round 3 · v14 설계안}
+
+\vspace{2mm}
+{\sffamily\fontsize{10}{14}\selectfont\color{muted}
+기준 버전: v13 \quad | \quad 신규 프레임워크: 미구현·미적용 \quad | \quad 검증 근거가 충분한 변경만 반영 \hfill 2026-11-11}
+
+\vspace{5mm}
+\resizebox{!}{240mm}{%
+\begin{tikzpicture}[x=1mm,y=1mm,
+  every node/.style={font=\sffamily\fontsize{9}{12}\selectfont,text=ink},
+  box/.style={draw=blue,line width=.7pt,rounded corners=2mm,fill=white,
+    align=center,inner sep=2mm,outer sep=0pt},
+  proposed/.style={box,draw=muted,dashed},
+  live/.style={box,fill=blue,text=white},
+  plannedgreen/.style={proposed,draw=teal,fill=white},
+  plannedpurple/.style={proposed,draw=purple,fill=white},
+  edge/.style={-{Stealth[length=2mm]},draw=muted,line width=.8pt,rounded corners=1mm},
+  releaseedge/.style={edge,draw=teal,line width=1.05pt,dashed},
+  contextedge/.style={edge,draw=purple,dashed},
+  label/.style={font=\sffamily\fontsize{8}{10}\selectfont,text=muted,fill=white,inner sep=.8mm},
+  heading/.style={anchor=west,font=\sffamily\fontsize{11}{14}\selectfont\bfseries},
+  small/.style={font=\sffamily\fontsize{8}{11}\selectfont,align=left,text=muted}]
+
+% Lanes. Background rectangles are deliberately independent of node extents.
+\fill[bluebg,rounded corners=3mm] (0,0) rectangle (288,-55);
+\fill[graybg,rounded corners=3mm] (0,-63) rectangle (288,-165);
+\fill[amberbg,rounded corners=3mm] (0,-174) rectangle (288,-229);
+\fill[purplebg,rounded corners=3mm] (300,0) rectangle (390,-229);
+\node[heading,text=blue] at (5,-7) {01\quad 거래 실행 · 현재 경로를 보존};
+\node[heading] at (5,-70) {02\quad 백그라운드 개선 · 사건이 생길 때만 작동};
+\node[heading,text=amber] at (5,-181) {03\quad 독립 검증 → 조건부 적용};
+\node[heading,text=purple] at (305,-7) {04\quad 컨텍스트·기억};
+
+% 1. Hot path: solid boxes are existing functions, dashed boxes are proposals.
+\node[box,text width=38mm,minimum height=28mm] (market) at (28,-33)
+  {\textbf{공식 시장}\\주문 · 견적 · 정산\\규칙 · 수요 · 공급};
+\node[live,text width=49mm,minimum height=15mm] (shop) at (99,-22)
+  {\textbf{Shop Main}\\가격 · 재고 · 보증};
+\node[live,text width=49mm,minimum height=15mm] (buyer) at (99,-43)
+  {\textbf{Buyer Main}\\탐색 · 협상 · 구매};
+\node[box,text width=54mm,minimum height=32mm] (guards) at (170,-33)
+  {\textbf{실행 보호 커널}\\현재 재고·자금 재확인\\SKU · 서명 · 보증 검사\\결제 단일화 · 중복 방지};
+\node[plannedgreen,text width=51mm,minimum height=32mm] (active) at (253,-33)
+  {\textbf{검증된 활성 목록 [제안]}\\Skill 계획 · 정책 패킷\\버전 고정 · 만료 검사\\만료/장애 시 기존 경로};
+\draw[edge,<->] (market.east) -- (55,-33) |- (shop.west);
+\draw[edge,<->] (55,-33) |- (buyer.west);
+\draw[edge] (guards.west) -- (136,-33) |- (shop.east);
+\draw[edge] (136,-33) |- (buyer.east);
+\draw[edge,draw=teal] (active.west) -- (guards.east);
+\node[small,anchor=west] at (83,-59)
+  {Main 추가 모델 호출·생성 대기 0 목표 / 전체·외부 지연 별도 측정};
+
+% 2. Event-driven analysis and capability creation.
+\node[proposed,text width=38mm,minimum height=27mm] (events) at (28,-92)
+  {\textbf{사건 원장·변경 감지}\\실패 · 품절 · 가격 변화\\실제 정산 · 품질 성숙};
+\node[proposed,text width=49mm,minimum height=27mm] (director) at (99,-92)
+  {\textbf{Director / 개선 감독}\\우선순위 · 작업 큐 · lease\\비용 예약 · 자원 제한};
+\node[proposed,text width=49mm,minimum height=27mm] (assessor) at (177,-92)
+  {\textbf{Need Assessor}\\무엇이 부족한가?\\갱신 / 조정 / 조합 / 생성};
+\node[proposed,text width=49mm,minimum height=27mm] (router) at (255,-92)
+  {\textbf{Skill Router}\\조건·권한·버전 필터\\선택 / 조합 / none};
+\draw[edge] (shop.south west) -- (67,-60) -| (events.north);
+\draw[edge] (buyer.south west) -- (67,-60);
+\draw[edge] (events.east) -- (director.west);
+\draw[edge] (director.east) -- (assessor.west);
+\draw[edge] (assessor.east) -- node[label,above] {재사용 우선} (router.west);
+
+\node[small,anchor=north west,text width=119mm] at (7,-118)
+  {\textbf{불필요한 생성·재시도 억제}\\
+   시장 장애와 거래 거절 분리 · 오래된 관측 먼저 갱신\\
+   같은 문제는 중복 제거 · 기존 도구의 조합 먼저 검토\\
+   기대효과·검증 가능성·남은 시간으로 작업 우선순위 결정};
+\node[proposed,text width=49mm,minimum height=33mm] (builder) at (177,-142)
+  {\textbf{Tool / Skill Builder}\\명세 · 코드 · 작성자 테스트\\격리 실행 · 비용 상한\\운영 키·출시 권한 없음};
+\node[proposed,text width=49mm,minimum height=33mm] (experts) at (255,-142)
+  {\textbf{분야별 분석 역할}\\시장·재고 포트폴리오\\Buyer 구매 경로\\품질 · 보증 · 별점};
+\draw[edge] (assessor.south) -- node[label,right] {기능 부족 확인} (builder.north);
+\draw[edge] (router.south) -- node[label,right] {선택한 스킬 사용} (experts.north);
+
+% 3. Evidence gates and a single controlled release path.
+\node[proposed,draw=amber,text width=101mm,minimum height=36mm] (evaluate) at (58,-207)
+  {\textbf{Independent Evaluator / 독립 검증}\\
+   A\;기능·권한 \quad B\;지연·자원·비용\\
+   C\;필수 사실·계약·출처 보존\\
+   D\;실제 경제적 개선·성숙도·불확실성\\
+   생성자 자기 테스트만으로 통과 불가};
+\node[plannedgreen,text width=101mm,minimum height=36mm] (release) at (213,-207)
+  {\textbf{Release Controller / 출시·복구}\\
+   E\;해당 변경의 모든 필수 gate 통과\\
+   baseline · 규칙 · artifact hash 재확인\\
+   안전한 적용 시점 → manifest 원자 전환\\
+   악화·필수 사실 손실 → 기존 버전 복구};
+\draw[edge] (builder.south) -- (177,-169) -- (2,-169) |- (evaluate.west);
+\draw[edge] (experts.south) -- (255,-169) -- (177,-169);
+\node[label] at (112,-169) {코드·스킬·전략 후보};
+\draw[edge,draw=teal] (evaluate.east) -- node[label,above] {검증된 범위만} (release.west);
+\draw[releaseedge] (release.east) -- (293,-207) |- (active.east);
+\node[font=\sffamily\fontsize{8}{10}\selectfont,text=teal,rotate=90,fill=white,inner sep=1mm]
+  at (293,-137) {검증 전 신규 전략의 실거래 적용 금지};
+
+% 4. Curated context is a derived view, never a replacement for the ledger.
+\node[plannedpurple,text width=75mm,minimum height=31mm] (curator) at (345,-31)
+  {\textbf{Context Curator}\\역할별 최소 패킷 · 점진 로드\\사실 / 가설 / 절차 분리\\중복 근거·외부 지시 오염 차단};
+\node[plannedpurple,text width=75mm,minimum height=32mm] (packet) at (345,-79)
+  {\textbf{Context Packet}\\출처 · 관측 시각 · 만료\\규칙 / 자료 / 정책 버전\\진행 중 의무·반례를 보존};
+\node[plannedpurple,text width=75mm,minimum height=32mm] (memory) at (345,-129)
+  {\textbf{Long Memory / Skill Library}\\검증된 사실·경험·절차 색인\\성공 · 실패 · 보류 모두 보존\\안 쓰는 스킬은 활성 목록에서 제외};
+\node[box,draw=purple,text width=75mm,minimum height=48mm] (evidence) at (345,-193)
+  {\textbf{원본 근거 · 보호 상태}\\공식 규칙 · 사건/정산 원장\\서명된 영수증 · 성숙 품질 결과\\예약 · 결제 불명 · 환불 의무\\\vspace{1mm}
+   \textcolor{purple}{요약으로 원본을 덮어쓰지 않음}\\
+   \textcolor{purple}{미해결 의무는 임의로 압축·삭제 금지}};
+\draw[contextedge] (curator.south) -- (packet.north);
+\draw[contextedge,<->] (packet.south) -- (memory.north);
+\draw[contextedge,<->] (memory.south) -- (evidence.north);
+\draw[contextedge] (packet.west) -- (297,-79) |- (router.east);
+\draw[contextedge] (evaluate.south) -- (58,-235) -| (evidence.south);
+\node[label,text=purple] at (193,-235) {평가 결과·실패·반례를 원본 근거와 연결해 보존};
+
+\node[small,anchor=north west,text width=390mm] at (0,-242)
+  {\textbf{범례}\quad 실선 상자: 현재 기능 / 점선 상자: v14 신규 제안 / 보라 점선 화살표: 컨텍스트·근거 / 초록 점선: 검증 후 적용\\
+   12개 논리적 역할은 상시 모델 12개를 뜻하지 않음 · 모델 worker 동시 2개 이하 제안 · 신규 유료 작업 예산 미설정/0이면 보류 · Jev/REA는 선택 사항};
+\end{tikzpicture}
+}
+\end{document}

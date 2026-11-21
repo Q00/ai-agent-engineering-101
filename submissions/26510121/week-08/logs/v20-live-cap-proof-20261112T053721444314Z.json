@@ -1,0 +1,161 @@
+{
+  "at_utc": "2026-11-12T05:37:21.444314+00:00",
+  "runtime": {
+    "pid": 15636,
+    "session": "6689840b259d4bf8989670719a3bff4e",
+    "started_at": 1794461683.5439632,
+    "launch_id": "auto-join-20261112T053443008030Z"
+  },
+  "execution_revision": "v20-demand-without-held-unit-caps-1",
+  "source_manifest": "logs\\v20-source-promotion-20261112T053441246238Z.json",
+  "source_mismatches": [],
+  "inventory_unit_caps_removed": true,
+  "inventory_ceiling": null,
+  "physical_units": 148,
+  "legal_max_units_per_supply_post": 20,
+  "current_supply_window": {
+    "open": false,
+    "opens_at": 1794462241,
+    "closes_at": 1794462421
+  },
+  "fresh_background_demand_diagnostic": true,
+  "diagnostic": {
+    "inventory_unit_caps_enabled": false,
+    "total_unit_ceiling": null,
+    "held_skus": 93,
+    "held_skus_target_at_most_two": 78,
+    "held_skus_with_repeat_paid_evidence": 21,
+    "target_shortfall_units_scenario": 21,
+    "merchant_context_at": 1794461765.3122983,
+    "supply_cycle_seconds": 1200,
+    "repeat_coverage_cycles": 3,
+    "public_only_coverage_cycles": 2,
+    "public_equal_share_prior_multiplier": 0.5,
+    "examples": [
+      {
+        "sku": "G022ce883",
+        "held": 9,
+        "target_scenario": 13,
+        "rate_per_hour_scenario": 8.841504350167064,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 40,
+        "public_qualified": true,
+        "observed_availability_hours": 4.180621933076117,
+        "lost_exact_requests_not_directly_added_to_rate": 0
+      },
+      {
+        "sku": "Gb909a9c8",
+        "held": 2,
+        "target_scenario": 5,
+        "rate_per_hour_scenario": 2.825252309795145,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 16,
+        "public_qualified": false,
+        "observed_availability_hours": 5.532116324040629,
+        "lost_exact_requests_not_directly_added_to_rate": 1
+      },
+      {
+        "sku": "Gef4d3036",
+        "held": 1,
+        "target_scenario": 3,
+        "rate_per_hour_scenario": 1.6132235972407705,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 7,
+        "public_qualified": true,
+        "observed_availability_hours": 4.304642185105216,
+        "lost_exact_requests_not_directly_added_to_rate": 2
+      },
+      {
+        "sku": "G1be6b0a6",
+        "held": 3,
+        "target_scenario": 5,
+        "rate_per_hour_scenario": 2.7736423471656084,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 14,
+        "public_qualified": false,
+        "observed_availability_hours": 4.878635281523071,
+        "lost_exact_requests_not_directly_added_to_rate": 0
+      }
+    ],
+    "interpretation": "Low rate/coverage can retain small targets without a unit cap. Prior and Poisson arrivals are scenarios, not identified hidden demand. Lost requests require feasibility attribution before adding demand."
+  },
+  "counts_since_restart": {
+    "market_research_published": 1,
+    "feedback_main_choice": 61,
+    "shop_settled": 1,
+    "purchase": 3,
+    "supply_execution_status": 0,
+    "analytical_role_error": 0,
+    "objective_context_error": 0,
+    "cycle_supervisor_error": 0,
+    "cycle_supply_error": 0,
+    "buyer_worker_error": 0,
+    "market_research_deferred": 0
+  },
+  "errors_since_restart": {
+    "analytical_role_error": 0,
+    "objective_context_error": 0,
+    "cycle_supervisor_error": 0,
+    "cycle_supply_error": 0,
+    "buyer_worker_error": 0,
+    "market_research_deferred": 0
+  },
+  "heartbeat": {
+    "at": 1794461836.6187427,
+    "preparing": true,
+    "researching": true,
+    "capability_designing": true,
+    "capability_error": null,
+    "preparation_error": null,
+    "research_error": null
+  },
+  "operating_policy": {
+    "status": "active",
+    "policy_authority": "agent_selected",
+    "research_at": 1794461815.3400857,
+    "patches": {
+      "shop": {
+        "shop_demand_horizon_cycles": 3,
+        "shop_sku_trend_factors": {
+          "Gef4d3036": 1.1,
+          "G022ce883": 0.95,
+          "G200e39a3": 1.05,
+          "G3434758a": 1.05,
+          "G0be9ed07": 0.95,
+          "G7fa48eaa": 0.9,
+          "G66ded25b": 1.05,
+          "G2560a8c9": 1.15,
+          "G1831f2c0": 0.75,
+          "Gdf79cd07": 1.1,
+          "G74e686be": 0.9,
+          "G5ec8117f": 1.2
+        },
+        "shop_public_demand_skus": [
+          "G022ce883",
+          "G0be9ed07",
+          "G1831f2c0",
+          "G200e39a3",
+          "G2560a8c9",
+          "G3434758a",
+          "G5ec8117f",
+          "G66ded25b",
+          "G74e686be",
+          "G7fa48eaa",
+          "Gdf79cd07",
+          "Gef4d3036"
+        ]
+      },
+      "buyer": {
+        "buyer_frontier_category_enabled": true,
+        "buyer_frontier_min_orders": 8,
+        "buyer_frontier_recheck_seconds": 60
+      }
+    },
+    "reasons": []
+  },
+  "new_restock_execution_observed": false,
+  "model_calls_by_this_verifier": 0,
+  "market_transactions_by_this_verifier": 0,
+  "economic_superiority_proven": false,
+  "verified": true
+}

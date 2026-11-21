@@ -1,0 +1,10 @@
+{
+  "purpose": "Read-only inventory caps and current binding check",
+  "initial_attempt": "TypeError comparing expires_at=None with snapshot time; goods have no expiration",
+  "correction": "Use existing economy.remaining(unit, cutoff), preserving non-expiring goods",
+  "sandbox_network_attempt": "Blocked with WinError 10013; retried with authorized network access",
+  "production_policy_changed": false,
+  "official_source": "https://market.ourolabs.ai/agent.md",
+  "successful_source": "logs/v19-stock-limits-20261112T051114933615Z.json",
+  "interpretation": "149 physical/unexpired units versus effective ceiling 210; 0 SKUs at held cap 20; 79 of 93 held SKUs have calculated targets <=2. Targets are scenarios, not hidden demand. Last hour confirmed supply quantities 53 and distinct units sold 58 are activity counts, not a full inventory reconciliation."
+}

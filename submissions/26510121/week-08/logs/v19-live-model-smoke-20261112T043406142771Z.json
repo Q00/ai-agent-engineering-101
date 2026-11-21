@@ -1,0 +1,283 @@
+{
+  "schema_valid": true,
+  "calls": 4,
+  "seconds": 32.82799999997951,
+  "published_only_in_isolation": true,
+  "market_transactions": 0,
+  "research_source": "logs\\v18-objective-replay-20261112T032746536024Z.json",
+  "research_source_cutoff": 1794454051.8027737,
+  "research_source_is_historical_replay": true,
+  "research": {
+    "analyst": {
+      "summary": "Retain 3 cycles: forecast Book 171k vs 150k/150k/153k at 1/1.5/2; stress -33k vs -37k/-37k/-39k. Preplan only: execution disabled; no promotion.",
+      "hypotheses": [
+        "31 sales, 19 stockouts and 151.61s delays suggest repeat-demand depth may help within cash guards.",
+        "Food 101/128 vs goods 1/49 may favor routing; food Saved is pending, goods mature Saved averages .3775.",
+        "Goods' 74/74 above-cap quotes suggest term-comparable failed-contract routing may reduce wasted effort."
+      ],
+      "evidence_ids": [
+        "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+        "ledger:5501995",
+        "kv:framework-plan",
+        "snapshot:shop-plan-v15.json",
+        "kv:feedback-last-policy",
+        "kv:quality-holdout-summary",
+        "kv:objective-decision-context"
+      ],
+      "skills": [
+        "stock_coverage",
+        "buyer_price_gap",
+        "buyer_preparation",
+        "shop_rating_holdout"
+      ],
+      "skill_steps": [
+        "measure",
+        "diagnose",
+        "propose",
+        "validate_facts"
+      ],
+      "buyer_probe_percent": 8,
+      "buyer_gap_power": 2,
+      "buyer_diverse_quotes": false,
+      "shop_service_level": 0.902,
+      "shop_plan": "diversified",
+      "forum_focus": "balanced",
+      "operating_actions": [
+        "stock_coverage",
+        "buyer_price_gap"
+      ],
+      "operating_policy": {
+        "cover_cycles": 3,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "approve_trial": false
+    },
+    "critic": {
+      "summary": "Retain 3 cycles: forecast Book 171k vs 150k/150k/153k at 1/1.5/2; stress -33k vs -37k/-37k/-39k. Preplan only; execution disabled; no promotion.",
+      "hypotheses": [
+        "31 paid, 19 stockouts and 152s delays may favor depth; spend 3.69m vs 571.57m spendable.",
+        "Food 101/128 vs goods 1/49 may favor routing, not Saved lift: food pending; mature goods .3775.",
+        "74/74 goods quotes above cap may justify same-owner/category routing with recovery probes."
+      ],
+      "evidence_ids": [
+        "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+        "ledger:5501995",
+        "kv:framework-plan",
+        "snapshot:shop-plan-v15.json",
+        "kv:feedback-last-policy",
+        "kv:quality-holdout-summary",
+        "kv:objective-decision-context"
+      ],
+      "skills": [
+        "stock_coverage",
+        "buyer_price_gap",
+        "buyer_preparation",
+        "shop_rating_holdout"
+      ],
+      "skill_steps": [
+        "measure",
+        "diagnose",
+        "propose",
+        "validate_facts"
+      ],
+      "buyer_probe_percent": 8,
+      "buyer_gap_power": 2,
+      "buyer_diverse_quotes": false,
+      "shop_service_level": 0.9005,
+      "shop_plan": "diversified",
+      "forum_focus": "balanced",
+      "operating_actions": [
+        "stock_coverage",
+        "buyer_price_gap"
+      ],
+      "operating_policy": {
+        "cover_cycles": 3,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "approve_trial": false
+    },
+    "selected": {
+      "schema": 1,
+      "at": 1794458046.0589137,
+      "expires_at": 1794459246.0589137,
+      "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "summary": "Retain 3 cycles: forecast Book 171k vs 150k/150k/153k at 1/1.5/2; stress -33k vs -37k/-37k/-39k. Preplan only; execution disabled; no promotion.",
+      "hypotheses": [
+        "31 paid, 19 stockouts and 152s delays may favor depth; spend 3.69m vs 571.57m spendable.",
+        "Food 101/128 vs goods 1/49 may favor routing, not Saved lift: food pending; mature goods .3775.",
+        "74/74 goods quotes above cap may justify same-owner/category routing with recovery probes."
+      ],
+      "evidence_ids": [
+        "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+        "ledger:5501995",
+        "kv:framework-plan",
+        "snapshot:shop-plan-v15.json",
+        "kv:feedback-last-policy",
+        "kv:quality-holdout-summary",
+        "kv:objective-decision-context"
+      ],
+      "skill_ids": [
+        "74d3ee01e01fa04e8eefa711e85041d7902f50df1834ce399f094e416d8bea07",
+        "07b1f855ba6afa45f49af8efa61263665e3df4be6202bd964f361ecb676a8894",
+        "343aac61dc07a0e086f3324861db5bb0ad0f5b83436eda1311a62327163e2cac",
+        "674377d13d42befbb838a6cd4550837e93fbb27965fc16c4b9888f46de3a7b9a"
+      ],
+      "queued_buyer_profile": null,
+      "trial_review_approved": false,
+      "economic_superiority_verified": false,
+      "shop_plan_recommendation": "diversified",
+      "operating_intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "operating_actions_reviewed": true,
+      "forum_focus": "balanced",
+      "objective_context_id": "67cf36fb379f3eb18212946594a2c40a94b0b14bf98e16c1431c3b17206363a1",
+      "operating_policy": {
+        "cover_cycles": 3,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "policy_authority": "independent_agent_consensus_with_numeric_execution_guards"
+    }
+  },
+  "capability": {
+    "triage": {
+      "design_needed": true,
+      "focus": "objective_gap_audit",
+      "reason": "A .046 leader gap and explicit compiler constraints frame both official objectives; audit the public gaps before choosing a plan.",
+      "evidence_ids": [
+        "kv:objective-decision-context",
+        "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942"
+      ]
+    },
+    "design": {
+      "tools": [
+        "objective_gap_audit",
+        "stock_depth_audit",
+        "buyer_frontier_audit"
+      ],
+      "reason": "Audit official Shop ALL and Buyer ALL gaps and constraints, then stock depth and mature buyer outcomes; observed cohorts do not establish causal lift.",
+      "evidence_ids": [
+        "kv:objective-decision-context",
+        "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+        "snapshot:inventory.json",
+        "ledger:5520850"
+      ]
+    },
+    "calculated_tools": [
+      "objective_gap_audit",
+      "stock_depth_audit",
+      "buyer_frontier_audit"
+    ],
+    "calculation_bytes": 3761
+  },
+  "usage": [
+    {
+      "role": "market_research_critic",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "medium",
+      "usage": {
+        "input_tokens": 8820,
+        "input_tokens_details": {
+          "cache_write_tokens": 8817,
+          "cached_tokens": 0
+        },
+        "output_tokens": 766,
+        "output_tokens_details": {
+          "reasoning_tokens": 309
+        },
+        "total_tokens": 9586
+      },
+      "estimated_usd": 0.02971,
+      "seconds": 11.234999999869615,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "_event_id": "a2387bf1628b4fe78173b2ad0bf0c0c9",
+      "_ts": 1794458046.0503159,
+      "_role": "system"
+    },
+    {
+      "role": "market_research_analyst",
+      "model": "gpt-6-astra",
+      "reasoning_effort": "medium",
+      "usage": {
+        "input_tokens": 8548,
+        "input_tokens_details": {
+          "cache_write_tokens": 8545,
+          "cached_tokens": 0
+        },
+        "output_tokens": 970,
+        "output_tokens_details": {
+          "reasoning_tokens": 516
+        },
+        "total_tokens": 9518
+      },
+      "estimated_usd": 0.15535,
+      "seconds": 21.406999999890104,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "_event_id": "9e11d7e900af49aa98a50b84a4f1de4e",
+      "_ts": 1794458034.7689629,
+      "_role": "system"
+    },
+    {
+      "role": "capability_designer",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "medium",
+      "usage": {
+        "input_tokens": 3268,
+        "input_tokens_details": {
+          "cache_write_tokens": 3265,
+          "cached_tokens": 0
+        },
+        "output_tokens": 120,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 3388
+      },
+      "estimated_usd": 0.00937,
+      "seconds": 3.405999999959022,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "_event_id": "fdfb85372ce84429b0ab083a7915fa54",
+      "_ts": 1794458023.1652172,
+      "_role": "system"
+    },
+    {
+      "role": "capability_triage",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "low",
+      "usage": {
+        "input_tokens": 3164,
+        "input_tokens_details": {
+          "cache_write_tokens": 3161,
+          "cached_tokens": 0
+        },
+        "output_tokens": 346,
+        "output_tokens_details": {
+          "reasoning_tokens": 246
+        },
+        "total_tokens": 3510
+      },
+      "estimated_usd": 0.0005685,
+      "seconds": 6.0939999998081475,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "_event_id": "bbf8a2f179d44ec49f9f57958671e8b2",
+      "_ts": 1794458019.4416182,
+      "_role": "system"
+    }
+  ],
+  "economic_superiority_proven": false
+}

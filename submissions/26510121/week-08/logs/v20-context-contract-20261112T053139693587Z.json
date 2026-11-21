@@ -1,0 +1,75 @@
+{
+  "schema_valid": true,
+  "metrics": {
+    "source_bytes": 21785,
+    "fact_bytes": 21785,
+    "budget_bytes": 23000,
+    "reductions": [],
+    "duplicated_meta_feedback_removed": false
+  },
+  "source": "logs\\v20-frozen-demand-20261112T052619694729Z.json.gz",
+  "historical_envelope": "logs\\v18-objective-replay-20261112T032746536024Z.json",
+  "scope": "Bounded schema/size contract only; mixed-date envelope is not a live market diagnosis.",
+  "diagnostic": {
+    "inventory_unit_caps_enabled": false,
+    "total_unit_ceiling": null,
+    "held_skus": 97,
+    "held_skus_target_at_most_two": 82,
+    "held_skus_with_repeat_paid_evidence": 22,
+    "target_shortfall_units_scenario": 20,
+    "merchant_context_at": 1794461159.927261,
+    "supply_cycle_seconds": 1200,
+    "repeat_coverage_cycles": 3,
+    "public_only_coverage_cycles": 2,
+    "public_equal_share_prior_multiplier": 0.5,
+    "examples": [
+      {
+        "sku": "G022ce883",
+        "held": 10,
+        "target_scenario": 13,
+        "rate_per_hour_scenario": 8.929110101743406,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 39,
+        "public_qualified": true,
+        "observed_availability_hours": 4.031075050102341,
+        "lost_exact_requests_not_directly_added_to_rate": 0
+      },
+      {
+        "sku": "G4a998429",
+        "held": 1,
+        "target_scenario": 4,
+        "rate_per_hour_scenario": 1.7630416687015535,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 7,
+        "public_qualified": false,
+        "observed_availability_hours": 4.044526162279978,
+        "lost_exact_requests_not_directly_added_to_rate": 0
+      },
+      {
+        "sku": "Gef4d3036",
+        "held": 1,
+        "target_scenario": 3,
+        "rate_per_hour_scenario": 1.5228732401001046,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 7,
+        "public_qualified": true,
+        "observed_availability_hours": 4.326053880585567,
+        "lost_exact_requests_not_directly_added_to_rate": 1
+      },
+      {
+        "sku": "Gb909a9c8",
+        "held": 3,
+        "target_scenario": 5,
+        "rate_per_hour_scenario": 3.0048926368165327,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 17,
+        "public_qualified": false,
+        "observed_availability_hours": 5.519236906369533,
+        "lost_exact_requests_not_directly_added_to_rate": 1
+      }
+    ],
+    "interpretation": "Low rate/coverage can retain small targets without a unit cap. Prior and Poisson arrivals are scenarios, not identified hidden demand. Lost requests require feasibility attribution before adding demand."
+  },
+  "model_calls": 0,
+  "market_transactions": 0
+}

@@ -1,0 +1,121 @@
+{
+  "source": "C:\\Users\\kenjin\\ai-agent-engineering-101\\submissions\\26510121\\week-08",
+  "replay_database": "C:\\Users\\kenjin\\ai-agent-engineering-101\\submissions\\26510121\\week-08\\.market\\system-upgrade-20261110\\repo\\submissions\\26510121\\week-08\\.market\\replay\\r3.sqlite3",
+  "network_calls": 0,
+  "reconcile_seconds": 0.15600000019185245,
+  "planning_seconds": 0.0,
+  "candidate_seconds": 0.8900000001303852,
+  "canonical_confirmed_refund_orders": 7,
+  "canonical_outcomes": 135,
+  "plan": {
+    "at": 1794293001.5549386,
+    "revision": "system-v13-contract-frontier",
+    "segments": {
+      "food": {
+        "orders": 455,
+        "closed": 455,
+        "paid": 355,
+        "conversion": 0.7802197802197802,
+        "quotes": 685,
+        "above_cap": 458
+      },
+      "goods": {
+        "orders": 206,
+        "closed": 206,
+        "paid": 7,
+        "conversion": 0.03398058252427184,
+        "quotes": 326,
+        "above_cap": 324
+      }
+    },
+    "issues": [
+      "goods_contract_conversion",
+      "price_frontier_no_overlap",
+      "shop_rating_model_shadow"
+    ],
+    "arena": {
+      "revision": "system-v13-contract-frontier",
+      "rules_sha256": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "champion": "contract_frontier",
+      "challenger": "coverage_probe",
+      "active": true,
+      "since": 1794293001.5549386,
+      "experiment": "8af030855e71163e11b986478753fade7a06dc5cc82f9d0153eaf63538d15bad"
+    },
+    "evaluation": {
+      "at": 1794293001.5549386,
+      "stats": {
+        "champion": {
+          "closed": 0,
+          "paid": 0,
+          "pending": 0,
+          "reward": 0,
+          "standard_error": 1,
+          "seconds": null,
+          "score_per_second": 0
+        },
+        "challenger": {
+          "closed": 0,
+          "paid": 0,
+          "pending": 0,
+          "reward": 0,
+          "standard_error": 1,
+          "seconds": null,
+          "score_per_second": 0
+        }
+      },
+      "ready": false,
+      "promote": false,
+      "rollback": false,
+      "note": "Saved uplift over assignment baseline; completed 6h+10m cohorts, minimum samples and latency guard."
+    },
+    "shop_rating": {
+      "mode": "shadow",
+      "reviews": 0,
+      "verified_accounts": 0
+    },
+    "next_actions": [
+      {
+        "issue": "goods_contract_conversion",
+        "stage": "bounded_contract_execution"
+      },
+      {
+        "issue": "price_frontier_no_overlap",
+        "stage": "bounded_contract_execution"
+      },
+      {
+        "issue": "shop_rating_model_shadow",
+        "stage": "observe"
+      }
+    ],
+    "memory": {
+      "facts": "market_unit_ledger",
+      "episodes": "contract and customer summaries",
+      "procedures": "versioned bounded profiles"
+    },
+    "hard_guards": [
+      "receipt_signature",
+      "exact_sku",
+      "market_certificate",
+      "saved_price_cap",
+      "refund_reserve",
+      "no_uncertain_payment_retry"
+    ]
+  },
+  "candidate_count": 133,
+  "memory_sample": {
+    "schema": "market-memory-v2",
+    "samples": 0,
+    "median_paid_to_list_ratio": null,
+    "grade": "A",
+    "warranty_hours": 6,
+    "source": "own settled contracts; 48h; exact category/grade/warranty",
+    "not_a_conversion_probability": true
+  },
+  "checks": [
+    "read-only original database",
+    "working replay only",
+    "no model or market calls",
+    "hard guards unchanged"
+  ]
+}

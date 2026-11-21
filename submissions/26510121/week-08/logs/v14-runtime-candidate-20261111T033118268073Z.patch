@@ -1,0 +1,202 @@
+--- a/r3/adapter.py
++++ b/r3/adapter.py
+@@ -198,43 +198,55 @@
+             return handle_order(kit,j,cfg,order,*args,**kwargs)
+         return original_order(order, *args, **kwargs)
+ 
++    def personal_news(market, md, state):
++        # A bounded slice, with enough per-request tolerance for the real server.
++        me = market.joined.get('buyer', (None,))[0]
++        if 'ledger_seq' not in state:
++            response = market.c.get(market.base + '/api/ledger', params={'after': -1}, timeout=8)
++            if response.status_code != 200:
++                return
++            rows = response.json()
++            state['ledger_seq'] = rows[-1]['seq'] if rows else 0
++        until = time.monotonic() + 15
++        for _ in range(4):
++            if time.monotonic() >= until:
++                break
++            response = market.c.get(market.base + '/api/ledger', params={'after': state['ledger_seq']}, timeout=8)
++            rows = response.json() if response.status_code == 200 else []
++            if not rows:
++                break
++            for event in rows:
++                data = event.get('data', {})
++                if event.get('kind') == 'broken' and data.get('buyer') == me:
++                    note = {'name': kit.CATALOG.get(data.get('item'), {}).get('name') or data.get('item'),
++                            'broke_at': int(event['ts'])}
++                    with (md / 'broken.jsonl').open('a', encoding='utf-8') as stream:
++                        stream.write(json.dumps(note, ensure_ascii=False) + '\n')
++            state['ledger_seq'] = rows[-1]['seq']
++            if len(rows) < 500:
++                break
++
+     def news(market, md, state):
+         if not cfg.get('autonomy_v14_enabled'):
+             original_news(market, md, state)
+         else:
+-            # Bounded catch-up: leave the cursor for the next tick, never claim
+-            # the full feed is current just because this slice ran out of time.
+-            me = market.joined.get('buyer', (None,))[0]
+-            if 'ledger_seq' not in state:
+-                response = market.c.get(market.base + '/api/ledger', params={'after': -1}, timeout=2)
+-                rows = response.json() if response.status_code == 200 else []
+-                state['ledger_seq'] = rows[-1]['seq'] if rows else 0
+-            until = time.monotonic() + 5
+-            for _ in range(4):
+-                if time.monotonic() >= until:
+-                    break
+-                response = market.c.get(market.base + '/api/ledger', params={'after': state['ledger_seq']}, timeout=2)
+-                rows = response.json() if response.status_code == 200 else []
+-                if not rows:
+-                    break
+-                # Write the append-only news before advancing its cursor.
+-                for event in rows:
+-                    data = event.get('data', {})
+-                    if event.get('kind') == 'broken' and data.get('buyer') == me:
+-                        note = {'name': kit.CATALOG.get(data.get('item'), {}).get('name') or data.get('item'),
+-                                'broke_at': int(event['ts'])}
+-                        with (md / 'broken.jsonl').open('a', encoding='utf-8') as stream:
+-                            stream.write(json.dumps(note, ensure_ascii=False) + '\n')
+-                state['ledger_seq'] = rows[-1]['seq']
+-                if len(rows) < 500:
+-                    break
++            try:
++                personal_news(market, md, state)
++            except Exception as exc:
++                j.add('feed_probe_error', {'stage': 'personal_news', 'error_type': type(exc).__name__})
+         seq = j.get("public_ledger_seq", -500)
+-        feed_until = time.monotonic() + 5
++        feed_until = time.monotonic() + 15
+         for _ in range(4):
+             if cfg.get('autonomy_v14_enabled') and time.monotonic() >= feed_until:
+                 break
+-            r = market.c.get(f"{market.base}/api/ledger", params={"after": seq},
+-                             **({'timeout': 2} if cfg.get('autonomy_v14_enabled') else {}))
++            try:
++                r = market.c.get(f"{market.base}/api/ledger", params={"after": seq},
++                                 **({'timeout': 8} if cfg.get('autonomy_v14_enabled') else {}))
++            except Exception as exc:
++                if not cfg.get('autonomy_v14_enabled'):
++                    raise
++                j.add('feed_probe_error', {'stage': 'public_ledger', 'error_type': type(exc).__name__})
++                break
+             if r.status_code != 200:
+                 break
+             rows = r.json()
+--- a/seller_r3.py
++++ b/seller_r3.py
+@@ -82,13 +82,26 @@
+             async with self.work_slots:
+                 await self._execute(task, context, event_queue)
+ 
++    async def reserve_unit(self, text, task_id):
++        pending = asyncio.create_task(asyncio.to_thread(self.select_unit, text, task_id))
++        try:
++            return await asyncio.shield(pending)
++        except asyncio.CancelledError:
++            # Cancelling the coroutine cannot stop an already running DB thread.
++            # Wait for its reservation, then release it before dropping the lock.
++            try:
++                await pending
++            finally:
++                await asyncio.to_thread(self.j.release, task_id)
++            raise
++
+     async def _execute(self, task, context, queue):
+         up = TaskUpdater(event_queue=queue, task_id=task.id, context_id=task.context_id)
+         say = lambda text, meta=None: up.new_agent_message(parts=[new_text_part(text)], metadata=meta)
+         text = (get_message_text(context.message) or "")[:2000]
+         deal = self.deals.get(task.id)
+         if deal is None:
+-            unit = await asyncio.to_thread(self.select_unit, text, task.id)
++            unit = await self.reserve_unit(text, task.id)
+             message_id = getattr(context.message, 'message_id', '')
+             metadata = customer_memory.metadata_dict(getattr(context.message, 'metadata', None))
+             shop_pubkey = None
+@@ -199,10 +212,11 @@
+ 
+     async def cancel(self, context, event_queue):
+         task = context.current_task
+-        await asyncio.to_thread(customer_memory.finish, self.j, task.id, 'cancelled')
+-        await asyncio.to_thread(self.j.release, task.id)
+-        self.deals.pop(task.id, None)
+-        await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
++        async with self.locks.setdefault(task.id, asyncio.Lock()):
++            await asyncio.to_thread(customer_memory.finish, self.j, task.id, 'cancelled')
++            await asyncio.to_thread(self.j.release, task.id)
++            self.deals.pop(task.id, None)
++            await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
+ 
+ 
+ def build(port, seller=None):
+--- a/tests/test_v14_runtime.py
++++ b/tests/test_v14_runtime.py
+@@ -192,3 +192,66 @@
+     with pytest.raises(ValueError):
+         bridge.run({'order': 'one', 'mandates': 'private'}, [], 1)
+     assert bridge.process is None
++
++
++def test_personal_feed_timeout_cannot_starve_public_catchup(tmp_path):
++    from r3.adapter import install, load_kit
++    journal = Journal(tmp_path)
++    journal.put('public_ledger_seq', 10)
++    calls = []
++    class Client:
++        def get(self, url, **kwargs):
++            calls.append(kwargs)
++            assert kwargs['timeout'] == 8
++            if kwargs['params']['after'] == 1:
++                raise httpx.ReadTimeout('synthetic personal feed timeout')
++            return httpx.Response(200, json=[])
++    market = SimpleNamespace(base='https://market.example', c=Client(), joined={'buyer': ('seochanit',)})
++    kit = install(load_kit(), journal, dict(policy(), autonomy_v14_enabled=True))
++    kit.broken_news(market, tmp_path, {'ledger_seq': 1})
++    assert [r['params']['after'] for r in calls] == [1, 10]
++    assert journal.get('public_feed_caught_up_at') > 0
++    assert journal.events('feed_probe_error')[0]['stage'] == 'personal_news'
++
++
++def test_cancelled_reservation_thread_cannot_leave_a_late_unit_hold(tmp_path, monkeypatch):
++    journal = Journal(tmp_path)
++    seller = seller_r3.Seller(journal, chooser=SimpleNamespace())
++    started, release = threading.Event(), threading.Event()
++    def slow_select(text, task):
++        started.set(); release.wait(timeout=3)
++        journal.reserve('synthetic-unit', task)
++        return {'unit': 'synthetic-unit'}
++    monkeypatch.setattr(seller, 'select_unit', slow_select)
++    async def scenario():
++        pending = asyncio.create_task(seller.reserve_unit('synthetic', 'task'))
++        while not started.is_set():
++            await asyncio.sleep(.001)
++        pending.cancel(); release.set()
++        with pytest.raises(asyncio.CancelledError):
++            await pending
++        with journal.connect() as db:
++            assert db.execute('SELECT COUNT(*) FROM reservations').fetchone()[0] == 0
++    asyncio.run(scenario())
++
++
++def test_cancel_serializes_with_the_same_task_execution(tmp_path, monkeypatch):
++    journal = Journal(tmp_path)
++    journal.reserve('synthetic-unit', 'task')
++    seller = seller_r3.Seller(journal, chooser=SimpleNamespace())
++    class Updater:
++        def __init__(self, **kwargs): pass
++        async def cancel(self): pass
++    monkeypatch.setattr(seller_r3, 'TaskUpdater', Updater)
++    async def scenario():
++        async with seller.locks.setdefault('task', asyncio.Lock()):
++            request = asyncio.create_task(seller.cancel(SimpleNamespace(
++                current_task=SimpleNamespace(id='task', context_id='context')), None))
++            await asyncio.sleep(.01)
++            assert not request.done()
++            with journal.connect() as db:
++                assert db.execute('SELECT COUNT(*) FROM reservations').fetchone()[0] == 1
++        await request
++        with journal.connect() as db:
++            assert db.execute('SELECT COUNT(*) FROM reservations').fetchone()[0] == 0
++    asyncio.run(scenario())

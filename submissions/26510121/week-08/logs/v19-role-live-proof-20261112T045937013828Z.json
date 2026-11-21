@@ -1,0 +1,567 @@
+{
+  "at_utc": "2026-11-12T04:59:37.012824+00:00",
+  "runtime": {
+    "pid": 11120,
+    "session": "3e9d3438a5f84f668ca937ba130849ad",
+    "started_at": 1794459187.7398262,
+    "launch_id": "auto-join-20261112T045307284680Z"
+  },
+  "expected_models": {
+    "market_research_analyst": "gpt-6.1-sol",
+    "market_research_critic": "gpt-6.1-terra",
+    "capability_triage": "gpt-6-luna",
+    "capability_designer": "gpt-6.1-sol"
+  },
+  "actual_models": {
+    "market_research_analyst": [
+      "gpt-6.1-sol"
+    ],
+    "market_research_critic": [
+      "gpt-6.1-terra"
+    ],
+    "capability_triage": [
+      "gpt-6-luna"
+    ],
+    "capability_designer": [
+      "gpt-6.1-sol"
+    ]
+  },
+  "all_roles_verified": true,
+  "current_runtime_models": {
+    "market_research_analyst": [
+      "gpt-6.1-sol"
+    ],
+    "market_research_critic": [
+      "gpt-6.1-terra"
+    ],
+    "capability_triage": [],
+    "capability_designer": []
+  },
+  "roles_verified_from_reused_plan": [
+    "capability_triage",
+    "capability_designer"
+  ],
+  "reused_plan_generation_usage": [
+    {
+      "role": "capability_triage",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "low",
+      "usage": {
+        "input_tokens": 3664,
+        "input_tokens_details": {
+          "cache_write_tokens": 3661,
+          "cached_tokens": 0
+        },
+        "output_tokens": 306,
+        "output_tokens_details": {
+          "reasoning_tokens": 208
+        },
+        "total_tokens": 3970
+      },
+      "estimated_usd": 0.000611,
+      "seconds": 5.530999999959022,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "event_at": 1794459067.1560302
+    },
+    {
+      "role": "capability_designer",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "medium",
+      "usage": {
+        "input_tokens": 3778,
+        "input_tokens_details": {
+          "cache_write_tokens": 3775,
+          "cached_tokens": 0
+        },
+        "output_tokens": 277,
+        "output_tokens_details": {
+          "reasoning_tokens": 28
+        },
+        "total_tokens": 4055
+      },
+      "estimated_usd": 0.012215,
+      "seconds": 7.827999999979511,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "event_at": 1794459075.0430644
+    }
+  ],
+  "astra_calls_since_restart": 0,
+  "capability_plan": {
+    "schema": 1,
+    "at": 1794459075.0924873,
+    "expires_at": 1794460275.0924873,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "tools": [
+      "objective_gap_audit",
+      "stock_depth_audit",
+      "buyer_frontier_audit"
+    ],
+    "evidence_ids": [
+      "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "ledger:5525870",
+      "snapshot:inventory.json",
+      "kv:feedback-last-policy"
+    ],
+    "effects": "read_only_analysis",
+    "id": "1499e7e93c4c2a22649a8bb358ea778ea6c1b44c944b8a31567005c2cae5616e"
+  },
+  "capability_brief": {
+    "at": 1794459521.5149844,
+    "expires_at": 1794459701.5149844,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "plan_id": "1499e7e93c4c2a22649a8bb358ea778ea6c1b44c944b8a31567005c2cae5616e",
+    "evidence_ids": [
+      "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "ledger:5527716",
+      "snapshot:inventory.json",
+      "kv:feedback-last-policy",
+      "kv:objective-decision-context"
+    ],
+    "calculations": {
+      "objective_gap_audit": {
+        "control": {
+          "status": "observe_and_trade",
+          "leader_gap": 0.05899999999999994,
+          "reasons": []
+        },
+        "constraints": [
+          "no_price_cap_change",
+          "full_refund_reserve",
+          "live_supply_checks",
+          "no_unverified_profile_promotion"
+        ],
+        "shop_alternatives": [],
+        "issues": []
+      },
+      "stock_depth_audit": {
+        "held_units": 130,
+        "distinct_skus": 90,
+        "internal_held_sku_cap": 20,
+        "skus_at_cap": 0,
+        "repeat_skus": [
+          {
+            "sku": "Gef4d3036",
+            "observed_paid20": 36,
+            "observed_external_buyers20": 17,
+            "held": 1
+          },
+          {
+            "sku": "G200e39a3",
+            "observed_paid20": 14,
+            "observed_external_buyers20": 7,
+            "held": 4
+          },
+          {
+            "sku": "G022ce883",
+            "observed_paid20": 40,
+            "observed_external_buyers20": 16,
+            "held": 1
+          },
+          {
+            "sku": "G3434758a",
+            "observed_paid20": 7,
+            "observed_external_buyers20": 6,
+            "held": 0
+          },
+          {
+            "sku": "G7fa48eaa",
+            "observed_paid20": 18,
+            "observed_external_buyers20": 9,
+            "held": 0
+          },
+          {
+            "sku": "G0be9ed07",
+            "observed_paid20": 21,
+            "observed_external_buyers20": 10,
+            "held": 1
+          },
+          {
+            "sku": "G66ded25b",
+            "observed_paid20": 10,
+            "observed_external_buyers20": 6,
+            "held": 0
+          },
+          {
+            "sku": "G2560a8c9",
+            "observed_paid20": 23,
+            "observed_external_buyers20": 10,
+            "held": 0
+          }
+        ],
+        "note": "Paid observations are not latent demand. A cap is not proof it binds; no cap change authorized."
+      },
+      "buyer_frontier_audit": {
+        "scope": "execution_cohorts_only",
+        "results": {
+          "main_choices_total": 2127,
+          "main_choices_by_policy": {
+            "75e0de1ed8db2b96b05957be748780493ed6e180bba91b83ddc5d7d39d24b56c": 307,
+            "eb54b4df9747f08e29711c2ab2ceea5a616b97118e891c99a7ca9bd0343b713e": 62,
+            "31abbaa687462843f6e5c4315e50674f3a642453cb24a850d1c9d286c46f812a": 62,
+            "442d2079fe35cbf68aaae11c8f0bafcbfa9cb192ee3ece8ecfa99a9739272ee6": 53
+          },
+          "buyer_closed_results_by_policy": {
+            "75e0de1ed8db2b96b05957be748780493ed6e180bba91b83ddc5d7d39d24b56c": {
+              "closed_orders": 20,
+              "paid": 11
+            },
+            "da0097b4fdffecdef5a2c1a61cf61947a0ba69a70923321dce9a72ad36005fc8": {
+              "closed_orders": 4,
+              "paid": 1
+            },
+            "98575615eb63155c296ea9683c82130002045a5f11ee774a26287a4826926ef2": {
+              "closed_orders": 4,
+              "paid": 3
+            },
+            "b9921c680438f3d34139d01c9b04354e2787a5e8cd0e7f2975a57f7ecc6499b6": {
+              "closed_orders": 4,
+              "paid": 2
+            }
+          },
+          "buyer_closed_results_by_policy_total": 165,
+          "shop_paid_results_by_policy": {
+            "75e0de1ed8db2b96b05957be748780493ed6e180bba91b83ddc5d7d39d24b56c": {
+              "paid": 13,
+              "gross_revenue": 1234653,
+              "gross_margin": 144941
+            },
+            "eb54b4df9747f08e29711c2ab2ceea5a616b97118e891c99a7ca9bd0343b713e": {
+              "paid": 3,
+              "gross_revenue": 59436,
+              "gross_margin": 13076
+            },
+            "f065e910660a4b352fe455a2f9fc377b72d4eb82d454b6a0e1c43cd87be6eb46": {
+              "paid": 3,
+              "gross_revenue": 1227356,
+              "gross_margin": 105886
+            },
+            "76260457e706e55cbd4d813be1925882f826247ccecfec03f81267fcb49876af": {
+              "paid": 2,
+              "gross_revenue": 41505,
+              "gross_margin": 11999
+            }
+          },
+          "shop_paid_results_by_policy_total": 52,
+          "buyer_canonical_mature_results_by_policy": {},
+          "buyer_canonical_mature_results_by_policy_total": 0,
+          "note": "Bounded observed cohorts, not causal lift; final quality uses canonical mature outcomes only."
+        }
+      }
+    },
+    "authority": "read_only_calculated_evidence",
+    "economic_superiority_verified": false,
+    "id": "d56eb4b4c3fe8b5ea2d49bc7e40fac2acea47200ff83b05d97b3cbafe1572b2c"
+  },
+  "capability_consumers": [],
+  "research_publications": [
+    {
+      "schema": 1,
+      "at": 1794459323.0989065,
+      "expires_at": 1794460523.0989065,
+      "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "summary": "Keep 3/6/8/60: rank forecast .00256 vs ≤.00099, stress -110k; 572m spendable. Execution not permitted; forum evidence biased; no promotion.",
+      "hypotheses": [
+        "3 vs 1/1.5/2: Book 319 vs 103/100/109k; revenue 2.78 vs 1.03/1.01/1.08m, forecast only.",
+        "Main 13 paid/145k margin; 51 paid, 45 stockouts and 35/36 acquired support depth despite delays.",
+        "Goods 1/54 vs food 74/112 paid; food Saved pending, goods mature .378. Recovery probes may help."
+      ],
+      "evidence_ids": [
+        "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+        "ledger:5526142",
+        "kv:framework-plan",
+        "snapshot:shop-plan-v15.json",
+        "kv:feedback-last-policy",
+        "kv:quality-holdout-summary",
+        "kv:objective-decision-context"
+      ],
+      "skill_ids": [
+        "74d3ee01e01fa04e8eefa711e85041d7902f50df1834ce399f094e416d8bea07",
+        "07b1f855ba6afa45f49af8efa61263665e3df4be6202bd964f361ecb676a8894",
+        "343aac61dc07a0e086f3324861db5bb0ad0f5b83436eda1311a62327163e2cac",
+        "674377d13d42befbb838a6cd4550837e93fbb27965fc16c4b9888f46de3a7b9a"
+      ],
+      "queued_buyer_profile": null,
+      "trial_review_approved": false,
+      "economic_superiority_verified": false,
+      "shop_plan_recommendation": "diversified",
+      "operating_intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "operating_actions_reviewed": true,
+      "forum_focus": "balanced",
+      "objective_context_id": "17e6070fb4fa131a08a58f39034ef628b8ff79f5e392bda5ed9ad4d71ea8134d",
+      "operating_policy": {
+        "cover_cycles": 3,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "policy_authority": "independent_agent_consensus_with_numeric_execution_guards",
+      "event_at": 1794459323.1666698
+    }
+  ],
+  "compiled_research_generations": 4,
+  "matched_main_choices": {
+    "shop": 88,
+    "buyer": 70
+  },
+  "main_examples": [
+    {
+      "decision": "a92dc3aaf0e2435e841865426d635838",
+      "policy_id": "11db62db6d16f3165745ec59a68c2770715599eeafe5edb4dd65f5a8b517bc80",
+      "role": "buyer",
+      "order": "o-da77ec7c0b1b",
+      "task": "33545598-a317-4253-92a5-01584e5188de",
+      "operation": "price",
+      "chosen": "accept",
+      "expected_delta": {
+        "surplus": 6693,
+        "deals": 1,
+        "saved": 1.1223721204256825e-06
+      },
+      "objective_utility": 4.072732764404119e-06,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459567.0280602
+    },
+    {
+      "decision": "10f3ebd75a984997a85769d32243eda2",
+      "policy_id": "11db62db6d16f3165745ec59a68c2770715599eeafe5edb4dd65f5a8b517bc80",
+      "role": "shop",
+      "order": null,
+      "task": "7777bf5a-5e43-4f92-9ce9-20f5596898c5",
+      "operation": "quote",
+      "chosen": "quote:732916:w6",
+      "expected_delta": {
+        "book": 1253.1022731342891,
+        "revenue": 63907.331780606524,
+        "profit": 63907.331780606524,
+        "stars_rank": 0.0
+      },
+      "objective_utility": 7.245989122017687e-05,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459567.2959247
+    },
+    {
+      "decision": "12741f6cbbaa4c35b5170e4e9bb71bba",
+      "policy_id": "11db62db6d16f3165745ec59a68c2770715599eeafe5edb4dd65f5a8b517bc80",
+      "role": "shop",
+      "order": null,
+      "task": "4d3d7391-3f71-401e-b73d-4992d912f559",
+      "operation": "quote",
+      "chosen": "quote:15729",
+      "expected_delta": {
+        "book": 179.21151095094228,
+        "revenue": 2249.655112328306,
+        "profit": 2249.655112328306,
+        "stars_rank": 0.0
+      },
+      "objective_utility": 2.6186090195112754e-06,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459567.5580435
+    },
+    {
+      "decision": "7256e125e96d49948d2c26dde446155b",
+      "policy_id": "11db62db6d16f3165745ec59a68c2770715599eeafe5edb4dd65f5a8b517bc80",
+      "role": "shop",
+      "order": null,
+      "task": "7777bf5a-5e43-4f92-9ce9-20f5596898c5",
+      "operation": "quote",
+      "chosen": "quote:732916:w6",
+      "expected_delta": {
+        "book": 1253.1022731342891,
+        "revenue": 63907.331780606524,
+        "profit": 63907.331780606524,
+        "stars_rank": 0.0
+      },
+      "objective_utility": 7.245989122017687e-05,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459569.0834265
+    },
+    {
+      "decision": "2183ea132e9c4e53889cf94c695f4ff4",
+      "policy_id": "11db62db6d16f3165745ec59a68c2770715599eeafe5edb4dd65f5a8b517bc80",
+      "role": "shop",
+      "order": null,
+      "task": "7777bf5a-5e43-4f92-9ce9-20f5596898c5",
+      "operation": "quote",
+      "chosen": "quote:732916:w6",
+      "expected_delta": {
+        "book": 1253.1022731342891,
+        "revenue": 63907.331780606524,
+        "profit": 63907.331780606524,
+        "stars_rank": 0.0
+      },
+      "objective_utility": 7.245989122017687e-05,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459570.3515036
+    },
+    {
+      "decision": "1b908727f1db4825bfc3545b9ef24f5f",
+      "policy_id": "11db62db6d16f3165745ec59a68c2770715599eeafe5edb4dd65f5a8b517bc80",
+      "role": "shop",
+      "order": null,
+      "task": "6204cb89-e620-4287-a5f9-55f1b24e243d",
+      "operation": "quote",
+      "chosen": "accept:14664",
+      "expected_delta": {
+        "book": 5089,
+        "revenue": 14664,
+        "profit": 14664,
+        "stars_rank": 0.0
+      },
+      "objective_utility": 1.90301284139216e-05,
+      "preview": false,
+      "reason": "selected_by_official_objective_surrogate_after_operating_policy",
+      "event_at": 1794459570.9975834
+    }
+  ],
+  "errors_since_restart": {
+    "analytical_role_error": 0,
+    "cycle_supervisor_error": 0,
+    "cycle_supply_error": 0,
+    "buyer_worker_error": 0,
+    "background_model_failed": 0,
+    "capability_deferred": 0,
+    "research_publication_rejected": 0
+  },
+  "usage": [
+    {
+      "role": "market_research_analyst",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "medium",
+      "response_mode": "json_schema",
+      "usage": {
+        "input_tokens": 8776,
+        "input_tokens_details": {
+          "cache_write_tokens": 8773,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1192,
+        "output_tokens_details": {
+          "reasoning_tokens": 723
+        },
+        "total_tokens": 9968
+      },
+      "estimated_usd": 0.03386,
+      "seconds": 25.45299999997951,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "event_at": 1794459310.7183506
+    },
+    {
+      "role": "market_research_critic",
+      "model": "gpt-6.1-terra",
+      "reasoning_effort": "medium",
+      "response_mode": "json_schema",
+      "usage": {
+        "input_tokens": 9196,
+        "input_tokens_details": {
+          "cache_write_tokens": 9193,
+          "cached_tokens": 0
+        },
+        "output_tokens": 980,
+        "output_tokens_details": {
+          "reasoning_tokens": 611
+        },
+        "total_tokens": 10176
+      },
+      "estimated_usd": 0.016395,
+      "seconds": 12.327999999979511,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "event_at": 1794459323.082228
+    }
+  ],
+  "cycle_heartbeat": {
+    "at": 1794459571.6678407,
+    "preparing": true,
+    "researching": true,
+    "capability_designing": true,
+    "capability_error": null,
+    "preparation_error": null,
+    "research_error": null
+  },
+  "research_last_attempt": {
+    "at": 1794459571.6678407,
+    "window": 1794459721,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "execution_revision": "v19-role-reasoning-analytic-skills-2",
+    "operating_state": "39b394d6ee9268a0d0a1455d9cb330b7ac0ef189bfe80f0e9bed585a4123308c",
+    "capability_plan_id": "1499e7e93c4c2a22649a8bb358ea778ea6c1b44c944b8a31567005c2cae5616e"
+  },
+  "current_policy": {
+    "id": "11db62db6d16f3165745ec59a68c2770715599eeafe5edb4dd65f5a8b517bc80",
+    "at": 1794459522.1148279,
+    "research_at": 1794459323.0989065,
+    "policy_authority": "agent_selected",
+    "patches": {
+      "shop": {
+        "shop_demand_horizon_cycles": 3,
+        "shop_sku_trend_factors": {
+          "Gef4d3036": 1.25,
+          "G200e39a3": 0.75,
+          "G022ce883": 1.4,
+          "G3434758a": 0.75,
+          "G7fa48eaa": 1.25,
+          "G0be9ed07": 1.1,
+          "G66ded25b": 0.85,
+          "G2560a8c9": 1.0,
+          "G1831f2c0": 1.2,
+          "G021aae64": 0.8,
+          "G74e686be": 1.2,
+          "G575cddb8": 1.25,
+          "G9a240832": 1.3,
+          "G0b4dad18": 1.35
+        },
+        "shop_public_demand_skus": [
+          "G022ce883",
+          "G0b4dad18",
+          "G0be9ed07",
+          "G1831f2c0",
+          "G200e39a3",
+          "G2560a8c9",
+          "G575cddb8",
+          "G66ded25b",
+          "G74e686be",
+          "G7fa48eaa",
+          "G9a240832",
+          "Gef4d3036"
+        ],
+        "shop_public_demand_caps": {
+          "Gef4d3036": 6,
+          "G200e39a3": 6,
+          "G022ce883": 6,
+          "G7fa48eaa": 6,
+          "G0be9ed07": 6,
+          "G66ded25b": 6,
+          "G2560a8c9": 6,
+          "G1831f2c0": 6,
+          "G74e686be": 6,
+          "G575cddb8": 6,
+          "G9a240832": 6,
+          "G0b4dad18": 6
+        }
+      },
+      "buyer": {
+        "buyer_frontier_category_enabled": true,
+        "buyer_frontier_min_orders": 8,
+        "buyer_frontier_recheck_seconds": 60
+      }
+    },
+    "reasons": []
+  },
+  "economic_superiority_or_first_place_proven": false,
+  "verified": false
+}

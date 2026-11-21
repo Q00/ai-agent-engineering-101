@@ -1,0 +1,1012 @@
+{
+  "at": "2026-11-06T07:50:30.843197+00:00",
+  "runtime": {
+    "pid": 33016,
+    "session": "6df33b1dd26a40c0855dc4202b2c904f",
+    "started_at": 1793950533.154966,
+    "launch_id": "auto-join-20261106T073532761743Z"
+  },
+  "minutes_since_restart": 14.96147050857544,
+  "policy": {
+    "version": "r3-market-observer-book-v6",
+    "market_control_enabled": true,
+    "tunnel_provider": "cloudflare",
+    "market_control_interval_seconds": 300,
+    "shop_growth_v5": true,
+    "shop_strategy_revision": "shop-v9-rank-capital",
+    "shop_championship_enabled": true,
+    "shop_championship_allocation_enabled": true,
+    "shop_inventory_ceiling": 180,
+    "shop_velocity_enabled": true,
+    "shop_velocity_allocation_enabled": true,
+    "shop_fast_execution_enabled": true,
+    "shop_stock_service_level": 0.9,
+    "shop_supply_slot_capital": 100000,
+    "shop_warranty_liquidity_penalty": 0.02,
+    "warranty_menu_enabled": true,
+    "checkout_recovery_enabled": true,
+    "buyer_patch34_enabled": true,
+    "buyer_strategy_revision": "buyer-v9-market-leader",
+    "buyer_championship_enabled": true,
+    "buyer_saved_target_margin": 0.002,
+    "buyer_rank_scope": "everyone",
+    "buyer_forum_post_interval_seconds": 300,
+    "checkout_max_attempts": 2,
+    "buyer_fast_food_enabled": true,
+    "buyer_food_time_seconds": 18,
+    "buyer_goods_time_seconds": 60,
+    "planning_horizon_hours": 6,
+    "storage_reserve_hours": 48,
+    "market_end_at": null,
+    "assortment_coverage_fraction": 0.35,
+    "shop_margin_fraction": 0.02,
+    "food_clearance_hours": 6,
+    "goods_clearance_hours": 96,
+    "actor_model": "gpt-6-luna",
+    "critic_model": "gpt-6-luna",
+    "daily_api_budget_usd": null,
+    "model_timeout_seconds": 18,
+    "critic_cash_fraction": 0.1,
+    "cash_reserve_fraction": 0.2,
+    "cash_floor": 750000,
+    "forum_post_interval_seconds": 600,
+    "supply_cycle_seconds": 1200,
+    "inventory_target_units": 60,
+    "restock_max_lines": 10,
+    "restock_max_qty": 20,
+    "max_sku_capital_fraction": 0.35,
+    "goods_warranty_by_grade": {
+      "A": 3,
+      "B": 3,
+      "C": 6
+    },
+    "quote_compare_min_budget": 100000,
+    "exploration_fraction": 0.1,
+    "max_shop_candidates": 3,
+    "max_negotiation_turns": 4,
+    "checkout_buffer_seconds": 30,
+    "unknown_goods_failure_stress": 0.3,
+    "session_ttl_seconds": 180,
+    "end_at": null,
+    "prices_usd_per_million": {
+      "gpt-6-luna": [
+        0.1,
+        0.5
+      ],
+      "gpt-6.1-terra": [
+        1.0,
+        5.0
+      ]
+    }
+  },
+  "revisions": {
+    "shop": "shop-v9-rank-capital",
+    "buyer": "buyer-v9-market-leader"
+  },
+  "strategies": {
+    "shop": {
+      "version": 10,
+      "patch": {
+        "category_weights": {
+          "가구/침구>가구>침대/매트리스": 1.1
+        }
+      },
+      "status": "stable",
+      "since": 1793950533.1673641,
+      "cooldown_until": 1793972133.1673641
+    },
+    "buyer": {
+      "version": 10,
+      "patch": {},
+      "status": "stable",
+      "since": 1793950621.8973517,
+      "cooldown_until": 1793972221.8973517
+    }
+  },
+  "health": {
+    "checked_at": 1793951423.8111763,
+    "status": "healthy",
+    "url": "https://royalty-village-autos-their.trycloudflare.com",
+    "pending_registration": false,
+    "consecutive_probe_failures": 0,
+    "market_visibility": "present",
+    "registry_misses": 0,
+    "probe_interval_seconds": 15,
+    "renewal_seconds": null
+  },
+  "control": {
+    "at": 1793951240.9704595,
+    "epoch": 1793854431.985112,
+    "status": "observe_and_trade",
+    "book": 66312827,
+    "book_peak": 66312827,
+    "book_drawdown": 0,
+    "drawdown_brake_until": 0,
+    "brake_drawdown": 0,
+    "capital_fraction": 1,
+    "cash_capacity": {
+      "spendable": 31644500.46,
+      "refund_liability": 430144,
+      "storage_to_end": 608283.54,
+      "cash_floor": 8170732.0,
+      "remaining_days": 2.0,
+      "reserve_release_schedule": [
+        {
+          "at": 1793959200,
+          "amount": 52000
+        },
+        {
+          "at": 1793964000,
+          "amount": 47800
+        },
+        {
+          "at": 1793965200,
+          "amount": 53000
+        },
+        {
+          "at": 1793966400,
+          "amount": 45800
+        },
+        {
+          "at": 1793967600,
+          "amount": 68098
+        },
+        {
+          "at": 1793970000,
+          "amount": 49619
+        },
+        {
+          "at": 1793971200,
+          "amount": 50912
+        },
+        {
+          "at": 1793973600,
+          "amount": 62915
+        }
+      ],
+      "discharged_refund_reserve": 0,
+      "reserve_release_before_next_supply": 0
+    },
+    "pause_restock": false,
+    "reasons": [],
+    "own_all": 1.418,
+    "leader_total": 1.708,
+    "leader_gap": 0.29000000000000004,
+    "sold_known_cost": 378,
+    "below_cost_sales": 0,
+    "shop_evidence_since": 1793950533.1673641,
+    "current_shop_known_cost": 6,
+    "current_shop_below_cost": 0,
+    "buyer_payment_failures": {
+      "stockout": 19,
+      "shelf_life": 26,
+      "other": 1
+    },
+    "opportunities": [
+      {
+        "sku": "G26be0a5a",
+        "arrival_rate_scenario": 10.073480389270099,
+        "competition_sellers_plus_us": 2,
+        "lost_exact_requests": 3,
+        "available_hours_observed": 1.6748442646529933
+      },
+      {
+        "sku": "Gb67975ff",
+        "arrival_rate_scenario": 9.353406073348006,
+        "competition_sellers_plus_us": 4,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 2.9764316082663016
+      },
+      {
+        "sku": "G022ce883",
+        "arrival_rate_scenario": 6.639538847119517,
+        "competition_sellers_plus_us": 10,
+        "lost_exact_requests": 31,
+        "available_hours_observed": 4.491141482922769
+      },
+      {
+        "sku": "G24f5f979",
+        "arrival_rate_scenario": 5.424010623667391,
+        "competition_sellers_plus_us": 10,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 2.3394579436381666
+      },
+      {
+        "sku": "G7fa48eaa",
+        "arrival_rate_scenario": 4.553093907713621,
+        "competition_sellers_plus_us": 10,
+        "lost_exact_requests": 4,
+        "available_hours_observed": 5.110765509737865
+      },
+      {
+        "sku": "G3e2cdb81",
+        "arrival_rate_scenario": 4.343563951269763,
+        "competition_sellers_plus_us": 4,
+        "lost_exact_requests": 39,
+        "available_hours_observed": 1.3159743469953529
+      },
+      {
+        "sku": "G74e686be",
+        "arrival_rate_scenario": 4.208333333333333,
+        "competition_sellers_plus_us": 4,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G1f5d00c7",
+        "arrival_rate_scenario": 4.1804688990738725,
+        "competition_sellers_plus_us": 2,
+        "lost_exact_requests": 8,
+        "available_hours_observed": 0.12064721783002216
+      },
+      {
+        "sku": "G55c364cb",
+        "arrival_rate_scenario": 3.963334454510538,
+        "competition_sellers_plus_us": 2,
+        "lost_exact_requests": 2,
+        "available_hours_observed": 0.3483668057786094
+      },
+      {
+        "sku": "G16dcdc73",
+        "arrival_rate_scenario": 3.6748842533082673,
+        "competition_sellers_plus_us": 3,
+        "lost_exact_requests": 6,
+        "available_hours_observed": 1.247905580202739
+      },
+      {
+        "sku": "G200e39a3",
+        "arrival_rate_scenario": 3.4125,
+        "competition_sellers_plus_us": 20,
+        "lost_exact_requests": 7,
+        "available_hours_observed": 0.8476196784443323
+      },
+      {
+        "sku": "G8ec51935",
+        "arrival_rate_scenario": 3.2690583503558552,
+        "competition_sellers_plus_us": 20,
+        "lost_exact_requests": 2,
+        "available_hours_observed": 2.7813969756497277
+      },
+      {
+        "sku": "Gc95a6511",
+        "arrival_rate_scenario": 3.073693703603105,
+        "competition_sellers_plus_us": 6,
+        "lost_exact_requests": 3,
+        "available_hours_observed": 1.6270677257908708
+      },
+      {
+        "sku": "Gef4d3036",
+        "arrival_rate_scenario": 2.884259259259259,
+        "competition_sellers_plus_us": 18,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G67efbcf0",
+        "arrival_rate_scenario": 2.7777777777777777,
+        "competition_sellers_plus_us": 9,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G3434758a",
+        "arrival_rate_scenario": 2.6770833333333335,
+        "competition_sellers_plus_us": 8,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "Gb2392fa9",
+        "arrival_rate_scenario": 2.6458333333333335,
+        "competition_sellers_plus_us": 4,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0.20969579643673364
+      },
+      {
+        "sku": "G66ded25b",
+        "arrival_rate_scenario": 2.628205128205128,
+        "competition_sellers_plus_us": 13,
+        "lost_exact_requests": 1,
+        "available_hours_observed": 5.085024202929605
+      },
+      {
+        "sku": "Gac0c1622",
+        "arrival_rate_scenario": 2.4285714285714284,
+        "competition_sellers_plus_us": 7,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G0b0ca441",
+        "arrival_rate_scenario": 2.3333333333333335,
+        "competition_sellers_plus_us": 6,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      }
+    ],
+    "suggestions": [
+      {
+        "role": "shop",
+        "field": "assortment_coverage_fraction",
+        "direction": 1,
+        "reason": "observed unserved external requests"
+      }
+    ],
+    "market_summary": {
+      "tracked_skus": 1500,
+      "observed_baskets": 100,
+      "top_unserved_categories": [
+        [
+          "식품>야채/과일>신선과일(부패주의)",
+          19.65939037502427
+        ],
+        [
+          "식품>김치/반찬/즉석요리>김치",
+          5.625661363486186
+        ],
+        [
+          "식품>음료>주스/코코아/생수",
+          2.021488794555059
+        ],
+        [
+          "가구/침구>침구/홈데코>침구",
+          1.965299844505935
+        ],
+        [
+          "식품>야채/과일>신선야채(부패주의)",
+          1.1930533814149138
+        ],
+        [
+          "식품>김치/반찬/즉석요리>찌개/탕류/장류",
+          1.0905754818020754
+        ],
+        [
+          "식품>기타 가공식품>과자",
+          0.4079138563116247
+        ],
+        [
+          "가구/침구>가구>침대/매트리스",
+          0.32462264293495097
+        ],
+        [
+          "가구/침구>가구>소파/의자/스툴",
+          0.27106542811457546
+        ],
+        [
+          "식품>조리/가공 과일/야채/견과류>조리/가공 견과류",
+          0.09130860301214602
+        ]
+      ],
+      "exposure_started_at": 1793929649.84606,
+      "context_note": "own buyer baskets have zero demand weight; external settlements only"
+    },
+    "note": "observational diagnosis; policy trials require mature own evidence and rollback checks",
+    "championship": {
+      "at": 1793951240.9704595,
+      "ranks": {
+        "shop": {
+          "rank": 16,
+          "population": 58
+        },
+        "buyer": {
+          "rank": 15,
+          "population": 55
+        }
+      },
+      "next_thresholds": {
+        "shop": {
+          "book": {
+            "current": 66312827,
+            "next_value": 66757495,
+            "gap": 444668,
+            "weight": 0.5,
+            "cohort_size": 58
+          },
+          "revenue": {
+            "current": 490892300,
+            "next_value": 539109909,
+            "gap": 48217609,
+            "weight": 0.3,
+            "cohort_size": 58
+          },
+          "stars_rank": {
+            "current": 4.36,
+            "next_value": 4.37,
+            "gap": 0.009999999999999787,
+            "weight": 0.2,
+            "cohort_size": 58
+          }
+        },
+        "buyer": {
+          "saved": {
+            "current": 0.2518,
+            "next_value": 0.2558,
+            "gap": 0.0040000000000000036,
+            "weight": 0.5,
+            "cohort_size": 55
+          },
+          "forum": {
+            "current": 0.878,
+            "next_value": 0.879,
+            "gap": 0.0010000000000000009,
+            "weight": 0.3,
+            "cohort_size": 55
+          },
+          "deals": {
+            "current": 5248,
+            "next_value": 5373,
+            "gap": 125,
+            "weight": 0.1,
+            "cohort_size": 55
+          },
+          "posts": {
+            "current": 389,
+            "next_value": 401,
+            "gap": 12,
+            "weight": 0.1,
+            "cohort_size": 55
+          }
+        }
+      },
+      "pace": {},
+      "idle_spendable_fraction": 0.7745817745582648,
+      "stock_cost": 30459167,
+      "scope": "everyone; student ranks remain separate in official board"
+    }
+  },
+  "progress": {
+    "at": 1793951240.9704595,
+    "ranks": {
+      "shop": {
+        "rank": 16,
+        "population": 58
+      },
+      "buyer": {
+        "rank": 15,
+        "population": 55
+      }
+    },
+    "next_thresholds": {
+      "shop": {
+        "book": {
+          "current": 66312827,
+          "next_value": 66757495,
+          "gap": 444668,
+          "weight": 0.5,
+          "cohort_size": 58
+        },
+        "revenue": {
+          "current": 490892300,
+          "next_value": 539109909,
+          "gap": 48217609,
+          "weight": 0.3,
+          "cohort_size": 58
+        },
+        "stars_rank": {
+          "current": 4.36,
+          "next_value": 4.37,
+          "gap": 0.009999999999999787,
+          "weight": 0.2,
+          "cohort_size": 58
+        }
+      },
+      "buyer": {
+        "saved": {
+          "current": 0.2518,
+          "next_value": 0.2558,
+          "gap": 0.0040000000000000036,
+          "weight": 0.5,
+          "cohort_size": 55
+        },
+        "forum": {
+          "current": 0.878,
+          "next_value": 0.879,
+          "gap": 0.0010000000000000009,
+          "weight": 0.3,
+          "cohort_size": 55
+        },
+        "deals": {
+          "current": 5248,
+          "next_value": 5373,
+          "gap": 125,
+          "weight": 0.1,
+          "cohort_size": 55
+        },
+        "posts": {
+          "current": 389,
+          "next_value": 401,
+          "gap": 12,
+          "weight": 0.1,
+          "cohort_size": 55
+        }
+      }
+    },
+    "pace": {},
+    "idle_spendable_fraction": 0.7745817745582648,
+    "stock_cost": 30459167,
+    "scope": "everyone; student ranks remain separate in official board"
+  },
+  "shop_quality_cohorts": {
+    "at": 1793951232.9401405,
+    "grades": {
+      "A": {
+        "n": 450,
+        "broken": 11,
+        "within3": 4,
+        "unknown_time": 0
+      },
+      "C": {
+        "n": 58,
+        "broken": 20,
+        "within3": 7,
+        "unknown_time": 0
+      },
+      "B": {
+        "n": 144,
+        "broken": 12,
+        "within3": 7,
+        "unknown_time": 0
+      }
+    }
+  },
+  "own_sales": {
+    "count": 7,
+    "revenue": 250680,
+    "gross_margin_before_later_costs": 57611,
+    "below_cost_count": 0,
+    "events": [
+      {
+        "task": "e3ebef89-ee9e-4b6c-b163-249b1805ffd5",
+        "unit": "u-ccde956b877f",
+        "sku": "G7fa48eaa",
+        "price": 3216,
+        "warranty_hours": 0,
+        "paid_at": 1793950682.5762162,
+        "strategy_version": 10,
+        "category": "식품>음료>주스/코코아/생수",
+        "cost": 2401,
+        "grade": "C",
+        "_ts": 1793950682.5762162
+      },
+      {
+        "task": "0d503ff0-6afc-4561-b667-c9d562e85581",
+        "unit": "u-019096ec05b5",
+        "sku": "Gc95a6511",
+        "price": 62915,
+        "warranty_hours": 6.0,
+        "paid_at": 1793950833.8172414,
+        "strategy_version": 10,
+        "category": "가구/침구>침구/홈데코>침구",
+        "cost": 40731,
+        "grade": "A",
+        "_ts": 1793950833.8172414
+      },
+      {
+        "task": "084ec994-ed08-47ea-8ca7-26e12ea2b378",
+        "unit": "u-84de0b8b857f",
+        "sku": "Gb67975ff",
+        "price": 55947,
+        "warranty_hours": 0,
+        "paid_at": 1793950861.5301707,
+        "strategy_version": 10,
+        "category": "가구/침구>침구/홈데코>침구",
+        "cost": 47605,
+        "grade": "A",
+        "_ts": 1793950861.5301707
+      },
+      {
+        "task": "94de4f08-7567-4cff-ad40-97b16fae28ae",
+        "unit": "u-2a014ff39489",
+        "sku": "G3e2cdb81",
+        "price": 5589,
+        "warranty_hours": 0,
+        "paid_at": 1793950961.2429228,
+        "strategy_version": 10,
+        "category": "식품>야채/과일>신선과일(부패주의)",
+        "cost": 3879,
+        "grade": "C",
+        "_ts": 1793950961.2440162
+      },
+      {
+        "task": "333662dc-e19f-4901-951a-25efdfac3c4f",
+        "unit": "u-55d5e6535553",
+        "sku": "Gb67975ff",
+        "price": 52390,
+        "warranty_hours": 0,
+        "paid_at": 1793950994.1865788,
+        "strategy_version": 10,
+        "category": "가구/침구>침구/홈데코>침구",
+        "cost": 43658,
+        "grade": "A",
+        "_ts": 1793950994.1865788
+      },
+      {
+        "task": "768acb0b-8ad2-456f-8506-f7ef0d89f1e0",
+        "unit": "u-6fe5ce6940c1",
+        "sku": "G022ce883",
+        "price": 13872,
+        "warranty_hours": 0,
+        "paid_at": 1793951073.9779348,
+        "strategy_version": 10,
+        "category": "식품>야채/과일>신선과일(부패주의)",
+        "cost": 12352,
+        "grade": "A",
+        "_ts": 1793951073.9789839
+      },
+      {
+        "task": "a94b0ce3-4d96-4e2f-be5b-287782c4ab8c",
+        "unit": "u-e61a526a2b53",
+        "sku": "Gb67975ff",
+        "price": 56751,
+        "warranty_hours": 0,
+        "paid_at": 1793951255.9880238,
+        "strategy_version": 10,
+        "category": "가구/침구>침구/홈데코>침구",
+        "cost": 42443,
+        "grade": "A",
+        "_ts": 1793951255.9880238
+      }
+    ]
+  },
+  "buyer_purchases": {
+    "count": 10,
+    "events": [
+      {
+        "order": "o-4665b64292e4",
+        "sku": "G200e39a3",
+        "unit": "u-f3e05a38d2a4",
+        "shop": "https://lucas-stadium-gage-birds.trycloudflare.com",
+        "shop_identity": "x8JUJW3Y+oGG3tGtGdLUVylPWi1SI6vr+U921+hZB3A=",
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "kind": "food",
+        "price": 27021,
+        "value": 37900,
+        "paid_at": 1793950944.8482509,
+        "grade": "B",
+        "list_price": 37900,
+        "expires_at": 1794396695.0,
+        "initial_saved_contribution": 0.28704485488126646,
+        "warranty_hours": 0,
+        "ledger": 3202931,
+        "strategy_version": 10,
+        "_ts": 1793950944.8482509
+      },
+      {
+        "order": "o-b3784757ab81",
+        "sku": "Gac0c1622",
+        "unit": "u-eeecc56bae58",
+        "shop": "https://bachelor-kilometers-soc-accommodation.trycloudflare.com",
+        "shop_identity": "Vs8RVMFpFELsADYIvuoEkoAaD52c6DH45gxgYs8X4/c=",
+        "name": "대복 맛있는 국내산 생깻잎김치 500gX2팩",
+        "kind": "food",
+        "price": 14780,
+        "value": 19980,
+        "paid_at": 1793950979.7177155,
+        "grade": "B",
+        "list_price": 19980,
+        "expires_at": 1794291552.0,
+        "initial_saved_contribution": 0.2602602602602603,
+        "warranty_hours": 0,
+        "ledger": 3203079,
+        "strategy_version": 10,
+        "_ts": 1793950979.7177155
+      },
+      {
+        "order": "o-7bfd461c06a5",
+        "sku": "Gc2f7811b",
+        "unit": "u-d196ba3205d9",
+        "shop": "https://ax-week07.treasuresky.xyz",
+        "shop_identity": "SHiVZ/6EvclxGN7x/86a5lgJd53ffD55Ds3c368t7sc=",
+        "name": "영국브랜드 1인용 빈백쇼파 엠비언트라운지 The Boss Chair_더보스 Blue Jazze블루",
+        "kind": "goods",
+        "price": 170000,
+        "value": 259000,
+        "paid_at": 1793951013.5031037,
+        "grade": "B",
+        "list_price": 259000,
+        "expires_at": null,
+        "initial_saved_contribution": 0.3436293436293436,
+        "warranty_hours": 72.0,
+        "ledger": 3203237,
+        "strategy_version": 10,
+        "_ts": 1793951013.5031037
+      },
+      {
+        "order": "o-73e86a9c901b",
+        "sku": "G114aefb6",
+        "unit": "u-63636f4f54ae",
+        "shop": "https://delete-leadership-gore-voluntary.trycloudflare.com",
+        "shop_identity": "5PO3ZoBssYMjXkL+Jiysp/XobLzcYOGypylPYaGE5jQ=",
+        "name": "2팩(56봉) 데니쉬 스타일 쿠키 밀크향",
+        "kind": "food",
+        "price": 5264,
+        "value": 8900,
+        "paid_at": 1793951068.4882174,
+        "grade": "B",
+        "list_price": 8900,
+        "expires_at": 1795381545.0,
+        "initial_saved_contribution": 0.40853932584269664,
+        "warranty_hours": 0,
+        "ledger": 3203597,
+        "strategy_version": 10,
+        "_ts": 1793951068.4882174
+      },
+      {
+        "order": "o-1f26f3c9e131",
+        "sku": "G9a240832",
+        "unit": "u-ea0a74c3e88b",
+        "shop": "https://enb-carol-turned-jail.trycloudflare.com",
+        "shop_identity": "3inNo6JxF+uTAsmTqqGxhRpY6GVILp98Otjk7E5hebE=",
+        "name": "펩시콜라 엑스트라 피즈 245ml 15개(업소용)",
+        "kind": "food",
+        "price": 4887,
+        "value": 10600,
+        "paid_at": 1793951099.1442666,
+        "grade": "C",
+        "list_price": 10600,
+        "expires_at": 1794883033.0,
+        "initial_saved_contribution": 0.5389622641509434,
+        "warranty_hours": 0,
+        "ledger": 3203815,
+        "strategy_version": 10,
+        "_ts": 1793951099.159973
+      },
+      {
+        "order": "o-75d298e8bf93",
+        "sku": "G67efbcf0",
+        "unit": "u-086d25e89d86",
+        "shop": "https://bachelor-kilometers-soc-accommodation.trycloudflare.com",
+        "shop_identity": "Vs8RVMFpFELsADYIvuoEkoAaD52c6DH45gxgYs8X4/c=",
+        "name": "더미식 유니자장+시래기장+한우두부강된장+마파두부+치킨크림카레 덮밥소스",
+        "kind": "food",
+        "price": 14750,
+        "value": 20000,
+        "paid_at": 1793951131.8976183,
+        "grade": "A",
+        "list_price": 20000,
+        "expires_at": 1794031942.0,
+        "initial_saved_contribution": 0.2625,
+        "warranty_hours": 0,
+        "ledger": 3204025,
+        "strategy_version": 10,
+        "_ts": 1793951131.899883
+      },
+      {
+        "order": "o-b4c8ed349e18",
+        "sku": "Gef4d3036",
+        "unit": "u-0662c950d8e2",
+        "shop": "https://bridge-par-started-checks.trycloudflare.com",
+        "shop_identity": "3lBHsp2Xwi48oVLvuqKi/8UH2HbUDqkUMGY/s4Pjj30=",
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "kind": "food",
+        "price": 20358,
+        "value": 28900,
+        "paid_at": 1793951169.4695337,
+        "grade": "B",
+        "list_price": 28900,
+        "expires_at": 1794088951.0,
+        "initial_saved_contribution": 0.29557093425605535,
+        "warranty_hours": 0,
+        "ledger": 3204250,
+        "strategy_version": 10,
+        "_ts": 1793951169.4695337
+      },
+      {
+        "order": "o-f0b3604bea4b",
+        "sku": "G03aae7ca",
+        "unit": "u-3a9a1b049156",
+        "shop": "https://add-candidates-bikes-mailman.trycloudflare.com",
+        "shop_identity": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+        "name": "더바른 파베초코크림떡 1box 개별포장",
+        "kind": "food",
+        "price": 12237,
+        "value": 16400,
+        "paid_at": 1793951229.0913174,
+        "grade": "C",
+        "list_price": 16400,
+        "expires_at": 1793989003.0,
+        "initial_saved_contribution": 0.25384146341463415,
+        "warranty_hours": 0,
+        "ledger": 3204547,
+        "strategy_version": 10,
+        "_ts": 1793951229.0966375
+      },
+      {
+        "order": "o-ac01d1139794",
+        "sku": "Gef4d3036",
+        "unit": "u-b84a2d7d2aff",
+        "shop": "https://bridge-par-started-checks.trycloudflare.com",
+        "shop_identity": "3lBHsp2Xwi48oVLvuqKi/8UH2HbUDqkUMGY/s4Pjj30=",
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "kind": "food",
+        "price": 20358,
+        "value": 28900,
+        "paid_at": 1793951268.2545643,
+        "grade": "B",
+        "list_price": 28900,
+        "expires_at": 1794058029.0,
+        "initial_saved_contribution": 0.29557093425605535,
+        "warranty_hours": 0,
+        "ledger": 3204712,
+        "strategy_version": 10,
+        "_ts": 1793951268.2545643
+      },
+      {
+        "order": "o-19651f1c9d0f",
+        "sku": "G66ded25b",
+        "unit": "u-4c9de39345db",
+        "shop": "https://add-candidates-bikes-mailman.trycloudflare.com",
+        "shop_identity": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "kind": "food",
+        "price": 13159,
+        "value": 17900,
+        "paid_at": 1793951346.037354,
+        "grade": "B",
+        "list_price": 17900,
+        "expires_at": 1794415791.0,
+        "initial_saved_contribution": 0.2648603351955307,
+        "warranty_hours": 0,
+        "ledger": 3205030,
+        "strategy_version": 10,
+        "_ts": 1793951346.037354
+      }
+    ]
+  },
+  "restock_plans": [
+    {
+      "strategy_version": 10,
+      "buy": [
+        {
+          "sku": "G8ec51935",
+          "qty": 3
+        },
+        {
+          "sku": "G8095ddd6",
+          "qty": 3
+        },
+        {
+          "sku": "Gf6b70da8",
+          "qty": 1
+        },
+        {
+          "sku": "G47788edd",
+          "qty": 1
+        },
+        {
+          "sku": "Gbec2b68f",
+          "qty": 1
+        },
+        {
+          "sku": "G4a12722c",
+          "qty": 1
+        },
+        {
+          "sku": "Gb5d0dde7",
+          "qty": 1
+        },
+        {
+          "sku": "G8adbc159",
+          "qty": 1
+        },
+        {
+          "sku": "G05277ffe",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v9-rank-capital",
+      "line_budget": 9,
+      "capital_commitment": 29760366.6,
+      "spendable": 43346833.080000006,
+      "expected_delta": {
+        "book": 2629191.524584623,
+        "profit": 17742262.73756441,
+        "revenue": 17749178.400002558
+      },
+      "_ts": 1793951057.1835148
+    }
+  ],
+  "successful_supplies": [
+    {
+      "time_kst": "16:44:20",
+      "qty": 3,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 3470056,
+      "balance_after": 51654403
+    },
+    {
+      "time_kst": "16:44:30",
+      "qty": 3,
+      "name": "[에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈)",
+      "cost": 1782107,
+      "balance_after": 49872296
+    },
+    {
+      "time_kst": "16:44:41",
+      "qty": 1,
+      "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+      "cost": 1742453,
+      "balance_after": 48143715
+    },
+    {
+      "time_kst": "16:44:55",
+      "qty": 1,
+      "name": "[자코모] 와드 4인 코너카우치형 기능성 비텔로 통가죽 슈렁큰 소가죽소파+쿠션2개",
+      "cost": 1139034,
+      "balance_after": 47004681
+    },
+    {
+      "time_kst": "16:45:05",
+      "qty": 1,
+      "name": "시몬스 D2178A. 뷰티레스트 자스민. 라지킹 침대",
+      "cost": 2454223,
+      "balance_after": 44550458
+    },
+    {
+      "time_kst": "16:45:16",
+      "qty": 1,
+      "name": "[다우닝] 아지오 4인 전체 통가죽 소파+스툴",
+      "cost": 1560806,
+      "balance_after": 42989652
+    },
+    {
+      "time_kst": "16:45:30",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "cost": 693765,
+      "balance_after": 42295887
+    },
+    {
+      "time_kst": "16:45:40",
+      "qty": 1,
+      "name": "[자코모] 에비뉴엘 4인 오플 천연면피 소가죽 소파",
+      "cost": 1100078,
+      "balance_after": 41195809
+    },
+    {
+      "time_kst": "16:45:51",
+      "qty": 1,
+      "name": "[헬렌스타인][한파용] 국내생산 알러지케어 헝가리 워셔블 구스이불 Q",
+      "cost": 342149,
+      "balance_after": 40853660
+    }
+  ],
+  "actual_supply_units": 13,
+  "actual_supply_cost": 14284671,
+  "forum_deliveries": [
+    {
+      "key": "buyer-insight:5979835",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1793950616.7793806
+    },
+    {
+      "key": "stock-announcement:2989918",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1793950837.0993185
+    },
+    {
+      "key": "buyer-insight:5979836",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1793950923.3940358
+    },
+    {
+      "key": "buyer-insight:5979837",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1793951243.2048945
+    }
+  ],
+  "post_restart_errors": {
+    "market_control_error": [],
+    "forum_error": [],
+    "strategy_error": []
+  },
+  "limits": [
+    "Short post-release observation, not proof of improved ranks or durable profit.",
+    "Supply success is parsed only from this launch console; plans are separate.",
+    "Gross margin excludes subsequent refunds, storage and expiration."
+  ]
+}

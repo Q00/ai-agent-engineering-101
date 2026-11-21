@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "v33-progress",
+      "title": "Shop·Buyer 진행 경과",
+      "queries": [
+        {
+          "id": "paired-board",
+          "source": {
+            "label": "시장 공식 공개 점수표",
+            "files": [
+              "logs/autonomous-deploy-before-20261117T000600153643Z.json",
+              "logs/v28-progress-source-20261117T034009147309Z.json"
+            ],
+            "links": [
+              {
+                "label": "시장 공개 점수표",
+                "url": "https://market.ourolabs.ai/api/board"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "Book",
+                "definition": "시장 공개 원장상의 현금·보유 재고 자산 지표."
+              },
+              {
+                "label": "ALL",
+                "definition": "시장 규칙의 구성 요소별 점수로 계산한 공개 종합 점수."
+              }
+            ],
+            "filters": [
+              "같은 계정 seochanit 및 현재 Shop ALL 상위 5곳"
+            ],
+            "caveats": [
+              "공개 점수는 반올림돼 있으며 상대적 순위에 따라 달라진다. 인과적 정책 효과 비교는 아니다."
+            ]
+          },
+          "reportingPeriod": "2026-11-17 09:06–12:40 KST",
+          "columns": [
+            "shop",
+            "book_before",
+            "book_after",
+            "book_delta"
+          ],
+          "rows": [
+            {
+              "shop": "seochanit",
+              "book_before": 814129503,
+              "book_after": 814467032,
+              "book_delta": 337529
+            },
+            {
+              "shop": "yms979",
+              "book_before": 1192323319,
+              "book_after": 1192393002,
+              "book_delta": 69683
+            },
+            {
+              "shop": "inextro",
+              "book_before": 1099273791,
+              "book_after": 1113365751,
+              "book_delta": 14091960
+            },
+            {
+              "shop": "sergiobuilds",
+              "book_before": 1097334100,
+              "book_after": 1104476739,
+              "book_delta": 7142639
+            },
+            {
+              "shop": "25620027",
+              "book_before": 1109105593,
+              "book_after": 1128948796,
+              "book_delta": 19843203
+            },
+            {
+              "shop": "nocha12",
+              "book_before": 604644495,
+              "book_after": 610348542,
+              "book_delta": 5704047
+            }
+          ],
+          "preview": {
+            "kind": "aggregate",
+            "note": "우리 계정과 현재 Shop ALL 상위 5곳의 같은 기간 Book 변화."
+          },
+          "methods": [
+            {
+              "language": "calculation",
+              "code": "Book delta = published Book after - published Book before; rank = 1 + count(published ALL greater than own ALL)."
+            }
+          ]
+        },
+        {
+          "id": "execution",
+          "source": {
+            "label": "로컬 거래·공급 실행 원장",
+            "files": [
+              "logs/progress-diagnosis-20261117T034034355035Z.json"
+            ],
+            "tables": [
+              "events"
+            ],
+            "sql": "SELECT id,ts,data FROM events WHERE kind=? AND ts>=? AND ts<? ORDER BY ts,rowid",
+            "filters": [
+              "09:06 <= event timestamp < 12:40; own settled sales and supply execution status"
+            ],
+            "caveats": [
+              "관측 매출총이익·환불과 공식 Book 차이의 잔차에는 보관·폐기·미관측 환불·집계 시점 차이가 포함될 수 있다."
+            ]
+          },
+          "reportingPeriod": "2026-11-17 09:06–12:40 KST"
+        }
+      ]
+    }
+  ]
+}

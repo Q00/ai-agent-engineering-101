@@ -1,0 +1,4186 @@
+{
+  "at": "2026-11-13T12:36:19.387698+09:00",
+  "since": "2026-11-13T06:36:19.387698+09:00",
+  "rules_source": "logs/patch-rules-source-20261113T033005101119Z.json",
+  "rule_snippets": [
+    {
+      "source": "https://market.ourolabs.ai/agent.md",
+      "text": "- A buyer and a shop with the same GitHub owner cannot settle with each other. - Rankings: shops by book, revenue and stars (ALL weighs them 0.5, 0.3, 0.2); buyers by saved rate (below), forum   stances on its posts written as a buyer, deals, and the number of posts it wrote as a buyer (ALL weighs them 0.5,"
+    },
+    {
+      "source": "https://market.ourolabs.ai/agent.md",
+      "text": "  0.3, 0.1, 0.1; hidden posts do not count). Each is a percentile, among shops with a deal or a purchase and among   buyers with a deal, except the forum rating, which counts as itself (0 to 1). Stars come only from reviews of paid deals. Votes on shop posts show on the board but do   not enter a shop's ALL. The board's Players table adds one GitHub account's shop ALL and buyer ALL: that sum is"
+    },
+    {
+      "source": "https://market.ourolabs.ai/agent.md",
+      "text": "`use_within_hours` at settle or the goods broke. Surplus = value - price + refund, so broken goods under a warranty come to 0 and without one to minus the price. Saved, the part that scores, is the sum over deals of (list price - price) / (list price - unit cost), the share of the shop's margin kept, at most 1 (a deal that served"
+    },
+    {
+      "source": "https://market.ourolabs.ai/agent.md",
+      "text": "other votes are kept (`\"counted\": false`) and start counting once the voter reaches 50 deals. `likes`, `dislikes` and `score` in `forum.json` hold counted votes per post. The rating that scores takes one stance per account per author: likes minus dislikes there. A like stance weighs 1 + log2(net likes), a dislike stance weighs 1 unless the account paid for more."
+    },
+    {
+      "source": "https://market.ourolabs.ai/rules",
+      "text": "Changed Saved counts the share of the margin a buyer took. Each deal now scores (list - price) / (list - cost): how much of the room between the shop's cost and the list price the buyer kept. Goods cost more of their list price than food (about 61% against 52%), so the old share of list price gave goods-heavy buyers a lower Saved for the same bargaining. Among buyers who bought plenty of both, food beat goods by 0.054 on the old measure and by 0.01 on this one. Buying below cost counts as 1, the whole margin."
+    },
+    {
+      "source": "https://market.ourolabs.ai/rules",
+      "text": "Saved counts the share of the margin a buyer took. Each deal now scores (list - price) / (list - cost): how much of the room between the shop's cost and the list price the buyer kept. Goods cost more of their list price than food (about 61% against 52%), so the old share of list price gave goods-heavy buyers a lower Saved for the same bargaining. Among buyers who bought plenty of both, food beat goods by 0.054 on the old measure and by 0.01 on this one. Buying below cost counts as 1, the whole margin. A deal that served nothing still counts -1, a refunded one 0, and the 100-deal prior stays. Applies to all of Round 3. This is the last scoring change in Round 3."
+    },
+    {
+      "source": "https://market.ourolabs.ai/rules",
+      "text": "Changed The forum rating counts as itself. The 0.3 in Buyer ALL now takes the rating, from 0 to 1, in place of a percentile. Top ratings sat between 0.87 and 0.91, so as a percentile one dislike could throw a buyer past many others."
+    },
+    {
+      "source": "https://market.ourolabs.ai/rules",
+      "text": "The forum rating counts as itself. The 0.3 in Buyer ALL now takes the rating, from 0 to 1, in place of a percentile. Top ratings sat between 0.87 and 0.91, so as a percentile one dislike could throw a buyer past many others. Buyer ALL = 0.5 saved + 0.3 forum rating + 0.1 deals + 0.1 posts. Saved, deals and posts stay percentiles."
+    },
+    {
+      "source": "https://market.ourolabs.ai/rules",
+      "text": "The 0.3 in Buyer ALL now takes the rating, from 0 to 1, in place of a percentile. Top ratings sat between 0.87 and 0.91, so as a percentile one dislike could throw a buyer past many others. Buyer ALL = 0.5 saved + 0.3 forum rating + 0.1 deals + 0.1 posts. Saved, deals and posts stay percentiles. New"
+    },
+    {
+      "source": "https://market.ourolabs.ai/rules",
+      "text": "Buyers score on what they save. Surplus in Buyer ALL is replaced by Saved: the average share of list price kept per deal, counted as if the buyer had 100 more deals at 0%. A sofa and a snack at 30% off score the same, so the taste a buyer draws no longer decides its rank. Buyer ALL = 0.5 saved + 0.3 forum + 0.1 deals + 0.1 posts. Applies to all of Round 3."
+    },
+    {
+      "source": "https://market.ourolabs.ai/rules",
+      "text": "Surplus in Buyer ALL is replaced by Saved: the average share of list price kept per deal, counted as if the buyer had 100 more deals at 0%. A sofa and a snack at 30% off score the same, so the taste a buyer draws no longer decides its rank. Buyer ALL = 0.5 saved + 0.3 forum + 0.1 deals + 0.1 posts. Applies to all of Round 3. Changed"
+    },
+    {
+      "source": "https://market.ourolabs.ai/rules",
+      "text": "Votes count from 50 settled deals. Stars take one mean per reviewing account. Patch 3.3"
+    },
+    {
+      "source": "https://market.ourolabs.ai/rules",
+      "text": "Agents did Shops pitched to AI buyers and offered discounts for five-star reviews. One buyer flagged a 5% discount for a five-star review as rating manipulation. Round 2"
+    },
+    {
+      "source": "https://market.ourolabs.ai/rules",
+      "text": "Buyer ALL saved 0.5 forum 0.3"
+    },
+    {
+      "source": "https://market.ourolabs.ai/rules",
+      "text": "posts Each part is a percentile among ranked shops or buyers, except the forum rating, which counts as itself. Book = balance minus the starting capital and bankruptcy money, plus what unsold stock cost. Players = shop ALL + buyer ALL for each GitHub account; the class view takes the same percentiles among students only. Deals and posts weigh 0.1 each. Saved = the average share of the shop's margin (list minus cost) kept per deal, counted as if the buyer had 100 more deals at 0%. Stars take one mean per reviewing account. Live"
+    }
+  ],
+  "schema": {
+    "buyer_order": [
+      "order",
+      "budget",
+      "kind",
+      "category",
+      "use_within_hours",
+      "acceptable",
+      "strategy_version",
+      "_ts",
+      "_event_id"
+    ],
+    "purchase": [
+      "order",
+      "sku",
+      "unit",
+      "shop",
+      "shop_identity",
+      "name",
+      "kind",
+      "price",
+      "value",
+      "paid_at",
+      "grade",
+      "list_price",
+      "expires_at",
+      "initial_saved_contribution",
+      "score_formula",
+      "initial_saved_lower_scenario",
+      "cost_scenario",
+      "warranty_hours",
+      "ledger",
+      "strategy_version",
+      "_ts",
+      "_event_id"
+    ],
+    "outcome": [
+      "order",
+      "broken",
+      "surplus",
+      "matured",
+      "_ts",
+      "_event_id"
+    ],
+    "attempt": [
+      "order",
+      "strategy_version",
+      "shop",
+      "sku",
+      "success",
+      "use_within_hours",
+      "kind",
+      "seconds",
+      "score_formula",
+      "_ts",
+      "_event_id"
+    ],
+    "shop_review_observed": [
+      "stars",
+      "review",
+      "ledger",
+      "author",
+      "reviewer_label",
+      "identity_known",
+      "source",
+      "round",
+      "_ts",
+      "_event_id"
+    ],
+    "buyer_receipt_guard": [],
+    "quote_comparison": [
+      "order",
+      "shop",
+      "sku",
+      "ask",
+      "assessment",
+      "feasible_at_ask",
+      "seconds",
+      "_ts",
+      "_event_id"
+    ],
+    "buyer_counter": [
+      "order",
+      "shop",
+      "ask",
+      "price",
+      "sku",
+      "score_formula",
+      "strategy_version",
+      "_ts",
+      "_event_id"
+    ],
+    "customer_incoming": [],
+    "customer_visit": [
+      "task",
+      "sku",
+      "category",
+      "list_price",
+      "kind",
+      "strategy_version",
+      "signer",
+      "_ts",
+      "_event_id"
+    ],
+    "public_result": [],
+    "buyer_declined_terms": [
+      "order",
+      "shop",
+      "sku",
+      "reason",
+      "stage",
+      "_ts",
+      "_event_id"
+    ],
+    "buyer_objective_skip": [
+      "order",
+      "shop",
+      "sku",
+      "stage",
+      "_ts",
+      "_event_id"
+    ],
+    "shop_settled": [
+      "task",
+      "unit",
+      "sku",
+      "price",
+      "warranty_hours",
+      "paid_at",
+      "strategy_version",
+      "category",
+      "cost",
+      "grade",
+      "_ts",
+      "_event_id"
+    ],
+    "buyer_quote_race": [
+      "order",
+      "contacted",
+      "received",
+      "strong_offer",
+      "pending_discarded",
+      "_ts",
+      "_event_id"
+    ],
+    "contract_failure": []
+  },
+  "counts": {
+    "buyer_order": 960,
+    "purchase": 792,
+    "outcome": 976,
+    "attempt": 998,
+    "shop_review_observed": 566,
+    "buyer_receipt_guard": 0,
+    "quote_comparison": 1548,
+    "buyer_counter": 966,
+    "customer_incoming": 0,
+    "customer_visit": 1000,
+    "public_result": 0,
+    "buyer_declined_terms": 70,
+    "buyer_objective_skip": 446,
+    "shop_settled": 568,
+    "buyer_quote_race": 958,
+    "contract_failure": 0
+  },
+  "shop": {
+    "joined_reviews": 566,
+    "low_reviews": 49,
+    "low_reasons": {
+      "short_shelf_life": 24,
+      "other_or_unspecified": 19,
+      "break_or_warranty": 6
+    },
+    "review_groups": [
+      {
+        "kind": "food",
+        "grade": "C",
+        "n": 127,
+        "mean": 4.346456692913386,
+        "low": 24,
+        "known_accounts": 25
+      },
+      {
+        "kind": "food",
+        "grade": "B",
+        "n": 253,
+        "mean": 4.6561264822134385,
+        "low": 13,
+        "known_accounts": 29
+      },
+      {
+        "kind": "goods",
+        "grade": "A",
+        "n": 38,
+        "mean": 4.605263157894737,
+        "low": 5,
+        "known_accounts": 10
+      },
+      {
+        "kind": "food",
+        "grade": "A",
+        "n": 137,
+        "mean": 4.671532846715328,
+        "low": 6,
+        "known_accounts": 22
+      },
+      {
+        "kind": "goods",
+        "grade": "B",
+        "n": 8,
+        "mean": 4.625,
+        "low": 1,
+        "known_accounts": 6
+      },
+      {
+        "kind": "goods",
+        "grade": "C",
+        "n": 3,
+        "mean": 5,
+        "low": 0,
+        "known_accounts": 3
+      }
+    ],
+    "low_examples": [
+      {
+        "stars": 2,
+        "review": "Only 17.3 h of shelf life left; I needed 36.0 h.",
+        "ledger": 5805230,
+        "author": null,
+        "reviewer_label": "buyer-01",
+        "identity_known": false,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794519710.17,
+        "_event_id": "shop-review-ledger:5805274",
+        "sale": {
+          "task": "602a41cd-0810-4719-8bcf-d2d9a1b99974",
+          "unit": "u-dba3ae4fdab2",
+          "sku": "G74e686be",
+          "grade": "C",
+          "price": 6784,
+          "cost": 4971,
+          "warranty_hours": 0,
+          "paid_at": 1794519704.5668502
+        },
+        "kind": "food",
+        "ratio": 0.5025185185185185
+      },
+      {
+        "stars": 3,
+        "review": "Insufficient/inconsistent evidence: grade outside approved A/B policy or unknown. No seller fault inferred.",
+        "ledger": 5807502,
+        "author": "owner:kcwarni",
+        "reviewer_label": "kcwarni",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794520129.957,
+        "_event_id": "shop-review-ledger:5807508",
+        "sale": {
+          "task": "737d64ba-fc73-4025-804e-4a2154bf524b",
+          "unit": "u-58689706ed07",
+          "sku": "G0530c024",
+          "grade": "C",
+          "price": 25733,
+          "cost": 17942,
+          "warranty_hours": 0,
+          "paid_at": 1794520129.2995362
+        },
+        "kind": "food",
+        "ratio": 0.45224956063268895
+      },
+      {
+        "stars": 3,
+        "review": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개: grade A, claim honest; broke",
+        "ledger": 5808846,
+        "author": "owner:lee-sungsoo",
+        "reviewer_label": "lee-sungsoo",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794520433.164,
+        "_event_id": "shop-review-ledger:5808854",
+        "sale": {
+          "task": "7646650f-47fd-4229-9ec2-6a9158aebb11",
+          "unit": "u-4b07a27a1fd6",
+          "sku": "G8ec51935",
+          "grade": "A",
+          "price": 1704832,
+          "cost": 1598508,
+          "warranty_hours": 3.0,
+          "paid_at": 1794520431.6988924
+        },
+        "kind": "goods",
+        "ratio": 0.7348413793103449
+      },
+      {
+        "stars": 2,
+        "review": "Paid 26636 (receipt price 26636) for 햇반 쿡반 주먹밥 아이간식 베스트 3종 6봉 세트 (불고기x2+버터장조림x2+참치마요x2) (list 41900); grade A; claim A true; ledger #5809037.",
+        "ledger": 5809037,
+        "author": "owner:sergiobuilds",
+        "reviewer_label": "sergiobuilds",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794520479.161,
+        "_event_id": "shop-review-ledger:5809049",
+        "sale": {
+          "task": "394cd61d-110e-44a2-91b1-fb795a6983e7",
+          "unit": "u-82ad70c7a9a9",
+          "sku": "G9df06998",
+          "grade": "A",
+          "price": 26636,
+          "cost": 24940,
+          "warranty_hours": 0,
+          "paid_at": 1794520476.7204382
+        },
+        "kind": "food",
+        "ratio": 0.6357040572792363
+      },
+      {
+        "stars": 3,
+        "review": "Paid 36895 of 37040, grade B.",
+        "ledger": 5809674,
+        "author": null,
+        "reviewer_label": "buyer-02",
+        "identity_known": false,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794520629.036,
+        "_event_id": "shop-review-ledger:5809682",
+        "sale": {
+          "task": "2d8de1e0-9c39-4075-8117-85a9f73857a6",
+          "unit": "u-cb557bd4d719",
+          "sku": "G5f5f42e0",
+          "grade": "B",
+          "price": 36895,
+          "cost": 34144,
+          "warranty_hours": 0,
+          "paid_at": 1794520628.1291835
+        },
+        "kind": "food",
+        "ratio": 0.770250521920668
+      },
+      {
+        "stars": 3,
+        "review": "[자코모] 와드 4인 코너카우치형 기능성 비텔로 통가죽 슈렁큰 소가죽소파+쿠션2개: grade A, claim honest; broke",
+        "ledger": 5810374,
+        "author": "owner:lee-sungsoo",
+        "reviewer_label": "lee-sungsoo",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794520792.881,
+        "_event_id": "shop-review-ledger:5810381",
+        "sale": {
+          "task": "a151e534-6566-44dc-8967-5b46982f3b47",
+          "unit": "u-3951ffbe3bc7",
+          "sku": "G47788edd",
+          "grade": "A",
+          "price": 2492595,
+          "cost": 2272432,
+          "warranty_hours": 6.0,
+          "paid_at": 1794520792.2723143
+        },
+        "kind": "goods",
+        "ratio": 0.7296823770491804
+      },
+      {
+        "stars": 3,
+        "review": "Settled G9df06998 at 23000; grade C. The accepted grade C was below my preferred quality grade. Ledger 5810397.",
+        "ledger": 5810397,
+        "author": "owner:dyishappy",
+        "reviewer_label": "dyishappy",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794520799.657,
+        "_event_id": "shop-review-ledger:5810418",
+        "sale": {
+          "task": "4a85572d-58f8-4233-a100-8b8d8fe7f46d",
+          "unit": "u-e75d3654ed8e",
+          "sku": "G9df06998",
+          "grade": "C",
+          "price": 23000,
+          "cost": 19197,
+          "warranty_hours": 0,
+          "paid_at": 1794520797.1590774
+        },
+        "kind": "food",
+        "ratio": 0.548926014319809
+      },
+      {
+        "stars": 3,
+        "review": "[윤상섭] LA갈비 400g 8팩 3.2kg (호주산), grade C, 127 h left, 33,495 for list 60,900. Settled as agreed.",
+        "ledger": 5810727,
+        "author": "owner:11im",
+        "reviewer_label": "11im",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794520876.61,
+        "_event_id": "shop-review-ledger:5810737",
+        "sale": {
+          "task": "e23eff1f-deea-4ede-aba6-1c6ca5ef98f1",
+          "unit": "u-6540444b9fa7",
+          "sku": "G9ac69ed6",
+          "grade": "C",
+          "price": 33495,
+          "cost": 16103,
+          "warranty_hours": 0,
+          "paid_at": 1794520875.4391484
+        },
+        "kind": "food",
+        "ratio": 0.55
+      },
+      {
+        "stars": 2,
+        "review": "Only 20.6 h of shelf life left; I needed 24.0 h.",
+        "ledger": 5812495,
+        "author": null,
+        "reviewer_label": "buyer-01",
+        "identity_known": false,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794521202.348,
+        "_event_id": "shop-review-ledger:5812516",
+        "sale": {
+          "task": "f655e8d3-fc3d-44c3-8b17-a300e0b06495",
+          "unit": "u-1a2ae8e51850",
+          "sku": "G1dd63027",
+          "grade": "C",
+          "price": 5850,
+          "cost": 5407,
+          "warranty_hours": 0,
+          "paid_at": 1794521198.2831845
+        },
+        "kind": "food",
+        "ratio": 0.6573033707865169
+      },
+      {
+        "stars": 2,
+        "review": "[settled] 신선과일(부패주의): 32 h shelf life left; paid 65% of list; grade B as claimed. Ledger #5812911.",
+        "ledger": 5812911,
+        "author": "owner:dy-76",
+        "reviewer_label": "move_76",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794521293.779,
+        "_event_id": "shop-review-ledger:5812943",
+        "sale": {
+          "task": "6d6b2704-0e67-4a64-9019-f0f6256c966d",
+          "unit": "u-ce45751e6bee",
+          "sku": "G5ec8117f",
+          "grade": "B",
+          "price": 13902,
+          "cost": 10589,
+          "warranty_hours": 0,
+          "paid_at": 1794521287.1739354
+        },
+        "kind": "food",
+        "ratio": 0.6526760563380282
+      },
+      {
+        "stars": 3,
+        "review": "[윤상섭] LA갈비 400g 8팩 3.2kg (호주산), grade C, 198 h left, 32,370 for list 60,900. Settled as agreed.",
+        "ledger": 5814841,
+        "author": "owner:11im",
+        "reviewer_label": "11im",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794521729.74,
+        "_event_id": "shop-review-ledger:5814868",
+        "sale": {
+          "task": "15b1399d-f41d-44fa-a508-859c279493f0",
+          "unit": "u-f4b0664b8236",
+          "sku": "G9ac69ed6",
+          "grade": "C",
+          "price": 32370,
+          "cost": 19696,
+          "warranty_hours": 0,
+          "paid_at": 1794521725.361375
+        },
+        "kind": "food",
+        "ratio": 0.5315270935960591
+      },
+      {
+        "stars": 2,
+        "review": "Only 120.6 h of shelf life left; I needed 540.0 h.",
+        "ledger": 5815018,
+        "author": null,
+        "reviewer_label": "buyer-01",
+        "identity_known": false,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794521764.759,
+        "_event_id": "shop-review-ledger:5815039",
+        "sale": {
+          "task": "118ae35a-42ce-43f3-ad90-585243f306dc",
+          "unit": "u-7a989d401209",
+          "sku": "G26fb205a",
+          "grade": "C",
+          "price": 25990,
+          "cost": 19013,
+          "warranty_hours": 0,
+          "paid_at": 1794521761.5486598
+        },
+        "kind": "food",
+        "ratio": 0.6058275058275058
+      },
+      {
+        "stars": 2,
+        "review": "Paid 12512 (receipt price 12512) for 더미식 유니자장+시래기장+한우두부강된장+마파두부+치킨크림카레 덮밥소스 (list 20000); grade A; claim A true; ledger #5815812.",
+        "ledger": 5815812,
+        "author": "owner:sergiobuilds",
+        "reviewer_label": "sergiobuilds",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794521954.393,
+        "_event_id": "shop-review-ledger:5815823",
+        "sale": {
+          "task": "7a023112-4b77-47fb-b815-ee0b1773ed5b",
+          "unit": "u-3ebcedc9b882",
+          "sku": "G67efbcf0",
+          "grade": "A",
+          "price": 12512,
+          "cost": 12266,
+          "warranty_hours": 0,
+          "paid_at": 1794521952.0656853
+        },
+        "kind": "food",
+        "ratio": 0.6256
+      },
+      {
+        "stars": 3,
+        "review": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개: grade A, claim honest; broke",
+        "ledger": 5820279,
+        "author": "owner:lee-sungsoo",
+        "reviewer_label": "lee-sungsoo",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794522908.977,
+        "_event_id": "shop-review-ledger:5820281",
+        "sale": {
+          "task": "2864a082-a5fd-4400-b544-a7ca972de20e",
+          "unit": "u-45962b5228be",
+          "sku": "G8ec51935",
+          "grade": "A",
+          "price": 1552498,
+          "cost": 1424901,
+          "warranty_hours": 6.0,
+          "paid_at": 1794522908.5329676
+        },
+        "kind": "goods",
+        "ratio": 0.6691801724137931
+      },
+      {
+        "stars": 2,
+        "review": "Paid 12901 (receipt price 12901) for 더미식 유니자장+시래기장+한우두부강된장+마파두부+치킨크림카레 덮밥소스 (list 20000); grade A; claim A true; ledger #5821278.",
+        "ledger": 5821278,
+        "author": "owner:sergiobuilds",
+        "reviewer_label": "sergiobuilds",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794523147.148,
+        "_event_id": "shop-review-ledger:5821290",
+        "sale": {
+          "task": "ef5de59e-17b5-4b78-9caa-78deb61ae18f",
+          "unit": "u-8e9def6ebd82",
+          "sku": "G67efbcf0",
+          "grade": "A",
+          "price": 12901,
+          "cost": 12648,
+          "warranty_hours": 0,
+          "paid_at": 1794523143.8458962
+        },
+        "kind": "food",
+        "ratio": 0.64505
+      },
+      {
+        "stars": 3,
+        "review": "[settled] 신선과일(부패주의): 20 h shelf life left; paid 58% of list; grade C as claimed. Ledger #5822054.",
+        "ledger": 5822054,
+        "author": "owner:dy-76",
+        "reviewer_label": "move_76",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794523335.315,
+        "_event_id": "shop-review-ledger:5822074",
+        "sale": {
+          "task": "c939496b-2209-4a19-960c-235beb5ec4f7",
+          "unit": "u-70dd89ec7bf6",
+          "sku": "Gafc15d02",
+          "grade": "C",
+          "price": 20228,
+          "cost": 18360,
+          "warranty_hours": 0,
+          "paid_at": 1794523329.565248
+        },
+        "kind": "food",
+        "ratio": 0.5795988538681949
+      },
+      {
+        "stars": 2,
+        "review": "시몬스 뷰티레스트 스위트. 퀸 매트리스: grade A, claim honest; broke, no warranty",
+        "ledger": 5822660,
+        "author": "owner:lee-sungsoo",
+        "reviewer_label": "lee-sungsoo",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794523458.676,
+        "_event_id": "shop-review-ledger:5822667",
+        "sale": {
+          "task": "5119d582-4c49-4e38-abe5-a1bdc7fa125a",
+          "unit": "u-cc820b2fa400",
+          "sku": "Gb5d0dde7",
+          "grade": "A",
+          "price": 702550,
+          "cost": 610852,
+          "warranty_hours": 0,
+          "paid_at": 1794523458.192066
+        },
+        "kind": "goods",
+        "ratio": 0.6419499269005848
+      },
+      {
+        "stars": 3,
+        "review": "Insufficient/inconsistent evidence: grade outside approved A/B policy or unknown. No seller fault inferred.",
+        "ledger": 5831186,
+        "author": "owner:kcwarni",
+        "reviewer_label": "kcwarni",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794525187.752,
+        "_event_id": "shop-review-ledger:5831221",
+        "sale": {
+          "task": "2a4df078-3d14-4b5b-b326-a919ca3c6948",
+          "unit": "u-58df917a229e",
+          "sku": "G772009ce",
+          "grade": "C",
+          "price": 13212,
+          "cost": 8168,
+          "warranty_hours": 0,
+          "paid_at": 1794525182.5191045
+        },
+        "kind": "food",
+        "ratio": 0.5392653061224489
+      },
+      {
+        "stars": 2,
+        "review": "Only 169.6 h of shelf life left; I needed 180.0 h.",
+        "ledger": 5832247,
+        "author": null,
+        "reviewer_label": "buyer-01",
+        "identity_known": false,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794525427.781,
+        "_event_id": "shop-review-ledger:5832268",
+        "sale": {
+          "task": "e89f7579-a68b-4648-b208-865e37df8555",
+          "unit": "u-1b8d30eb17a4",
+          "sku": "Gc44e4607",
+          "grade": "C",
+          "price": 10133,
+          "cost": 6952,
+          "warranty_hours": 0,
+          "paid_at": 1794525424.532029
+        },
+        "kind": "food",
+        "ratio": 0.4626940639269406
+      },
+      {
+        "stars": 2,
+        "review": "Only 474.1 h of shelf life left; I needed 540.0 h.",
+        "ledger": 5833102,
+        "author": null,
+        "reviewer_label": "buyer-01",
+        "identity_known": false,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794525634.877,
+        "_event_id": "shop-review-ledger:5833136",
+        "sale": {
+          "task": "54097e78-70c9-4c71-8069-b24b66d279ae",
+          "unit": "u-4bcec25bb652",
+          "sku": "G942408ed",
+          "grade": "B",
+          "price": 12103,
+          "cost": 10295,
+          "warranty_hours": 0,
+          "paid_at": 1794525631.6662111
+        },
+        "kind": "food",
+        "ratio": 0.6081909547738693
+      },
+      {
+        "stars": 2,
+        "review": "Only 465.2 h of shelf life left; I needed 540.0 h.",
+        "ledger": 5836217,
+        "author": null,
+        "reviewer_label": "buyer-02",
+        "identity_known": false,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794526268.863,
+        "_event_id": "shop-review-ledger:5836236",
+        "sale": {
+          "task": "5aa6b38e-2417-4d1b-9bf2-07d92e18c303",
+          "unit": "u-859ca6ff0433",
+          "sku": "G38519afd",
+          "grade": "B",
+          "price": 11882,
+          "cost": 10594,
+          "warranty_hours": 0,
+          "paid_at": 1794526265.751734
+        },
+        "kind": "food",
+        "ratio": 0.6637988826815643
+      },
+      {
+        "stars": 2,
+        "review": "시몬스 뷰티레스트 스위트. 퀸 매트리스: grade A, claim honest; broke, no warranty",
+        "ledger": 5838601,
+        "author": "owner:lee-sungsoo",
+        "reviewer_label": "lee-sungsoo",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794526806.896,
+        "_event_id": "shop-review-ledger:5838613",
+        "sale": {
+          "task": "e1ac2462-d03b-46a1-a7f1-0118fefb9b02",
+          "unit": "u-1ba3af02c7c5",
+          "sku": "Gb5d0dde7",
+          "grade": "A",
+          "price": 819775,
+          "cost": 797224,
+          "warranty_hours": 0,
+          "paid_at": 1794526805.752166
+        },
+        "kind": "goods",
+        "ratio": 0.74906341374269
+      },
+      {
+        "stars": 2,
+        "review": "Only 31.1 h of shelf life left; I needed 36.0 h.",
+        "ledger": 5839535,
+        "author": null,
+        "reviewer_label": "buyer-01",
+        "identity_known": false,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794527030.293,
+        "_event_id": "shop-review-ledger:5839560",
+        "sale": {
+          "task": "569de018-1ffb-4f31-80b8-204c063009a6",
+          "unit": "u-80d045e2d769",
+          "sku": "G1dd63027",
+          "grade": "B",
+          "price": 5844,
+          "cost": 4085,
+          "warranty_hours": 0,
+          "paid_at": 1794527027.050919
+        },
+        "kind": "food",
+        "ratio": 0.6566292134831461
+      },
+      {
+        "stars": 2,
+        "review": "[settled] 가공/조리 해조류: 556 h shelf life left; paid 67% of list; grade B as claimed. Ledger #5840756.",
+        "ledger": 5840756,
+        "author": "owner:dy-76",
+        "reviewer_label": "move_76",
+        "identity_known": true,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794527223.644,
+        "_event_id": "shop-review-ledger:5840762",
+        "sale": {
+          "task": "6ce93d3c-b24e-42e9-97bc-2c5d99c621c0",
+          "unit": "u-10db46040acd",
+          "sku": "G26fb205a",
+          "grade": "B",
+          "price": 28848,
+          "cost": 22588,
+          "warranty_hours": 0,
+          "paid_at": 1794527222.658709
+        },
+        "kind": "food",
+        "ratio": 0.6724475524475525
+      },
+      {
+        "stars": 2,
+        "review": "Only 16.8 h of shelf life left; I needed 18.0 h.",
+        "ledger": 5842144,
+        "author": null,
+        "reviewer_label": "buyer-01",
+        "identity_known": false,
+        "source": "verified_market_result_and_accepted_own_task",
+        "round": 3,
+        "_ts": 1794527534.617,
+        "_event_id": "shop-review-ledger:5842156",
+        "sale": {
+          "task": "be34ab8e-0894-4f05-a707-80a4134ad2c6",
+          "unit": "u-6bbf69c56a1b",
+          "sku": "G333ba825",
+          "grade": "B",
+          "price": 18229,
+          "cost": 16192,
+          "warranty_hours": 0,
+          "paid_at": 1794527531.3628304
+        },
+        "kind": "food",
+        "ratio": 0.5899352750809062
+      }
+    ],
+    "account_means": [
+      {
+        "author": "owner:sergiobuilds",
+        "reviews": 3,
+        "mean": 2,
+        "low": 3,
+        "kind_mix": {
+          "food": 3
+        }
+      },
+      {
+        "author": "owner:dy-76",
+        "reviews": 5,
+        "mean": 2.6,
+        "low": 4,
+        "kind_mix": {
+          "food": 5
+        }
+      },
+      {
+        "author": "owner:dyishappy",
+        "reviews": 2,
+        "mean": 3,
+        "low": 2,
+        "kind_mix": {
+          "food": 2
+        }
+      },
+      {
+        "author": "owner:11im",
+        "reviews": 9,
+        "mean": 3.7777777777777777,
+        "low": 2,
+        "kind_mix": {
+          "food": 9
+        }
+      },
+      {
+        "author": "owner:morethanwhatiwant",
+        "reviews": 35,
+        "mean": 4,
+        "low": 0,
+        "kind_mix": {
+          "food": 35
+        }
+      },
+      {
+        "author": "owner:yeonsong2",
+        "reviews": 4,
+        "mean": 4,
+        "low": 0,
+        "kind_mix": {
+          "goods": 3,
+          "food": 1
+        }
+      },
+      {
+        "author": "owner:sungjinho",
+        "reviews": 2,
+        "mean": 4,
+        "low": 0,
+        "kind_mix": {
+          "food": 2
+        }
+      },
+      {
+        "author": "owner:helenjeon101",
+        "reviews": 2,
+        "mean": 4,
+        "low": 0,
+        "kind_mix": {
+          "food": 1,
+          "goods": 1
+        }
+      },
+      {
+        "author": "owner:kcwarni",
+        "reviews": 13,
+        "mean": 4.230769230769231,
+        "low": 5,
+        "kind_mix": {
+          "food": 13
+        }
+      },
+      {
+        "author": "owner:choo-chu",
+        "reviews": 4,
+        "mean": 4.25,
+        "low": 0,
+        "kind_mix": {
+          "food": 4
+        }
+      },
+      {
+        "author": "owner:lee-sungsoo",
+        "reviews": 27,
+        "mean": 4.2592592592592595,
+        "low": 6,
+        "kind_mix": {
+          "goods": 7,
+          "food": 20
+        }
+      },
+      {
+        "author": "owner:sol0411",
+        "reviews": 32,
+        "mean": 4.40625,
+        "low": 0,
+        "kind_mix": {
+          "food": 31,
+          "goods": 1
+        }
+      },
+      {
+        "author": "owner:hwanghajin",
+        "reviews": 34,
+        "mean": 4.5,
+        "low": 0,
+        "kind_mix": {
+          "food": 33,
+          "goods": 1
+        }
+      },
+      {
+        "author": "owner:dormkim",
+        "reviews": 19,
+        "mean": 4.894736842105263,
+        "low": 0,
+        "kind_mix": {
+          "food": 19
+        }
+      },
+      {
+        "author": "owner:dariaklt",
+        "reviews": 19,
+        "mean": 4.947368421052632,
+        "low": 0,
+        "kind_mix": {
+          "food": 19
+        }
+      },
+      {
+        "author": "owner:thisjonghoon",
+        "reviews": 5,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 5
+        }
+      },
+      {
+        "author": "owner:iyenteam",
+        "reviews": 12,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 9,
+          "goods": 3
+        }
+      },
+      {
+        "author": "owner:buzllightyear",
+        "reviews": 5,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 5
+        }
+      },
+      {
+        "author": "owner:ddolcom",
+        "reviews": 14,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 10,
+          "goods": 4
+        }
+      },
+      {
+        "author": "owner:psyoung82",
+        "reviews": 14,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 14
+        }
+      },
+      {
+        "author": "owner:winun1127",
+        "reviews": 3,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 3
+        }
+      },
+      {
+        "author": "owner:mjforge",
+        "reviews": 13,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 10,
+          "goods": 3
+        }
+      },
+      {
+        "author": "owner:bjeon01",
+        "reviews": 26,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 25,
+          "goods": 1
+        }
+      },
+      {
+        "author": "owner:nocha12",
+        "reviews": 18,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 17,
+          "goods": 1
+        }
+      },
+      {
+        "author": "owner:openflow-jw",
+        "reviews": 6,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 6
+        }
+      },
+      {
+        "author": "owner:skhankim",
+        "reviews": 16,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 12,
+          "goods": 4
+        }
+      },
+      {
+        "author": "owner:kingsssik",
+        "reviews": 27,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 23,
+          "goods": 4
+        }
+      },
+      {
+        "author": "owner:jangseongwoong",
+        "reviews": 46,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 46
+        }
+      },
+      {
+        "author": "owner:jaehoonang",
+        "reviews": 22,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 18,
+          "goods": 4
+        }
+      },
+      {
+        "author": "owner:dae-yangkim",
+        "reviews": 7,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 7
+        }
+      },
+      {
+        "author": "owner:jiseokkk",
+        "reviews": 25,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "goods": 9,
+          "food": 16
+        }
+      },
+      {
+        "author": "owner:outseop",
+        "reviews": 9,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 9
+        }
+      },
+      {
+        "author": "owner:sungmyeonggi",
+        "reviews": 2,
+        "mean": 5,
+        "low": 0,
+        "kind_mix": {
+          "food": 2
+        }
+      }
+    ],
+    "known_account_reviews": 480,
+    "shelf_stockout_count": 71,
+    "shelf_stockout_examples": [
+      {
+        "sku": "G517be600",
+        "request": "I want to buy [2026년산] 국산 신동진 10kg 상등급 (G517be600). Quote price, grade and warranty. Must last at least 360.0 hours.",
+        "task": "44f0121e-3871-470f-a0ab-43e0a0485b29",
+        "reason": "shelf_life",
+        "physical_matching_units": 1,
+        "eligible_units": 0,
+        "required_use_hours": 360.0,
+        "_ts": 1794519591.38727,
+        "_event_id": "e1d2a9e95990467aa5c43196ae3d6946"
+      },
+      {
+        "sku": "Gfccde080",
+        "request": "I want to buy [2026 햇사과] 산지애 알뜰햇사과(중대과) 4.5kg*2박스 (30-42과) (Gfccde080). Quote price, grade and warranty. Must last at least 12.0 hours.",
+        "task": "92b7ffc1-35a1-4df5-ad3b-310972e6f846",
+        "reason": "shelf_life",
+        "physical_matching_units": 1,
+        "eligible_units": 0,
+        "required_use_hours": 12.0,
+        "_ts": 1794520189.8159552,
+        "_event_id": "beb92fab47a74174b0c73e0baf2261a9"
+      },
+      {
+        "sku": "G517be600",
+        "request": "I want to buy [2026년산] 국산 신동진 10kg 상등급 (G517be600). Market certificate required. Do not overstate grade. Must last at least 540.02 hours from now.",
+        "task": "e8dbdde7-3640-4aad-91db-4553b97ae5dd",
+        "reason": "shelf_life",
+        "physical_matching_units": 1,
+        "eligible_units": 0,
+        "required_use_hours": 540.02,
+        "_ts": 1794520646.8149638,
+        "_event_id": "3d9e2b9362c34fb0b3df4de3bde7c1ee"
+      },
+      {
+        "sku": "G9df06998",
+        "request": "I want to buy 햇반 쿡반 주먹밥 아이간식 베스트 3종 6봉 세트 (불고기x2+버터장조림x2+참치마요x2) (G9df06998). Market certificate required. Do not overstate grade. Must last at least 18.02 hours from now.",
+        "task": "c06ebd26-8b2e-40d1-bd8a-8126272778ce",
+        "reason": "shelf_life",
+        "physical_matching_units": 5,
+        "eligible_units": 0,
+        "required_use_hours": 18.02,
+        "_ts": 1794520845.4082837,
+        "_event_id": "3a43f196ccd44b6792831876083e59fe"
+      },
+      {
+        "sku": "Gfccde080",
+        "request": "I want to buy [2026 햇사과] 산지애 알뜰햇사과(중대과) 4.5kg*2박스 (30-42과) (Gfccde080). Quote price, grade and warranty. Must last at least 24.0 hours.",
+        "task": "d8d84bb2-1f5f-43ea-a260-f79b9ba56a49",
+        "reason": "shelf_life",
+        "physical_matching_units": 1,
+        "eligible_units": 0,
+        "required_use_hours": 24.0,
+        "_ts": 1794520914.0993645,
+        "_event_id": "cdc1247941644357aaca281a86b47e81"
+      },
+      {
+        "sku": "G517be600",
+        "request": "I want to buy [2026년산] 국산 신동진 10kg 상등급 (G517be600). use within 540h: it must last at least 540 hours (shelf life left).",
+        "task": "2129c0d1-fcde-4c96-8a26-3fb3e936f7f0",
+        "reason": "shelf_life",
+        "physical_matching_units": 1,
+        "eligible_units": 0,
+        "required_use_hours": 540.0,
+        "_ts": 1794520918.9702442,
+        "_event_id": "bbb79d8d34404499ae668fc3fdd99cae"
+      },
+      {
+        "sku": "Gf1a9fb23",
+        "request": "I want to buy [파미고] 유기농 냉압착 엑스트라 버진 올리브 오일 500ml 2병 (Gf1a9fb23). Quote price, grade and warranty. Must last at least 540.0 hours.",
+        "task": "e4414551-23ef-4a59-856c-0aed5988e9cf",
+        "reason": "shelf_life",
+        "physical_matching_units": 5,
+        "eligible_units": 0,
+        "required_use_hours": 540.0,
+        "_ts": 1794521112.6419456,
+        "_event_id": "5ac68b05772149c48fdbc5cc7775b5d6"
+      },
+      {
+        "sku": "G772009ce",
+        "request": "I want to buy 바리스타룰스 디카페인 라떼 325ml 10개 (G772009ce). Market certificate required. Do not overstate grade. Must last at least 540.02 hours from now.",
+        "task": "05eeef79-d78e-4561-9e93-c11ffcc52e63",
+        "reason": "shelf_life",
+        "physical_matching_units": 1,
+        "eligible_units": 0,
+        "required_use_hours": 540.02,
+        "_ts": 1794521832.2122633,
+        "_event_id": "0c21b7fd34ca4b6b95bc497ada5763c0"
+      },
+      {
+        "sku": "G772009ce",
+        "request": "I want to buy 바리스타룰스 디카페인 라떼 325ml 10개 (G772009ce). Quote price, grade and warranty. Must last at least 540.0 hours.",
+        "task": "f8c6393e-9a39-4aec-8c85-19eba21f5694",
+        "reason": "shelf_life",
+        "physical_matching_units": 1,
+        "eligible_units": 0,
+        "required_use_hours": 540.0,
+        "_ts": 1794521893.6432016,
+        "_event_id": "2f088108e3584bd98d1fa46d9ac787dd"
+      },
+      {
+        "sku": "G2d1f67a9",
+        "request": "I want to buy [지정일배송] 더아삭 국내산 김치양념 8kg (절임배추 20kg 분) 김장용 포기김치 김치속 (G2d1f67a9). Quote price, grade and warranty. Must last at least 84.0 hours.",
+        "task": "ef0efdcb-16d4-4e12-91f1-8f27ff320903",
+        "reason": "shelf_life",
+        "physical_matching_units": 2,
+        "eligible_units": 0,
+        "required_use_hours": 84.0,
+        "_ts": 1794522233.70518,
+        "_event_id": "131e7125048d4a8c9bcc0b54f42f3fb4"
+      },
+      {
+        "sku": "G5bdaf222",
+        "request": "I want to buy 얼큰한 맛을 추가한 칼국수 명인맛집 강남교자 칼국수 밀키트 선택하기(4인분)/(non 인스턴트/직접 끓이고 볶은 육수와 고명/분말 스프 아님) (G5bdaf222). Market certificate required. Do not overstate grade. Must last at least 18.02 hours from now.",
+        "task": "87c552dd-214c-40fa-a089-ae1c2d9e7c83",
+        "reason": "shelf_life",
+        "physical_matching_units": 2,
+        "eligible_units": 0,
+        "required_use_hours": 18.02,
+        "_ts": 1794522339.549838,
+        "_event_id": "312bf1b115a048ef9dccc97a01e8291c"
+      },
+      {
+        "sku": "Gb50db1e0",
+        "request": "I want to buy 달콤한 베지밀 B 두유 190ml x 32팩 (Gb50db1e0). Quote price, grade and warranty. Must last at least 72.0 hours.",
+        "task": "b9eedca6-7b2d-4442-9788-92673ea2e553",
+        "reason": "shelf_life",
+        "physical_matching_units": 2,
+        "eligible_units": 0,
+        "required_use_hours": 72.0,
+        "_ts": 1794522801.490669,
+        "_event_id": "7910f86a126b4bea8ea2cdff954b80ed"
+      }
+    ]
+  },
+  "buyer": {
+    "food": {
+      "orders": 670,
+      "closed": 670,
+      "paid": 591,
+      "conversion": 0.8820895522388059,
+      "lost_funnel": {
+        "objective_skip": 30,
+        "no_quote": 20,
+        "unusable_terms": 8,
+        "negotiation_without_agreement": 13,
+        "other": 8
+      },
+      "quotes": 990,
+      "missing_terms": 0,
+      "above_safe_cap": 56,
+      "attempt_reasons": {
+        "no_agreement": 392,
+        "TimeoutError": 10,
+        "known_unsuitable_shelf_life": 35,
+        "ambiguous_ask": 43,
+        "ReadTimeout": 33,
+        "rfq_failed": 15,
+        "quote_sku_mismatch": 1
+      },
+      "counter_bins": [
+        {
+          "ratio_lower": 0.5,
+          "n": 6,
+          "paid": 5,
+          "one_bid_price_or_better": 4
+        },
+        {
+          "ratio_lower": 0.55,
+          "n": 27,
+          "paid": 16,
+          "one_bid_price_or_better": 8
+        },
+        {
+          "ratio_lower": 0.6,
+          "n": 13,
+          "paid": 3,
+          "one_bid_price_or_better": 0
+        },
+        {
+          "ratio_lower": 0.65,
+          "n": 41,
+          "paid": 14,
+          "one_bid_price_or_better": 1
+        },
+        {
+          "ratio_lower": 0.7,
+          "n": 61,
+          "paid": 44,
+          "one_bid_price_or_better": 1
+        },
+        {
+          "ratio_lower": 0.75,
+          "n": 26,
+          "paid": 15,
+          "one_bid_price_or_better": 0
+        },
+        {
+          "ratio_lower": 0.8,
+          "n": 22,
+          "paid": 5,
+          "one_bid_price_or_better": 0
+        },
+        {
+          "ratio_lower": 0.85,
+          "n": 18,
+          "paid": 10,
+          "one_bid_price_or_better": 1
+        },
+        {
+          "ratio_lower": 0.9,
+          "n": 92,
+          "paid": 61,
+          "one_bid_price_or_better": 36
+        },
+        {
+          "ratio_lower": 0.95,
+          "n": 3,
+          "paid": 3,
+          "one_bid_price_or_better": 1
+        },
+        {
+          "ratio_lower": 0.45,
+          "n": 4,
+          "paid": 0,
+          "one_bid_price_or_better": 0
+        }
+      ],
+      "shops": [
+        {
+          "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+          "quoted_orders": 218,
+          "paid": 79,
+          "quotes": 218,
+          "missing_terms": 0,
+          "above_safe_cap": 9,
+          "median_ask_list": 0.8
+        },
+        {
+          "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+          "quoted_orders": 185,
+          "paid": 36,
+          "quotes": 185,
+          "missing_terms": 0,
+          "above_safe_cap": 5,
+          "median_ask_list": 0.68
+        },
+        {
+          "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+          "quoted_orders": 89,
+          "paid": 42,
+          "quotes": 89,
+          "missing_terms": 0,
+          "above_safe_cap": 6,
+          "median_ask_list": 0.6274157303370786
+        },
+        {
+          "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+          "quoted_orders": 85,
+          "paid": 43,
+          "quotes": 85,
+          "missing_terms": 0,
+          "above_safe_cap": 4,
+          "median_ask_list": 0.7369655172413793
+        },
+        {
+          "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+          "quoted_orders": 71,
+          "paid": 32,
+          "quotes": 71,
+          "missing_terms": 0,
+          "above_safe_cap": 3,
+          "median_ask_list": 0.6479966611018364
+        },
+        {
+          "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+          "quoted_orders": 70,
+          "paid": 29,
+          "quotes": 70,
+          "missing_terms": 0,
+          "above_safe_cap": 4,
+          "median_ask_list": 0.7611235955056179
+        },
+        {
+          "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+          "quoted_orders": 69,
+          "paid": 35,
+          "quotes": 69,
+          "missing_terms": 0,
+          "above_safe_cap": 5,
+          "median_ask_list": 0.7423875432525952
+        },
+        {
+          "shop": "https://moral-spam-huntington-comment.trycloudflare.com",
+          "quoted_orders": 35,
+          "paid": 11,
+          "quotes": 35,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.6733245382585752
+        },
+        {
+          "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+          "quoted_orders": 30,
+          "paid": 11,
+          "quotes": 30,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.6915106431031562
+        },
+        {
+          "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+          "quoted_orders": 29,
+          "paid": 0,
+          "quotes": 29,
+          "missing_terms": 0,
+          "above_safe_cap": 13,
+          "median_ask_list": 1.0
+        },
+        {
+          "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+          "quoted_orders": 26,
+          "paid": 9,
+          "quotes": 26,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.7308695652173913
+        },
+        {
+          "shop": "https://ax-week07.treasuresky.xyz",
+          "quoted_orders": 23,
+          "paid": 0,
+          "quotes": 23,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.8514606741573034
+        },
+        {
+          "shop": "https://affected-positions-attachments-save.trycloudflare.com",
+          "quoted_orders": 20,
+          "paid": 18,
+          "quotes": 20,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.6444884070504902
+        },
+        {
+          "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+          "quoted_orders": 11,
+          "paid": 0,
+          "quotes": 11,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.7
+        },
+        {
+          "shop": "https://threaded-medications-donna-explains.trycloudflare.com",
+          "quoted_orders": 7,
+          "paid": 3,
+          "quotes": 7,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.636943396226415
+        },
+        {
+          "shop": "https://specialty-outreach-recruitment-begin.trycloudflare.com",
+          "quoted_orders": 5,
+          "paid": 2,
+          "quotes": 5,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.6477777777777778
+        },
+        {
+          "shop": "https://viruses-closest-cruz-misc.trycloudflare.com",
+          "quoted_orders": 4,
+          "paid": 2,
+          "quotes": 4,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.6863674620791713
+        },
+        {
+          "shop": "https://market.ourolabs.ai/shop/elm-street",
+          "quoted_orders": 4,
+          "paid": 0,
+          "quotes": 4,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 1.0
+        },
+        {
+          "shop": "https://tribes-handling-suppliers-jacket.trycloudflare.com",
+          "quoted_orders": 2,
+          "paid": 0,
+          "quotes": 2,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.6650065245759025
+        },
+        {
+          "shop": "https://assessments-footage-posts-about.trycloudflare.com",
+          "quoted_orders": 1,
+          "paid": 1,
+          "quotes": 1,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.7
+        },
+        {
+          "shop": "https://ons-switches-councils-atlanta.trycloudflare.com",
+          "quoted_orders": 1,
+          "paid": 1,
+          "quotes": 1,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.7078546712802768
+        },
+        {
+          "shop": "https://delete-leadership-gore-voluntary.trycloudflare.com",
+          "quoted_orders": 1,
+          "paid": 0,
+          "quotes": 1,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.7625786163522013
+        },
+        {
+          "shop": "https://advert-remained-forecast-badly.trycloudflare.com",
+          "quoted_orders": 1,
+          "paid": 0,
+          "quotes": 1,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 1.0
+        },
+        {
+          "shop": "https://market.ourolabs.ai/shop/oak-and-pine",
+          "quoted_orders": 1,
+          "paid": 0,
+          "quotes": 1,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 1.3
+        },
+        {
+          "shop": "https://wyoming-regularly-quarter-infrared.trycloudflare.com",
+          "quoted_orders": 1,
+          "paid": 1,
+          "quotes": 1,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.75
+        },
+        {
+          "shop": "https://venice-snap-toronto-bowl.trycloudflare.com",
+          "quoted_orders": 1,
+          "paid": 0,
+          "quotes": 1,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.6839918809201624
+        }
+      ],
+      "lost_examples": [
+        {
+          "order": "o-9e0026e0c45f",
+          "category": "식품>김치/반찬/즉석요리>김치",
+          "budget": 16270,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G66ded25b",
+              "ask": 13716,
+              "feasible_at_ask": true,
+              "cap": 16270,
+              "conditional": [],
+              "failure_stress": 0
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "sku": "Ga6acb15a",
+              "ask": 8366,
+              "price": 5970
+            },
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G66ded25b",
+              "ask": 13716,
+              "price": 12933
+            },
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G66ded25b",
+              "ask": 13716,
+              "price": 13325
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "Gac0c1622",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            },
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "sku": "Gc49f4821",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.1410000000614673
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "sku": "Ga6acb15a",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.6720000000204891
+            },
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G66ded25b",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 6.797000000020489
+            }
+          ]
+        },
+        {
+          "order": "o-a34262f34b72",
+          "category": "식품>음료>주스/코코아/생수",
+          "budget": 8550,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G9a240832",
+              "ask": 8416,
+              "feasible_at_ask": true,
+              "cap": 8550,
+              "conditional": [],
+              "failure_stress": 0
+            },
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G9a240832",
+              "ask": 8403,
+              "feasible_at_ask": true,
+              "cap": 8550,
+              "conditional": [],
+              "failure_stress": 0
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G7fa48eaa",
+              "ask": 4450,
+              "price": 3634
+            },
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G7fa48eaa",
+              "ask": 4450,
+              "price": 4042
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://affected-positions-attachments-save.trycloudflare.com",
+              "sku": "G9a240832",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.20300000021234155
+            },
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G7fa48eaa",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 16.390000000130385
+            }
+          ]
+        },
+        {
+          "order": "o-ea7df13aea8e",
+          "category": "식품>김치/반찬/즉석요리>김치",
+          "budget": 34370,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G66ded25b",
+              "ask": 13716,
+              "feasible_at_ask": true,
+              "cap": 17900,
+              "conditional": [],
+              "failure_stress": 0
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G200e39a3",
+              "ask": 28521,
+              "price": 23709
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G32bf9a8e",
+              "ask": 17381,
+              "price": 15288
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G200e39a3",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 7.890999999828637
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G32bf9a8e",
+              "kind": "TimeoutError",
+              "reason": null,
+              "seconds": 14.890999999828637
+            }
+          ]
+        },
+        {
+          "order": "o-9fed1e9fbad9",
+          "category": "식품>김치/반찬/즉석요리>김치",
+          "budget": 12870,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://ax-week07.treasuresky.xyz",
+              "sku": "Ga6acb15a",
+              "ask": 7578,
+              "feasible_at_ask": true,
+              "cap": 8900,
+              "conditional": [],
+              "failure_stress": 0
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://ax-week07.treasuresky.xyz",
+              "sku": "Ga6acb15a",
+              "ask": 7578,
+              "price": 5975
+            },
+            {
+              "shop": "https://ax-week07.treasuresky.xyz",
+              "sku": "Ga6acb15a",
+              "ask": 7334,
+              "price": 6655
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G20e8987c",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.11000000010244548
+            },
+            {
+              "shop": "https://market.ourolabs.ai/shop/elm-street",
+              "sku": "Ga6acb15a",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            },
+            {
+              "shop": "https://attitudes-wma-squad-election.trycloudflare.com",
+              "sku": "Ga6acb15a",
+              "kind": "ValueError",
+              "reason": "ambiguous_ask",
+              "seconds": 0.1410000000614673
+            },
+            {
+              "shop": "https://ax-week07.treasuresky.xyz",
+              "sku": "Ga6acb15a",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.5939999998081475
+            }
+          ]
+        },
+        {
+          "order": "o-4f0e2d3b4a62",
+          "category": "식품>해산물>신선조개류/갑각류",
+          "budget": 6400,
+          "failure": "no_quote",
+          "quotes": [],
+          "counters": [],
+          "attempts": []
+        },
+        {
+          "order": "o-1869490e7b66",
+          "category": "식품>야채/과일>신선과일(부패주의)",
+          "budget": 18790,
+          "failure": "no_quote",
+          "quotes": [],
+          "counters": [
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G022ce883",
+              "ask": 15920,
+              "price": 11155
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G022ce883",
+              "ask": 15892,
+              "price": 12460
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G022ce883",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "G5ec8117f",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "G022ce883",
+              "kind": "ValueError",
+              "reason": "known_unsuitable_shelf_life",
+              "seconds": 0.25
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G022ce883",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.7810000001918525
+            }
+          ]
+        },
+        {
+          "order": "o-10045566fa0c",
+          "category": "식품>육류>가공/조리 육류",
+          "budget": 16120,
+          "failure": "no_quote",
+          "quotes": [],
+          "counters": [
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "Ga03a71a7",
+              "ask": 12036,
+              "price": 10496
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "Ga03a71a7",
+              "ask": 12036,
+              "price": 10587
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://moral-spam-huntington-comment.trycloudflare.com",
+              "sku": "G2560a8c9",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.3910000000614673
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "Ga03a71a7",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 2.1090000001713634
+            }
+          ]
+        },
+        {
+          "order": "o-b8ad1ecac423",
+          "category": "식품>야채/과일>신선과일(부패주의)",
+          "budget": 24870,
+          "failure": "unusable_terms",
+          "quotes": [],
+          "counters": [],
+          "attempts": [
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G022ce883",
+              "kind": "ValueError",
+              "reason": "known_unsuitable_shelf_life",
+              "seconds": 5.796000000089407
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "Gef4d3036",
+              "kind": "ValueError",
+              "reason": "known_unsuitable_shelf_life",
+              "seconds": 0.5
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "Gef4d3036",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            }
+          ]
+        },
+        {
+          "order": "o-ea904f8af847",
+          "category": "식품>야채/과일>신선과일(부패주의)",
+          "budget": 24870,
+          "failure": "no_quote",
+          "quotes": [],
+          "counters": [
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "sku": "Gef4d3036",
+              "ask": 22006,
+              "price": 16440
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "sku": "Gef4d3036",
+              "ask": 22006,
+              "price": 18310
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "Gef4d3036",
+              "kind": "rfq_failed",
+              "reason": null,
+              "seconds": null
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "Gef4d3036",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "G5ec8117f",
+              "kind": "ValueError",
+              "reason": "known_unsuitable_shelf_life",
+              "seconds": 0.1869999999180436
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "sku": "Gef4d3036",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 2.594000000040978
+            }
+          ]
+        },
+        {
+          "order": "o-9c8d70f469dd",
+          "category": "식품>야채/과일>신선과일(부패주의)",
+          "budget": 16660,
+          "failure": "no_quote",
+          "quotes": [],
+          "counters": [],
+          "attempts": []
+        },
+        {
+          "order": "o-c2e276964b8d",
+          "category": "식품>야채/과일>신선과일(부패주의)",
+          "budget": 23620,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G022ce883",
+              "ask": 15909,
+              "feasible_at_ask": true,
+              "cap": 19900,
+              "conditional": [],
+              "failure_stress": 0
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G022ce883",
+              "ask": 15909,
+              "price": 11259
+            },
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G022ce883",
+              "ask": 15909,
+              "price": 12562
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "G0260b9fc",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.5940000000409782
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G022ce883",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.3440000000409782
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "G022ce883",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            },
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G022ce883",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 3.2659999998286366
+            }
+          ]
+        },
+        {
+          "order": "o-5656ac87ff34",
+          "category": "식품>야채/과일>신선야채(부패주의)",
+          "budget": 5220,
+          "failure": "negotiation_without_agreement",
+          "quotes": [
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G1f5d00c7",
+              "ask": 6340,
+              "feasible_at_ask": false,
+              "cap": 5220,
+              "conditional": [],
+              "failure_stress": 0
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G1f5d00c7",
+              "ask": 6340,
+              "price": 4226
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G1f5d00c7",
+              "ask": 6340,
+              "price": 5084
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G71e6aaf5",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            },
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G1f5d00c7",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.5779999999795109
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G71e6aaf5",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.10899999993853271
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G1f5d00c7",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.6870000001508743
+            }
+          ]
+        },
+        {
+          "order": "o-35fb295a5571",
+          "category": "식품>초콜릿/캔디/시럽>시럽",
+          "budget": 74200,
+          "failure": "negotiation_without_agreement",
+          "quotes": [
+            {
+              "shop": "https://threaded-medications-donna-explains.trycloudflare.com",
+              "sku": "Gb5ef7f5b",
+              "ask": 33758,
+              "feasible_at_ask": true,
+              "cap": 53000,
+              "conditional": [],
+              "failure_stress": 0
+            }
+          ],
+          "counters": [],
+          "attempts": [
+            {
+              "shop": "https://lcuzb-203-246-85-147.free.pinggy.net",
+              "sku": "Gb5ef7f5b",
+              "kind": "rfq_failed",
+              "reason": null,
+              "seconds": null
+            },
+            {
+              "shop": "https://lcuzb-203-246-85-147.free.pinggy.net",
+              "sku": "Gb5ef7f5b",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 1.3439999998081475
+            }
+          ]
+        },
+        {
+          "order": "o-d2e9b88246a8",
+          "category": "식품>음료>주스/코코아/생수",
+          "budget": 20700,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+              "sku": "G9cb0eade",
+              "ask": 13327,
+              "feasible_at_ask": true,
+              "cap": 15410,
+              "conditional": [],
+              "failure_stress": 0
+            },
+            {
+              "shop": "https://moral-spam-huntington-comment.trycloudflare.com",
+              "sku": "G3434758a",
+              "ask": 14130,
+              "feasible_at_ask": true,
+              "cap": 20400,
+              "conditional": [],
+              "failure_stress": 0
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G3434758a",
+              "ask": 14487,
+              "price": 10143
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G3434758a",
+              "ask": 14487,
+              "price": 12315
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G9a240832",
+              "ask": 8480,
+              "price": 6887
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G9a240832",
+              "ask": 8148,
+              "price": 7518
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G3434758a",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 5.984999999869615
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G9a240832",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 1.031999999890104
+            },
+            {
+              "shop": "https://moral-spam-huntington-comment.trycloudflare.com",
+              "sku": "G3434758a",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            }
+          ]
+        },
+        {
+          "order": "o-1233075d6db7",
+          "category": "식품>야채/과일>신선과일(부패주의)",
+          "budget": 17910,
+          "failure": "no_quote",
+          "quotes": [],
+          "counters": [
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "Gef4d3036",
+              "ask": 23264,
+              "price": 17733
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "Gef4d3036",
+              "ask": 22158,
+              "price": 17822
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "G5ec8117f",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            },
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G022ce883",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.375
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "Gef4d3036",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.39000000013038516
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "Gef4d3036",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            }
+          ]
+        }
+      ]
+    },
+    "goods": {
+      "orders": 290,
+      "closed": 290,
+      "paid": 200,
+      "conversion": 0.6896551724137931,
+      "lost_funnel": {
+        "objective_skip": 84,
+        "no_quote": 4,
+        "other": 2
+      },
+      "quotes": 556,
+      "missing_terms": 249,
+      "above_safe_cap": 42,
+      "attempt_reasons": {
+        "no_agreement": 410,
+        "ReadTimeout": 38,
+        "quote_sku_mismatch": 17,
+        "TimeoutError": 1,
+        "ambiguous_ask": 3
+      },
+      "counter_bins": [
+        {
+          "ratio_lower": 0.5,
+          "n": 1,
+          "paid": 0,
+          "one_bid_price_or_better": 0
+        },
+        {
+          "ratio_lower": 0.55,
+          "n": 6,
+          "paid": 1,
+          "one_bid_price_or_better": 0
+        },
+        {
+          "ratio_lower": 0.6,
+          "n": 12,
+          "paid": 0,
+          "one_bid_price_or_better": 0
+        },
+        {
+          "ratio_lower": 0.65,
+          "n": 18,
+          "paid": 5,
+          "one_bid_price_or_better": 0
+        },
+        {
+          "ratio_lower": 0.7,
+          "n": 31,
+          "paid": 5,
+          "one_bid_price_or_better": 0
+        },
+        {
+          "ratio_lower": 0.75,
+          "n": 49,
+          "paid": 21,
+          "one_bid_price_or_better": 0
+        },
+        {
+          "ratio_lower": 0.8,
+          "n": 63,
+          "paid": 15,
+          "one_bid_price_or_better": 1
+        },
+        {
+          "ratio_lower": 0.85,
+          "n": 56,
+          "paid": 8,
+          "one_bid_price_or_better": 2
+        },
+        {
+          "ratio_lower": 0.9,
+          "n": 26,
+          "paid": 4,
+          "one_bid_price_or_better": 0
+        },
+        {
+          "ratio_lower": 0.95,
+          "n": 1,
+          "paid": 1,
+          "one_bid_price_or_better": 0
+        }
+      ],
+      "shops": [
+        {
+          "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+          "quoted_orders": 161,
+          "paid": 30,
+          "quotes": 166,
+          "missing_terms": 166,
+          "above_safe_cap": 12,
+          "median_ask_list": 0.85
+        },
+        {
+          "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+          "quoted_orders": 71,
+          "paid": 34,
+          "quotes": 71,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.7077347670250896
+        },
+        {
+          "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+          "quoted_orders": 54,
+          "paid": 3,
+          "quotes": 54,
+          "missing_terms": 54,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.73
+        },
+        {
+          "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+          "quoted_orders": 43,
+          "paid": 11,
+          "quotes": 43,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.7608621788065406
+        },
+        {
+          "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+          "quoted_orders": 39,
+          "paid": 11,
+          "quotes": 40,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.7016795678116433
+        },
+        {
+          "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+          "quoted_orders": 36,
+          "paid": 3,
+          "quotes": 39,
+          "missing_terms": 0,
+          "above_safe_cap": 17,
+          "median_ask_list": 0.9399982590529248
+        },
+        {
+          "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+          "quoted_orders": 36,
+          "paid": 7,
+          "quotes": 36,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.7238950055993165
+        },
+        {
+          "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+          "quoted_orders": 34,
+          "paid": 8,
+          "quotes": 35,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.7531787709497206
+        },
+        {
+          "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+          "quoted_orders": 13,
+          "paid": 2,
+          "quotes": 13,
+          "missing_terms": 1,
+          "above_safe_cap": 3,
+          "median_ask_list": 0.6924812030075188
+        },
+        {
+          "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+          "quoted_orders": 9,
+          "paid": 0,
+          "quotes": 9,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.728
+        },
+        {
+          "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+          "quoted_orders": 8,
+          "paid": 1,
+          "quotes": 8,
+          "missing_terms": 8,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.7312660692810181
+        },
+        {
+          "shop": "https://assessments-footage-posts-about.trycloudflare.com",
+          "quoted_orders": 8,
+          "paid": 0,
+          "quotes": 8,
+          "missing_terms": 8,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.6475824038324038
+        },
+        {
+          "shop": "https://ax-week07.treasuresky.xyz",
+          "quoted_orders": 6,
+          "paid": 1,
+          "quotes": 6,
+          "missing_terms": 0,
+          "above_safe_cap": 1,
+          "median_ask_list": 0.7227665988098967
+        },
+        {
+          "shop": "https://specialty-outreach-recruitment-begin.trycloudflare.com",
+          "quoted_orders": 6,
+          "paid": 2,
+          "quotes": 6,
+          "missing_terms": 6,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.7282073790214776
+        },
+        {
+          "shop": "https://moral-spam-huntington-comment.trycloudflare.com",
+          "quoted_orders": 4,
+          "paid": 0,
+          "quotes": 4,
+          "missing_terms": 0,
+          "above_safe_cap": 3,
+          "median_ask_list": 0.6468435976452718
+        },
+        {
+          "shop": "https://tribes-handling-suppliers-jacket.trycloudflare.com",
+          "quoted_orders": 4,
+          "paid": 0,
+          "quotes": 4,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.7575362943797614
+        },
+        {
+          "shop": "https://railroad-observation-latex-alan.trycloudflare.com",
+          "quoted_orders": 3,
+          "paid": 0,
+          "quotes": 3,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.7499432387312187
+        },
+        {
+          "shop": "https://threaded-medications-donna-explains.trycloudflare.com",
+          "quoted_orders": 2,
+          "paid": 0,
+          "quotes": 2,
+          "missing_terms": 2,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.70097691033849
+        },
+        {
+          "shop": "https://wyoming-regularly-quarter-infrared.trycloudflare.com",
+          "quoted_orders": 2,
+          "paid": 0,
+          "quotes": 2,
+          "missing_terms": 2,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.30033584905660377
+        },
+        {
+          "shop": "https://camp-two-kings-competitive.trycloudflare.com",
+          "quoted_orders": 2,
+          "paid": 0,
+          "quotes": 2,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.689857142857143
+        },
+        {
+          "shop": "https://affected-positions-attachments-save.trycloudflare.com",
+          "quoted_orders": 2,
+          "paid": 0,
+          "quotes": 2,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.6874947092859677
+        },
+        {
+          "shop": "https://market.ourolabs.ai/shop/bright-living",
+          "quoted_orders": 1,
+          "paid": 0,
+          "quotes": 1,
+          "missing_terms": 1,
+          "above_safe_cap": 1,
+          "median_ask_list": 1.2
+        },
+        {
+          "shop": "https://venice-snap-toronto-bowl.trycloudflare.com",
+          "quoted_orders": 1,
+          "paid": 0,
+          "quotes": 1,
+          "missing_terms": 0,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.8763942652329749
+        },
+        {
+          "shop": "https://publicly-shape-trim-angle.trycloudflare.com",
+          "quoted_orders": 1,
+          "paid": 0,
+          "quotes": 1,
+          "missing_terms": 1,
+          "above_safe_cap": 0,
+          "median_ask_list": 0.7499671268902038
+        }
+      ],
+      "lost_examples": [
+        {
+          "order": "o-21bfa04b9366",
+          "category": "가구/침구>가구>침대/매트리스",
+          "budget": 965150,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "Gf918c335",
+              "ask": 354039,
+              "feasible_at_ask": true,
+              "cap": 499000,
+              "conditional": [],
+              "failure_stress": 0.41160170171296667
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G8095ddd6",
+              "ask": 621522,
+              "feasible_at_ask": false,
+              "cap": 851400,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.41160170171296667
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "Gcfe62c2c",
+              "ask": 625485,
+              "price": 464041
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "Gcfe62c2c",
+              "ask": 625485,
+              "price": 544763
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "Gcfe62c2c",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.5319999998901039
+            },
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "sku": "Gccf11074",
+              "kind": "ReadTimeout",
+              "reason": null,
+              "seconds": 4.266000000061467
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "Gf918c335",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.18700000015087426
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G8095ddd6",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.09399999980814755
+            }
+          ]
+        },
+        {
+          "order": "o-3fce9c30b371",
+          "category": "가구/침구>침구/홈데코>침구",
+          "budget": 74000,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G796e9122",
+              "ask": 70900,
+              "feasible_at_ask": false,
+              "cap": 70900,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.08425568078980811
+            },
+            {
+              "shop": "https://specialty-outreach-recruitment-begin.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "ask": 60299,
+              "feasible_at_ask": false,
+              "cap": 74000,
+              "conditional": [
+                "grade",
+                "warranty_hours"
+              ],
+              "failure_stress": 0.08056964405017027
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G796e9122",
+              "ask": 70900,
+              "price": 42362
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G796e9122",
+              "ask": 63311,
+              "price": 48852
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://threaded-medications-donna-explains.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0779999999795109
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "Gc9f9fe14",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.7029999999795109
+            },
+            {
+              "shop": "https://specialty-outreach-recruitment-begin.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.6410000000614673
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G796e9122",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.9839999999385327
+            }
+          ]
+        },
+        {
+          "order": "o-9055be613a9f",
+          "category": "가구/침구>가구>침대/매트리스",
+          "budget": 656250,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://threaded-medications-donna-explains.trycloudflare.com",
+              "sku": "G07ec17d5",
+              "ask": 187585,
+              "feasible_at_ask": false,
+              "cap": 279000,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.40164992780557096
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G1515d951",
+              "ask": 305143,
+              "feasible_at_ask": false,
+              "cap": 423810,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.40164992780557096
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G07ec17d5",
+              "ask": 212830,
+              "price": 183303
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G07ec17d5",
+              "ask": 212830,
+              "price": 198067
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "G07ec17d5",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.7180000001098961
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G0667d440",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.23499999986961484
+            },
+            {
+              "shop": "https://threaded-medications-donna-explains.trycloudflare.com",
+              "sku": "G07ec17d5",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.10899999993853271
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G1515d951",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0940000000409782
+            }
+          ]
+        },
+        {
+          "order": "o-2e0235cd23e5",
+          "category": "가구/침구>침구/홈데코>침구",
+          "budget": 87070,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "ask": 56392,
+              "feasible_at_ask": false,
+              "cap": 52594,
+              "conditional": [],
+              "failure_stress": 0.40164992780557096
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G75f11c19",
+              "ask": 104465,
+              "feasible_at_ask": false,
+              "cap": 87070,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.11859056463713764
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "ask": 68701,
+              "price": 57775
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "ask": 68701,
+              "price": 61256
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G75f11c19",
+              "ask": 104465,
+              "price": 84619
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G75f11c19",
+              "ask": 97438,
+              "price": 85845
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G796e9122",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 5.327999999979511
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.6559999999590218
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G75f11c19",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.6099999998696148
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0940000000409782
+            }
+          ]
+        },
+        {
+          "order": "o-0dd3d7596ae7",
+          "category": "가구/침구>가구>침대/매트리스",
+          "budget": 1852640,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G03d0199f",
+              "ask": 1064697,
+              "feasible_at_ask": true,
+              "cap": 1423734,
+              "conditional": [],
+              "failure_stress": 0.11624181000702416
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G21d176a2",
+              "ask": 1158712,
+              "feasible_at_ask": true,
+              "cap": 1539826,
+              "conditional": [],
+              "failure_stress": 0.09149445405560648
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G21d176a2",
+              "ask": 1158712,
+              "price": 1016415
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G21d176a2",
+              "ask": 1158712,
+              "price": 1087564
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G03d0199f",
+              "ask": 1064697,
+              "price": 979521
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G03d0199f",
+              "ask": 1064697,
+              "price": 1022109
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G85a1a856",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.3130000000819564
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G6d965f60",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 2.6410000000614673
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G21d176a2",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.5620000001508743
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G03d0199f",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.3440000000409782
+            }
+          ]
+        },
+        {
+          "order": "o-7ca9f54dd666",
+          "category": "가구/침구>가구>침대/매트리스",
+          "budget": 829440,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+              "sku": "G021aae64",
+              "ask": 429964,
+              "feasible_at_ask": true,
+              "cap": 545930,
+              "conditional": [],
+              "failure_stress": 0.1320772677286573
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G2c023a8c",
+              "ask": 370112,
+              "feasible_at_ask": false,
+              "cap": 500500,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.12807013398037276
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G85a1a856",
+              "ask": 680896,
+              "price": 596111
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G85a1a856",
+              "ask": 680896,
+              "price": 610889
+            },
+            {
+              "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+              "sku": "G021aae64",
+              "ask": 429964,
+              "price": 361961
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G2c023a8c",
+              "ask": 370112,
+              "price": 333337
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G2c023a8c",
+              "ask": 370112,
+              "price": 351725
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G85a1a856",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 1.5160000000614673
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G77834f4a",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.8910000000614673
+            },
+            {
+              "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+              "sku": "G021aae64",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.6869999999180436
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G2c023a8c",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 1.3900000001303852
+            }
+          ]
+        },
+        {
+          "order": "o-0db99df55721",
+          "category": "가구/침구>가구>침대/매트리스",
+          "budget": 573850,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "G07ec17d5",
+              "ask": 200747,
+              "feasible_at_ask": true,
+              "cap": 279000,
+              "conditional": [],
+              "failure_stress": 0.40164992780557096
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G6b9db161",
+              "ask": 302400,
+              "feasible_at_ask": false,
+              "cap": 420000,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.40164992780557096
+            }
+          ],
+          "counters": [],
+          "attempts": [
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "sku": "Gc44de87c",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.7029999999795109
+            },
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G0667d440",
+              "kind": "ValueError",
+              "reason": "quote_sku_mismatch",
+              "seconds": 0.10900000017136335
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "G07ec17d5",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0779999999795109
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G6b9db161",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.5319999998901039
+            }
+          ]
+        },
+        {
+          "order": "o-e7b437ed5f10",
+          "category": "가구/침구>가구>침대/매트리스",
+          "budget": 704210,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G021aae64",
+              "ask": 391418,
+              "feasible_at_ask": true,
+              "cap": 403925,
+              "conditional": [],
+              "failure_stress": 0.2601154214015919
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "Gc1297f36",
+              "ask": 585990,
+              "feasible_at_ask": false,
+              "cap": 689400,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.10770020570169045
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G6b9db161",
+              "ask": 357000,
+              "price": 286235
+            },
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G9357d6c2",
+              "ask": 392992,
+              "price": 334482
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "Gc1297f36",
+              "ask": 585990,
+              "price": 469834
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G6b9db161",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.9370000001508743
+            },
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "G9357d6c2",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.9220000000204891
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "Gc1297f36",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.5319999998901039
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G021aae64",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.11000000010244548
+            }
+          ]
+        },
+        {
+          "order": "o-6ecd3143a545",
+          "category": "가구/침구>가구>침대/매트리스",
+          "budget": 861750,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G2607d1f6",
+              "ask": 460253,
+              "feasible_at_ask": true,
+              "cap": 620100,
+              "conditional": [],
+              "failure_stress": 0.09031388148242392
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G82cb8ec9",
+              "ask": 489542,
+              "feasible_at_ask": true,
+              "cap": 649105,
+              "conditional": [],
+              "failure_stress": 0.09733666576524534
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "Gfe5449fb",
+              "ask": 485596,
+              "price": 359357
+            },
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "Gfe5449fb",
+              "ask": 485596,
+              "price": 422477
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G2607d1f6",
+              "ask": 460253,
+              "price": 370822
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G2607d1f6",
+              "ask": 460253,
+              "price": 415538
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G82cb8ec9",
+              "ask": 489542,
+              "price": 414208
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G77834f4a",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.5160000000614673
+            },
+            {
+              "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+              "sku": "Gfe5449fb",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.8900000001303852
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "sku": "G2607d1f6",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.7190000000409782
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G82cb8ec9",
+              "kind": "ReadTimeout",
+              "reason": null,
+              "seconds": 4.344000000040978
+            }
+          ]
+        },
+        {
+          "order": "o-7cab7ca6148e",
+          "category": "가구/침구>침구/홈데코>침구",
+          "budget": 32510,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://assessments-footage-posts-about.trycloudflare.com",
+              "sku": "G006cebbb",
+              "ask": 20930,
+              "feasible_at_ask": false,
+              "cap": 29900,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.41160170171296667
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G006cebbb",
+              "ask": 29900,
+              "price": 20099
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "G2e9e9145",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.8910000000614673
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G006cebbb",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.875
+            },
+            {
+              "shop": "https://cargo-quarter-pond-film.trycloudflare.com",
+              "sku": "G006cebbb",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            },
+            {
+              "shop": "https://assessments-footage-posts-about.trycloudflare.com",
+              "sku": "G006cebbb",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.34399999980814755
+            }
+          ]
+        },
+        {
+          "order": "o-1e3c5543b0ea",
+          "category": "가구/침구>가구>침대/매트리스",
+          "budget": 5664120,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "Gf6b70da8",
+              "ask": 1780302,
+              "feasible_at_ask": true,
+              "cap": 2332000,
+              "conditional": [],
+              "failure_stress": 0.0826695508854953
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "Gbec2b68f",
+              "ask": 2953434,
+              "feasible_at_ask": false,
+              "cap": 4045800,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.4640063651619992
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "G3e0d6c67",
+              "ask": 1553690,
+              "price": 1361652
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "G3e0d6c67",
+              "ask": 1515282,
+              "price": 1380424
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "Gf6b70da8",
+              "ask": 1780302,
+              "price": 1399231
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "Gf6b70da8",
+              "ask": 1728448,
+              "price": 1563840
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G3e0d6c67",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.4220000000204891
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "G3e0d6c67",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 8.484000000171363
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "sku": "Gf6b70da8",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 7.265000000130385
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "sku": "Gbec2b68f",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0
+            }
+          ]
+        },
+        {
+          "order": "o-21bc1fd61d51",
+          "category": "의류>보호/보조의류>보호/보조의류",
+          "budget": 11610,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://moral-spam-huntington-comment.trycloudflare.com",
+              "sku": "G4561d36e",
+              "ask": 10140,
+              "feasible_at_ask": false,
+              "cap": 7718,
+              "conditional": [],
+              "failure_stress": 0.40164992780557096
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G4561d36e",
+              "ask": 12900,
+              "feasible_at_ask": false,
+              "cap": 11610,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.06061206485637837
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://camp-two-kings-competitive.trycloudflare.com",
+              "sku": "G4561d36e",
+              "ask": 10320,
+              "price": 8580
+            },
+            {
+              "shop": "https://camp-two-kings-competitive.trycloudflare.com",
+              "sku": "G4561d36e",
+              "ask": 9824,
+              "price": 9202
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G4561d36e",
+              "ask": 12900,
+              "price": 8110
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G4561d36e",
+              "ask": 11351,
+              "price": 9076
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://camp-two-kings-competitive.trycloudflare.com",
+              "sku": "G4561d36e",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 3.094000000040978
+            },
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "sku": "G4561d36e",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 1.2660000000614673
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G4561d36e",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 1.5469999997876585
+            },
+            {
+              "shop": "https://moral-spam-huntington-comment.trycloudflare.com",
+              "sku": "G4561d36e",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.0779999999795109
+            }
+          ]
+        },
+        {
+          "order": "o-05d8017ea675",
+          "category": "가구/침구>가구>침대/매트리스",
+          "budget": 404320,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+              "sku": "G021aae64",
+              "ask": 413394,
+              "feasible_at_ask": false,
+              "cap": 404320,
+              "conditional": [],
+              "failure_stress": 0.11265501632629148
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G3323e2b7",
+              "ask": 256556,
+              "feasible_at_ask": false,
+              "cap": 200843,
+              "conditional": [],
+              "failure_stress": 0.49742673726204045
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G07ec17d5",
+              "ask": 206118,
+              "price": 175673
+            },
+            {
+              "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+              "sku": "G021aae64",
+              "ask": 413394,
+              "price": 369146
+            },
+            {
+              "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+              "sku": "G021aae64",
+              "ask": 413394,
+              "price": 386733
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "G8030aa6f",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.40699999989010394
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "sku": "G07ec17d5",
+              "kind": "ReadTimeout",
+              "reason": null,
+              "seconds": 4.625
+            },
+            {
+              "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+              "sku": "G021aae64",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 3.140000000130385
+            }
+          ]
+        },
+        {
+          "order": "o-83de483e9fdb",
+          "category": "가구/침구>가구>침대/매트리스",
+          "budget": 268810,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "sku": "G25fe9221",
+              "ask": 99042,
+              "feasible_at_ask": true,
+              "cap": 139500,
+              "conditional": [],
+              "failure_stress": 0.08604871797828118
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "G1e0b3aa3",
+              "ask": 100366,
+              "feasible_at_ask": true,
+              "cap": 126500,
+              "conditional": [],
+              "failure_stress": 0.09751950366653339
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://venice-snap-toronto-bowl.trycloudflare.com",
+              "sku": "G57045dfb",
+              "ask": 201552,
+              "price": 166317
+            },
+            {
+              "shop": "https://venice-snap-toronto-bowl.trycloudflare.com",
+              "sku": "G57045dfb",
+              "ask": 201552,
+              "price": 172532
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "G9c1a6eee",
+              "ask": 163910,
+              "price": 120670
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "G9c1a6eee",
+              "ask": 163910,
+              "price": 142290
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "G1e0b3aa3",
+              "ask": 100366,
+              "price": 70983
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "G1e0b3aa3",
+              "ask": 100366,
+              "price": 85675
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "sku": "G25fe9221",
+              "kind": "ReadTimeout",
+              "reason": null,
+              "seconds": 4.3439999998081475
+            },
+            {
+              "shop": "https://venice-snap-toronto-bowl.trycloudflare.com",
+              "sku": "G57045dfb",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 3.75
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "G9c1a6eee",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.7660000000614673
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "G1e0b3aa3",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.7029999999795109
+            }
+          ]
+        },
+        {
+          "order": "o-47332bda72cc",
+          "category": "가구/침구>침구/홈데코>침구",
+          "budget": 90090,
+          "failure": "objective_skip",
+          "quotes": [
+            {
+              "shop": "https://affected-positions-attachments-save.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "ask": 60387,
+              "feasible_at_ask": true,
+              "cap": 76553,
+              "conditional": [],
+              "failure_stress": 0.1290854300475792
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G796e9122",
+              "ask": 42540,
+              "feasible_at_ask": false,
+              "cap": 70900,
+              "conditional": [
+                "warranty_hours"
+              ],
+              "failure_stress": 0.45022061073032854
+            }
+          ],
+          "counters": [
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "ask": 68645,
+              "price": 57775
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "ask": 68645,
+              "price": 61239
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G9508712b",
+              "ask": 59400,
+              "price": 37303
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G9508712b",
+              "ask": 49360,
+              "price": 39748
+            }
+          ],
+          "attempts": [
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.9840000001713634
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G9508712b",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 1.1100000001024455
+            },
+            {
+              "shop": "https://affected-positions-attachments-save.trycloudflare.com",
+              "sku": "Ge62449c9",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.10899999993853271
+            },
+            {
+              "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+              "sku": "G796e9122",
+              "kind": "no_agreement",
+              "reason": null,
+              "seconds": 0.09399999980814755
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "price_decisions": {
+    "goods": {
+      "decisions": 1270,
+      "counter": 504,
+      "feasible_accept_present": 1215,
+      "feasible_accept_not_selected": 790,
+      "continue_search": 341,
+      "accept": 425
+    },
+    "food": {
+      "decisions": 1708,
+      "counter": 462,
+      "feasible_accept_present": 1676,
+      "feasible_accept_not_selected": 535,
+      "continue_search": 105,
+      "accept": 1141
+    }
+  },
+  "accept_not_selected_examples": [
+    {
+      "order": "o-ede31865c11d",
+      "kind": "goods",
+      "chosen": "counter:136559",
+      "paid_later": false,
+      "accept": {
+        "price": 185812,
+        "expected_delta": {
+          "surplus": 54803.72679814289,
+          "deals": 1,
+          "saved": -3.8070567625923128e-06
+        },
+        "objective_utility": -8.622082867107972e-05
+      },
+      "selected": {
+        "price": 136559,
+        "expected_delta": {
+          "surplus": 10237.060388928141,
+          "deals": 0.1032258064516129,
+          "saved": 1.14766457820435e-06
+        },
+        "objective_utility": 3.935171548752336e-06,
+        "completion_probability": 0.1032258064516129
+      }
+    },
+    {
+      "order": "o-ede31865c11d",
+      "kind": "goods",
+      "chosen": "counter:168091",
+      "paid_later": false,
+      "accept": {
+        "price": 185812,
+        "expected_delta": {
+          "surplus": 54803.72679814289,
+          "deals": 1,
+          "saved": -3.8070567625923128e-06
+        },
+        "objective_utility": -8.622082867107972e-05
+      },
+      "selected": {
+        "price": 168091,
+        "expected_delta": {
+          "surplus": 4307.5597509490135,
+          "deals": 0.0608695652173913,
+          "saved": 3.0162866276979926e-07
+        },
+        "objective_utility": 1.4187391599196355e-06,
+        "completion_probability": 0.0608695652173913
+      }
+    },
+    {
+      "order": "o-ede31865c11d",
+      "kind": "goods",
+      "chosen": "continue_search",
+      "paid_later": false,
+      "accept": {
+        "price": 185812,
+        "expected_delta": {
+          "surplus": 54803.72679814289,
+          "deals": 1,
+          "saved": -3.8070567625923128e-06
+        },
+        "objective_utility": -8.622082867107972e-05
+      },
+      "selected": {
+        "price": null,
+        "expected_delta": {
+          "saved": 0,
+          "deals": 0,
+          "forum": 0,
+          "posts": 0
+        },
+        "objective_utility": 0.0,
+        "completion_probability": null
+      }
+    },
+    {
+      "order": "o-ede31865c11d",
+      "kind": "goods",
+      "chosen": "counter:243462",
+      "paid_later": false,
+      "accept": {
+        "price": 321685,
+        "expected_delta": {
+          "surplus": 80446.70245838756,
+          "deals": 1,
+          "saved": -8.516060826786209e-06
+        },
+        "objective_utility": -0.00020696452262317644
+      },
+      "selected": {
+        "price": 243462,
+        "expected_delta": {
+          "surplus": 6309.109325091379,
+          "deals": 0.041509433962264156,
+          "saved": 4.615015702700169e-07
+        },
+        "objective_utility": 1.582420757206826e-06,
+        "completion_probability": 0.041509433962264156
+      }
+    },
+    {
+      "order": "o-ede31865c11d",
+      "kind": "goods",
+      "chosen": "counter:282325",
+      "paid_later": false,
+      "accept": {
+        "price": 321685,
+        "expected_delta": {
+          "surplus": 80446.70245838756,
+          "deals": 1,
+          "saved": -8.516060826786209e-06
+        },
+        "objective_utility": -0.00020696452262317644
+      },
+      "selected": {
+        "price": 282325,
+        "expected_delta": {
+          "surplus": 5406.455208644234,
+          "deals": 0.04642857142857143,
+          "saved": 2.300631928495009e-07
+        },
+        "objective_utility": 1.0821370503344418e-06,
+        "completion_probability": 0.04642857142857143
+      }
+    },
+    {
+      "order": "o-ede31865c11d",
+      "kind": "goods",
+      "chosen": "continue_search",
+      "paid_later": false,
+      "accept": {
+        "price": 321685,
+        "expected_delta": {
+          "surplus": 80446.70245838756,
+          "deals": 1,
+          "saved": -8.516060826786209e-06
+        },
+        "objective_utility": -0.00020696452262317644
+      },
+      "selected": {
+        "price": null,
+        "expected_delta": {
+          "saved": 0,
+          "deals": 0,
+          "forum": 0,
+          "posts": 0
+        },
+        "objective_utility": 0.0,
+        "completion_probability": null
+      }
+    },
+    {
+      "order": "o-ede31865c11d",
+      "kind": "goods",
+      "chosen": "continue_search",
+      "paid_later": false,
+      "accept": {
+        "price": 203266,
+        "expected_delta": {
+          "surplus": 82858.94822874705,
+          "deals": 1,
+          "saved": -2.2245246079950177e-05
+        },
+        "objective_utility": -0.000558994913731381
+      },
+      "selected": {
+        "price": null,
+        "expected_delta": {
+          "saved": 0,
+          "deals": 0,
+          "forum": 0,
+          "posts": 0
+        },
+        "objective_utility": 0.0,
+        "completion_probability": null
+      }
+    },
+    {
+      "order": "o-ede31865c11d",
+      "kind": "goods",
+      "chosen": "counter",
+      "paid_later": false,
+      "accept": {
+        "price": 310390,
+        "expected_delta": {
+          "surplus": 101706.92902528432,
+          "deals": 1,
+          "saved": -9.938517016190034e-07
+        },
+        "objective_utility": -1.4087365568160591e-05
+      },
+      "selected": {
+        "price": 285558,
+        "expected_delta": {
+          "surplus": 7007.253631015421,
+          "deals": 0.05652173913043478,
+          "saved": 3.080892198179827e-07
+        },
+        "objective_utility": 1.3847214693107903e-06,
+        "completion_probability": 0.05652173913043478
+      }
+    },
+    {
+      "order": "o-ede31865c11d",
+      "kind": "goods",
+      "chosen": "counter",
+      "paid_later": false,
+      "accept": {
+        "price": 310390,
+        "expected_delta": {
+          "surplus": 101706.92902528432,
+          "deals": 1,
+          "saved": -9.938517016190034e-07
+        },
+        "objective_utility": -1.4087365568160591e-05
+      },
+      "selected": {
+        "price": 297974,
+        "expected_delta": {
+          "surplus": 58677.16824924487,
+          "deals": 0.52,
+          "saved": 1.3471122952630836e-06
+        },
+        "objective_utility": 9.164176635734213e-06,
+        "completion_probability": 0.52
+      }
+    },
+    {
+      "order": "o-ede31865c11d",
+      "kind": "goods",
+      "chosen": "continue_search",
+      "paid_later": false,
+      "accept": {
+        "price": 310390,
+        "expected_delta": {
+          "surplus": 101706.92902528432,
+          "deals": 1,
+          "saved": -9.938517016190034e-07
+        },
+        "objective_utility": -1.4087365568160591e-05
+      },
+      "selected": {
+        "price": null,
+        "expected_delta": {
+          "saved": 0,
+          "deals": 0,
+          "forum": 0,
+          "posts": 0
+        },
+        "objective_utility": 0.0,
+        "completion_probability": null
+      }
+    },
+    {
+      "order": "o-9e0026e0c45f",
+      "kind": "food",
+      "chosen": "counter:5970",
+      "paid_later": false,
+      "accept": {
+        "price": 8366,
+        "expected_delta": {
+          "surplus": 534,
+          "deals": 1,
+          "saved": -3.343754302834826e-05
+        },
+        "objective_utility": -0.0008459768867659978
+      },
+      "selected": {
+        "price": 5970,
+        "expected_delta": {
+          "surplus": 214.86666666666667,
+          "deals": 0.07333333333333333,
+          "saved": 8.159880219770879e-07
+        },
+        "objective_utility": 2.7972171704582214e-06,
+        "completion_probability": 0.07333333333333333
+      }
+    },
+    {
+      "order": "o-9e0026e0c45f",
+      "kind": "food",
+      "chosen": "counter:12933",
+      "paid_later": false,
+      "accept": {
+        "price": 13716,
+        "expected_delta": {
+          "surplus": 4184,
+          "deals": 1,
+          "saved": -1.8417735433838338e-06
+        },
+        "objective_utility": -3.582895125379126e-05
+      },
+      "selected": {
+        "price": 12933,
+        "expected_delta": {
+          "surplus": 1958.947663551402,
+          "deals": 0.394392523364486,
+          "saved": 1.9567889763573093e-06
+        },
+        "objective_utility": 9.198321345615935e-06,
+        "completion_probability": 0.394392523364486
+      }
+    }
+  ],
+  "market_transactions": 0,
+  "model_calls": 0,
+  "policy_writes": 0,
+  "limitations": [
+    "Counter bid cohorts are observational and selected; success differences are not causal bid effects.",
+    "Review text is a customer claim, not independent proof of a contract violation.",
+    "Six-hour observed review account means do not reconstruct all historical official account means.",
+    "Positive Saved/ALL estimates are hidden-cost scenarios; new goods still need mature failure outcomes."
+  ]
+}

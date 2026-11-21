@@ -1,0 +1,5638 @@
+{
+  "at": "2026-11-09T07:40:49.183390+00:00",
+  "runtime": {
+    "pid": 38184,
+    "session": "f9f684e1c51640b49a9d27fea3a771cb",
+    "started_at": 1794193764.4504054,
+    "launch_id": "auto-join-20261109T030923999515Z"
+  },
+  "minutes_since_restart": 271.4122164050738,
+  "policy": {
+    "version": "r3-market-observer-book-v6",
+    "market_control_enabled": true,
+    "tunnel_provider": "cloudflare",
+    "market_control_interval_seconds": 300,
+    "shop_growth_v5": true,
+    "shop_strategy_revision": "shop-v10-patch35-terms",
+    "shop_championship_enabled": true,
+    "shop_championship_allocation_enabled": true,
+    "shop_inventory_ceiling": 180,
+    "shop_velocity_enabled": true,
+    "shop_velocity_allocation_enabled": true,
+    "shop_fast_execution_enabled": true,
+    "shop_stock_service_level": 0.9,
+    "shop_supply_slot_capital": 100000,
+    "shop_warranty_liquidity_penalty": 0.02,
+    "warranty_menu_enabled": true,
+    "checkout_recovery_enabled": true,
+    "buyer_patch34_enabled": true,
+    "buyer_strategy_revision": "buyer-v11-evidence-contracts",
+    "buyer_forum_metric": "raw",
+    "buyer_championship_enabled": true,
+    "buyer_saved_target_margin": 0.002,
+    "buyer_rank_scope": "everyone",
+    "buyer_forum_post_interval_seconds": 300,
+    "checkout_max_attempts": 2,
+    "buyer_fast_food_enabled": true,
+    "buyer_food_time_seconds": 18,
+    "buyer_goods_time_seconds": 45,
+    "planning_horizon_hours": 6,
+    "storage_reserve_hours": 48,
+    "market_end_at": null,
+    "assortment_coverage_fraction": 0.35,
+    "shop_margin_fraction": 0.02,
+    "food_clearance_hours": 6,
+    "goods_clearance_hours": 96,
+    "actor_model": "gpt-6-luna",
+    "critic_model": "gpt-6-luna",
+    "daily_api_budget_usd": null,
+    "model_timeout_seconds": 18,
+    "critic_cash_fraction": 0.1,
+    "cash_reserve_fraction": 0.2,
+    "cash_floor": 750000,
+    "forum_post_interval_seconds": 600,
+    "supply_cycle_seconds": 1200,
+    "inventory_target_units": 60,
+    "restock_max_lines": 10,
+    "restock_max_qty": 20,
+    "max_sku_capital_fraction": 0.35,
+    "goods_warranty_by_grade": {
+      "A": 3,
+      "B": 3,
+      "C": 6
+    },
+    "quote_compare_min_budget": 100000,
+    "exploration_fraction": 0.1,
+    "max_shop_candidates": 3,
+    "max_negotiation_turns": 4,
+    "checkout_buffer_seconds": 30,
+    "unknown_goods_failure_stress": 0.3,
+    "session_ttl_seconds": 180,
+    "end_at": null,
+    "prices_usd_per_million": {
+      "gpt-6-luna": [
+        0.1,
+        0.5
+      ],
+      "gpt-6.1-terra": [
+        1.0,
+        5.0
+      ]
+    },
+    "buyer_market_quality_enabled": true,
+    "buyer_contract_routing_enabled": true,
+    "buyer_negotiation_turns": 3
+  },
+  "revisions": {
+    "shop": "shop-v10-patch35-terms",
+    "buyer": "buyer-v11-evidence-contracts"
+  },
+  "rules": {
+    "at": 1794209836.6853259,
+    "sha256": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "compatible": true,
+    "expected": "book/revenue/stars; surge<=1.5",
+    "source": "/agent.md",
+    "buyer_metric": "saved",
+    "buyer_compatible": true,
+    "buyer_forum_metric": "raw",
+    "paid_dislike_power": true,
+    "paid_dislike_contract_known": true,
+    "forum_vote_min_deals": 50,
+    "stance_scoring": true,
+    "dislike_costs_shop_cash": true
+  },
+  "buyer_context": {
+    "buyer_metric": "saved",
+    "buyer_forum_metric": "raw",
+    "buyer_rank_scope": "everyone",
+    "rank_note": "percentile components use midrank/continuous surrogates; Patch 3.5 forum uses its raw 0..1 rating"
+  },
+  "strategies": {
+    "shop": {
+      "version": 15,
+      "patch": {
+        "category_weights": {
+          "가구/침구>가구>침대/매트리스": 1.1
+        }
+      },
+      "status": "stable",
+      "since": 1794193764.460078,
+      "cooldown_until": 1794215364.460078
+    },
+    "buyer": {
+      "version": 14,
+      "patch": {},
+      "status": "stable",
+      "since": 1794205668.1692917,
+      "cooldown_until": 1794227268.1692917
+    }
+  },
+  "health": {
+    "checked_at": 1794210037.6711752,
+    "status": "healthy",
+    "url": "https://leasing-point-township-afterwards.trycloudflare.com",
+    "pending_registration": false,
+    "consecutive_probe_failures": 0,
+    "market_visibility": "present",
+    "registry_misses": 0,
+    "probe_interval_seconds": 15,
+    "renewal_seconds": null
+  },
+  "control": {
+    "at": 1794209883.3653228,
+    "epoch": 1793854431.985112,
+    "status": "observe_and_trade",
+    "book": 560287805,
+    "book_peak": 560287805,
+    "book_drawdown": 0,
+    "drawdown_brake_until": 0,
+    "brake_drawdown": 0,
+    "capital_fraction": 1,
+    "cash_capacity": {
+      "spendable": 316049588.03999996,
+      "refund_liability": 105281127,
+      "storage_to_end": 754708.16,
+      "cash_floor": 105521355.80000001,
+      "remaining_days": 2.0,
+      "reserve_release_schedule": [
+        {
+          "at": 1794211200,
+          "amount": 2655735
+        },
+        {
+          "at": 1794212400,
+          "amount": 558606
+        },
+        {
+          "at": 1794213600,
+          "amount": 3847711
+        },
+        {
+          "at": 1794214800,
+          "amount": 364003
+        },
+        {
+          "at": 1794216000,
+          "amount": 5670875
+        },
+        {
+          "at": 1794217200,
+          "amount": 5031234
+        },
+        {
+          "at": 1794218400,
+          "amount": 1647200
+        },
+        {
+          "at": 1794219600,
+          "amount": 9267606
+        },
+        {
+          "at": 1794220800,
+          "amount": 13565964
+        },
+        {
+          "at": 1794222000,
+          "amount": 8837347
+        },
+        {
+          "at": 1794223200,
+          "amount": 12881633
+        },
+        {
+          "at": 1794224400,
+          "amount": 10053823
+        },
+        {
+          "at": 1794225600,
+          "amount": 6603596
+        },
+        {
+          "at": 1794226800,
+          "amount": 3776143
+        },
+        {
+          "at": 1794228000,
+          "amount": 2438248
+        },
+        {
+          "at": 1794229200,
+          "amount": 6594109
+        },
+        {
+          "at": 1794230400,
+          "amount": 546624
+        },
+        {
+          "at": 1794231600,
+          "amount": 10940670
+        }
+      ],
+      "discharged_refund_reserve": 795216,
+      "reserve_release_before_next_supply": 0
+    },
+    "pause_restock": false,
+    "reasons": [],
+    "own_all": 1.608,
+    "leader_total": 1.728,
+    "leader_gap": 0.12,
+    "sold_known_cost": 177,
+    "below_cost_sales": 0,
+    "shop_evidence_since": 1794193764.460078,
+    "current_shop_known_cost": 175,
+    "current_shop_below_cost": 0,
+    "buyer_payment_failures": {
+      "shelf_life": 19,
+      "stockout": 3
+    },
+    "opportunities": [
+      {
+        "sku": "G8ec51935",
+        "arrival_rate_scenario": 15.800723757427695,
+        "competition_sellers_plus_us": 20,
+        "lost_exact_requests": 3,
+        "available_hours_observed": 3.100752012597189
+      },
+      {
+        "sku": "G1515d951",
+        "arrival_rate_scenario": 10.352208709117447,
+        "competition_sellers_plus_us": 20,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0.7372758942842483
+      },
+      {
+        "sku": "G07ec17d5",
+        "arrival_rate_scenario": 9.006405079821514,
+        "competition_sellers_plus_us": 22,
+        "lost_exact_requests": 1,
+        "available_hours_observed": 0.5400713343752754
+      },
+      {
+        "sku": "G021aae64",
+        "arrival_rate_scenario": 8.403335463993233,
+        "competition_sellers_plus_us": 20,
+        "lost_exact_requests": 4,
+        "available_hours_observed": 1.7333742370208092
+      },
+      {
+        "sku": "G53b150b5",
+        "arrival_rate_scenario": 7.9661354439433625,
+        "competition_sellers_plus_us": 11,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 3.298039802710214
+      },
+      {
+        "sku": "G03d0199f",
+        "arrival_rate_scenario": 6.04873693574822,
+        "competition_sellers_plus_us": 20,
+        "lost_exact_requests": 1,
+        "available_hours_observed": 2.4778244064251567
+      },
+      {
+        "sku": "G0667d440",
+        "arrival_rate_scenario": 5.037582772723229,
+        "competition_sellers_plus_us": 18,
+        "lost_exact_requests": 1,
+        "available_hours_observed": 0.0732646083831787
+      },
+      {
+        "sku": "G19a70f63",
+        "arrival_rate_scenario": 4.0925030518156795,
+        "competition_sellers_plus_us": 13,
+        "lost_exact_requests": 1,
+        "available_hours_observed": 0.1808417444096671
+      },
+      {
+        "sku": "G74e686be",
+        "arrival_rate_scenario": 3.7291666666666665,
+        "competition_sellers_plus_us": 8,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G200e39a3",
+        "arrival_rate_scenario": 3.71875,
+        "competition_sellers_plus_us": 16,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "Gef4d3036",
+        "arrival_rate_scenario": 3.576388888888889,
+        "competition_sellers_plus_us": 12,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "Gb5d0dde7",
+        "arrival_rate_scenario": 3.2117225337148385,
+        "competition_sellers_plus_us": 17,
+        "lost_exact_requests": 1,
+        "available_hours_observed": 2.5690728188223306
+      },
+      {
+        "sku": "G66ded25b",
+        "arrival_rate_scenario": 3.142857142857143,
+        "competition_sellers_plus_us": 14,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G022ce883",
+        "arrival_rate_scenario": 3.1416666666666666,
+        "competition_sellers_plus_us": 10,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G67efbcf0",
+        "arrival_rate_scenario": 2.8452380952380953,
+        "competition_sellers_plus_us": 7,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G85a1a856",
+        "arrival_rate_scenario": 2.827461439176179,
+        "competition_sellers_plus_us": 13,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0.8376613453361723
+      },
+      {
+        "sku": "G16dcdc73",
+        "arrival_rate_scenario": 2.7870370370370368,
+        "competition_sellers_plus_us": 9,
+        "lost_exact_requests": 6,
+        "available_hours_observed": 0.4380426940653058
+      },
+      {
+        "sku": "G7fa48eaa",
+        "arrival_rate_scenario": 2.759259259259259,
+        "competition_sellers_plus_us": 9,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G9a240832",
+        "arrival_rate_scenario": 2.7083333333333335,
+        "competition_sellers_plus_us": 6,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      },
+      {
+        "sku": "G4a998429",
+        "arrival_rate_scenario": 2.6666666666666665,
+        "competition_sellers_plus_us": 6,
+        "lost_exact_requests": 0,
+        "available_hours_observed": 0
+      }
+    ],
+    "suggestions": [
+      {
+        "role": "shop",
+        "field": "assortment_coverage_fraction",
+        "direction": 1,
+        "reason": "observed unserved external requests"
+      }
+    ],
+    "market_summary": {
+      "tracked_skus": 1500,
+      "observed_baskets": 100,
+      "top_unserved_categories": [
+        [
+          "식품>김치/반찬/즉석요리>김치",
+          13.570697049355962
+        ],
+        [
+          "식품>야채/과일>신선과일(부패주의)",
+          12.758512745934727
+        ],
+        [
+          "식품>음료>주스/코코아/생수",
+          11.472295353627109
+        ],
+        [
+          "식품>야채/과일>신선야채(부패주의)",
+          3.4979204016938685
+        ],
+        [
+          "가구/침구>가구>소파/의자/스툴",
+          3.327002853766664
+        ],
+        [
+          "식품>기타 가공식품>과자",
+          2.653937624042931
+        ],
+        [
+          "가구/침구>가구>침대/매트리스",
+          2.06078719523698
+        ],
+        [
+          "식품>시리얼/곡물/콩류>곡물",
+          1.9814068891639998
+        ],
+        [
+          "식품>계란/유제품>우유/두유",
+          1.5862540354739052
+        ],
+        [
+          "가구/침구>침구/홈데코>침구",
+          1.175774688582398
+        ]
+      ],
+      "exposure_started_at": 1794188283.3653228,
+      "context_note": "own buyer baskets have zero demand weight; external settlements only"
+    },
+    "note": "observational diagnosis; policy trials require mature own evidence and rollback checks",
+    "championship": {
+      "at": 1794209883.3653228,
+      "ranks": {
+        "shop": {
+          "rank": 7,
+          "population": 60
+        },
+        "buyer": {
+          "rank": 12,
+          "population": 57
+        }
+      },
+      "next_thresholds": {
+        "shop": {
+          "book": {
+            "current": 560287805,
+            "next_value": 706618692,
+            "gap": 146330887,
+            "weight": 0.5,
+            "cohort_size": 60,
+            "scale": "percentile"
+          },
+          "revenue": {
+            "current": 3379777049,
+            "next_value": 4264062295,
+            "gap": 884285246,
+            "weight": 0.3,
+            "cohort_size": 60,
+            "scale": "percentile"
+          },
+          "stars_rank": {
+            "current": 4.33,
+            "next_value": 4.34,
+            "gap": 0.009999999999999787,
+            "weight": 0.2,
+            "cohort_size": 60,
+            "scale": "percentile"
+          }
+        },
+        "buyer": {
+          "saved": {
+            "current": 0.2971,
+            "next_value": 0.2974,
+            "gap": 0.00030000000000002247,
+            "weight": 0.5,
+            "cohort_size": 57,
+            "scale": "percentile"
+          },
+          "forum": {
+            "current": 0.897,
+            "next_value": 0.898,
+            "gap": 0.0010000000000000009,
+            "weight": 0.3,
+            "cohort_size": 57,
+            "scale": "raw",
+            "all_gain_per_0_01": 0.003,
+            "next_value_is": "peer benchmark, not a percentile threshold"
+          },
+          "deals": {
+            "current": 8431,
+            "next_value": 8548,
+            "gap": 117,
+            "weight": 0.1,
+            "cohort_size": 57,
+            "scale": "percentile"
+          },
+          "posts": {
+            "current": 1203,
+            "next_value": 1225,
+            "gap": 22,
+            "weight": 0.1,
+            "cohort_size": 57,
+            "scale": "percentile"
+          }
+        }
+      },
+      "pace": {
+        "shop": {
+          "metric": "book",
+          "hours": 5.958165276977751,
+          "own_per_hour": 4560537.63815412,
+          "fastest_matched": [
+            {
+              "name": "yms979",
+              "per_hour": 6051141.1355624655
+            },
+            {
+              "name": "25620027",
+              "per_hour": 4855264.440511429
+            },
+            {
+              "name": "kcwarni",
+              "per_hour": 2261150.265847234
+            }
+          ],
+          "note": "observational pace, not a forecast or causal estimate"
+        },
+        "buyer": {
+          "metric": "saved",
+          "hours": 5.958165276977751,
+          "own_per_hour": 0.00043637594446168634,
+          "fastest_matched": [
+            {
+              "name": "dariaklt",
+              "per_hour": 0.0019469080599059916
+            },
+            {
+              "name": "kcwarni",
+              "per_hour": 0.0013930462842430761
+            },
+            {
+              "name": "iyen-dori",
+              "per_hour": 0.0008895355790949836
+            }
+          ],
+          "note": "observational pace, not a forecast or causal estimate"
+        }
+      },
+      "idle_spendable_fraction": 0.5990248810658287,
+      "stock_cost": 37771668,
+      "scope": "everyone; student ranks remain separate in official board"
+    }
+  },
+  "progress": {
+    "at": 1794209883.3653228,
+    "ranks": {
+      "shop": {
+        "rank": 7,
+        "population": 60
+      },
+      "buyer": {
+        "rank": 12,
+        "population": 57
+      }
+    },
+    "next_thresholds": {
+      "shop": {
+        "book": {
+          "current": 560287805,
+          "next_value": 706618692,
+          "gap": 146330887,
+          "weight": 0.5,
+          "cohort_size": 60,
+          "scale": "percentile"
+        },
+        "revenue": {
+          "current": 3379777049,
+          "next_value": 4264062295,
+          "gap": 884285246,
+          "weight": 0.3,
+          "cohort_size": 60,
+          "scale": "percentile"
+        },
+        "stars_rank": {
+          "current": 4.33,
+          "next_value": 4.34,
+          "gap": 0.009999999999999787,
+          "weight": 0.2,
+          "cohort_size": 60,
+          "scale": "percentile"
+        }
+      },
+      "buyer": {
+        "saved": {
+          "current": 0.2971,
+          "next_value": 0.2974,
+          "gap": 0.00030000000000002247,
+          "weight": 0.5,
+          "cohort_size": 57,
+          "scale": "percentile"
+        },
+        "forum": {
+          "current": 0.897,
+          "next_value": 0.898,
+          "gap": 0.0010000000000000009,
+          "weight": 0.3,
+          "cohort_size": 57,
+          "scale": "raw",
+          "all_gain_per_0_01": 0.003,
+          "next_value_is": "peer benchmark, not a percentile threshold"
+        },
+        "deals": {
+          "current": 8431,
+          "next_value": 8548,
+          "gap": 117,
+          "weight": 0.1,
+          "cohort_size": 57,
+          "scale": "percentile"
+        },
+        "posts": {
+          "current": 1203,
+          "next_value": 1225,
+          "gap": 22,
+          "weight": 0.1,
+          "cohort_size": 57,
+          "scale": "percentile"
+        }
+      }
+    },
+    "pace": {
+      "shop": {
+        "metric": "book",
+        "hours": 5.958165276977751,
+        "own_per_hour": 4560537.63815412,
+        "fastest_matched": [
+          {
+            "name": "yms979",
+            "per_hour": 6051141.1355624655
+          },
+          {
+            "name": "25620027",
+            "per_hour": 4855264.440511429
+          },
+          {
+            "name": "kcwarni",
+            "per_hour": 2261150.265847234
+          }
+        ],
+        "note": "observational pace, not a forecast or causal estimate"
+      },
+      "buyer": {
+        "metric": "saved",
+        "hours": 5.958165276977751,
+        "own_per_hour": 0.00043637594446168634,
+        "fastest_matched": [
+          {
+            "name": "dariaklt",
+            "per_hour": 0.0019469080599059916
+          },
+          {
+            "name": "kcwarni",
+            "per_hour": 0.0013930462842430761
+          },
+          {
+            "name": "iyen-dori",
+            "per_hour": 0.0008895355790949836
+          }
+        ],
+        "note": "observational pace, not a forecast or causal estimate"
+      }
+    },
+    "idle_spendable_fraction": 0.5990248810658287,
+    "stock_cost": 37771668,
+    "scope": "everyone; student ranks remain separate in official board"
+  },
+  "shop_quality_cohorts": {
+    "at": 1794209928.7715383,
+    "grades": {
+      "C": {
+        "n": 170,
+        "broken": 57,
+        "within3": 24,
+        "unknown_time": 0
+      },
+      "A": {
+        "n": 1082,
+        "broken": 37,
+        "within3": 16,
+        "unknown_time": 0
+      },
+      "B": {
+        "n": 305,
+        "broken": 39,
+        "within3": 17,
+        "unknown_time": 0
+      }
+    }
+  },
+  "own_sales": {
+    "count": 178,
+    "revenue": 203255646,
+    "gross_margin_before_later_costs": 27792340,
+    "below_cost_count": 0,
+    "events": [
+      {
+        "task": "4bbc33da-affc-40b1-ab13-91b75ce4a00d",
+        "unit": "u-da0bb797e2df",
+        "sku": "G24f5f979",
+        "price": 2527740,
+        "warranty_hours": 0,
+        "paid_at": 1794194135.1809309,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 2478176,
+        "grade": "A",
+        "_ts": 1794194135.1824408
+      },
+      {
+        "task": "1e2f3617-115d-4e3d-966d-2cb0cec739c8",
+        "unit": "u-ccfb4cbf79ab",
+        "sku": "G6cd0e9d4",
+        "price": 1598745,
+        "warranty_hours": 3.0,
+        "paid_at": 1794194208.8811405,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1455666,
+        "grade": "A",
+        "_ts": 1794194208.882147
+      },
+      {
+        "task": "ad89a98d-624f-4c6f-a010-b107c45b9c9f",
+        "unit": "u-6cbbefc828d2",
+        "sku": "Gf6b70da8",
+        "price": 1797923,
+        "warranty_hours": 6.0,
+        "paid_at": 1794194356.5246582,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1625754,
+        "grade": "A",
+        "_ts": 1794194356.5256863
+      },
+      {
+        "task": "99ec3a3c-71ed-4c6f-ad57-b928449c92d9",
+        "unit": "u-61cbb9655c06",
+        "sku": "Gf6b70da8",
+        "price": 1629500,
+        "warranty_hours": 3.0,
+        "paid_at": 1794195077.7438188,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1343817,
+        "grade": "A",
+        "_ts": 1794195077.7438188
+      },
+      {
+        "task": "02eb3905-7c24-427f-87c0-eb7fb7ae1624",
+        "unit": "u-ae249ef511bd",
+        "sku": "G6cd0e9d4",
+        "price": 1781745,
+        "warranty_hours": 6.0,
+        "paid_at": 1794195219.5657997,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 826645,
+        "grade": "C",
+        "_ts": 1794195219.5670485
+      },
+      {
+        "task": "5caef18b-e3f8-489f-8702-d090e503f9b7",
+        "unit": "u-5fe23076ab15",
+        "sku": "G24f5f979",
+        "price": 2885333,
+        "warranty_hours": 6.0,
+        "paid_at": 1794195267.7420187,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 2578491,
+        "grade": "A",
+        "_ts": 1794195267.7420187
+      },
+      {
+        "task": "71a88af4-a87b-4f8f-8f20-cde18eb624cc",
+        "unit": "u-a6a3ed4afc3d",
+        "sku": "G6cd0e9d4",
+        "price": 1680000,
+        "warranty_hours": 0,
+        "paid_at": 1794196307.0007904,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1634538,
+        "grade": "A",
+        "_ts": 1794196307.0025318
+      },
+      {
+        "task": "fd4b4d9b-675f-4d79-ba9d-cc738dea0e23",
+        "unit": "u-1d1d1ffea0ac",
+        "sku": "G8ec51935",
+        "price": 1552544,
+        "warranty_hours": 0,
+        "paid_at": 1794196312.2396047,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 999841,
+        "grade": "B",
+        "_ts": 1794196312.2510989
+      },
+      {
+        "task": "4c1decdc-cba4-4b50-88bc-c50e026254a7",
+        "unit": "u-74bf6b1b9f28",
+        "sku": "Gf6b70da8",
+        "price": 1307991,
+        "warranty_hours": 0,
+        "paid_at": 1794196461.2455726,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1195688,
+        "grade": "B",
+        "_ts": 1794196461.2466006
+      },
+      {
+        "task": "dc183095-0d4a-489a-87c4-47884a2f9304",
+        "unit": "u-221f79f91012",
+        "sku": "G6cd0e9d4",
+        "price": 1769424,
+        "warranty_hours": 0,
+        "paid_at": 1794196642.5639114,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1616670,
+        "grade": "A",
+        "_ts": 1794196642.5639114
+      },
+      {
+        "task": "2e1d55cb-62af-4c14-b411-1a9f3108180f",
+        "unit": "u-2a0f6aee24d4",
+        "sku": "G8ec51935",
+        "price": 1854280,
+        "warranty_hours": 6.0,
+        "paid_at": 1794197069.6173327,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1627140,
+        "grade": "A",
+        "_ts": 1794197069.6173327
+      },
+      {
+        "task": "b70996ef-a1cf-4dae-a75d-42e4697e836c",
+        "unit": "u-a27a54d3a90e",
+        "sku": "Gf6b70da8",
+        "price": 1700000,
+        "warranty_hours": 6.0,
+        "paid_at": 1794197070.303045,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1561036,
+        "grade": "A",
+        "_ts": 1794197070.303045
+      },
+      {
+        "task": "f39cdb81-5c5e-469a-af45-2e52c6b9e1da",
+        "unit": "u-c78b53609a97",
+        "sku": "G1515d951",
+        "price": 339048,
+        "warranty_hours": 6.0,
+        "paid_at": 1794197164.2520692,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 285342,
+        "grade": "A",
+        "_ts": 1794197164.2520692
+      },
+      {
+        "task": "2c9c8248-f9f1-4ae3-8baf-ac35c30d6f00",
+        "unit": "u-b51eaa1ce9e3",
+        "sku": "G8ec51935",
+        "price": 1552544,
+        "warranty_hours": 0,
+        "paid_at": 1794197201.3989758,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 961008,
+        "grade": "B",
+        "_ts": 1794197201.4031615
+      },
+      {
+        "task": "c8d21878-6077-4919-912b-745157638f74",
+        "unit": "u-d6428c2b5757",
+        "sku": "G6cd0e9d4",
+        "price": 1700000,
+        "warranty_hours": 3.0,
+        "paid_at": 1794197264.5326934,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1453313,
+        "grade": "B",
+        "_ts": 1794197264.5326934
+      },
+      {
+        "task": "a91560af-71ad-4351-be88-69af4f2a2d71",
+        "unit": "u-3ff6dda002bb",
+        "sku": "G53b150b5",
+        "price": 521557,
+        "warranty_hours": 6.0,
+        "paid_at": 1794197364.1501894,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 478439,
+        "grade": "A",
+        "_ts": 1794197364.1501894
+      },
+      {
+        "task": "2acfe3f5-750f-4613-b47a-2c6e2aa027b5",
+        "unit": "u-69ad5a15e230",
+        "sku": "Gb5d0dde7",
+        "price": 634752,
+        "warranty_hours": 0,
+        "paid_at": 1794197377.9585748,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 422405,
+        "grade": "C",
+        "_ts": 1794197377.959734
+      },
+      {
+        "task": "5e3c8222-db59-4550-bf29-945f038ce91c",
+        "unit": "u-e0ab749f5e12",
+        "sku": "G6cd0e9d4",
+        "price": 1796989,
+        "warranty_hours": 6.0,
+        "paid_at": 1794197547.444959,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1504560,
+        "grade": "A",
+        "_ts": 1794197547.444959
+      },
+      {
+        "task": "4c1cbf4b-689a-43ce-a0f0-156b184236ee",
+        "unit": "u-5001d1c8bf9b",
+        "sku": "Gbec2b68f",
+        "price": 2747246,
+        "warranty_hours": 0,
+        "paid_at": 1794197624.3893514,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 2505410,
+        "grade": "A",
+        "_ts": 1794197624.3893514
+      },
+      {
+        "task": "eed72c77-21f9-450e-9def-e417cf738b2a",
+        "unit": "u-b2b2ed1f3f45",
+        "sku": "G021aae64",
+        "price": 405732,
+        "warranty_hours": 6.0,
+        "paid_at": 1794197724.9700346,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 378508,
+        "grade": "A",
+        "_ts": 1794197724.9700346
+      },
+      {
+        "task": "8a42612e-654e-47d1-adb3-478da1409bdd",
+        "unit": "u-758f57ce1601",
+        "sku": "G03d0199f",
+        "price": 934379,
+        "warranty_hours": 0,
+        "paid_at": 1794197941.4817479,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 729415,
+        "grade": "B",
+        "_ts": 1794197941.4978867
+      },
+      {
+        "task": "8259db37-5271-49f3-af43-084f795b3078",
+        "unit": "u-4299109aee3f",
+        "sku": "G6cd0e9d4",
+        "price": 1657560,
+        "warranty_hours": 3.0,
+        "paid_at": 1794198162.7026958,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1238486,
+        "grade": "B",
+        "_ts": 1794198162.7026958
+      },
+      {
+        "task": "cd33c9fa-4e9e-47c3-a1c9-5267e4ee4d64",
+        "unit": "u-5755bca6314a",
+        "sku": "G53b150b5",
+        "price": 639103,
+        "warranty_hours": 0,
+        "paid_at": 1794198289.8772311,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 609013,
+        "grade": "A",
+        "_ts": 1794198289.8817546
+      },
+      {
+        "task": "69315abf-4d35-4233-a698-694873d82297",
+        "unit": "u-bc26f1284420",
+        "sku": "G8ec51935",
+        "price": 1698844,
+        "warranty_hours": 6.0,
+        "paid_at": 1794198514.6255524,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1584513,
+        "grade": "A",
+        "_ts": 1794198514.6255524
+      },
+      {
+        "task": "be3a2a6d-ccfe-43d6-9e4c-712c280a5104",
+        "unit": "u-6c4e0d02f19d",
+        "sku": "G6cd0e9d4",
+        "price": 1760000,
+        "warranty_hours": 0,
+        "paid_at": 1794198527.7907143,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1694802,
+        "grade": "A",
+        "_ts": 1794198527.7919567
+      },
+      {
+        "task": "1a494a8c-2bae-4610-a3ae-8ff6cbbe9bfd",
+        "unit": "u-eebb2bbf50f3",
+        "sku": "G8ec51935",
+        "price": 1678530,
+        "warranty_hours": 6.0,
+        "paid_at": 1794198536.9062734,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1364706,
+        "grade": "A",
+        "_ts": 1794198536.9220455
+      },
+      {
+        "task": "e3110eb6-3015-45a0-b274-855885c273f2",
+        "unit": "u-35cc4ef60962",
+        "sku": "G24f5f979",
+        "price": 2450000,
+        "warranty_hours": 6.0,
+        "paid_at": 1794198608.250639,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 2260572,
+        "grade": "A",
+        "_ts": 1794198608.2521894
+      },
+      {
+        "task": "d75cc442-96c4-4ee8-baa6-953787c0426e",
+        "unit": "u-e7514f986528",
+        "sku": "G53b150b5",
+        "price": 670720,
+        "warranty_hours": 0,
+        "paid_at": 1794198737.0949028,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 604920,
+        "grade": "A",
+        "_ts": 1794198737.0949028
+      },
+      {
+        "task": "3c656b73-4b6b-4303-96f7-44a670965df4",
+        "unit": "u-7682643ec4f5",
+        "sku": "G8ec51935",
+        "price": 1325880,
+        "warranty_hours": 0,
+        "paid_at": 1794198950.4699006,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 645014,
+        "grade": "C",
+        "_ts": 1794198950.5018082
+      },
+      {
+        "task": "4594abe7-520f-41c7-ac04-d7d980c3ea88",
+        "unit": "u-8187827a1bbb",
+        "sku": "G8ec51935",
+        "price": 1681570,
+        "warranty_hours": 6.0,
+        "paid_at": 1794199050.0483935,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1276351,
+        "grade": "A",
+        "_ts": 1794199050.0483935
+      },
+      {
+        "task": "91e9e033-7537-4c49-a356-e7046ed5c0ae",
+        "unit": "u-75115041c222",
+        "sku": "G4a12722c",
+        "price": 2102367,
+        "warranty_hours": 0,
+        "paid_at": 1794199258.6507993,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 2045755,
+        "grade": "A",
+        "_ts": 1794199258.6507993
+      },
+      {
+        "task": "9dc9577e-feca-4d0c-a8f6-d48f3bd724cf",
+        "unit": "u-e77539ac7c54",
+        "sku": "G53b150b5",
+        "price": 670720,
+        "warranty_hours": 0,
+        "paid_at": 1794199269.6115217,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 608887,
+        "grade": "A",
+        "_ts": 1794199269.6115217
+      },
+      {
+        "task": "cfeac411-da78-4d33-8529-b64702d74d82",
+        "unit": "u-9e47bfc36ee6",
+        "sku": "G8ec51935",
+        "price": 1540000,
+        "warranty_hours": 0,
+        "paid_at": 1794199281.6583343,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1448485,
+        "grade": "A",
+        "_ts": 1794199281.6583343
+      },
+      {
+        "task": "1d6ec3b7-4105-43d2-8cb9-92d7d26bbfe0",
+        "unit": "u-5481c2aeaaaf",
+        "sku": "Gb5d0dde7",
+        "price": 795216,
+        "warranty_hours": 6.0,
+        "paid_at": 1794199408.8765054,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 536604,
+        "grade": "B",
+        "_ts": 1794199408.8765054
+      },
+      {
+        "task": "040e66e7-0281-49a6-9c3e-d7afb48025b4",
+        "unit": "u-b3c91e881793",
+        "sku": "G8ec51935",
+        "price": 1593659,
+        "warranty_hours": 0,
+        "paid_at": 1794199501.5105295,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1301827,
+        "grade": "B",
+        "_ts": 1794199501.5115545
+      },
+      {
+        "task": "ed15d189-7a4b-4369-9c6e-bbd3841f8bf5",
+        "unit": "u-f107c0ecf04a",
+        "sku": "G53b150b5",
+        "price": 583525,
+        "warranty_hours": 0,
+        "paid_at": 1794199553.4998066,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 451573,
+        "grade": "B",
+        "_ts": 1794199553.5008693
+      },
+      {
+        "task": "10f4fe9b-6d9b-4f6e-be94-2040bfa92efc",
+        "unit": "u-2584140fbc55",
+        "sku": "G53b150b5",
+        "price": 450000,
+        "warranty_hours": 0,
+        "paid_at": 1794199608.3683481,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 340350,
+        "grade": "C",
+        "_ts": 1794199608.3694165
+      },
+      {
+        "task": "c75aa306-fb0b-48e3-9b99-ae0f807f8cbe",
+        "unit": "u-c6dd1158e4bc",
+        "sku": "G03d0199f",
+        "price": 934379,
+        "warranty_hours": 0,
+        "paid_at": 1794199612.5858252,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 760483,
+        "grade": "B",
+        "_ts": 1794199612.586822
+      },
+      {
+        "task": "c224171d-3d4b-4c2c-9529-8de3980f0aea",
+        "unit": "u-f64937e76b13",
+        "sku": "G8ec51935",
+        "price": 1638392,
+        "warranty_hours": 6.0,
+        "paid_at": 1794199714.1258743,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1356926,
+        "grade": "A",
+        "_ts": 1794199714.1258743
+      },
+      {
+        "task": "61de0c73-6e7e-4ff5-babd-f57ee9f1bb45",
+        "unit": "u-49ae7576b138",
+        "sku": "G8ec51935",
+        "price": 1638076,
+        "warranty_hours": 6.0,
+        "paid_at": 1794199827.0314312,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1342314,
+        "grade": "A",
+        "_ts": 1794199827.0314312
+      },
+      {
+        "task": "4e3f2763-5bec-46f1-a622-5ffa768358c4",
+        "unit": "u-1e95bead9db9",
+        "sku": "G8ec51935",
+        "price": 1800426,
+        "warranty_hours": 6.0,
+        "paid_at": 1794199842.3256571,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1613440,
+        "grade": "A",
+        "_ts": 1794199842.3256571
+      },
+      {
+        "task": "5b87c81f-bf46-4f90-a3b2-bf33ec4556e9",
+        "unit": "u-86b29fa91236",
+        "sku": "G8ec51935",
+        "price": 1600419,
+        "warranty_hours": 0,
+        "paid_at": 1794199864.6129613,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1538551,
+        "grade": "A",
+        "_ts": 1794199864.614001
+      },
+      {
+        "task": "9fce7132-3a5f-4702-b061-d15c8d034dba",
+        "unit": "u-b55e3ef31455",
+        "sku": "G8ec51935",
+        "price": 1670383,
+        "warranty_hours": 6.0,
+        "paid_at": 1794199922.0142262,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1557629,
+        "grade": "A",
+        "_ts": 1794199922.0153637
+      },
+      {
+        "task": "23e2b841-f976-4442-9d01-19e50d732cee",
+        "unit": "u-d55049aff22d",
+        "sku": "G8ec51935",
+        "price": 1603799,
+        "warranty_hours": 6.0,
+        "paid_at": 1794199943.7098575,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1418192,
+        "grade": "A",
+        "_ts": 1794199943.7175431
+      },
+      {
+        "task": "26f25182-1a72-447e-909c-99b53e6da8cc",
+        "unit": "u-354e1f177bf8",
+        "sku": "Gf6b70da8",
+        "price": 1458918,
+        "warranty_hours": 3.0,
+        "paid_at": 1794200148.4463606,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1332864,
+        "grade": "A",
+        "_ts": 1794200148.4504826
+      },
+      {
+        "task": "8db7ed38-2497-4af9-8deb-21ade82022e5",
+        "unit": "u-712bc96f5320",
+        "sku": "Gf6b70da8",
+        "price": 1196817,
+        "warranty_hours": 3.0,
+        "paid_at": 1794200254.838233,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 918669,
+        "grade": "C",
+        "_ts": 1794200254.8392339
+      },
+      {
+        "task": "fcaea55c-2721-4fe2-9b78-b979007afb02",
+        "unit": "u-9d2238d6d7aa",
+        "sku": "G53b150b5",
+        "price": 486271,
+        "warranty_hours": 6.0,
+        "paid_at": 1794200350.8766057,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 377342,
+        "grade": "B",
+        "_ts": 1794200350.8766057
+      },
+      {
+        "task": "a95fe0cc-c0c7-4b82-99b4-a822c7940716",
+        "unit": "u-4db321fb0449",
+        "sku": "G53b150b5",
+        "price": 486271,
+        "warranty_hours": 0,
+        "paid_at": 1794200534.607668,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 355743,
+        "grade": "B",
+        "_ts": 1794200534.6096752
+      },
+      {
+        "task": "738a5259-97e0-4941-87d0-9e67b8d405d4",
+        "unit": "u-15b1e22f3e78",
+        "sku": "G8ec51935",
+        "price": 1602109,
+        "warranty_hours": 6.0,
+        "paid_at": 1794200753.2663972,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1445753,
+        "grade": "A",
+        "_ts": 1794200753.2663972
+      },
+      {
+        "task": "a2fc7f9f-068c-47bd-8a5f-0eb495fb2cfe",
+        "unit": "u-90bf216f5ef7",
+        "sku": "Gb5d0dde7",
+        "price": 694902,
+        "warranty_hours": 6.0,
+        "paid_at": 1794200784.642297,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 606644,
+        "grade": "A",
+        "_ts": 1794200784.642297
+      },
+      {
+        "task": "6976abc1-ecc3-49fe-a68a-7b7a64cf128a",
+        "unit": "u-978748906e49",
+        "sku": "G8ec51935",
+        "price": 1270262,
+        "warranty_hours": 0,
+        "paid_at": 1794200786.0162292,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 661654,
+        "grade": "C",
+        "_ts": 1794200786.032054
+      },
+      {
+        "task": "d3341920-d2a1-429e-8c9a-6cb8085e0131",
+        "unit": "u-08b1c7270c1d",
+        "sku": "G021aae64",
+        "price": 291156,
+        "warranty_hours": 0,
+        "paid_at": 1794200875.7829874,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 262667,
+        "grade": "C",
+        "_ts": 1794200875.7987275
+      },
+      {
+        "task": "ab0f240f-ea39-44d2-89e6-aca0ec978b3c",
+        "unit": "u-cc935a412ca5",
+        "sku": "G8ec51935",
+        "price": 1791334,
+        "warranty_hours": 6.0,
+        "paid_at": 1794200896.8770375,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1615161,
+        "grade": "A",
+        "_ts": 1794200896.8770375
+      },
+      {
+        "task": "9e5eafc3-480b-474e-9a43-5da2772cc8ae",
+        "unit": "u-97d469a4f9c5",
+        "sku": "G53b150b5",
+        "price": 527774,
+        "warranty_hours": 0,
+        "paid_at": 1794200923.9083264,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 349803,
+        "grade": "B",
+        "_ts": 1794200923.9232528
+      },
+      {
+        "task": "ea670bd8-008c-4dac-a406-9e8ce043964e",
+        "unit": "u-9ec68a7f4bf7",
+        "sku": "G53b150b5",
+        "price": 558606,
+        "warranty_hours": 3.0,
+        "paid_at": 1794200986.684739,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 533546,
+        "grade": "A",
+        "_ts": 1794200986.6857758
+      },
+      {
+        "task": "1a1364aa-2cbb-4806-8996-51ee1c4de066",
+        "unit": "u-ee98874b2a18",
+        "sku": "G8ec51935",
+        "price": 1469908,
+        "warranty_hours": 6.0,
+        "paid_at": 1794201027.549134,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1289587,
+        "grade": "A",
+        "_ts": 1794201027.549134
+      },
+      {
+        "task": "ab98bda9-39c5-44bd-b2ec-ab43e49af9a9",
+        "unit": "u-6d76d6d871cc",
+        "sku": "G53b150b5",
+        "price": 519823,
+        "warranty_hours": 6.0,
+        "paid_at": 1794201128.0483186,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 462937,
+        "grade": "A",
+        "_ts": 1794201128.0483186
+      },
+      {
+        "task": "66149536-f209-456c-b3b0-efe9fa63a82f",
+        "unit": "u-e454c05e3129",
+        "sku": "G8ec51935",
+        "price": 1796467,
+        "warranty_hours": 6.0,
+        "paid_at": 1794201211.057729,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1600222,
+        "grade": "A",
+        "_ts": 1794201211.058894
+      },
+      {
+        "task": "3563896b-b458-4569-a12c-b79de5d1e1d8",
+        "unit": "u-ff9fd1e5b401",
+        "sku": "G03d0199f",
+        "price": 1074599,
+        "warranty_hours": 0,
+        "paid_at": 1794201234.5529726,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 431073,
+        "grade": "C",
+        "_ts": 1794201234.5529726
+      },
+      {
+        "task": "c7a40bb6-9f8f-481e-9109-32ae6c2b2ecb",
+        "unit": "u-77cd4a5c5fd5",
+        "sku": "G8ec51935",
+        "price": 1637897,
+        "warranty_hours": 6.0,
+        "paid_at": 1794201435.9254453,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1492403,
+        "grade": "A",
+        "_ts": 1794201435.9266205
+      },
+      {
+        "task": "17881122-ff99-49c1-be3a-6ed37f5c7ce6",
+        "unit": "u-5c5053d20ff9",
+        "sku": "G8ec51935",
+        "price": 1637897,
+        "warranty_hours": 6.0,
+        "paid_at": 1794201473.4191456,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1523506,
+        "grade": "A",
+        "_ts": 1794201473.4191456
+      },
+      {
+        "task": "5038d19b-3142-4f7a-a27e-7588c2c2eb13",
+        "unit": "u-afbd2d1d016d",
+        "sku": "G8ec51935",
+        "price": 1731296,
+        "warranty_hours": 6.0,
+        "paid_at": 1794201512.7014043,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1388456,
+        "grade": "B",
+        "_ts": 1794201512.7014043
+      },
+      {
+        "task": "b76660ce-85ff-48de-b03d-86773191e6fb",
+        "unit": "u-58324cf7c8d5",
+        "sku": "G03d0199f",
+        "price": 985219,
+        "warranty_hours": 3.0,
+        "paid_at": 1794201849.3293355,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 821873,
+        "grade": "B",
+        "_ts": 1794201849.3293355
+      },
+      {
+        "task": "b2d25f14-b78a-4171-ac17-123657bc222b",
+        "unit": "u-d4c29c40fd06",
+        "sku": "G53b150b5",
+        "price": 559245,
+        "warranty_hours": 0,
+        "paid_at": 1794201853.7059505,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 539549,
+        "grade": "A",
+        "_ts": 1794201853.7059505
+      },
+      {
+        "task": "3786a88d-d3b2-4f64-a9f2-b0a83e507c33",
+        "unit": "u-7930bf6e928e",
+        "sku": "G8ec51935",
+        "price": 1637897,
+        "warranty_hours": 6.0,
+        "paid_at": 1794202001.038023,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1440654,
+        "grade": "A",
+        "_ts": 1794202001.039026
+      },
+      {
+        "task": "cd54ff72-df33-4492-9301-450e85366b12",
+        "unit": "u-47832b12d52a",
+        "sku": "G021aae64",
+        "price": 468542,
+        "warranty_hours": 6.0,
+        "paid_at": 1794202075.9199238,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 436605,
+        "grade": "A",
+        "_ts": 1794202075.9199238
+      },
+      {
+        "task": "e9d1d87e-7f9f-44f3-9508-4004f3706eb6",
+        "unit": "u-efdf9c4842f2",
+        "sku": "G8ec51935",
+        "price": 1810037,
+        "warranty_hours": 6.0,
+        "paid_at": 1794202090.6301255,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1686663,
+        "grade": "A",
+        "_ts": 1794202090.6455798
+      },
+      {
+        "task": "edeef008-1ad1-4bf3-9263-07c2d9951364",
+        "unit": "u-c4f757601e6b",
+        "sku": "G03d0199f",
+        "price": 1289076,
+        "warranty_hours": 6.0,
+        "paid_at": 1794202125.974369,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1198948,
+        "grade": "A",
+        "_ts": 1794202125.974369
+      },
+      {
+        "task": "688c6557-ebcb-4eef-9021-a4136204a90a",
+        "unit": "u-2d99e5af7e0a",
+        "sku": "G53b150b5",
+        "price": 429806,
+        "warranty_hours": 0,
+        "paid_at": 1794202201.9844983,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 288566,
+        "grade": "C",
+        "_ts": 1794202201.9844983
+      },
+      {
+        "task": "404fa452-6dfb-495e-a0c7-5338f42dfb3a",
+        "unit": "u-52e059bad350",
+        "sku": "G8ec51935",
+        "price": 1431246,
+        "warranty_hours": 3.0,
+        "paid_at": 1794202204.7095733,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1311733,
+        "grade": "A",
+        "_ts": 1794202204.7095733
+      },
+      {
+        "task": "60786313-26d3-41d8-9917-46843583e562",
+        "unit": "u-6536cbdc5a42",
+        "sku": "G53b150b5",
+        "price": 429580,
+        "warranty_hours": 0,
+        "paid_at": 1794202228.7718997,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 273433,
+        "grade": "C",
+        "_ts": 1794202228.7729404
+      },
+      {
+        "task": "7bd9af58-a650-4d40-9666-273728515162",
+        "unit": "u-95645fed7f2e",
+        "sku": "G9718023b",
+        "price": 1829149,
+        "warranty_hours": 6.0,
+        "paid_at": 1794202259.8055952,
+        "strategy_version": 15,
+        "category": "컴퓨터/비디오게임>컴퓨터/비디오게임>컴퓨터",
+        "cost": 1704319,
+        "grade": "A",
+        "_ts": 1794202259.8301964
+      },
+      {
+        "task": "4f69e4d0-24b9-4090-b790-b6ba90fcf2ab",
+        "unit": "u-1fd8be3d543d",
+        "sku": "Gb5d0dde7",
+        "price": 717591,
+        "warranty_hours": 6.0,
+        "paid_at": 1794202343.5828986,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 668619,
+        "grade": "A",
+        "_ts": 1794202343.587068
+      },
+      {
+        "task": "1eafa8c2-0d49-40a5-97d5-99ffdf396b57",
+        "unit": "u-9985f1297501",
+        "sku": "G53b150b5",
+        "price": 554169,
+        "warranty_hours": 0,
+        "paid_at": 1794202399.5811405,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 508266,
+        "grade": "A",
+        "_ts": 1794202399.5811405
+      },
+      {
+        "task": "0aa3eb97-ed26-41fc-ac83-6cc28765fddd",
+        "unit": "u-37799a6a1e2d",
+        "sku": "G8ec51935",
+        "price": 1772609,
+        "warranty_hours": 6.0,
+        "paid_at": 1794202417.1161683,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1651637,
+        "grade": "A",
+        "_ts": 1794202417.1172545
+      },
+      {
+        "task": "726d7688-5958-4ae7-a238-4a5267baf01f",
+        "unit": "u-849beb084a6f",
+        "sku": "G53b150b5",
+        "price": 528922,
+        "warranty_hours": 6.0,
+        "paid_at": 1794202460.5419059,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 492825,
+        "grade": "A",
+        "_ts": 1794202460.5419059
+      },
+      {
+        "task": "2798593b-8f88-4ee3-8c4d-1b0a0869436e",
+        "unit": "u-9a8a47cbab24",
+        "sku": "G8ec51935",
+        "price": 1431246,
+        "warranty_hours": 3.0,
+        "paid_at": 1794202502.865977,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1361326,
+        "grade": "A",
+        "_ts": 1794202502.8669744
+      },
+      {
+        "task": "d767f6aa-5759-4e2e-85f9-28e5244bfeb1",
+        "unit": "u-4a21da611932",
+        "sku": "G8ec51935",
+        "price": 1726861,
+        "warranty_hours": 0,
+        "paid_at": 1794202626.3105838,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1637852,
+        "grade": "A",
+        "_ts": 1794202626.3118665
+      },
+      {
+        "task": "88b33e8e-414b-4e39-b3de-c57106e7d604",
+        "unit": "u-b1b9a7856aa8",
+        "sku": "G8ec51935",
+        "price": 1622538,
+        "warranty_hours": 0,
+        "paid_at": 1794202681.6606612,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1393915,
+        "grade": "A",
+        "_ts": 1794202681.661709
+      },
+      {
+        "task": "bcae9cb4-8813-42e5-9d6c-a1395ca3229e",
+        "unit": "u-410af8dea722",
+        "sku": "G8ec51935",
+        "price": 1442528,
+        "warranty_hours": 0,
+        "paid_at": 1794202811.8988962,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 964346,
+        "grade": "B",
+        "_ts": 1794202811.9150465
+      },
+      {
+        "task": "cb20cde8-4e44-45f1-9de5-a5cb9ffdcfb3",
+        "unit": "u-4efbda538a28",
+        "sku": "G8ec51935",
+        "price": 1614858,
+        "warranty_hours": 0,
+        "paid_at": 1794202973.7947915,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1448506,
+        "grade": "A",
+        "_ts": 1794202973.7947915
+      },
+      {
+        "task": "4242adf8-f625-43ba-81f1-5a319d13099c",
+        "unit": "u-93a5ec3688bd",
+        "sku": "Gb5d0dde7",
+        "price": 870154,
+        "warranty_hours": 6.0,
+        "paid_at": 1794203037.9634256,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 810513,
+        "grade": "A",
+        "_ts": 1794203037.964429
+      },
+      {
+        "task": "d0a6b55f-ba90-49f2-8f96-e4d7e5b4450e",
+        "unit": "u-1261f1b5f278",
+        "sku": "G8ec51935",
+        "price": 1439840,
+        "warranty_hours": 0,
+        "paid_at": 1794203057.3462265,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1024468,
+        "grade": "B",
+        "_ts": 1794203057.3632176
+      },
+      {
+        "task": "2b7d224e-7515-4a83-b3be-834d69f6a220",
+        "unit": "u-dcbc703fe3e6",
+        "sku": "G8ec51935",
+        "price": 1611019,
+        "warranty_hours": 0,
+        "paid_at": 1794203109.0415754,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1550407,
+        "grade": "A",
+        "_ts": 1794203109.0500329
+      },
+      {
+        "task": "3e3d640e-688c-4b4f-89f6-6872ddbe085a",
+        "unit": "u-d5610ffa0ce0",
+        "sku": "Gb5d0dde7",
+        "price": 847370,
+        "warranty_hours": 6.0,
+        "paid_at": 1794203124.6096692,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 781225,
+        "grade": "A",
+        "_ts": 1794203124.612287
+      },
+      {
+        "task": "51d31ca7-ee45-4684-a06b-f6a69e57910d",
+        "unit": "u-c5ef8b603155",
+        "sku": "G8ec51935",
+        "price": 1797462,
+        "warranty_hours": 6.0,
+        "paid_at": 1794203228.939175,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1655631,
+        "grade": "A",
+        "_ts": 1794203228.9567616
+      },
+      {
+        "task": "3ef8e58b-1115-4b85-bccb-060ab0bbce3e",
+        "unit": "u-c0883b1b7cbc",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794203345.745382,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1523893,
+        "grade": "A",
+        "_ts": 1794203345.7523618
+      },
+      {
+        "task": "f4ed3b55-a49b-47cd-bd9d-5df5dedb72d6",
+        "unit": "u-5c5e4fbf6141",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794203397.197914,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1520284,
+        "grade": "A",
+        "_ts": 1794203397.197914
+      },
+      {
+        "task": "51526a23-ee27-4360-b217-44e8037a1523",
+        "unit": "u-f6dc738bf8b5",
+        "sku": "G03d0199f",
+        "price": 1286924,
+        "warranty_hours": 6.0,
+        "paid_at": 1794203463.7707071,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1143369,
+        "grade": "A",
+        "_ts": 1794203463.8160455
+      },
+      {
+        "task": "1e05a751-439e-49b3-9b3f-3ce4be6b4adc",
+        "unit": "u-3f73b528543b",
+        "sku": "Gb5d0dde7",
+        "price": 650000,
+        "warranty_hours": 0,
+        "paid_at": 1794203510.143068,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 367749,
+        "grade": "C",
+        "_ts": 1794203510.143403
+      },
+      {
+        "task": "2af0eeee-045a-4053-9df1-ab6f7334195b",
+        "unit": "u-d47866d686be",
+        "sku": "G8ec51935",
+        "price": 1801686,
+        "warranty_hours": 6.0,
+        "paid_at": 1794203529.6922035,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1611828,
+        "grade": "A",
+        "_ts": 1794203529.6922035
+      },
+      {
+        "task": "5809cf23-903e-45fd-86cc-f666bed87540",
+        "unit": "u-e20334097e0d",
+        "sku": "G021aae64",
+        "price": 379687,
+        "warranty_hours": 0,
+        "paid_at": 1794203584.8823931,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 372242,
+        "grade": "A",
+        "_ts": 1794203584.8823931
+      },
+      {
+        "task": "680879ae-0fa2-477f-8add-89612b009762",
+        "unit": "u-03d5950161a6",
+        "sku": "G53b150b5",
+        "price": 530219,
+        "warranty_hours": 0,
+        "paid_at": 1794203595.546421,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 500107,
+        "grade": "A",
+        "_ts": 1794203595.5476065
+      },
+      {
+        "task": "62182f6f-12ee-432b-9e67-6a00b510e6b7",
+        "unit": "u-2ec596a7200a",
+        "sku": "G021aae64",
+        "price": 363740,
+        "warranty_hours": 0,
+        "paid_at": 1794203603.7377236,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 256865,
+        "grade": "C",
+        "_ts": 1794203603.7387836
+      },
+      {
+        "task": "57987d7b-bb8a-40d8-9c97-542e266e5d36",
+        "unit": "u-0606750a6ba9",
+        "sku": "Gbec2b68f",
+        "price": 2683758,
+        "warranty_hours": 0,
+        "paid_at": 1794203693.026301,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 2167874,
+        "grade": "B",
+        "_ts": 1794203693.0422616
+      },
+      {
+        "task": "fd131473-bd54-410d-91ef-3b8a49d116db",
+        "unit": "u-dc257e35ac0b",
+        "sku": "G021aae64",
+        "price": 364003,
+        "warranty_hours": 3.0,
+        "paid_at": 1794203868.4360662,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 347456,
+        "grade": "A",
+        "_ts": 1794203868.437096
+      },
+      {
+        "task": "101e5eb0-4b97-4346-91f1-b3dc92171117",
+        "unit": "u-7ab3ad15ec8a",
+        "sku": "G53b150b5",
+        "price": 558605,
+        "warranty_hours": 0,
+        "paid_at": 1794203932.0632033,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 492703,
+        "grade": "A",
+        "_ts": 1794203932.0642078
+      },
+      {
+        "task": "27dba65c-b728-4449-b6f5-1a8d304e1ec3",
+        "unit": "u-1fbabf280acd",
+        "sku": "G03d0199f",
+        "price": 1073369,
+        "warranty_hours": 0,
+        "paid_at": 1794203990.5016558,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1031130,
+        "grade": "A",
+        "_ts": 1794203990.5067024
+      },
+      {
+        "task": "faa290c0-fd4e-4a49-b6cc-d1a4a5f6946a",
+        "unit": "u-13352c86df82",
+        "sku": "G8ec51935",
+        "price": 1613763,
+        "warranty_hours": 0,
+        "paid_at": 1794204039.5553734,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1307663,
+        "grade": "A",
+        "_ts": 1794204039.5553734
+      },
+      {
+        "task": "94bcfb14-750f-4399-9794-41fa44363eab",
+        "unit": "u-f6f0988282e8",
+        "sku": "G53b150b5",
+        "price": 558605,
+        "warranty_hours": 0,
+        "paid_at": 1794204231.886069,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 522083,
+        "grade": "A",
+        "_ts": 1794204231.88808
+      },
+      {
+        "task": "ad54dbfc-5ee2-475c-8431-b741f6227bd2",
+        "unit": "u-01165f58123e",
+        "sku": "G53b150b5",
+        "price": 632991,
+        "warranty_hours": 6.0,
+        "paid_at": 1794204273.1961029,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 588690,
+        "grade": "A",
+        "_ts": 1794204273.197108
+      },
+      {
+        "task": "4ddef2ec-9726-4f0e-a0d3-7f4a21939f79",
+        "unit": "u-4d6c60c8a03c",
+        "sku": "G53b150b5",
+        "price": 576186,
+        "warranty_hours": 0,
+        "paid_at": 1794204398.2365196,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 411788,
+        "grade": "B",
+        "_ts": 1794204398.2681653
+      },
+      {
+        "task": "01621707-5a79-42bc-8c7a-9b7b3b0de685",
+        "unit": "u-89a603ca1fda",
+        "sku": "G03d0199f",
+        "price": 1073370,
+        "warranty_hours": 3.0,
+        "paid_at": 1794204437.766958,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 932926,
+        "grade": "A",
+        "_ts": 1794204437.766958
+      },
+      {
+        "task": "4ec9a4b3-aab4-49a0-b87a-4f1ce4af1d82",
+        "unit": "u-e37b802a808c",
+        "sku": "G03d0199f",
+        "price": 985554,
+        "warranty_hours": 0,
+        "paid_at": 1794204500.7072701,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 879032,
+        "grade": "B",
+        "_ts": 1794204500.7084763
+      },
+      {
+        "task": "0593bcfe-e326-449d-84d7-f5bd4555ca35",
+        "unit": "u-4683a719d470",
+        "sku": "Gbec2b68f",
+        "price": 3143152,
+        "warranty_hours": 6.0,
+        "paid_at": 1794204647.8325021,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 2926238,
+        "grade": "A",
+        "_ts": 1794204647.8332782
+      },
+      {
+        "task": "3a62e015-66a4-462b-81d1-ff64e9de94ed",
+        "unit": "u-23b075705cda",
+        "sku": "G03d0199f",
+        "price": 1116694,
+        "warranty_hours": 3.0,
+        "paid_at": 1794204740.6419,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1024959,
+        "grade": "A",
+        "_ts": 1794204740.6419
+      },
+      {
+        "task": "0fe53015-7486-4fec-89da-5742c0ae3a3a",
+        "unit": "u-62208ff66ea1",
+        "sku": "G8ec51935",
+        "price": 1439313,
+        "warranty_hours": 0,
+        "paid_at": 1794204820.4342227,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1058975,
+        "grade": "B",
+        "_ts": 1794204820.4352815
+      },
+      {
+        "task": "bae4d8d1-c084-4700-9c40-6e8b01db50c0",
+        "unit": "u-20ad516a83ce",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794204883.0896702,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1331423,
+        "grade": "A",
+        "_ts": 1794204883.110927
+      },
+      {
+        "task": "49888b48-e466-414a-aba3-9038459b599a",
+        "unit": "u-3e47fe484987",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794205058.6078231,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1325673,
+        "grade": "A",
+        "_ts": 1794205058.6078231
+      },
+      {
+        "task": "7c6ece9d-0ab2-41a9-ab90-a31913eb84ed",
+        "unit": "u-9ede3edf93a1",
+        "sku": "G53b150b5",
+        "price": 584135,
+        "warranty_hours": 0,
+        "paid_at": 1794205075.0797596,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 514576,
+        "grade": "A",
+        "_ts": 1794205075.0797596
+      },
+      {
+        "task": "14c65446-7062-4c0d-a685-247ac5547104",
+        "unit": "u-167554dd2c41",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794205152.58332,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1380479,
+        "grade": "A",
+        "_ts": 1794205152.58332
+      },
+      {
+        "task": "c78f333f-ecce-45d5-a392-37bdc4e5c9a1",
+        "unit": "u-e188ecc6a025",
+        "sku": "G53b150b5",
+        "price": 577752,
+        "warranty_hours": 0,
+        "paid_at": 1794205256.3447244,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 517321,
+        "grade": "A",
+        "_ts": 1794205256.3447244
+      },
+      {
+        "task": "2e3e1a15-632f-4c9f-9e97-da25011691c2",
+        "unit": "u-cde8fcacfb1c",
+        "sku": "G8ec51935",
+        "price": 1794822,
+        "warranty_hours": 6.0,
+        "paid_at": 1794205363.998027,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1616151,
+        "grade": "A",
+        "_ts": 1794205363.9990299
+      },
+      {
+        "task": "0b917d8b-827b-4dc4-9a2f-ca1378e1d8f0",
+        "unit": "u-6671e68d8766",
+        "sku": "G6cd0e9d4",
+        "price": 1517280,
+        "warranty_hours": 0,
+        "paid_at": 1794205437.4263582,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1456721,
+        "grade": "A",
+        "_ts": 1794205437.4263582
+      },
+      {
+        "task": "cf4fa4d3-3afb-4ef0-8b61-18addf0ab850",
+        "unit": "u-fa9be036cda5",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794205549.4566681,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1554607,
+        "grade": "A",
+        "_ts": 1794205549.4566681
+      },
+      {
+        "task": "1496f570-9a44-4cdf-8a92-24b22a91b3c8",
+        "unit": "u-278c9e6e5429",
+        "sku": "G021aae64",
+        "price": 366232,
+        "warranty_hours": 0,
+        "paid_at": 1794205572.197697,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 333677,
+        "grade": "B",
+        "_ts": 1794205572.197697
+      },
+      {
+        "task": "712cb6b6-67a9-4052-bfa7-1983c4e333c4",
+        "unit": "u-3cc7943cddb6",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794205578.6149292,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1496968,
+        "grade": "A",
+        "_ts": 1794205578.6149292
+      },
+      {
+        "task": "50d429bb-534f-4f01-9253-3b5718c78a29",
+        "unit": "u-c05fb53c91b0",
+        "sku": "G07ec17d5",
+        "price": 209147,
+        "warranty_hours": 6.0,
+        "paid_at": 1794205601.8810158,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 191260,
+        "grade": "A",
+        "_ts": 1794205601.8869994
+      },
+      {
+        "task": "3c8e62da-56c7-4d21-905f-80a4ba628621",
+        "unit": "u-1d53c21d861f",
+        "sku": "G1515d951",
+        "price": 283962,
+        "warranty_hours": 0,
+        "paid_at": 1794205717.4021642,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 236873,
+        "grade": "A",
+        "_ts": 1794205717.4074826
+      },
+      {
+        "task": "ceb8a162-5d22-4e16-96dd-7d4eb3e1623b",
+        "unit": "u-c8fd19bfc8c4",
+        "sku": "G021aae64",
+        "price": 434279,
+        "warranty_hours": 6.0,
+        "paid_at": 1794205763.2043145,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 384448,
+        "grade": "A",
+        "_ts": 1794205763.234506
+      },
+      {
+        "task": "8265349d-dfbc-4f18-b964-ed90529a9ea8",
+        "unit": "u-e7b8c7009d0a",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794205845.2966824,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1393102,
+        "grade": "A",
+        "_ts": 1794205845.2977142
+      },
+      {
+        "task": "3d73fc92-3a81-4123-864c-7af876280bde",
+        "unit": "u-88f107db7b1f",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794205893.8120635,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1367854,
+        "grade": "A",
+        "_ts": 1794205893.8120635
+      },
+      {
+        "task": "69b9df92-4d3b-4401-909b-0db31687e084",
+        "unit": "u-850f80ae0a18",
+        "sku": "G021aae64",
+        "price": 364156,
+        "warranty_hours": 0,
+        "paid_at": 1794205901.54193,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 229016,
+        "grade": "B",
+        "_ts": 1794205901.54193
+      },
+      {
+        "task": "d7cab7db-05bc-493b-baf8-5fa86c7ad46f",
+        "unit": "u-eadb4dd97082",
+        "sku": "G021aae64",
+        "price": 364156,
+        "warranty_hours": 3.0,
+        "paid_at": 1794205926.2064679,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 338948,
+        "grade": "A",
+        "_ts": 1794205926.2064679
+      },
+      {
+        "task": "3362471f-6a0b-4029-811a-23f987c588b4",
+        "unit": "u-77db1bda3173",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794205930.992052,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1370512,
+        "grade": "A",
+        "_ts": 1794205930.992052
+      },
+      {
+        "task": "def9ce1d-d092-4f20-9df2-2c2836de5fee",
+        "unit": "u-ff63b95a849e",
+        "sku": "G53b150b5",
+        "price": 575358,
+        "warranty_hours": 0,
+        "paid_at": 1794206114.8812509,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 538481,
+        "grade": "A",
+        "_ts": 1794206114.8934937
+      },
+      {
+        "task": "8200a0df-c84e-4c49-8173-ff42255d8310",
+        "unit": "u-afffb7088303",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794206181.2393787,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1319002,
+        "grade": "B",
+        "_ts": 1794206181.2393787
+      },
+      {
+        "task": "21a9dc93-1e6a-48a8-bee7-1f0f7d92d130",
+        "unit": "u-528b40baa9d4",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794206552.2948408,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1428042,
+        "grade": "A",
+        "_ts": 1794206552.2948408
+      },
+      {
+        "task": "eca8154c-0c7d-450c-b8ea-44280ddfb5fa",
+        "unit": "u-55e76ef9fef6",
+        "sku": "G1515d951",
+        "price": 339048,
+        "warranty_hours": 6.0,
+        "paid_at": 1794206643.9288158,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 286142,
+        "grade": "A",
+        "_ts": 1794206643.9288158
+      },
+      {
+        "task": "aa70d668-32c3-4718-94c2-f86cea8d65a6",
+        "unit": "u-1e958f3843aa",
+        "sku": "G03d0199f",
+        "price": 941333,
+        "warranty_hours": 0,
+        "paid_at": 1794206710.3114357,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 624018,
+        "grade": "C",
+        "_ts": 1794206710.3114357
+      },
+      {
+        "task": "1627c2c3-ac25-4f51-9db0-0f41f21a1eb8",
+        "unit": "u-e7222652c256",
+        "sku": "G021aae64",
+        "price": 366638,
+        "warranty_hours": 0,
+        "paid_at": 1794206727.7816906,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 248472,
+        "grade": "B",
+        "_ts": 1794206727.7828872
+      },
+      {
+        "task": "64b1132d-dc35-4852-a4dc-9b2f7f2c8b21",
+        "unit": "u-aa0a8cfd6655",
+        "sku": "G021aae64",
+        "price": 420000,
+        "warranty_hours": 6.0,
+        "paid_at": 1794206765.6923988,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 387425,
+        "grade": "A",
+        "_ts": 1794206765.6939366
+      },
+      {
+        "task": "844151dd-fb81-4045-9506-b3eec366c7b8",
+        "unit": "u-54b1bbcb4986",
+        "sku": "G021aae64",
+        "price": 448598,
+        "warranty_hours": 6.0,
+        "paid_at": 1794206831.0487676,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 417324,
+        "grade": "A",
+        "_ts": 1794206831.0487676
+      },
+      {
+        "task": "3e6e282f-eb23-419b-b04f-92228ada0963",
+        "unit": "u-09a7333c15c5",
+        "sku": "G1515d951",
+        "price": 339048,
+        "warranty_hours": 6.0,
+        "paid_at": 1794206832.5589988,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 284661,
+        "grade": "A",
+        "_ts": 1794206832.5736644
+      },
+      {
+        "task": "67e1f622-0d38-43db-b267-99d4feb7d149",
+        "unit": "u-4b3e3630b45b",
+        "sku": "G0667d440",
+        "price": 232029,
+        "warranty_hours": 0,
+        "paid_at": 1794206874.824392,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 200911,
+        "grade": "A",
+        "_ts": 1794206874.8304029
+      },
+      {
+        "task": "5fe6455a-97aa-4fad-b457-4594efa803a2",
+        "unit": "u-2b59bc337085",
+        "sku": "G07ec17d5",
+        "price": 206821,
+        "warranty_hours": 6.0,
+        "paid_at": 1794206909.2669916,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 153885,
+        "grade": "A",
+        "_ts": 1794206909.2669916
+      },
+      {
+        "task": "1ff66aa3-c750-4cc3-a97e-ece06a51c66a",
+        "unit": "u-83be99b0dd59",
+        "sku": "G021aae64",
+        "price": 367244,
+        "warranty_hours": 0,
+        "paid_at": 1794206940.4737,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 291368,
+        "grade": "B",
+        "_ts": 1794206940.4737
+      },
+      {
+        "task": "c2512418-7f09-4f0e-808b-e5ad1df531fd",
+        "unit": "u-c8a8eb1daba3",
+        "sku": "G8ec51935",
+        "price": 1439168,
+        "warranty_hours": 0,
+        "paid_at": 1794206953.4610465,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1101102,
+        "grade": "B",
+        "_ts": 1794206953.46584
+      },
+      {
+        "task": "158e4762-a25f-4071-93a4-10283f344543",
+        "unit": "u-71debdcc51cb",
+        "sku": "G021aae64",
+        "price": 365706,
+        "warranty_hours": 0,
+        "paid_at": 1794207014.946002,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 348195,
+        "grade": "B",
+        "_ts": 1794207014.9470284
+      },
+      {
+        "task": "d4688fef-f870-4b46-bc76-b8ce20383232",
+        "unit": "u-9f18b8d9babd",
+        "sku": "G03d0199f",
+        "price": 1201620,
+        "warranty_hours": 6.0,
+        "paid_at": 1794207043.9229832,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1117690,
+        "grade": "A",
+        "_ts": 1794207043.9229832
+      },
+      {
+        "task": "2d35d986-21a5-4319-a312-07849c1c6cb1",
+        "unit": "u-0d7a9c9ffb9e",
+        "sku": "G8ec51935",
+        "price": 1612938,
+        "warranty_hours": 0,
+        "paid_at": 1794207066.3105533,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1300466,
+        "grade": "B",
+        "_ts": 1794207066.3117075
+      },
+      {
+        "task": "d814d830-b4a3-4069-914b-94eaa540f8be",
+        "unit": "u-cfc284951935",
+        "sku": "G85a1a856",
+        "price": 534528,
+        "warranty_hours": 3.0,
+        "paid_at": 1794207246.9666786,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 419409,
+        "grade": "B",
+        "_ts": 1794207246.9682188
+      },
+      {
+        "task": "b584f48c-7675-4f50-8bb5-fa4dcd46fd14",
+        "unit": "u-0cb8d190371a",
+        "sku": "G03d0199f",
+        "price": 1112672,
+        "warranty_hours": 3.0,
+        "paid_at": 1794207272.9985492,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1024595,
+        "grade": "A",
+        "_ts": 1794207272.9985492
+      },
+      {
+        "task": "9d46de65-7008-4031-8104-f933f31ebf1d",
+        "unit": "u-2d8a7943c3f0",
+        "sku": "G24f5f979",
+        "price": 2858974,
+        "warranty_hours": 6.0,
+        "paid_at": 1794207442.762957,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 2659026,
+        "grade": "A",
+        "_ts": 1794207442.762957
+      },
+      {
+        "task": "4afa90d8-7fe9-42ad-99dc-8862ef3bfa61",
+        "unit": "u-de941c1d9b58",
+        "sku": "G16dcdc73",
+        "price": 40913,
+        "warranty_hours": 0,
+        "paid_at": 1794207447.5017667,
+        "strategy_version": 15,
+        "category": "식품>김치/반찬/즉석요리>김치",
+        "cost": 32984,
+        "grade": "B",
+        "_ts": 1794207447.5017667
+      },
+      {
+        "task": "c4acd0e0-10cd-407d-8e01-834fbce12cc2",
+        "unit": "u-e7be612abbc7",
+        "sku": "Gb5d0dde7",
+        "price": 780000,
+        "warranty_hours": 6.0,
+        "paid_at": 1794207595.4953244,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 708106,
+        "grade": "A",
+        "_ts": 1794207595.4953244
+      },
+      {
+        "task": "2528848a-1aec-42e6-a921-ba0e39aa7e96",
+        "unit": "u-0c23527ea04a",
+        "sku": "G1515d951",
+        "price": 245809,
+        "warranty_hours": 0,
+        "paid_at": 1794207738.6816058,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 137284,
+        "grade": "C",
+        "_ts": 1794207738.6827214
+      },
+      {
+        "task": "70b40dcf-2d1b-4d6b-ac9e-0431040188c4",
+        "unit": "u-e20df1ec2ac1",
+        "sku": "G07ec17d5",
+        "price": 207576,
+        "warranty_hours": 6.0,
+        "paid_at": 1794207783.8249035,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 171411,
+        "grade": "A",
+        "_ts": 1794207783.8249035
+      },
+      {
+        "task": "0ce82093-df3d-4a0b-a4f0-6d412060b5e4",
+        "unit": "u-a129b1a913d3",
+        "sku": "G19a70f63",
+        "price": 1022316,
+        "warranty_hours": 0,
+        "paid_at": 1794207896.7217324,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 786219,
+        "grade": "B",
+        "_ts": 1794207896.7217324
+      },
+      {
+        "task": "e0b924f4-128d-4209-8a4f-90d288b15483",
+        "unit": "u-fc94bdd7d9ad",
+        "sku": "G1515d951",
+        "price": 283460,
+        "warranty_hours": 0,
+        "paid_at": 1794207991.0968106,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 239672,
+        "grade": "B",
+        "_ts": 1794207991.0968106
+      },
+      {
+        "task": "c31e8144-e787-4eb2-b0a0-9e6e5816c856",
+        "unit": "u-387ee70d7abf",
+        "sku": "G1515d951",
+        "price": 286079,
+        "warranty_hours": 0,
+        "paid_at": 1794208117.0117657,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 207425,
+        "grade": "B",
+        "_ts": 1794208117.0129704
+      },
+      {
+        "task": "6d752657-f97e-4b37-ad6c-784ad2a382ca",
+        "unit": "u-946ffd8e396b",
+        "sku": "G03d0199f",
+        "price": 1078334,
+        "warranty_hours": 0,
+        "paid_at": 1794208137.1419566,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 868678,
+        "grade": "B",
+        "_ts": 1794208137.1430461
+      },
+      {
+        "task": "a216b172-8cd7-4f9b-b567-efbb414596af",
+        "unit": "u-ae358d4408aa",
+        "sku": "G85a1a856",
+        "price": 641395,
+        "warranty_hours": 0,
+        "paid_at": 1794208277.9601245,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 487376,
+        "grade": "B",
+        "_ts": 1794208277.9613273
+      },
+      {
+        "task": "b1c53e11-509a-4f4e-a2d3-c1238c8a3015",
+        "unit": "u-36b3d08eaa5f",
+        "sku": "G53b150b5",
+        "price": 450000,
+        "warranty_hours": 0,
+        "paid_at": 1794208410.3257668,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 340912,
+        "grade": "B",
+        "_ts": 1794208410.326814
+      },
+      {
+        "task": "d3889f64-fa9a-485c-be5a-8a09aabe2e0c",
+        "unit": "u-a20175c98a2b",
+        "sku": "Gbec2b68f",
+        "price": 2650000,
+        "warranty_hours": 3.0,
+        "paid_at": 1794208452.1235824,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 2464556,
+        "grade": "A",
+        "_ts": 1794208452.1235824
+      },
+      {
+        "task": "14259f16-6da2-4996-b268-fad663a2f2b1",
+        "unit": "u-02ec9fa0f878",
+        "sku": "G07ec17d5",
+        "price": 161820,
+        "warranty_hours": 0,
+        "paid_at": 1794208599.4627757,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 116937,
+        "grade": "C",
+        "_ts": 1794208599.4653413
+      },
+      {
+        "task": "4cae421a-d02e-47a6-b88f-f2a9d66993af",
+        "unit": "u-e09d42f17703",
+        "sku": "G1515d951",
+        "price": 339048,
+        "warranty_hours": 6.0,
+        "paid_at": 1794208724.2077203,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 257915,
+        "grade": "A",
+        "_ts": 1794208724.2077203
+      },
+      {
+        "task": "20470d21-5e92-40c8-9f2f-03775333f48f",
+        "unit": "u-484ea6c1c44a",
+        "sku": "G53b150b5",
+        "price": 571856,
+        "warranty_hours": 0,
+        "paid_at": 1794208906.0318303,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 503491,
+        "grade": "A",
+        "_ts": 1794208906.0318303
+      },
+      {
+        "task": "15174ab3-4f13-40aa-ab8e-8390be1c52c5",
+        "unit": "u-ce38e89a9747",
+        "sku": "G53b150b5",
+        "price": 630463,
+        "warranty_hours": 6.0,
+        "paid_at": 1794208937.3448448,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 580173,
+        "grade": "A",
+        "_ts": 1794208937.3448448
+      },
+      {
+        "task": "6978fb52-62b1-4dea-8100-c5142b791456",
+        "unit": "u-a77aa659a5d4",
+        "sku": "G1515d951",
+        "price": 339048,
+        "warranty_hours": 6.0,
+        "paid_at": 1794208994.0845232,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 264875,
+        "grade": "A",
+        "_ts": 1794208994.1002564
+      },
+      {
+        "task": "ed4c4781-bc02-4534-994c-1a02013b83ac",
+        "unit": "u-55ef66883431",
+        "sku": "Gbec2b68f",
+        "price": 2713009,
+        "warranty_hours": 3.0,
+        "paid_at": 1794209032.3760612,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 2414660,
+        "grade": "A",
+        "_ts": 1794209032.3760612
+      },
+      {
+        "task": "d4ad82d9-775b-4cbf-b26f-a8f3f2804dd4",
+        "unit": "u-a5b85dd496c9",
+        "sku": "G03d0199f",
+        "price": 1228019,
+        "warranty_hours": 6.0,
+        "paid_at": 1794209101.0793228,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1076996,
+        "grade": "A",
+        "_ts": 1794209101.0793228
+      },
+      {
+        "task": "cf5d1e88-abfd-4698-a5a3-d732cdb31be9",
+        "unit": "u-35a5fa393662",
+        "sku": "G0667d440",
+        "price": 233067,
+        "warranty_hours": 0,
+        "paid_at": 1794209162.4840229,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 206178,
+        "grade": "B",
+        "_ts": 1794209162.4840229
+      },
+      {
+        "task": "89380579-16e9-4165-889b-196b22672fa6",
+        "unit": "u-483f2c1b212f",
+        "sku": "G00327e80",
+        "price": 1655073,
+        "warranty_hours": 6.0,
+        "paid_at": 1794209187.0625103,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1410284,
+        "grade": "A",
+        "_ts": 1794209187.0625103
+      },
+      {
+        "task": "9a68d683-eb33-49b5-9467-2a7db6045806",
+        "unit": "u-394333529ab8",
+        "sku": "G03d0199f",
+        "price": 1230171,
+        "warranty_hours": 6.0,
+        "paid_at": 1794209187.5632117,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 1077205,
+        "grade": "A",
+        "_ts": 1794209187.5632117
+      },
+      {
+        "task": "cfd1696e-cfcb-4858-b9b3-4e7d17d0bf9c",
+        "unit": "u-e400aa5bac8e",
+        "sku": "G07ec17d5",
+        "price": 223200,
+        "warranty_hours": 6.0,
+        "paid_at": 1794209273.5574472,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 205163,
+        "grade": "A",
+        "_ts": 1794209273.5574472
+      },
+      {
+        "task": "20e310f0-1299-4572-a250-87ad174e6fed",
+        "unit": "u-d50c5745d7a4",
+        "sku": "G0e4deffc",
+        "price": 1224960,
+        "warranty_hours": 3.0,
+        "paid_at": 1794209313.5309563,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1025166,
+        "grade": "B",
+        "_ts": 1794209313.5309563
+      },
+      {
+        "task": "b8ca2817-0746-436a-b824-d833541e5dd0",
+        "unit": "u-dd8eef2688d0",
+        "sku": "G07ec17d5",
+        "price": 208266,
+        "warranty_hours": 6.0,
+        "paid_at": 1794209568.7196722,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 184075,
+        "grade": "A",
+        "_ts": 1794209568.7196722
+      },
+      {
+        "task": "90773966-4589-47d0-b901-48deb7a06de1",
+        "unit": "u-c9f8a6510b5e",
+        "sku": "G19a70f63",
+        "price": 1168650,
+        "warranty_hours": 6.0,
+        "paid_at": 1794209640.9195504,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 927425,
+        "grade": "A",
+        "_ts": 1794209640.9195504
+      },
+      {
+        "task": "4bb0955c-8345-4896-9a54-623d03d85f92",
+        "unit": "u-4b0e8153a175",
+        "sku": "G24f5f979",
+        "price": 2942473,
+        "warranty_hours": 6.0,
+        "paid_at": 1794209730.3082144,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 2737007,
+        "grade": "A",
+        "_ts": 1794209730.3082144
+      },
+      {
+        "task": "76a8e956-d34a-45f1-840b-88fa370b3329",
+        "unit": "u-0b403df837ed",
+        "sku": "G021aae64",
+        "price": 462730,
+        "warranty_hours": 6.0,
+        "paid_at": 1794209755.0442395,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 430418,
+        "grade": "A",
+        "_ts": 1794209755.045237
+      },
+      {
+        "task": "b5bd865b-4004-4c07-92b5-d056df42ba9f",
+        "unit": "u-4ec9e375c84a",
+        "sku": "G021aae64",
+        "price": 419302,
+        "warranty_hours": 6.0,
+        "paid_at": 1794209785.0638819,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 390023,
+        "grade": "A",
+        "_ts": 1794209785.0638819
+      },
+      {
+        "task": "d71e099f-d3e4-482f-8c6a-ca8d8e8f4389",
+        "unit": "u-7cbbb2e29bff",
+        "sku": "G47788edd",
+        "price": 2119051,
+        "warranty_hours": 3.0,
+        "paid_at": 1794209827.9232042,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 2010216,
+        "grade": "A",
+        "_ts": 1794209827.9232042
+      },
+      {
+        "task": "8e244061-e515-4166-bd4a-0d6323545160",
+        "unit": "u-d628ac4d9a43",
+        "sku": "G021aae64",
+        "price": 433275,
+        "warranty_hours": 6.0,
+        "paid_at": 1794209856.171167,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 401322,
+        "grade": "A",
+        "_ts": 1794209856.172509
+      },
+      {
+        "task": "ee24da16-f9ed-4404-8813-26e32a966ce4",
+        "unit": "u-a2cb4e4cdb30",
+        "sku": "G4a12722c",
+        "price": 2312603,
+        "warranty_hours": 0,
+        "paid_at": 1794209871.3212035,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 2253914,
+        "grade": "A",
+        "_ts": 1794209871.3222098
+      },
+      {
+        "task": "fbd96730-ec6d-4e47-9834-c500f513429d",
+        "unit": "u-0cc96061b754",
+        "sku": "G021aae64",
+        "price": 378653,
+        "warranty_hours": 3.0,
+        "paid_at": 1794209910.963451,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 361030,
+        "grade": "A",
+        "_ts": 1794209910.963451
+      },
+      {
+        "task": "5659c1fd-7ccd-4725-93c9-216c0f94e97b",
+        "unit": "u-c3213a1ceae2",
+        "sku": "G07ec17d5",
+        "price": 173431,
+        "warranty_hours": 0,
+        "paid_at": 1794209936.9583833,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 86194,
+        "grade": "C",
+        "_ts": 1794209936.9590325
+      },
+      {
+        "task": "573f274b-3e88-4355-819f-5fa9fe80dccb",
+        "unit": "u-3867c1818dfa",
+        "sku": "G021aae64",
+        "price": 376766,
+        "warranty_hours": 3.0,
+        "paid_at": 1794210003.95924,
+        "strategy_version": 15,
+        "category": "가구/침구>가구>침대/매트리스",
+        "cost": 359175,
+        "grade": "A",
+        "_ts": 1794210003.9602757
+      }
+    ]
+  },
+  "buyer_purchases": {
+    "count": 46,
+    "events": [
+      {
+        "order": "o-7c07575cd56f",
+        "sku": "G200e39a3",
+        "unit": "u-811093b0d02c",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "kind": "food",
+        "price": 24135,
+        "value": 37900,
+        "paid_at": 1794205856.1907003,
+        "grade": "B",
+        "list_price": 37900,
+        "expires_at": 1794662408.0,
+        "initial_saved_contribution": 0.36319261213720316,
+        "warranty_hours": 0,
+        "ledger": 4382762,
+        "strategy_version": 14,
+        "_ts": 1794205856.2104526
+      },
+      {
+        "order": "o-eae0bf0b421f",
+        "sku": "Gdf79cd07",
+        "unit": "u-337bcd468310",
+        "shop": "https://drawings-stockholm-mall-terminals.trycloudflare.com",
+        "shop_identity": "3inNo6JxF+uTAsmTqqGxhRpY6GVILp98Otjk7E5hebE=",
+        "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+        "kind": "food",
+        "price": 6840,
+        "value": 15200,
+        "paid_at": 1794205965.1082897,
+        "grade": "C",
+        "list_price": 15200,
+        "expires_at": 1794903487.0,
+        "initial_saved_contribution": 0.55,
+        "warranty_hours": 0,
+        "ledger": 4383183,
+        "strategy_version": 14,
+        "_ts": 1794205965.124533
+      },
+      {
+        "order": "o-7db4bde5dacd",
+        "sku": "G1b2dceb6",
+        "unit": "u-6718668ee5d7",
+        "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+        "shop_identity": "Tn4LL1RfwiHcttuydXxxyGn2wWXDA/MItkahALdG190=",
+        "name": "국내산 고당도 감홍사과 2kg (중과/10-11과내외)",
+        "kind": "food",
+        "price": 12172,
+        "value": 18900,
+        "paid_at": 1794206099.4032593,
+        "grade": "C",
+        "list_price": 18900,
+        "expires_at": 1794273972.0,
+        "initial_saved_contribution": 0.355978835978836,
+        "warranty_hours": 0,
+        "ledger": 4383724,
+        "strategy_version": 14,
+        "_ts": 1794206099.4032593
+      },
+      {
+        "order": "o-ee3c70a04222",
+        "sku": "Gf6b70da8",
+        "unit": "u-c2b1e5765e51",
+        "shop": "https://poker-agree-field-macintosh.trycloudflare.com",
+        "shop_identity": "2Qq2HD4NP/R9i5Z8vw7lkJJfrkZEGJ83suhv98lC/50=",
+        "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+        "kind": "goods",
+        "price": 1514508,
+        "value": 2332000,
+        "paid_at": 1794206193.9270146,
+        "grade": "A",
+        "list_price": 2332000,
+        "expires_at": null,
+        "initial_saved_contribution": 0.3505540308747856,
+        "warranty_hours": 6.0,
+        "ledger": 4384077,
+        "strategy_version": 14,
+        "_ts": 1794206193.9405913
+      },
+      {
+        "order": "o-5bf6910d4089",
+        "sku": "Gef4d3036",
+        "unit": "u-9aa5e7986fee",
+        "shop": "https://associates-thumbs-light-look.trycloudflare.com",
+        "shop_identity": "UGvWdffDxadZvZRR9ESzYvWfBNmtVtX0zSZ+R2U8zss=",
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "kind": "food",
+        "price": 18727,
+        "value": 28900,
+        "paid_at": 1794206267.420464,
+        "grade": "B",
+        "list_price": 28900,
+        "expires_at": 1794343245.0,
+        "initial_saved_contribution": 0.3520069204152249,
+        "warranty_hours": 0,
+        "ledger": 4384365,
+        "strategy_version": 14,
+        "_ts": 1794206267.4215708
+      },
+      {
+        "order": "o-341e30e6b33b",
+        "sku": "G81ed2825",
+        "unit": "u-ce7925e33646",
+        "shop": "https://poker-agree-field-macintosh.trycloudflare.com",
+        "shop_identity": "2Qq2HD4NP/R9i5Z8vw7lkJJfrkZEGJ83suhv98lC/50=",
+        "name": "몽베스트 생수 무라벨 330mLx20병",
+        "kind": "food",
+        "price": 1924,
+        "value": 3290,
+        "paid_at": 1794206371.219929,
+        "grade": "B",
+        "list_price": 3290,
+        "expires_at": 1795517470.0,
+        "initial_saved_contribution": 0.41519756838905775,
+        "warranty_hours": 0,
+        "ledger": 4384764,
+        "strategy_version": 14,
+        "_ts": 1794206371.219929
+      },
+      {
+        "order": "o-8a6ad457a94d",
+        "sku": "G16dcdc73",
+        "unit": "u-89dd7d8926f4",
+        "shop": "https://screenshots-wright-omaha-witch.trycloudflare.com",
+        "shop_identity": "3inNo6JxF+uTAsmTqqGxhRpY6GVILp98Otjk7E5hebE=",
+        "name": "조선호텔 특제육수 포기김치 4kg + 총각김치 1.5kg",
+        "kind": "food",
+        "price": 45158,
+        "value": 76800,
+        "paid_at": 1794206563.1508145,
+        "grade": "B",
+        "list_price": 76800,
+        "expires_at": 1794572217.0,
+        "initial_saved_contribution": 0.4120052083333333,
+        "warranty_hours": 0,
+        "ledger": 4385454,
+        "strategy_version": 14,
+        "_ts": 1794206563.1508145
+      },
+      {
+        "order": "o-4c537b34bf6e",
+        "sku": "G66ded25b",
+        "unit": "u-b5a688d5d9a8",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "kind": "food",
+        "price": 10253,
+        "value": 17900,
+        "paid_at": 1794206628.2511728,
+        "grade": "B",
+        "list_price": 17900,
+        "expires_at": 1794664417.0,
+        "initial_saved_contribution": 0.42720670391061455,
+        "warranty_hours": 0,
+        "ledger": 4385883,
+        "strategy_version": 14,
+        "_ts": 1794206628.2511728
+      },
+      {
+        "order": "o-08f708fd6ebf",
+        "sku": "G74e686be",
+        "unit": "u-40d0abc08148",
+        "shop": "https://tissue-isa-spreading-workplace.trycloudflare.com",
+        "shop_identity": "78GE3qxXXH15+nDCyn6tulbDhNumGfuR5nmACDHuWlY=",
+        "name": "제주 달콤 노지감귤 9kg 대과(L/2L)",
+        "kind": "food",
+        "price": 7151,
+        "value": 13500,
+        "paid_at": 1794206696.1673872,
+        "grade": "B",
+        "list_price": 13500,
+        "expires_at": 1794308944.0,
+        "initial_saved_contribution": 0.4702962962962963,
+        "warranty_hours": 0,
+        "ledger": 4386267,
+        "strategy_version": 14,
+        "_ts": 1794206696.1694784
+      },
+      {
+        "order": "o-6be725715dd2",
+        "sku": "G32bf9a8e",
+        "unit": "u-dac3852550c2",
+        "shop": "https://screenshots-wright-omaha-witch.trycloudflare.com",
+        "shop_identity": "3inNo6JxF+uTAsmTqqGxhRpY6GVILp98Otjk7E5hebE=",
+        "name": "[호랑이김치] 국산100% 전라도 파김치 쪽파김치 2kg",
+        "kind": "food",
+        "price": 15029,
+        "value": 25560,
+        "paid_at": 1794206762.0282114,
+        "grade": "B",
+        "list_price": 25560,
+        "expires_at": 1794482100.0,
+        "initial_saved_contribution": 0.41201095461658843,
+        "warranty_hours": 0,
+        "ledger": 4386540,
+        "strategy_version": 14,
+        "_ts": 1794206762.0317824
+      },
+      {
+        "order": "o-fa05da49db89",
+        "sku": "G9a240832",
+        "unit": "u-9dca7fa77ed4",
+        "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+        "shop_identity": "i4jK4hcpby3UTBgs4etimCq3HhGoY1aCedRDvgbZ0QE=",
+        "name": "펩시콜라 엑스트라 피즈 245ml 15개(업소용)",
+        "kind": "food",
+        "price": 5406,
+        "value": 10600,
+        "paid_at": 1794206819.4139986,
+        "grade": "C",
+        "list_price": 10600,
+        "expires_at": 1794882005.0,
+        "initial_saved_contribution": 0.49,
+        "warranty_hours": 0,
+        "ledger": 4386811,
+        "strategy_version": 14,
+        "_ts": 1794206819.4218972
+      },
+      {
+        "order": "o-05dd9da1a35d",
+        "sku": "Gfb2c0249",
+        "unit": "u-afa3d5976bbd",
+        "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+        "shop_identity": "3lBHsp2Xwi48oVLvuqKi/8UH2HbUDqkUMGY/s4Pjj30=",
+        "name": "[장길영사과] 사과 중과 10kg(33~39과)",
+        "kind": "food",
+        "price": 49104,
+        "value": 70900,
+        "paid_at": 1794206928.3153963,
+        "grade": "B",
+        "list_price": 70900,
+        "expires_at": 1794302983.0,
+        "initial_saved_contribution": 0.30741889985895626,
+        "warranty_hours": 0,
+        "ledger": 4387200,
+        "strategy_version": 14,
+        "_ts": 1794206928.3164794
+      },
+      {
+        "order": "o-1b9d61e242da",
+        "sku": "G32bf9a8e",
+        "unit": "u-32a8a63f7012",
+        "shop": "https://screenshots-wright-omaha-witch.trycloudflare.com",
+        "shop_identity": "3inNo6JxF+uTAsmTqqGxhRpY6GVILp98Otjk7E5hebE=",
+        "name": "[호랑이김치] 국산100% 전라도 파김치 쪽파김치 2kg",
+        "kind": "food",
+        "price": 15080,
+        "value": 25560,
+        "paid_at": 1794206992.054691,
+        "grade": "B",
+        "list_price": 25560,
+        "expires_at": 1794487885.0,
+        "initial_saved_contribution": 0.41001564945226915,
+        "warranty_hours": 0,
+        "ledger": 4387462,
+        "strategy_version": 14,
+        "_ts": 1794206992.054691
+      },
+      {
+        "order": "o-54fbfc3aedba",
+        "sku": "G66ded25b",
+        "unit": "u-6eb0eff48a42",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "kind": "food",
+        "price": 10241,
+        "value": 17900,
+        "paid_at": 1794207059.0079384,
+        "grade": "B",
+        "list_price": 17900,
+        "expires_at": 1794676154.0,
+        "initial_saved_contribution": 0.42787709497206705,
+        "warranty_hours": 0,
+        "ledger": 4387763,
+        "strategy_version": 14,
+        "_ts": 1794207059.011691
+      },
+      {
+        "order": "o-375258eb55db",
+        "sku": "G0ec8941a",
+        "unit": "u-20a8f74e143b",
+        "shop": "https://graduation-visibility-involving-searching.trycloudflare.com",
+        "shop_identity": "QZ9LlsqE15ufLChVAfPii6CaoJvqCrdsazqBajKDyg4=",
+        "name": "[함양군]해올림푸드 양념단풍깻잎 장아찌 300g",
+        "kind": "food",
+        "price": 10958,
+        "value": 15900,
+        "paid_at": 1794207170.7683504,
+        "grade": "C",
+        "list_price": 15900,
+        "expires_at": 1794321666.0,
+        "initial_saved_contribution": 0.3108176100628931,
+        "warranty_hours": 0,
+        "ledger": 4388263,
+        "strategy_version": 14,
+        "_ts": 1794207170.7683504
+      },
+      {
+        "order": "o-6c80a34a94de",
+        "sku": "Gac0c1622",
+        "unit": "u-4976720fbaf9",
+        "shop": "https://screenshots-wright-omaha-witch.trycloudflare.com",
+        "shop_identity": "3inNo6JxF+uTAsmTqqGxhRpY6GVILp98Otjk7E5hebE=",
+        "name": "대복 맛있는 국내산 생깻잎김치 500gX2팩",
+        "kind": "food",
+        "price": 13846,
+        "value": 19980,
+        "paid_at": 1794207233.1899579,
+        "grade": "A",
+        "list_price": 19980,
+        "expires_at": 1794720092.0,
+        "initial_saved_contribution": 0.307007007007007,
+        "warranty_hours": 0,
+        "ledger": 4388454,
+        "strategy_version": 14,
+        "_ts": 1794207233.1936295
+      },
+      {
+        "order": "o-02f87bab9355",
+        "sku": "G333ba825",
+        "unit": "u-95e2b4577ed5",
+        "shop": "https://excluding-desirable-sociology-proportion.trycloudflare.com",
+        "shop_identity": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+        "name": "[안동맛자반] 순살 간고등어 반마리 140g x 10팩",
+        "kind": "food",
+        "price": 20841,
+        "value": 30900,
+        "paid_at": 1794207301.4625535,
+        "grade": "C",
+        "list_price": 30900,
+        "expires_at": 1794244229.0,
+        "initial_saved_contribution": 0.32553398058252425,
+        "warranty_hours": 0,
+        "ledger": 4388705,
+        "strategy_version": 14,
+        "_ts": 1794207301.478587
+      },
+      {
+        "order": "o-65c7a3fcaaf6",
+        "sku": "G16dcdc73",
+        "unit": "u-a93ed702d279",
+        "shop": "https://excluding-desirable-sociology-proportion.trycloudflare.com",
+        "shop_identity": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+        "name": "조선호텔 특제육수 포기김치 4kg + 총각김치 1.5kg",
+        "kind": "food",
+        "price": 39168,
+        "value": 76800,
+        "paid_at": 1794207410.942455,
+        "grade": "C",
+        "list_price": 76800,
+        "expires_at": 1794370610.0,
+        "initial_saved_contribution": 0.49,
+        "warranty_hours": 0,
+        "ledger": 4389105,
+        "strategy_version": 14,
+        "_ts": 1794207410.942455
+      },
+      {
+        "order": "o-5a640b627cd8",
+        "sku": "G66ded25b",
+        "unit": "u-1f3b49926803",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "kind": "food",
+        "price": 8621,
+        "value": 17900,
+        "paid_at": 1794207479.0633924,
+        "grade": "C",
+        "list_price": 17900,
+        "expires_at": 1794441286.0,
+        "initial_saved_contribution": 0.5183798882681564,
+        "warranty_hours": 0,
+        "ledger": 4389339,
+        "strategy_version": 14,
+        "_ts": 1794207479.0679448
+      },
+      {
+        "order": "o-e5f1c77fe1dc",
+        "sku": "G022ce883",
+        "unit": "u-342181e4ef65",
+        "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+        "shop_identity": "3lBHsp2Xwi48oVLvuqKi/8UH2HbUDqkUMGY/s4Pjj30=",
+        "name": "[양지촌농원] 26년산 보은건대추 1kg 26mm",
+        "kind": "food",
+        "price": 13239,
+        "value": 19900,
+        "paid_at": 1794207662.5166419,
+        "grade": "B",
+        "list_price": 19900,
+        "expires_at": 1794315973.0,
+        "initial_saved_contribution": 0.33472361809045226,
+        "warranty_hours": 0,
+        "ledger": 4390137,
+        "strategy_version": 14,
+        "_ts": 1794207662.5176485
+      },
+      {
+        "order": "o-54b6d4054bfd",
+        "sku": "G022ce883",
+        "unit": "u-10bb21337235",
+        "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+        "shop_identity": "i4jK4hcpby3UTBgs4etimCq3HhGoY1aCedRDvgbZ0QE=",
+        "name": "[양지촌농원] 26년산 보은건대추 1kg 26mm",
+        "kind": "food",
+        "price": 8955,
+        "value": 19900,
+        "paid_at": 1794207783.4888508,
+        "grade": "C",
+        "list_price": 19900,
+        "expires_at": 1794260082.0,
+        "initial_saved_contribution": 0.55,
+        "warranty_hours": 0,
+        "ledger": 4390787,
+        "strategy_version": 14,
+        "_ts": 1794207783.4888508
+      },
+      {
+        "order": "o-fcff3acd5bce",
+        "sku": "G200e39a3",
+        "unit": "u-8e7839419b5b",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "kind": "food",
+        "price": 24228,
+        "value": 37900,
+        "paid_at": 1794207843.717759,
+        "grade": "B",
+        "list_price": 37900,
+        "expires_at": 1794548991.0,
+        "initial_saved_contribution": 0.36073878627968337,
+        "warranty_hours": 0,
+        "ledger": 4391078,
+        "strategy_version": 14,
+        "_ts": 1794207843.7192624
+      },
+      {
+        "order": "o-2e3d7aceb537",
+        "sku": "G66ded25b",
+        "unit": "u-2b0cad3e31ee",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "kind": "food",
+        "price": 8694,
+        "value": 17900,
+        "paid_at": 1794207990.4382248,
+        "grade": "C",
+        "list_price": 17900,
+        "expires_at": 1794472296.0,
+        "initial_saved_contribution": 0.5143016759776536,
+        "warranty_hours": 0,
+        "ledger": 4391624,
+        "strategy_version": 14,
+        "_ts": 1794207990.4382248
+      },
+      {
+        "order": "o-9d784f73d51a",
+        "sku": "Gdf79cd07",
+        "unit": "u-e9f3fd060426",
+        "shop": "https://limiting-reasonable-carlo-handling.trycloudflare.com",
+        "shop_identity": "i4jK4hcpby3UTBgs4etimCq3HhGoY1aCedRDvgbZ0QE=",
+        "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+        "kind": "food",
+        "price": 8710,
+        "value": 15200,
+        "paid_at": 1794208058.312788,
+        "grade": "C",
+        "list_price": 15200,
+        "expires_at": 1794874058.0,
+        "initial_saved_contribution": 0.42697368421052634,
+        "warranty_hours": 0,
+        "ledger": 4391894,
+        "strategy_version": 14,
+        "_ts": 1794208058.3138187
+      },
+      {
+        "order": "o-57bb9bb27bcc",
+        "sku": "G5bdaf222",
+        "unit": "u-49aa1203eca6",
+        "shop": "https://rentals-egg-hear-taylor.trycloudflare.com",
+        "shop_identity": "c7YEbyYv9VBh/qI7l4YR6IEoJM6aZV6rQ7PMUXtd+TQ=",
+        "name": "얼큰한 맛을 추가한 칼국수 명인맛집 강남교자 칼국수 밀키트 선택하기(4인분)/(non 인스턴트/직접 끓이고 볶은 육수와 고명/분말 스프 아님)",
+        "kind": "food",
+        "price": 19098,
+        "value": 35900,
+        "paid_at": 1794208161.6600018,
+        "grade": "B",
+        "list_price": 35900,
+        "expires_at": 1794274145.0,
+        "initial_saved_contribution": 0.4680222841225627,
+        "warranty_hours": 0,
+        "ledger": 4392304,
+        "strategy_version": 14,
+        "_ts": 1794208161.662267
+      },
+      {
+        "order": "o-d8c2b372d569",
+        "sku": "G200e39a3",
+        "unit": "u-22ee0a6f2935",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "kind": "food",
+        "price": 23868,
+        "value": 37900,
+        "paid_at": 1794208229.1686795,
+        "grade": "B",
+        "list_price": 37900,
+        "expires_at": 1794650421.0,
+        "initial_saved_contribution": 0.37023746701846966,
+        "warranty_hours": 0,
+        "ledger": 4392501,
+        "strategy_version": 14,
+        "_ts": 1794208229.1717408
+      },
+      {
+        "order": "o-d2e9fbc803bd",
+        "sku": "G16dcdc73",
+        "unit": "u-d01bdc992f0e",
+        "shop": "https://excluding-desirable-sociology-proportion.trycloudflare.com",
+        "shop_identity": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+        "name": "조선호텔 특제육수 포기김치 4kg + 총각김치 1.5kg",
+        "kind": "food",
+        "price": 51451,
+        "value": 76800,
+        "paid_at": 1794208286.5300357,
+        "grade": "A",
+        "list_price": 76800,
+        "expires_at": 1794696905.0,
+        "initial_saved_contribution": 0.3300651041666667,
+        "warranty_hours": 0,
+        "ledger": 4392768,
+        "strategy_version": 14,
+        "_ts": 1794208286.5300357
+      },
+      {
+        "order": "o-fca6996eaea7",
+        "sku": "G74e686be",
+        "unit": "u-4a313a1b8276",
+        "shop": "https://tissue-isa-spreading-workplace.trycloudflare.com",
+        "shop_identity": "78GE3qxXXH15+nDCyn6tulbDhNumGfuR5nmACDHuWlY=",
+        "name": "제주 달콤 노지감귤 9kg 대과(L/2L)",
+        "kind": "food",
+        "price": 8952,
+        "value": 13500,
+        "paid_at": 1794208369.6906583,
+        "grade": "B",
+        "list_price": 13500,
+        "expires_at": 1794321376.0,
+        "initial_saved_contribution": 0.3368888888888889,
+        "warranty_hours": 0,
+        "ledger": 4393054,
+        "strategy_version": 14,
+        "_ts": 1794208369.6927583
+      },
+      {
+        "order": "o-0f5e7716bed2",
+        "sku": "G35351812",
+        "unit": "u-27e739213535",
+        "shop": "https://excluding-desirable-sociology-proportion.trycloudflare.com",
+        "shop_identity": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+        "name": "[전라도청년] 저온압착 100%통참깨 청년들기름 350ml x 2병",
+        "kind": "food",
+        "price": 11340,
+        "value": 18900,
+        "paid_at": 1794208450.3804793,
+        "grade": "B",
+        "list_price": 18900,
+        "expires_at": 1795927276.0,
+        "initial_saved_contribution": 0.4,
+        "warranty_hours": 0,
+        "ledger": 4393344,
+        "strategy_version": 14,
+        "_ts": 1794208450.3804793
+      },
+      {
+        "order": "o-1b952d7b0684",
+        "sku": "Gdf79cd07",
+        "unit": "u-c33ba2b43b71",
+        "shop": "https://screenshots-wright-omaha-witch.trycloudflare.com",
+        "shop_identity": "3inNo6JxF+uTAsmTqqGxhRpY6GVILp98Otjk7E5hebE=",
+        "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+        "kind": "food",
+        "price": 6840,
+        "value": 15200,
+        "paid_at": 1794208529.5610542,
+        "grade": "C",
+        "list_price": 15200,
+        "expires_at": 1795087262.0,
+        "initial_saved_contribution": 0.55,
+        "warranty_hours": 0,
+        "ledger": 4393678,
+        "strategy_version": 14,
+        "_ts": 1794208529.5641966
+      },
+      {
+        "order": "o-506c437a64f7",
+        "sku": "G16dcdc73",
+        "unit": "u-afa35db92832",
+        "shop": "https://excluding-desirable-sociology-proportion.trycloudflare.com",
+        "shop_identity": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+        "name": "조선호텔 특제육수 포기김치 4kg + 총각김치 1.5kg",
+        "kind": "food",
+        "price": 46080,
+        "value": 76800,
+        "paid_at": 1794208733.8899932,
+        "grade": "A",
+        "list_price": 76800,
+        "expires_at": 1794700225.0,
+        "initial_saved_contribution": 0.4,
+        "warranty_hours": 0,
+        "ledger": 4394495,
+        "strategy_version": 14,
+        "_ts": 1794208733.9039588
+      },
+      {
+        "order": "o-625108a74206",
+        "sku": "Gdf79cd07",
+        "unit": "u-5db83461e867",
+        "shop": "https://screenshots-wright-omaha-witch.trycloudflare.com",
+        "shop_identity": "3inNo6JxF+uTAsmTqqGxhRpY6GVILp98Otjk7E5hebE=",
+        "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+        "kind": "food",
+        "price": 6840,
+        "value": 15200,
+        "paid_at": 1794208877.9815583,
+        "grade": "C",
+        "list_price": 15200,
+        "expires_at": 1794648283.0,
+        "initial_saved_contribution": 0.55,
+        "warranty_hours": 0,
+        "ledger": 4395050,
+        "strategy_version": 14,
+        "_ts": 1794208877.9855747
+      },
+      {
+        "order": "o-4c663e058131",
+        "sku": "Gf0e2e6b0",
+        "unit": "u-836cdd868784",
+        "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+        "shop_identity": "3lBHsp2Xwi48oVLvuqKi/8UH2HbUDqkUMGY/s4Pjj30=",
+        "name": "지누스 컴포트 서포트 하이브리드 스프링 매트리스 30cm SS 슈퍼싱글",
+        "kind": "goods",
+        "price": 149726,
+        "value": 249440,
+        "paid_at": 1794208941.7473676,
+        "grade": "B",
+        "list_price": 249440,
+        "expires_at": null,
+        "initial_saved_contribution": 0.39975144323284156,
+        "warranty_hours": 12.0,
+        "ledger": 4395318,
+        "strategy_version": 14,
+        "_ts": 1794208941.7473676
+      },
+      {
+        "order": "o-e5b85c5a369d",
+        "sku": "Gf0e2e6b0",
+        "unit": "u-35cfa29a6268",
+        "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+        "shop_identity": "3lBHsp2Xwi48oVLvuqKi/8UH2HbUDqkUMGY/s4Pjj30=",
+        "name": "지누스 컴포트 서포트 하이브리드 스프링 매트리스 30cm SS 슈퍼싱글",
+        "kind": "goods",
+        "price": 152316,
+        "value": 249440,
+        "paid_at": 1794209053.4228349,
+        "grade": "B",
+        "list_price": 249440,
+        "expires_at": null,
+        "initial_saved_contribution": 0.38936818473380375,
+        "warranty_hours": 12.0,
+        "ledger": 4395819,
+        "strategy_version": 14,
+        "_ts": 1794209053.4254797
+      },
+      {
+        "order": "o-c5d9da0d0f6c",
+        "sku": "Gdf79cd07",
+        "unit": "u-f18420ab3c8d",
+        "shop": "https://screenshots-wright-omaha-witch.trycloudflare.com",
+        "shop_identity": "3inNo6JxF+uTAsmTqqGxhRpY6GVILp98Otjk7E5hebE=",
+        "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+        "kind": "food",
+        "price": 8150,
+        "value": 15200,
+        "paid_at": 1794209125.567214,
+        "grade": "B",
+        "list_price": 15200,
+        "expires_at": 1795532562.0,
+        "initial_saved_contribution": 0.46381578947368424,
+        "warranty_hours": 0,
+        "ledger": 4396180,
+        "strategy_version": 14,
+        "_ts": 1794209125.5829356
+      },
+      {
+        "order": "o-4df8f7b7afed",
+        "sku": "Gef4d3036",
+        "unit": "u-1ba7c1342b52",
+        "shop": "https://rentals-egg-hear-taylor.trycloudflare.com",
+        "shop_identity": "c7YEbyYv9VBh/qI7l4YR6IEoJM6aZV6rQ7PMUXtd+TQ=",
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "kind": "food",
+        "price": 17796,
+        "value": 28900,
+        "paid_at": 1794209207.8621252,
+        "grade": "B",
+        "list_price": 28900,
+        "expires_at": 1794300353.0,
+        "initial_saved_contribution": 0.38422145328719726,
+        "warranty_hours": 0,
+        "ledger": 4396642,
+        "strategy_version": 14,
+        "_ts": 1794209207.8631275
+      },
+      {
+        "order": "o-87690a6823e7",
+        "sku": "G66ded25b",
+        "unit": "u-f7600845d05f",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "kind": "food",
+        "price": 8488,
+        "value": 17900,
+        "paid_at": 1794209277.5300562,
+        "grade": "C",
+        "list_price": 17900,
+        "expires_at": 1794390114.0,
+        "initial_saved_contribution": 0.5258100558659218,
+        "warranty_hours": 0,
+        "ledger": 4396952,
+        "strategy_version": 14,
+        "_ts": 1794209277.533196
+      },
+      {
+        "order": "o-7288ed027793",
+        "sku": "G200e39a3",
+        "unit": "u-5b131746b54e",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "kind": "food",
+        "price": 21894,
+        "value": 37900,
+        "paid_at": 1794209332.4845045,
+        "grade": "B",
+        "list_price": 37900,
+        "expires_at": 1794676023.0,
+        "initial_saved_contribution": 0.42232189973614775,
+        "warranty_hours": 0,
+        "ledger": 4397214,
+        "strategy_version": 14,
+        "_ts": 1794209332.4916394
+      },
+      {
+        "order": "o-a42a64fce86b",
+        "sku": "G66ded25b",
+        "unit": "u-35ba64df4fce",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+        "kind": "food",
+        "price": 8488,
+        "value": 17900,
+        "paid_at": 1794209433.4731355,
+        "grade": "C",
+        "list_price": 17900,
+        "expires_at": 1794433767.0,
+        "initial_saved_contribution": 0.5258100558659218,
+        "warranty_hours": 0,
+        "ledger": 4397579,
+        "strategy_version": 14,
+        "_ts": 1794209433.4867704
+      },
+      {
+        "order": "o-289d3ddc826a",
+        "sku": "G200e39a3",
+        "unit": "u-e6a738cdf542",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+        "kind": "food",
+        "price": 23651,
+        "value": 37900,
+        "paid_at": 1794209502.5498312,
+        "grade": "B",
+        "list_price": 37900,
+        "expires_at": 1794607088.0,
+        "initial_saved_contribution": 0.3759630606860158,
+        "warranty_hours": 0,
+        "ledger": 4397877,
+        "strategy_version": 14,
+        "_ts": 1794209502.5498312
+      },
+      {
+        "order": "o-9ea7f8bac14b",
+        "sku": "Gdf79cd07",
+        "unit": "u-a1209fbbd91d",
+        "shop": "https://screenshots-wright-omaha-witch.trycloudflare.com",
+        "shop_identity": "3inNo6JxF+uTAsmTqqGxhRpY6GVILp98Otjk7E5hebE=",
+        "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+        "kind": "food",
+        "price": 8558,
+        "value": 15200,
+        "paid_at": 1794209590.5005138,
+        "grade": "B",
+        "list_price": 15200,
+        "expires_at": 1795776433.0,
+        "initial_saved_contribution": 0.4369736842105263,
+        "warranty_hours": 0,
+        "ledger": 4398200,
+        "strategy_version": 14,
+        "_ts": 1794209590.5163698
+      },
+      {
+        "order": "o-b86a6c72fbda",
+        "sku": "Gf6b70da8",
+        "unit": "u-f9571ad964ff",
+        "shop": "https://poker-agree-field-macintosh.trycloudflare.com",
+        "shop_identity": "2Qq2HD4NP/R9i5Z8vw7lkJJfrkZEGJ83suhv98lC/50=",
+        "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+        "kind": "goods",
+        "price": 1453933,
+        "value": 2332000,
+        "paid_at": 1794209664.001531,
+        "grade": "A",
+        "list_price": 2332000,
+        "expires_at": null,
+        "initial_saved_contribution": 0.3765295883361921,
+        "warranty_hours": 6.0,
+        "ledger": 4398460,
+        "strategy_version": 14,
+        "_ts": 1794209664.001531
+      },
+      {
+        "order": "o-87a86ffe0ac1",
+        "sku": "G2108d9bc",
+        "unit": "u-931bba8ee076",
+        "shop": "https://viruses-closest-cruz-misc.trycloudflare.com",
+        "shop_identity": "Zo2OR9JmVDBGZvGwu+HSY4XDT54CXENK4N4cj/w0WqA=",
+        "name": "시티델리 풍미가득 볶음밥 5종 10봉 택",
+        "kind": "food",
+        "price": 10487,
+        "value": 18900,
+        "paid_at": 1794209780.31936,
+        "grade": "C",
+        "list_price": 18900,
+        "expires_at": 1795156215.0,
+        "initial_saved_contribution": 0.44513227513227516,
+        "warranty_hours": 0,
+        "ledger": 4398963,
+        "strategy_version": 14,
+        "_ts": 1794209780.3226776
+      },
+      {
+        "order": "o-564e50c8ae23",
+        "sku": "Gef4d3036",
+        "unit": "u-6a629d601c93",
+        "shop": "https://drop-composed-euro-gourmet.trycloudflare.com",
+        "shop_identity": "AHYvR2+JHi7DQ19ubUId5HspWGGReOfLca1i2PvBvuo=",
+        "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+        "kind": "food",
+        "price": 17411,
+        "value": 28900,
+        "paid_at": 1794209858.0006483,
+        "grade": "B",
+        "list_price": 28900,
+        "expires_at": 1794341581.0,
+        "initial_saved_contribution": 0.3975432525951557,
+        "warranty_hours": 0,
+        "ledger": 4399252,
+        "strategy_version": 14,
+        "_ts": 1794209858.0027406
+      },
+      {
+        "order": "o-df580d83fecd",
+        "sku": "G09ddb328",
+        "unit": "u-b079bc86ee4c",
+        "shop": "https://excluding-desirable-sociology-proportion.trycloudflare.com",
+        "shop_identity": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+        "name": "널담 고단백 저당 크림 가득 쫀득빵 4종 혼합 10봉",
+        "kind": "food",
+        "price": 8385,
+        "value": 12900,
+        "paid_at": 1794209925.679557,
+        "grade": "B",
+        "list_price": 12900,
+        "expires_at": 1794331436.0,
+        "initial_saved_contribution": 0.35,
+        "warranty_hours": 0,
+        "ledger": 4399496,
+        "strategy_version": 14,
+        "_ts": 1794209925.6816115
+      },
+      {
+        "order": "o-60f3ac176aba",
+        "sku": "Gf0e58a76",
+        "unit": "u-2704660490c2",
+        "shop": "https://excluding-desirable-sociology-proportion.trycloudflare.com",
+        "shop_identity": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+        "name": "밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀",
+        "kind": "food",
+        "price": 48035,
+        "value": 73900,
+        "paid_at": 1794209985.4216378,
+        "grade": "A",
+        "list_price": 73900,
+        "expires_at": 1796590895.0,
+        "initial_saved_contribution": 0.35,
+        "warranty_hours": 0,
+        "ledger": 4399793,
+        "strategy_version": 14,
+        "_ts": 1794209985.4230769
+      }
+    ]
+  },
+  "restock_plans": [
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G24f5f979",
+          "qty": 1
+        },
+        {
+          "sku": "G6cd0e9d4",
+          "qty": 1
+        },
+        {
+          "sku": "Gf6b70da8",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 3,
+      "capital_commitment": 10056690.0,
+      "spendable": 425531578.94,
+      "expected_delta": {
+        "book": 538299.9527916013,
+        "profit": 5709058.622901119,
+        "revenue": 5709880.992655621
+      },
+      "_ts": 1794194675.5215585
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G24f5f979",
+          "qty": 1
+        },
+        {
+          "sku": "G6cd0e9d4",
+          "qty": 2
+        },
+        {
+          "sku": "Gf6b70da8",
+          "qty": 2
+        },
+        {
+          "sku": "G9718023b",
+          "qty": 1
+        },
+        {
+          "sku": "G53b150b5",
+          "qty": 1
+        },
+        {
+          "sku": "G8ec51935",
+          "qty": 1
+        },
+        {
+          "sku": "G4a12722c",
+          "qty": 1
+        },
+        {
+          "sku": "G021aae64",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 8,
+      "capital_commitment": 26594334.540000003,
+      "spendable": 420473100.94,
+      "expected_delta": {
+        "book": 1201615.96386669,
+        "profit": 14637514.450190056,
+        "revenue": 14643023.49411532
+      },
+      "_ts": 1794195952.9703717
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G6cd0e9d4",
+          "qty": 4
+        },
+        {
+          "sku": "G8ec51935",
+          "qty": 2
+        },
+        {
+          "sku": "Gf6b70da8",
+          "qty": 2
+        },
+        {
+          "sku": "G03d0199f",
+          "qty": 1
+        },
+        {
+          "sku": "G1515d951",
+          "qty": 1
+        },
+        {
+          "sku": "G47788edd",
+          "qty": 1
+        },
+        {
+          "sku": "Gb5d0dde7",
+          "qty": 1
+        },
+        {
+          "sku": "Gbec2b68f",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 8,
+      "capital_commitment": 34836964.739999995,
+      "spendable": 414252202.76,
+      "expected_delta": {
+        "book": 1394762.042551358,
+        "profit": 18365299.23024876,
+        "revenue": 18375952.690109883
+      },
+      "_ts": 1794196972.667999
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G8ec51935",
+          "qty": 6
+        },
+        {
+          "sku": "G6cd0e9d4",
+          "qty": 3
+        },
+        {
+          "sku": "G53b150b5",
+          "qty": 2
+        },
+        {
+          "sku": "Gf6b70da8",
+          "qty": 1
+        },
+        {
+          "sku": "G03d0199f",
+          "qty": 1
+        },
+        {
+          "sku": "G021aae64",
+          "qty": 1
+        },
+        {
+          "sku": "G1515d951",
+          "qty": 1
+        },
+        {
+          "sku": "Gb5d0dde7",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 8,
+      "capital_commitment": 33796102.68,
+      "spendable": 403319741.8,
+      "expected_delta": {
+        "book": 1581210.0923654218,
+        "profit": 18940975.61379615,
+        "revenue": 18945195.817112017
+      },
+      "_ts": 1794198215.3263085
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G53b150b5",
+          "qty": 2
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 1,
+      "capital_commitment": 1924128.0,
+      "spendable": 390793930.28,
+      "expected_delta": {
+        "book": 167752.6766617046,
+        "profit": 1157064.6766286688,
+        "revenue": 1157273.2472936087
+      },
+      "_ts": 1794198304.4689567
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G8ec51935",
+          "qty": 6
+        },
+        {
+          "sku": "G24f5f979",
+          "qty": 2
+        },
+        {
+          "sku": "G53b150b5",
+          "qty": 3
+        },
+        {
+          "sku": "G4a12722c",
+          "qty": 1
+        },
+        {
+          "sku": "G6cd0e9d4",
+          "qty": 1
+        },
+        {
+          "sku": "Gb5d0dde7",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 6,
+      "capital_commitment": 35386788.6,
+      "spendable": 395148993.98,
+      "expected_delta": {
+        "book": 2052898.5485220084,
+        "profit": 20222502.318932146,
+        "revenue": 20227080.647462595
+      },
+      "_ts": 1794199301.456407
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G8ec51935",
+          "qty": 9
+        },
+        {
+          "sku": "G53b150b5",
+          "qty": 4
+        },
+        {
+          "sku": "Gb5d0dde7",
+          "qty": 2
+        },
+        {
+          "sku": "G03d0199f",
+          "qty": 1
+        },
+        {
+          "sku": "Gf6b70da8",
+          "qty": 1
+        },
+        {
+          "sku": "G021aae64",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 6,
+      "capital_commitment": 35470751.94,
+      "spendable": 381479803.68,
+      "expected_delta": {
+        "book": 2120263.1392964027,
+        "profit": 20372761.160091363,
+        "revenue": 20375775.513697736
+      },
+      "_ts": 1794200719.1984315
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G8ec51935",
+          "qty": 10
+        },
+        {
+          "sku": "G53b150b5",
+          "qty": 4
+        },
+        {
+          "sku": "G03d0199f",
+          "qty": 2
+        },
+        {
+          "sku": "Gb5d0dde7",
+          "qty": 2
+        },
+        {
+          "sku": "G021aae64",
+          "qty": 1
+        },
+        {
+          "sku": "Gbec2b68f",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 6,
+      "capital_commitment": 41948159.94,
+      "spendable": 366856382.26,
+      "expected_delta": {
+        "book": 2049692.1503154105,
+        "profit": 23488906.493582685,
+        "revenue": 23495278.485493504
+      },
+      "_ts": 1794201721.6655462
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G8ec51935",
+          "qty": 11
+        },
+        {
+          "sku": "G53b150b5",
+          "qty": 6
+        },
+        {
+          "sku": "G03d0199f",
+          "qty": 3
+        },
+        {
+          "sku": "Gb5d0dde7",
+          "qty": 4
+        },
+        {
+          "sku": "G021aae64",
+          "qty": 3
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 5,
+      "capital_commitment": 47505113.82,
+      "spendable": 355471846.40000004,
+      "expected_delta": {
+        "book": 2893036.1080240672,
+        "profit": 27353108.865998708,
+        "revenue": 27357151.90193935
+      },
+      "_ts": 1794203183.3858855
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G8ec51935",
+          "qty": 5
+        },
+        {
+          "sku": "G53b150b5",
+          "qty": 4
+        },
+        {
+          "sku": "Gbec2b68f",
+          "qty": 1
+        },
+        {
+          "sku": "G03d0199f",
+          "qty": 2
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 4,
+      "capital_commitment": 25499056.5,
+      "spendable": 343661511.94,
+      "expected_delta": {
+        "book": 1634973.6507357196,
+        "profit": 14786634.826881964,
+        "revenue": 14789109.873959556
+      },
+      "_ts": 1794204351.125927
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G8ec51935",
+          "qty": 5
+        },
+        {
+          "sku": "G03d0199f",
+          "qty": 4
+        },
+        {
+          "sku": "Gbec2b68f",
+          "qty": 2
+        },
+        {
+          "sku": "G53b150b5",
+          "qty": 3
+        },
+        {
+          "sku": "G021aae64",
+          "qty": 4
+        },
+        {
+          "sku": "G85a1a856",
+          "qty": 1
+        },
+        {
+          "sku": "G1515d951",
+          "qty": 1
+        },
+        {
+          "sku": "G9c9f8f94",
+          "qty": 1
+        },
+        {
+          "sku": "G3e0d6c67",
+          "qty": 1
+        },
+        {
+          "sku": "G07ec17d5",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 10,
+      "capital_commitment": 40285550.76,
+      "spendable": 341266824.03999996,
+      "expected_delta": {
+        "book": 2043084.19582079,
+        "profit": 22615069.091391917,
+        "revenue": 22620621.060922645
+      },
+      "_ts": 1794205461.4751914
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G8ec51935",
+          "qty": 7
+        },
+        {
+          "sku": "G021aae64",
+          "qty": 6
+        },
+        {
+          "sku": "G1515d951",
+          "qty": 2
+        },
+        {
+          "sku": "G53b150b5",
+          "qty": 1
+        },
+        {
+          "sku": "G16dcdc73",
+          "qty": 1
+        },
+        {
+          "sku": "G0667d440",
+          "qty": 1
+        },
+        {
+          "sku": "G429bd69e",
+          "qty": 1
+        },
+        {
+          "sku": "G07ec17d5",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 8,
+      "capital_commitment": 26199433.26,
+      "spendable": 335987307.12,
+      "expected_delta": {
+        "book": 1661744.4630751582,
+        "profit": 15188085.714004803,
+        "revenue": 15191235.351971956
+      },
+      "_ts": 1794206597.1060092
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G03d0199f",
+          "qty": 3
+        },
+        {
+          "sku": "G1515d951",
+          "qty": 6
+        },
+        {
+          "sku": "G021aae64",
+          "qty": 5
+        },
+        {
+          "sku": "G8ec51935",
+          "qty": 1
+        },
+        {
+          "sku": "G07ec17d5",
+          "qty": 2
+        },
+        {
+          "sku": "G00327e80",
+          "qty": 1
+        },
+        {
+          "sku": "Gb5d0dde7",
+          "qty": 1
+        },
+        {
+          "sku": "G85a1a856",
+          "qty": 1
+        },
+        {
+          "sku": "G19a70f63",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 9,
+      "capital_commitment": 21709687.14,
+      "spendable": 327490581.2,
+      "expected_delta": {
+        "book": 1343807.485008855,
+        "profit": 11849679.622233232,
+        "revenue": 11856506.331223201
+      },
+      "_ts": 1794207677.7940295
+    },
+    {
+      "strategy_version": 15,
+      "buy": [
+        {
+          "sku": "G1515d951",
+          "qty": 5
+        },
+        {
+          "sku": "G07ec17d5",
+          "qty": 5
+        },
+        {
+          "sku": "G53b150b5",
+          "qty": 2
+        },
+        {
+          "sku": "G03d0199f",
+          "qty": 1
+        },
+        {
+          "sku": "G85a1a856",
+          "qty": 1
+        },
+        {
+          "sku": "Gbec2b68f",
+          "qty": 1
+        },
+        {
+          "sku": "G19a70f63",
+          "qty": 1
+        },
+        {
+          "sku": "G16dcdc73",
+          "qty": 1
+        },
+        {
+          "sku": "G0e4deffc",
+          "qty": 1
+        },
+        {
+          "sku": "G0667d440",
+          "qty": 1
+        }
+      ],
+      "policy": "shop-v10-patch35-terms",
+      "line_budget": 10,
+      "capital_commitment": 18333834.84,
+      "spendable": 324557757.34000003,
+      "expected_delta": {
+        "book": 940464.8037747034,
+        "profit": 9530216.760268647,
+        "revenue": 9537494.019316653
+      },
+      "_ts": 1794209002.2388833
+    }
+  ],
+  "successful_supplies": [
+    {
+      "time_kst": "12:24:45",
+      "qty": 1,
+      "name": "[다우닝] 플라나 4인 스윙 전체 통가죽 소파+스툴",
+      "cost": 2578491,
+      "balance_after": 536385309
+    },
+    {
+      "time_kst": "12:24:54",
+      "qty": 1,
+      "name": "[자코모] 굿뮤즈 스윙 3.5인 기능성 슈렁큰 천연면피 소가죽 소파+스툴",
+      "cost": 826645,
+      "balance_after": 535558664
+    },
+    {
+      "time_kst": "12:25:07",
+      "qty": 1,
+      "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+      "cost": 1343817,
+      "balance_after": 534214847
+    },
+    {
+      "time_kst": "12:45:59",
+      "qty": 1,
+      "name": "[다우닝] 플라나 4인 스윙 전체 통가죽 소파+스툴",
+      "cost": 2260572,
+      "balance_after": 538250853
+    },
+    {
+      "time_kst": "12:46:16",
+      "qty": 2,
+      "name": "[자코모] 굿뮤즈 스윙 3.5인 기능성 슈렁큰 천연면피 소가죽 소파+스툴",
+      "cost": 3251208,
+      "balance_after": 534999645
+    },
+    {
+      "time_kst": "12:46:23",
+      "qty": 2,
+      "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+      "cost": 2756724,
+      "balance_after": 532242921
+    },
+    {
+      "time_kst": "12:46:36",
+      "qty": 1,
+      "name": "라이젠5 7500F RTX5060Ti RAM_16GB SSD_1TB_윈도우 탑재 조립PC 게이밍 컴퓨터 데스크탑 P609",
+      "cost": 1704319,
+      "balance_after": 530538602
+    },
+    {
+      "time_kst": "12:46:45",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "cost": 478439,
+      "balance_after": 530060163
+    },
+    {
+      "time_kst": "12:46:56",
+      "qty": 1,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 999841,
+      "balance_after": 529060322
+    },
+    {
+      "time_kst": "12:47:13",
+      "qty": 1,
+      "name": "[다우닝] 아지오 4인 전체 통가죽 소파+스툴",
+      "cost": 2045755,
+      "balance_after": 527014567
+    },
+    {
+      "time_kst": "12:47:27",
+      "qty": 1,
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "cost": 378508,
+      "balance_after": 526636059
+    },
+    {
+      "time_kst": "13:02:54",
+      "qty": 4,
+      "name": "[자코모] 굿뮤즈 스윙 3.5인 기능성 슈렁큰 천연면피 소가죽 소파+스툴",
+      "cost": 6153221,
+      "balance_after": 526792797
+    },
+    {
+      "time_kst": "13:03:09",
+      "qty": 2,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 2588148,
+      "balance_after": 524204649
+    },
+    {
+      "time_kst": "13:03:19",
+      "qty": 2,
+      "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+      "cost": 2251533,
+      "balance_after": 521953116
+    },
+    {
+      "time_kst": "13:03:31",
+      "qty": 1,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 729415,
+      "balance_after": 521223701
+    },
+    {
+      "time_kst": "13:03:44",
+      "qty": 1,
+      "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+      "cost": 285342,
+      "balance_after": 520938359
+    },
+    {
+      "time_kst": "13:03:58",
+      "qty": 1,
+      "name": "[자코모] 와드 4인 코너카우치형 기능성 비텔로 통가죽 슈렁큰 소가죽소파+쿠션2개",
+      "cost": 2010216,
+      "balance_after": 518928143
+    },
+    {
+      "time_kst": "13:04:08",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "cost": 422405,
+      "balance_after": 518505738
+    },
+    {
+      "time_kst": "13:04:19",
+      "qty": 1,
+      "name": "시몬스 D2178A. 뷰티레스트 자스민. 라지킹 침대",
+      "cost": 2505410,
+      "balance_after": 516000328
+    },
+    {
+      "time_kst": "13:23:38",
+      "qty": 6,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 7620896,
+      "balance_after": 524223519
+    },
+    {
+      "time_kst": "13:23:47",
+      "qty": 3,
+      "name": "[자코모] 굿뮤즈 스윙 3.5인 기능성 슈렁큰 천연면피 소가죽 소파+스툴",
+      "cost": 4758963,
+      "balance_after": 519464556
+    },
+    {
+      "time_kst": "13:23:58",
+      "qty": 2,
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "cost": 1213933,
+      "balance_after": 518250623
+    },
+    {
+      "time_kst": "13:24:10",
+      "qty": 1,
+      "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+      "cost": 1559474,
+      "balance_after": 516691149
+    },
+    {
+      "time_kst": "13:24:21",
+      "qty": 1,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 760483,
+      "balance_after": 515930666
+    },
+    {
+      "time_kst": "13:25:11",
+      "qty": 2,
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "cost": 1060460,
+      "balance_after": 515509309
+    },
+    {
+      "time_kst": "13:41:44",
+      "qty": 6,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 8827052,
+      "balance_after": 522260888
+    },
+    {
+      "time_kst": "13:41:55",
+      "qty": 2,
+      "name": "[다우닝] 플라나 4인 스윙 전체 통가죽 소파+스툴",
+      "cost": 5396033,
+      "balance_after": 516864855
+    },
+    {
+      "time_kst": "13:42:09",
+      "qty": 3,
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "cost": 1073435,
+      "balance_after": 515791420
+    },
+    {
+      "time_kst": "13:42:20",
+      "qty": 1,
+      "name": "[다우닝] 아지오 4인 전체 통가죽 소파+스툴",
+      "cost": 2253914,
+      "balance_after": 513537506
+    },
+    {
+      "time_kst": "13:42:31",
+      "qty": 1,
+      "name": "[자코모] 굿뮤즈 스윙 3.5인 기능성 슈렁큰 천연면피 소가죽 소파+스툴",
+      "cost": 1466844,
+      "balance_after": 512070662
+    },
+    {
+      "time_kst": "13:42:45",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "cost": 536604,
+      "balance_after": 511534058
+    },
+    {
+      "time_kst": "14:05:26",
+      "qty": 9,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 12457396,
+      "balance_after": 517013213
+    },
+    {
+      "time_kst": "14:05:35",
+      "qty": 4,
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "cost": 1885835,
+      "balance_after": 515127378
+    },
+    {
+      "time_kst": "14:05:46",
+      "qty": 2,
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "cost": 1275263,
+      "balance_after": 513852115
+    },
+    {
+      "time_kst": "14:05:57",
+      "qty": 1,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 431073,
+      "balance_after": 515023151
+    },
+    {
+      "time_kst": "14:06:08",
+      "qty": 1,
+      "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+      "cost": 1662979,
+      "balance_after": 513360172
+    },
+    {
+      "time_kst": "14:06:26",
+      "qty": 1,
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "cost": 262667,
+      "balance_after": 513792407
+    },
+    {
+      "time_kst": "14:22:06",
+      "qty": 10,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 14030853,
+      "balance_after": 514068573
+    },
+    {
+      "time_kst": "14:22:17",
+      "qty": 4,
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "cost": 1563090,
+      "balance_after": 512505483
+    },
+    {
+      "time_kst": "14:22:32",
+      "qty": 2,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 2020821,
+      "balance_after": 510484662
+    },
+    {
+      "time_kst": "14:22:42",
+      "qty": 2,
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "cost": 1591738,
+      "balance_after": 508892924
+    },
+    {
+      "time_kst": "14:23:00",
+      "qty": 1,
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "cost": 436605,
+      "balance_after": 508456319
+    },
+    {
+      "time_kst": "14:23:08",
+      "qty": 1,
+      "name": "시몬스 D2178A. 뷰티레스트 자스민. 라지킹 침대",
+      "cost": 2167874,
+      "balance_after": 506288445
+    },
+    {
+      "time_kst": "14:46:24",
+      "qty": 11,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 15886607,
+      "balance_after": 517451340
+    },
+    {
+      "time_kst": "14:46:36",
+      "qty": 6,
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "cost": 3032692,
+      "balance_after": 514418648
+    },
+    {
+      "time_kst": "14:46:46",
+      "qty": 3,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 3107425,
+      "balance_after": 511311223
+    },
+    {
+      "time_kst": "14:46:57",
+      "qty": 4,
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "cost": 2377073,
+      "balance_after": 508934150
+    },
+    {
+      "time_kst": "14:47:13",
+      "qty": 3,
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "cost": 976563,
+      "balance_after": 509755049
+    },
+    {
+      "time_kst": "15:05:52",
+      "qty": 5,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 6947438,
+      "balance_after": 518530837
+    },
+    {
+      "time_kst": "15:06:03",
+      "qty": 4,
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "cost": 1897460,
+      "balance_after": 516537160
+    },
+    {
+      "time_kst": "15:06:17",
+      "qty": 1,
+      "name": "시몬스 D2178A. 뷰티레스트 자스민. 라지킹 침대",
+      "cost": 2926238,
+      "balance_after": 513610922
+    },
+    {
+      "time_kst": "15:06:29",
+      "qty": 2,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 1903991,
+      "balance_after": 511706931
+    },
+    {
+      "time_kst": "15:24:24",
+      "qty": 5,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 7250027,
+      "balance_after": 522103976
+    },
+    {
+      "time_kst": "15:24:35",
+      "qty": 4,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 3634981,
+      "balance_after": 518468995
+    },
+    {
+      "time_kst": "15:24:47",
+      "qty": 2,
+      "name": "시몬스 D2178A. 뷰티레스트 자스민. 라지킹 침대",
+      "cost": 4879216,
+      "balance_after": 513589779
+    },
+    {
+      "time_kst": "15:24:59",
+      "qty": 3,
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "cost": 1613581,
+      "balance_after": 511976198
+    },
+    {
+      "time_kst": "15:25:12",
+      "qty": 4,
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "cost": 1286089,
+      "balance_after": 510690109
+    },
+    {
+      "time_kst": "15:25:24",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+      "cost": 419409,
+      "balance_after": 510270700
+    },
+    {
+      "time_kst": "15:25:37",
+      "qty": 1,
+      "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+      "cost": 236873,
+      "balance_after": 510033827
+    },
+    {
+      "time_kst": "15:25:51",
+      "qty": 1,
+      "name": "삼성전자 LED 4K UHD 125.7cm(50인치) 비즈니스TV LH50BEHHLGFXKR 스탠드형 에너지효율 1등급",
+      "cost": 408833,
+      "balance_after": 511237932
+    },
+    {
+      "time_kst": "15:26:02",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 허브. 라지킹 매트리스",
+      "cost": 1316827,
+      "balance_after": 509921105
+    },
+    {
+      "time_kst": "15:26:13",
+      "qty": 1,
+      "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+      "cost": 191260,
+      "balance_after": 510096077
+    },
+    {
+      "time_kst": "15:43:19",
+      "qty": 7,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 9822365,
+      "balance_after": 511387182
+    },
+    {
+      "time_kst": "15:43:30",
+      "qty": 6,
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "cost": 2123202,
+      "balance_after": 509263980
+    },
+    {
+      "time_kst": "15:43:41",
+      "qty": 2,
+      "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+      "cost": 570803,
+      "balance_after": 508693177
+    },
+    {
+      "time_kst": "15:43:53",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "cost": 410241,
+      "balance_after": 508282936
+    },
+    {
+      "time_kst": "15:44:04",
+      "qty": 1,
+      "name": "조선호텔 특제육수 포기김치 4kg + 총각김치 1.5kg",
+      "cost": 32984,
+      "balance_after": 508249952
+    },
+    {
+      "time_kst": "15:44:23",
+      "qty": 1,
+      "name": "지누스 그린티 에어 하이브리드 스프링 매트리스 20cm Q 퀸",
+      "cost": 200911,
+      "balance_after": 508388089
+    },
+    {
+      "time_kst": "15:44:35",
+      "qty": 1,
+      "name": "[다우닝] 릴로 SO302 1인 전체 내추럴가죽 리클라이너",
+      "cost": 555554,
+      "balance_after": 507832535
+    },
+    {
+      "time_kst": "15:44:46",
+      "qty": 1,
+      "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+      "cost": 153885,
+      "balance_after": 507678650
+    },
+    {
+      "time_kst": "16:01:18",
+      "qty": 3,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 3354453,
+      "balance_after": 517592427
+    },
+    {
+      "time_kst": "16:01:30",
+      "qty": 6,
+      "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+      "cost": 1388760,
+      "balance_after": 516203667
+    },
+    {
+      "time_kst": "16:01:40",
+      "qty": 5,
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "cost": 1671841,
+      "balance_after": 514531826
+    },
+    {
+      "time_kst": "16:01:51",
+      "qty": 1,
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "cost": 1467247,
+      "balance_after": 513064579
+    },
+    {
+      "time_kst": "16:02:09",
+      "qty": 2,
+      "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+      "cost": 288348,
+      "balance_after": 512776231
+    },
+    {
+      "time_kst": "16:02:22",
+      "qty": 1,
+      "name": "[다우닝] 플라나 베이직 4인 전체 천연가죽 소파",
+      "cost": 1410284,
+      "balance_after": 511611756
+    },
+    {
+      "time_kst": "16:02:36",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "cost": 607119,
+      "balance_after": 511004637
+    },
+    {
+      "time_kst": "16:02:46",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+      "cost": 487376,
+      "balance_after": 510517261
+    },
+    {
+      "time_kst": "16:02:57",
+      "qty": 1,
+      "name": "[다우닝] 플라나 베이직 3인 전체 천연가죽 소파",
+      "cost": 786219,
+      "balance_after": 509731042
+    },
+    {
+      "time_kst": "16:23:23",
+      "qty": 5,
+      "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+      "cost": 1345569,
+      "balance_after": 517046868
+    },
+    {
+      "time_kst": "16:23:36",
+      "qty": 5,
+      "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+      "cost": 840410,
+      "balance_after": 516206458
+    },
+    {
+      "time_kst": "16:23:47",
+      "qty": 2,
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "cost": 843623,
+      "balance_after": 515362835
+    },
+    {
+      "time_kst": "16:23:59",
+      "qty": 1,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 1080012,
+      "balance_after": 516995832
+    },
+    {
+      "time_kst": "16:24:09",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+      "cost": 666712,
+      "balance_after": 516329120
+    },
+    {
+      "time_kst": "16:24:24",
+      "qty": 1,
+      "name": "시몬스 D2178A. 뷰티레스트 자스민. 라지킹 침대",
+      "cost": 2388152,
+      "balance_after": 513940968
+    },
+    {
+      "time_kst": "16:24:36",
+      "qty": 1,
+      "name": "[다우닝] 플라나 베이직 3인 전체 천연가죽 소파",
+      "cost": 927425,
+      "balance_after": 513013543
+    },
+    {
+      "time_kst": "16:24:47",
+      "qty": 1,
+      "name": "조선호텔 특제육수 포기김치 4kg + 총각김치 1.5kg",
+      "cost": 36260,
+      "balance_after": 512977283
+    },
+    {
+      "time_kst": "16:24:58",
+      "qty": 1,
+      "name": "에비뉴엘 4인 슈렁큰 소가죽 소파+스툴",
+      "cost": 1025166,
+      "balance_after": 511952117
+    },
+    {
+      "time_kst": "16:25:11",
+      "qty": 1,
+      "name": "지누스 그린티 에어 하이브리드 스프링 매트리스 20cm Q 퀸",
+      "cost": 206178,
+      "balance_after": 512973958
+    }
+  ],
+  "actual_supply_units": 215,
+  "actual_supply_cost": 206867976,
+  "forum_deliveries": [
+    {
+      "key": "buyer-insight:5980646",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794193852.2485483
+    },
+    {
+      "key": "stock-announcement:2990323",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794193951.1159227
+    },
+    {
+      "key": "buyer-insight:5980647",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794194161.1969428
+    },
+    {
+      "key": "buyer-insight:5980648",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794194477.8429968
+    },
+    {
+      "key": "stock-announcement:2990324",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794194603.5306652
+    },
+    {
+      "key": "buyer-insight:5980649",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794194814.1913528
+    },
+    {
+      "key": "buyer-insight:5980650",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794195152.5604134
+    },
+    {
+      "key": "stock-announcement:2990325",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794195236.3365884
+    },
+    {
+      "key": "buyer-insight:5980651",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794195472.9278963
+    },
+    {
+      "key": "buyer-insight:5980652",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794195773.3920374
+    },
+    {
+      "key": "stock-announcement:2990326",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794195864.5026424
+    },
+    {
+      "key": "buyer-insight:5980653",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794196081.2726974
+    },
+    {
+      "key": "buyer-insight:5980654",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794196402.4243433
+    },
+    {
+      "key": "stock-announcement:2990327",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794196508.7205598
+    },
+    {
+      "key": "buyer-insight:5980655",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794196724.9558418
+    },
+    {
+      "key": "buyer-insight:5980656",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794197044.1689193
+    },
+    {
+      "key": "stock-announcement:2990328",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794197152.5837173
+    },
+    {
+      "key": "buyer-insight:5980657",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794197346.7803879
+    },
+    {
+      "key": "buyer-insight:5980658",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794197663.337554
+    },
+    {
+      "key": "stock-announcement:2990329",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794197787.1618469
+    },
+    {
+      "key": "buyer-insight:5980659",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794197977.6883538
+    },
+    {
+      "key": "buyer-insight:5980660",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794198295.4656065
+    },
+    {
+      "key": "stock-announcement:2990330",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794198393.2268014
+    },
+    {
+      "key": "buyer-insight:5980661",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794198619.7679996
+    },
+    {
+      "key": "buyer-insight:5980663",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794198928.83394
+    },
+    {
+      "key": "stock-announcement:2990331",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794199031.5262132
+    },
+    {
+      "key": "buyer-insight:5980664",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794199251.064042
+    },
+    {
+      "key": "buyer-insight:5980665",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794199562.6263056
+    },
+    {
+      "key": "stock-announcement:2990332",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794199664.5439167
+    },
+    {
+      "key": "buyer-insight:5980666",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794199909.894292
+    },
+    {
+      "key": "buyer-insight:5980667",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794200238.0893717
+    },
+    {
+      "key": "stock-announcement:2990333",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794200293.3562698
+    },
+    {
+      "key": "buyer-insight:5980668",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794200542.1111517
+    },
+    {
+      "key": "buyer-insight:5980669",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794200855.0094674
+    },
+    {
+      "key": "stock-announcement:2990334",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794200917.7986152
+    },
+    {
+      "key": "buyer-insight:5980670",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794201173.2049937
+    },
+    {
+      "key": "buyer-insight:5980671",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794201476.5797904
+    },
+    {
+      "key": "stock-announcement:2990335",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794201532.736237
+    },
+    {
+      "key": "buyer-insight:5980672",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794201807.2046673
+    },
+    {
+      "key": "buyer-insight:5980673",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794202112.784368
+    },
+    {
+      "key": "stock-announcement:2990336",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794202169.7507331
+    },
+    {
+      "key": "buyer-insight:5980674",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794202458.3547118
+    },
+    {
+      "key": "buyer-insight:5980675",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794202799.3786883
+    },
+    {
+      "key": "stock-announcement:2990337",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794202799.9181728
+    },
+    {
+      "key": "buyer-insight:5980676",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794203128.2472777
+    },
+    {
+      "key": "stock-announcement:2990339",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794203407.5733082
+    },
+    {
+      "key": "buyer-insight:5980678",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794203465.6499257
+    },
+    {
+      "key": "buyer-insight:5980679",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794203803.8103197
+    },
+    {
+      "key": "stock-announcement:2990340",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794204040.060669
+    },
+    {
+      "key": "buyer-insight:5980680",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794204162.2596881
+    },
+    {
+      "key": "buyer-insight:5980681",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794204473.0478861
+    },
+    {
+      "key": "stock-announcement:2990341",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794204654.596224
+    },
+    {
+      "key": "buyer-insight:5980682",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794204803.8922777
+    },
+    {
+      "key": "buyer-insight:5980683",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794205147.7199244
+    },
+    {
+      "key": "stock-announcement:2990342",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794205293.08065
+    },
+    {
+      "key": "buyer-insight:5980684",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794205499.0913477
+    },
+    {
+      "key": "buyer-insight:5980685",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794205834.2673495
+    },
+    {
+      "key": "stock-announcement:2990343",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794205931.1679628
+    },
+    {
+      "key": "buyer-insight:5980687",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794206159.0796554
+    },
+    {
+      "key": "buyer-insight:5980688",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794206476.8672042
+    },
+    {
+      "key": "stock-announcement:2990344",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794206587.1947763
+    },
+    {
+      "key": "buyer-insight:5980689",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794206822.5592043
+    },
+    {
+      "key": "buyer-insight:5980690",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794207161.0027955
+    },
+    {
+      "key": "stock-announcement:2990345",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794207204.4739513
+    },
+    {
+      "key": "buyer-insight:5980691",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794207483.3066502
+    },
+    {
+      "key": "buyer-insight:5980692",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794207822.9524322
+    },
+    {
+      "key": "stock-announcement:2990346",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794207824.177728
+    },
+    {
+      "key": "buyer-insight:5980693",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794208152.88075
+    },
+    {
+      "key": "stock-announcement:2990347",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794208452.1395652
+    },
+    {
+      "key": "buyer-insight:5980694",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794208516.2332835
+    },
+    {
+      "key": "buyer-insight:5980696",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794208841.6477907
+    },
+    {
+      "key": "stock-announcement:2990348",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794209088.801202
+    },
+    {
+      "key": "buyer-insight:5980697",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794209188.1635666
+    },
+    {
+      "key": "buyer-insight:5980698",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794209492.4395566
+    },
+    {
+      "key": "stock-announcement:2990349",
+      "status": 200,
+      "role": "shop",
+      "_ts": 1794209694.8608384
+    },
+    {
+      "key": "buyer-insight:5980699",
+      "status": 200,
+      "role": "buyer",
+      "_ts": 1794209843.048866
+    }
+  ],
+  "post_restart_errors": {
+    "market_control_error": [],
+    "forum_error": [],
+    "strategy_error": []
+  },
+  "limits": [
+    "Short post-release observation, not proof of improved ranks or durable profit.",
+    "Supply success is parsed only from this launch console; plans are separate.",
+    "Gross margin excludes subsequent refunds, storage and expiration."
+  ]
+}

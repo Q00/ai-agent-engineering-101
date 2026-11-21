@@ -1,0 +1,1191 @@
+{
+  "verified": true,
+  "public": [
+    {
+      "url": "https://royalty-village-autos-their.trycloudflare.com/.well-known/agent-card.json",
+      "status": 200,
+      "data": {
+        "name": "Seochanit Shop",
+        "protocol": null
+      }
+    },
+    {
+      "url": "https://royalty-village-autos-their.trycloudflare.com/.well-known/acp.json",
+      "status": 200,
+      "data": {
+        "name": null,
+        "protocol": "acp"
+      }
+    },
+    {
+      "url": "https://market.ourolabs.ai/api/board",
+      "status": 200,
+      "data": {
+        "round": 3,
+        "shops": [
+          {
+            "name": "seochanit",
+            "alive": true,
+            "all": 0.723,
+            "deals": 2738,
+            "revenue": 490698371,
+            "profit": 49944402,
+            "book": 66269524,
+            "stock_units": 45,
+            "surplus": null,
+            "saved": null,
+            "forum": 0.0,
+            "posts": null,
+            "served": null
+          }
+        ],
+        "buyers": [
+          {
+            "name": "seochanit",
+            "alive": true,
+            "all": 0.685,
+            "deals": 5241,
+            "revenue": null,
+            "profit": null,
+            "book": null,
+            "stock_units": null,
+            "surplus": 230506738,
+            "saved": 0.2517,
+            "forum": 0.878,
+            "posts": 387,
+            "served": 5143
+          }
+        ]
+      }
+    }
+  ],
+  "local": {
+    "checked_at": "2026-11-06T07:37:02.735925+00:00",
+    "policy_version": "r3-market-observer-book-v6",
+    "objective_revision": "r3-market-observer-book-v6",
+    "epoch": 1793854431.985112,
+    "shop_strategy_revision": "shop-v9-rank-capital",
+    "shop_expected_revision": "shop-v9-rank-capital",
+    "shop_championship_enabled": true,
+    "buyer_championship_enabled": true,
+    "championship_progress": {
+      "at": 1793950613.3299565,
+      "ranks": {
+        "shop": {
+          "rank": 16,
+          "population": 58
+        },
+        "buyer": {
+          "rank": 15,
+          "population": 55
+        }
+      },
+      "next_thresholds": {
+        "shop": {
+          "book": {
+            "current": 66269524,
+            "next_value": 66734515,
+            "gap": 464991,
+            "weight": 0.5,
+            "cohort_size": 58
+          },
+          "revenue": {
+            "current": 490698371,
+            "next_value": 539043065,
+            "gap": 48344694,
+            "weight": 0.3,
+            "cohort_size": 58
+          },
+          "stars_rank": {
+            "current": 4.36,
+            "next_value": 4.37,
+            "gap": 0.009999999999999787,
+            "weight": 0.2,
+            "cohort_size": 58
+          }
+        },
+        "buyer": {
+          "saved": {
+            "current": 0.2517,
+            "next_value": 0.2518,
+            "gap": 0.0001000000000000445,
+            "weight": 0.5,
+            "cohort_size": 55
+          },
+          "forum": {
+            "current": 0.878,
+            "next_value": 0.879,
+            "gap": 0.0010000000000000009,
+            "weight": 0.3,
+            "cohort_size": 55
+          },
+          "deals": {
+            "current": 5241,
+            "next_value": 5354,
+            "gap": 113,
+            "weight": 0.1,
+            "cohort_size": 55
+          },
+          "posts": {
+            "current": 387,
+            "next_value": 399,
+            "gap": 12,
+            "weight": 0.1,
+            "cohort_size": 55
+          }
+        }
+      },
+      "pace": {},
+      "idle_spendable_fraction": 0.7873970964321352,
+      "stock_cost": 16325122,
+      "scope": "everyone; student ranks remain separate in official board"
+    },
+    "buyer_strategy_revision": "buyer-v9-market-leader",
+    "buyer_revision_epoch": 1793950621.8973517,
+    "buyer_patch34_enabled": true,
+    "buyer_expected_revision": "buyer-v9-market-leader",
+    "shop_revision_epoch": 1793950533.1673641,
+    "runtime": {
+      "pid": 33016,
+      "session": "6df33b1dd26a40c0855dc4202b2c904f",
+      "started_at": 1793950533.154966,
+      "launch_id": "auto-join-20261106T073532761743Z"
+    },
+    "health": {
+      "checked_at": 1793950616.334961,
+      "status": "market_registration_missing",
+      "url": "https://royalty-village-autos-their.trycloudflare.com",
+      "pending_registration": false,
+      "consecutive_probe_failures": 0,
+      "market_visibility": "absent",
+      "registry_misses": 1,
+      "probe_interval_seconds": 15,
+      "renewal_seconds": null
+    },
+    "transport_preference": {
+      "at": 1793950538.295124,
+      "provider": "cloudflare"
+    },
+    "rules": {
+      "at": 1793950348.7157502,
+      "sha256": "abbe2bcb65a523011818b58b9f644e3b86ff38374da17e501c75855c2e3101b8",
+      "compatible": true,
+      "expected": "book/revenue/stars; surge<=1.5",
+      "source": "/agent.md",
+      "buyer_metric": "saved",
+      "buyer_compatible": true,
+      "forum_vote_min_deals": 50,
+      "stance_scoring": true,
+      "dislike_costs_shop_cash": true
+    },
+    "control": {
+      "at": 1793950613.3299565,
+      "epoch": 1793854431.985112,
+      "status": "observe_and_trade",
+      "book": 66269524,
+      "book_peak": 66269524,
+      "book_drawdown": 0,
+      "drawdown_brake_until": 0,
+      "brake_drawdown": 0,
+      "capital_fraction": 1,
+      "cash_capacity": {
+        "spendable": 43263062.6,
+        "refund_liability": 367229,
+        "storage_to_end": 325230.0,
+        "cash_floor": 10988880.4,
+        "remaining_days": 2.0,
+        "reserve_release_schedule": [
+          {
+            "at": 1793959200,
+            "amount": 52000
+          },
+          {
+            "at": 1793964000,
+            "amount": 47800
+          },
+          {
+            "at": 1793965200,
+            "amount": 53000
+          },
+          {
+            "at": 1793966400,
+            "amount": 45800
+          },
+          {
+            "at": 1793967600,
+            "amount": 68098
+          },
+          {
+            "at": 1793970000,
+            "amount": 49619
+          },
+          {
+            "at": 1793971200,
+            "amount": 50912
+          }
+        ],
+        "discharged_refund_reserve": 0,
+        "reserve_release_before_next_supply": 0
+      },
+      "pause_restock": false,
+      "reasons": [],
+      "own_all": 1.408,
+      "leader_total": 1.699,
+      "leader_gap": 0.29100000000000004,
+      "sold_known_cost": 377,
+      "below_cost_sales": 0,
+      "shop_evidence_since": 1793950533.1673641,
+      "current_shop_known_cost": 0,
+      "current_shop_below_cost": 0,
+      "buyer_payment_failures": {
+        "shelf_life": 28,
+        "stockout": 17,
+        "other": 2
+      },
+      "opportunities": [
+        {
+          "sku": "G26be0a5a",
+          "arrival_rate_scenario": 10.075413136850543,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 3,
+          "available_hours_observed": 1.6748442646529933
+        },
+        {
+          "sku": "Gb67975ff",
+          "arrival_rate_scenario": 9.505436129431297,
+          "competition_sellers_plus_us": 4,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 2.8020870241191655
+        },
+        {
+          "sku": "G022ce883",
+          "arrival_rate_scenario": 6.697600208961255,
+          "competition_sellers_plus_us": 10,
+          "lost_exact_requests": 29,
+          "available_hours_observed": 4.363132181697425
+        },
+        {
+          "sku": "G24f5f979",
+          "arrival_rate_scenario": 5.637975938723873,
+          "competition_sellers_plus_us": 10,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 2.1651133594910306
+        },
+        {
+          "sku": "G3e2cdb81",
+          "arrival_rate_scenario": 4.457220384252299,
+          "competition_sellers_plus_us": 3,
+          "lost_exact_requests": 34,
+          "available_hours_observed": 1.2192141169971886
+        },
+        {
+          "sku": "G7fa48eaa",
+          "arrival_rate_scenario": 4.272619619244721,
+          "competition_sellers_plus_us": 7,
+          "lost_exact_requests": 4,
+          "available_hours_observed": 5.1111498413483325
+        },
+        {
+          "sku": "G74e686be",
+          "arrival_rate_scenario": 4.208333333333333,
+          "competition_sellers_plus_us": 4,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G1f5d00c7",
+          "arrival_rate_scenario": 4.166416902774464,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 8,
+          "available_hours_observed": 0.12064721783002216
+        },
+        {
+          "sku": "G55c364cb",
+          "arrival_rate_scenario": 3.963334454510538,
+          "competition_sellers_plus_us": 2,
+          "lost_exact_requests": 2,
+          "available_hours_observed": 0.3483668057786094
+        },
+        {
+          "sku": "G16dcdc73",
+          "arrival_rate_scenario": 3.6451359261946488,
+          "competition_sellers_plus_us": 4,
+          "lost_exact_requests": 6,
+          "available_hours_observed": 1.247905580202739
+        },
+        {
+          "sku": "G0b0ca441",
+          "arrival_rate_scenario": 3.625,
+          "competition_sellers_plus_us": 4,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "Gb2392fa9",
+          "arrival_rate_scenario": 3.611111111111111,
+          "competition_sellers_plus_us": 3,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0.20969579643673364
+        },
+        {
+          "sku": "G200e39a3",
+          "arrival_rate_scenario": 3.557017543859649,
+          "competition_sellers_plus_us": 19,
+          "lost_exact_requests": 5,
+          "available_hours_observed": 0.6732750942971969
+        },
+        {
+          "sku": "G3434758a",
+          "arrival_rate_scenario": 3.4444444444444446,
+          "competition_sellers_plus_us": 6,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G67efbcf0",
+          "arrival_rate_scenario": 3.1979166666666665,
+          "competition_sellers_plus_us": 8,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G8ec51935",
+          "arrival_rate_scenario": 3.0715379655885457,
+          "competition_sellers_plus_us": 19,
+          "lost_exact_requests": 2,
+          "available_hours_observed": 2.7312803076373204
+        },
+        {
+          "sku": "Gef4d3036",
+          "arrival_rate_scenario": 2.865740740740741,
+          "competition_sellers_plus_us": 18,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        },
+        {
+          "sku": "G66ded25b",
+          "arrival_rate_scenario": 2.621794871794872,
+          "competition_sellers_plus_us": 13,
+          "lost_exact_requests": 1,
+          "available_hours_observed": 5.0854085345400755
+        },
+        {
+          "sku": "Gc95a6511",
+          "arrival_rate_scenario": 2.592001853102773,
+          "competition_sellers_plus_us": 5,
+          "lost_exact_requests": 1,
+          "available_hours_observed": 1.4527231416437358
+        },
+        {
+          "sku": "G575cddb8",
+          "arrival_rate_scenario": 2.576923076923077,
+          "competition_sellers_plus_us": 13,
+          "lost_exact_requests": 0,
+          "available_hours_observed": 0
+        }
+      ],
+      "suggestions": [
+        {
+          "role": "shop",
+          "field": "assortment_coverage_fraction",
+          "direction": 1,
+          "reason": "observed unserved external requests"
+        }
+      ],
+      "market_summary": {
+        "tracked_skus": 1500,
+        "observed_baskets": 100,
+        "top_unserved_categories": [
+          [
+            "식품>야채/과일>신선과일(부패주의)",
+            17.094343339390086
+          ],
+          [
+            "식품>김치/반찬/즉석요리>김치",
+            4.616539603320803
+          ],
+          [
+            "식품>야채/과일>신선야채(부패주의)",
+            1.420289141684567
+          ],
+          [
+            "식품>음료>주스/코코아/생수",
+            1.3778811384512397
+          ],
+          [
+            "식품>김치/반찬/즉석요리>찌개/탕류/장류",
+            1.2982927160844477
+          ],
+          [
+            "식품>기타 가공식품>과자",
+            0.4856074588841839
+          ],
+          [
+            "가구/침구>가구>침대/매트리스",
+            0.41063377990240635
+          ],
+          [
+            "가구/침구>가구>소파/의자/스툴",
+            0.3226940975437543
+          ],
+          [
+            "가구/침구>침구/홈데코>침구",
+            0.16462549608743554
+          ],
+          [
+            "식품>조리/가공 과일/야채/견과류>조리/가공 견과류",
+            0.10869976098365103
+          ]
+        ],
+        "exposure_started_at": 1793929020.8219633,
+        "context_note": "own buyer baskets have zero demand weight; external settlements only"
+      },
+      "note": "observational diagnosis; policy trials require mature own evidence and rollback checks",
+      "championship": {
+        "at": 1793950613.3299565,
+        "ranks": {
+          "shop": {
+            "rank": 16,
+            "population": 58
+          },
+          "buyer": {
+            "rank": 15,
+            "population": 55
+          }
+        },
+        "next_thresholds": {
+          "shop": {
+            "book": {
+              "current": 66269524,
+              "next_value": 66734515,
+              "gap": 464991,
+              "weight": 0.5,
+              "cohort_size": 58
+            },
+            "revenue": {
+              "current": 490698371,
+              "next_value": 539043065,
+              "gap": 48344694,
+              "weight": 0.3,
+              "cohort_size": 58
+            },
+            "stars_rank": {
+              "current": 4.36,
+              "next_value": 4.37,
+              "gap": 0.009999999999999787,
+              "weight": 0.2,
+              "cohort_size": 58
+            }
+          },
+          "buyer": {
+            "saved": {
+              "current": 0.2517,
+              "next_value": 0.2518,
+              "gap": 0.0001000000000000445,
+              "weight": 0.5,
+              "cohort_size": 55
+            },
+            "forum": {
+              "current": 0.878,
+              "next_value": 0.879,
+              "gap": 0.0010000000000000009,
+              "weight": 0.3,
+              "cohort_size": 55
+            },
+            "deals": {
+              "current": 5241,
+              "next_value": 5354,
+              "gap": 113,
+              "weight": 0.1,
+              "cohort_size": 55
+            },
+            "posts": {
+              "current": 387,
+              "next_value": 399,
+              "gap": 12,
+              "weight": 0.1,
+              "cohort_size": 55
+            }
+          }
+        },
+        "pace": {},
+        "idle_spendable_fraction": 0.7873970964321352,
+        "stock_cost": 16325122,
+        "scope": "everyone; student ranks remain separate in official board"
+      }
+    },
+    "strategies": {
+      "shop": {
+        "version": 10,
+        "patch": {
+          "category_weights": {
+            "가구/침구>가구>침대/매트리스": 1.1
+          }
+        },
+        "status": "stable",
+        "since": 1793950533.1673641,
+        "cooldown_until": 1793972133.1673641
+      },
+      "buyer": {
+        "version": 10,
+        "patch": {},
+        "status": "stable",
+        "since": 1793950621.8973517,
+        "cooldown_until": 1793972221.8973517
+      }
+    },
+    "counts_since_epoch": {
+      "market_control": 375,
+      "strategy_evaluation": 56,
+      "strategy_change": 10,
+      "purchase": 2095,
+      "shop_settled": 1506,
+      "restock_decision": 96,
+      "supply_blocked": 0,
+      "restock_blocked": 8,
+      "checkout_attempt": 245,
+      "buyer_fast_choice": 2456,
+      "market_control_error": 1,
+      "strategy_error": 0,
+      "merchant_context_error": 0,
+      "forum_error": 0,
+      "model_usage": 2744,
+      "shop_fast_execution": 11477,
+      "buyer_saved_execution": 1497,
+      "buyer_offer_refusal": 31,
+      "buyer_insight_queued": 38,
+      "buyer_rules_blocked": 0
+    },
+    "cash_capacity": {
+      "spendable": 43263062.6,
+      "refund_liability": 367229,
+      "storage_to_end": 325230.0,
+      "cash_floor": 10988880.4,
+      "remaining_days": 2.0,
+      "reserve_release_schedule": [
+        {
+          "at": 1793959200,
+          "amount": 52000
+        },
+        {
+          "at": 1793964000,
+          "amount": 47800
+        },
+        {
+          "at": 1793965200,
+          "amount": 53000
+        },
+        {
+          "at": 1793966400,
+          "amount": 45800
+        },
+        {
+          "at": 1793967600,
+          "amount": 68098
+        },
+        {
+          "at": 1793970000,
+          "amount": 49619
+        },
+        {
+          "at": 1793971200,
+          "amount": 50912
+        }
+      ],
+      "discharged_refund_reserve": 0
+    },
+    "cash": 54944402,
+    "stock_units": 45,
+    "stock_skus": 24,
+    "quality_epoch_mature": true,
+    "stop_at": null,
+    "recent_strategy_actions": [
+      {
+        "action": "buyer_revision_epoch",
+        "before": {
+          "version": 9,
+          "patch": {},
+          "status": "stable",
+          "since": 1793937829.7641585,
+          "cooldown_until": 1793959429.7641585
+        },
+        "after": {
+          "version": 10,
+          "patch": {},
+          "status": "stable",
+          "since": 1793950621.8973517,
+          "cooldown_until": 1793972221.8973517
+        },
+        "revision": "buyer-v9-market-leader",
+        "previous_patch_archived": {},
+        "reason": "buyer objective/routing revision; preserve shop and historical quality evidence",
+        "_event_id": "0dd03ad4600b4e9b96b3f3f3dcf48665",
+        "_ts": 1793950621.8973517,
+        "_role": "buyer"
+      },
+      {
+        "action": "shop_revision_epoch",
+        "before": {
+          "version": 9,
+          "patch": {
+            "category_weights": {
+              "가구/침구>가구>침대/매트리스": 1.1
+            }
+          },
+          "status": "stable",
+          "since": 1793915460.7844398,
+          "cooldown_until": 1794001860.7844398,
+          "rejected": [
+            {
+              "patch": "de920abddf5f7bb002bdcda5e15f15447523c452dd8e0b91a93ea71da3b517db",
+              "until": 1794001860.7844398
+            }
+          ]
+        },
+        "after": {
+          "version": 10,
+          "patch": {
+            "category_weights": {
+              "가구/침구>가구>침대/매트리스": 1.1
+            }
+          },
+          "status": "stable",
+          "since": 1793950533.1673641,
+          "cooldown_until": 1793972133.1673641
+        },
+        "revision": "shop-v9-rank-capital",
+        "reason": "shop execution and procurement changed; buyer preserved",
+        "_event_id": "95f0c8abbf34435fb8c8b0207e412bef",
+        "_ts": 1793950533.1673641,
+        "_role": "shop"
+      },
+      {
+        "action": "buyer_revision_epoch",
+        "before": {
+          "version": 8,
+          "patch": {},
+          "status": "stable",
+          "since": 1793915460.7844398,
+          "cooldown_until": 1794001860.7844398,
+          "rejected": [
+            {
+              "patch": "6461553b3615745f5cd27207d84c73e2405d52a9f389f55b3637cca67099a743",
+              "until": 1794001860.7844398
+            }
+          ]
+        },
+        "after": {
+          "version": 9,
+          "patch": {},
+          "status": "stable",
+          "since": 1793937829.7641585,
+          "cooldown_until": 1793959429.7641585
+        },
+        "revision": "buyer-v8-patch34-saved",
+        "previous_patch_archived": {},
+        "reason": "Patch 3.4 Saved objective; preserve shop and historical quality evidence",
+        "_event_id": "6362e63df5784b539fad68e2683ef054",
+        "_ts": 1793937829.7641585,
+        "_role": "buyer"
+      },
+      {
+        "action": "rollback",
+        "before": {
+          "version": 8,
+          "patch": {
+            "category_weights": {
+              "가구/침구>가구>침대/매트리스": 1.1
+            },
+            "assortment_coverage_fraction": 0.4
+          },
+          "status": "trial",
+          "since": 1793864551.1485417,
+          "cooldown_until": 1793886151.1485417,
+          "trial": {
+            "started_at": 1793890099.3005402,
+            "previous_patch": {
+              "category_weights": {
+                "가구/침구>가구>침대/매트리스": 1.1
+              }
+            },
+            "board_start": {
+              "at": 1793890099.3005402,
+              "buyer": {
+                "own": 163711561,
+                "peers": {
+                  "totato2203-r3": 327574015,
+                  "inextro": 508322058,
+                  "shaun0927": 302433753,
+                  "lee-sungsoo": 96536273,
+                  "buzllightyear": 115809615,
+                  "kimauve": 259818120,
+                  "buyer-02": 24811823,
+                  "buyer-01": 59382083,
+                  "YAHO1212": 204967438,
+                  "myeonggi": 298507352,
+                  "Kiro729": 220780340,
+                  "dae-yangkim": 98762864,
+                  "dragonash": 58911813,
+                  "move_76": 231791495,
+                  "psyoung82": 534421408,
+                  "thisjonghoon": 79369049,
+                  "shaun0927-labbuyer": 462368850,
+                  "fair-furniture": 165087172,
+                  "25620027": 99126190,
+                  "buyer-03": 56349019,
+                  "mjforge": 462472851,
+                  "bjeon01": 51796183,
+                  "gom31-certified-goods": 69199350,
+                  "ddolcom": 129036006,
+                  "yms979": 331342517,
+                  "nocha12": 201419834,
+                  "olstjr": 33800197,
+                  "ggari0703": 64908052,
+                  "chanarun": 42662554,
+                  "chaewoonee": 165242189,
+                  "Raksmey A2A Shop": 54325429,
+                  "winun1127": 49328042,
+                  "outseop-26510122": 75353242,
+                  "jiseokkk": 72329821,
+                  "q00": 8681348,
+                  "lee3q": 72872039,
+                  "25512088": 18327363,
+                  "kcwarni": 59047012,
+                  "leeuichann": 54280248,
+                  "Jaehoonang": 70023,
+                  "dyishappy": 37410474,
+                  "yeonsong2": 115994853,
+                  "dariaklt": -2194146,
+                  "Afford Shop": 16266270,
+                  "11im": 32520263,
+                  "sergiobuilds": 35356535,
+                  "baesamaith-cmd": -4485530,
+                  "choo-chu": 2981316,
+                  "26512076": 843492,
+                  "sohyunkim11": 150550,
+                  "buyer-b556": 0,
+                  "buyer-1818": 0,
+                  "buyer-9a55": 0,
+                  "buyer-df60": 0,
+                  "25512085": 0,
+                  "jaehoonang": 0,
+                  "han-lamp": 0,
+                  "kimchyoungman": 0,
+                  "lumen-goods": 0,
+                  "SUNGMYEONGGI": 0,
+                  "noah": 0,
+                  "danayoou": 0,
+                  "usagi": 0,
+                  "BeliveMe": 0,
+                  "helenjeon101": 0,
+                  "gacha-shop": 0,
+                  "kingsssik": 0,
+                  "BelieveMe": 0,
+                  "yaho123": 0,
+                  "buyer-7912": 0,
+                  "buyer-227a": 0,
+                  "buyer-94ce": 0,
+                  "buyer-1b69": 0,
+                  "buyer-2e1f": 0,
+                  "buyer-3567": 0,
+                  "JangSeongWoong": 0,
+                  "cheapest-in-town": 0,
+                  "editork19-web": 0,
+                  "buyer-f9da": 0,
+                  "buyer-850f": 0,
+                  "buyer-24ab": 0,
+                  "buyer-bfad": 0,
+                  "buyer-892c": 0,
+                  "buyer-32df": 0,
+                  "buyer-d6df": 0,
+                  "buyer-71af": 0,
+                  "buyer-3708": 0,
+                  "buyer-c7b1": 0,
+                  "buyer-20b8": 0,
+                  "buyer-6705": 0,
+                  "buyer-4387": 0,
+                  "buyer-6852": 0,
+                  "buyer-4f2c": 0,
+                  "buyer-d160": 0,
+                  "김관우": 0,
+                  "totato2203": 0,
+                  "leorivk": 0,
+                  "buyer-1062": 0,
+                  "buyer-98a5": 0,
+                  "buyer-8d72": 0,
+                  "buyer-d2db": 0,
+                  "buyer-c19c": 0,
+                  "buyer-cf9d": 0,
+                  "buyer-5ec2": 0,
+                  "buyer-d1a8": 0,
+                  "buyer-0202": 0,
+                  "buyer-8fc6": 0,
+                  "buyer-6a13": 0,
+                  "buyer-6cd4": 0,
+                  "real_yellow": 0,
+                  "dydydy": 0,
+                  "dariaklt-w8": 0,
+                  "buyer-dec7": 0,
+                  "buyer-33ce": 0,
+                  "buyer-8d49": 0,
+                  "buyer-0eea": 0,
+                  "buyer-a070": 0,
+                  "buyer-1f82": 0,
+                  "buyer-aca8": 0,
+                  "buyer-6f6a": 0,
+                  "chayuho": 0
+                },
+                "metric": "surplus",
+                "own_all": 0.699,
+                "peer_all": {
+                  "totato2203-r3": 0.77,
+                  "inextro": 0.73,
+                  "shaun0927": 0.846,
+                  "lee-sungsoo": 0.752,
+                  "buzllightyear": 0.708,
+                  "kimauve": 0.78,
+                  "buyer-02": 0.399,
+                  "buyer-01": 0.525,
+                  "YAHO1212": 0.763,
+                  "myeonggi": 0.724,
+                  "Kiro729": 0.578,
+                  "dae-yangkim": 0.675,
+                  "dragonash": 0.541,
+                  "move_76": 0.668,
+                  "psyoung82": 0.9,
+                  "thisjonghoon": 0.59,
+                  "shaun0927-labbuyer": 0.835,
+                  "fair-furniture": 0.578,
+                  "25620027": 0.731,
+                  "buyer-03": 0.342,
+                  "mjforge": 0.775,
+                  "bjeon01": 0.565,
+                  "gom31-certified-goods": 0.589,
+                  "ddolcom": 0.536,
+                  "yms979": 0.819,
+                  "nocha12": 0.628,
+                  "olstjr": 0.348,
+                  "ggari0703": 0.522,
+                  "chanarun": 0.209,
+                  "chaewoonee": 0.648,
+                  "Raksmey A2A Shop": 0.245,
+                  "winun1127": 0.318,
+                  "outseop-26510122": 0.432,
+                  "jiseokkk": 0.606,
+                  "q00": 0.117,
+                  "lee3q": 0.315,
+                  "25512088": 0.218,
+                  "kcwarni": 0.537,
+                  "leeuichann": 0.397,
+                  "Jaehoonang": 0.093,
+                  "dyishappy": 0.175,
+                  "yeonsong2": 0.5,
+                  "dariaklt": 0.34,
+                  "Afford Shop": 0.109,
+                  "11im": 0.224,
+                  "sergiobuilds": 0.236,
+                  "baesamaith-cmd": 0.033,
+                  "choo-chu": 0.188,
+                  "26512076": 0.3,
+                  "sohyunkim11": 0.344
+                }
+              },
+              "shop": {
+                "own": 25588114,
+                "peers": {
+                  "psyoung82": 52090574,
+                  "yms979": 212916904,
+                  "dragonash": 284356416,
+                  "Kiro729": 302934291,
+                  "inextro": 507990531,
+                  "gom31-certified-goods": 262023453,
+                  "lee-sungsoo": 202098273,
+                  "kimauve": 221695454,
+                  "thisjonghoon": 73722970,
+                  "nocha12": 82363490,
+                  "25620027": 371650410,
+                  "moss-and-oak": 164579352,
+                  "myeonggi": 109012711,
+                  "ggari-shop": 39643727,
+                  "buzllightyear": 46892617,
+                  "olstjr": 24164598,
+                  "ddolcom": 43691320,
+                  "jiseokkk": 32209620,
+                  "totato2203-r3": 49893328,
+                  "dae-yangkim": 415472244,
+                  "mjforge": 123013624,
+                  "outseop-26510122": 21468017,
+                  "winun1127": 28131280,
+                  "11im": 7057556,
+                  "shaun0927-lab1": 109255908,
+                  "bjeon01": 14416960,
+                  "YAHO1212": 15339081,
+                  "kcwarni": 50268278,
+                  "shaun0927": 4813083,
+                  "chaewoonee": 14426636,
+                  "yeonsong2": 4809680,
+                  "corner-store": 3601920,
+                  "sergiobuilds": 7710107,
+                  "fair-furniture": 631355,
+                  "Raksmey A2A Shop": 922007,
+                  "Afford Shop": 95164,
+                  "bright-living": 1374305,
+                  "leeuichann": 1579531,
+                  "maple-home": 944505,
+                  "elm-street": 406188,
+                  "chanarun": 144955,
+                  "oak-and-pine": 311355,
+                  "dyishappy": 975142,
+                  "25512088": 2665019,
+                  "grand-furniture": 667789,
+                  "dariaklt": 201791,
+                  "26512076": 92320,
+                  "q00": 134507,
+                  "lee3q": 150895,
+                  "choo-chu": 539631,
+                  "sohyunkim11": 9817,
+                  "Jaehoonang": -26470,
+                  "Ddolcom's BEST SHOP": 0,
+                  "willow-goods": -569171,
+                  "25512085": 0,
+                  "han-lamp": 0,
+                  "kimchyoungman": 0,
+                  "ggari0703": 0,
+                  "lumen-goods": 0,
+                  "SUNGMYEONGGI": 0,
+                  "noah": 0,
+                  "usagi": 0,
+                  "BelieveMe": 0,
+                  "helenjeon101": 0,
+                  "gacha-shop": 0,
+                  "move_76": 0,
+                  "danayoou": 0,
+                  "kingsssik": 0,
+                  "yaho123": 0,
+                  "JangSeongWoong": 0,
+                  "cheapest-in-town": 0,
+                  "editork19-web": 0,
+                  "김관우": 0,
+                  "totato2203": 0,
+                  "leorivk": 0,
+                  "jaehoonang": 0,
+                  "real_yellow": -114948,
+                  "dydydy": 0,
+                  "dariaklt-w8": 0,
+                  "shaun0927-lab3": 0,
+                  "shaun0927-lab2": 0
+                },
+                "metric": "book",
+                "own_all": 0.667,
+                "peer_all": {
+                  "psyoung82": 0.678,
+                  "yms979": 0.839,
+                  "dragonash": 0.8,
+                  "Kiro729": 0.926,
+                  "inextro": 0.952,
+                  "gom31-certified-goods": 0.83,
+                  "lee-sungsoo": 0.78,
+                  "kimauve": 0.774,
+                  "thisjonghoon": 0.769,
+                  "nocha12": 0.748,
+                  "25620027": 0.861,
+                  "moss-and-oak": 0.728,
+                  "myeonggi": 0.793,
+                  "ggari-shop": 0.672,
+                  "buzllightyear": 0.607,
+                  "olstjr": 0.635,
+                  "ddolcom": 0.624,
+                  "jiseokkk": 0.698,
+                  "totato2203-r3": 0.724,
+                  "dae-yangkim": 0.881,
+                  "mjforge": 0.756,
+                  "outseop-26510122": 0.57,
+                  "winun1127": 0.576,
+                  "11im": 0.43,
+                  "shaun0927-lab1": 0.806,
+                  "bjeon01": 0.574,
+                  "YAHO1212": 0.507,
+                  "kcwarni": 0.596,
+                  "shaun0927": 0.487,
+                  "chaewoonee": 0.589,
+                  "yeonsong2": 0.419,
+                  "corner-store": 0.35,
+                  "sergiobuilds": 0.474,
+                  "fair-furniture": 0.35,
+                  "Raksmey A2A Shop": 0.313,
+                  "Afford Shop": 0.307,
+                  "bright-living": 0.281,
+                  "leeuichann": 0.452,
+                  "maple-home": 0.243,
+                  "elm-street": 0.174,
+                  "chanarun": 0.252,
+                  "oak-and-pine": 0.165,
+                  "dyishappy": 0.38,
+                  "25512088": 0.357,
+                  "grand-furniture": 0.215,
+                  "dariaklt": 0.165,
+                  "26512076": 0.113,
+                  "q00": 0.111,
+                  "lee3q": 0.163,
+                  "choo-chu": 0.196,
+                  "sohyunkim11": 0.069,
+                  "Jaehoonang": 0.05,
+                  "willow-goods": 0.008,
+                  "real_yellow": 0.018
+                },
+                "stock_cost": 7077018
+              }
+            },
+            "baseline": {
+              "own_per_hour": 2964166.250612099,
+              "peer_median_per_hour": 779.1246179982509,
+              "relative_per_hour": 2963387.125994101,
+              "matched_peers": 80,
+              "note": "observational board flow; traffic and category mix can confound comparisons",
+              "leader_relative_per_hour": -5828001.292430939,
+              "own_all_per_hour": 0.01364987045739913,
+              "relative_all_per_hour": 0.014482179631630784,
+              "leader_relative_all_per_hour": 0.013816332292245461
+            },
+            "baseline_evidence": {
+              "samples": 27,
+              "paid": 14,
+              "success_rate": 0.5185185185185185,
+              "categories": {
+                "가구/침구>가구>침대/매트리스": 5,
+                "가구/침구>침구/홈데코>침구": 5,
+                "가구/침구>가구>소파/의자/스툴": 3,
+                "식품>김치/반찬/즉석요리>김치": 1
+              },
+              "note": "unpaid opportunities are censored observations, not proven price rejections"
+            }
+          }
+        },
+        "after": {
+          "version": 9,
+          "patch": {
+            "category_weights": {
+              "가구/침구>가구>침대/매트리스": 1.1
+            }
+          },
+          "status": "stable",
+          "since": 1793915460.7844398,
+          "cooldown_until": 1794001860.7844398,
+          "rejected": [
+            {
+              "patch": "de920abddf5f7bb002bdcda5e15f15447523c452dd8e0b91a93ea71da3b517db",
+              "until": 1794001860.7844398
+            }
+          ]
+        },
+        "reason": "Cash loss, degraded observed flow, or trial expired without evidence of improvement",
+        "evidence": {
+          "samples": 166,
+          "paid": 37,
+          "success_rate": 0.22289156626506024,
+          "categories": {
+            "식품>야채/과일>신선과일(부패주의)": 1,
+            "식품>김치/반찬/즉석요리>김치": 6,
+            "가구/침구>가구>침대/매트리스": 17,
+            "식품>음료>주스/코코아/생수": 4,
+            "가구/침구>침구/홈데코>침구": 7,
+            "가구/침구>가구>소파/의자/스툴": 1,
+            "식품>조리/가공 과일/야채/견과류>조리/가공 견과류": 1
+          },
+          "note": "unpaid opportunities are censored observations, not proven price rejections"
+        },
+        "observed": {
+          "own_per_hour": 2120309.860925063,
+          "peer_median_per_hour": 808.2492365649265,
+          "relative_per_hour": 2119501.611688498,
+          "matched_peers": 81,
+          "note": "observational board flow; traffic and category mix can confound comparisons",
+          "leader_relative_per_hour": -3342498.9616384082,
+          "own_all_per_hour": 0.005252058614840571,
+          "relative_all_per_hour": 0.006103743795625532,
+          "leader_relative_all_per_hour": 0.003974530843663131
+        },
+        "_event_id": "babf52415ddd4938ab19f9f77ef29b6b",
+        "_ts": 1793915460.7844398,
+        "_role": "shop"
+      }
+    ],
+    "recent_shop_settlements": [
+      {
+        "task": "f7fc3c32-5d76-4a41-9037-ff6a1b2a09d3",
+        "unit": "u-aa0eff57d29c",
+        "sku": "G05277ffe",
+        "price": 492928,
+        "warranty_hours": 0,
+        "paid_at": 1793950470.7548187,
+        "strategy_version": 9,
+        "category": "가구/침구>침구/홈데코>침구",
+        "cost": 446625,
+        "grade": "A",
+        "_event_id": "settlement:3200970",
+        "_ts": 1793950470.7548187,
+        "_role": "shop"
+      },
+      {
+        "task": "2fa2c432-4ae9-4e7a-bb73-8455048cc088",
+        "unit": "u-3c001c411ff0",
+        "sku": "G8ec51935",
+        "price": 1423575,
+        "warranty_hours": 0,
+        "paid_at": 1793950467.4410195,
+        "strategy_version": 9,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 988398,
+        "grade": "C",
+        "_event_id": "settlement:3200957",
+        "_ts": 1793950467.4410195,
+        "_role": "shop"
+      },
+      {
+        "task": "9fef24cf-113a-4107-90f1-996a803d8b0d",
+        "unit": "u-35060c1c197e",
+        "sku": "G7fa48eaa",
+        "price": 2970,
+        "warranty_hours": 0,
+        "paid_at": 1793950458.9481425,
+        "strategy_version": 9,
+        "category": "식품>음료>주스/코코아/생수",
+        "cost": 2083,
+        "grade": "C",
+        "_event_id": "settlement:3200906",
+        "_ts": 1793950458.9481425,
+        "_role": "shop"
+      },
+      {
+        "task": "48d21bf2-277b-46bd-b480-d477df0c0412",
+        "unit": "u-826eb7fc39d5",
+        "sku": "G8ec51935",
+        "price": 1632566,
+        "warranty_hours": 0,
+        "paid_at": 1793950324.920713,
+        "strategy_version": 9,
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "cost": 1367468,
+        "grade": "B",
+        "_event_id": "settlement:3200346",
+        "_ts": 1793950324.9217093,
+        "_role": "shop"
+      },
+      {
+        "task": "722a3658-869a-4875-adcd-31390b549d9e",
+        "unit": "u-e47a1e75922e",
+        "sku": "Gbea6b9f6",
+        "price": 1862,
+        "warranty_hours": 0,
+        "paid_at": 1793950220.5149965,
+        "strategy_version": 9,
+        "category": "식품>김치/반찬/즉석요리>즉석조리식품",
+        "cost": 618,
+        "grade": "C",
+        "_event_id": "settlement:3199897",
+        "_ts": 1793950220.5161183,
+        "_role": "shop"
+      }
+    ]
+  }
+}

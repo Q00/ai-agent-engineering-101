@@ -1,0 +1,132 @@
+{
+  "audit": "logs/v26-service-strategy-audit-20261113T033621239495Z.json",
+  "peer_source": "logs/peer-market-source-20261113T034324668548Z.json",
+  "incomplete_terms": {
+    "total_goods_quotes": 556,
+    "incomplete": 249,
+    "warranty_hours": 231,
+    "grade+warranty_hours": 15,
+    "grade": 3
+  },
+  "goods_orders_with_incomplete_quotes": 219,
+  "unpaid_goods_orders_with_incomplete_quotes": 59,
+  "explicit_zero_warranty_positive_scenarios": {
+    "quote_count": 1,
+    "unpaid_orders": 0,
+    "examples": [
+      {
+        "order": "o-84ac265b7d7f",
+        "shop": "https://frankfurt-special-expectations-fighter.trycloudflare.com",
+        "sku": "G7978c65e",
+        "ask": 1122356,
+        "failure": 0.058587172740252054,
+        "saved_if_explicitly_uninsured_scenario": 0.7223659337497548,
+        "currently_unpaid": false
+      }
+    ]
+  },
+  "additional_warranty_parser_matches": 0,
+  "warranty_parser_examples": [],
+  "closed_unpaid_orders_with_full_terms_quote_at_or_above_saved_reference": 3,
+  "recoverable_quote_scenarios": [
+    {
+      "order": "o-83de483e9fdb",
+      "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+      "sku": "G25fe9221",
+      "ask": 99042,
+      "expected_contribution_scenario": 0.7629552188626846,
+      "current_saved": 0.7204
+    },
+    {
+      "order": "o-e86caa7e4e52",
+      "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+      "sku": "G67c36d2b",
+      "ask": 290933,
+      "expected_contribution_scenario": 0.7721603095544951,
+      "current_saved": 0.7226
+    },
+    {
+      "order": "o-904237a42227",
+      "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+      "sku": "G03d0199f",
+      "ask": 1129005,
+      "expected_contribution_scenario": 0.7576207070720974,
+      "current_saved": 0.7231
+    }
+  ],
+  "positive_accept_incorrectly_skipped_by_main": 0,
+  "closed_unpaid_orders_after_counter_over_positive_accept": 1,
+  "accept_counter_examples": [
+    {
+      "order": "o-6ecd3143a545",
+      "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+      "ask": 489542,
+      "accept_utility": 2.4929642774562674e-07,
+      "counter_utility": 1.6241495582103304e-06,
+      "counter_probability": 0.06363636363636364
+    }
+  ],
+  "first_goods_counter_calibration": {
+    "n": 263,
+    "mean_predicted": 0.07794504832071086,
+    "paid_at_first_bid_or_less": 0,
+    "paid_eventually_same_seller": 48
+  },
+  "public_recent_review_comparisons": [
+    {
+      "author": "sergiobuilds",
+      "sample": 0,
+      "shops": 0,
+      "mean": null,
+      "examples": []
+    },
+    {
+      "author": "dy-76",
+      "sample": 0,
+      "shops": 0,
+      "mean": null,
+      "examples": []
+    },
+    {
+      "author": "dyishappy",
+      "sample": 0,
+      "shops": 0,
+      "mean": null,
+      "examples": []
+    },
+    {
+      "author": "11im",
+      "sample": 0,
+      "shops": 0,
+      "mean": null,
+      "examples": []
+    }
+  ],
+  "review_schema": [
+    "stars",
+    "review",
+    "round"
+  ],
+  "shelf_rejections": 71,
+  "requests_beyond_catalog_shelf_hours": 0,
+  "numeric_quote_score_formula_mismatch": {
+    "current_legacy_example": [
+      0.4,
+      0.6
+    ],
+    "margin_share_example": [
+      1.0,
+      0.8
+    ],
+    "example": "L=100; A cost=70 price=60 versus C cost=25 price=40; healthy scenario"
+  },
+  "market_transactions": 0,
+  "model_calls": 0,
+  "policy_writes": 0,
+  "limitations": [
+    "Current peer review samples are each shops newest limited records, not unbiased reviewer cohorts.",
+    "A lower paid-at-first-bid rate can include subsequent concessions or self-cancellation; it does not identify pure seller refusal.",
+    "A quote available earlier is not guaranteed reservable at checkout; recoverable counts are opportunities, not guaranteed conversions.",
+    "Numeric score inconsistency is in the RFQ score/ordering; Main already uses whole-objective deltas."
+  ]
+}

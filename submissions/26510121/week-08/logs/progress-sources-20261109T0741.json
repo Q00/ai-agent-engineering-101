@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "official-progress",
+      "title": "공식 순위와 점수 변화",
+      "queries": [
+        {
+          "id": "board-comparison",
+          "source": {
+            "label": "시장 공식 board 저장본",
+            "files": [
+              "logs/peer-market-source-20261109T052720647141Z.json",
+              "logs/peer-market-source-20261109T074127697069Z.json"
+            ],
+            "links": [
+              {
+                "label": "시장 공식 보드",
+                "url": "https://market.ourolabs.ai/api/board"
+              }
+            ],
+            "filters": [
+              "계정: seochanit",
+              "순위: ALL/total 숫자가 공개된 전체 참가자"
+            ],
+            "metricDefinitions": [
+              {
+                "label": "ALL",
+                "definition": "Shop은 Book 50%, 매출 30%, 계정별 평균 별점 20%. Buyer는 Saved 백분위 50%, forum 원점수 30%, 거래 10%, 게시 10%."
+              }
+            ],
+            "caveats": [
+              "공개 점수의 동점은 공동 순위로 계산했다. 보드 캐시와 로컬 이벤트의 갱신 시점은 다를 수 있다."
+            ]
+          },
+          "reportingPeriod": "2026-11-09 14:27:21–16:41:29 KST",
+          "columns": [
+            "role",
+            "before",
+            "after"
+          ],
+          "rows": [
+            {
+              "role": "shops",
+              "before": 8,
+              "after": 7
+            },
+            {
+              "role": "buyers",
+              "before": 10,
+              "after": 12
+            },
+            {
+              "role": "players",
+              "before": 9,
+              "after": 9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "buyer-cohort",
+      "title": "Buyer v11 주문과 실제 결제",
+      "queries": [
+        {
+          "id": "matched-orders",
+          "source": {
+            "label": "로컬 거래 원장과 공식 정산 결과",
+            "files": [
+              "analyze_progress_20261109.py",
+              "logs/progress-cohort-analysis-20261109T0741.json"
+            ],
+            "sql": "SELECT ts,data FROM events WHERE kind=? AND ts>? AND ts<=? ORDER BY ts",
+            "filters": [
+              "주문 발생 시각 기준으로 동일 길이의 이전/새 버전 구간 비교",
+              "결과·구매·견적은 같은 order ID로 연결",
+              "구간 종료 후 결과 제외"
+            ],
+            "caveats": [
+              "인접 구간의 단순 관측 비교로 전략 변경의 인과 효과를 확정하지 않는다. 새 공산품 구매는 6시간 품질 성숙 전이다. 견적과 실패 시도는 한 주문에서 반복될 수 있다."
+            ]
+          },
+          "reportingPeriod": "2026-11-09T15:27:48.169292+09:00–2026-11-09T16:41:29.638859+09:00",
+          "columns": [
+            "kind",
+            "orders",
+            "completed",
+            "paid"
+          ],
+          "rows": [
+            {
+              "kind": "food",
+              "orders": 57,
+              "completed": 56,
+              "paid": 42
+            },
+            {
+              "kind": "goods",
+              "orders": 19,
+              "completed": 19,
+              "paid": 4
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

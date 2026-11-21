@@ -1,0 +1,29 @@
+{
+  "version": "r3-demand-portfolio-rfq-v4",
+  "actor_model": "gpt-6-luna",
+  "critic_model": "gpt-6-luna",
+  "daily_api_budget_usd": null,
+  "model_timeout_seconds": 18,
+  "critic_cash_fraction": 0.10,
+  "cash_reserve_fraction": 0.20,
+  "cash_floor": 750000,
+  "forum_post_interval_seconds": 600,
+  "supply_cycle_seconds": 1200,
+  "inventory_target_units": 30,
+  "restock_max_lines": 10,
+  "restock_max_qty": 6,
+  "max_sku_capital_fraction": 0.35,
+  "goods_warranty_by_grade": {"A": 3, "B": 3, "C": 6},
+  "quote_compare_min_budget": 100000,
+  "exploration_fraction": 0.10,
+  "max_shop_candidates": 3,
+  "max_negotiation_turns": 4,
+  "checkout_buffer_seconds": 30,
+  "unknown_goods_failure_stress": 0.30,
+  "session_ttl_seconds": 180,
+  "end_at": "2026-11-17T23:59:00+09:00",
+  "prices_usd_per_million": {
+    "gpt-6-luna": [0.10, 0.50],
+    "gpt-6.1-terra": [1.00, 5.00]
+  }
+}

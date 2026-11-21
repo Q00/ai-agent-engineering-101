@@ -1,0 +1,834 @@
+--- a/r3/discovery.py
++++ b/r3/discovery.py
+@@ -0,0 +1,67 @@
++"""Keep public discovery independent of the long-lived negotiation HTTP pool.
++
++Only the Shop's public card is cached, briefly. Quotes, inventory, ACP checkout,
++receipts, payments and signing never use this cache.
++"""
++import asyncio
++import copy
++import time
++from urllib.parse import urlsplit
++import httpx
++from starlette.responses import JSONResponse
++
++
++class DiscoveryCache:
++    def __init__(self, factory=None, clock=time.monotonic):
++        self.factory=factory or (lambda: httpx.AsyncClient(timeout=2,trust_env=False,follow_redirects=False,
++            limits=httpx.Limits(max_connections=4,max_keepalive_connections=4)))
++        self.clock=clock;self.client=None;self.lock=asyncio.Lock();self.cached=None
++        self.upstream=None;self.until=0;self.served=0;self.hits=0;self.errors=0;self.last_seconds=None
++        self.retry_at=0
++
++    async def card(self, proxy):
++        started=self.clock()
++        try:
++            async with self.lock:
++                if self.cached is None and self.clock()<self.retry_at:
++                    return JSONResponse({'error':'shop discovery temporarily unavailable'},status_code=503)
++                if self.cached is None or self.upstream!=proxy.upstream or self.clock()>=self.until:
++                    if self.client is None:self.client=self.factory()
++                    response=await self.client.get(proxy.upstream+'/.well-known/agent-card.json')
++                    response.raise_for_status();card=response.json()
++                    if (not isinstance(card,dict) or card.get('name')!='Seochanit Shop'
++                            or not isinstance(card.get('supportedInterfaces',[]),list)):
++                        raise ValueError('unexpected_discovery_identity')
++                    self.cached=card;self.upstream=proxy.upstream;self.until=self.clock()+10
++                else:self.hits+=1
++                # rewrite() also prepares the kit's original interface routing.
++                # A tunnel rotation changes only the public rewriting, never
++                # the cached original interface addresses.
++                rewritten=proxy.rewrite(copy.deepcopy(self.cached))
++            self.served+=1;self.last_seconds=self.clock()-started
++            return JSONResponse(rewritten,headers={'Cache-Control':'no-store'})
++        except (httpx.HTTPError,ValueError,TypeError,KeyError):
++            self.errors+=1;self.cached=None;self.until=0;self.retry_at=self.clock()+1;self.last_seconds=self.clock()-started
++            return JSONResponse({'error':'shop discovery temporarily unavailable'},status_code=503)
++
++    def summary(self):
++        return {'served':self.served,'cache_hits':self.hits,'errors':self.errors,'last_seconds':self.last_seconds,
++                'separate_http_pool':True,'metadata_ttl_seconds':10}
++
++
++def install(kit):
++    base=kit.Proxy
++    if getattr(base,'r3_priority_discovery',False):return
++    class PriorityProxy(base):
++        r3_priority_discovery=True
++        def __init__(self,*args,**kwargs):
++            self.discovery=DiscoveryCache()
++            super().__init__(*args,**kwargs)
++
++        async def handle(self,req):
++            local=urlsplit(self.upstream or '').hostname in ('127.0.0.1','localhost','::1')
++            if (self.acp is not None and local and req.method=='GET'
++                    and req.path_params.get('path')=='.well-known/agent-card.json'):
++                return await self.discovery.card(self)
++            return await super().handle(req)
++    kit.Proxy=PriorityProxy
+--- a/r3/recovery.py
++++ b/r3/recovery.py
+@@ -0,0 +1,33 @@
++"""Typed, expiring observer-to-supervisor requests; one mutation owner."""
++from .state import atomic_json, identity, read_json
++
++
++def request(directory, runtime, url, evidence, now):
++    required=('runtime_matches','verified','identity_matches','public_ready')
++    if (not runtime.get('session') or not all(evidence.get(k) is True for k in required)
++            or not evidence.get('active_peers') or not evidence.get('registry_count')
++            or evidence.get('shop_alive') not in (True,False)):
++        return None
++    row={'schema':1,'session':runtime['session'],'url':url.rstrip('/'),'action':'rejoin',
++         'at':now,'expires_at':now+90,'source':'independent_recovery_observer',
++         'evidence':{k:evidence.get(k) for k in (*required,'active_peers','registry_count','listed','shop_alive')}}
++    row['id']=identity(row)
++    atomic_json(directory/'recovery-request.json',row)
++    return row['id']
++
++
++def receive(directory, runtime, url, now, previous_id=None):
++    row=read_json(directory/'recovery-request.json',{})
++    if (row.get('schema')!=1 or row.get('session')!=runtime.get('session') or not runtime.get('session')
++            or row.get('url')!=url.rstrip('/') or row.get('action')!='rejoin'
++            or row.get('source')!='independent_recovery_observer' or row.get('id')==previous_id
++            or not isinstance(row.get('at'),(int,float)) or not isinstance(row.get('expires_at'),(int,float))
++            or not 0<=now-row['at']<90 or now>=row['expires_at']
++            or row.get('id')!=identity({k:v for k,v in row.items() if k!='id'})):
++        return None
++    e=row.get('evidence',{})
++    if (not all(e.get(k) is True for k in ('runtime_matches','verified','identity_matches','public_ready'))
++            or not e.get('active_peers') or not e.get('registry_count')
++            or e.get('shop_alive') not in (True,False)):
++        return None
++    return row
+--- a/r3/adapter.py
++++ b/r3/adapter.py
+@@ -26,6 +26,9 @@
+ def install(kit, journal=None, config=None):
+     j = journal or Journal()
+     cfg = config or policy()
++    if cfg.get('discovery_priority_enabled') and hasattr(kit,'Proxy'):
++        from .discovery import install as install_discovery
++        install_discovery(kit)
+     from .autonomy import BackgroundLane
+     analytics_lane = BackgroundLane('market-analysis-v14')
+     publication_lane = BackgroundLane('market-publication-v14')
+--- a/r3/transport.py
++++ b/r3/transport.py
+@@ -159,6 +159,10 @@
+         self.last_rotation=self.started-600
+         self.verified_checks=0
+         self.active_peers=False
++        self.cooperative=read_json(self.directory/'policy.json',{}).get('cooperative_recovery_enabled',False)
++        self.runtime=read_json(self.directory/'.market/runtime.json',{})
++        self.last_request=None;self.last_actual_verified=None
++        self.next_registration=self.started
+ 
+     def snapshot(self, status):
+         atomic_json(self.directory / '.market/shop-health.json', {
+@@ -168,12 +172,25 @@
+             'board_offline_checks':self.board_offline_checks,
+             'market_board_alive':self.last_board_alive,
+             'board_global_outage':self.board_global_outage,
+-            'recovery_revision':'v15' if self.recovery_v15 else 'v14',
++            'recovery_revision':'v17' if self.cooperative else 'v15' if self.recovery_v15 else 'v14',
+             'verified_checks':self.verified_checks,
+-            'seconds_since_market_verified':max(0,time.monotonic()-self.last_verified),
++            'seconds_since_market_verified':(max(0,time.monotonic()-self.last_actual_verified) if self.last_actual_verified is not None else None) if self.cooperative else max(0,time.monotonic()-self.last_verified),
++            'seconds_since_verification_or_grace':max(0,time.monotonic()-self.last_verified),
++            'last_observer_request':self.last_request,
++            'discovery':self.proxy.discovery.summary() if hasattr(self.proxy,'discovery') else None,
+             'probe_interval_seconds': 15, 'renewal_seconds': 3300 if self.provider == 'pinggy' else None})
+ 
+     def tick(self, now=None):
++        if not self.cooperative:return self._tick(now)
++        from .lifecycle import lease
++        try:
++            with lease(self.directory/'.market/discovery-mutation.lock'):
++                return self._tick(now)
++        except RuntimeError as exc:
++            if 'already holds' not in str(exc):raise
++            self.snapshot('recovery_mutation_in_progress')
++
++    def _tick(self, now=None):
+         now = time.monotonic() if now is None else now
+         kit = self.kit
+         if self.procs[0].poll() is not None:
+@@ -220,7 +237,7 @@
+                                     matched=(len(own)==1 and (own[0].get('card') or {}).get('url','').rstrip('/')==self.proxy.public)
+                                     verified=present and matched and self.last_board_alive is True
+                                     self.verified_checks=self.verified_checks+1 if verified else 0
+-                                    if verified:self.last_verified=now
++                                    if verified:self.last_verified=now;self.last_actual_verified=now
+                                 self.board_offline_checks=self.board_offline_checks+1 if offline else 0
+                                 if self.board_offline_checks>=2 and now-self.last_board_rejoin>=120:
+                                     self.pending_registration=True
+@@ -228,6 +245,17 @@
+                         except Exception:pass
+             except Exception:
+                 self.market_visibility='unverified'
++        if self.cooperative:
++            from .recovery import receive
++            req=receive(self.directory/'.market',self.runtime,self.proxy.public,time.time(),self.last_request)
++            if req:
++                self.last_request=req['id']
++                accepted=(healthy and self.active_peers and not self.board_global_outage
++                          and self.market_visibility not in ('market_empty','unverified')
++                          and (self.market_visibility!='present' or self.last_board_alive is False))
++                if accepted:self.pending_registration=True
++                atomic_json(self.directory/'.market/recovery-response.json',{'id':req['id'],'at':time.time(),
++                    'accepted':bool(accepted),'reason':'confirmed_primary_probe' if accepted else 'current_probe_does_not_confirm_failure'})
+         expired_soon = self.provider == 'pinggy' and now - self.started >= 3300
+         # A market validator timeout while our public card still answers does
+         # not establish a broken tunnel. Preserve the reachable address and
+@@ -265,17 +293,19 @@
+             self.last_verified=now  # Bounded discovery grace for the new hostname.
+             self.verified_checks=0
+             kit.log('[tunnel] replacement ready; shop registration pending at ' + url)
+-        if self.pending_registration and self.market_visibility!='market_empty' and not self.board_global_outage:
++        if self.pending_registration and self.market_visibility!='market_empty' and not self.board_global_outage and (not self.cooperative or now>=self.next_registration):
+             # A one-shot join must be retried even when the new URL is already healthy.
+             try:
+                 result = self.market.join('shop', self.args.name, self.keys['shop'], self.proxy.public, tries=1)
+             except (Exception, SystemExit) as exc:
+                 self.registration_failures+=1
++                if self.cooperative:self.next_registration=now+min(120,15*2**min(3,self.registration_failures-1))
+                 kit.log('[market] shop registration pending; retrying in 15 s (' + type(exc).__name__ + ')')
+                 self.snapshot('registration_retry')
+                 return
+             self.pending_registration = False
+             self.registration_failures=0
++            if self.cooperative:self.next_registration=now+60
+             self.registry_misses=0
+             # Join acknowledges identity/URL acceptance, not sustained public
+             # discovery. Only independent registry and board probes establish it.
+--- a/r3/cycle.py
++++ b/r3/cycle.py
+@@ -64,12 +64,21 @@
+         started=time.monotonic()
+         now=time.time()
+         if now-self.last_analysis>=60:
+-            analytics(self.j,now);self.last_analysis=now
++            self.last_analysis=now
++            roles={'market_observer':lambda:analytics(self.j,time.time())}
+             if self.cfg.get('objective_feedback_enabled'):
+                 from .quality import update as quality_update
+                 from .feedback import update as feedback_update
+-                quality_update(self.j,self.cfg,now)
+-                feedback_update(self.j,self.cfg,now)
++                roles.update(quality_evaluator=lambda:quality_update(self.j,self.cfg,time.time()),
++                             policy_compiler=lambda:feedback_update(self.j,self.cfg,time.time()))
++            status={}
++            for role,work in roles.items():
++                try:
++                    work();status[role]={'at':time.time(),'status':'completed'}
++                except Exception as exc:
++                    status[role]={'at':time.time(),'status':'failed','error_type':type(exc).__name__}
++                    self.j.add('analytical_role_error',dict(role=role,**status[role]))
++            self.j.put('analytical-role-status',status)
+             self.meta(now)
+             from .usage import report
+             report(self.j,self.cfg,now)
+@@ -98,6 +107,7 @@
+             summary['operating_policy']={k:feedback.get(k) for k in ('id','at','status','regime','patches','reasons','execution_feedback')}
+             summary['next_actions']=[{'issue':reason,'action':'restore_or_refresh_facts' if 'stale' in reason or 'guards' in reason else 'independent_research_review'} for reason in feedback.get('reasons',[])]
+             summary['quality_holdout']=self.j.get('quality-holdout-summary',{})
++            summary['analytical_roles']=self.j.get('analytical-role-status',{})
+         self.j.put('cycle-meta-state',summary);self.j.add('cycle_meta_evaluation',summary)
+ 
+     def tick(self,now=None):
+--- a/r3/research.py
++++ b/r3/research.py
+@@ -24,9 +24,23 @@
+     'shop_service_level': {'type': 'number', 'minimum': .85, 'maximum': .95},
+     'shop_plan': {'type': 'string', 'enum': ['diversified', 'breadth', 'cautious', 'wait']},
+     'operating_actions': {'type':'array','items':{'type':'string','enum':['stock_coverage','buyer_price_gap']},'maxItems':2},
++    'operating_policy': {'type':'object','additionalProperties':False,'properties':{
++        'cover_cycles':{'type':'number','enum':[1,1.5,2,3]},
++        'initial_batch_limit':{'type':'integer','enum':[2,6,10,20]},
++        'frontier_min_orders':{'type':'integer','enum':[4,8,12]},
++        'recheck_seconds':{'type':'integer','enum':[60,120,300]}},
++        'required':['cover_cycles','initial_batch_limit','frontier_min_orders','recheck_seconds']},
+     'approve_trial': {'type': 'boolean'}}, 'required': [
+         'summary','hypotheses','evidence_ids','skills','skill_steps','buyer_probe_percent','buyer_gap_power',
+-        'buyer_diverse_quotes','shop_service_level','shop_plan','operating_actions','approve_trial']}
++        'buyer_diverse_quotes','shop_service_level','shop_plan','operating_actions','operating_policy','approve_trial']}
++
++
++def valid_operating(value):
++    choices={'cover_cycles':(1,1.5,2,3),'initial_batch_limit':(2,6,10,20),
++             'frontier_min_orders':(4,8,12),'recheck_seconds':(60,120,300)}
++    return isinstance(value,dict) and set(value)==set(choices) and all(
++        type(value[key]) in (int,float) and not isinstance(value[key],bool) and value[key] in allowed
++        and (key=='cover_cycles' or type(value[key]) is int) for key,allowed in choices.items())
+ 
+ 
+ def execution_projection(feedback):
+@@ -106,6 +120,7 @@
+             and value['shop_plan'] in ('diversified','breadth','cautious','wait') and type(value['approve_trial']) is bool
+             and isinstance(value['operating_actions'],list) and len(value['operating_actions'])<=2
+             and all(x in ('stock_coverage','buyer_price_gap') for x in value['operating_actions'])
++            and valid_operating(value['operating_policy'])
+             and isinstance(value['summary'],str) and len(value['summary']) <= 800
+             and isinstance(value['hypotheses'],list) and len(value['hypotheses']) <= 4
+             and all(isinstance(x,str) and len(x)<=400 for x in value['hypotheses'])
+@@ -138,6 +153,13 @@
+         'operating_actions is independent of approve_trial: insufficient mature challenger samples block economic '
+         'promotion, not measurement-based routing responses. Shop transport failures do not block Buyer actions. '
+         'Approve only operating actions justified by the supplied fresh facts; an empty list is valid. '
++        'Choose operating_policy using measured demand, competing supply, cost/risk, closed-order results and '
++        'peer trends. These are your execution parameters, not a request for a human to tune them. Cover cycles '
++        'sets repeat-demand inventory coverage; initial_batch_limit sets a conditional cap, never a buy target. '
++        'Higher public-only batches require stronger diverse external payments. Frontier controls apply only '
++        'to repeated, term-comparable price failures with recovery probes. Return baseline values if evidence '
++        'does not support change; preserve the supplied current_operating_policy exactly instead of assuming '
++        'the first enum value is the baseline. Rank/cash/quality objectives and money guards remain authoritative. '
+         'Inspect Main execution_feedback, peer trends, inventory, supply blocks and regime changes; explain why to act or wait. '
+         'Use <=3 short hypotheses and a concise summary. '
+         + ('Independently challenge the proposed explanation; approve_trial only if evidence supports a bounded test, '
+@@ -225,6 +247,13 @@
+     if config.get('objective_feedback_enabled'):
+         packet['operating_intents']=sorted(set(analyst['operating_actions']) & set(critic['operating_actions']))
+         packet['operating_actions_reviewed']=True
++        if config.get('agent_policy_selection_enabled'):
++            a,b=analyst['operating_policy'],critic['operating_policy']
++            packet['operating_policy']={'cover_cycles':min(a['cover_cycles'],b['cover_cycles']),
++                'initial_batch_limit':min(a['initial_batch_limit'],b['initial_batch_limit']),
++                'frontier_min_orders':max(a['frontier_min_orders'],b['frontier_min_orders']),
++                'recheck_seconds':min(a['recheck_seconds'],b['recheck_seconds'])}
++            packet['policy_authority']='independent_agent_consensus_with_numeric_execution_guards'
+     atomic_json(journal.md/'market-research-v15.json',packet)
+     journal.put('research-last-result',packet)
+     journal.add('market_research_published',packet)
+@@ -252,6 +281,17 @@
+     market=journal.get('cycle-market-analytics',{})
+     if not 0<=now-market.get('at',0)<180:
+         return None
++    if config.get('agent_policy_selection_enabled'):
++        from .feedback import update as refresh_operating
++        operating=journal.get('feedback-last-policy',{})
++        if operating.get('status')!='active' or operating.get('at',0)<market.get('at',0):
++            operating=refresh_operating(journal,config,now,force=True) or {}
++        # Do not pay a model to reconsider a known stale diagnosis. The
++        # observer must first publish a coherent, current evidence generation.
++        if (operating.get('status')!='active' or operating.get('rules_hash')!=rules.get('sha256')
++                or operating.get('at',0)<market.get('at',0)
++                or not -2<=now-market.get('feed_at',journal.get('public_feed_caught_up_at',0))<180):
++            return None
+     previous=journal.get('research-last-attempt',{})
+     window=(journal.snapshot('inventory.json',{}).get('restock') or {}).get('opens_at')
+     preopen=type(window) in (int,float) and 0<=window-now<=300 and previous.get('window')!=window
+@@ -274,6 +314,10 @@
+            'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level')},
+            'meta':journal.get('cycle-meta-state',{}),
+            'evidence_ids':evidence}
++    baseline=journal.get('research-last-result',{}).get('operating_policy')
++    if not valid_operating(baseline):
++        baseline={'cover_cycles':1,'initial_batch_limit':6,'frontier_min_orders':8,'recheck_seconds':120}
++    facts['current_operating_policy']=baseline
+     if config.get('objective_feedback_enabled'):
+         operating=journal.get('feedback-last-policy',{})
+         facts['operating_feedback']={k:operating.get(k) for k in ('at','regime','facts','peer_trends','objective_targets','patches','reasons','execution_feedback','constraints')}
+--- a/r3/feedback.py
++++ b/r3/feedback.py
+@@ -14,15 +14,19 @@
+ REVISION = 'objective-feedback-v16-1'
+ FILE = 'operating-policy-v16.json'
+ LIMITS = {'shop': {'shop_demand_horizon_cycles': (1., 3.), 'shop_inventory_ceiling': (120, 240),
+-                    'shop_sku_trend_factors': None,'shop_public_demand_skus':None},
+-          'buyer': {'buyer_frontier_category_enabled': (False, True)}}
++                    'shop_sku_trend_factors': None,'shop_public_demand_skus':None,'shop_public_demand_caps':None},
++          'buyer': {'buyer_frontier_category_enabled': (False, True),
++                    'buyer_frontier_min_orders':(4,12),'buyer_frontier_recheck_seconds':(60,300)}}
+ 
+ 
+ def valid_patch(role, patch):
+     if not isinstance(patch, dict) or set(patch)-LIMITS[role].keys():
+         return False
+     for key, value in patch.items():
+-        if key=='shop_public_demand_skus':
++        if key=='shop_public_demand_caps':
++            if not isinstance(value,dict) or len(value)>20 or any(not isinstance(k,str) or not k.startswith('G')
++                or len(k)>64 or type(v) is not int or not 1<=v<=20 for k,v in value.items()):return False
++        elif key=='shop_public_demand_skus':
+             if not isinstance(value,list) or len(value)>20 or any(not isinstance(s,str) or not s.startswith('G') or len(s)>64 for s in value):return False
+         elif key=='shop_sku_trend_factors':
+             if (not isinstance(value,dict) or len(value)>20 or any(not isinstance(sku,str) or not sku.startswith('G') or len(sku)>64
+@@ -31,7 +35,7 @@
+             if type(value) is not bool: return False
+         elif type(value) not in (int, float) or not math.isfinite(value) or not LIMITS[role][key][0] <= value <= LIMITS[role][key][1]:
+             return False
+-        elif key == 'shop_inventory_ceiling' and type(value) is not int:
++        elif key in {'shop_inventory_ceiling','buyer_frontier_min_orders','buyer_frontier_recheck_seconds'} and type(value) is not int:
+             return False
+     return True
+ 
+@@ -40,15 +44,15 @@
+     rules = journal.get('market_rules', {})
+     return bool(rules.get('compatible') and rules.get('buyer_compatible') and rules.get('sha256')
+         and 0 <= now-rules.get('at', now) < 7200
+-        and 0 <= now-journal.get('board_checked_at', 0) < 180
+-        and 0 <= now-journal.get('public_feed_caught_up_at', 0) < 180)
+-
+-
+-def update(journal, config, now=None):
++        and -2 <= now-journal.get('board_checked_at', 0) < 180
++        and -2 <= now-journal.get('public_feed_caught_up_at', 0) < 180)
++
++
++def update(journal, config, now=None, force=False):
+     if not config.get('objective_feedback_enabled'): return None
+     now = time.time() if now is None else now
+     previous = journal.snapshot(FILE, {})
+-    if 0 <= now-previous.get('at', 0) < 45: return previous
++    if not force and 0 <= now-previous.get('at', 0) < 45: return previous
+     board = journal.snapshot('board.json', {})
+     market = journal.get('cycle-market-analytics', {})
+     rules = journal.get('market_rules', {})
+@@ -118,6 +122,9 @@
+                 and issued.get('rules_hash') == rules.get('sha256')
+                 and 0 <= now-issued.get('at', 0) < 1200 and now < issued.get('expires_at', 0))
+     intents = issued.get('operating_intents', []) if reviewed else []
++    from .research import valid_operating
++    selected=issued.get('operating_policy',{})
++    agent_selected=config.get('agent_policy_selection_enabled') and reviewed and valid_operating(selected)
+     patches = {'shop': {}, 'buyer': {}}
+     reasons = []
+     evidence_ok = fresh(journal, now) and 0 <= now-market.get('at', 0) < 180 and board.get('round') == 3
+@@ -125,6 +132,7 @@
+         # Supply failures justify a larger coverage horizon only for SKUs with
+         # repeat own paid demand. Candidate economics still reject bad units.
+         cycles = min(3., 1.25 + min(1.75, len(blocks)/4))
++        if agent_selected:cycles=selected['cover_cycles']
+         if regime == 'shock': cycles = min(cycles, 1.5)
+         if 'stock_coverage' in intents:
+             patches['shop']['shop_demand_horizon_cycles'] = cycles
+@@ -134,18 +142,26 @@
+     if evidence_ok and segments['goods']['closed'] >= 20 and segments['goods']['conversion'] < .3:
+         if 'buyer_price_gap' in intents:
+             patches['buyer']['buyer_frontier_category_enabled'] = True
++            if agent_selected:
++                patches['buyer'].update(buyer_frontier_min_orders=selected['frontier_min_orders'],
++                    buyer_frontier_recheck_seconds=selected['recheck_seconds'])
+         else: reasons.append('buyer_frontier_review_pending')
+     if evidence_ok and 'stock_coverage' in intents:
+         factors={}
+         qualified=[]
++        caps={}
+         for sku in market.get('top_skus',[])[:20]:
+             n=sku.get('recent60',0);current=sku.get('recent20',0)
+             if n>=12:
+                 ratio=(current+5)/(max(0,n-current)/2+5)
+                 factors[sku['sku']]=round(max(.75,min(1.5,1+(ratio-1)*.5))*20)/20
+-            if n>=20 and current>=10 and sku.get('buyers20',0)>=3:qualified.append(sku['sku'])
++            if n>=20 and current>=10 and sku.get('buyers20',0)>=3:
++                qualified.append(sku['sku'])
++                if agent_selected:
++                    caps[sku['sku']]=min(selected['initial_batch_limit'],20 if current>=50 and sku.get('buyers20',0)>=5 else 6)
+         if factors:patches['shop']['shop_sku_trend_factors']=factors
+         if qualified:patches['shop']['shop_public_demand_skus']=sorted(qualified)
++        if caps:patches['shop']['shop_public_demand_caps']=caps
+     if not evidence_ok: reasons.append('facts_stale_or_rules_unverified')
+     if journal.get('market_control', {}).get('pause_restock'): reasons.append('fresh_supply_guards_still_required')
+     # This semantic ID is stable when the policy is unchanged. Merely observing
+@@ -185,6 +201,8 @@
+             'restock_block_reasons': dict(Counter(r.get('reason') for r in blocks)), 'stockouts_60min': len(shortages),
+             'buyer_segments_60min': segments, 'technical_attempts_60min': sum(r.get('kind') in ('ReadTimeout','ConnectTimeout','ConnectError') for r in attempts)},
+         'peer_trends': trends, 'research_at': issued.get('at'), 'reviewed_intents': intents,
++        'policy_authority':'agent_selected' if agent_selected else 'bounded_baseline',
++        'source_times':{'board':journal.get('board_checked_at'),'feed':journal.get('public_feed_caught_up_at'),'analytics':market.get('at')},
+         'objective_targets':{'shop':rank_targets(scoring_board,'shop'),'buyer':rank_targets(scoring_board,'buyer')},
+         'execution_feedback': {'main_choices_by_policy': dict(choice_counts), 'buyer_closed_results_by_policy': outcomes,
+             'buyer_canonical_mature_results_by_policy':canonical,
+--- a/r3/shop_growth.py
++++ b/r3/shop_growth.py
+@@ -15,7 +15,7 @@
+     return max(0.0,min(1.0,1-cdf))
+ 
+ 
+-def target_stock(rate, paid, config, public_qualified=False):
++def target_stock(rate, paid, config, public_qualified=False, public_limit=6):
+     maximum=min(20,config['restock_max_qty'])
+     arrivals=max(0,rate)*config.get('supply_cycle_seconds',1200)/3600
+     supported=paid>=3 or public_qualified and config.get('objective_feedback_enabled')
+@@ -30,7 +30,7 @@
+     # Diverse, recent external payments can fund a measured first batch even
+     # before our own stock was visible. Public activity alone is capped at six;
+     # repeated own paid demand can use all twenty legal units per supply call.
+-    return min(maximum,target if paid>=3 else min(6 if supported else 2,target))
++    return min(maximum,target if paid>=3 else min(max(1,min(20,public_limit)) if supported else 2,target))
+ 
+ 
+ def resale_terms(product,public,journal,config,now):
+--- a/r3/economy.py
++++ b/r3/economy.py
+@@ -401,7 +401,8 @@
+             paid=growth.get('positive_paid_while_available',0)
+             if paid>=3:rate=max(.01,growth.get('paid_arrival_rate_scenario',rate/max(.01,trend))*trend)
+             public_qualified=config.get('objective_feedback_enabled') and sku in config.get('shop_public_demand_skus',[])
+-            desired=target_stock(rate,paid,config,public_qualified=public_qualified)
++            desired=target_stock(rate,paid,config,public_qualified=public_qualified,
++                public_limit=config.get('shop_public_demand_caps',{}).get(sku,6))
+         else:
+             desired = max(1, math.ceil(rate * config.get('supply_cycle_seconds', 1200) / 3600 * 1.5))
+         needed=desired-count.get(sku,0)
+--- a/r3/contracts.py
++++ b/r3/contracts.py
+@@ -73,7 +73,7 @@
+         candidate=paused[0]
+         category=candidate.get('evidence',{}).get('category_frontier',{})
+         key='frontier-last-probe:'+identity([shop_identity(journal,candidate['shop']),candidate['product'].get('category')])
+-        if not category.get('paused') or now-journal.get(key,0)>=120:
++        if not category.get('paused') or now-journal.get(key,0)>=config.get('buyer_frontier_recheck_seconds',120):
+             kept=[candidate]
+             kept[0].setdefault('evidence',{}).setdefault('contract_route',{})['probe']=True
+             if category.get('paused'):journal.put(key,now)
+@@ -95,10 +95,11 @@
+                     and 0<=now-r['_ts']<1200 and r.get('ask',0)>r.get('cap',float('inf'))
+                     and type(r.get('list_price')) in (int,float) and r['list_price']>0]
+     orders={r['order'] for r in rows};skus={r['sku'] for r in rows}
+-    if len(orders)<8 or len(skus)<3: return False
++    minimum=max(4,min(12,config.get('buyer_frontier_min_orders',8)))
++    if len(orders)<minimum or len(skus)<3: return False
+     term=candidate.get('evidence',{}).get('seller_term_prior',{})
+     comparable=[r for r in rows if r.get('grade')==term.get('grade') and r.get('warranty_hours')==term.get('warranty_hours')]
+-    if len({r['order'] for r in comparable})<8: return False
++    if len({r['order'] for r in comparable})<minimum: return False
+     worst_ratio=min(r['ask']/r['list_price'] for r in comparable)
+     improved=candidate['reference_price']/max(1,candidate['product']['list_price'])<worst_ratio*.95
+     probe=int(identity([order['order'],owner,category])[:8],16)%100<config.get('buyer_contract_probe_percent',8)
+--- a/shop_recovery_guard.py
++++ b/shop_recovery_guard.py
+@@ -22,7 +22,8 @@
+     reason = 'unverified'
+     if not probe.get('runtime_matches'):
+         return 'stop', dict(state, misses=0), 'runtime_changed'
+-    if probe.get('primary_age', 0) < 120:
++    recent_primary=probe.get('primary_age',0)<120
++    if recent_primary and not probe.get('cooperative_recovery'):
+         return 'wait', dict(state, misses=0), 'primary_supervisor_recent'
+     if not probe.get('verified'):
+         return 'wait', dict(state, misses=0), reason
+@@ -39,9 +40,11 @@
+     state['misses'] = state.get('misses', 0) + 1
+     if state['misses'] < 2:
+         return 'wait', state, 'confirm_again'
++    if recent_primary and probe.get('unverified_seconds',0)<180:
++        return 'wait',state,'allow_current_address_verification_grace'
+     if now - state.get('last_attempt', 0) < 120:
+         return 'wait', state, 'repair_cooldown'
+-    return 'repair', dict(state, last_attempt=now, misses=0), 'confirmed_own_discovery_failure'
++    return ('request' if recent_primary else 'repair'), dict(state, last_attempt=now, misses=0), 'confirmed_own_discovery_failure'
+ 
+ 
+ def probe(url, pinned):
+@@ -61,6 +64,9 @@
+     shops = registry.get('shops', [])
+     health = read_json(ROOT / '.market/shop-health.json', {})
+     primary = health.get('primary_heartbeat_at', health.get('checked_at', 0))
++    grace=health.get('seconds_since_verification_or_grace',health.get('seconds_since_market_verified',0))
++    actual=health.get('seconds_since_market_verified')
++    unverified=min(actual,grace) if type(actual) in (int,float) and type(grace) in (int,float) else grace
+     result = {
+         'runtime_matches': read_json(ROOT / '.market/runtime.json', {}) == pinned and market_active(),
+         'primary_age': time.time() - primary,
+@@ -71,11 +77,24 @@
+         'listed': any(r.get('name') == 'seochanit' and r.get('url', '').rstrip('/') == url for r in shops),
+         'shop_alive': own[0].get('alive') if len(own) == 1 else None,
+         'active_peers': sum(r.get('name') != 'seochanit' and r.get('alive') is True for r in board.get('shops', [])),
++        'cooperative_recovery':read_json(ROOT/'policy.json',{}).get('cooperative_recovery_enabled',False),
++        'unverified_seconds':unverified if type(unverified) in (int,float) else 0,
+     }
+     return result
+ 
+ 
+ def repair(pinned, url):
++    if read_json(ROOT/'policy.json',{}).get('cooperative_recovery_enabled'):
++        try:
++            with lease(ROOT/'.market/discovery-mutation.lock'):
++                return _repair(pinned,url)
++        except RuntimeError as exc:
++            if 'already holds' not in str(exc):raise
++            return {'attempted':False,'reason':'primary_mutation_in_progress'}
++    return _repair(pinned,url)
++
++
++def _repair(pinned, url):
+     # Recheck immediately before invoking the existing identity-bound helper.
+     if read_json(ROOT / '.market/runtime.json', {}) != pinned or not market_active():
+         return {'attempted': False, 'reason': 'runtime_changed'}
+@@ -118,6 +137,9 @@
+                        'url': url, 'action': action, 'reason': reason, 'probe': evidence, 'state': state}
+                 if action == 'repair':
+                     row['repair'] = repair(pinned, url)
++                elif action=='request':
++                    from r3.recovery import request
++                    row['request_id']=request(ROOT/'.market',pinned,url,evidence,now)
+                 if action == 'stop':
+                     stream.write(json.dumps(row) + '\n'); stream.flush()
+                     return
+--- a/policy.json
++++ b/policy.json
+@@ -97,6 +97,9 @@
+   "buyer_contract_probe_percent": 8,
+   "autonomy_v14_enabled": true,
+   "buyer_worker_enabled": true,
+-  "execution_revision": "v16-objective-feedback-1",
+-  "objective_feedback_enabled": true
++  "execution_revision": "v17-agent-policy-recovery-1",
++  "objective_feedback_enabled": true,
++  "agent_policy_selection_enabled": true,
++  "discovery_priority_enabled": true,
++  "cooperative_recovery_enabled": true
+ }
+--- a/tests/test_agent_policy_recovery.py
++++ b/tests/test_agent_policy_recovery.py
+@@ -0,0 +1,200 @@
++import asyncio
++import copy
++import json
++import time
++from types import SimpleNamespace
++import httpx
++import pytest
++from r3.state import atomic_json, identity
++from r3 import feedback, research
++from r3.discovery import DiscoveryCache, install
++from r3.recovery import request, receive
++from r3.shop_growth import target_stock
++from shop_recovery_guard import decide
++from test_market_cycle import opinion, FakeAPI
++from test_objective_feedback import market
++
++
++def test_agents_select_operating_parameters_and_main_uses_consensus(tmp_path):
++    j,cfg,now=market(tmp_path);cfg=dict(cfg,agent_policy_selection_enabled=True)
++    a=opinion(['one']);b=opinion(['one']);a['approve_trial']=b['approve_trial']=False
++    a['operating_policy']={'cover_cycles':3,'initial_batch_limit':20,'frontier_min_orders':4,'recheck_seconds':300}
++    b['operating_policy']={'cover_cycles':2,'initial_batch_limit':10,'frontier_min_orders':8,'recheck_seconds':60}
++    row=research.publish(j,cfg,{'evidence_ids':['one']},a,b,'rules',now)
++    assert row['operating_policy']=={'cover_cycles':2,'initial_batch_limit':10,'frontier_min_orders':8,'recheck_seconds':60}
++    m=j.get('cycle-market-analytics');m['top_skus']=[{'sku':'Ghot','recent20':70,'recent60':100,'buyers20':8},
++        {'sku':'Gweak','recent20':10,'recent60':20,'buyers20':3}];j.put('cycle-market-analytics',m)
++    p=feedback.update(j,cfg,now);s=feedback.apply(j,cfg,'shop',now=now);buyer=feedback.apply(j,cfg,'buyer',order='o',now=now)
++    assert p['policy_authority']=='agent_selected' and s['shop_demand_horizon_cycles']==2
++    assert s['shop_public_demand_caps']=={'Ghot':10,'Gweak':6}
++    assert target_stock(1000,0,s,True,public_limit=s['shop_public_demand_caps']['Ghot'])==10
++    assert buyer['buyer_frontier_min_orders']==8 and buyer['buyer_frontier_recheck_seconds']==60
++    assert buyer['buyer_saved_target_margin']==cfg['buyer_saved_target_margin']
++    assert row['trial_review_approved'] is False and row['queued_buyer_profile'] is None
++
++
++@pytest.mark.parametrize('bad',[None,{'cover_cycles':3},
++    {'cover_cycles':100,'initial_batch_limit':20,'frontier_min_orders':4,'recheck_seconds':60},
++    {'cover_cycles':True,'initial_batch_limit':20,'frontier_min_orders':4,'recheck_seconds':60},
++    {'cover_cycles':3,'initial_batch_limit':20,'frontier_min_orders':0,'recheck_seconds':60}])
++def test_agent_policy_cannot_escape_typed_parameter_space(bad):
++    value=opinion(['one']);value['operating_policy']=bad
++    assert not research.validate(value,['one'])
++
++
++@pytest.mark.parametrize('key,value',[('buyer_frontier_min_orders',6.5),('buyer_frontier_recheck_seconds',60.5)])
++def test_compiled_integer_controls_cannot_accept_fractional_values(key,value):
++    assert not feedback.valid_patch('buyer',{key:value})
++
++
++def test_concurrent_feed_timestamp_does_not_misclassify_current_facts(tmp_path):
++    j,cfg,now=market(tmp_path);j.put('public_feed_caught_up_at',now+.5)
++    assert feedback.fresh(j,now)
++    j.put('public_feed_caught_up_at',now+10)
++    assert not feedback.fresh(j,now)
++
++
++def test_stale_analytics_does_not_spend_api_budget_just_because_cursor_caught_up(tmp_path):
++    j,cfg,now=market(tmp_path);cfg=dict(cfg,agent_policy_selection_enabled=True)
++    j.put('cycle-market-analytics',{'at':now,'feed_at':now-1000,'windows':{}})
++    api=FakeAPI()
++    assert research.update(j,cfg,now,client=api,key='synthetic') is None
++    assert api.requests==[] and not j.events('model_usage')
++
++
++def test_reasoner_receives_explicit_baseline_instead_of_guessing_first_enum(tmp_path):
++    j,cfg,now=market(tmp_path);cfg=dict(cfg,agent_policy_selection_enabled=True)
++    j.put('cycle-market-analytics',{'at':now,'feed_at':now,'windows':{}})
++    api=FakeAPI();assert research.update(j,cfg,now,client=api,key='synthetic')
++    facts=json.loads(api.requests[0]['input'])['facts']
++    assert facts['current_operating_policy']=={'cover_cycles':1,'initial_batch_limit':6,'frontier_min_orders':8,'recheck_seconds':120}
++
++
++def test_one_failed_analytical_role_does_not_stop_other_roles_or_preparation(tmp_path,monkeypatch):
++    from r3.cycle import MarketCycle
++    from r3 import quality,prepared,prewindow
++    j,cfg,now=market(tmp_path);calls=[]
++    monkeypatch.setattr(quality,'update',lambda *a:(_ for _ in ()).throw(ValueError('synthetic bad review')))
++    monkeypatch.setattr(feedback,'update',lambda *a,**k:calls.append('compiled'))
++    monkeypatch.setattr(prepared,'update',lambda *a:calls.append('buyer_prepared'))
++    monkeypatch.setattr(prewindow,'prepare',lambda *a:calls.append('shop_prepared'))
++    cycle=MarketCycle(j,cfg,None,None);cycle.prepare();cycle.stop.set()
++    assert calls==['compiled','buyer_prepared','shop_prepared']
++    statuses=j.get('analytical-role-status')
++    assert statuses['quality_evaluator']['status']=='failed' and statuses['policy_compiler']['status']=='completed'
++    assert j.events('analytical_role_error')[0]['role']=='quality_evaluator'
++
++
++def probe(**patch):
++    return dict(runtime_matches=True,verified=True,identity_matches=True,public_ready=True,
++        registry_count=10,active_peers=8,shop_alive=False,listed=False,primary_age=10,
++        cooperative_recovery=True,unverified_seconds=300,**patch)
++
++
++def test_fresh_primary_heartbeat_cannot_silence_confirmed_observer_failure():
++    action,state,_=decide(probe(),{},1000);assert action=='wait'
++    action,state,_=decide(probe(),state,1030);assert action=='request'
++    assert decide(probe(),state,1060)[0]=='wait'
++
++
++def test_new_address_gets_discovery_grace_and_global_outage_never_queues():
++    p=probe();p['unverified_seconds']=30
++    assert decide(p,{'misses':5},1000)[0]=='wait'
++    p=probe();p['active_peers']=0
++    assert decide(p,{'misses':5},1000)[0]=='wait'
++
++
++@pytest.mark.parametrize('fault',['session','url','expired','future','duplicate','tampered'])
++def test_old_or_forged_recovery_request_cannot_mutate_current_registration(tmp_path,fault):
++    runtime={'session':'current'};url='https://own.example';rid=request(tmp_path,runtime,url,probe(),1000)
++    assert rid and receive(tmp_path,runtime,url,1001)
++    duplicate=None;at=1001
++    if fault=='session':runtime={'session':'new'}
++    if fault=='url':url='https://new.example'
++    if fault=='expired':at=1090
++    if fault=='future':at=999
++    if fault=='duplicate':duplicate=rid
++    if fault=='tampered':
++        raw=json.loads((tmp_path/'recovery-request.json').read_text());raw['action']='rotate_everything';atomic_json(tmp_path/'recovery-request.json',raw)
++    assert receive(tmp_path,runtime,url,at,duplicate) is None
++
++
++def test_primary_consumes_request_only_after_its_own_public_probes(tmp_path):
++    from test_transport import supervisor_fixture
++    attempts=[]
++    monitor,old,new,stopped,logs=supervisor_fixture(tmp_path,lambda *a,**k:attempts.append(a) or {'name':'seochanit'})
++    monitor.cooperative=True;monitor.runtime={'session':'current'};monitor.provider='cloudflare';monitor.market.base='https://market.example'
++    def get(url,**kwargs):
++        rows=([{'name':'seochanit','url':'https://old.example'}] if url.endswith('/api/shops') else
++              [{'name':'seochanit','alive':False,'card':{'url':'https://old.example'}},{'name':'peer','alive':True}])
++        return httpx.Response(200,json={'shops':rows})
++    monitor.market.c=SimpleNamespace(get=get)
++    rid=request(tmp_path/'.market',monitor.runtime,monitor.proxy.public,probe(),time.time())
++    monitor.tick(1)
++    assert attempts and monitor.last_request==rid and monitor.procs[1] is old and not stopped
++    ack=json.loads((tmp_path/'.market/recovery-response.json').read_text())
++    assert ack['accepted'] is True
++
++
++def card_proxy():
++    def rewrite(card):
++        for iface in card['supportedInterfaces']:iface['url']=p.public+'/a2a/0'
++        return card
++    p=SimpleNamespace(public='https://old.example',upstream='http://127.0.0.1:9000',rewrite=rewrite)
++    return p
++
++
++def test_discovery_uses_separate_pool_and_rewrites_rotated_address_without_corrupting_cache():
++    async def run():
++        calls=[]
++        class Client:
++            async def get(self,url):
++                calls.append(url)
++                return httpx.Response(200,json={'name':'Seochanit Shop','supportedInterfaces':[{'url':'http://127.0.0.1:9000/a2a'}]},request=httpx.Request('GET',url))
++        cache=DiscoveryCache(factory=Client);p=card_proxy()
++        a=await cache.card(p);p.public='https://new.example';b=await cache.card(p)
++        assert len(calls)==1 and cache.hits==1
++        assert json.loads(a.body)['supportedInterfaces'][0]['url']=='https://old.example/a2a/0'
++        assert json.loads(b.body)['supportedInterfaces'][0]['url']=='https://new.example/a2a/0'
++        assert cache.cached['supportedInterfaces'][0]['url'].startswith('http://127.0.0.1')
++    asyncio.run(run())
++
++
++def test_expired_discovery_does_not_hide_dead_seller_and_failure_retry_is_bounded():
++    async def run():
++        clock=[0];calls=[]
++        class Client:
++            async def get(self,url):
++                calls.append(url)
++                if len(calls)>1:raise httpx.ReadTimeout('synthetic')
++                return httpx.Response(200,json={'name':'Seochanit Shop'},request=httpx.Request('GET',url))
++        cache=DiscoveryCache(factory=Client,clock=lambda:clock[0]);p=card_proxy();p.rewrite=lambda c:c
++        assert (await cache.card(p)).status_code==200
++        clock[0]=11
++        assert (await cache.card(p)).status_code==503
++        clock[0]=11.5
++        assert (await cache.card(p)).status_code==503 and len(calls)==2
++    asyncio.run(run())
++
++
++def test_card_path_does_not_wait_for_negotiation_pool_and_checkout_route_is_unchanged():
++    async def run():
++        from starlette.responses import JSONResponse
++        blocked=asyncio.Event()
++        class Base:
++            async def handle(self,req):
++                if req.path_params['path'].startswith('a2a/'):
++                    await blocked.wait()
++                return JSONResponse({'original_checkout':True})
++        kit=SimpleNamespace(Proxy=Base);install(kit);p=kit.Proxy.__new__(kit.Proxy)
++        p.upstream='http://127.0.0.1:9000';p.acp=object()
++        class Cache:
++            async def card(self,proxy):return JSONResponse({'name':'Seochanit Shop'})
++        p.discovery=Cache()
++        task=asyncio.create_task(p.handle(SimpleNamespace(method='POST',path_params={'path':'a2a/0'})))
++        result=await asyncio.wait_for(p.handle(SimpleNamespace(method='GET',path_params={'path':'.well-known/agent-card.json'})),.1)
++        assert result.status_code==200 and not task.done()
++        checkout=await p.handle(SimpleNamespace(method='POST',path_params={'path':'acp/checkout_sessions'}))
++        assert json.loads(checkout.body)=={'original_checkout':True}
++        blocked.set();await task
++    asyncio.run(run())
+--- a/tests/test_market_cycle.py
++++ b/tests/test_market_cycle.py
+@@ -30,7 +30,9 @@
+     return {'summary':'Use bounded experiments; keep checkout guards.', 'hypotheses':['Demand may have shifted.'],
+         'evidence_ids':evidence[:2],'skills':['stock_coverage'],'skill_steps':['measure','diagnose','propose','validate_facts'], 'buyer_probe_percent':12,'buyer_gap_power':2,
+         'buyer_diverse_quotes':True,'shop_service_level':.95,'shop_plan':'diversified',
+-        'operating_actions':['stock_coverage','buyer_price_gap'],'approve_trial':True}
++        'operating_actions':['stock_coverage','buyer_price_gap'],
++        'operating_policy':{'cover_cycles':2,'initial_batch_limit':6,'frontier_min_orders':8,'recheck_seconds':120},
++        'approve_trial':True}
+ 
+ 
+ def test_plan_prepared_while_closed_then_consumed_only_in_correct_window(tmp_path):
+--- a/verify_market_cycle_live.py
++++ b/verify_market_cycle_live.py
+@@ -34,6 +34,7 @@
+                'cycle_supervisor_error','cycle_supply_error','buyer_worker_error','shop_settled','purchase','model_usage']
+         if cfg.get('objective_feedback_enabled'):
+             kinds+=['feedback_policy_created','feedback_main_choice','quality_holdout_evaluation']
++        if cfg.get('agent_policy_selection_enabled'):kinds+=['analytical_role_error']
+         counts={kind:db.execute('SELECT count(*) FROM events WHERE kind=? AND ts>=?',(kind,runtime.get('started_at',now))).fetchone()[0] for kind in kinds}
+         models=[json.loads(raw) for raw, in db.execute('SELECT data FROM events WHERE kind=? AND ts>=?',('model_usage',runtime.get('started_at',now)))]
+         heartbeat=kv('cycle-heartbeat');meta=kv('cycle-meta-state');last_research=kv('research-last-result')
+@@ -42,7 +43,7 @@
+     try:
+         with lease(ROOT/'.market/shop-recovery-guard.lock'):guard_active=False
+     except RuntimeError:guard_active=True
+-    release='v16' if cfg.get('objective_feedback_enabled') else 'v15'
++    release='v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
+     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
+     manifest=read_json(promotion,{})
+     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]
+@@ -51,8 +52,11 @@
+             'listed':listed,'online':online,'own':{role:{k:r.get(k) for k in ('alive','all','book','saved','deals','forum')} for role,r in own.items()},
+             'source_mismatches':mismatches,'counts_since_restart':counts,'cycle_heartbeat':heartbeat,'last_preparation':stats,
+             'meta':meta,'last_research':last_research,'model_usage':[{'role':r.get('role'),'model':r.get('model'),'usage':r.get('usage'),'estimated_usd':r.get('estimated_usd')} for r in models],
+-            'operating_policy':{k:operating.get(k) for k in ('at','id','status','regime','patches','reasons','execution_feedback')},
++            'operating_policy':{k:operating.get(k) for k in ('at','id','status','regime','policy_authority','source_times','patches','reasons','execution_feedback')},
+             'quality_holdout':quality,
++            'analytical_roles':kv('analytical-role-status'),
++            'recovery_request':read_json(ROOT/'.market/recovery-request.json',{}),
++            'recovery_response':read_json(ROOT/'.market/recovery-response.json',{}),
+             'market_status_verified':all(r.get('status')==200 for r in results[2:]),
+             'independent_recovery_guard_active':guard_active,'primary_recovery':health,
+             'cost_cap_usd':cfg.get('daily_api_budget_usd'),'budget_mode':cfg.get('research_budget_mode'),

@@ -1,0 +1,39 @@
+<meta charset="utf-8"><style>/* Portable host defaults: scoped so charts also work without a Visualize host. */
+[data-data-chart] {
+  color-scheme: light dark;
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--foreground, light-dark(#242424, #ececec));
+  --foreground: light-dark(#242424, #ececec);
+  --muted-foreground: light-dark(#6b6b6b, #aaa);
+  --card: light-dark(#fff, #202020);
+  --muted: light-dark(#f3f3f3, #303030);
+  --popover: light-dark(#fff, #292929);
+  --popover-foreground: var(--foreground);
+  --border: light-dark(#e7e7e7, #454545);
+  --ring: light-dark(#176bb8, #83c3ff);
+  --green: light-dark(#22794d, #74d58b);
+  --red: light-dark(#bc4760, #ed7891);
+  --viz-series-1: light-dark(#339cff, #83c3ff);
+  --viz-series-2: light-dark(#f3883b, #f59a56);
+  --viz-series-3: light-dark(#5dc977, #74d58b);
+  --viz-series-4: light-dark(#eb77b1, #f08fc0);
+  --viz-series-5: light-dark(#9b79ec, #aa91ef);
+  --viz-series-6: light-dark(#3ab9b1, #5acbc2);
+  min-width: 0;
+  width: 100%;
+}
+[data-data-chart][data-appearance="light"] { color-scheme: light; }
+[data-data-chart][data-appearance="dark"] { color-scheme: dark; }
+[data-data-chart] > [data-chart-error] { margin: 8px 0; color: var(--foreground); }
+@media print { [data-data-chart] { color-scheme: light; break-inside: avoid; } }
+</style>
+<section id="data-chart-44b81e97-3b0d-4083-98d1-c6db938b3289" data-data-chart data-viz-composition data-appearance="auto">
+<div data-viz-container style="min-width:0;min-height:380px"></div>
+</section>
+<script type="module">
+const {mountChart}=await import("https://persistent.oaistatic.com/plugins/visualize/charts/data-analytics-plugin/1.2.1/charts/element.js");
+const root=document.getElementById("data-chart-44b81e97-3b0d-4083-98d1-c6db938b3289");
+const target=root.querySelector("[data-viz-container]");
+const config={"id":"shop-buyer-progress-20261109","title":"Shop 개선과 Buyer 상대 점수 하락","description":"2026-11-09 KST 공식 보드 관측. ALL 점수 축은 0.75–0.85로 확대했다. 시작 저장본은 캐시된 보드다.","height":280,"spec":{"type":"line","x":"time","y":["Shop ALL","Buyer ALL"],"yLabel":"ALL 점수","yDomain":[0.75,0.85],"startAtZero":false,"showValues":true,"showLegend":true,"colors":{"Shop ALL":"#167D9A","Buyer ALL":"#B55D22"},"valueFormat":{"style":"decimal","maximumFractionDigits":3}},"rows":[{"time":"2026-11-09T12:08:59.008302+09:00","Shop ALL":0.805,"Buyer ALL":0.792},{"time":"2026-11-09T14:27:21.306749+09:00","Shop ALL":0.824,"Buyer ALL":0.796},{"time":"2026-11-09T16:41:29.638859+09:00","Shop ALL":0.827,"Buyer ALL":0.781}]};
+mountChart(target,config);
+</script>

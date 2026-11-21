@@ -1,0 +1,182 @@
+{
+  "scope": "Small synthetic model probes; no public market transaction or broad quality claim",
+  "results": [
+    {
+      "model": "gpt-6-luna",
+      "role": "buyer",
+      "expected": "large",
+      "chosen": "large",
+      "passed": true,
+      "seconds": 5.125
+    },
+    {
+      "model": "gpt-6-luna",
+      "role": "shop",
+      "expected": "sell",
+      "chosen": "sell",
+      "passed": true,
+      "seconds": 2.422000000020489
+    },
+    {
+      "model": "gpt-6-luna",
+      "role": "buyer",
+      "expected": "useful_food",
+      "chosen": "useful_food",
+      "passed": true,
+      "seconds": 2.312999999965541
+    },
+    {
+      "model": "gpt-6.1-terra",
+      "role": "buyer",
+      "expected": "large",
+      "chosen": "large",
+      "passed": true,
+      "seconds": 2.875
+    },
+    {
+      "model": "gpt-6.1-terra",
+      "role": "shop",
+      "expected": "sell",
+      "chosen": "sell",
+      "passed": true,
+      "seconds": 2.0780000000377186
+    },
+    {
+      "model": "gpt-6.1-terra",
+      "role": "buyer",
+      "expected": "useful_food",
+      "chosen": "useful_food",
+      "passed": true,
+      "seconds": 2.405999999959022
+    }
+  ],
+  "usage": [
+    {
+      "role": "buyer_critic",
+      "model": "gpt-6.1-terra",
+      "usage": {
+        "input_tokens": 229,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 101,
+        "output_tokens_details": {
+          "reasoning_tokens": 30
+        },
+        "total_tokens": 330
+      },
+      "estimated_usd": 0.000734,
+      "seconds": 2.375,
+      "_event_id": "3646a7eb874d4930abe5fb30214957c9",
+      "_ts": 1793678423.6140895,
+      "_role": "buyer_critic"
+    },
+    {
+      "role": "shop_critic",
+      "model": "gpt-6.1-terra",
+      "usage": {
+        "input_tokens": 215,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 49,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 264
+      },
+      "estimated_usd": 0.00046,
+      "seconds": 2.062000000034459,
+      "_event_id": "ab281424901f4b57a3a24c1bd9539b8c",
+      "_ts": 1793678421.200897,
+      "_role": "shop_critic"
+    },
+    {
+      "role": "buyer_critic",
+      "model": "gpt-6.1-terra",
+      "usage": {
+        "input_tokens": 221,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 99,
+        "output_tokens_details": {
+          "reasoning_tokens": 42
+        },
+        "total_tokens": 320
+      },
+      "estimated_usd": 0.000716,
+      "seconds": 2.8429999999934807,
+      "_event_id": "f65f5048bccc4145b24468f2960265c5",
+      "_ts": 1793678419.1346083,
+      "_role": "buyer_critic"
+    },
+    {
+      "role": "buyer_actor",
+      "model": "gpt-6-luna",
+      "usage": {
+        "input_tokens": 228,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 67,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 295
+      },
+      "estimated_usd": 5.63e-05,
+      "seconds": 2.280999999959022,
+      "_event_id": "8a5d59ebaabc40dab8fa325530ca119f",
+      "_ts": 1793678416.2551558,
+      "_role": "buyer_actor"
+    },
+    {
+      "role": "shop_actor",
+      "model": "gpt-6-luna",
+      "usage": {
+        "input_tokens": 214,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 48,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 262
+      },
+      "estimated_usd": 4.5400000000000006e-05,
+      "seconds": 2.422000000020489,
+      "_event_id": "449604b7ee48428b9f8b5e517424501b",
+      "_ts": 1793678413.9524488,
+      "_role": "shop_actor"
+    },
+    {
+      "role": "buyer_actor",
+      "model": "gpt-6-luna",
+      "usage": {
+        "input_tokens": 220,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens": 70,
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        },
+        "total_tokens": 290
+      },
+      "estimated_usd": 5.7e-05,
+      "seconds": 5.0939999999827705,
+      "_event_id": "7f6fa54fe6b6445792ea64c4066e68c8",
+      "_ts": 1793678411.5147607,
+      "_role": "buyer_actor"
+    }
+  ],
+  "passed": true
+}

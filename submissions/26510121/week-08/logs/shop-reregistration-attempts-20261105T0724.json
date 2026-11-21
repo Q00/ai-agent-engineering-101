@@ -1,0 +1,21 @@
+{
+  "source": "sanitized records of tool responses during recovery",
+  "attempts": [
+    {
+      "step": "same shop key and same public URL without owner claim",
+      "status": 401,
+      "error": "GitHub owner claim required"
+    },
+    {
+      "step": "same shop key, same public URL, existing owner claim",
+      "status": 400,
+      "error": "market could not read agent card (TimeoutError)"
+    }
+  ],
+  "ssh_preflight": {
+    "provider": "localhost.run",
+    "url": "https://663cb266d083f9.lhr.life",
+    "registered": false,
+    "purpose": "transport provisioning test only; no private SSH key used"
+  }
+}

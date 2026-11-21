@@ -1,0 +1,207 @@
+--- a/policy.json
++++ b/policy.json
+@@ -116,7 +116,7 @@
+   "buyer_contract_probe_percent": 8,
+   "autonomy_v14_enabled": true,
+   "buyer_worker_enabled": true,
+-  "execution_revision": "v24-account-reputation-and-capital-1",
++  "execution_revision": "v25-efficient-background-routing-1",
+   "objective_feedback_enabled": true,
+   "agent_policy_selection_enabled": true,
+   "discovery_priority_enabled": true,
+@@ -126,10 +126,10 @@
+   "capability_interval_seconds": 900,
+   "background_llm_roles": {
+     "market_research_analyst": {
+-      "model": "gpt-6.1-sol",
+-      "reasoning": "medium",
+-      "max_output_tokens": 8192,
+-      "timeout_seconds": 75
++      "model": "gpt-6-luna",
++      "reasoning": "low",
++      "max_output_tokens": 4096,
++      "timeout_seconds": 45
+     },
+     "market_research_critic": {
+       "model": "gpt-6.1-terra",
+@@ -139,13 +139,13 @@
+     },
+     "capability_triage": {
+       "model": "gpt-6-luna",
+-      "reasoning": "low",
+-      "max_output_tokens": 2048,
++      "reasoning": "none",
++      "max_output_tokens": 1024,
+       "timeout_seconds": 25
+     },
+     "capability_designer": {
+-      "model": "gpt-6.1-sol",
+-      "reasoning": "medium",
++      "model": "gpt-6-luna",
++      "reasoning": "low",
+       "max_output_tokens": 2048,
+       "timeout_seconds": 35,
+       "response_mode": "function"
+@@ -169,5 +169,6 @@
+   ],
+   "shop_internal_capital_caps_enabled": false,
+   "shop_reputation_v24_enabled": true,
+-  "shop_new_goods_warranty_hours": 6
++  "shop_new_goods_warranty_hours": 6,
++  "llm_cost_v25_enabled": true
+ }
+--- a/r3/llm_roles.py
++++ b/r3/llm_roles.py
+@@ -11,6 +11,18 @@
+     'gpt-6.1-terra': {'none','low','medium','high','xhigh','max'},
+     'gpt-6.1-sol': {'low','medium','high','xhigh','max'},
+ }
++
++
++def token_cost(config,model,usage):
++    """Token-price estimate, separate from conservative reservation accounting."""
++    rates=config['prices_usd_per_million'][model]
++    cache=config.get('cache_prices_usd_per_million',{}).get(model)
++    total=max(0,usage.get('input_tokens',0));details=usage.get('input_tokens_details') or {}
++    cached=min(total,max(0,details.get('cached_tokens',0)))
++    written=min(total-cached,max(0,details.get('cache_write_tokens',0)))
++    ordinary=total-cached-written
++    return ((ordinary*rates[0]+cached*(cache[0] if cache else rates[0])+
++        written*(cache[1] if cache else rates[0]*1.25)+max(0,usage.get('output_tokens',0))*rates[1])/1e6)
+ 
+ 
+ def profile(config, role):
+@@ -68,6 +80,10 @@
+           'reasoning':{'effort':settings['reasoning']},
+           'text':{'format':{'type':'json_schema','name':'background_decision','strict':True,'schema':schema}},
+           'max_output_tokens':settings['max_output_tokens'],'store':False}
++    if config.get('llm_cost_v25_enabled'):
++        # Stable role routing aids prefix reuse; it is not a cached decision.
++        # All current evidence, IDs and the independent critic still get sent.
++        body['prompt_cache_key']='r3-v25:'+role+':'+model
+     mode=settings.get('response_mode','json_schema')
+     if mode=='function':
+         body.pop('text')
+@@ -98,6 +114,7 @@
+         journal.add('model_usage',{'role':role,'model':model,'reasoning_effort':settings['reasoning'],
+             'response_mode':mode,
+             'usage':usage,'estimated_usd':actual,'seconds':time.monotonic()-started,
++            'priced_token_estimate_usd':token_cost(config,model,usage) if usage else None,
+             'completion_status':result.get('status'),'accounting':'conservative_input_1.25x',
+             'automatic_model_fallback':False})
+         if result.get('status') not in (None,'completed'):
+--- a/tests/test_llm_roles.py
++++ b/tests/test_llm_roles.py
+@@ -14,12 +14,12 @@
+ 
+ def test_production_role_models_and_reasoning_are_supported():
+     cfg=policy()
+-    expected={'market_research_analyst':'gpt-6.1-sol','market_research_critic':'gpt-6.1-terra',
+-              'capability_triage':'gpt-6-luna','capability_designer':'gpt-6.1-sol'}
++    expected={'market_research_analyst':'gpt-6-luna','market_research_critic':'gpt-6.1-terra',
++              'capability_triage':'gpt-6-luna','capability_designer':'gpt-6-luna'}
+     for role,model in expected.items():
+         assert profile(cfg,role)['model']==model
+     assert cfg['actor_model']=='gpt-6-luna' and cfg['daily_api_budget_usd'] is None
+-    cfg=copy.deepcopy(cfg);cfg['background_llm_roles']['market_research_analyst']['reasoning']='none'
++    cfg=copy.deepcopy(cfg);cfg['background_llm_roles']['market_research_analyst']['reasoning']='unsupported'
+     with pytest.raises(ModelError,match='role_profile_invalid'):profile(cfg,'market_research_analyst')
+     cfg['background_llm_roles']['market_research_analyst']['model']='gpt-6-astra'
+     with pytest.raises(ModelError,match='role_profile_invalid'):profile(cfg,'market_research_analyst')
+@@ -29,11 +29,11 @@
+     j,cfg,now=fixture(tmp_path);api=FakeAPI();facts={'evidence_ids':['one']}
+     a=research.call(j,cfg,facts,['one'],'analyst',client=api,key='synthetic')
+     research.call(j,cfg,facts,['one'],'critic',proposal=a,client=api,key='synthetic')
+-    assert [r['model'] for r in api.requests]==['gpt-6.1-sol','gpt-6.1-terra']
+-    assert all(r['reasoning']['effort']=='medium' and r['max_output_tokens']==8192 for r in api.requests)
++    assert [r['model'] for r in api.requests]==['gpt-6-luna','gpt-6.1-terra']
++    assert [(r['reasoning']['effort'],r['max_output_tokens']) for r in api.requests]==[('low',4096),('medium',8192)]
+     assert all(r['text']['format']['schema']['properties']['evidence_ids']['items']['enum']==['one'] for r in api.requests)
+     assert 'enum' not in research.SCHEMA['properties']['evidence_ids']['items']
+-    assert {r['reasoning_effort'] for r in j.events('model_usage')}=={'medium'}
++    assert {r['reasoning_effort'] for r in j.events('model_usage')}=={'low','medium'}
+ 
+ 
+ class CapabilityAPI:
+--- a/tests/test_uncapped_stock.py
++++ b/tests/test_uncapped_stock.py
+@@ -14,7 +14,7 @@
+     assert cfg['shop_inventory_caps_enabled'] is False
+     assert inventory_limit(cfg) is None
+     assert cfg['restock_max_qty']==20 and cfg['restock_max_lines']==10
+-    assert cfg['background_llm_roles']['market_research_analyst']['model']=='gpt-6.1-sol'
++    assert cfg['background_llm_roles']['market_research_analyst']['model']=='gpt-6-luna'
+ 
+ 
+ def test_demand_targets_can_exceed_twenty_and_sparse_fixed_batch_limits():
+--- a/tests/test_v25_cost_routing.py
++++ b/tests/test_v25_cost_routing.py
+@@ -0,0 +1,57 @@
++"""Low-cost routing must retain current evidence, independent review and money guards."""
++import copy
++import json
++import pytest
++from r3.state import policy
++from r3.llm_roles import token_cost
++from r3 import research
++from test_market_cycle import fixture,FakeAPI
++
++
++def test_cache_billing_categories_are_disjoint_and_reasoning_not_double_charged():
++    cfg=policy();u={'input_tokens':1000,'output_tokens':200,
++        'input_tokens_details':{'cached_tokens':300,'cache_write_tokens':400},
++        'output_tokens_details':{'reasoning_tokens':150}}
++    assert token_cost(cfg,'gpt-6-luna',u)==pytest.approx((300*.1+300*.01+400*.125+200*.5)/1e6)
++    u['input_tokens_details']['cached_tokens']=2000
++    assert token_cost(cfg,'gpt-6-luna',u)==pytest.approx((1000*.01+200*.5)/1e6)
++
++
++def test_frozen_operating_usage_costs_less_than_half_with_independent_critic():
++    cfg=policy()
++    recorded=[('market_research_analyst','gpt-6.1-sol',47092,5748),
++              ('market_research_critic','gpt-6.1-terra',49026,6208),
++              ('capability_triage','gpt-6-luna',17772,1117),
++              ('capability_designer','gpt-6.1-sol',6669,233)]
++    old=new=0
++    for role,model,inp,out in recorded:
++        u={'input_tokens':inp,'output_tokens':out,'input_tokens_details':{'cache_write_tokens':inp}}
++        old+=token_cost(cfg,model,u)
++        new+=token_cost(cfg,cfg['background_llm_roles'][role]['model'],u)
++    assert new<old*.5
++    assert cfg['background_llm_roles']['market_research_critic']['model']=='gpt-6.1-terra'
++    assert cfg['background_llm_roles']['market_research_critic']['max_output_tokens']==8192
++    assert cfg['daily_api_budget_usd'] is None
++
++
++def test_cache_routing_never_reuses_an_old_decision_or_weakens_evidence_enum(tmp_path):
++    j,cfg,now=fixture(tmp_path);api=FakeAPI()
++    for eid in ('current-one','current-two'):
++        research.call(j,cfg,{'observed_at':now,'evidence_ids':[eid]},[eid],'analyst',client=api,key='synthetic')
++    assert len(api.requests)==2
++    a,b=api.requests
++    assert a['prompt_cache_key']==b['prompt_cache_key']
++    assert json.loads(a['input'])['valid_evidence_ids']!=json.loads(b['input'])['valid_evidence_ids']
++    assert b['text']['format']['schema']['properties']['evidence_ids']['items']['enum']==['current-two']
++    assert all(r['model']=='gpt-6-luna' for r in api.requests)
++    assert all('priced_token_estimate_usd' in r for r in j.events('model_usage'))
++    assert not j.events('purchase') and not j.events('shop_settled')
++
++
++def test_cheap_analyst_cannot_bypass_separate_critic_or_mutate_config(tmp_path):
++    j,cfg,now=fixture(tmp_path);before=copy.deepcopy(cfg);api=FakeAPI()
++    a=research.call(j,cfg,{'evidence_ids':['now']},['now'],'analyst',client=api,key='synthetic')
++    research.call(j,cfg,{'evidence_ids':['now']},['now'],'critic',proposal=a,client=api,key='synthetic')
++    assert [r['model'] for r in api.requests]==['gpt-6-luna','gpt-6.1-terra']
++    assert cfg==before and j.get('research-last-result') is None
++    assert not any('astra' in r['model'] for r in api.requests)
+--- a/verify_market_cycle_live.py
++++ b/verify_market_cycle_live.py
+@@ -46,7 +46,7 @@
+     try:
+         with lease(ROOT/'.market/shop-recovery-guard.lock'):guard_active=False
+     except RuntimeError:guard_active=True
+-    release='v24' if cfg.get('shop_reputation_v24_enabled') else 'v23' if cfg.get('book_growth_v23_enabled') else 'v22' if cfg.get('buyer_patch36_enabled') else 'v21' if cfg.get('shop_adaptive_demand_enabled') else 'v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
++    release='v25' if cfg.get('llm_cost_v25_enabled') else 'v24' if cfg.get('shop_reputation_v24_enabled') else 'v23' if cfg.get('book_growth_v23_enabled') else 'v22' if cfg.get('buyer_patch36_enabled') else 'v21' if cfg.get('shop_adaptive_demand_enabled') else 'v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
+     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
+     manifest=read_json(promotion,{})
+     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]
