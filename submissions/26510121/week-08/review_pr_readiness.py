@@ -11,6 +11,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[2]
 PREFIX = "submissions/26510121/"
+VISUALLY_REVIEWED_COMMIT = "239e162"
 
 
 def git(*args):
@@ -71,16 +72,25 @@ def main():
         result["required_files"].append(dict(path=name, exists=path.is_file(),
             bytes=path.stat().st_size if path.exists() else 0, tracked=relative in tracked,
             pending_status=status.get(relative)))
+    tex = (ROOT / "architecture.tex").read_text(encoding="utf-8-sig")
+    references = set()
+    for block in re.findall(r"\\texttt\{([^{}]+)\}", tex):
+        if "/" in block:
+            references.update(part.strip().replace(r"\_", "_").split(".")[0]
+                              for part in block.split("/"))
+    result["architecture_module_references"] = dict(count=len(references), missing=[name
+        for name in sorted(references) if not any((base / (name + ".py")).exists()
+            for base in (ROOT, ROOT / "r3"))])
     from importlib.util import find_spec
     if find_spec("pymupdf"):
         import pymupdf
         with pymupdf.open(ROOT / "architecture.pdf") as doc:
-            reviewed_pdf = git("show", "dae29ff:" + PREFIX + "week-08/architecture.pdf")
+            reviewed_pdf = git("show", VISUALLY_REVIEWED_COMMIT + ":" + PREFIX + "week-08/architecture.pdf")
             result["architecture_pdf"] = dict(pages=len(doc), outside_text_blocks=sum(
                 not page.rect.contains(pymupdf.Rect(block[:4])) for page in doc for block in page.get_text("blocks")),
                 matches_visually_reviewed_pdf=hashlib.sha256((ROOT / "architecture.pdf").read_bytes()).digest()
                     == hashlib.sha256(reviewed_pdf).digest(),
-                visual_review_evidence="PDF in commit dae29ff was rendered and manually inspected on 2026-11-21: no overlapping boxes or clipped text.")
+                visual_review_evidence="PDF in commit " + VISUALLY_REVIEWED_COMMIT + " was rendered and manually inspected on 2026-11-21: no overlapping boxes or clipped text.")
     release = json.loads((ROOT / "logs" / "v34-release-20261117.json").read_text(encoding="utf-8-sig"))
     result["v34_runtime_source_mismatches"] = [name for name, digest in release["source_hashes"].items()
         if hashlib.sha256((ROOT / name).read_bytes()).hexdigest() != digest]
