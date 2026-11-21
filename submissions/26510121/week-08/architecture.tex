@@ -32,7 +32,7 @@ Solid blue: final execution \quad Dashed amber: earlier LLM paths, disabled at t
    Orders / catalog / inventory / board / ledger / reviews / refunds / public forum};
 \node[box,text width=25.1cm,minimum height=1.05cm,fill=green!4,draw=green!40!black] (memory) at (0,-1.25)
   {\textbf{Shared evidence, memory and context service} \quad
-   \texttt{state.py / sync.py / long\_memory.py / framework.py / objective\_context.py}\\
+   \texttt{state.py / adapter.py / long\_memory.py / customer\_memory.py / objective\_context.py}\\
    SQLite WAL event journal + snapshots; exact-ID retrieval, bounded summaries and customer episodes;
    source times / rule hashes; observed vs predicted, pending vs mature outcomes remain distinct.};
 \node[office] (market) at (-9.9,-3.35)
@@ -62,10 +62,10 @@ Solid blue: final execution \quad Dashed amber: earlier LLM paths, disabled at t
 \node[box,text width=7.75cm,minimum height=1.35cm] (buyer) at (8.8,-5.8)
   {\textbf{Buyer: search and negotiation}\\
    Shop / SKU / bid candidates, Saved contribution and objective per execution time\\
-   \texttt{buyer / market\_memory / buyer\_worker}};
+   \texttt{market\_buyer / market\_memory / buyer\_worker}};
 \node[main,text width=10.65cm,minimum height=1.9cm] (main) at (-6.4,-8.25)
   {\textbf{Main: final numerical selection and execution control}\\
-   \texttt{model.Chooser / cycle / worker\_bridge / kit\_adapter}\\
+   \texttt{model.Chooser / cycle / worker\_bridge / adapter}\\
    Feasible candidate IDs + bounded factual packets $\rightarrow$ numerical objective / time.\\
    \textbf{Final policy: \texttt{llm\_disabled=true}; fast numerical paths.}\\
    Workers negotiate; payment mandates stay with the parent process.};
