@@ -193,7 +193,10 @@ class RoleMind(BaseMind):
     def context(self, events):
         self.directory = self.owner.directory
         self.app_tools = self.owner.app_tools if self.role == "shop" else {}
-        return (super().context(events) + "\n\n" + EVIDENCE_CONTRACT
+        reply_ids = [e.id for e in events]
+        reply_guide = ("\nReply routing: args.to MUST be the exact message id, never its from/name/task_id. "
+                       + "Current message ids: " + json.dumps(reply_ids))
+        return (super().context(events) + reply_guide + "\n\n" + EVIDENCE_CONTRACT
                 + "\nLocal inherited policy and deterministic analysis:\n" + role_context(self.root, self.role))
 
     def step_log(self, entry):
