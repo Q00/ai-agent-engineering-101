@@ -35,6 +35,11 @@ def seller_terms(product, fees, config=None):
     for key in ("price_floor", "closing_price_floor"):
         # p - ceil(p*bps/10000) - fixed >= old net floor.
         result[key] = ((result[key] + fixed) * 10000 + 9999 - bps) // (10000 - bps)
+    opening = product.get("base_opening_price")
+    if type(opening) is int and opening > 0:
+        adjustment = cfg["opening"].get("adjust_bps", {}).get(product.get("sku"), 0)
+        result["opening_price"] = max(result["price_floor"], (opening * (10000 + adjustment) + 9999) // 10000)
+        result["opening_adjust_bps"] = adjustment
     result["qualification"] = "Policy floor, not a quote or a verified warranty certificate"
     return result
 
@@ -117,7 +122,9 @@ No guessed demand, Round 3 records, or market writes are used here.
             target = min(cap, math.ceil(recent[sku] * cover / 3600) + int(recent[sku] > 0))
             targets.append({"sku": sku, "available": held[sku], "confirmed_sales_last_hour": recent[sku],
                             "target": target, "needed": max(0, target - held[sku])})
-        return {"status": "advisory", "targets": targets, "held_units": len(units),
+        priority = restock.get("priority_skus", [])
+        targets.sort(key=lambda row: (priority.index(row["sku"]) if row["sku"] in priority else len(priority), row["sku"]))
+        return {"status": "advisory", "targets": targets, "priority_skus": priority, "held_units": len(units),
                 "cash_reserve": (cash * restock["cash_reserve_percent"] + 99) // 100,
                 "max_units_per_run": min(restock["max_units_per_run"], max(0, restock["max_stock_units"] - len(units))),
                 "qualification": "Forecast only. Profitability, refunds, demand diversity, depth, budget and supply gates still apply."}
@@ -128,8 +135,14 @@ No guessed demand, Round 3 records, or market writes are used here.
 def role_context(root, role, now=None):
     now = time.time() if now is None else now
     cfg = policy()
-    result = {"round": 4, "objective": "credits", "policy": cfg["buyer" if role == "buyer" else "shop"]}
     data = read_evidence(root, "buyer" if role == "buyer" else "shop", now)
+    state = None
+    if role != "buyer":
+        from strategy.control import PolicyController
+        cfg, state = PolicyController(root, cfg).effective(data, now)
+    result = {"round": 4, "objective": "credits", "policy": cfg["buyer" if role == "buyer" else "shop"]}
+    if state is not None:
+        result["operations_policy"] = state
     if role != "buyer":
         result["inventory_analysis"] = inventory_analysis(data, cfg["shop"], now)
     result["calculated_terms"] = []

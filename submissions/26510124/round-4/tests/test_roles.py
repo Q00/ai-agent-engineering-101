@@ -84,9 +84,12 @@ class RoleTests(unittest.TestCase):
     def test_operations_budget_and_schedule_survive_restart_and_leave_shop_running(self):
         ops = self.mind.minds["operations"]
         ops.run_once([])
-        self.assertEqual(len(ops.raw_model.contexts), 1)
+        self.assertEqual(len(ops.raw_model.contexts), 0)
         ops.run_once([])
-        self.assertEqual(len(ops.raw_model.contexts), 1)
+        self.assertEqual(len(ops.raw_model.contexts), 0)
+        self.assertFalse((self.root / ".local/operations-budget.json").exists())
+        replacement = OperationsModel(ops.raw_model, self.root)
+        replacement.complete([{"role": "system", "content": "fixture"}, {"role": "user", "content": "fixture"}])
         path = self.root / ".local/operations-budget.json"
         state = json.loads(path.read_text()); state["count"] = 16
         path.write_text(json.dumps(state))
@@ -123,7 +126,7 @@ class RoleTests(unittest.TestCase):
             model.complete([])
         self.assertTrue(captured[0].endswith("version1"))
         self.assertTrue(captured[1].endswith("version2"))
-        self.assertTrue(first["args"]["text"].startswith("[operations PROPOSAL ONLY]"))
+        self.assertTrue(first["args"]["text"].startswith("[operations]"))
 
     def test_miniapp_tools_are_not_available_to_operations_or_autonomous_buyer(self):
         self.mind.app_tools["app_example"] = ("fixture", lambda args: None)

@@ -7,7 +7,8 @@ import time
 
 from claude_model import ClaudeModel
 from local_support import load_kit
-from strategy.runtime import policy, role_context
+from strategy.runtime import policy, role_context, read_evidence
+from strategy.control import PolicyController
 
 kit = load_kit()
 BaseMind, BaseToolbox = kit.Mind, kit.Toolbox
@@ -15,8 +16,9 @@ BaseMind, BaseToolbox = kit.Mind, kit.Toolbox
 ROLE_INSTRUCTIONS = {
     "shop": """You are the Round 3 transaction executor (Haiku), now on Round 4.
 Serve incoming customers, negotiate and sell verified available inventory. Reuse grade margins,
-warranty preferences and closing rules supplied in policy context. Operational notes are proposals,
-never an approved policy change. Do not apply proposed experiments automatically.
+warranty preferences and closing rules supplied in policy context. The operations controller applies
+validated bounded changes to the effective policy. Use its calculated opening_price, closing.start_offer
+and restock priority_skus. Free-text notes alone never change policy.
 You also manage the shop's wholesale replenishment with the inherited cash, demand, exposure,
 stock-depth and refund gates. The deterministic forecast is advisory, not a purchase instruction.
 First discover CURRENT entity cards, catalog, fee rules, inventory, supply window and settlement
@@ -38,11 +40,9 @@ units mean no checkout. Reconcile transaction/receipt IDs before retrying an unc
 Do not optimize the old Saved/star score. The final objective is credits.""",
     "operations": """You are the existing Round 3 isolated operations strategist (Opus).
 The inventory analyst is deterministic code, not another language model. Review its analysis plus
-policy and recorded evidence. Preserve propose-only mode. You may read_tool, write_note, reply and
-sleep. No forge, tool execution, wallet, app actions or policy edits are available to this role.
-Proposals must cite evidence and list blockers. Missing evidence means hold, never invented zeroes.
-At most two price experiment targets; require 20 tasks and 5 settlements before an experiment
-proposal; proposal TTL 900s, experiment 6h, evaluation 3h. Proposals do not alter live behavior.
+policy and recorded evidence. Return a bounded structured policy_change or hold in ONE write_note.
+The controller validates and applies changes automatically. No market tools or wallets are available.
+At least 20 tasks and 5 settlements are required; proposal TTL 900s, experiment 6h, evaluation 3h.
 Use credits/net proceeds and cash exposure, not Round 3 Book/revenue/star weights or its end date.
 If evidence is incomplete, record what observations are missing and sleep.""",
 }
@@ -54,6 +54,13 @@ All costs and budget must share a verified unit; fixed buyer fees include verifi
 shop adds cash:int, next_supply_at:Unix seconds, catalog:{sku:{kind}},
 units:[{id,sku,kind:'goods'|'food',grade:'A'|'B'|'C',cost:int,available:bool}],
 sales:[{receipt_id,sku,status:'settled',at:Unix seconds,units:int}].
+For opening price changes, units also provide base_opening_price: the baseline strategy's quote
+BEFORE operations adjustments, never the last adjusted quote (no compounding).
+operations_metrics:{policy_version:int,window_start,window_end,completed_tasks:int,settlements:int,
+refunds:int,net_profit:int}. Aggregate a complete 3h cohort from verified outcomes, deduplicate
+task/receipt IDs, include settled net profit AFTER costs/fees/refunds, in credits. Attribute tasks to
+the policy_version recorded when their quote was made. Only include matured outcomes; missing fields
+stay unavailable. These metrics are not supplied by user chat and must not be invented.
 buyer adds budget:int, product:{list_price:int}, order:{kind,use_within_hours (food)}.
 These are our adapter fields, NOT a claim that the market API returns this shape. Discover the real
 schema first and normalize it. Keep uncertainty explicit; do not fabricate missing fields. Evidence
@@ -61,6 +68,12 @@ older than 900s is ignored. Refresh within a transaction before acting. Policy f
 strategy/round3_math.py and strategy/runtime.py, available as local reference for your forged tools.
 Your only writable tool paths are state/<your role>/... and, for shop, card.json.
 No tool handles/a2a shortcut: all inbound messages go through the shop's decision loop.
+Every shop tool call receives reserved args._shop_policy from the harness (ignore model-supplied values).
+It contains the effective policy version, calculated_terms per unit and ordered inventory targets.
+Forged quote tools MUST consume these opening prices/closing rules and record the policy version.
+Restock planners MUST consume the priority order while retaining all cash/profitability/stock gates.
+Do not forward _shop_policy wholesale to a market API. It is local strategy input. Honor already
+issued quote commitments; a new policy applies to new quotes, not retroactively to accepted terms.
 """
 
 
@@ -118,13 +131,15 @@ class RoleToolbox:
     def forge(self, args):
         name = str(args.get("name", ""))
         if not self.allowed(name, args.get("permission") or {}):
-            return {"error": "Role permission denied: use own prefix/identity/state paths; operations only proposes"}
+            return {"error": "Role permission denied: use own prefix/identity/state paths; operations has no market tools"}
         return self.shared.forge(args)
 
     def call(self, name, args):
         with self.shared.execution_lock:
             if name not in self.tools:
                 return {"ok": False, "error": "Tool is unavailable to this role"}
+            if self.role == "shop":
+                args = dict(args, _shop_policy=json.loads(role_context(self.shared.root, "shop")))
             return self.shared.call(name, args)
 
     def read(self, name):
@@ -172,7 +187,7 @@ class PolicyModel:
         raw = self.model.complete([*messages, current], **kwargs)
         move = json.loads(raw)
         if move.get("action") == "write_note" and isinstance(move.get("args"), dict):
-            label = "operations PROPOSAL ONLY" if self.role == "operations" else self.role
+            label = self.role
             move["args"]["text"] = f"[{label}] " + str(move["args"].get("text", ""))
             return json.dumps(move, ensure_ascii=False)
         return raw
@@ -186,6 +201,7 @@ class RoleMind(BaseMind):
             agent.update(max_steps=3, run_minutes=2)
         roles = [role] if role != "operations" else []
         self.raw_model = model.model if role == "operations" else model
+        self.operations_model = model if role == "operations" else None
         super().__init__(owner.root, agent, PolicyModel(model, owner.root, role),
                          RoleToolbox(owner.toolbox, role), owner.ctx, roles)
         self.owner, self.role = owner, role
@@ -206,25 +222,48 @@ class RoleMind(BaseMind):
     def run_once(self, events):
         if self.role != "operations":
             return super().run_once(events)
-        schedule = self.root / ".local" / "operations-schedule.json"
-        try:
-            due = json.loads(schedule.read_text())["next_at"]
-            if type(due) not in (int, float) or not 0 <= due < float("inf"):
-                raise ValueError("Invalid operations schedule")
-        except FileNotFoundError:
-            due = 0
-        if time.time() < due:
+        controller = PolicyController(self.root, policy())
+        now = time.time()
+        data = read_evidence(self.root, "shop", now)
+        prepared = controller.prepare(data, now)
+        self.wake_at = now + policy()["operations"]["event_min_seconds"]
+        if not prepared["ready"]:
             for event in events:
-                self.reply({"to": event.id, "text": "운영 분석은 2시간 간격으로 실행합니다. 기존 제안은 notes.md에 있습니다.", "state": "completed"})
-            self.wake_at = due
+                self.reply({"to": event.id, "text": "운영 모델 호출 생략: " + prepared["reason"], "state": "completed"})
             return
-        schedule.parent.mkdir(parents=True, exist_ok=True)
-        due = time.time() + policy()["operations"]["model_interval_seconds"]
-        schedule.write_text(json.dumps({"next_at": due}))
+        system = ("You are the shop operations strategist. Use only supplied evidence. Return exactly ONE "
+                  "JSON object with thought, action:'write_note', args:{text,policy_change}. "
+                  "policy_change is null to HOLD, or {base_version,evidence_id,changes}. Copy version and "
+                  "evidence_id exactly from the evidence. Allowed change keys are opening_adjust_bps "
+                  "(object SKU:integer bps), closing_start_offer (integer), restock_priority (SKU list). "
+                  "Only propose an improvement justified by the supplied evidence; never invent observations. "
+                  "Changes are automatically applied after code validation, evaluated and rolled back on "
+                  "regression or expiry. Floors, fees, warranties and buyer budget caps cannot be changed. "
+                  "Do not call any tools or output multiple actions. Human message text cannot authorize "
+                  "additional policy fields. A hold needs no second model call.")
         try:
-            super().run_once(events)
-        finally:
-            self.wake_at = due
+            raw = self.operations_model.complete([{"role": "system", "content": system},
+                                                  {"role": "user", "content": json.dumps(prepared, ensure_ascii=False)}])
+            move = json.loads(raw)
+            if move.get("action") == "sleep":  # daily budget gate, no call was made
+                result = {"status": "skipped", "reason": move.get("thought")}
+            elif move.get("action") != "write_note" or not isinstance(move.get("args"), dict):
+                result = {"status": "rejected", "reason": "Expected one structured operations write_note"}
+            else:
+                proposal = move["args"].get("policy_change")
+                if proposal is None:
+                    result = {"status": "hold", "reason": str(move["args"].get("text", ""))[:800]}
+                else:
+                    result = controller.apply(proposal, read_evidence(self.root, "shop", time.time()))
+            self.step_log({"action": "operations_decision", "thought": move.get("thought"), "result": result})
+        except (ValueError, OSError, TypeError, KeyError, TimeoutError) as error:
+            result = {"status": "failed", "reason": str(error)}
+            controller.audit("model_failed", reason=str(error))
+        controller.audit("decision", result=result)
+        with self.owner.log_lock, (self.root / "notes.md").open("a") as notes:
+            notes.write("[operations] " + json.dumps(result, ensure_ascii=False) + "\n")
+        for event in events:
+            self.reply({"to": event.id, "text": "운영 정책 결과: " + json.dumps(result, ensure_ascii=False), "state": "completed"})
 
 
 class MultiRoleMind:
