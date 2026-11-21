@@ -1,70 +1,130 @@
-\documentclass[11pt,a4paper,landscape]{article}
-\usepackage[margin=1.3cm]{geometry}
+% Build: pdflatex -interaction=nonstopmode -halt-on-error
+%   -output-directory=artifacts/architecture-build architecture.tex
+% Offices are module responsibilities, not independent LLM agents.
+\documentclass[10pt,a4paper,landscape]{article}
+\usepackage[margin=7mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta}
 \pagestyle{empty}
 \renewcommand{\familydefault}{\sfdefault}
-\hyphenpenalty=10000
-\exhyphenpenalty=10000
+\setlength{\parindent}{0pt}
 \begin{document}
 \begin{center}
-{\Large\bfseries Round 3: lifecycle memory and role-specific actor--critic}\par
+{\Large\bfseries Round 3: company organisation and bounded LLM decision paths}\\[1.5mm]
+{\small Student 26510121 \quad Shop v34 / Buyer v32 \quad
+Solid blue: final execution \quad Dashed amber: earlier LLM paths, disabled at the end}
 \vspace{2mm}
-{\small Student 26510121 \quad | \quad Implemented modules, not a claim of optimality}
-\vspace{4mm}
-
 \begin{tikzpicture}[
-  box/.style={draw=blue!55!black,fill=blue!4,rounded corners=3pt,align=center,
-              text width=4.6cm,minimum height=1.05cm,font=\small},
-  critic/.style={box,draw=orange!75!black,fill=orange!8,text width=4.5cm},
-  flow/.style={-{Latex[length=2mm]},thick,draw=black!65}
+  x=1cm,y=1cm,
+  box/.style={draw=blue!50!black,fill=blue!3,rounded corners=2pt,
+    align=center,inner sep=2.5mm,font=\fontsize{8.4}{10}\selectfont},
+  office/.style={box,text width=5.75cm,minimum height=1.4cm},
+  main/.style={box,draw=blue!75!black,fill=blue!8,line width=.8pt},
+  history/.style={box,draw=orange!80!black,fill=orange!5,dashed,line width=.7pt},
+  flow/.style={-{Latex[length=1.8mm]},draw=blue!65!black,line width=.65pt},
+  past/.style={-{Latex[length=1.8mm]},draw=orange!80!black,dashed,line width=.65pt},
+  note/.style={font=\fontsize{7.3}{8.6}\selectfont,align=center,fill=white,inner sep=1pt}
 ]
-\node[box,text width=24cm] (input) at (0,0)
- {\textbf{Observed events and trusted snapshots}\\
-  orders, catalog, inventory, registry, ledger, payments, reviews, breaks, forum};
-\node[box,draw=green!45!black,fill=green!5] (memory) at (-8,-2.1)
- {\textbf{Lifecycle memory}\\SQLite WAL, event IDs, provenance, pending and mature outcomes};
-\node[box,text width=6.2cm] (tools) at (0,-2.1)
- {\textbf{Numerical evidence and critics}\\Useful surplus, recovery value, cash exposure, quote outcomes, rank approximation};
-\node[box] (meta) at (8,-2.1)
- {\textbf{Meta-harness}\\Relevant context, deadline, selective review, shared API cost cap};
-\node[box] (sa) at (-8,-4.9)
- {\textbf{Shop actor}\\Replenishment, unit, price, warranty\\GPT-6 Luna};
-\node[critic] (sc) at (-2.7,-4.9)
- {\textbf{Shop critic}\\Evidence and risk review\\Selective GPT-6.1 Terra};
-\node[box] (ba) at (2.7,-4.9)
- {\textbf{Buyer actor}\\Shop, SKU, negotiation, accept\\GPT-6 Luna};
-\node[critic] (bc) at (8,-4.9)
- {\textbf{Buyer critic}\\Utility and completion review\\Selective GPT-6.1 Terra};
-\node[box,text width=17cm,draw=red!65!black,fill=red!3] (guard) at (0,-7.5)
- {\textbf{Deterministic execution checks}\\
-  inventory reservations, signatures, integer prices, budget, exact checkout SKU, certificates, food horizon, warranty};
-\node[box,text width=20cm] (kit) at (0,-9.5)
- {\textbf{Course kit v4 + student adapter}\\
-  A2A negotiation $\rightarrow$ signed receipt $\rightarrow$ ACP checkout $\rightarrow$ AP2 mandates $\rightarrow$ settlement};
-\draw[flow] (input) -- (tools);
-\draw[flow] (input.south west) ++(3,0) -- (memory.north);
-\draw[flow] (input.south east) ++(-3,0) -- (meta.north);
-\draw[flow] (memory) -- (tools);
-\draw[flow] (tools) -- (meta);
-\draw[flow] (memory) -- (sa);
-\draw[flow] (tools) -- (ba.north);
-\draw[flow] (meta) -- (bc);
-\draw[flow] (sa) -- (sc);
-\draw[flow] (ba) -- (bc);
-\draw[flow] (sc.south) -- (sc.south |- guard.north);
-\draw[flow] (bc.south) -- (bc.south |- guard.north);
-\draw[flow] (guard) -- (kit);
-\draw[flow,draw=green!45!black] (kit.west) -- (-12.8,-9.5) -- (-12.8,-2.1) -- (memory.west);
-\node[font=\scriptsize,rotate=90,fill=white] at (-12.8,-6.3) {actual outcomes and delayed revisions};
+\node[box,text width=25.1cm,minimum height=.55cm] (sources) at (0,0)
+  {\textbf{Market and own execution evidence} \quad
+   Orders / catalog / inventory / board / ledger / reviews / refunds / public forum};
+\node[box,text width=25.1cm,minimum height=1.05cm,fill=green!4,draw=green!40!black] (memory) at (0,-1.25)
+  {\textbf{Shared evidence, memory and context service} \quad
+   \texttt{state.py / sync.py / long\_memory.py / framework.py / objective\_context.py}\\
+   SQLite WAL event journal + snapshots; exact-ID retrieval, bounded summaries and customer episodes;
+   source times / rule hashes; observed vs predicted, pending vs mature outcomes remain distinct.};
+\node[office] (market) at (-9.9,-3.35)
+  {\textbf{Market intelligence office}\\
+   Demand, competitor stock, public Wanted and evidence-based forum content\\
+   \texttt{merchant / demand\_policy / forum}};
+\node[office] (finance) at (-3.3,-3.35)
+  {\textbf{Finance and risk offices}\\
+   Book, free cash, reserves, mature sales / refunds, uncertain loss estimates\\
+   \texttt{finance / outcomes / risk / departments}};
+\node[office] (quality) at (3.3,-3.35)
+  {\textbf{Quality and customer office}\\
+   Grade, shelf life, warranty, verified reviews and delayed quality outcomes\\
+   \texttt{quality / reputation / service\_contracts}};
+\node[office] (score) at (9.9,-3.35)
+  {\textbf{Score strategy office}\\
+   Shop ALL + Buyer ALL, cohort thresholds, Saved targets; labelled surrogates\\
+   \texttt{meta / objective\_context / score\_campaign}};
+\node[box,text width=7.75cm,minimum height=1.35cm] (procure) at (-8.8,-5.8)
+  {\textbf{Shop: procurement office}\\
+   Marginal buy vs wait; demand / cost / storage / expiry / refund scenarios; cash capacity\\
+   \texttt{departments / inventory\_portfolio / prewindow / restock}};
+\node[box,text width=7.75cm,minimum height=1.35cm] (sales) at (0,-5.8)
+  {\textbf{Shop: sales and contracts office}\\
+   Unit, price, warranty, sell vs retain / expire; inventory reservations\\
+   \texttt{economy / shop\_offer / quote\_market / seller\_r3}};
+\node[box,text width=7.75cm,minimum height=1.35cm] (buyer) at (8.8,-5.8)
+  {\textbf{Buyer: search and negotiation}\\
+   Shop / SKU / bid candidates, Saved contribution and objective per execution time\\
+   \texttt{buyer / market\_memory / buyer\_worker}};
+\node[main,text width=10.65cm,minimum height=1.9cm] (main) at (-6.4,-8.25)
+  {\textbf{Main: final numerical selection and execution control}\\
+   \texttt{model.Chooser / cycle / worker\_bridge / kit\_adapter}\\
+   Feasible candidate IDs + bounded factual packets $\rightarrow$ numerical objective / time.\\
+   \textbf{Final policy: \texttt{llm\_disabled=true}; fast numerical paths.}\\
+   Workers negotiate; payment mandates stay with the parent process.};
+\node[history,text width=12.0cm,minimum height=1.9cm] (actors) at (6.5,-8.25)
+  {\textbf{Earlier transaction LLM lane: Shop and Buyer Actor--Critic}\\
+   Meta-harness: relevant facts, candidate IDs, deadline and metered API usage\\
+   Actor $\rightarrow$ selective independent Critic $\rightarrow$ validated candidate ID\\
+   Initial: Luna actor / Terra critic; assignments evolved with policy versions.\\
+   Schema / deadline / objective-floor checks; numerical fallback on failure.};
+\node[box,text width=10.65cm,minimum height=1.9cm,fill=blue!2] (ops) at (-6.4,-10.95)
+  {\textbf{Operations and control office}\\
+   \texttt{control / recovery / transport / lifecycle / cycle}\\
+   Freshness and compatibility checks, supply-window preparation,
+   separate background lanes, process leases and reconnect / registration.\\
+   \textbf{Research / automation office:} bounded evaluators and derived memory;
+   paid research and tool-design lanes disabled in the final policy.};
+\node[history,text width=12.0cm,minimum height=1.9cm] (research) at (6.5,-10.95)
+  {\textbf{Earlier background LLM research and analytic-skill lane (v19)}\\
+   Luna need / reuse triage $\rightarrow$ Sol designer $\rightarrow$ trusted read-only templates\\
+   Factual brief $\rightarrow$ Sol strategy analyst $\rightarrow$ Terra independent critic\\
+   Typed proposals $\rightarrow$ freshness / rule / evidence checks $\rightarrow$ bounded policy.\\
+   \texttt{capability / llm\_roles / research / feedback / autonomy}\\
+   No generated executable code or direct payment authority.};
+\node[main,text width=25.1cm,minimum height=.95cm,draw=red!60!black,fill=red!3] (guard) at (0,-13.15)
+  {\textbf{Execution gates: model output and numerical output share the same checks}\\
+   Inventory / reservation, fresh terms, cash and reserves, SKU / grade / certificate / shelf life / warranty,
+   signed receipt, integer price, open-mandate cap, order identity and replay protection.};
+\node[main,text width=25.1cm,minimum height=.95cm] (execution) at (0,-14.65)
+  {\textbf{Course kit v4 + student adapters: external actions}\\
+   A2A negotiation $\rightarrow$ signed receipt $\rightarrow$ ACP checkout $\rightarrow$ AP2 mandates
+   $\rightarrow$ market settlement; separate supply / forum hooks. Actual results feed memory and evaluators.};
+\draw[flow] (sources) -- (memory);
+\draw[flow] (memory.south) -- (0,-2.0);
+\draw[flow] (-9.9,-2.0) -- (9.9,-2.0);
+\foreach \n in {market,finance,quality,score} {\draw[flow] (\n.north |- 0,-2.0) -- (\n.north);}
+\foreach \n in {market,finance,quality,score} {\draw[flow] (\n.south) -- (\n.south |- 0,-4.6);}
+\draw[flow] (-9.9,-4.6) -- (9.9,-4.6);
+\foreach \n in {procure,sales,buyer} {\draw[flow] (\n.north |- 0,-4.6) -- (\n.north);}
+\foreach \n in {procure,sales,buyer} {\draw[flow] (\n.south) -- (\n.south |- 0,-7.0);}
+\draw[flow] (-8.8,-7.0) -- (8.8,-7.0);
+\draw[flow] (-6.4,-7.0) -- (main.north);
+\draw[past] (6.5,-7.0) -- (actors.north);
+\draw[past] (actors.west) -- node[note,text width=.7cm] {ID} (main.east);
+\draw[flow] (ops.north) -- (main.south);
+\draw[past] (research.north) -- (actors.south);
+\draw[past] (research.west) -- node[note,text width=.7cm] {policy} (ops.east);
+\draw[flow] (main.west) -- (-12.65,-8.25) -- (-12.65,-12.4) -- (0,-12.4) -- (guard.north);
+\draw[flow] (guard) -- (execution);
+\draw[flow,draw=green!45!black] (execution.west) -- (-13.35,-14.65) -- (-13.35,-1.25) -- (memory.west);
+\node[note,rotate=90,text=green!35!black] at (-13.35,-8.3) {settlements, refusals, reviews and delayed refunds};
 \end{tikzpicture}
-
-\vspace{3mm}
-\begin{minipage}{24cm}\small
-Model weights stay fixed. Numeric priors are labeled, forecasts stay separate from facts,
-and model/API failures use a logged bounded fallback. Local cryptographic settlement and
-live-model checks are evidence of implementation; public Round 3 deals and final rank
-must be reported separately after operation.
+\vspace{1mm}
+\begin{minipage}{27cm}\fontsize{7.5}{9}\selectfont
+\textbf{Interpretation.} Offices are responsibilities across Python modules, not one LLM per office.
+Solid and dashed paths represent different operating stages, not simultaneous final deployment.
+Model weights were not trained. Internal expected gains and rank surrogates are not realised profit or official scores.\\
+\textbf{Models.} Luna = GPT-6 Luna; Sol = GPT-6.1 Sol; Terra = GPT-6.1 Terra. \textbf{Traceability.} \texttt{policy.json}; \texttt{SHOP\_COMPANY\_ORG\_2026-11-16.md};
+\texttt{FINALDAY\_DEPLOYMENT\_2026-11-16.md}; \texttt{V19\_MODEL\_ROLES\_2026-11-12.md};
+v19 role live proof and v34 release / live logs. The organisational design exceeds the subset of packet contracts enforced in code.
 \end{minipage}
 \end{center}
 \end{document}

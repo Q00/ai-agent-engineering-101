@@ -1,5 +1,26 @@
 # Week 08 구현 및 검증 기록
 
+## 2026-11-21 제출용 아키텍처 갱신
+
+`architecture.tex`와 `architecture.pdf`를 최종 회사 조직 구조와 운영 중 사용한 LLM 경로를 함께 보여 주는 한 페이지 그림으로 갱신했다. 아래 11월 초 기록의 기본 모델·구조 설명을 최종 실행 설정으로 해석하면 안 된다. 운영 결과 부분은 아직 최종 제출용으로 정리해야 한다.
+
+그림의 파란 실선은 최종 Shop v34 / Buyer v32의 수치 실행 경로다. 공통 SQLite WAL 사건 원장과 스냅샷에서 출처·시각·규칙 해시를 확인하고, 시장정보실, 회계·리스크실, 품질·고객실, 점수전략실이 근거를 만든다. Shop의 조달실은 매입과 대기를 비교하고 판매·계약실은 재고 단위·가격·보증을 제안한다. Buyer는 Saved 목표와 전체 목적함수/실행시간으로 검색·협상 후보를 비교한다. Main은 후보를 선택하고 최종 제약검사를 거쳐 키트와 학생 어댑터로 외부 행동을 실행한다. Buyer worker는 협상하며 결제 mandate는 부모 프로세스에만 남는다.
+
+주황 점선은 과거에 사용한 두 LLM 경로이며 최종 실행에서는 비활성화됐다.
+
+- 거래 판단: 관련 메모리·수치 후보·기한을 담은 컨텍스트 → Actor → 필요한 경우 독립 Critic → 후보 ID 검증 → 동일한 실행 검사. 초기에는 GPT-6 Luna Actor / GPT-6.1 Terra Critic을 사용했고 이후 배정은 버전별로 달라졌다. 실패·기한 초과·목적함수 하한 미달은 수치 경로로 처리했다.
+- 배경 연구·분석 도구(v19): GPT-6 Luna가 새 분석 필요성과 기존 도구 재사용을 판단하고, GPT-6.1 Sol이 신뢰된 읽기 전용 분석 템플릿을 조합했다. 계산된 근거를 Sol 전략 분석가와 GPT-6.1 Terra 독립 비평가가 검토하고, 출처·유효기간·규칙 및 제한된 정책 컴파일 검사를 거쳐 거래 후보에 반영했다. 생성된 계획에는 임의 Python 실행이나 직접 결제 권한이 없다. 실제 연결 근거는 `logs/v19-role-live-proof-20261112T050116986042Z.json`과 `V19_MODEL_ROLES_2026-11-12.md`에 있다.
+
+최종 `policy.json`은 `finalday_departments_enabled=true`, `llm_disabled=true`, `research_enabled=false`, `capability_llm_enabled=false`다. 회사 부서는 기존 Python 모듈의 책임 구분이며 부서마다 독립 LLM을 호출한다는 뜻이 아니다. 전체 조직 설계의 모든 JSON 봉투 계약이 강제됐다고 주장하지 않는다. 실제 회계·리스크 → 조달 → Main 및 Buyer 점수전략 → 입찰 후보 연결은 `r3/departments.py`, `r3/cycle.py`, `r3/prewindow.py`, `r3/market_memory.py`와 `FINALDAY_DEPLOYMENT_2026-11-16.md`를 기준으로 한다.
+
+키트 기본형에 더한 핵심은 사건의 성숙도·출처를 관리하는 메모리, 회사 역할별 근거와 후보 생성, ALL 목적함수와 실행시간 평가, 선택적인 LLM 검토 및 배경 연구, 공통 금융·품질·신원 검사와 부모 프로세스의 결제 권한이다. 모델 가중치를 학습하지 않았으며, 내부 기대값을 실현 이익이나 공식 점수로 표시하지 않는다.
+
+빌드: `pdflatex -interaction=nonstopmode -halt-on-error -output-directory=artifacts/architecture-build architecture.tex` 후 생성된 PDF를 제출 경로로 복사한다. `build_architecture.py`는 같은 빌드의 원본 콘솔을 매번 새 로그로 보존하고 PyMuPDF로 한 페이지 여부와 미리보기를 확인하는 보조 도구다. 이 도구는 제출 에이전트와 별도인 빌드 환경에 `PyMuPDF`와 TinyTeX/TeX Live가 필요하다.
+
+## 초기 구현·운영 기록 (2026-11-03~04)
+
+아래는 당시 관측과 실패·복구를 남긴 기록이다. 최종 정산 수·Players Class 순위·10주차 기준값 비교를 대신하지 않는다.
+
 2026-11-04 장애·복구 기록은 `RECOVERY_2026-11-04.md`에 추가했다. 보증 기간 null 처리와 터널 재등록 재시도 결함을 수정했고 72개 회귀가 통과했다. 12:31 KST 공개 상태에서 Shop 204건·Buyer 424건 정산, 양쪽 alive를 확인했으나, Shop 재고는 소진돼 다음 공급 창에서 보충해야 하는 상태였다.
 
 이 문서는 진행 중인 구현 보고서다. 실제 Round 3 운영 결과를 채우기 전에는 완성된 제출 보고서가 아니다.
