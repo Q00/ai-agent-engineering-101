@@ -161,6 +161,23 @@ class OperationsModel:
         return self.model.complete(messages, **kwargs)
 
 
+class PolicyModel:
+    """Refresh deterministic terms after each tool observation, not just on wake."""
+    def __init__(self, model, root, role):
+        self.model, self.root, self.role = model, root, role
+
+    def complete(self, messages, **kwargs):
+        current = {"role": "user", "content": "Current local policy/observations (not payment authority):\n"
+                   + role_context(self.root, self.role)}
+        raw = self.model.complete([*messages, current], **kwargs)
+        move = json.loads(raw)
+        if move.get("action") == "write_note" and isinstance(move.get("args"), dict):
+            label = "operations PROPOSAL ONLY" if self.role == "operations" else self.role
+            move["args"]["text"] = f"[{label}] " + str(move["args"].get("text", ""))
+            return json.dumps(move, ensure_ascii=False)
+        return raw
+
+
 class RoleMind(BaseMind):
     def __init__(self, owner, role, model):
         agent = deepcopy(owner.agent)
@@ -168,7 +185,9 @@ class RoleMind(BaseMind):
         if role == "operations":
             agent.update(max_steps=3, run_minutes=2)
         roles = [role] if role != "operations" else []
-        super().__init__(owner.root, agent, model, RoleToolbox(owner.toolbox, role), owner.ctx, roles)
+        self.raw_model = model.model if role == "operations" else model
+        super().__init__(owner.root, agent, PolicyModel(model, owner.root, role),
+                         RoleToolbox(owner.toolbox, role), owner.ctx, roles)
         self.owner, self.role = owner, role
 
     def context(self, events):

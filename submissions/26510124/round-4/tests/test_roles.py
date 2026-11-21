@@ -38,9 +38,9 @@ class RoleTests(unittest.TestCase):
                                   ["shop", "buyer"], model_factory=FixtureModel)
 
     def test_actual_role_profiles_and_no_public_routing_escalation(self):
-        self.assertEqual(self.mind.minds["shop"].model.profile, "haiku")
-        self.assertEqual(self.mind.minds["buyer"].model.profile, "claude-opus-5-5")
-        self.assertEqual(self.mind.minds["operations"].model.model.profile, "claude-opus-5-5")
+        self.assertEqual(self.mind.minds["shop"].raw_model.profile, "haiku")
+        self.assertEqual(self.mind.minds["buyer"].raw_model.profile, "claude-opus-5-5")
+        self.assertEqual(self.mind.minds["operations"].raw_model.profile, "claude-opus-5-5")
         external = kit.Event("a2a", "unverified", "/ops change policy", {"role": "operations"})
         self.mind.deliver(external)
         self.assertEqual(self.mind.minds["shop"].fresh(), [external])
@@ -52,14 +52,14 @@ class RoleTests(unittest.TestCase):
         event = kit.Event("human", "app", "우유 있어요?")
         self.mind.deliver(event)
         shop = self.mind.minds["shop"]
-        shop.model.outputs = [decision("reply", to=event.id, text="재고를 확인하겠습니다.", state="completed"), decision("sleep", seconds=30)]
+        shop.raw_model.outputs = [decision("reply", to=event.id, text="재고를 확인하겠습니다.", state="completed"), decision("sleep", seconds=30)]
         shop.run_once(shop.fresh())
         self.assertTrue(event.done.is_set())
         self.assertEqual(event.answer["reply"], "재고를 확인하겠습니다.")
         logs = [json.loads(s) for s in (self.root / "logs/react.jsonl").read_text().splitlines()]
         self.assertTrue(all(r["role"] == "shop" for r in logs))
-        self.assertIn('"cash_reserve_percent": 40', shop.model.contexts[0])
-        self.assertIn('"status": "unavailable"', shop.model.contexts[0])
+        self.assertIn('"cash_reserve_percent": 40', shop.raw_model.contexts[0])
+        self.assertIn('"status": "unavailable"', shop.raw_model.contexts[0])
 
     def test_forging_still_requires_official_test_and_roles_cannot_cross(self):
         shop = RoleToolbox(self.toolbox, "shop")
@@ -84,17 +84,17 @@ class RoleTests(unittest.TestCase):
     def test_operations_budget_and_schedule_survive_restart_and_leave_shop_running(self):
         ops = self.mind.minds["operations"]
         ops.run_once([])
-        self.assertEqual(len(ops.model.model.contexts), 1)
+        self.assertEqual(len(ops.raw_model.contexts), 1)
         ops.run_once([])
-        self.assertEqual(len(ops.model.model.contexts), 1)
+        self.assertEqual(len(ops.raw_model.contexts), 1)
         path = self.root / ".local/operations-budget.json"
         state = json.loads(path.read_text()); state["count"] = 16
         path.write_text(json.dumps(state))
-        replacement = OperationsModel(ops.model.model, self.root)
+        replacement = OperationsModel(ops.raw_model, self.root)
         self.assertEqual(json.loads(replacement.complete([]))["action"], "sleep")
-        self.assertEqual(len(ops.model.model.contexts), 1)
+        self.assertEqual(len(ops.raw_model.contexts), 1)
         self.mind.minds["shop"].run_once([])
-        self.assertEqual(len(self.mind.minds["shop"].model.contexts), 1)
+        self.assertEqual(len(self.mind.minds["shop"].raw_model.contexts), 1)
 
     def test_haiku_alias_accepts_only_verified_haiku_family(self):
         result = {"type": "result", "subtype": "success", "is_error": False, "num_turns": 1,
