@@ -61,6 +61,9 @@ def save_memory(mem: dict) -> None:
 def remember(mem: dict, shop_name: str, record: dict) -> None:
     s = mem["shops"].setdefault(shop_name, {"trades": [], "avoid": False, "avoid_reason": None})
     s["trades"].append(record)
+    if len(s["trades"]) > 200:                     # expiry: the note (consolidate) keeps the gist; the raw log was 12 MB / 40k trades
+        s["dropped"] = s.get("dropped", 0) + len(s["trades"]) - 200
+        s["trades"] = s["trades"][-200:]
     if record.get("mismatch"):
         s["avoid"], s["avoid_reason"] = True, f"receipt {record['receipt_price']} != agreed {record['agreed']} ({record['when']})"
 

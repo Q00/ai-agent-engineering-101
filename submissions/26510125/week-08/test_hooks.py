@@ -54,6 +54,10 @@ assert mb.accept_policy({"kind": "food", "use_within_hours": 5})["min_hours_left
 (md / "payments.jsonl").write_text("\n".join(json.dumps({"shop": "http://bad", "paid": False}) for _ in range(2)) + "\n"
                                    + json.dumps({"shop": "http://ok", "paid": False}) + "\n")
 assert mb.refused_shops(md) == {"http://bad"}
+emem = {"shops": {}}
+for i in range(205):
+    mb.remember(emem, "s", {"when": "t", "item": "x", "budget": 1, "status": "bought", "agreed": 1, "receipt_price": 1, "mismatch": False, "stars": 5, "rounds": 1, "url": "u", "i": i})
+assert len(emem["shops"]["s"]["trades"]) == 200 and emem["shops"]["s"]["trades"][0]["i"] == 5 and emem["shops"]["s"]["dropped"] == 5
 assert mb.price_cap(400, 300) == 225 and mb.price_cap(200, 300) == 200 and mb.price_cap(200, None) == 200
 wmem = {"shops": {"none": {"trades": [{"warranty": 0}, {"warranty": 0}]}, "some": {"trades": [{"warranty": 0}, {"warranty": 6}]},
                   "once": {"trades": [{"warranty": 0}]}, "food": {"trades": [{}, {}]}}}
