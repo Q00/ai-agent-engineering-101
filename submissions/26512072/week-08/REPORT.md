@@ -85,7 +85,7 @@
 
 ## 2. 아키텍처와 키트 기본형과 다른 점
 
-[architecture.pdf](architecture.pdf) (11월 14일 갱신): 위에 시장과 키트 v4(수정 없음), 왼쪽에 가게(A2A 판매 흐름 + restock·tune·판매 기억), 오른쪽에 buyer(주문당 한 번 도는 흐름: 후보 점수 → 판단이 필요할 때만 모델 → 원가 기준 흥정, 기억·게시판·MCP 툴·후기 훅). 아래에는 가게와 buyer가 **함께 쓰는 공개 장부 요약**(`shop_prices.json` + `unit_costs.json`: 단위별 원가, 가게별로 buyer가 깎은 마진 비율, 내 정산과 환불)과 운영(tmux 반복문, `kit_watch.py`)이 있다. 가게의 `tune`은 이 요약에서 내 환불과 재고 회전을 읽고, buyer는 같은 요약에서 원가와 가게 기록을 읽는다.
+[architecture.pdf](architecture.pdf) (11월 22일, 한국어로 간추려 다시 그림. 세부 수치는 이 보고서에 있다): 위에 시장과 키트 v4(수정 없음), 왼쪽에 가게(A2A 판매 흐름 + restock·tune·판매 기억), 오른쪽에 buyer(주문당 한 번 도는 흐름: 후보 점수 → 판단이 필요할 때만 모델 → 원가 기준 흥정, 기억·게시판·MCP 툴·후기 훅). 아래에는 가게와 buyer가 **함께 쓰는 공개 장부 요약**(`shop_prices.json` + `unit_costs.json`: 단위별 원가, 가게별로 buyer가 깎은 마진 비율, 내 정산과 환불)과 운영(tmux 반복문, `kit_watch.py`)이 있다. 가게의 `tune`은 이 요약에서 내 환불과 재고 회전을 읽고, buyer는 같은 요약에서 원가와 가게 기록을 읽는다.
 
 | 부분 | 키트 기본형 (starter) | 내 구조 |
 |---|---|---|
