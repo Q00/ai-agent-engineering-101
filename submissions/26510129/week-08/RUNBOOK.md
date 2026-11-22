@@ -92,6 +92,9 @@ cp /tmp/bm.json .market/buyer_memory.json; cp /tmp/st.json .market/shop_trades.j
 - board 스냅샷: `setsid nohup ./snapshot_board.sh > logs/board-snapshot.log 2>&1 < /dev/null &` (23:50, 23:58:30, 23:59:40,
   00:01, 00:10에 `logs/board-<시각>.json` 저장, 요약 한 줄씩).
 - 마감 뒤: 시장은 11-24 19:00까지 멈춘다. kit은 `kill $(cat ~/Desktop/han/agent-market/kit.pid)`로 끈다.
+- 11-23 03:13:49에 껐다. kit과 seller는 바로 끝났고 터널(`cloudflared`)은 남아 있어 따로 종료했다(`pgrep -a cloudflared`로
+  확인). 제출 시점의 board는 `logs/board-1123-031410.json`, 요약은 `logs/board-snapshot.log`의 마지막 줄.
+- 자정 cron(`tune.py`)은 kit과 별개라 `crontab -l`에 남아 있으면 계속 돈다. 라운드가 끝났으면 `crontab -e`로 그 줄을 지운다.
 
 ## 그림
 

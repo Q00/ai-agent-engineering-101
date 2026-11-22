@@ -8,7 +8,7 @@
 |---|---|
 | 구조 | 주문 로그 → 가게 프로파일 → 교훈·조절값, 세 층의 메모리. 점수식은 코드에 적지 않고 시장 규칙 페이지에서 읽는다 |
 | 모델 | 흥정 제안은 Haiku(가게가 3% 이상 움직일 때만), 하루 한 번의 반성은 Opus. 예산·서명·결제는 어떤 모델 컨텍스트에도 없다 |
-| 결과 | 마감(11-17 23:59:41) board: 가게 29/86위, buyer 31/139위, Players 학생 백분위 0.511 |
+| 결과 | 마감 board: 가게 29/86위, buyer 31/139위, Players Class view에서 학생 46명 중 23번째(백분위 0.511). 제출 시점(11-23)에도 같다 |
 | 크게 잃은 곳 | 블랙리스트 버그 1.5일(11-05), 쿨오프 교착(11-11), 규칙 변경을 5일 동안 모름(11-12~17) |
 
 ## 1. 부품별 설계
@@ -108,7 +108,7 @@ buyer의 주문 한 건(그림의 가운데 줄):
 6. **감사와 기록**: 영수증과 `accept` 조건(식품 최소 수명, 공산품 등급, C등급은 보증)을 kit이 결제 전에 확인하고,
    방문은 한 줄로 기록된다.
 
-새 구조의 첫 주문(`logs/market-kit.log`, 11-17):
+새 구조의 첫 주문(`logs/market-kit.log.1`, 11-17):
 
 ```
 19:37:18 [buyer] [strategy] {"archived_now": 88151, "archived_rows": 88151, "event": "buyer_memory", "formula": "margin_share", "hot_rows": 15320, "ms": 472, ..., "pay_target": 0.711, "quick_target": 0.851, ..., "saved": 0.7305, "shops": 75}
@@ -165,7 +165,8 @@ buyer의 주문 한 건(그림의 가운데 줄):
 
 그림의 원본은 `architecture.tex`이고 `make_figure.py`가 생성한다(좌표 계산, 글자 이스케이프, 상자에 글이 들어가는지
 검사). 실습 서버에는 TeX 엔진이 없어 같은 배치를 matplotlib으로 그린 `architecture-preview.png`로 확인했다.
-`architecture.pdf`는 `.tex`를 컴파일해 만든다(6절).
+저장소의 `architecture.pdf`는 11-03의 `.tex`를 빌드한 것이고(커밋 `0aef475`), 그 뒤에 다시 그린 지금의 `.tex`는 이
+서버에서 컴파일하지 못했다. 위 설명과 맞는 그림은 `architecture.tex`와 `architecture-preview.png`다.
 
 ## 3. Round 3 결과
 
@@ -177,9 +178,24 @@ buyer의 주문 한 건(그림의 가운데 줄):
 | 11-11 17:00 | Book 60.9M, 매출 458M, 정산 6,750, 22/83위 | 거래 5,774, Saved 0.257(패치 3.4 식), 34/131위 | |
 | 11-17 19:18 | Book 69.4M, 매출 573.7M, 정산 8,025, 별점 4.62, ALL 0.624, 29/86위 | 거래 16,335, Saved 0.7346(패치 3.6 식), 글 3,401, 포럼 평점 0.936, ALL 0.676, 31/139위 | 합 1.300, 학생 합 1.134, 학생 백분위 0.511 |
 | **11-17 23:59:41 (마감)** | Book 69.3M, 매출 575.8M, 정산 8,034, 별점 4.62, ALL 0.628, **29/86위** | 거래 16,643, Saved 0.7358, 글 3,452, 포럼 평점 0.936, ALL 0.676, **31/139위** | 합 1.304, 학생 합 1.14, **학생 백분위 0.511** |
+| 11-23 03:14 (제출 시점) | Book 67.5M, 매출 575.8M, 정산 8,034, 별점 4.62, ALL 0.621, 29/86위 | 거래 16,643, Saved 0.7351, 글 3,452, 포럼 평점 0.936, ALL 0.676, 31/139위 | 합 1.297, 학생 합 1.129, 학생 백분위 0.511 |
 
-순위는 house를 뺀 학생 계정 기준이다. 마감 스냅샷은 `snapshot_board.sh`가 23:50, 23:58:30, 23:59:40, 00:01에
-`logs/board-*.json`으로 저장했고 한 줄 요약은 `logs/board-snapshot.log`에 있다. 네 시점의 순위는 같다.
+가게와 buyer 순위는 house 계정을 뺀 것이다. 중간 평가의 순위 점수는 Players의 Class view에서 온다. 학생 46명 중
+학생 합 순으로 23번째, 백분위 0.511이고 마감과 제출 시점이 같다. `logs/board-snapshot.log`의 두 줄:
+
+```
+2026-11-17 23:59:41 | shops rank 29/86 all=0.628 book=69316777 revenue=575782386 stars=4.62 deals=8034 | buyers rank 31/139 all=0.676 saved=0.7358 deals=16643 posts=3452 forum=0.936 | players total=1.304 student_total=1.14 student_pct=0.511
+2026-11-23 03:14:11 | shops rank 29/86 all=0.621 book=67520708 revenue=575782386 stars=4.62 deals=8034 | buyers rank 31/139 all=0.676 saved=0.7351 deals=16643 posts=3452 forum=0.936 | players total=1.297 student_total=1.129 student_pct=0.511
+```
+
+- 마감 스냅샷은 `snapshot_board.sh`가 23:50, 23:58:30, 23:59:40, 00:01, 00:10에 `logs/board-*.json`으로 저장했다.
+  다섯 시점의 순위는 같다.
+- 이 보고서의 시각은 모두 실습 서버의 시계다. 11-23에 시장의 응답 헤더와 비교하니 서버가 6분 35초 느렸다. 그래서
+  "23:59:41" 스냅샷은 시장 시각으로 00:06쯤, board가 멈춘 뒤에 찍힌 것이다. 내 로그의 마지막 정산은 23:51:32이고
+  시장의 첫 503(`Round 3 ended`)은 23:53:52에 왔다.
+- 마감 뒤 Book이 180만 줄었다. 안 팔린 공산품에는 하루에 원가의 1%가 보관료로 붙는다(9주차 노트). restock 줄의
+  `balance`는 11-17 23:53의 42,615,236에서 11-23 03:08의 41,054,448로, `stock`은 361에서 345로 내려갔다.
+- Saved 0.7358 → 0.7351: 마감 뒤 02:38까지 내가 산 물건의 고장이 7건 통지됐다(로그의 `[broken]` 줄).
 
 buyer의 하루 단위 기록(`.market/buyer_memory.json`과 보관 파일; 점수는 패치 3.6 식, 원가는 등급 중간값 추정):
 
@@ -195,7 +211,7 @@ buyer의 하루 단위 기록(`.market/buyer_memory.json`과 보관 파일; 점�
 
 이 추정으로 전체 16,341건을 계산하면 Saved 0.7304이고 board는 0.7346이다.
 
-### 3.2 정산 로그 인용 (`logs/market-kit.log`)
+### 3.2 정산 로그 인용 (`logs/market-kit.log.1`)
 
 ```
 19:37:22 [acp] paid 51664 through https://excuse-sandy-changes-buried.trycloudflare.com/acp, settled at ledger #7819345: 맛젤 제스프리 그린키위 왕점보 개별 155g내외 65개입 10kg 대용량 벌크, grade A, 44.9 h of shelf life left
@@ -203,24 +219,44 @@ buyer의 하루 단위 기록(`.market/buyer_memory.json`과 보관 파일; 점�
 17:48:41 [acp] settled LED 후레쉬 손전등 충전식 써치라이트 at 6374, ledger #7786866, unit u-b1d893f7e8a6 grade B
 ```
 
-첫 줄은 내 buyer가 산 것(`paid`), 아래 둘은 내 가게가 판 것(`settled`)이다. kit 로그는 20MB마다 돌고 매일 자정
-`tune.py`가 커밋했다(11-12부터 매일; 그 전 회전분 일부는 `logs/kit-stdout-2026-11-06_1819-to-11-10_1930.log`).
+첫 줄은 내 buyer가 산 것(`paid`), 아래 둘은 내 가게가 판 것(`settled`)이다. 셋 다 11-17의 줄이다. kit은 로그가
+20MB가 되면 `.log.1`로 넘기고 이전 `.log.1`을 덮어쓴다. 마감 뒤에도 kit을 켜 두어서 마지막 날의 로그가 `.log.1`로
+넘어갔고, 지금의 `market-kit.log`에는 정산 줄이 없다.
 
-### 3.3 거부 사유 (`.market/payments.jsonl`, 라운드 전체, 11-17 19:25)
+| 파일 | 기간 | 정산 줄 |
+|---|---|---|
+| `logs/market-kit.log.1` | 11-17 13:07 ~ 11-22 09:04 | 마감 전 11시간: `paid` 785, `settled` 19. 그 뒤는 시장의 503 |
+| `logs/market-kit.log` | 11-22 09:04 ~ 11-23 03:13 (kit 정지) | 없음 |
+| `logs/kit-stdout-2026-11-06_1819-to-11-10_1930.log` | 11-06 18:20 ~ 11-10 19:30 | `paid` 3,009, `settled` 2,679. `[market] shop registered as jiseokkk, round 3` |
+| git 이력의 `logs/market-kit.log` | 11-11 ~ 11-18, 매일 자정 `tune.py`의 커밋 | 그날의 로그 (`git log -- logs/market-kit.log`) |
 
-결제 19,476건 중 16,342건 지불, 3,134건 거부.
+라운드 전체의 정산 수는 board의 숫자다: 가게 8,034, buyer 16,643. 내 결제 기록으로는 buyer가 16,639건이다(3.3절).
+
+### 3.3 거부 사유 (`.market/payments.jsonl`, 라운드 전체)
+
+결제 19,805건 중 16,639건 지불, 3,166건 거부.
 
 | 건수 | 사유 | 누가 막았나 |
 |---|---|---|
-| 1,128 | `not paying: N h of shelf life left, the policy asks for N` | 내 `accept`의 `min_hours_left`를 kit이 확인 |
-| 1,003 | `not paying: grade C, the policy accepts ['A', 'B']` | 내 `accept`의 `grades` |
-| 400 | `checkout refused: 409 {"error":"unit u-… is not in stock for this order"}` | 다른 buyer가 먼저 삼 |
-| 193 | `not paying: warranty N h, the policy asks for N` | C등급에 건 보증 조건(11-11 이후) |
+| 1,149 | `not paying: N h of shelf life left, the policy asks for N` | 내 `accept`의 `min_hours_left`를 kit이 확인 |
+| 1,006 | `not paying: grade C, the policy accepts ['A', 'B']` | 내 `accept`의 `grades` |
+| 401 | `checkout refused: 409 {"error":"unit u-… is not in stock for this order"}` | 다른 buyer가 먼저 삼 |
+| 197 | `not paying: warranty N h, the policy asks for N` | C등급에 건 보증 조건(11-11 이후) |
 | 148 | `the ACP endpoint <url> is not on the shop's host; not paying` | kit |
-| 220 | `no certificate …` (세 가지 문구) | 인증서를 뺀 가게 |
-| 42 | 시장의 결제 거부, timeout, 500, 기타 | 시장 |
+| 222 | `no certificate …` (세 가지 문구) | 인증서를 뺀 가게 |
+| 43 | 시장의 결제 거부, timeout, 500, 기타 | 시장 |
 
-수명·등급 거부 2,131건은 흥정이 끝난 뒤에야 막힌 것이다. 가게가 등급과 남은 시간을 말하면 흥정 전에 취소하지만(로그의
+`.market/`은 커밋하지 않는 런타임 상태라, 저장소에서 확인할 수 있는 것은 로그의 거부 줄이다. `logs/market-kit.log.1`의
+마감 전 11시간에는 101줄이 있다(수명 39, 보증 20, 재고 없음 18, 등급 C 17, 인증서 없음 7).
+
+```
+13:09:44 [acp] not paying: warranty 0 h, the policy asks for 1
+13:14:44 [acp] not paying: 0.49 h of shelf life left, the policy asks for 12
+13:17:44 [acp] not paying: grade C, the policy accepts ['A', 'B']
+14:43:57 [acp] checkout refused: 409 {"error":"unit u-c3d52082f84b is not in stock for this order"}
+```
+
+수명·등급 거부 2,155건은 흥정이 끝난 뒤에야 막힌 것이다. 가게가 등급과 남은 시간을 말하면 흥정 전에 취소하지만(로그의
 `not negotiating`), 말하지 않는 가게에서는 거를 수 없었다. 거부는 몇 가게에 몰려 있다. 11-17 20:15 기준 최근 48시간에
 합의 3,658건 중 455건(12%)이 거부됐고, yeonsong2는 등급을 말하지 않는데 135건이 C등급으로 거부(결제 55건),
 dragonash는 "A등급" 식품이 수명으로 31건 거부(결제 28건), chaewoonee·ddolcom·ggari-shop·myeonggi는 C등급에 보증이
@@ -233,11 +269,14 @@ dragonash는 "A등급" 식품이 수명으로 31건 거부(결제 28건), chaewo
 정산되나"를 아는 것, 틀렸을 때의 비용은 나빠요(포럼 평점은 buyer ALL의 0.3), 확인할 숫자는 포럼 평점과 글 수로 잡았다.
 이 저장소에 남은 가장 가까운 기준 기록은 11-11 17:00의 board다.
 
-| | 11-11 17:00 | 11-17 19:18 |
-|---|---|---|
-| buyer로 쓴 글 | 1,788 | 3,401 (`outbox.sent.jsonl` 3,413줄 중 3,410줄이 status 200) |
-| 포럼 평점 | 0.93 | 0.936 |
-| 최근 100개 창 안의 내 글 | | 2개, 좋아요 6개씩, 나빠요 0 |
+| | 기준: 11-11 17:00 | 11-17 19:18 | 마감 (제출 시점에도 같다) |
+|---|---|---|---|
+| buyer로 쓴 글 | 1,788 | 3,401 | 3,452 (`outbox.sent.jsonl`의 status 200도 3,452줄) |
+| 포럼 평점 | 0.93 | 0.936 | 0.936 |
+| 최근 100개 창 안의 내 글 | | 2개, 좋아요 6개씩, 나빠요 0 | |
+
+기준 시점에서 마감까지 글은 1,664개 늘었고 평점은 0.93에서 0.936으로 거의 그대로다. 글 수는 buyer ALL의 0.1, 평점은
+0.3이므로 이 행동이 올린 것은 글 수 쪽이다.
 
 11주차 강의 노트는 11-12 이후 좋아요를 가장 많이 받은 글로 bjeon01, real_yellow, dariaklt, jiseokkk의 구매 기록을 들었다.
 
@@ -265,6 +304,15 @@ dragonash는 "A등급" 식품이 수명으로 31건 거부(결제 28건), chaewo
 - 마감 뒤 자정의 반성(Opus, 7.9초)은 변경 없이 다음 라운드를 위한 교훈을 남겼다: "Under margin_share the board's
   score is a mean, so a deal only helps if it beats the running average: on 11-17 grade A scored 0.90 and grade C 0.58
   (278 deals) ... The next round should start by reading the rules page" (`logs/tune.log`, `.market/lessons.jsonl`).
+
+### 3.6 마감 이후 (11-18 ~ 11-23)
+
+- kit은 11-23 03:13:49에 껐다. 그때까지 시장은 주문 요청마다 503으로 답했고 그 줄(`order failed: 503`)이 두 로그 파일에
+  42,815개다. 정산은 없다.
+- 시세 글은 ledger 24시간 창에 정산이 남아 있던 11-18 23:44까지 264번 더 나갔고 모두 503이었다.
+- 자정의 반성은 cron이 여섯 밤(11-18 ~ 11-23) 더 돌렸다. Opus는 매번 답했고 조절값은 바꾸지 않았다. 다만 매번 "이번이
+  라운드의 마지막 반성"이라는 입력을 받아 거의 같은 교훈을 여섯 번 적었다(`logs/tune.log`). 마감 뒤에 반성을 멈추는
+  조건도, 이미 있는 교훈을 걸러 내는 검사도 없다. 고치지 않고 기록으로 남긴다.
 
 ## 4. 마지막 날 다시 짠 이유 (11-17 19시 진단)
 
@@ -332,9 +380,9 @@ python make_figure.py && tectonic architecture.tex   # 그림: .tex 생성 후 P
 
 | 검증 | 결과 |
 |---|---|
-| 단위 테스트 | 130/130 (11-17) |
+| 단위 테스트 | 130/130 (11-23에 다시 실행) |
 | 공식 `market_test_week07.py` | 25/25 (11-03, `logs/market-test.log`) |
-| 실전 | 11-11 15:55 이후 kit 재시작 없이 마감까지, traceback 0건 |
+| 실전 | 11-11 15:54에 띄운 kit을 재시작 없이 11-23 03:13까지. 자정 커밋의 로그(11-11 ~ 11-18)와 지금의 두 파일에 traceback 0건 |
 | 반성 시험 실행 | `logs/reflect-dryrun-2026-11-17.txt` (Opus 8.3초, 입력 8,404자) |
 
 `.market/`(런타임 상태)과 `*.pem`은 커밋하지 않는다.
