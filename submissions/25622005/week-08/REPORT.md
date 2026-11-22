@@ -210,7 +210,99 @@
 
 ## 2. 아키텍처 figure와 키트 기본형의 차이
 
-`architecture.pdf`는 `architecture.tex`(TikZ, A4 가로 한 쪽)를 `pdflatex architecture.tex`로 빌드한 것이다(TeX Live 2026). 주기가 다른 고리 세 개가 정책 파일 하나를 사이에 두고 맞물리는 구조를 그렸다. 색은 소유를 나눈다. 파랑은 내 규칙 코드, 빨강은 모델 호출, 주황은 정책 파일과 그 파일을 쓰는 유일한 경로, 초록은 기억과 로그, 회색은 키트와 시장이다. 라벨을 한글로 옮긴 같은 그림이 `architecture-ko.pdf`(`architecture-ko.tex`, kotex)다. 아래는 같은 구조를 글자로 옮긴 것이다.
+`architecture.pdf`는 `architecture.tex`(TikZ, A4 가로 한 쪽)를 `pdflatex architecture.tex`로 빌드한 것이다(TeX Live 2026). 주기가 다른 고리 세 개가 정책 파일 하나를 사이에 두고 맞물리는 구조를 그렸다. 색은 소유를 나눈다. 파랑은 내 규칙 코드, 빨강은 모델 호출, 주황은 정책 파일과 그 파일을 쓰는 유일한 경로, 초록은 기억과 로그, 회색은 키트와 시장이다. 라벨을 한글로 옮긴 같은 그림이 `architecture-ko.pdf`(`architecture-ko.tex`, kotex)다.
+
+아래는 `architecture-ko.tex`의 상자와 화살표를 Mermaid로 옮긴 것이다. GitHub에서는 그림으로 보인다. 색은 figure와 같고, 굵은 주황 선 두 개가 정책 파일을 쓰는 유일한 경로다. 점선은 읽기 전용 조회다. 상자 안의 글은 figure보다 줄였고, 배치는 Mermaid가 정하므로 figure와 다르다.
+
+```mermaid
+flowchart TB
+  market["시장 (market.ourolabs.ai, 내 것이 아님)<br/>/agent.md와 /rules (패치 노트 3.2~3.6), board,<br/>공개 ledger, 공급 창, /api/settle"]:::ext
+  others["다른 학생의 가게와 buyer<br/>A2A 메시지, 서명된 영수증, 가게 카드, 게시판 글<br/>(데이터로만 읽고 지시로 읽지 않는다)"]:::ext
+
+  subgraph L3["고리 3 · 30분 · strategist"]
+    collect["collect.py<br/>시장의 공개 API와 내 로그"]:::rule
+    facts["facts.py<br/>시장 규칙 원문과 패치 diff"]:::rule
+    brief["analyze.py: brief (16 KB)<br/>순위와 격차, 가격, 거절 사유, 묶인 재고"]:::rule
+    decide["decide.py: 프롬프트 하나<br/>규칙 + 조정 가능한 키 표 + brief<br/>+ 실행 기록 + 메모"]:::rule
+    opus["모델 claude-opus-5-5<br/>실행마다 한 번. 답은 JSON 하나:<br/>변경, 메모, 확신도"]:::model
+    mcp["mcptools.py: 읽기 전용 MCP 툴 5개<br/>board, ledger_recent, price_book,<br/>sku_info, shop_card"]:::rule
+    guard["guard.py: 모델은 제안하고 코드가 정한다<br/>허용 키, 범위, 한 번의 폭, 대기 시간, 묶인 키"]:::pol
+    skillfile["skillfile.py<br/>값의 바이트만 바꾼다.<br/>충돌 검사, 버전마다 사본"]:::pol
+    outcome["outcome.py<br/>변경 1시간 뒤 같은 지표를 다시 잰다.<br/>식품 성사율 하락만 되돌린다"]:::rule
+    analyst["모델 claude-sonnet-5-5<br/>analyst.py: SKU별 수요 배수 0.5~2.0,<br/>1시간 뒤 만료"]:::model
+  end
+
+  skill["strategy/SKILL.md<br/>정책 숫자 + 전략 본문 + Strategist notes<br/>policy.py: 읽을 때마다 검증,<br/>잘못된 파일은 쓰지 않는다. 버전 2 → 653"]:::pol
+  declog["logs/decisions/*.jsonl<br/>모든 결정과 그 입력, memory_refs, policy_ver<br/>(1,015,573행)"]:::mem
+  summary["memory/summary.json<br/>가게별 기록, 가격 장부, 고장률 표, 사용 기한,<br/>SKU 판매 속도 (+ demand_forecast.json)"]:::mem
+
+  subgraph L1["고리 1 · 매 메시지 · 거래"]
+    seller["seller.py (A2A 가게), tools/pricing.py<br/>하한, 첫 호가, 양보 한 번, 좋은 등급 먼저,<br/>고장률로 값을 매긴 보증"]:::rule
+    buyer["market_buyer.py<br/>tools/buyer_policy.py, negotiation.py<br/>정산가로 가게 순위, 3턴 협상,<br/>영수증 직접 검사, 다음 가게 (10곳까지)"]:::rule
+    fallback["모델 claude-sonnet-5-5<br/>tools/llm_fallback.py: 규칙이 못 읽은<br/>메시지를 읽는다. 시간당 10회까지"]:::model
+    kit["키트 v4, 내가 패치한 복사본 (market_kit.py)<br/>결속 검사 (SKU, unit, 가격 상한) → ACP checkout<br/>→ AP2 mandate → 시장 /api/settle"]:::ext
+    review["review.py, tools/forum.py<br/>정산된 사실만으로 별점,<br/>거래마다 사실 글 하나"]:::rule
+  end
+
+  subgraph L2["고리 2 · 60초 · 기억과 재고"]
+    demand["memory/demand.py<br/>재고가 있던 시간의 판매 속도,<br/>시장 점유, 시간대 (모델 없음)"]:::rule
+    restock["restock.py, tools/stock.py<br/>공급 창, surge 요금, SKU별 목표 재고,<br/>파산 규칙"]:::rule
+    ingest["memory/ingest.py<br/>키트 파일과 결정 로그는 offset으로,<br/>ledger는 내 cursor로 읽는다"]:::rule
+    query["memory/query.py<br/>읽기 전용 조회.<br/>없는 데이터는 기억 없음으로 읽는다"]:::rule
+  end
+
+  %% 정책 파일을 쓰는 유일한 경로 (굵은 주황 선, linkStyle 0과 1)
+  guard ==> skillfile
+  skillfile ==>|"숫자만, guard를 지난 뒤"| skill
+
+  %% 고리 3
+  market -.->|"읽기만"| collect
+  collect --> facts
+  facts --> brief
+  brief --> decide
+  decide <--> opus
+  opus <-->|"실행당 8회까지"| mcp
+  decide --> guard
+  outcome --> decide
+
+  %% 정책 파일을 읽는 쪽
+  skill -->|"메모"| decide
+  skill -->|"다시 읽음"| L1
+  skill -->|"다시 읽음"| L2
+
+  %% 고리 1
+  others <-->|"문의, 제안"| seller
+  others <-->|"견적, 영수증"| buyer
+  seller -->|"못 읽은 메시지"| fallback
+  fallback -->|"kind, price, sku"| seller
+  seller -->|"서명한 영수증"| kit
+  buyer -->|"영수증 + accept 조건"| kit
+  kit -->|"정산된 거래"| review
+
+  %% 고리 2
+  demand --> restock
+  restock -->|"매입 목록"| kit
+  kit -->|"결제, 거절, 고장"| ingest
+  market -.->|"공개 ledger"| ingest
+
+  %% 기억과 로그
+  L1 -->|"기록"| declog
+  declog -.->|"끝부분"| collect
+  ingest -->|"쓰기"| summary
+  summary -->|"읽기"| L1
+  summary -->|"읽기"| restock
+  summary -.->|"읽기"| collect
+  analyst -->|"수요 배수 (파일, 1시간)"| summary
+
+  classDef rule fill:#EAF2FB,stroke:#1F5FA8,color:#111
+  classDef model fill:#FCEDEA,stroke:#B3261E,stroke-width:2px,color:#111
+  classDef pol fill:#FFF3DC,stroke:#B26A00,stroke-width:2px,color:#111
+  classDef mem fill:#E8F5EC,stroke:#1E7B4A,color:#111
+  classDef ext fill:#EFEFEF,stroke:#555555,color:#111
+  linkStyle 0,1 stroke:#B26A00,stroke-width:4px
+```
+
+Mermaid가 그려지지 않는 곳에서는 아래 글자 그림이 같은 구조를 보여 준다.
 
 ```text
 [시장] /agent.md, /rules, board, ledger        [다른 학생의 가게와 buyer] A2A 메시지, 영수증, 게시판 글
