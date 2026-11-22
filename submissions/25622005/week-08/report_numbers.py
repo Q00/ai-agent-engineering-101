@@ -1,9 +1,11 @@
 """Recount the numbers REPORT.md quotes, from the copies under logs/ only.
 
     python report_numbers.py            everything (about a minute: the seller log is 0.5 GB unpacked)
-    python report_numbers.py kit        one part: kit | decisions | strategist | forum
+    python report_numbers.py kit        one part: kit | market | decisions | strategist | forum
 
 logs/market-kit*.log                 the kit's log and its archives (Round 3: the files from 20261107 on)
+logs/market/                         the kit's own files from .market/: payments.jsonl (every checkout my buyer paid or
+                                     did not, with the reason), broken.jsonl (what broke of its purchases), inventory.json
 logs/decisions/<role>.jsonl.gz       every decision row of the seller, buyer, restock, review and forum hooks
 logs/strategist-home/runs.jsonl      one row per strategist run; changes.jsonl one per SKILL.md rewrite or outcome check
 logs/outbox.sent.jsonl               the forum posts the kit sent and the market's answers
@@ -24,6 +26,7 @@ from pathlib import Path
 
 LOGS = Path(__file__).resolve().parent / "logs"
 END_TS = 1794927540                                 # 2026-11-17 23:59 KST, stock.end_ts
+WEEK10_TS = 1794304800                              # 2026-11-10 19:00 KST, the week-10 class (the lab's baseline)
 KIT_FIRST = "market-kit.20261107-184911.log"        # the archive Round 3 starts in (the one before is Round 2)
 KIT_END = "Round 3 ended at"
 SELLER_WINDOW_H, BUYER_WINDOW_H = 12, 36
@@ -84,7 +87,9 @@ def kit():
     for label, pattern in (
             ("not paying: shelf life", r"not paying: [0-9.]+ h of shelf"),
             ("not paying: no certificate", r"not paying: no certificate"),
-            ("checkout refused: unit not in stock", r"checkout refused: .*is not in stock for this order"),
+            ("checkout refused by a shop (my buyer): unit not in stock", r"checkout refused: [0-9]+ .*is not in stock for this order"),
+            ("checkout refused by my shop: unit not in stock", r"checkout refused: unit .*is not in stock for this order"),
+            ("not paying: ACP endpoint not on the shop's host", r"is not on the shop's host; not paying"),
             ("payment not completed", r"payment not completed"),
             ("  empty market error", r'payment not completed: [0-9]+ .*"market":\{"error":""\}'),
             ("  Internal Server Error", r"payment not completed: .*Internal Server Error"),
@@ -94,6 +99,30 @@ def kit():
             ("settle refused: market error", r"settle refused: \{"),
             ("forum post answered 200", r"\[forum\] post as buyer: 200")):
         print(f"{label}:", count(pattern))
+
+
+def market():
+    """The kit's working files: the buyer's payments (Round 3 only: the file starts with kit v4) and breakages."""
+    folder = LOGS / "market"
+    pays = list(rows(folder / "payments.jsonl"))
+    paid = [r for r in pays if r.get("paid")]
+    print("== .market files (copies in logs/market/)")
+    print(f"payments.jsonl: {len(pays)} checkouts, paid {len(paid)} (unique ledger numbers "
+          f"{len({r.get('ledger') for r in paid})}), not paid {len(pays) - len(paid)}")
+    why = collections.Counter()
+    for r in pays:
+        if not r.get("paid"):
+            w = re.sub(r"<!DOCTYPE.*", "<html error page>", str(r.get("reason")), flags=re.S)
+            w = norm(re.sub(r"u-[0-9a-f]{12}", "<unit>", w))        # the unit id first: norm() would cut its digits
+            why[w.split(',"checks"')[0][:95]] += 1
+    for k, v in why.most_common():
+        print(f"  {v:6d}  {k}")
+    broke = [r.get("broke_at") or 0 for r in rows(folder / "broken.jsonl")]
+    print(f"broken.jsonl: {len(broke)} purchases broke, {sum(1 for t in broke if t <= END_TS)} of them before the end")
+    inv = json.loads((folder / "inventory.json").read_text(encoding="utf-8"))
+    units = inv.get("units") or []
+    print(f"inventory.json: balance {inv.get('balance')}, start {inv.get('start')}, bankruptcies {inv.get('bankruptcies')}, "
+          f"units {len(units)}, stock at cost {sum(u.get('cost') or 0 for u in units)}")
 
 
 def decisions():
@@ -183,8 +212,9 @@ def strategist():
     print("SKILL.md rewrites that changed the focus or trend list:", lists)
     after = [r for r in every if r.get("ts", 0) > END_TS]
     print(f"runs after the end (market paused): {len(after)}")
-    for label, run in (("last read before the end", runs[-1]), ("first read after the end", after[0] if after else None),
-                       ("latest read", every[-1])):
+    week10 = min(runs, key=lambda r: abs(r.get("ts", 0) - WEEK10_TS))
+    for label, run in (("week-10 class, the baseline", week10), ("last read before the end", runs[-1]),
+                       ("first read after the end", after[0] if after else None), ("latest read", every[-1])):
         if run is None:
             continue
         me = run.get("me") or {}
@@ -214,6 +244,6 @@ def forum():
 
 
 if __name__ == "__main__":
-    parts = {"kit": kit, "decisions": decisions, "strategist": strategist, "forum": forum}
+    parts = {"kit": kit, "market": market, "decisions": decisions, "strategist": strategist, "forum": forum}
     for name in sys.argv[1:] or parts:
         parts[name]()
