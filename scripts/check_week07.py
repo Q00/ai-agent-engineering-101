@@ -143,9 +143,7 @@ def check_no_keys(sub: Path):
 
 
 def check_market(sub: Path, github):
-    ok("market check skipped (temporary)")
-    return
-    """log = sub / "logs" / "market-kit.log"
+    log = sub / "logs" / "market-kit.log"
     text = log.read_text(encoding="utf-8", errors="ignore") if log.is_file() else ""
     names = {role: re.findall(rf"\[market\] {role} registered as (.+?), round \d+", text) for role in ("shop", "buyer")}
     if not names["shop"] or not names["buyer"]:
@@ -171,7 +169,7 @@ def check_market(sub: Path, github):
             fail(f"{role} {name!r} belongs to @{owner}, not @{github}")
         else:
             state = "running now" if row.get("alive") else "not running now"
-            ok(f"market: {role} {name!r} of @{owner}, {state}, {row.get('deals', 0)} counted deal(s) in Round 2")"""
+            ok(f"market: {role} {name!r} of @{owner}, {state}, {row.get('deals', 0)} counted deal(s) in Round 2")
 
 
 def check_report_md(sub: Path):
