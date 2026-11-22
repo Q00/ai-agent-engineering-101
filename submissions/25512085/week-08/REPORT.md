@@ -1,100 +1,139 @@
 # Week 08 — mjforge Round 3 운영 보고서
 
-학번 **25512085** · 작성 기준 **2026-11-13** · **제출 준비 중(미완료)**
+- **학번**: 25512085 (GitHub: `@MJforge`, 에이전트명: `mjforge`)
+- **아키텍처 Figure**: [architecture.pdf](architecture.pdf) ([architecture.tex](architecture.tex))
+- **결과 기준**: Round 3 종료(11/17 23:59) 직후 `2026-11-18 00:00:42 KST`에 저장한 board 스냅샷([history/20261118-round3-close/board_final.json](history/20261118-round3-close/board_final.json)) 및 배포 VM 실행 로그([logs/market-kit.log](logs/market-kit.log))
 
-기준은 로컬 최신 코드가 아니라 VM HEAD **`6bb3cd855fe76a29e1412699688595069ca5fa45`**이다. 11월 13일 01:20–01:26 KST 읽기 전용 조사에서 허용 소스 15개가 VM HEAD와 해시 일치하고 tracked dirty가 0이었다. 이는 디스크 증거이지 실행 중 모든 import의 동일성을 증명하는 것은 아니다. buyer `17e0f24` 대응은 메인 handoff의 버전 설명이며 이 문서 작업에서 Git ancestry를 재검증하지 않았다.
+---
 
-과제 기준: [한국어 736–766행](../../../week-08.html), [영어 730–760행](../../../week-08-en.html). 기존 구현 시점의 [보고서 원문](history/20261113-report-figure-01/prior-report.md)은 별도 보존했다. 기존 로그·실패 이력·소스는 수정하지 않았다.
+## 1. 부품별 설계
 
-**근거 표기:** [E: 운영 증거 요약](history/20261113-submission-alignment-01/evidenceSummary.md), [R: 구조와 소스 행 번호](history/20261113-submission-alignment-01/runtime-structure.md), [S: 운영 소스 사본](history/20261113-submission-alignment-01/runtime-source/submissions/25512085/week-08/), [K: 키트 소스](history/20261113-submission-alignment-01/runtime-source/scripts/market_kit.py), [M: 지표 snapshot](history/20261113-submission-alignment-01/sanitizedmetrics.json). 아래 행 번호는 로컬 pending 코드가 아니라 S/K 기준이다.
+### 1.1 모델 (Model)
+Round 3 실거래 운영에서는 LLM 호출 대신 **규칙 기반 정책 엔진**을 주 의사결정기로 채택했다.
+- **사용 모델**: `gpt-5.6-sol` (`agent.json`의 `harness`: `codex exec --skip-git-repo-check -m gpt-5.6-sol`, Codex CLI 경유). 사용처는 **게시판 글 작성(`forum_writer.py`)** 한 곳이다.
+- **판매(Seller)와 구매(Buyer)**: 다수의 에이전트가 동시에 협상을 요청하는 환경에서 빠르게 응답하고, 원가·보관료·등급별 파손 확률·보증 조건을 일관되게 계산하기 위해 가격 산출과 수락 판단을 모두 규칙 기반으로 구현했다. 거래 경로에서는 모델을 호출하지 않는다.
+- **게시판(Forum)**: 초반에는 게시판 글 작성에 모델을 호출했다. [logs/model-calls.log](logs/model-calls.log) 2,539건 기준으로 모델 작성 성공은 **158건(11/03 21:07 ~ 11/05 08:53, 1건당 중앙값 약 36초)** 이었고, 같은 기간 **90초 타임아웃 140건**과 **ChatGPT 사용량 한도 오류 44건**이 발생해 템플릿으로 대체되었다. 지연과 사용량 한도 때문에 모델 호출을 끄고(`FORUM_USE_MODEL = False`), 이후 2,197건은 실제 원장 데이터만 조합하는 템플릿 방식으로 작성했다. 모델 답변과 템플릿은 같은 안전 필터를 통과해야 게시된다.
+- **설계 회고와 한계**: 이 구조는 자율성·반응성·능동성·사회성을 갖춘 규칙 기반 에이전트로서 빠른 응답과 일관된 손익·파손율 계산에는 강점이 있었지만, 본질적으로는 사람이 규칙을 미리 정의해 둔 고빈도 자동화 프로그램에 가까웠다. 실제로 운영 도중 채점 규칙이 바뀌거나(Patch 3.4/3.6) 마감 전 조기 청산 버그가 생겼을 때 에이전트가 스스로 규칙 변화를 추론해 전략을 바꾸지 못하고 사람이 직접 코드를 수정·배포해야 하는 한계가 드러났다.
 
-## 1. 부품 구현 (40%)
+### 1.2 컨텍스트와 메모리 관리 (Context & Memory)
+키트가 매 턴 내려주는 `.market/` 파일만으로는 직전 시세 변화나 가게별 신뢰도, 자체 파손율을 다음 결정에 반영하기 어렵고, 반대로 매 요청마다 수만 줄짜리 원시 로그를 통째로 읽으면 응답 지연이 커진다. 이를 해결하기 위해 데이터 레이크하우스 설계에서 쓰이는 **Medallion(Bronze → Silver/Gold) 파이프라인** 을 축소 적용한 **공유 인텔리전스 허브(`state_hub.json`)** 를 중심으로, 컨텍스트와 메모리를 5개 계층으로 분리·관리했다.
+ 
+#### Medallion 파이프라인
+Databricks 등 데이터 레이크하우스에서 대량의 거래 데이터를 단계별로 정제할 때 쓰이는 데이터 설계 패턴이다.  
+대량의 클릭·주문·반품 로그가 쌓이는 환경에서 원본 로그를 매번 처음부터 끝까지 읽으면 응답이 느려지고 서버를 유지하기 어렵다. 반대로 원본은 삭제하고 요약본만 남기면 나중에 버그 발생이나 기준 변경 시 다시 검증할 수 없다.  
+따라서 원본은 그대로 두고(Bronze), 깨끗하게 정리한 뒤(Silver), 의사결정에 바로 쓸 요약표(Gold)를 미리 만들어 두는 것이 Medallion 구조의 핵심이다.
 
-### 모델: 운영 정책과 개발 AI를 구분한다
+- **Bronze (원시 데이터)**: 키트가 생성하는 `.market/` 스냅샷·원장 파일(`payments.jsonl`, `broken.jsonl`, `inventory.json`, `forum.json`)과 시장 공개 원장(`/api/ledger`)의 원시 이벤트
+- **Silver/Gold (집계·정규화 허브, `state_hub.json`)**: `store.py`가 원시 데이터를 증분 수집·정규화해 4개 독립 프로세스(`seller`, `restock`, `market_buyer`, `review`)가 즉시 조회할 수 있는 요약 피처(최근 3시간 상품·등급별 체결가, 수요 레이더, 자본 단계, 파손 통계)로 유지
 
-현재 seller의 가격·협상·수락은 규칙 기반이다. Round 3 `market_buyer.py`는 `if not is_round3` 아래의 `call_harness`를 우회한다(1243–1253행). `forum_writer.py`는 `FORUM_USE_MODEL=False`로 템플릿을 사용한다. no-deal 후기에는 `random.choice`가 있으므로 전체 출력까지 결정론적이라고 주장하지 않는다.
+| 계층 | 저장 위치 | 보존 범위 및 갱신 방식 | 다음 의사결정에 반영되는 내용 |
+| :--- | :--- | :--- | :--- |
+| **공유 상태 허브 (Gold)** | `state_hub.json` | 수급 주기마다 시장 공개 원장(`/api/ledger`)과 원시 로그(Bronze)를 증분 수집·정규화해 파일 락으로 갱신. 상품별 최근 3시간 체결가(최대 50건), 자체 판매·파손 통계(최근 8시간) 유지 | 판매 1차 견적 기준가, 구매 시세 비교, 인기 품목 판별 및 파손 환불률 추정 |
+| **가게 평판 메모리** | `memory.json` | 가게별 최근 5건 거래 기록과 과거 누적 평점 요약 유지 | 구매 후보 가게 순위 산정, 불량·반복 거절 가게 일시 회피(쿨다운), 방문 다양성 유지 |
+| **정산 후 구매 기록** | 정산 후기 훅 | 실제 결제가 완료된 최근 150건 구매 내역 유지 | 게시판 시세 브리핑 근거 및 사후 파손 상품의 판매자 귀속 추적 |
+| **판매 작업 메모리** | 판매 서버 메모리 | 진행 중인 협상(90초) 및 영수증 서명 완료 재고(120초) 임시 보관 | 동시 협상 상태 유지 및 같은 재고 단위의 중복 서명 방지 |
+| **사후 감사 저널** | `runtime/buyer-outcomes-v1.jsonl` | `store.py`가 원장 수집 후 허브 락 해제 시점에 원장 기반 정산·파손·환불 결과를 순차 기록(256 MiB 상한) | 사후 정산·파손 분석 및 정책 수정 전후 비교 |
 
-legacy 경로의 `gpt-5.6-sol`, Gemini 후보 이름은 호출 성공 증거가 아니다. **현재 Round 3 LLM 사용·성능 비교·비용 측정은 입증하지 못했다.** 개발/문서 작성에는 AI를 사용했다(이번 문서 초안: GPT-6 Astra). 이는 시장 운영 모델과 다르며 과거 구현 담당 모델은 미확인이다. 과제의 모델 부품 평가를 규칙 엔진만으로 충족한다고 단정할 수 없다. 학생이 이 선택과 한계를 설명하고 평가 해석을 확인해야 한다(R 모델 표).
+### 1.3 툴 (Tools)
+제공된 키트(`market_kit.py` v4)는 통신·결제 프로토콜을 맡고 어떻게 장사하고, 무엇을 사고, 무엇을 기억할지 결정하는 전략을 추가하였다.
 
-### 컨텍스트: 무엇을 남기고 다음 결정에 쓰는가
+- **기본 마켓 키트(`market_kit.py`)** : A2A 프록시 및 Cloudflare 터널 연결, ACP 체크아웃, AP2 결제 서명 검증, 시장 정산 요청(/api/settle), .market/ 파일 자동 동기화, 게시판 전송(별도 수급 훅 미등록 시 무작위 재고 매입)
 
-| 저장 계층 | 갱신·보존 한계 | 다음 결정의 입력 |
-|---|---|---|
-| seller working memory | `self.open`, `self.committed_units` 메모리 dict. 생성 후 >90초 / 서명 후 >120초, 다음 execute에서 정리. 재시작 복구 없음 | 진행 중 협상과 중복 unit 선택 억제 |
-| A2A SDK / kit 세션 | SDK task 및 kit ACP 세션은 별도 메모리 계층. durable 복구나 ACP 300초 만료 보장 없음 | task 진행, checkout 상태 |
-| `seller_history.json` (legacy) | trades 최근25, reviews 최근5, 품목 가격40. 전체 실정산 원장 아님 | legacy 경로의 기록이며 현행 Round 3 견적의 주 입력으로 표시하지 않음 |
-| `memory.json` | 가게별 최근5개와 유효 평점 archived count/average | buyer가 직접 읽어 trust, 재방문·다양성·실패/cooldown 순위에 사용(hub를 경유하는 입력 아님) |
-| `.market` 스냅샷 + `state_hub.json` | kit 스냅샷과 별도로 restock→store의 공개 원장 직접 GET·정규화·hub 반영. structured comparables SKU별50개/3h, scalar 가격30개(구매자는 최근 유효15개), shop tag 전체120행/조건3개 | 현행 seller는 hub/cash policy를 사용. buyer의 조건별 가격 비교, 수요·매입·신뢰 판단에도 사용 |
-| 정산 후 구매 목록 | review hook에서 `my_purchases` 최근150개로 갱신 | 실제 구매 후기·게시 근거; receipt만 받은 pending은 성공 아님 |
-| append journal | hub lock 밖 append/flush/fsync. 256 MiB 상한 초과 시 `journal_capacity_unknown`; replay도 event/order 상한 존재 | 사후 주문 결과 연결·감사. 전체 공식 Saved나 다음 가격 입력으로 자동 환산하지 않음 |
+#### 추가한 5가지 툴
+- **Buyer 상품 구매 (`market_buyer.py`)**: 주문이 들어오면 허용 품목을 보유한 가게를 평판과 예상 절감률 순으로 정렬해 협상한다. 상대 가게의 영수증을 받으면 서명 존재 여부, 예산 상한, 시장 시세 기반 가격 상한(거래가 충분히 쌓인 상품은 공산품 정가 67%·식품 66% 이하), 식품 잔여 유통기한(요구 시간 + 0.25시간 여유), 공산품 파손 위험을 반영한 기대 절감률(기본 0 초과, 정산 표본 5건 이상 SKU는 0.25 초과)을 모두 통과한 경우에만 수락한다.
+- **Shop 판매·가격·보증 (`seller.py`, `seller_cash_policy.py`)**: 공산품은 등급별 차등 보증(A등급 72시간, B등급 6시간, C등급 0시간)을 적용하고, 동일 상품·등급·보증 조건의 최근 시장 체결가 중앙값과 파손 환불 확률·보관료(일 1%)를 반영해 원가 손실이 나지 않는 하한선 위에서 단계적으로 협상한 뒤 서명 영수증을 발급한다.
+- **Shop 재고 입고·배분 (`restock.py`)**: 파산선·안전마진·1일 보관비를 반영한 **현금 하한(`cash_floor`) 기반 가용 현금 한도** 내에서, 20분마다 열리는 입고 창에서 최근 문의·품절·시장 정산량으로 상품을 인기 등급별로 분류한 뒤 파손 환불 비용과 보관료를 빼고도 이익이 남는 품목만 골라 입고 계획을 출력한다.
+- **정산 후기·게시판 (`review.py`, `forum_writer.py`)**: 정산이 끝나면 가게 평판 메모리를 갱신하고, 실제 원장 번호 3건 이상이 뒷받침되는 카테고리 시세 분석글(Buyer)과 보유 재고의 등급·정가·원장 근거를 담은 재고 공지글(Shop)을 작성한다.
+- **가시성 보호 래퍼 (`guarded_market_kit.py`)**: 기본 키트 실행을 감싸 가게 노출 상태를 감시하고 가시성 문제가 생겼을 때 보호 동작을 수행한다.
 
-근거: R 「Buyer 정책과 메모리 보존」, S `store.py:218–238,308–331,450–468`, `buyer_outcomes.py:167–193`. 원본 state/journal 내용은 이 문서 작업에서 읽지 않았다. 원장 coverage, food served/value, legacy kind 등이 없으면 **unknown**을 유지한다. 이벤트 부재를 무고장·성공으로 보지 않는다.
+---
 
-### 툴: 자체 정책과 키트 책임 경계
+## 2. 아키텍처 구조와 키트 기본형과의 차이
 
-- **우리 코드:** `market_buyer.py`가 후보 ranking, 재시도, 정수 제안, 영수증 가격/허용 SKU/서명 존재/예산 gate, `accept` 조건을 구성하고 `{shop, receipt, accept, ...}`를 kit에 반환한다. goods 최종 receipt gate는 정산 표본5개 미만이면 ExpectedSaved>0, 5개 이상이면 **보증 유무와 관계없이 >0.25**이며 등급·보증도 확인한다. food는 사용기간+0.25h를 요구한다. A2A 상대 가게와 협상하지만 실제 인증서 검증과 결제는 kit에 위임한다.
-- **우리 seller:** A2A AgentExecutor에서 재고·조건 파싱 → SKU/cohort 선택 → 단일 `seller_cash_policy.py`의 견적 → Ed25519 서명 영수증. 직접 `/api/settle`하지 않는다. cohort 내 실제 견적과 보유 비용 tie band를 비교한다. 식품은 사용기간과 만료를 먼저 확인한다.
-- **우리 연결부:** `guarded_market_kit.py`/`visibility_guard.py`는 kit에 가시성 보호를 연결한다. `restock.py`는 `{buy: [...]}` 수급 계획 JSON을 반환하며 실제 매입은 kit가 실행한다. `review.py`는 정산 뒤 기억·신뢰를 갱신하고 `{stars, review}`를 반환하며 `forum_writer.py`가 outbox 초안을 만든다. 실제 게시도 kit 책임이다.
-- **제공 키트:** v4 proxy, `/.well-known/acp.json`, checkout create/complete, 영수증·서명·금액·인증 조건 확인, `checkout_jwt` 및 AP2 closed mandates 처리, 시장 `/api/settle`, sync/outbox orchestration을 사용한다(K:228–552,705–765). 이를 자체 제작 결제 프로토콜이라고 하지 않는다. acp.json에서 임의 툴을 자동 생성하는 선택 과제도 구현했다고 주장하지 않는다.
+[architecture.pdf](architecture.pdf)는 C4 Container/Component 관점에서 `mjforge` 전체 시스템을 **상단 관문 → 4개 정책 모듈 → 중앙 공유 허브 ETL → 하단 3종 저장소** 계층으로 정리하고, 외부 시스템(시장 서버·상대 에이전트)과의 경계를 분리하였다.
 
-**예산 기본 조건:** buyer는 제안 상한과 실제 receipt 가격을 재검사하고 kit의 open mandate 범위 검증을 거친다. [합성 테스트 코드](test_buyer_savings_guard_offline.py)의 `test_cheap_completed_and_budget_boundary`는 budget 70000에 receipt 70001을 거절하도록 검증한다. 테스트의 존재와 이번 실행 성공은 다르다(이번 미실행). acceptable SKU가 checkout에서 교체될 때 개인 risk/정가 할인 cap을 완전히 보장하는 것은 별도 미해결이며, 이를 open mandate 상한과 혼동하지 않는다.
+1. **상단 관문 — 기본 마켓 키트**: 제공 키트(`market_kit.py` v4)가 시장 서버(`/api/settle`, `/api/supply`, `/forum`) 및 상대 에이전트(A2A·ACP)와의 통신·결제를 중계하고, `guarded_market_kit.py`가 가게 노출 상태를 감시한다.
+2. **4-Process 정책 계층**: 실행 시점과 목표 지표가 서로 다른 **Buyer 상품 구매**, **Shop 판매·가격·보증**, **Shop 재고 입고·배분**, **정산 후기·게시판** 으로 분리해, 한쪽의 지연이나 오류가 다른 거래를 멈추지 않도록 격리했다. 
+이는 **실제 기업에서** 구매, 기획, 영업, 물류관리, 마케팅 팀을 별도로 운영하는 것과 **유사한 시스템** 을 구축하고자 한 것이다.
+3. **중앙 공유 인텔리전스 허브 ETL (Silver, `store.py`)**: 키트가 내려주는 `.market/` 원시 로그(Bronze)와 시장 공개 원장(`GET /api/ledger`)을 증분 수집·정규화(Silver)해 4개 프로세스가 공유하는 집계 허브(Gold)로 적재한다.
+4. **하단 3종 영구 저장소**: 모든 데이터를 파일 하나에 몰아넣지 않고, 데이터 수명과 접근 주체에 따라 3개 저장소로 분리했다.
+   - **원본 보관 (Bronze, `.market/` · `buyer_outcomes.py`)**: 기본 마켓 키트가 내려받는 결제·파손·재고 원본(`.market/`)과 `store.py`가 원장 수집 후 허브 락 밖에서 기록하는 원장 기반 정산·파손·환불 감사 저널(`buyer_outcomes`)을 보관한다. `payments.jsonl`·`broken.jsonl`과 감사 저널은 덧붙이기(append) 방식으로 누적 보존되고, `inventory.json` 같은 스냅샷 파일은 키트가 최신 상태로 덮어쓴다. `store.py`(Silver)가 원본 로그를 읽어 집계에 활용하고, 장애나 정책 변경 시 원인을 되짚는 블랙박스 역할을 한다.
+   - **공유 상태 허브 (Gold, `state_hub.json`)**: `store.py`(Silver)가 원본 로그와 시장 공개 원장(`/api/ledger`)을 정제해 단방향으로 적재하는 공용 요약 테이블이다. 4개 프로세스가 무거운 원본 로그를 매번 풀스캔하지 않고 최근 3시간 시세·수요·파손 통계를 빠르게 공유할 수 있게 한다.
+   - **가게 평판 메모리 (`memory.json`)**: `Shop` 측에서는 필요 없는 Buyer 전용 데이터(가게별 최근 5건 거래, 누적 평점, 반복 거절 시 일시 회피용 쿨다운)를 별도 저장소로 분리했다. 공용 허브의 파일 락을 기다리지 않고 `Buyer`가 협상 직후 조회·기록하고 `정산 후기`가 사후 결과를 보강하는 독립 피드백 루프를 이룬다.
 
-### 가격·Saved·재고 정책과 한계
+### 키트 기본형과의 핵심 차이
 
-buyer 후보의 할인율과 **공식 Saved는 다르다.** [11월 9일 step1 기록](history/20261109-buyer-saved-strategy-step1/IMPLEMENTATION.md)(10–14행)은 메인이 당시 공식 agent.md에서 확인해 전달한 정의를 보존한다: surplus=`value-price+refund`, 거래별 Saved는 surplus/list, 아무것도 제공하지 못한 거래는 -1(환불 시 0), 합계를 `(deals+100)`으로 나눈다. 이 문서 작업은 외부 URL을 재조회하지 않았고 해당 기록에 정확한 URL이 없어 독립 공식 검증은 미완료다. 부분 환불 해석도 임의 보완하지 않는다.
+| 구분 | 키트 기본형 | mjforge 구현 구조 |
+| :--- | :--- | :--- |
+| **컨텍스트 공유** | 각 프로세스가 `.market/` 파일만 단발성으로 읽음 | **Bronze(원시 로그·원장) → Silver/Gold(`state_hub.json`)** 계층으로 집계해 4개 프로세스가 공유 |
+| **재고 수급** | 별도 수급 전략이 없으면 무작위로 재고 매입 | **현금 하한(`cash_floor`) 기반 가용 현금 제어** + 문의·품절·시장 정산량 기반 인기 분류 + 파손 환불·보유세 차감 검증 후 매입 |
+| **판매 가격·보증** | 원가 위 단순 호가, 품질·보증 구분 없음 | A 72h / B 6h / C 0h 차등 보증 + 최근 동일 조건 체결가 기반 동적 견적 |
+| **구매 판단** | 단순 가격 협상 수락 | 등급별 파손율(A 3% / B 15% / C 35%, 11/03 수업 제시값이며 자체 실측값 아님)을 반영한 기대 절감률 가드 + 유통기한 사전 검증 + 가게 평판 라우팅 |
+| **게시판·노출 보호** | 게시판 자동화 및 가시성 감시 없음 | 원장 번호를 근거로 첨부하는 Buyer/Shop 양방향 게시판 작성기 + 가게 노출 감시 래퍼 |
 
-운영 goods 후보 proxy는 `d=(list-price)/list`, 정책 prior `q`(A=.03/B=.15/C=.35)에 대해 보증>=6h이면 `(1-q)d`, 그 외 `(1-q)d-q`이다. 최종 receipt는 해당 SKU 정산 표본5개 미만이면 ExpectedSaved>0, **5개 이상이면 보증 유무와 관계없이 >0.25**여야 한다(S `market_buyer.py:1454–1460`). 상수 이름의 UNCOVERED만 보고 무보증 전용 조건으로 해석하지 않는다. 표본5개 이상인 mature 가격 cap은 goods 정가의 **67%**, food **66%** 이하이며 예산·중앙가 등과의 최솟값으로 더 낮아질 수 있다(499–520,840–857행). 이 비율이 고정 구매가라는 뜻은 아니다. q는 실측 고장률이 아니며 순위용 조건부 중앙가는 표본 부족 시 보수 fallback을 쓴다. [step2 개발 당시 기록](history/20261109-buyer-saved-strategy-step2/IMPLEMENTATION.md)보다 현재 운영 소스의 최종 gate를 우선한다.
+### 운영 중 실패와 수정 과정
+- **초반 무보증 파손 누적 대응 (11/09)**: 초반 채점 기준이 절감 총액(`Surplus`)이던 시기에 저가 무보증 상품을 대량 매수하면서 11/03~11/09 동안 파손이 904건 누적되었다. 채점 기준이 평균 절감률(`Saved`)로 바뀐 뒤 파손 확률을 차감하는 수락 게이트를 도입했다. 이후 일 파손 건수는 최대 185건(11/06)에서 마지막 날 6건(11/17)으로 줄었다. 다만 같은 시기 거래량·상품 구성도 함께 변해, 감소분 전체를 게이트의 효과로 검증하지는 못했다.
+- **재고 매입 정지 버그 수정 (11/15)**: 재매입 금지 목록이 상한(500개)에 도달하자 전체 상품 매입이 함께 멈추던 버그를 발견해, 금지 목록에 없는 정상 상품은 계속 매입하도록 수정했다.
+- **게시판 근거 첨부 및 데드락 수정 (11/15)**: Shop 공지글에 원장 번호·등급·정가를 포함하도록 보완했고, Buyer 게시판 작성기가 한쪽 유형(식품/공산품)의 후보만 존재할 때 카테고리 순환이 막혀 43시간 동안 글을 못 올리던 데드락을 수정했다.
+- **마감 전 조기 청산 로직 해제 (11/17)**: 초기 규칙("종료 시 미판매 재고 0원") 기준으로 넣어 둔 종료 36시간 전 매입 중단·24시간 전 덤핑 로직이 작동하면서 원장 수집과 게시판 발송이 멈추고 신선 식품을 원가 이하로 팔던 문제를 확인했다. 현재 규칙(`Book`은 미판매 재고를 원가 100%로 인정)에 맞게 이를 해제했고, 이후 3.5시간 동안 Shop ALL이 `0.704 → 0.734`로 오르고 게시판 발송이 정상화된 것이 함께 관측되었다(인과 효과는 별도로 검증하지 않음).
 
-seller의 C 우선 pilot은 **3SKU**(`g021aae64`, `g0be9ed07`, `g81ade83e`)에서 무제약 문의이며 C 재고가 있을 때 C cohort만 선택한다. 모든 품목·모든 요청의 C-only 판매가 아니다. 명시 등급·보증 조건은 우선하며 A72h/B6h/C0h 고정 조건을 유지한다(S `seller.py:203,445–475,570`).
+---
 
-restock의 수급창별 `reserved`/`planned_skus`는 중복 매입·예산 억제 기록이지 seller의 협상 예약이 아니다. hot/popular/observe 수요 분류(예: 문의>=2이면 popular, >=4이면 hot 및 최소 깊이3), 성장기 cash allocation, 종료 전 축소를 함께 사용한다. 공개시장 비율 fallback cache **30분** 및 kit catalog 최초 조회 재사용은 존재하지만, 로컬 추가 catalog snapshot cache와는 다르다.
+## 3. Round 3 결과
 
-**현재 운영 제약:** hub lock은 기본 8초 실패 후에도 진행하는 fail-open이다(S `store.py:112–142`). seller 예약은 휘발성이며 SDK/ACP 메모리 상태의 장기 보존도 보장하지 않는다. journal의 unknown과 상한도 남는다. 로컬의 fail-closed, persistent 예약, committed 5분, catalog cache 및 `_cash_*` 모듈 분리는 **미배포**다. 로컬 catalog cache의 재사용 계약은 `mtime_ns + size`이며 “같은 1초 동안 재사용”하는 TTL 계약이 아니다.
+### 3.1 기준 시점(10주차) vs 종료 시점 비교
+결과 기준: Round 3 종료(11/17 23:59) 직후 2026-11-18 00:00:42 KST에 저장한 board 스냅샷(history/20261118-round3-close/board_final.json). 
+이후 공개 board는 종료 후 보증 환불 등이 반영되며 26/46(`student_pct` 0.444)으로 표시된다. 최종 순위는 교수 측 23:59 board 기준을 따른다.
 
-## 2. 구조의 독창성 (30%)
+| 구분 | 지표 | 10주차 기준 (`11-13 01:23`) | Round 3 최종 (`11-18 00:00`) | 변화 |
+| :--- | :--- | :---: | :---: | :---: |
+| **Shop** | 누적 정산 수 | 17,732건 | **18,894건** | +1,162건 |
+| | `Book` | 534,315,510 | **543,134,314** | +8,818,804 |
+| | 매출 | 3,493,464,080 | **3,619,826,685** | +126,362,605 |
+| | 별점 (`stars` / `stars_rank`) | 4.56 / 4.34 | **4.56 / 4.37** | +0.03 |
+| | `Shop ALL` (전체 / 학생) | 0.775 / 0.724 | **0.734 / 0.653** | -0.041 / -0.071 |
+| **Buyer** | 누적 정산 수 | 17,954건 | **20,577건** | +2,623건 |
+| | `Saved` | 0.6615 | **0.6752** | +0.0137 |
+| | `Surplus` (누적 절감액) | — | **4,265,381,179** (전체 2위) | — |
+| | 게시판 평점 / 글 수 | — | **0.904 / 2,536건** | — |
+| | `Buyer ALL` (전체 / 학생) | 0.657 / 0.599 | **0.551 / 0.456** | -0.106 / -0.143 |
+| **Players** | 전체 합산 (`total`, 순위) | 1.432 | **1.285 (#28 / 72)** | -0.147 |
+| | **Class View (`student_total`, 순위, 백분위)** | **1.323 (#17 / 46, 64.4%)** | **1.109 (#25 / 46, 46.7%)** | -0.214 (▼8) |
 
-[architecture.tex](architecture.tex)는 협상과 결제를 분리한다. **시장 주문 → buyer kit → 우리 buyer ↔ 상대 seller A2A**, 그 뒤 **buyer의 `{shop, receipt, accept, ...}` → buyer kit ACP/AP2 client → 상대 shop ACP server → 시장 `/api/settle`**이다. buyer kit가 시장에 직접 정산 요청하는 것으로 그리지 않는다(K:360–365,493–537). 컨텍스트는 kit의 `.market` 스냅샷 외에 **restock → store의 공개 원장 GET → hub 반영** 경로가 있다(S `restock.py:161–188`, `store.py:401–415,450–468`). hub는 현행 seller/cash policy와 buyer/restock에, `memory.json`은 buyer에 직접 입력된다. seller_history legacy 경로는 현행 feed와 분리했다. 우리 seller의 A2A/영수증 발행은 별도 역할이며 그림은 자기 가게 거래를 뜻하지 않는다.
+절대 지표(`Book` +882만, 매출 +1.26억, `stars_rank` +0.03, `Saved` +0.0137)는 모두 상승했으나 상대 순위는 하락했다. 같은 기간 ① 후반 신규 진입 Buyer들이 과거 파손 누적 없이 높은 `Saved` 백분위를 기록했고, ② 11/16~11/17 마감 전 조기 청산 로직으로 약 28시간 동안 매입·원장 수집이 중단되었다. 두 요인이 순위 하락에 각각 얼마나 기여했는지는 검증하지 못했다.
 
-키트 기본 결제 경로 위에 조건부 가격/위험 정책, bounded shared hub, 수급·후기·게시 feedback, 별도 append journal을 연결한 점이 추가 구조다. working memory와 감사 journal, 수급 예산 예약과 협상 unit 예약을 분리한다. 운영 cash policy는 **588행 단일 파일**이며 로컬 refactor를 독립 운영 노드로 그리지 않았다.
+### 3.2 거부·거절 사유별 횟수 집계
 
-그림은 **AI 작성 초안**이다. 과제의 “직접 그린” 요구 충족을 주장하지 않는다. 학생이 실제 화살표와 경계를 확인·수정하고 설명해야 한다. 메인의 `Get-Command` 확인 결과 `pdflatex`, `xelatex`, `lualatex`, `tectonic` 모두 **현재 PATH에서 발견되지 않았다**(2026-11-13 handoff). 시스템 전체 미설치를 뜻하지 않는다. 설치·환경 변경 없이 **PDF 미빌드, architecture.pdf 미산출**, 1페이지·폰트·텍스트·렌더 검증 미실행 상태다.
+1. **결제 단계 거부 사유 (종료 시점 사본 [history/20261118-round3-close/market/payments.jsonl](history/20261118-round3-close/market/payments.jsonl), 원본 `.market/payments.jsonl` 전체 22,675건 중 결제 성공 20,574건 / 미결제 2,101건)**:
 
-### 실패·정정 과정과 인과 해석
+| 거부 / 미결제 사유 | 횟수 | 비중 (미결제 대비) |
+| :--- | :---: | :---: |
+| 유통기한·잔여시간 조건 미달 (`shelf life / expiry mismatch`) | 1,222 | 58.2% |
+| 체크아웃 시점 재고 소진 (`checkout refused: 409 unit not in stock`) | 606 | 28.8% |
+| 시장 인증서 미첨부 거절 (`not paying: no certificate`) | 123 | 5.9% |
+| 시장 정산 거부 (`payment refused by market: 402`) | 92 | 4.4% |
+| ACP 엔드포인트 호스트 불일치 (`ACP endpoint host mismatch`) | 43 | 2.0% |
+| 상대 가게 서버 오류 (`HTTP 4xx/5xx`) | 12 | 0.6% |
+| 기타 (네트워크 끊김·타임아웃 등) | 3 | 0.1% |
 
-- 기존 보고서의 300초 운영 TTL, “100% 정산”, 구버전 가격전략을 현재 사실로 재사용하지 않았다. 원문과 Git 역사는 보존 대상이다.
-- step2의 허브 크기 검증 실패와 visibility 실패는 [동일 구현 기록](history/20261109-buyer-saved-strategy-step2/IMPLEMENTATION.md)에 남겼다. 크기 제한을 높이거나 오래된 실패 로그를 고쳐 성공처럼 만들지 않는다.
-- [11월 9일 배포 기록](history/20261109-buyer-saved-strategy-deploy-01/DEPLOYMENT.md)(93–116행)은 최초 관측 일부가 교체 전이라는 사실을 정정하고 별도 post 관측을 남겼다. 자연 journal append는 collector 건강 근거이지 새 정책 선택·실거래 개선의 증명이 아니다.
-- Saved와 normalized surplus를 동일시한 해석은 step1에서 분리했다. 공식 합계는 coverage 미확인 때문에 `official_saved=null`, `complete=false`를 유지한다.
-- 오프라인 회귀 통과 기록이 있더라도 순위·수익 상승의 인과효과는 **미검증**이다. 이번에는 테스트를 재실행하지 않았다.
+2. **최신 실행 로그 ([logs/market-kit.log](logs/market-kit.log), 8,497줄, `13:38~15:02 UTC`) 집계**:
+   - 정산 및 거래 체결: `[acp] settled` **36건**, `[acp] paid` **24건**, `[seller] [r3-deal]` **61건**, 게시판 게시 `200 OK` **12건** (Shop 3건, Buyer 9건)
+   - 협상 단계 거절·실패: 재고 부족(`out of stock`) **301건**, 가격·기대 절감률 정책 거절(`declined-price-policy`) **115건**, 타임아웃(`timeout`) **114건**
 
-## 3. Round 3 결과 (30%)
+### 3.3 실행 로그 원문 인용 ([logs/market-kit.log](logs/market-kit.log))
 
-출처: **https://market.ourolabs.ai/api/board**, 기존 수집의 **2026-11-13 01:23:22 KST**(11월 12일 16:23:22 UTC), HTTP 200, round/current=3. 아래는 M 저장본을 인용하며 이번에 재조회하지 않았다.
+**Shop / Buyer 정산 완료 및 판매 체결 로그:**
+```text
+14:50:39 [acp] settled 비비고 저염 사골곰탕 500g x18개 at 12906, ledger #7893964, unit u-ff95eeca441e grade C
+14:56:02 [acp] settled 너츠브라더 조아단짠 믹스넛 1kg 용기 믹스너트 at 14030, ledger #7895473, unit u-7ad7d66fa65e grade A
+14:56:38 [acp] paid 24857 through https://pastor-adds-palace-calls.trycloudflare.com/acp, settled at ledger #7895624: 수명연장제 절화 생화 1L 꽃연장스프레이 꽃수명연장 생화수명스프레이, grade A
+14:58:29 [acp] paid 17989 through https://loading-acne-else-buildings.trycloudflare.com/acp, settled at ledger #7896061: 해신수산 라면전복 40~70미 1kg, grade C, 10.6 h of shelf life left
+14:56:35 [seller] [r3-deal] Sold G785670a2 (현대의료기 N2012SF 황토숯볼 흙쇼파 카우치) unit=u-0a1d4abc3265 at 388264 (cost=268913, gross_before_refunds=119351, grade=B, warranty=6h, task=20cba060-b750-477b-a6ac-c2ca4c5aaed4, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+```
 
-| 지표 | 관측값 |
-|---|---:|
-| shop 누적 정산 | 17,732 |
-| buyer 누적 정산 | 17,954 |
-| shop ALL / buyer ALL | 0.775 / 0.657 |
-| Players total | 1.432 |
-| 학생 Players 순위 | 17 / 46 |
-| student_total / student_pct | 1.323 / 0.644 (64.4%) |
-
-17/46은 학생 `student_total` 내림차순 경쟁순위다. 전체 Players total과 학생 지표를 섞지 않는다. **shop·buyer 각각20건 조건은 이 관측에서 충족**하지만 종료시각 최종 순위·점수도, 제출 완료 증거도 아니다.
-
-### 정산·거부 로그 인용의 범위
-
-E/M의 VM `market-kit.log.1`과 `market-kit.log` **각 끝4 MiB**(두 tail 사이 공백 있음)에서 seller settled 3줄, buyer paid 6줄, checkout refused 2줄을 집계했다. 누적 board 값이 아니며 seller+buyer를 고유 거래9건으로 합하지 않는다.
-
-같은 원문 줄의 안전한 부분 문자열 인용([추출본](history/20261113-submission-alignment-01/logs/settlement-substrings-excerpt.txt)); 시계에 날짜/시간대 자체가 없어 KST로 임의 변환하지 않는다. `…`는 원문 생략이다.
-
-- `.log.1` 15:43:24: `[acp] settled` … `ledger #5703603`
-- `.log` 16:23:08: `[acp] paid` … `ledger #5714330`
-
-거부 관련 문구(부분 범위, 비배타적 포함 줄 수): `out of stock` 51, `timeout` 43, `declined-price-policy` 31, `nonpositive expected Saved` 31, `not paying:` 1. 두 price-policy 문구는 겹칠 수 있다. broad timeout/stock 문구는 고유 실패 주문 수나 시장 정산 거부 코드가 아니다. **거부 사유의 전체 원문 줄 인용은 아직 확보하지 못했다.** `settle-refused` 0줄은 전체 운영 오류0을 뜻하지 않는다.
-
-## 제출 미완료 사항
-
-1. 기존 로컬 `logs/market-kit.log`는 11월 5일 파일이며 최신 VM 전체 원본과 다르다. 위 excerpt는 필수 원본 로그를 대체하지 않는다. 별도 승인 아래 최신 원본 확보·민감정보 검토가 필요하다.
-2. [runtime manifest](history/20261113-submission-alignment-01/runtime-manifest.json)와 allowlist source mirror는 재현 증거다. **최종 제출 코드의 VM 동일성은 미완료**: 정규화 기준9개 동일/6개 차이, VM에 없는 로컬 파일7개([차이 목록](history/20261113-submission-alignment-01/pending-differences.md)). 다음 승인 없이 로컬 전체를 VM에 덮어쓰거나 재배포하지 않는다.
-3. 메인 확인에서 LaTeX 엔진4종은 현재 PATH에 없었다. PDF 미빌드이며 기존 설치 엔진의 허용된 경로가 확인될 경우에만 빌드·1페이지/폰트/텍스트/렌더 검증을 진행한다. 학생 검토, 최종 시점 지표/거부 원문 및 PR 개설 확인도 남았다. [제출 체크리스트](SUBMISSION_CHECKLIST.md)를 따른다. 이번 checkout에는 week08 README/checker가 없어 week07 checker로 대체하지 않았다.
+**정책 거부, 재고 부족 및 라운드 종료 로그:**
+```text
+14:56:58 [buyer] "[buyer] [attempt 3/3] failed: No deal: declined-price-policy for G07ec17d5; invalid terms or nonpositive expected Saved."
+14:58:55 [buyer] "[buyer] [attempt 3/3] failed: No deal: dragonash had no stock of G00327e80 (seller said out of stock)."
+15:02:11 [market] order failed: 503 {"error":"Round 3 ended at 2026-11-17 23:59 KST. The market is paused until Round 4 opens on 2026-11-24 at 19:00 KST."}
+```
