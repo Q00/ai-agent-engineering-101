@@ -13,4 +13,10 @@
 - check_week08.py: 로컬과 최신 upstream에 없어 실행했다고 주장하지 않음
 - 공개할 과거 Git blob1317개, 약163MB에 대해 키·등록 코드 패턴 검사 결과 후보0
 - 루트 logs/market-kit.log는 배포 로그의 고정 사본을 제출 전용 브랜치에 포함. 운영 중인 원본은 수정하지 않음
-- 원격 제출 상태: 검증 후 PR 개설 및 원격 파일·CI 확인 진행 중
+- 원격 제출: [PR #409](https://github.com/Q00/ai-agent-engineering-101/pull/409), 제목 `[week-08] 26510122`, open / 일반 PR
+- PR 개설: **2026-11-22 14:47:24 KST**, 11월23일23:59 제출 마감 전
+- 최초 제출 head: e2b13a3e77fc094707925aae72e0471279a1ec8f
+- 원격 변경732개 모두 본인 제출 폴더. REPORT.md / agent.json / architecture.tex / architecture.pdf / logs/market-kit.log 포함 확인
+- 최초 GitHub 자동 검사: [pr-check #744](https://github.com/Q00/ai-agent-engineering-101/actions/runs/44990910715) 성공
+- 최신 검사와 병합 상태는 [PR 검사 화면](https://github.com/Q00/ai-agent-engineering-101/pull/409/checks)에서 확인. 제출은 PR 개설 기준이며 교수자의 병합과 구분
+- 기본 브랜치 병합·운영 재배포·DB 초기화는 수행하지 않음
