@@ -12,16 +12,27 @@ settlement and the market contract are not policy and cannot be changed here.
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import time
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING, Final, Literal
 
 from pydantic import Field, JsonValue, ValidationError
 
 from market_a2a.models import FrozenModel
+from r3.policy_storage import (
+    SnapshotConflictError,
+    coherent_snapshot,
+    locked,
+    read_expiries,
+    read_previous_snapshot,
+    reader_lock,
+    write_snapshot,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -45,8 +56,15 @@ TACTICAL_FIELDS: Final = frozenset(
         "buyer.quick_accept_ratio",
         "buyer.late_accept_share",
         "restock.replenish_qty",
+        "restock.depth_skus",
     }
 )
+
+
+# Goods break only within 6 h of a sale (market rule), so a longer warranty costs
+# nothing more. The market refuses a settle whose warranty is above 72 h
+# (claim_and_warranty_well_formed, seen 11/5 13:44 with 8760 h), so 72 is the cap.
+WARRANTY_MAX_HOURS: Final = 72
 
 
 class SellerPolicy(FrozenModel):
@@ -59,6 +77,8 @@ class SellerPolicy(FrozenModel):
     # Owner rule (11/4): stars are 20% of the shop's ALL and ours ranked 32nd of 47.
     # Deals at 0.8+ of list drew 4.3-4.4 stars, 0.6-0.79 drew 4.7-4.8, so no ask
     # opens above this share of list unless the accept line itself is higher.
+    # Live policy holds 0.76 since the 11/4 20:33 trial (market 0.755): dear sales
+    # 69 -> 102/h, margin +37%; the default stays 0.79 for a fresh policy file.
     max_ask_ratio: float = Field(default=0.79, ge=0.50, le=1.00)
     # Owner rule (11/4): every deal brings one review of equal weight, and goods
     # under 50k list made 22% of our deals but 1% of margin (4.2k a deal), so they
@@ -70,6 +90,14 @@ class SellerPolicy(FrozenModel):
     min_margin: float = Field(default=0.05, ge=0.0, le=0.50)
     # Accept any offer at or above cost * (1 + accept_margin) without more rounds.
     accept_margin: float = Field(default=0.15, ge=0.0, le=1.00)
+    # Grade C's own accept margin (None = accept_margin): C breaks about 17% within
+    # the warranty, so its accept line can carry that risk (owner trial, 11/4).
+    accept_margin_c: float | None = Field(default=None, ge=0.0, le=1.00)
+    # High-ticket goods (list >= high_list_price) accept at cost * (1 + this): a
+    # 2.3M unit bought at 70-80 % of list sat at 0.90-1.03 of list on the 29 %
+    # margin while the market paid ~0.79 (11/5); 8 % of cost is still ~130k each.
+    high_list_price: int = Field(default=1_000_000, ge=0, le=100_000_000)
+    accept_margin_high: float | None = Field(default=None, ge=0.0, le=1.00)
     # Each counter moves this share of the way from the ask toward the accept line.
     concession: float = Field(default=0.30, ge=0.05, le=1.00)
     max_rounds: int = Field(default=5, ge=1, le=12)
@@ -80,9 +108,9 @@ class SellerPolicy(FrozenModel):
     stale_goods_hours: float = Field(default=168.0, ge=1.0, le=720.0)
     stale_markup_cut: float = Field(default=0.10, ge=0.0, le=0.50)
     # Warranty hours promised per grade of goods; 0 means no warranty.
-    warranty_a: int = Field(default=6, ge=0, le=24)
-    warranty_b: int = Field(default=0, ge=0, le=24)
-    warranty_c: int = Field(default=0, ge=0, le=24)
+    warranty_a: int = Field(default=6, ge=0, le=WARRANTY_MAX_HOURS)
+    warranty_b: int = Field(default=0, ge=0, le=WARRANTY_MAX_HOURS)
+    warranty_c: int = Field(default=0, ge=0, le=WARRANTY_MAX_HOURS)
     claim_grade: bool = True
     # A food grade claim must match the grade at checkout or at settlement. When the
     # grade would change within this horizon, the claim is omitted instead of guessed.
@@ -118,6 +146,9 @@ class BuyerPolicy(FrozenModel):
     # Never pay more than this share of the shipped SKU's list price.
     max_price_ratio: float = Field(default=0.95, ge=0.20, le=1.00)
     max_rounds: int = Field(default=4, ge=1, le=10)
+    # Owner emergency 11/7-11/8: a purchase must add at least this expected Saved
+    # credit; 0.34 first, 0.30 once the final average (~0.28) set the right line.
+    min_expected_credit: float = Field(default=0.34, ge=0.25, le=0.50)
     # Extra shelf life demanded beyond the order's use_within_hours.
     food_margin_hours: float = Field(default=1.0, ge=0.0, le=48.0)
     require_cert: bool = True
@@ -144,7 +175,14 @@ class BuyerPolicy(FrozenModel):
     # Stage 1 of the owner's bandit rollout (11/4): rank shops on a Thompson draw
     # of "has the listed stock" x "our payment goes through" instead of the means.
     # A policy switch, so a bad hour is undone without a deploy.
-    thompson: bool = True
+    thompson: bool = False
+    # The ranking prices a shop by the surplus it leaves us, (1 - its usual paid
+    # share of list) / (1 - ours), instead of a +-20 % nudge: Thompson's failure
+    # (11/4) showed the cheap-shop signal was too weak to steer the choice.
+    surplus_score: bool = True
+    # Ask the two best-ranked shops for a first quote at once and negotiate with
+    # the one leaving more surplus (the market's top buyer asks three; 11/4).
+    dual_quote: bool = True
 
 
 class RestockPolicy(FrozenModel):
@@ -156,7 +194,21 @@ class RestockPolicy(FrozenModel):
     seed_budget: int = Field(default=2_500_000, ge=0)
     stock_share: float = Field(default=0.7, ge=0.0, le=0.9)
     units_per_sku: int = Field(default=1, ge=1, le=20)
-    max_units: int = Field(default=400, ge=1, le=5000)
+    # Broaden coverage independently of the per-SKU twenty-unit holding limit.
+    # Owner 11/5: the first expansion adds five market-ranked replenishment SKUs.
+    depth_skus: int = Field(default=6, ge=1, le=25)
+    # Growth is bounded by existing cash, stock, food and endgame limits.
+    growth_enabled: bool = True
+    cover_hours: float = Field(default=0.67, ge=0.34, le=2.0)
+    probe_qty: int = Field(default=1, ge=1, le=3)
+    # Owner-listed trial SKUs keep a small total position across all buy paths.
+    # Empty preserves existing policies; clear a SKU only after reviewing it.
+    probe_skus: tuple[str, ...] = ()
+    price_bands: int = Field(default=3, ge=1, le=3)
+    min_mature_sales: int = Field(default=20, ge=5, le=100)
+    max_units: int = Field(
+        default=400, ge=1, le=8000
+    )  # 5000 -> 6500 09:4x -> 8000 13:2x
     min_food_shelf_hours: int = Field(default=720, ge=24, le=720)
     food_min_list_price: int = Field(default=5_000, ge=0)
     food_max_list_price: int = Field(default=60_000, ge=0)
@@ -192,7 +244,7 @@ class TacticalOverlay(FrozenModel):
     """Bounded, time-limited changes on top of the strategy values."""
 
     changes: dict[str, JsonValue] = Field(
-        default_factory=dict, max_length=MAX_TACTICAL_CHANGES
+        default_factory=dict, max_length=len(TACTICAL_FIELDS)
     )
     reason: str = Field(default="", max_length=300)
     applied_at: float = 0.0
@@ -213,6 +265,7 @@ class PolicyHistory(FrozenModel):
     strategy: Policy | None = None
     tactical: TacticalOverlay | None = None
     bands: dict[str, Band] = Field(default_factory=dict)
+    field_expiries: dict[str, float] = Field(default_factory=dict, exclude=True)
 
     def base(self) -> Policy:
         """Return the strategy layer's policy without any tactical overlay."""
@@ -287,40 +340,123 @@ def policy_path(market_dir: Path | None = None) -> Path:
     return base.resolve().parent / POLICY_FILE
 
 
+class PolicyConflictError(ValueError):
+    """A policy changed after the caller read its expected revision."""
+
+
+def _check_version(history: PolicyHistory, expected_version: int | None) -> None:
+    if expected_version is not None and history.current.version != expected_version:
+        message = (
+            f"Policy conflict: expected {expected_version}, "
+            f"found {history.current.version}"
+        )
+        raise PolicyConflictError(message)
+
+
 def load_history(path: Path) -> PolicyHistory:
-    """Return the full history or a default history when none exists."""
+    """Read coherently using a shared lock or verified immutable-snapshot reads."""
+    with reader_lock(path) as acquired:
+        if acquired:
+            return _load_history(path)
+        try:
+            snapshot = coherent_snapshot(path)
+        except FileNotFoundError:
+            return PolicyHistory(current=Policy())
+        except (SnapshotConflictError, ValidationError) as error:
+            message = "Policy snapshot metadata is inconsistent"
+            raise PolicyConflictError(message) from error
+        history = PolicyHistory.model_validate_json(snapshot.raw)
+        return _with_expiries(history, snapshot.expiries)
+
+
+def _load_history(path: Path) -> PolicyHistory:
+    """Read one consistent snapshot while the caller owns the process lock."""
     try:
-        return PolicyHistory.model_validate_json(path.read_bytes())
-    except (OSError, ValidationError, ValueError):
+        raw = path.read_bytes()
+    except OSError:
         return PolicyHistory(current=Policy())
+    try:
+        history = PolicyHistory.model_validate_json(raw)
+    except (ValidationError, ValueError):
+        salvaged = _salvage_history(raw)
+        if salvaged is None:
+            return PolicyHistory(current=Policy())
+        history = salvaged
+    expiries = read_expiries(path, hashlib.sha256(raw).hexdigest())
+    return _with_expiries(history, expiries)
+
+
+def _salvage_history(raw: bytes) -> PolicyHistory | None:
+    """Keep the live policy when only an old version or a band fails validation.
+
+    11/5 14:05: a tighter warranty bound (72 h) made the previous version (8760 h)
+    invalid, the whole file read as defaults, and the next save wrote over the
+    real policy. Old versions, bands and an overlay that no longer validate are
+    dropped; the file still reads as defaults only when ``current`` itself fails.
+    """
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    kept: list[object] = []
+    for old in data.get("previous") or []:
+        try:
+            _ = Policy.model_validate(old)
+        except ValidationError:
+            continue
+        kept.append(old)
+    data["previous"] = kept[:MAX_HISTORY]
+    bands = data.get("bands") or {}
+    good: dict[str, object] = {}
+    for key, band in bands.items() if isinstance(bands, dict) else []:
+        try:
+            _ = Band.model_validate(band)
+        except ValidationError:
+            continue
+        good[key] = band
+    data["bands"] = good
+    for optional in ("strategy", "tactical"):
+        try:
+            _ = PolicyHistory.model_validate({**data, optional: data.get(optional)})
+        except ValidationError:
+            data[optional] = None
+    try:
+        return PolicyHistory.model_validate(data)
+    except ValidationError:
+        return None
+
+
+def _with_expiries(history: PolicyHistory, expiries: dict[str, float]) -> PolicyHistory:
+    overlay = history.tactical
+    if overlay is not None:
+        expiries = {
+            key: expiries.get(key, overlay.expires_at) for key in overlay.changes
+        }
+    return history.model_copy(update={"field_expiries": expiries})
 
 
 def load_policy(path: Path, now: float | None = None) -> Policy:
-    """Return the effective policy; an expired tactical overlay yields the base.
-
-    A missing or invalid file yields the defaults, so a trade never waits on the
-    manager.
-    """
+    """Return only tactical fields still live at the observation time."""
     history = load_history(path)
-    stamp = now if now is not None else time.time()
-    overlay = history.tactical
-    if overlay is not None and stamp >= overlay.expires_at:
-        return history.base()
-    return history.current
+    if history.tactical is None:
+        return history.current
+    effective = apply_changes(
+        history.base(),
+        carried_changes(history, now if now is not None else time.time()),
+    )
+    return effective.model_copy(
+        update={
+            "version": history.current.version,
+            "updated_at": history.current.updated_at,
+            "reason": history.current.reason,
+        }
+    )
 
 
 def _write(path: Path, history: PolicyHistory) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with NamedTemporaryFile(
-        mode="w", encoding="utf-8", dir=path.parent, delete=False
-    ) as stream:
-        temporary = Path(stream.name)
-        try:
-            _ = stream.write(history.model_dump_json(indent=1))
-            stream.flush()
-            _ = temporary.replace(path)
-        finally:
-            temporary.unlink(missing_ok=True)
+    write_snapshot(path, history.model_dump_json(indent=1), history.field_expiries)
 
 
 def _stamp(candidate: Policy, version: int, reason: str) -> Policy:
@@ -354,40 +490,104 @@ def validate_bands(bands: Mapping[str, Band], base: Policy) -> dict[str, Band]:
     return accepted
 
 
+@locked
 def save_policy(
     path: Path,
     candidate: Policy,
     reason: str,
     *,
     bands: Mapping[str, Band] | None = None,
+    expected_version: int | None = None,
 ) -> Policy:
-    """Publish a strategy version: it becomes the base and clears any tactical overlay.
+    """Publish changed strategy fields while preserving unrelated live overlays."""
+    history = _load_history(path)
+    _check_version(history, expected_version)
+    changes = {
+        f"{section}.{field}": field_value(candidate, f"{section}.{field}")
+        for section, model in SECTIONS.items()
+        for field in model.model_fields
+        if field_value(candidate, f"{section}.{field}")
+        != field_value(history.base(), f"{section}.{field}")
+    }
+    base = apply_changes(history.base(), changes)
+    kept = validate_bands(bands, base) if bands is not None else history.bands
+    overlay_changes = dict(history.tactical.changes) if history.tactical else {}
+    for key in changes:
+        _ = overlay_changes.pop(key, None)
+    return _publish(
+        path,
+        history,
+        _Publication(base, overlay_changes, history.field_expiries, kept),
+        reason,
+    )
 
-    Keeps two previous effective versions for rollback. ``bands`` replaces the
-    tactical bands when given; otherwise the stored bands stay.
-    """
-    history = load_history(path)
-    current = history.current
-    stamped = _stamp(candidate, current.version + 1, reason)
-    kept = validate_bands(bands, stamped) if bands is not None else history.bands
+
+@dataclass(frozen=True, slots=True)
+class _Publication:
+    base: Policy
+    changes: dict[str, JsonValue]
+    expiries: dict[str, float]
+    bands: dict[str, Band]
+    applied_at: float | None = None
+
+
+def _publish(
+    path: Path, history: PolicyHistory, update: _Publication, reason: str
+) -> Policy:
+    base, changes = update.base, update.changes
+    expiries, bands = update.expiries, update.bands
+    stamped = _stamp(apply_changes(base, changes), history.current.version + 1, reason)
+    expiries = {key: expiries[key] for key in changes}
+    overlay = (
+        TacticalOverlay(
+            changes=changes,
+            reason=reason[:300],
+            applied_at=(
+                update.applied_at
+                if update.applied_at is not None
+                else history.tactical.applied_at
+                if history.tactical
+                else time.time()
+            ),
+            expires_at=min(expiries.values()),
+            version=stamped.version,
+        )
+        if changes
+        else None
+    )
     _write(
         path,
         PolicyHistory(
             current=stamped,
-            previous=(current, *history.previous)[:MAX_HISTORY],
-            strategy=stamped,
-            tactical=None,
-            bands=kept,
+            previous=(history.current, *history.previous)[:MAX_HISTORY],
+            strategy=base,
+            tactical=overlay,
+            bands=bands,
+            field_expiries=expiries,
         ),
     )
     return stamped
 
 
-def save_bands(path: Path, bands: Mapping[str, Band]) -> dict[str, Band]:
-    """Replace the tactical bands only: no new version, the overlay stays."""
-    history = load_history(path)
+@locked
+def save_bands(
+    path: Path, bands: Mapping[str, Band], *, expected_version: int | None = None
+) -> dict[str, Band]:
+    """Replace bands under the same revision lock as policy values."""
+    history = _load_history(path)
+    _check_version(history, expected_version)
     kept = validate_bands(bands, history.base())
-    _write(path, history.model_copy(update={"bands": kept}))
+    _ = _publish(
+        path,
+        history,
+        _Publication(
+            history.base(),
+            dict(history.tactical.changes) if history.tactical else {},
+            history.field_expiries,
+            kept,
+        ),
+        "bands updated",
+    )
     return kept
 
 
@@ -419,19 +619,22 @@ def strategy_changes(changes: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
     return dict(changes)
 
 
-def save_tactical(
+@locked
+def save_tactical(  # noqa: PLR0913 - preserves existing API plus optimistic revision
     path: Path,
     changes: Mapping[str, JsonValue],
     reason: str,
     *,
     now: float | None = None,
     ttl: float = TACTICAL_TTL_SECONDS,
+    expected_version: int | None = None,
 ) -> Policy:
     """Apply at most three tactical changes inside their bands for ``ttl`` seconds."""
     if len(changes) > MAX_TACTICAL_CHANGES:
         message = f"At most {MAX_TACTICAL_CHANGES} tactical changes per step"
         raise ValueError(message)
-    history = load_history(path)
+    history = _load_history(path)
+    _check_version(history, expected_version)
     base = history.base()
     stamp = now if now is not None else time.time()
     for key, value in changes.items():
@@ -445,56 +648,109 @@ def save_tactical(
         if not band.low <= float(value) <= band.high:
             message = f"Tactical value outside its band: {key}"
             raise ValueError(message)
-    effective = apply_changes(base, dict(changes))
-    stamped = _stamp(effective, history.current.version + 1, f"tactical: {reason}")
-    overlay = TacticalOverlay(
-        changes=dict(changes),
-        reason=reason[:300],
-        applied_at=stamp,
-        expires_at=stamp + ttl,
-        version=stamped.version,
-    )
-    _write(
+    # A live overlay's other fields stay: a new step adds to it rather than
+    # wiping it (11/5 05:38 a buyer step erased the 05:23 idle-cash depth rise).
+    merged = carried_changes(history, stamp)
+    expiries = dict(history.field_expiries)
+    for key, value in changes.items():
+        if merged.get(key) != value:
+            expiries[key] = stamp + ttl
+        merged[key] = value
+    return _publish(
         path,
-        PolicyHistory(
-            current=stamped,
-            previous=(history.current, *history.previous)[:MAX_HISTORY],
-            strategy=base,
-            tactical=overlay,
-            bands=history.bands,
-        ),
+        history,
+        _Publication(base, merged, expiries, history.bands, stamp),
+        f"tactical: {reason}",
     )
-    return stamped
 
 
-def expire_tactical(path: Path, now: float | None = None) -> Policy | None:
-    """Drop an expired overlay from the file; return the base when one was dropped."""
-    history = load_history(path)
+def carried_changes(history: PolicyHistory, now: float) -> dict[str, JsonValue]:
+    """Return the live overlay's changes that still sit inside their bands."""
     overlay = history.tactical
-    stamp = now if now is not None else time.time()
-    if overlay is None or stamp < overlay.expires_at:
+    if overlay is None:
+        return {}
+    base = history.base()
+    kept: dict[str, JsonValue] = {}
+    for key, value in overlay.changes.items():
+        if now >= history.field_expiries.get(key, overlay.expires_at):
+            continue
+        if key not in TACTICAL_FIELDS or isinstance(value, bool):
+            continue
+        if not isinstance(value, (int, float)):
+            continue
+        band = history.bands.get(key) or default_band(key, base)
+        if band.low <= float(value) <= band.high:
+            kept[key] = value
+    return kept
+
+
+@locked
+def expire_tactical(
+    path: Path, now: float | None = None, *, expected_version: int | None = None
+) -> Policy | None:
+    """Remove only expired tactical fields, retaining other deadlines."""
+    history = _load_history(path)
+    _check_version(history, expected_version)
+    overlay = history.tactical
+    if overlay is None:
         return None
-    base = _stamp(history.base(), history.current.version + 1, "tactical expired")
-    _write(
+    live = carried_changes(history, now if now is not None else time.time())
+    if live == overlay.changes:
+        return None
+    return _publish(
         path,
-        PolicyHistory(
-            current=base,
-            previous=(history.current, *history.previous)[:MAX_HISTORY],
-            strategy=base,
-            tactical=None,
-            bands=history.bands,
-        ),
+        history,
+        _Publication(history.base(), live, history.field_expiries, history.bands),
+        "tactical expired",
     )
-    return base
 
 
-def rollback_policy(path: Path, reason: str) -> Policy | None:
-    """Make the previous version active again; the ledger of past trades stays."""
-    history = load_history(path)
-    if not history.previous:
+@locked
+def rollback_policy(
+    path: Path,
+    reason: str,
+    *,
+    fields: tuple[str, ...] = (),
+    expected_values: Mapping[str, JsonValue] | None = None,
+    expected_version: int | None = None,
+) -> Policy | None:
+    """Restore explicitly scoped fields only if their expected values still match."""
+    history = _load_history(path)
+    _check_version(history, expected_version)
+    if not history.previous or not fields:
         return None
-    restored = history.previous[0]
-    return save_policy(path, restored, f"rollback: {reason}")
+    if expected_values is None or any(
+        key not in expected_values
+        or field_value(history.current, key) != expected_values[key]
+        for key in fields
+    ):
+        message = "Rollback requires matching expected values for every scoped field"
+        raise PolicyConflictError(message)
+    prior_raw = read_previous_snapshot(path)
+    if prior_raw is None:
+        message = "Scoped rollback requires preserved layer metadata"
+        raise PolicyConflictError(message)
+    prior = PolicyHistory.model_validate_json(prior_raw)
+    if prior.current.version != history.previous[0].version:
+        message = "Rollback checkpoint no longer matches previous revision"
+        raise PolicyConflictError(message)
+    prior_expiries = read_expiries(path, hashlib.sha256(prior_raw.encode()).hexdigest())
+    changes = {key: field_value(prior.base(), key) for key in fields}
+    base = apply_changes(history.base(), changes)
+    overlay = dict(history.tactical.changes) if history.tactical else {}
+    expiries = dict(history.field_expiries)
+    for key in fields:
+        _ = overlay.pop(key, None)
+        _ = expiries.pop(key, None)
+        if prior.tactical is not None and key in prior.tactical.changes:
+            overlay[key] = prior.tactical.changes[key]
+            expiries[key] = prior_expiries.get(key, prior.tactical.expires_at)
+    return _publish(
+        path,
+        history,
+        _Publication(base, overlay, expiries, history.bands),
+        f"rollback: {reason}",
+    )
 
 
 def apply_changes(policy: Policy, changes: dict[str, JsonValue]) -> Policy:

@@ -1,7 +1,7 @@
 """Leaders' table: how the top shops and buyers win, next to our own numbers.
 
-Every thirty minutes the manager takes the board's ten most profitable shops and
-ten best buyers by surplus, looks them up in the public-ledger mirror it already
+Every thirty minutes the manager takes the Class's leading shops by Book and
+buyers by Saved, looks them up in the public-ledger mirror it already
 keeps, and computes what can be measured without talking to them: settlements,
 price as a share of list, how many categories, how much food, dishonest grade
 claims, and how much of their volume is trade between agents of the same owner.
@@ -22,6 +22,9 @@ from typing import TYPE_CHECKING, Final
 
 from r3.guard import sanitize_name
 
+# Reuse the graded Class identity contract instead of maintaining a second copy.
+from r3.standing import board_owner, board_rows, class_rows, finite_number
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -34,6 +37,7 @@ HISTORY: Final = "r3-benchmark.jsonl"
 TOP_N: Final = 10
 SELF_TRADE_LIMIT: Final = 0.3
 DISHONEST_LIMIT: Final = 0.05
+SELECTION_VERSION: Final = "class_book_saved_v1"
 
 
 def benchmark_path(market_dir: Path | None = None) -> Path:
@@ -43,11 +47,6 @@ def benchmark_path(market_dir: Path | None = None) -> Path:
         return Path(configured)
     base = market_dir if market_dir is not None else Path(".market")
     return base.resolve().parent / LATEST
-
-
-def _login(row: Mapping[str, object]) -> str:
-    owner = row.get("owner")
-    return str(owner.get("login", "")) if isinstance(owner, dict) else ""
 
 
 def _num(value: object) -> float:
@@ -60,19 +59,59 @@ def _num(value: object) -> float:
 def leaders(
     board: Mapping[str, object], key: str, metric: str, ours: str
 ) -> list[dict[str, object]]:
-    """Top players (not house agents) of one board table, plus our own row."""
-    rows = board.get(key)
-    players = [
-        r for r in (rows if isinstance(rows, list) else []) if isinstance(r, dict)
+    """Rank active Class representatives, retaining ties and our owner's row."""
+    students = [
+        row
+        for row in board_rows(board, "players")
+        if row.get("student") is True and not row.get("house")
     ]
-    players = [r for r in players if not r.get("house")]
+    owners = {board_owner(row) for row in students}
+    if not owners or "" in owners or len(owners) != len(students):
+        return []
+    selected_shops = class_rows(board, students, "shops", "shop")
+    selected_buyers = class_rows(board, students, "buyers", "buyer")
+    own_owner = next(
+        (
+            board_owner(row)
+            for row in (*selected_shops, *selected_buyers)
+            if row.get("name") == ours
+        ),
+        "",
+    )
+    players = selected_shops if key == "shops" else selected_buyers
+    identities = {(row.get("name"), board_owner(row)) for row in players}
+    if len(identities) != len(players) or any(row.get("house") for row in players):
+        return []
+    if any(not finite_number(row.get("deals")) for row in players):
+        return []
+    if key == "shops" and any(
+        _num(row.get("deals")) == 0 and not finite_number(row.get("stock_units"))
+        for row in players
+    ):
+        return []
+    players = [
+        row
+        for row in players
+        if _num(row.get("deals")) > 0
+        or (key == "shops" and _num(row.get("stock_units")) > 0)
+    ]
+    if any(not finite_number(row.get(metric)) for row in players) or (
+        metric == "saved" and any(_num(row.get(metric)) > 1 for row in players)
+    ):
+        return []
     players.sort(key=lambda r: _num(r.get(metric)), reverse=True)
-    picked = players[:TOP_N]
+    picked = players[:0]
+    rank = 0
+    previous = None
     for index, row in enumerate(players, start=1):
-        row["_rank"] = index
-    if ours and all(str(r.get("name")) != ours for r in picked):
-        mine = [r for r in players if str(r.get("name")) == ours]
-        picked += mine[:1]
+        value = _num(row.get(metric))
+        if value != previous:
+            rank = index
+        row["_rank"] = rank
+        row["_ours"] = bool(own_owner and board_owner(row) == own_owner)
+        if rank <= TOP_N or row["_ours"]:
+            picked.append(row)
+        previous = value
     return picked
 
 
@@ -97,19 +136,16 @@ def build(  # noqa: PLR0913, C901, PLR0915 - one explicit pass
     stamp = now if now is not None else time.time()
     settles = ledger.settles(stamp - hours * 3600)
     warranties = ledger.shop_warranties(stamp - hours * 3600)
-    shops = leaders(board, "shops", "profit", ours)
+    shops = leaders(board, "shops", "book", ours)
     buyers = leaders(board, "buyers", "saved", ours)
     owner_of_buyer = {
-        str(r.get("name")): _login(r)
-        for r in (board.get("buyers") if isinstance(board.get("buyers"), list) else [])  # pyright: ignore[reportGeneralTypeIssues]
-        if isinstance(r, dict)
+        str(r.get("name")): board_owner(r) for r in board_rows(board, "buyers")
     }
     url_to_owner: dict[str, str] = {}
-    for row in board.get("shops") if isinstance(board.get("shops"), list) else []:  # pyright: ignore[reportGeneralTypeIssues]
-        if isinstance(row, dict):
-            url = shop_urls.get(str(row.get("name")), "").rstrip("/")
-            if url:
-                url_to_owner[url] = _login(row)
+    for row in board_rows(board, "shops"):
+        url = shop_urls.get(str(row.get("name")), "").rstrip("/")
+        if url:
+            url_to_owner[url] = board_owner(row)
     by_shop: dict[str, list[tuple[str, str, int, str, str]]] = {}
     by_buyer: dict[str, list[tuple[str, str, int, str, str]]] = {}
     for _, buyer, shop, sku, amount, grade, claim in settles:
@@ -127,7 +163,7 @@ def build(  # noqa: PLR0913, C901, PLR0915 - one explicit pass
     for row in shops:
         name = str(row.get("name"))
         url = shop_urls.get(name, "").rstrip("/")
-        owner = _login(row)
+        owner = board_owner(row)
         sold = by_shop.get(url, [])
         ratios = [r for b, s, a, _g, _c in sold if (r := ratio(s, a)) is not None]
         cats = {catalog[s].category for _b, s, _a, _g, _c in sold if s in catalog}
@@ -159,10 +195,12 @@ def build(  # noqa: PLR0913, C901, PLR0915 - one explicit pass
             {
                 "rank": row.get("_rank"),
                 "name": sanitize_name(name),
-                "ours": name == ours,
+                "ours": row["_ours"],
+                "book": row.get("book"),
                 "profit": row.get("profit"),
                 "revenue": row.get("revenue"),
                 "stars": row.get("stars"),
+                "stars_rank": row.get("stars_rank"),
                 "deals_total": row.get("deals"),
                 f"settles_{int(hours)}h": n,
                 "median_price_to_list": round(statistics.median(ratios), 3)
@@ -186,7 +224,7 @@ def build(  # noqa: PLR0913, C901, PLR0915 - one explicit pass
     buyer_rows: list[dict[str, object]] = []
     for row in buyers:
         name = str(row.get("name"))
-        owner = _login(row)
+        owner = board_owner(row)
         bought = by_buyer.get(name, [])
         ratios = [r for _u, s, a, _g, _c in bought if (r := ratio(s, a)) is not None]
         self_trade = sum(
@@ -199,7 +237,8 @@ def build(  # noqa: PLR0913, C901, PLR0915 - one explicit pass
             {
                 "rank": row.get("_rank"),
                 "name": sanitize_name(name),
-                "ours": name == ours,
+                "ours": row["_ours"],
+                "surplus": row.get("surplus"),
                 "saved": row.get("saved"),
                 "deals_total": row.get("deals"),
                 f"settles_{int(hours)}h": n,
@@ -216,6 +255,14 @@ def build(  # noqa: PLR0913, C901, PLR0915 - one explicit pass
         "ts": round(stamp),
         "round": board.get("round"),
         "window_hours": hours,
+        "scope": "class",
+        "selection_version": SELECTION_VERSION,
+        "rank_metrics": {"shops": "book", "buyers": "saved"},
+        "status": "available" if shops and buyers else "insufficient_class_data",
+        "role_status": {
+            "shops": "available" if shops else "insufficient_class_data",
+            "buyers": "available" if buyers else "insufficient_class_data",
+        },
         "shops": shop_rows,
         "buyers": buyer_rows,
     }
@@ -253,18 +300,38 @@ def load_day_ago(latest: Path, now: float | None = None) -> dict[str, object]:
         return {}
     for line in lines[-200:]:
         try:
-            row = json.loads(line)
+            rows = board_rows({"history": [json.loads(line)]}, "history")
         except ValueError:
             continue
-        if isinstance(row, dict) and abs(_num(row.get("ts")) - target) < gap:
-            gap = abs(_num(row.get("ts")) - target)
-            best = row
+        for row in rows:
+            if (
+                row.get("selection_version") == SELECTION_VERSION
+                and row.get("scope") == "class"
+                and row.get("rank_metrics") == {"shops": "book", "buyers": "saved"}
+                and abs(_num(row.get("ts")) - target) < gap
+            ):
+                gap = abs(_num(row.get("ts")) - target)
+                best = row
     return best if gap <= 6 * 3600 else {}
 
 
 def compact(table: Mapping[str, object], top: int = 5) -> dict[str, object]:
     """Return a short view for prompts: top rows and ours."""
-    out: dict[str, object] = {"ts": table.get("ts"), "round": table.get("round")}
+    out: dict[str, object] = {
+        "ts": table.get("ts"),
+        "round": table.get("round"),
+        "scope": table.get("scope"),
+        "selection_version": table.get("selection_version"),
+        "rank_metrics": table.get("rank_metrics"),
+        "status": table.get("status"),
+        "role_status": table.get("role_status"),
+    }
+    if (
+        table.get("selection_version") != SELECTION_VERSION
+        or table.get("scope") != "class"
+        or table.get("rank_metrics") != {"shops": "book", "buyers": "saved"}
+    ):
+        return {**out, "status": "incompatible_selection", "shops": [], "buyers": []}
     for key in ("shops", "buyers"):
         rows = table.get(key)
         rows = rows if isinstance(rows, list) else []

@@ -17,17 +17,105 @@ from contextlib import closing
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal
 
-if TYPE_CHECKING:
-    from collections.abc import Iterable
+from pydantic import Field, TypeAdapter
 
-    from r3.market_files import PaymentLine
+from market_a2a.models import FrozenModel
+
+if TYPE_CHECKING:
+    from collections.abc import Collection, Iterable
+
+    from r3.market_files import Order, PaymentLine
 
 EVENTS_ENV: Final = "AX_R3_EVENTS"
 EVENTS_FILE: Final = "r3-events.sqlite"
 ROUND_TWO: Final = 2
+_TIMEOUT_COUNTS: Final = TypeAdapter(list[tuple[str, int]])
+_ATTEMPT_TIMES: Final = TypeAdapter(list[tuple[str, str, str, float]])
+_CLOSE_ROWS: Final = TypeAdapter(list[tuple[str, str, int, int]])
+_YIELD_ROWS: Final = TypeAdapter(list[tuple[str, str, str, float, str | None]])
+# A shop that rarely sells to us and takes long to say so spends the order's
+# seconds other shops could use. 11/10 09:30-15:30: seven such shops won 3 of 409
+# tries yet took 2,400 of 8,233 try-seconds (29 %), while olstjr took 5.9 s a try
+# and won 53 %, so speed alone is not the test.
+FRUITLESS_MIN_TRIES: Final = 10
+FRUITLESS_MAX_WIN: Final = 0.03
+FRUITLESS_MIN_SECONDS: Final = 4.0
+_RECEIPT_SKUS: Final = TypeAdapter(list[tuple[str, str]])
+# 11/16 08:5x (owner, Codex 08:12): psyoung82 settled 22 food orders and none of 68
+# goods tries in 2 h, yet its food deals lifted it for goods orders too. Price, time
+# and close statistics are kept per shop x order kind (food / goods); a shop with
+# under KIND_MIN attempts of that kind mixes in its other-kind evidence in
+# proportion, so a thin side is not judged on a handful of tries. No shop is blocked.
+KIND_MIN: Final = 10
+
+
+def _kind_weight(n_kind: int) -> float:
+    return min(1.0, n_kind / KIND_MIN)
+
+
+def blend_counts(
+    mine: dict[str, int], every: dict[str, int], n_kind: int
+) -> dict[str, int]:
+    """Return this kind's counts plus the other kind's, scaled by how thin it is."""
+    rest = 1.0 - _kind_weight(n_kind)
+    keys = set(mine) | set(every)
+    out = {
+        k: mine.get(k, 0) + round(rest * (every.get(k, 0) - mine.get(k, 0)))
+        for k in keys
+    }
+    return {k: v for k, v in out.items() if v}
+
+
+def blend_value(mine: float | None, every: float, n_kind: int) -> float:
+    """Return this kind's value mixed with the all-kinds value while samples are few."""
+    if mine is None:
+        return every
+    w = _kind_weight(n_kind)
+    return w * mine + (1.0 - w) * every
+
+
 Outcome = Literal[
     "agreed", "no_deal", "paid", "refused", "unknown", "error", "suspicious"
 ]
+
+
+class FoodEvidence(FrozenModel):
+    """Observed food inputs, not proof of certificate validity or final utility.
+
+    Later payments and public settlements/breaks remain authoritative and join
+    by order/unit. Missing historical fields stay null; no outcome is inferred.
+    """
+
+    order_id: str = Field(min_length=1, strict=True)
+    stage: Literal["order", "quote", "acceptance", "receipt"]
+    observed_at: float = Field(ge=0, allow_inf_nan=False, strict=True)
+    task_id: str | None = Field(default=None, strict=True)
+    shop: str | None = Field(default=None, strict=True)
+    sku: str | None = Field(default=None, strict=True)
+    unit: str | None = Field(default=None, strict=True)
+    use_within_hours: float | None = Field(
+        default=None, ge=0, allow_inf_nan=False, strict=True
+    )
+    food_margin_hours: float | None = Field(
+        default=None, ge=0, allow_inf_nan=False, strict=True
+    )
+    certificate_expires_at: float | None = Field(
+        default=None, ge=0, allow_inf_nan=False, strict=True
+    )
+    seller_expires_at: float | None = Field(
+        default=None, ge=0, allow_inf_nan=False, strict=True
+    )
+    stated_hours_left: float | None = Field(
+        default=None, allow_inf_nan=False, strict=True
+    )
+    grade: Literal["A", "B", "C"] | None = None
+    warranty_hours: float | None = Field(
+        default=None, ge=0, allow_inf_nan=False, strict=True
+    )
+    price: int | None = Field(default=None, ge=0, strict=True)
+    list_price: int | None = Field(default=None, ge=0, strict=True)
+    certificate_attached: bool | None = Field(default=None, strict=True)
+    policy_version: int | None = Field(default=None, ge=0, strict=True)
 
 
 def events_path(market_dir: Path | None = None) -> Path:
@@ -41,6 +129,35 @@ def events_path(market_dir: Path | None = None) -> Path:
         else Path(os.environ.get("MARKET_DIR", ".market"))
     )
     return base.resolve().parent / EVENTS_FILE
+
+
+# Our own price walk-aways (owner emergency, 11/7): the shop answered, we left.
+OWN_WALKAWAY_MARKERS: Final = (
+    "above the emergency line",
+    "expected credit below",
+    "receipt expected credit below",
+)
+
+
+# 11/11: before this time our fake-settlement screen fired on the plain word
+# "ledger" (r3/guard.py), so those "suspicious" rows say nothing about the shop.
+SCREEN_BUG_UNTIL: Final = 1794360600.0  # 2026-11-11 10:30 KST
+SCREEN_BUG_REASON: Final = "suspicious seller text: fake_settlement"
+
+
+def screen_bug(reason: object, ts: object) -> bool:
+    """Tell whether an attempt was dropped only by the old ledger-word bug."""
+    try:
+        when = float(str(ts))
+    except ValueError:
+        return False
+    return str(reason or "") == SCREEN_BUG_REASON and when < SCREEN_BUG_UNTIL
+
+
+def own_walkaway(reason: object) -> bool:
+    """Tell whether an attempt ended because we left on price, not the shop."""
+    text = str(reason or "")
+    return any(marker in text for marker in OWN_WALKAWAY_MARKERS)
 
 
 def refusal_kind(reason: str) -> str:
@@ -74,6 +191,22 @@ class EventLedger:
                     shop TEXT NOT NULL, shop_name TEXT, sku TEXT, list_price INTEGER,
                     price INTEGER, outcome TEXT NOT NULL, reason TEXT, ledger INTEGER,
                     elapsed REAL, market_round INTEGER NOT NULL DEFAULT 0)"""
+            )
+            _ = db.execute(
+                """CREATE TABLE IF NOT EXISTS buyer_orders (
+                    order_id TEXT PRIMARY KEY, observed_at REAL NOT NULL,
+                    budget INTEGER, kind TEXT, expires REAL, policy_version INTEGER)"""
+            )
+            _ = db.execute(
+                """CREATE TABLE IF NOT EXISTS buyer_food_evidence (
+                    order_id TEXT NOT NULL, shop TEXT NOT NULL,
+                    task_id TEXT NOT NULL, stage TEXT NOT NULL,
+                    observed_at REAL NOT NULL, unit TEXT, payload TEXT NOT NULL,
+                    PRIMARY KEY(order_id, shop, task_id, stage))"""
+            )
+            _ = db.execute(
+                """CREATE INDEX IF NOT EXISTS buyer_attempt_order
+                ON buyer_attempts(order_id)"""
             )
             # Retain old evidence; unknown rounds must not be guessed from a
             # missing catalog price. Older releases did not store this column.
@@ -137,6 +270,194 @@ class EventLedger:
             )
         if os.name != "nt":
             path.chmod(0o600)
+
+    def record_order_metadata(
+        self,
+        order: Order,
+        *,
+        observed_at: float | None = None,
+        policy_version: int | None = None,
+    ) -> None:
+        """Capture issued orders before selection; preserve the first observation."""
+        if not order.order:
+            return
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db, db:
+            _ = db.execute(
+                "INSERT OR IGNORE INTO buyer_orders VALUES (?,?,?,?,?,?)",
+                (
+                    order.order,
+                    time.time() if observed_at is None else observed_at,
+                    order.budget if order.budget > 0 else None,
+                    order.kind,
+                    order.expires,
+                    policy_version,
+                ),
+            )
+
+    def record_food_evidence(self, evidence: FoodEvidence) -> None:
+        """Append one observed stage through the bounded batch writer."""
+        self.record_food_evidence_batch((evidence,))
+
+    def record_food_evidence_batch(self, evidence: Iterable[FoodEvidence]) -> None:
+        """Flush after negotiation; SQLite lock waiting is limited to 50 ms."""
+        with closing(sqlite3.connect(self.path, timeout=0.05)) as db, db:
+            _ = db.executemany(
+                """INSERT OR IGNORE INTO buyer_food_evidence
+                (order_id, shop, task_id, stage, observed_at, unit, payload)
+                VALUES (?,?,?,?,?,?,?)""",
+                (
+                    (
+                        row.order_id,
+                        row.shop or "",
+                        row.task_id or "",
+                        row.stage,
+                        row.observed_at,
+                        row.unit,
+                        row.model_dump_json(),
+                    )
+                    for row in evidence
+                ),
+            )
+
+    def shop_timeout_counts(self, hours: float = 6) -> dict[str, int]:
+        """Count first-reply timeouts only, indexed by normalized shop URL."""
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = _TIMEOUT_COUNTS.validate_python(
+                db.execute(
+                    """SELECT rtrim(shop,'/'),count(*) FROM buyer_attempts
+                    WHERE ts>=? AND reason='shop timeout' GROUP BY rtrim(shop,'/')""",
+                    (time.time() - hours * 3600,),
+                ).fetchall()
+            )
+        return dict(rows)
+
+    def hung_shop_names(self, hours: float, min_count: int) -> frozenset[str]:
+        """Lower-cased names of shops that left us waiting ``min_count`` times.
+
+        Counted by shop name, not URL: tunnel shops come back under a new
+        trycloudflare URL and a URL count starts again from zero (11/12
+        outseop-26510122 hung 14 times across three URLs in two hours). A first
+        reply over six seconds ("shop timeout") and an order clock that ran out
+        at the shop ("timed out") both count.
+        """
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = _TIMEOUT_COUNTS.validate_python(
+                db.execute(
+                    """SELECT lower(shop_name),count(*) FROM buyer_attempts
+                    WHERE ts>=? AND reason IN ('shop timeout','timed out')
+                    GROUP BY lower(shop_name)""",
+                    (time.time() - hours * 3600,),
+                ).fetchall()
+            )
+        return frozenset(name for name, count in rows if count >= min_count)
+
+    def close_counts(
+        self, hours: float, skus: Collection[str]
+    ) -> dict[str, tuple[int, int]]:
+        """Lower-cased shop name -> (tries, deals) on these SKUs lately.
+
+        By name for the same reason as :meth:`hung_shop_names`. The SKUs are the
+        order's acceptable list, so the count is per product category.
+        """
+        wanted = frozenset(skus)
+        counts: dict[str, tuple[int, int]] = {}
+        if not wanted:
+            return counts
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = _CLOSE_ROWS.validate_python(
+                # 11/15 10:5x (owner): a close is a paid agreement, not an agreed
+                # price (cheapest-in-town: 26 agreed, 15 paid in 6 h).
+                db.execute(
+                    """SELECT lower(a.shop_name),a.sku,count(*),
+                    sum(a.outcome='agreed' AND coalesce(p.paid,0)=1)
+                    FROM buyer_attempts a LEFT JOIN payments p
+                        ON p.order_id=a.order_id
+                        AND rtrim(p.shop,'/')=rtrim(a.shop,'/')
+                    WHERE a.ts>=? AND a.shop_name!=''
+                    GROUP BY lower(a.shop_name),a.sku""",
+                    (time.time() - hours * 3600,),
+                ).fetchall()
+            )
+        for name, sku, tries, deals in rows:
+            if sku in wanted:
+                had = counts.get(name, (0, 0))
+                counts[name] = (had[0] + tries, had[1] + deals)
+        return counts
+
+    def time_yield(
+        self, hours: float, kind: str | None = None
+    ) -> dict[str, tuple[float, int]]:
+        """Lower-cased shop name -> (seconds of our order time spent, deals) lately.
+
+        Seconds are each attempt's own share of its order's elapsed time, the same
+        split :meth:`slow_fruitless_shops` uses. With ``kind`` both are mixed per
+        :func:`blend_counts` (by attempts of that kind).
+        """
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = _YIELD_ROWS.validate_python(
+                db.execute(
+                    """SELECT a.order_id, lower(a.shop_name),
+                    CASE WHEN a.outcome='agreed' AND coalesce(p.paid,0)=1
+                        THEN 'agreed' ELSE 'no_deal' END,
+                    coalesce(a.elapsed, 0.0), o.kind FROM buyer_attempts a
+                    LEFT JOIN payments p ON p.order_id=a.order_id
+                        AND rtrim(p.shop,'/')=rtrim(a.shop,'/')
+                    LEFT JOIN buyer_orders o ON o.order_id=a.order_id
+                    WHERE a.ts>=? AND a.shop_name!=''
+                    ORDER BY a.order_id, a.ts, a.id""",
+                    (time.time() - hours * 3600,),
+                ).fetchall()
+            )
+        out: dict[str, tuple[float, int]] = {}
+        mine: dict[str, tuple[float, int, int]] = {}
+        order, before = "", 0.0
+        for order_id, name, outcome, elapsed, order_kind in rows:
+            if order_id != order:
+                order, before = order_id, 0.0
+            spent, deals = out.get(name, (0.0, 0))
+            took = max(0.0, elapsed - before)
+            won = int(outcome == "agreed")
+            out[name] = (spent + took, deals + won)
+            if kind is not None and order_kind == kind:
+                s0, d0, n0 = mine.get(name, (0.0, 0, 0))
+                mine[name] = (s0 + took, d0 + won, n0 + 1)
+            before = elapsed
+        if kind is None:
+            return out
+        mixed: dict[str, tuple[float, int]] = {}
+        for name, (spent, deals) in out.items():
+            s0, d0, n0 = mine.get(name, (0.0, 0, 0))
+            rest = 1.0 - _kind_weight(n0)
+            mixed[name] = (s0 + rest * (spent - s0), d0 + round(rest * (deals - d0)))
+        return mixed
+
+    def slow_fruitless_shops(self, hours: float = 6) -> frozenset[str]:
+        """Return normalized URLs of shops both slow and almost never selling to us."""
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = _ATTEMPT_TIMES.validate_python(
+                db.execute(
+                    """SELECT order_id, rtrim(shop,'/'), outcome, coalesce(elapsed, 0.0)
+                    FROM buyer_attempts WHERE ts>=? AND NOT (reason=? AND ts<?)
+                    ORDER BY order_id, ts, id""",
+                    (time.time() - hours * 3600, SCREEN_BUG_REASON, SCREEN_BUG_UNTIL),
+                ).fetchall()
+            )
+        seconds: dict[str, list[float]] = {}
+        wins: dict[str, int] = {}
+        order, before = "", 0.0
+        for order_id, shop, outcome, elapsed in rows:
+            if order_id != order:
+                order, before = order_id, 0.0
+            seconds.setdefault(shop, []).append(max(0.0, elapsed - before))
+            wins[shop] = wins.get(shop, 0) + (outcome == "agreed")
+            before = elapsed
+        return frozenset(
+            shop
+            for shop, spent in seconds.items()
+            if len(spent) >= FRUITLESS_MIN_TRIES
+            and wins[shop] / len(spent) < FRUITLESS_MAX_WIN
+            and statistics.median(spent) >= FRUITLESS_MIN_SECONDS
+        )
 
     def record_attempt(  # noqa: PLR0913 - one row, explicit columns
         self,
@@ -231,27 +552,265 @@ class EventLedger:
                 added += cursor.rowcount
         return added
 
-    def shop_outcomes(self, hours: float) -> dict[str, dict[str, int]]:
-        """Count paid/refused/agreed/no_deal per shop URL within the window."""
+    def shop_outcomes(
+        self, hours: float, kind: str | None = None
+    ) -> dict[str, dict[str, int]]:
+        """Count paid/refused/agreed/no_deal per shop URL within the window.
+
+        With ``kind`` ("food" / "goods") the counts are that kind's orders, mixed
+        with the other kind's while the shop has under KIND_MIN of this kind.
+        """
         since = time.time() - hours * 3600
         counts: dict[str, dict[str, int]] = {}
+        mine: dict[str, dict[str, int]] = {}
+        tries: dict[str, int] = {}
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
-            for shop, outcome, n in db.execute(
-                """SELECT shop, outcome, count(*) FROM buyer_attempts
-                WHERE ts >= ? GROUP BY shop, outcome""",
+            for shop, outcome, reason, ts, order_kind in db.execute(
+                """SELECT a.shop, a.outcome, a.reason, a.ts, o.kind
+                FROM buyer_attempts a LEFT JOIN buyer_orders o
+                    ON o.order_id = a.order_id
+                WHERE a.ts >= ?""",
                 (since,),
             ):
-                bucket = counts.setdefault(str(shop).rstrip("/"), {})
-                bucket[str(outcome)] = bucket.get(str(outcome), 0) + int(n)
-            for shop, paid, n in db.execute(
-                """SELECT shop, paid, count(*) FROM payments
-                WHERE ts >= ? GROUP BY shop, paid""",
+                if screen_bug(reason, ts):
+                    continue
+                url = str(shop).rstrip("/")
+                key = "walked" if own_walkaway(reason) else str(outcome)
+                bucket = counts.setdefault(url, {})
+                bucket[key] = bucket.get(key, 0) + 1
+                if kind is not None and order_kind == kind:
+                    own = mine.setdefault(url, {})
+                    own[key] = own.get(key, 0) + 1
+                    tries[url] = tries.get(url, 0) + 1
+            for shop, paid, order_kind, n in db.execute(
+                """SELECT p.shop, p.paid, o.kind, count(*) FROM payments p
+                LEFT JOIN buyer_orders o ON o.order_id = p.order_id
+                WHERE p.ts >= ? GROUP BY p.shop, p.paid, o.kind""",
                 (since,),
             ):
+                url = str(shop).rstrip("/")
                 key = "paid" if paid else "refused"
-                bucket = counts.setdefault(str(shop).rstrip("/"), {})
+                bucket = counts.setdefault(url, {})
                 bucket[key] = bucket.get(key, 0) + int(n)
-        return counts
+                if kind is not None and order_kind == kind:
+                    own = mine.setdefault(url, {})
+                    own[key] = own.get(key, 0) + int(n)
+        if kind is None:
+            return counts
+        return {
+            url: blend_counts(mine.get(url, {}), every, tries.get(url, 0))
+            for url, every in counts.items()
+        }
+
+    def wall_offers(self, hours: float) -> dict[tuple[str, str], int]:
+        """(shop URL, SKU) -> times the shop would not come down to our line lately."""
+        since = time.time() - hours * 3600
+        out: dict[tuple[str, str], int] = {}
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            for shop, sku, n in db.execute(
+                """SELECT shop, sku, count(*) FROM buyer_attempts
+                WHERE ts >= ? AND reason LIKE '%above the emergency line%'
+                GROUP BY shop, sku""",
+                (since,),
+            ):
+                out[(str(shop).rstrip("/"), str(sku))] = int(n)
+        return out
+
+    def receipt_refusals(self, hours: float) -> dict[str, int]:
+        """Shop URL -> signed receipts we refused (grade, warranty or credit line)."""
+        since = time.time() - hours * 3600
+        out: dict[str, int] = {}
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            for shop, n in db.execute(
+                """SELECT shop, count(*) FROM buyer_attempts
+                WHERE ts >= ? AND reason LIKE 'receipt expected credit below%'
+                GROUP BY shop""",
+                (since,),
+            ):
+                out[str(shop).rstrip("/")] = int(n)
+        return out
+
+    def receipt_refused_skus(
+        self, hours: float, minimum: int = 3
+    ) -> frozenset[tuple[str, str]]:
+        """Find repeated receipt failures for a shop and selected SKU only.
+
+        Count distinct orders per price, quality or identity cause. Recovery
+        requires a later agreed attempt with the same order/shop/SKU in a paid
+        kit row carrying its ledger number. Import time is not transaction time.
+        The selected SKU is known here; unit and grade identity are not. This
+        memory narrows exploration, never replaces the final receipt checks.
+        """
+        now = time.time()
+        since = now - hours * 3600
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = _RECEIPT_SKUS.validate_python(
+                db.execute(
+                    """WITH paid_attempts AS (
+                        SELECT rtrim(a.shop, '/') AS shop, a.sku, a.ts, a.id,
+                            row_number() OVER (
+                                PARTITION BY rtrim(a.shop, '/'), a.sku
+                                ORDER BY a.ts DESC, a.id DESC
+                            ) AS recency
+                        FROM buyer_attempts a JOIN payments p
+                            ON p.order_id = a.order_id
+                            AND rtrim(p.shop, '/') = rtrim(a.shop, '/')
+                            AND p.item = a.sku
+                        WHERE a.ts BETWEEN ? AND ? AND a.market_round = 3
+                            AND a.outcome = 'agreed' AND p.paid = 1
+                            AND p.ledger IS NOT NULL
+                    ), failures AS (
+                        SELECT rtrim(a.shop, '/') AS shop, a.sku, a.order_id,
+                            CASE
+                                WHEN a.reason LIKE '%shipped SKU unknown:%'
+                                    THEN 'identity'
+                                WHEN a.reason LIKE '%of the shipped list%'
+                                    THEN 'price'
+                                ELSE 'quality'
+                            END AS cause
+                        FROM buyer_attempts a LEFT JOIN paid_attempts p
+                            ON p.shop = rtrim(a.shop, '/') AND p.sku = a.sku
+                            AND p.recency = 1
+                        WHERE a.ts BETWEEN ? AND ? AND a.market_round = 3
+                            AND a.outcome = 'no_deal'
+                            AND trim(a.sku) <> '' AND trim(a.shop) <> ''
+                            AND trim(a.order_id) <> ''
+                            AND a.reason LIKE 'receipt expected credit below%'
+                            AND (p.id IS NULL OR a.ts > p.ts
+                                OR (a.ts = p.ts AND a.id > p.id))
+                    )
+                    SELECT shop, sku FROM failures
+                    GROUP BY shop, sku, cause
+                    HAVING count(DISTINCT order_id) >= ?""",
+                    (since, now, since, now, minimum),
+                ).fetchall()
+            )
+        return frozenset(rows)
+
+    def repeated_receipt_refusals(
+        self, minutes: float, minimum: int = 2
+    ) -> frozenset[tuple[str, str]]:
+        """(shop URL, SKU) refused at the receipt for one reason in ``minimum`` orders.
+
+        11/15 10:5x (owner): the same shop and SKU failed the receipt check for the
+        same cause again and again (Kiro729 G67e6f916 "claim B, warranty 0 h" in 8
+        orders over 2 h, dae-yangkim B with a 3 h warranty 22 times). Only that pair
+        rests for ``minutes``; the shop's other SKUs are still bought.
+        """
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = _RECEIPT_SKUS.validate_python(
+                db.execute(
+                    """SELECT rtrim(shop,'/'), sku FROM buyer_attempts
+                    WHERE ts>=? AND outcome='no_deal'
+                        AND reason LIKE 'receipt expected credit below%'
+                        AND trim(sku)<>'' AND trim(shop)<>''
+                    GROUP BY rtrim(shop,'/'), sku, reason
+                    HAVING count(DISTINCT order_id) >= ?""",
+                    (time.time() - minutes * 60, minimum),
+                ).fetchall()
+            )
+        return frozenset(rows)
+
+    def repeated_stock_misses(
+        self, minutes: float, minimum: int = 2
+    ) -> frozenset[tuple[str, str]]:
+        """(shop URL, SKU) that answered "none in stock" in ``minimum`` orders lately.
+
+        11/15 17:0x (owner): after 15:00, 22 shop/SKU pairs said none in stock 3+
+        times for 125 attempts (dae-yangkim G1957829c 28, G16822d88 10).
+        """
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = _RECEIPT_SKUS.validate_python(
+                db.execute(
+                    """SELECT rtrim(shop,'/'), sku FROM buyer_attempts
+                    WHERE ts>=? AND outcome='no_deal'
+                        AND (reason LIKE 'NoStockError%'
+                            OR reason LIKE '%none of that%')
+                        AND trim(sku)<>'' AND trim(shop)<>''
+                    GROUP BY rtrim(shop,'/'), sku
+                    HAVING count(DISTINCT order_id) >= ?""",
+                    (time.time() - minutes * 60, minimum),
+                ).fetchall()
+            )
+        return frozenset(rows)
+
+    def losing_streak_pairs(
+        self, streak: int, minutes: float, memory_hours: float = 6.0
+    ) -> frozenset[tuple[str, str]]:
+        """(shop URL, SKU) whose last ``streak`` attempts all failed, lately.
+
+        11/17 08:5x (owner, strategy 08:51): in 3 h 24 pairs took 242 of 1,967
+        attempts (12 %) with 6+ tries and no deal. A pair whose last ``streak``
+        attempts were all ``no_deal`` rests until ``minutes`` after the last one; an
+        agreed attempt clears it.
+        """
+        now = time.time()
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = db.execute(
+                """SELECT rtrim(shop,'/'), sku, ts, outcome FROM buyer_attempts
+                WHERE ts>=? AND trim(sku)<>'' AND trim(shop)<>''
+                ORDER BY ts DESC""",
+                (now - memory_hours * 3600,),
+            ).fetchall()
+        recent: dict[tuple[str, str], list[tuple[float, str]]] = {}
+        for shop, sku, ts, outcome in rows:
+            seen = recent.setdefault((str(shop), str(sku)), [])
+            if len(seen) < streak:
+                seen.append((float(ts), str(outcome)))
+        return frozenset(
+            pair
+            for pair, seen in recent.items()
+            if len(seen) == streak
+            and all(outcome == "no_deal" for _, outcome in seen)
+            and now - seen[0][0] <= minutes * 60
+        )
+
+    def losing_shops(
+        self, streak: int, minutes: float, memory_hours: float = 6.0
+    ) -> frozenset[str]:
+        """Shop URLs whose last ``streak`` attempts all ended in no_deal, lately.
+
+        11/17 10:5x (owner, strategy 10:52): gom31-certified-goods took 35 attempts
+        and 5.4 minutes in an hour with no deal. A shop rests until ``minutes``
+        after its last such attempt; a deal clears it.
+        """
+        now = time.time()
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = db.execute(
+                """SELECT rtrim(shop,'/'), ts, outcome FROM buyer_attempts
+                WHERE ts>=? AND trim(shop)<>'' ORDER BY ts DESC""",
+                (now - memory_hours * 3600,),
+            ).fetchall()
+        recent: dict[str, list[tuple[float, str]]] = {}
+        for shop, ts, outcome in rows:
+            seen = recent.setdefault(str(shop), [])
+            if len(seen) < streak:
+                seen.append((float(ts), str(outcome)))
+        return frozenset(
+            shop
+            for shop, seen in recent.items()
+            if len(seen) == streak
+            and all(outcome == "no_deal" for _, outcome in seen)
+            and now - seen[0][0] <= minutes * 60
+        )
+
+    def stale_unit_pairs(self, minutes: float) -> frozenset[tuple[str, str]]:
+        """(shop URL, SKU) whose checkout said the shipped unit is out of stock.
+
+        11/15 10:5x (owner): cheapest-in-town agreed 11 deals in 6 h on one unit
+        (u-a4ee3e5ee801) that every checkout refused with 409 "not in stock". The
+        pair rests for ``minutes`` so the order goes to the next shop at once.
+        """
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            rows = _RECEIPT_SKUS.validate_python(
+                db.execute(
+                    """SELECT DISTINCT rtrim(shop,'/'), item FROM payments
+                    WHERE ts>=? AND paid=0 AND item IS NOT NULL AND shop IS NOT NULL
+                        AND reason LIKE 'checkout refused: 409%not in stock%'""",
+                    (time.time() - minutes * 60,),
+                ).fetchall()
+            )
+        return frozenset(rows)
 
     def failure_streaks(self, hours: float) -> dict[str, tuple[int, float]]:
         """Count failed orders; only a completed payment clears an R3 streak.
@@ -264,14 +823,16 @@ class EventLedger:
         since = now - hours * 3600
         streaks: dict[str, tuple[int, float]] = {}
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
-            for shop, outcome, ts, market_round, paid in db.execute(
-                """SELECT a.shop, a.outcome, a.ts, a.market_round, p.paid
+            for shop, outcome, ts, market_round, paid, reason in db.execute(
+                """SELECT a.shop, a.outcome, a.ts, a.market_round, p.paid, a.reason
                 FROM buyer_attempts a LEFT JOIN payments p
                 ON p.order_id = a.order_id
                 AND rtrim(p.shop, '/') = rtrim(a.shop, '/')
                 WHERE a.ts >= ? ORDER BY a.ts, a.id""",
                 (since,),
             ):
+                if own_walkaway(reason) or screen_bug(reason, ts):
+                    continue  # we left on price, or our old screen bug: not the shop
                 key = str(shop).rstrip("/")
                 count, _ = streaks.get(key, (0, 0.0))
                 if (
@@ -283,37 +844,87 @@ class EventLedger:
                     streaks[key] = (0, float(ts))
         return {k: (n, now - last) for k, (n, last) in streaks.items() if n > 0}
 
-    def stock_misses(self, hours: float) -> dict[str, tuple[int, int]]:
-        """Per shop URL: (asks answered "none in stock", asks) within the window."""
+    def stock_misses(
+        self, hours: float, kind: str | None = None
+    ) -> dict[str, tuple[int, int]]:
+        """Per shop URL: (asks answered "none in stock", asks) within the window.
+
+        With ``kind`` the counts are mixed per :func:`blend_counts`.
+        """
         since = time.time() - hours * 3600
         counts: dict[str, tuple[int, int]] = {}
+        mine: dict[str, tuple[int, int]] = {}
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
-            for shop, reason in db.execute(
-                "SELECT shop, reason FROM buyer_attempts WHERE ts >= ?", (since,)
+            for shop, reason, order_kind in db.execute(
+                """SELECT a.shop, a.reason, o.kind FROM buyer_attempts a
+                LEFT JOIN buyer_orders o ON o.order_id = a.order_id
+                WHERE a.ts >= ?""",
+                (since,),
             ):
                 text = str(reason or "").lower()
                 miss = "in stock" in text or "out of stock" in text
                 key = str(shop).rstrip("/")
                 misses, asks = counts.get(key, (0, 0))
                 counts[key] = (misses + int(miss), asks + 1)
-        return counts
+                if kind is not None and order_kind == kind:
+                    misses, asks = mine.get(key, (0, 0))
+                    mine[key] = (misses + int(miss), asks + 1)
+        if kind is None:
+            return counts
+        out: dict[str, tuple[int, int]] = {}
+        for key, (misses, asks) in counts.items():
+            own = mine.get(key, (0, 0))
+            mixed = blend_counts(
+                {"miss": own[0], "ask": own[1]}, {"miss": misses, "ask": asks}, own[1]
+            )
+            out[key] = (mixed.get("miss", 0), mixed.get("ask", 0))
+        return out
 
-    def price_ratios(self, hours: float) -> dict[str, float]:
-        """Median actual paid/list share, excluding pending and refused agreements."""
+    def price_ratios(self, hours: float, kind: str | None = None) -> dict[str, float]:
+        """Median actual paid/list share, excluding pending and refused agreements.
+
+        With ``kind`` the shop's median for that kind, mixed per :func:`blend_value`.
+        """
         since = time.time() - hours * 3600
         ratios: dict[str, list[float]] = {}
+        mine: dict[str, list[float]] = {}
         with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
-            for shop, price, list_price in db.execute(
-                """SELECT a.shop, p.price, a.list_price FROM buyer_attempts a
+            for shop, price, list_price, order_kind in db.execute(
+                """SELECT a.shop, p.price, a.list_price, o.kind FROM buyer_attempts a
                 JOIN payments p ON p.order_id = a.order_id
                 AND rtrim(p.shop, '/') = rtrim(a.shop, '/')
+                LEFT JOIN buyer_orders o ON o.order_id = a.order_id
                 WHERE a.ts >= ? AND a.outcome = 'agreed' AND p.paid = 1
                 AND p.price > 0 AND a.list_price > 0""",
                 (since,),
             ):
                 key = str(shop).rstrip("/")
-                ratios.setdefault(key, []).append(float(price) / float(list_price))
-        return {k: statistics.median(v) for k, v in ratios.items()}
+                ratio = float(price) / float(list_price)
+                ratios.setdefault(key, []).append(ratio)
+                if kind is not None and order_kind == kind:
+                    mine.setdefault(key, []).append(ratio)
+        every = {k: statistics.median(v) for k, v in ratios.items()}
+        if kind is None:
+            return every
+        return {
+            k: blend_value(
+                statistics.median(mine[k]) if mine.get(k) else None,
+                v,
+                len(mine.get(k, [])),
+            )
+            for k, v in every.items()
+        }
+
+    def receipt_costs(self, since: float) -> dict[str, int]:
+        """Return the cost of each unit our seller signed a receipt for since then."""
+        with closing(sqlite3.connect(self.path, timeout=1.0)) as db:
+            return {
+                str(unit): int(cost)
+                for unit, cost in db.execute(
+                    "SELECT unit, cost FROM seller_receipts WHERE ts >= ?", (since,)
+                )
+                if unit and cost is not None
+            }
 
     def refusal_counts(self, hours: float, floor: float = 0.0) -> dict[str, int]:
         """Agreed deals the kit did not pay, by reason, for the strategy model.

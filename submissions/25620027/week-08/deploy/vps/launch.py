@@ -21,6 +21,7 @@ from market_a2a.anthropic_fallback import HAIKU_MODEL
 from market_a2a.models import HarnessError
 from market_a2a.paid_fallback import DailyQuota, configured_paid_provider
 from r3.model_client import APPROVED_MODELS
+from r3.model_failover import validate_openai_fallback_env
 
 if TYPE_CHECKING:
     from anyio.abc import Process
@@ -160,36 +161,37 @@ def validate_model_roles() -> None:
 
 
 def validate_paid_launch(settings: LaunchSettings) -> None:
-    """Permit only the authorized Claude routes with one existing shared ledger.
+    """Validate approved R3 routes against one existing shared attempt ledger.
 
     ``ANTHROPIC_MODEL`` stays pinned to Haiku: it is the in-trade reader and the
-    legacy fallback. The slow loops pick their models from their own variables.
+    legacy fallback. R3's optional secondary route does not change that selector.
     """
+    failover = validate_openai_fallback_env()
     provider = configured_paid_provider()
     match provider:
         case "none":
-            return
+            if failover is None:
+                return
         case "anthropic":
             if (
-                not os.environ.get("ANTHROPIC_API_KEY")
-                or os.environ.get("ANTHROPIC_MODEL", HAIKU_MODEL) != HAIKU_MODEL
-            ):
+                not os.environ.get("ANTHROPIC_API_KEY") and failover is None
+            ) or os.environ.get("ANTHROPIC_MODEL", HAIKU_MODEL) != HAIKU_MODEL:
                 message = "Approved Haiku API key and model configuration are required"
                 raise HarnessError(message)
-            validate_model_roles()
-            quota = settings.run_directory / "paid-quota.sqlite3"
-            if (
-                os.environ.get("AX_PAID_QUOTA_PATH") != str(quota)
-                or not quota.is_file()
-            ):
-                message = "Existing shared R3 paid quota ledger is required"
-                raise HarnessError(message)
-            _ = DailyQuota(quota, int(os.environ.get("AX_PAID_DAILY_LIMIT", "5000")))
         case "openai":
-            message = "This deployment authorizes Haiku fallback only"
+            message = (
+                "This deployment authorizes the Anthropic legacy fallback; "
+                "use AX_R3_OPENAI_FALLBACK for R3 failover"
+            )
             raise HarnessError(message)
         case _:
             assert_never(provider)
+    validate_model_roles()
+    quota = settings.run_directory / "paid-quota.sqlite3"
+    if os.environ.get("AX_PAID_QUOTA_PATH") != str(quota) or not quota.is_file():
+        message = "Existing shared R3 paid quota ledger is required"
+        raise HarnessError(message)
+    _ = DailyQuota(quota, int(os.environ.get("AX_PAID_DAILY_LIMIT", "5000")))
 
 
 async def activate(settings: LaunchSettings, app: Path = APP) -> int:
@@ -224,6 +226,7 @@ async def activate(settings: LaunchSettings, app: Path = APP) -> int:
         "AX_R3_EVENTS": str(settings.run_directory / "r3-events.sqlite"),
         "AX_R3_LEDGER": str(settings.run_directory / "r3-ledger.sqlite"),
         "AX_R3_PICTURE": str(settings.run_directory / "r3-picture.json"),
+        "AX_R3_SHOP_URL": settings.public_url,
         "PYTHONPATH": str(app),
     }
     manager = (
@@ -236,6 +239,8 @@ async def activate(settings: LaunchSettings, app: Path = APP) -> int:
         settings.market_url,
         "--shop-url",
         settings.public_url,
+        "--shop-name",
+        "25620027",
         "--buyer-name",
         "25620027",
     )

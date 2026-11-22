@@ -138,17 +138,20 @@ class LedgerDB:
                 )
             ]
 
-    def median_price(self, sku: str, since: float, min_count: int = 5) -> float | None:
-        """Median settled price of one SKU over all shops; None under ``min_count``."""
+    def median_price(
+        self, sku: str, since: float, min_count: int = 5, grade: str | None = None
+    ) -> float | None:
+        """Median settled price of one SKU over all shops; None under ``min_count``.
+
+        With ``grade`` only that grade's settles count (a C sale is no price for A).
+        """
+        query = (
+            "SELECT amount FROM rows WHERE kind='settle' AND sku = ? AND ts >= ? "
+            "AND amount > 0 AND (? IS NULL OR grade = ?)"
+        )
+        params = (sku, since, grade or None, grade or None)
         with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
-            prices = [
-                int(a)
-                for (a,) in db.execute(
-                    """SELECT amount FROM rows WHERE kind='settle' AND sku = ?
-                    AND ts >= ? AND amount > 0""",
-                    (sku, since),
-                )
-            ]
+            prices = [int(a) for (a,) in db.execute(query, params)]
         return statistics.median(prices) if len(prices) >= min_count else None
 
     def shop_breaks(
@@ -161,38 +164,36 @@ class LedgerDB:
         observed once its six hours are over, or as soon as it breaks.
         """
         now = time.time()
+        sales: dict[tuple[str, str], list[tuple[float, str]]] = {}
+        hit: set[tuple[str, str, float]] = set()
+        counts: dict[str, tuple[int, int]] = {}
         with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
-            settled = db.execute(
+            for buyer, sku, shop, ts in db.execute(
                 """SELECT buyer, sku, shop, ts FROM rows
                 WHERE kind='settle' AND ts >= ? ORDER BY ts""",
                 (since - BREAK_WINDOW,),
-            ).fetchall()
-            broken = db.execute(
+            ):
+                if str(sku) in goods and shop:
+                    sales.setdefault((str(buyer), str(sku)), []).append(
+                        (float(ts), str(shop).rstrip("/"))
+                    )
+            for buyer, sku, ts in db.execute(
                 "SELECT buyer, sku, ts FROM rows WHERE kind='broken' AND ts >= ?",
                 (since,),
-            ).fetchall()
-        sales: dict[tuple[str, str], list[tuple[float, str]]] = {}
-        for buyer, sku, shop, ts in settled:
-            if str(sku) in goods and shop:
-                sales.setdefault((str(buyer), str(sku)), []).append(
-                    (float(ts), str(shop).rstrip("/"))
-                )
-        hit: set[tuple[str, str, float]] = set()
-        counts: dict[str, tuple[int, int]] = {}
-        for buyer, sku, ts in broken:
-            match = [
-                (t, shop)
-                for t, shop in sales.get((str(buyer), str(sku)), [])
-                if 0 <= float(ts) - t <= BREAK_WINDOW
-            ]
-            if not match:
-                continue
-            t, shop = match[-1]
-            if (str(buyer), str(sku), t) in hit:
-                continue
-            hit.add((str(buyer), str(sku), t))
-            b, o = counts.get(shop, (0, 0))
-            counts[shop] = (b + 1, o + 1)
+            ):
+                match = [
+                    (t, shop)
+                    for t, shop in sales.get((str(buyer), str(sku)), [])
+                    if 0 <= float(ts) - t <= BREAK_WINDOW
+                ]
+                if not match:
+                    continue
+                t, shop = match[-1]
+                if (str(buyer), str(sku), t) in hit:
+                    continue
+                hit.add((str(buyer), str(sku), t))
+                b, o = counts.get(shop, (0, 0))
+                counts[shop] = (b + 1, o + 1)
         for (buyer, sku), rows in sales.items():
             for t, shop in rows:
                 if t < since or (buyer, sku, t) in hit or now - t < BREAK_WINDOW:
@@ -234,40 +235,40 @@ class LedgerDB:
         Food is left out: it expires, it does not break.
         """
         now = time.time()
-        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
-            settled = db.execute(
-                """SELECT seq, buyer, sku, grade, ts, data FROM rows
-                WHERE kind='settle' AND ts >= ? AND ts <= ? ORDER BY ts""",
-                (since, now - BREAK_WINDOW),
-            ).fetchall()
-            broken = db.execute(
-                "SELECT buyer, sku, ts, data FROM rows WHERE kind='broken' AND ts >= ?",
-                (since,),
-            ).fetchall()
         grade_of: dict[int, str] = {}
         by_unit: dict[str, int] = {}
         by_pair: dict[tuple[str, str], list[tuple[float, int]]] = {}
-        for seq, buyer, sku, grade, ts, raw in settled:
-            data = _data(raw)
-            if data.get("expires_at"):
-                continue
-            grade_of[int(seq)] = str(grade or "?")
-            unit = str(data.get("unit") or "")
-            if unit:
-                by_unit[unit] = int(seq)
-            by_pair.setdefault((str(buyer), str(sku)), []).append((float(ts), int(seq)))
         hit: set[int] = set()
-        for buyer, sku, ts, raw in broken:
-            seq = by_unit.get(str(_data(raw).get("unit") or ""))
-            if seq is None:
-                earlier = [
-                    s
-                    for t, s in by_pair.get((str(buyer), str(sku)), [])
-                    if 0 <= float(ts) - t <= BREAK_WINDOW and s not in hit
-                ]
-                seq = earlier[-1] if earlier else None
-            if seq is not None:
-                hit.add(seq)
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            for seq, buyer, sku, grade, ts, raw in db.execute(
+                """SELECT seq, buyer, sku, grade, ts, data FROM rows
+                WHERE kind='settle' AND ts >= ? AND ts <= ? ORDER BY ts""",
+                (since, now - BREAK_WINDOW),
+            ):
+                data = _data(raw)
+                if data.get("expires_at"):
+                    continue
+                grade_of[int(seq)] = str(grade or "?")
+                unit = str(data.get("unit") or "")
+                if unit:
+                    by_unit[unit] = int(seq)
+                by_pair.setdefault((str(buyer), str(sku)), []).append(
+                    (float(ts), int(seq))
+                )
+            for buyer, sku, ts, raw in db.execute(
+                "SELECT buyer, sku, ts, data FROM rows WHERE kind='broken' AND ts >= ?",
+                (since,),
+            ):
+                seq = by_unit.get(str(_data(raw).get("unit") or ""))
+                if seq is None:
+                    earlier = [
+                        s
+                        for t, s in by_pair.get((str(buyer), str(sku)), [])
+                        if 0 <= float(ts) - t <= BREAK_WINDOW and s not in hit
+                    ]
+                    seq = earlier[-1] if earlier else None
+                if seq is not None:
+                    hit.add(seq)
         rates: dict[str, tuple[int, int]] = {}
         for seq, grade in grade_of.items():
             b, t = rates.get(grade, (0, 0))
@@ -337,6 +338,36 @@ class LedgerDB:
             "our_shop_settles": our_shop_n,
             "our_buyer_settles": our_buyer_n,
         }
+
+    def shop_sales(self, since: float, shop: str) -> list[tuple[str, int, str]]:
+        """Our shop's settles since ``since``: (sku, amount, unit)."""
+        out: list[tuple[str, int, str]] = []
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            for sku, amount, raw in db.execute(
+                """SELECT sku, amount, data FROM rows WHERE kind='settle'
+                AND ts >= ? AND rtrim(shop, '/') = ?""",
+                (since, shop.rstrip("/")),
+            ):
+                out.append(
+                    (str(sku), int(amount or 0), str(_data(raw).get("unit", "")))
+                )
+        return out
+
+    def refunds_by_unit(self, since: float, shop: str) -> dict[str, int]:
+        """Warranty refunds our shop paid since ``since``, per unit id."""
+        out: dict[str, int] = {}
+        with closing(sqlite3.connect(self.path, timeout=2.0)) as db:
+            for (raw,) in db.execute(
+                "SELECT data FROM rows WHERE kind='broken' AND ts >= ?", (since,)
+            ):
+                data = _data(raw)
+                if str(data.get("shop", "")).rstrip("/") != shop.rstrip("/"):
+                    continue
+                unit = str(data.get("unit", ""))
+                refunded = data.get("refunded")
+                if unit and isinstance(refunded, (int, float)):
+                    out[unit] = out.get(unit, 0) + int(refunded)
+        return out
 
     def demand_counts(
         self,

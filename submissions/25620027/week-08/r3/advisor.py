@@ -419,6 +419,9 @@ class Advisor:
                                 "revenue",
                                 "stars",
                                 "saved",
+                                "surplus",
+                                "forum",
+                                "posts",
                                 "paid",
                             )
                             if k in row

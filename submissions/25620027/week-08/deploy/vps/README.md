@@ -161,3 +161,35 @@ private/data 디렉터리와 키는 실행 UID10001이 접근할 수 있어야 �
 - 로컬550개·Linux530개·프리플라이트 PASS. 이미지의 accounting/reflection/recorder/buyer 해시, host arm의ddee4a1 해시, 공개/내부 카드 및ACP200, 양역할alive를 확인했다. marketR2·R3원장0에서 반영했다.
 - `notify_r3.py` 전달 프로토콜은 기존판과 같아 교체하지 않았다. runtime·비용/호출한도·알림/크론·종료도 전후 해시/값이 동일하다. 터널 유지. 복구는 기존 `launch-r3.sh 8ca3d3bbff62`이며 새 비용 장부와 다른 데이터는 되돌리거나 지우지 않는다.
 - 순손익은 원가/환불/폐기/보관비와 잔고+재고 대사가 가능할 때만 판단한다. 개장 후 처음 양쪽15분 창이 없으면 미확인이 정상이며 R2 거래를 대신 넣지 않는다. [검사·배포 원자료](../../logs/net-profit-deployment-20261103/summary.json).
+
+### 2026-11-05 16:40 KST — R3 OpenAI 자동 대체 호출
+
+사용자 승인으로 `300128cff29b`를 배포했다. Anthropic Haiku·Sonnet을 주 경로로 유지하고, 공급자 한도·크레딧·접속 장애 때 R3 공통 모델 클라이언트가 OpenAI를 대체 경로로 사용한다. 이 절이 현재 R3 공급자 설정이며, 위 날짜별 배포·크론 설명은 당시 이력이다.
+
+**17:05 상태 추가:** 공식 보드에서 가게 alive=false·buyer alive=true, 가게 목록에서 매장 누락을 root가 확인했다. 공개 card/ACP200만으로 시장 등록 정상임을 판단하면 안 된다. 같은 검증 판본의 복구·재등록 확인이 진행 중이며, 아래16:48 검증은 사고 전 기록이다. 최신 상태는 [배포 상태](../../.omo/evidence/openai-fallback-20261105/deployment-state.json)와 `offline-incident-1705/` 증거를 따른다. 이 문서는 아직 사고 복구 완료를 주장하지 않는다.
+
+- 비공개 `/docker/ax-week08-25620027/private/openai-fallback.env`를 Compose의 선택적 env 파일로 추가했다. 기존 AX 설정 `/Users/sungjinho/.config/ax-agent/openai.env`의 키를 재사용했으며 권한은 `0600`이다. 파일·키를 소스 묶음이나 로그에 넣지 않는다.
+- `AX_R3_OPENAI_FALLBACK=1`, `AX_R3_OPENAI_MODEL=gpt-5-mini`, `AX_R3_OPENAI_TRADE_MODEL=gpt-4.1-mini-2025-04-14`를 사용한다. 키 변수는 `OPENAI_API_KEY`다. OpenAI endpoint는 코드의 `https://api.openai.com/v1/`로 고정되어 공급자 간 키가 섞이지 않는다.
+- 기존 `AX_OPENAI_FALLBACK=0`·`AX_PAID_FALLBACK=anthropic`는 별도 레거시 선택자이므로 그대로 둔다. 이를 `openai`로 바꾸는 방식은 이번 R3 대체 경로가 아니다.
+- 느린 역할은 GPT-5 Mini, 거래 안 3초 reader는 GPT-4.1 Mini가 설정돼 있다. 모든 실제 공급자 시도와 호환 재시도는 기존 공용 하루5,000회 장부를 차감한다. `AX_R3_DAILY_USD=6`의 기존 사다리도 공통 적용한다: USD6부터 전략 강등, USD12부터 느린 역할 중지, USD18부터 거래 reader 중지다. 전체를 USD6에서 멈추는 단일 하드 캡은 아니다.
+- 한 요청의 전체 deadline 안에서만 공급자를 바꾼다. 정상 응답의 tool 부재·일반 잘못된 요청은 추가 유료 호출을 만들지 않는다. 예산·장부·호출 수 차단은 다른 공급자로 우회하지 않는다.
+
+검증은 **로컬765개/Linux745개**, Compose 선택 파일 없음/승인 파일 있음 두 경우, 공개 card·ACP200, 배포 뒤 판매9·구매4 정산·OOM0까지 확인했다. 실제 OpenAI-only SDK 진단에서는 전략 역할 GPT-5 Mini 도구 호출이2,343ms에 성공했고153입력/23출력 토큰·USD0.000084를 기록했다. 서비스의 원래 Anthropic 키와 시장 거래를 건드리지 않은 진단이다.
+
+**거래 3초 경로의 실제 성공은 아직 확인하지 못했다.** 설정된 Mini 경로는 두 번 deadline에 걸렸으며, 다른 모델의 진단도 이 한계를 해소하지 못했다. 따라서 두 대체 경로 모두의 실전 검증이 끝났다고 보고하지 않는다. deadline은 늘리지 않았고, 모델 결과가 없으면 기존 규칙 거래가 계속된다. 타임아웃·실패의 응답 usage가 없다는 사실은 무료 호출을 뜻하지 않는다.
+
+사용량 기록에 실패하면 `model_accounting_blocked`와 가능한 `r3-events.sqlite.model-blocked` 표식으로 유료 모델을 차단한다. 저장 문제와 누락 사용량을 대사한 뒤에만 해당 KV 행·표식을 정리하고, 메모리에 차단이 남은 클라이언트도 다시 만든다. 장부를 지우거나 차단만 무작정 풀지 않는다. 환경변수 변경은 `docker restart`만으로 반영되지 않으므로, 필요 시 실제 current를 대조한 기존 Compose/launch 재생성 절차를 따른다.
+
+현재72h 보증·`growth_enabled=false`·일반 식품 clearance0·키/장부/정책/터널을 보존한다. 구형24h 상한 이미지로 복구하지 않는다. 대기 중인 품절 신원 후보는 이전 launch.py 기반이므로 **새 launch.py 위에 `--shop-name 25620027` 두 인자만 재적용**하고 다시 회귀·Linux 검증해야 한다. 후보 파일 전체를 복사하면 새 공급자 검증을 잃는다.
+
+[상세 운영·검증·복구 기록](../../.omo/evidence/openai-fallback-20261105/OPERATIONS.md) · [현재 배포 상태](../../.omo/evidence/openai-fallback-20261105/deployment-state.json)
+
+
+### 2026-11-05 18:12 품절 보고서 등록 이름 연결
+
+release `3a8bb12fee337fa1`는manager명령에`--shop-name 25620027`만추가해시장공급이름과품절집계를연결했다. 기존OpenAI전환·신원/정책/키/장부/한도/터널유지, 로컬766/Linux746검증·생산SKU106/검토12확인. 상세는[배포근거](../../.omo/evidence/codex-hourly-20261105/hourly/20261105T084020Z/stockout-identity-rollout/REPORT.md)와같은폴더배포상태다.
+
+
+### R3 사용자 종료 — 2026-11-18
+
+사용자가 R3 종료를 직접 지시해 Codex가 2026-11-18T15:02:59.561818+09:00에 거래 컨테이너·전용 터널 중지(exited), Docker restart=no, health/arm/notify/logkeep cron 4개 비활성화를 확인했다. 전용 cron 원본은 VPS monitor의 `r3-shutdown-20261118T055853Z`에 백업했으며 원장·키·로그·데이터·컨테이너는 보존했다. 분석 예약은 이미 삭제돼 남아 있지 않다. 근거는 [종료 확인](../../.omo/evidence/r3-shutdown-20261118T055853Z/RESULT.md)과 verification.json이다.

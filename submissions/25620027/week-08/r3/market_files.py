@@ -62,6 +62,13 @@ class RestockWindow(KitFile):
     closes_at: float = 0.0
 
 
+class SurgePrice(KitFile):
+    """The market's current multiplier for buying another unit of a SKU."""
+
+    sku: str
+    factor: float = Field(default=1.0, ge=1.0, allow_inf_nan=False)
+
+
 class Inventory(KitFile):
     """The shop's wallet and stock as the kit last read it (up to 10 s old)."""
 
@@ -74,6 +81,7 @@ class Inventory(KitFile):
     storage_per_day: float = 0.01
     units: tuple[Unit, ...] = ()
     restock: RestockWindow | None = None
+    surge: tuple[SurgePrice, ...] = ()
 
 
 class CatalogItem(KitFile):

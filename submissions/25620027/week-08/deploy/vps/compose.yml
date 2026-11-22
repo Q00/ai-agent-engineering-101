@@ -5,7 +5,7 @@ services:
       context: ${AX_R3_BUNDLE:?Use the verified build-context directory}
       dockerfile: deploy/vps/Dockerfile
     image: ax-week08-25620027:prepared
-    restart: "no"
+    restart: unless-stopped
     init: true
     read_only: true
     user: "10001:10001"
@@ -24,6 +24,8 @@ services:
     env_file:
       - ${AX_R3_PRIVATE_DIR:?Supply an approved private directory}/model-market.env
       - ${AX_R3_PRIVATE_DIR}/anthropic-fallback.env
+      - path: ${AX_R3_PRIVATE_DIR}/openai-fallback.env
+        required: false
     volumes:
       - ${AX_R3_PRIVATE_DIR}:/private:ro
       - ${AX_R3_DATA_DIR:?Supply an isolated writable data directory}:/data
@@ -31,7 +33,10 @@ services:
     # by the host's approved tunnel without publishing a container-wide listener.
     network_mode: host
     tmpfs: ["/tmp:mode=1777,size=128m"]
-    mem_limit: 768m
+    # 768m OOM-killed twice on 11/15 (03:49, 06:46 KST). The join and manager
+    # processes grow about 165MB/h together; 2048m buys ~8h between restarts on
+    # a host with ~6GB free, and the restart policy keeps trading alive.
+    mem_limit: 2048m
     cpus: "1.0"
     pids_limit: 128
     security_opt: ["no-new-privileges:true"]

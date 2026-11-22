@@ -17,42 +17,69 @@
 
 from __future__ import annotations
 
+import importlib
 import logging
 import os
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Annotated, Final
+from typing import TYPE_CHECKING, Annotated, Any, Final
 
 import anyio
 import typer
-import uvicorn
-from fastapi import FastAPI
-from pydantic import TypeAdapter
-
-from market_a2a.buyer import buy
-from market_a2a.catalog import Catalog
-from market_a2a.market_buyer import MarketRequest, market_buy
-from market_a2a.model_session import harness_session
-from market_a2a.models import (
-    FrozenModel,
-    Purchase,
-    ShopCard,
-    ShoppingItem,
-)
-from market_a2a.receipts import ReceiptSigner
-from market_a2a.seller import create_app
-from market_a2a.shopping import shop
-from r3 import buyer as r3_buyer
-from r3 import restock as r3_restock
-from r3 import review as r3_review
-from r3.ledger_db import LedgerDB, ledger_path
-from r3.market_files import read_catalog
-from r3.picture import load_picture, picture_path
-from r3.seller import create_r3_app
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
+
+# 11/15 09:5x: the kit starts this file once per order (market-buyer) and once per
+# deal (review). Importing every command's modules took 3.9 s under the trading
+# container's one CPU, about 8 s of each ~35 s deal, and the market hands us the
+# next order only when the last one ends. Each command now imports what it uses;
+# the names stay reachable as module attributes (tests patch them).
+_LAZY: Final[dict[str, tuple[str, str | None]]] = {
+    "uvicorn": ("uvicorn", None),
+    "FastAPI": ("fastapi", "FastAPI"),
+    "TypeAdapter": ("pydantic", "TypeAdapter"),
+    "buy": ("market_a2a.buyer", "buy"),
+    "Catalog": ("market_a2a.catalog", "Catalog"),
+    "MarketRequest": ("market_a2a.market_buyer", "MarketRequest"),
+    "market_buy": ("market_a2a.market_buyer", "market_buy"),
+    "harness_session": ("market_a2a.model_session", "harness_session"),
+    "FrozenModel": ("market_a2a.models", "FrozenModel"),
+    "Purchase": ("market_a2a.models", "Purchase"),
+    "ShopCard": ("market_a2a.models", "ShopCard"),
+    "ShoppingItem": ("market_a2a.models", "ShoppingItem"),
+    "ReceiptSigner": ("market_a2a.receipts", "ReceiptSigner"),
+    "create_app": ("market_a2a.seller", "create_app"),
+    "shop": ("market_a2a.shopping", "shop"),
+    "r3_buyer": ("r3.buyer", None),
+    "r3_restock": ("r3.restock", None),
+    "r3_review": ("r3.review", None),
+    "LedgerDB": ("r3.ledger_db", "LedgerDB"),
+    "ledger_path": ("r3.ledger_db", "ledger_path"),
+    "read_catalog": ("r3.market_files", "read_catalog"),
+    "load_picture": ("r3.picture", "load_picture"),
+    "picture_path": ("r3.picture", "picture_path"),
+    "create_r3_app": ("r3.seller", "create_r3_app"),
+}
+
+
+def __getattr__(name: str) -> object:
+    """Import a command's dependency on first use (PEP 562)."""
+    try:
+        module_name, attribute = _LAZY[name]
+    except KeyError:
+        raise AttributeError(name) from None
+    module = importlib.import_module(module_name)
+    value = module if attribute is None else getattr(module, attribute)
+    globals()[name] = value
+    return value
+
+
+def _dep(name: str) -> Any:  # noqa: ANN401 - a lazily imported module or object
+    """Return a dependency, honouring a test's patch of the module attribute."""
+    return getattr(sys.modules[__name__], name)
+
 
 ROOT: Final = Path(__file__).resolve().parent
 KINDS: Final = ("lamp", "chair", "bookshelf", "desk", "storage")
@@ -61,11 +88,16 @@ LOGGER: Final = logging.getLogger("ax06")
 app = typer.Typer(add_completion=False)
 
 
-class ShoppingInput(FrozenModel):
-    """The buyer sees only requested descriptions and one total budget."""
+def _shopping_input() -> Any:  # noqa: ANN401 - a pydantic model class
+    """Build the shopping input: requested descriptions and one total budget."""
+    frozen = _dep("FrozenModel")
+    item = _dep("ShoppingItem")
 
-    budget: int
-    items: tuple[ShoppingItem, ...]
+    class ShoppingInput(frozen):  # type: ignore[misc, valid-type]
+        budget: int
+        items: tuple[item, ...]  # type: ignore[valid-type]
+
+    return ShoppingInput
 
 
 def emit(message: str) -> None:
@@ -92,24 +124,26 @@ async def serve(
     first_shop_price_offset: int = 0,
 ) -> None:
     """Own the shared model client until the seller server shuts down."""
-    signer = ReceiptSigner.load(ROOT / "shop_key.pem")
-    async with harness_session(emit) as harness:
+    signer = _dep("ReceiptSigner").load(ROOT / "shop_key.pem")
+    async with _dep("harness_session")(emit) as harness:
         if directory:
-            web = FastAPI()
+            web = _dep("FastAPI")()
             for index in range(SHOP_COUNT):
                 base = f"http://127.0.0.1:{port}/shops/{index:02d}/"
                 kind = KINDS[index % len(KINDS)]
                 offset = index * 5 + (first_shop_price_offset if index == 0 else 0)
-                catalog = Catalog(catalog_path, price_offset=offset, kinds=(kind,))
-                child = create_app(
+                catalog = _dep("Catalog")(
+                    catalog_path, price_offset=offset, kinds=(kind,)
+                )
+                child = _dep("create_app")(
                     base, harness, catalog, f"shop-{index:02d}-{kind}", signer=signer
                 )
                 web.mount(f"/shops/{index:02d}", child)
         else:
-            web = create_app(
+            web = _dep("create_app")(
                 f"http://127.0.0.1:{port}/",
                 harness,
-                Catalog(catalog_path),
+                _dep("Catalog")(catalog_path),
                 "Sungjin Shop",
                 signer=signer,
             )
@@ -121,9 +155,15 @@ async def serve(
                 )
             )
         )
-        await uvicorn.Server(
-            uvicorn.Config(web, host="127.0.0.1", port=port, log_level="warning"),
-        ).serve()
+        await (
+            _dep("uvicorn")
+            .Server(
+                _dep("uvicorn").Config(
+                    web, host="127.0.0.1", port=port, log_level="warning"
+                ),
+            )
+            .serve()
+        )
 
 
 @app.command()
@@ -141,16 +181,22 @@ def seller(
 
         isolated(legacy)
         return
-    signer = ReceiptSigner.load(ROOT / "shop_key.pem")
-    web = create_r3_app(
+    signer = _dep("ReceiptSigner").load(ROOT / "shop_key.pem")
+    web = _dep("create_r3_app")(
         f"http://127.0.0.1:{port}/", "Sungjin Shop", signer=signer, emit=emit
     )
 
     async def run() -> None:
         emit("SELLER mode=r3-stock model=none policy=table")
-        await uvicorn.Server(
-            uvicorn.Config(web, host="127.0.0.1", port=port, log_level="warning"),
-        ).serve()
+        await (
+            _dep("uvicorn")
+            .Server(
+                _dep("uvicorn").Config(
+                    web, host="127.0.0.1", port=port, log_level="warning"
+                ),
+            )
+            .serve()
+        )
 
     isolated(run)
 
@@ -160,7 +206,7 @@ def r3_seller(
     config: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
 ) -> None:
     """Run local R3 ACP/A2A integration without joining the public market."""
-    from r3.server import serve_r3
+    from r3.server import serve_r3  # noqa: PLC0415 - keep server-only imports off hook startup
 
     absolute = config.resolve()
 
@@ -199,8 +245,8 @@ def buyer(
     """Run one model buyer against an independently implemented seller."""
 
     async def run() -> None:
-        async with harness_session(emit) as harness:
-            result = await buy(harness, url, item, budget, emit)
+        async with _dep("harness_session")(emit) as harness:
+            result = await _dep("buy")(harness, url, item, budget, emit)
             emit("BUYER_RESULT " + result.model_dump_json())
 
     isolated(run)
@@ -227,17 +273,19 @@ def market_buyer(  # noqa: PLR0913 - the kit's hook arguments
     if mode != "model":
 
         async def fast() -> None:
-            outcome = await r3_buyer.buy(shops_path, item, budget, order_path, emit)
-            typer.echo(r3_buyer.result_line(outcome))
+            outcome = await _dep("r3_buyer").buy(
+                shops_path, item, budget, order_path, emit
+            )
+            typer.echo(_dep("r3_buyer").result_line(outcome))
 
         isolated(fast)
         return
 
     async def run() -> None:
-        async with harness_session(emit) as harness:
-            result = await market_buy(
+        async with _dep("harness_session")(emit) as harness:
+            result = await _dep("market_buy")(
                 harness,
-                MarketRequest(
+                _dep("MarketRequest")(
                     shops_path=shops_path,
                     item=item,
                     budget=budget,
@@ -258,17 +306,17 @@ def restock(
     """Print the restock plan for the kit: breadth first, then what sells."""
     folder = state.resolve()
     signal = None
-    picture = load_picture(picture_path(folder))
+    picture = _dep("load_picture")(_dep("picture_path")(folder))
     try:
-        ledger_file = ledger_path(folder)
+        ledger_file = _dep("ledger_path")(folder)
         by_category: dict[str, int] = {}
         by_sku: dict[str, int] = {}
         if ledger_file.exists():
-            by_category, by_sku = LedgerDB(ledger_file).demand_counts(
-                read_catalog(folder), 24
+            by_category, by_sku = _dep("LedgerDB")(ledger_file).demand_counts(
+                _dep("read_catalog")(folder), 24
             )
         if ledger_file.exists() or picture.hot_categories:
-            signal = r3_restock.DemandSignal(
+            signal = _dep("r3_restock").DemandSignal(
                 by_category,
                 by_sku,
                 frozenset(picture.hot_categories),
@@ -276,7 +324,13 @@ def restock(
             )
     except (OSError, ValueError) as exc:
         emit(f"RESTOCK ledger signal unavailable: {type(exc).__name__}")
-    typer.echo(r3_restock.run(folder, signal=signal))
+    typer.echo(
+        _dep("r3_restock").run(
+            folder,
+            signal=signal,
+            shop_url=os.environ.get("AX_R3_SHOP_URL", ""),
+        )
+    )
 
 
 @app.command()
@@ -284,7 +338,7 @@ def review(
     deal: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
 ) -> None:
     """Rate a settled deal from the market's receipt; no budget in public text."""
-    typer.echo(r3_review.run(deal.resolve()))
+    typer.echo(_dep("r3_review").run(deal.resolve()))
 
 
 @app.command()
@@ -293,15 +347,21 @@ def shopping(
     shopping_input: Annotated[Path, typer.Option(exists=True)],
 ) -> None:
     """Run the shopping-list buyer with actual public cards and one budget."""
-    cards = TypeAdapter(tuple[ShopCard, ...]).validate_json(directory.read_bytes())
-    request = ShoppingInput.model_validate_json(shopping_input.read_bytes())
+    cards = _dep("TypeAdapter")(tuple[_dep("ShopCard"), ...]).validate_json(
+        directory.read_bytes()
+    )
+    request = _shopping_input().model_validate_json(shopping_input.read_bytes())
 
     async def run() -> None:
-        async with harness_session(emit) as harness:
-            purchases = await shop(harness, cards, request.items, request.budget, emit)
+        async with _dep("harness_session")(emit) as harness:
+            purchases = await _dep("shop")(
+                harness, cards, request.items, request.budget, emit
+            )
             emit(
                 "SHOPPING_RESULT "
-                + TypeAdapter(tuple[Purchase, ...]).dump_json(purchases).decode()
+                + _dep("TypeAdapter")(tuple[_dep("Purchase"), ...])
+                .dump_json(purchases)
+                .decode()
             )
             for result in purchases:
                 emit("PURCHASE " + result.model_dump_json())

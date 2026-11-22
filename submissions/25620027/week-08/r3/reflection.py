@@ -12,6 +12,8 @@ import time
 from contextlib import closing
 from typing import TYPE_CHECKING, Final
 
+from pydantic import TypeAdapter
+
 from r3.accounting import STOCK_FILE, financial_window
 
 if TYPE_CHECKING:
@@ -21,6 +23,8 @@ if TYPE_CHECKING:
 WINDOW_SECONDS: Final = 900
 MAX_VERSIONS: Final = 6
 MIN_SAMPLE: Final = 5
+_VERSION_ROWS: Final = TypeAdapter(list[tuple[int]])
+_BOOLEAN: Final = TypeAdapter(bool)
 # Versions arrive every 3-15 minutes (tactical overlay plus strategy), so equal
 # +-15 min windows almost always held another change: on 11/4 every review read
 # "confounded" and the strategy model held for hours with nothing to learn from.
@@ -78,6 +82,18 @@ def _reviews(
             GROUP BY version""",
             (stamp - 86400 - WINDOW_SECONDS,),
         ).fetchall()
+        buyer_versions = {
+            version
+            for (version,) in _VERSION_ROWS.validate_python(
+                db.execute(
+                    """SELECT DISTINCT version FROM policy_changes
+                    WHERE accepted=1 AND version IS NOT NULL
+                    AND (field LIKE 'buyer.%' OR field LIKE 'band:buyer.%')
+                    AND ts>=?""",
+                    (stamp - 86400 - WINDOW_SECONDS,),
+                ).fetchall()
+            )
+        }
     groups = _groups([(int(v), float(t), int(n)) for v, t, n in found])
     picked = [index for index, group in enumerate(groups) if group[0] >= stamp - 86400][
         -MAX_VERSIONS:
@@ -168,13 +184,21 @@ def _reviews(
                 )
             row["delta"] = delta
             profit = delta.get("shop_net_profit")
-            row["assessment_basis"] = "shop_net_profit"
-            row["assessment"] = "insufficient_evidence"
-            row["financial_small_sample"] = (
-                min(before["shop_settles"], after["shop_settles"]) < MIN_SAMPLE
+            buyer_affected = any(version in buyer_versions for version in versions)
+            row.update(
+                assessment_basis=(
+                    "buyer_mature_surplus_per_issued_order"
+                    if buyer_affected
+                    else "shop_net_profit"
+                ),
+                assessment="insufficient_evidence",
+                financial_small_sample=_BOOLEAN.validate_python(
+                    min(before["shop_settles"], after["shop_settles"]) < MIN_SAMPLE
+                ),
             )
             if (
                 isinstance(profit, (int, float))
+                and not buyer_affected
                 and not short
                 and not row["small_sample"]
                 and not row["financial_small_sample"]

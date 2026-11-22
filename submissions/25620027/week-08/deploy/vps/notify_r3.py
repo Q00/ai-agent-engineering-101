@@ -28,6 +28,9 @@ from urllib.request import urlopen
 
 KST = timezone(timedelta(hours=9))
 BASE = Path("/docker/ax-week08-25620027")
+QUIET_LOOPS = (
+    BASE / "notify-quiet-loops"
+)  # present: no policy-change/notes/digest messages
 CONTAINER = "ax-week08-25620027-r3-r3-1"
 HERMES = "hermes-agent-ztmz-hermes-agent-1"
 MARKET = "https://market.ourolabs.ai"
@@ -104,6 +107,8 @@ class Snapshot:
     )
     # engineer notes the strategy model filed (ts, note), oldest first
     engineer_notes: list[tuple[float, str]] = field(default_factory=list)
+    # 11/10: code-found alerts with Sonnet's explanation (r3/watch.py)
+    watch_alerts: list[dict[str, object]] = field(default_factory=list)
     refused_24h: int = 0
     balance: int | None = None
     units: int | None = None
@@ -258,6 +263,20 @@ def collect(base: Path = BASE, *, market: str = MARKET) -> Snapshot:  # noqa: C9
                 snap.engineer_notes.append((float(row.get("ts") or 0), row["note"]))
     except OSError:
         pass
+    try:
+        for line in (
+            (base / "data/r3/r3-watch-alerts.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()[-50:]
+        ):
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(row, dict) and isinstance(row.get("message"), str):
+                snap.watch_alerts.append(row)
+    except OSError:
+        pass
     if _sql(events, "SELECT name FROM sqlite_master WHERE name = 'loop_runs'"):
         snap.loop_runs = [
             (float(str(ts)), str(role), str(outcome), str(detail or ""))
@@ -355,7 +374,13 @@ def conditions(snap: Snapshot) -> set[str]:
     return active
 
 
-ROLE_NAMES = {"scout": "정찰", "tactical": "전술", "strategy": "전략", "trade": "통역"}
+ROLE_NAMES = {
+    "scout": "정찰",
+    "tactical": "전술",
+    "strategy": "전략",
+    "trade": "통역",
+    "watch": "감시",
+}
 OUTCOME_NAMES = {
     "read": "판독",
     "changed": "변경",
@@ -544,6 +569,16 @@ TRIGGER_KO = [
         re.compile(r"fold recurring tactical moves"),
         "같은 방향 전술 이동 3회 → 기본값으로 고정",
     ),
+    (
+        re.compile(
+            r"cash is (\d+)% of cash \+ stock, grade-weighted stale stock ([\d.]+)%"
+        ),
+        "현금이 자산의 {0}%로 놀고 있고 오래된 재고는 {1}%뿐 → 깊게 쌓는 품목 확대",
+    ),
+    (
+        re.compile(r"grade-weighted stale stock is ([\d.]+)% of cash \+ stock"),
+        "오래 안 팔린 재고가 자산의 {0}% → 깊게 쌓는 품목 축소",
+    ),
 ]
 
 
@@ -609,7 +644,7 @@ def change_notice(rows: list[tuple[float, str, str, str, str, str, str]]) -> str
         if why:
             lines.append(f"근거: {why}")
         elif reason:
-            lines.append(f"모델 설명: {reason[:160]}")
+            lines.append(f"설명: {reason[:240]}")
     return "\n".join(lines)
 
 
@@ -726,12 +761,50 @@ def decide(
         )
         once.add("final")
     new["once"] = sorted(once)
-    return messages + loop_messages(snap, new), new
+    return messages + watch_messages(snap, new) + loop_messages(snap, new), new
+
+
+def watch_messages(snap: Snapshot, state: dict[str, object]) -> list[str]:
+    """Watch alerts are faults, not loop chatter: sent even in the quiet hours."""
+    cursor = float(str(state.get("watch_cursor", snap.now - 1800)))
+    fresh = [a for a in snap.watch_alerts if float(str(a.get("ts", 0))) > cursor]
+    if not fresh:
+        return []
+    state["watch_cursor"] = max(float(str(a.get("ts", 0))) for a in fresh)
+    lines = ["[AX R3] 감시 경보 (코드 점검 → Sonnet 설명)"]
+    for alert in fresh[-5:]:
+        lines.append(f"{_kst(float(str(alert.get('ts', 0)))):%m/%d %H:%M} · {alert['message']}")
+        why = alert.get("explanation")
+        if isinstance(why, dict):
+            for label, field_key in (
+                ("원인 추정", "likely_cause"),
+                ("다음 확인", "check_next"),
+                ("하지 말 것", "avoid"),
+            ):
+                text = str(why.get(field_key, "")).strip()
+                if text:
+                    lines.append(f"  {label}: {text[:200]}")
+    lines.append("파일: data/r3/r3-watch-alerts.jsonl")
+    return ["\n".join(lines)]
 
 
 def loop_messages(snap: Snapshot, state: dict[str, object]) -> list[str]:
     """Policy changes since the last pass, one loop digest per hour, new notes."""
     messages: list[str] = []
+    if QUIET_LOOPS.exists():
+        # Owner 11/5: no mid-hour strategy/tactics messages, only the hourly
+        # report. Cursors still move so nothing piles up for a later burst.
+        state["notes_cursor"] = max(
+            [float(str(state.get("notes_cursor", 0)))]
+            + [n[0] for n in snap.engineer_notes]
+        )
+        state["loop_cursor"] = max(
+            [float(str(state.get("loop_cursor", 0)))]
+            + [r[0] for r in snap.loop_runs]
+            + [r[0] for r in snap.policy_changes]
+        )
+        state["digest_hour"] = f"{_kst(snap.now):%Y-%m-%d %H}"
+        return messages
     notes_cursor = float(str(state.get("notes_cursor", snap.now - 600)))
     new_notes = [n for n in snap.engineer_notes if n[0] > notes_cursor]
     if new_notes:

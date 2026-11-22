@@ -104,6 +104,7 @@ class Identity(Wire):
     sku: str = ""
     item: str = ""
     ask: JsonValue = None
+    warranty_hours: JsonValue = None
 
 
 class Message(Wire):

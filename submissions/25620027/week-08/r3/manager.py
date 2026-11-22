@@ -21,8 +21,9 @@ import os
 import sqlite3
 import statistics
 import time
+from math import isfinite
 from pathlib import Path  # noqa: TC003 - typer resolves the CLI annotation at runtime
-from typing import TYPE_CHECKING, Annotated, Final
+from typing import TYPE_CHECKING, Annotated, Final, cast
 
 import anyio
 import httpx
@@ -31,13 +32,24 @@ from pydantic import Field, JsonValue, ValidationError, field_validator
 
 from market_a2a.anthropic_fallback import HAIKU_MODEL
 from market_a2a.models import FrozenModel
+from r3 import watch as watcher
 from r3.benchmark import benchmark_path, build, compact, load_day_ago, load_latest
 from r3.benchmark import save as save_benchmark
+from r3.buyer import SAVED_FEEDBACK_FILE, publish_saved_feedback
+from r3.buyer_report import write_buyer_report
 from r3.events import EventLedger, events_path
 from r3.forum import STATE_FILE as FORUM_STATE
 from r3.forum import maybe_post
+from r3.fresh_list import (
+    FRESH_LIST_FILE,
+    NEEDS_FILE,
+    find_buyer02_needs,
+    find_fresh_list,
+    write_fresh_list,
+)
 from r3.guard import wrap_untrusted
 from r3.ledger_db import LedgerDB, ledger_path, pull
+from r3.manager_buyer_report import REPORT_EVERY, REPORT_FILE, cached_buyer_report
 from r3.market_files import (
     read_catalog,
     read_demand,
@@ -50,6 +62,14 @@ from r3.model_client import (
     Request,
     parse_arguments,
     tool_param,
+)
+from r3.overpriced import (
+    OVERPRICED_FILE,
+    STUCK_SALES_HOURS,
+    find_overpriced,
+    own_sales,
+    stuck,
+    write_overpriced,
 )
 from r3.picture import (
     Picture,
@@ -86,18 +106,50 @@ from r3.policy import (
     save_tactical,
     widen_band,
 )
+from r3.pricing import quote
+from r3.rater_demand import (
+    RATER_DEMAND_FILE,
+    find_rater_demand,
+    write_rater_demand,
+)
 from r3.reflection import policy_reviews
+from r3.restock import ECONOMICS_FILE, OWN_RATE_WINDOW, DemandSignal
+from r3.restock import STATE_FILE as RESTOCK_STATE_FILE
+from r3.restock import depth_targets as restock_depth
+from r3.restock import load_state as load_restock_state
 from r3.review import DEALS_FILE
 from r3.reviews import MAX_OURS, MAX_PER_LEADER, load_digest, run_digest, third_party
 from r3.standing import standing as graded_standing
+from r3.stockouts import STOCKOUTS_FILE, missed_sales, write_stockouts
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
     from r3.market_files import CatalogItem
 
+
+class BuyerReviewControl(FrozenModel, extra="ignore"):
+    """Bound model write ownership to the existing user delegation."""
+
+    owner_control_until: float = Field(ge=0, le=1794841200.0, allow_inf_nan=False)
+
+
+def owner_buyer_review_until(path: Path, now: float) -> float:
+    """Keep malformed control fail-closed, without extending the delegation."""
+    if now >= BUYER_REVIEW_DEADLINE:
+        return 0.0
+    try:
+        control = BuyerReviewControl.model_validate_json(path.read_text())
+    except FileNotFoundError:
+        return 0.0
+    except (OSError, ValueError):
+        return BUYER_REVIEW_DEADLINE
+    return control.owner_control_until if control.owner_control_until > now else 0.0
+
+
 LOGGER: Final = logging.getLogger("r3.manager")
 PULL_EVERY: Final = 30.0
+STUCK_MEDIAN_SECONDS: Final = 6 * 3600.0  # same window as the seller's anchor
 SCOUT_EVERY: Final = 300.0
 # Cadences set by the user on 2026-11-01 after the live trial: scout model every
 # 5 min, tactical every 15 min, strategy every 30 min (~$1.5 a day at trial prices).
@@ -108,27 +160,117 @@ BENCHMARK_EVERY: Final = 1800.0
 REVIEW_DIGEST_EVERY: Final = 1800.0
 STRATEGY_MIN_GAP: Final = 600.0
 ALERT_CALLS_PER_HOUR: Final = 2
+# Owner 11/10 ("네, 바꿔줘"): in 72 h Sonnet filed 14 policy changes and Haiku 166,
+# none applied (owner locks, rightly: each went against what was measured). The
+# models stop editing the policy; Sonnet now explains watch alerts (r3/watch.py).
+MODEL_POLICY_EDITS: Final = False
 OSCILLATION_WINDOW: Final = 1800.0
 REVIEWS_CACHE_SECONDS: Final = 1800.0
 FORUM_CACHE_SECONDS: Final = 240.0
 BOARD_CACHE_SECONDS: Final = 600.0
 MAX_CHANGES: Final = 6
 MAX_TACTICAL: Final = 3
+LOCKED_MODEL_PREFIXES: Final = ("seller.", "restock.")
+SAVED_PRICE_CAP_FIELD: Final = "buyer.max_price_ratio"
+SAVED_TIMING_FIELD: Final = "buyer.late_accept_share"
+SAVED_OWNER_FIELDS: Final = frozenset(
+    (
+        SAVED_PRICE_CAP_FIELD,
+        SAVED_TIMING_FIELD,
+        "buyer.quick_accept_ratio",
+        "buyer.first_offer_ratio",
+        "buyer.food_margin_hours",
+        "buyer.surplus_score",
+        "buyer.min_expected_credit",
+        "buyer.fail_streak",
+        "buyer.fail_cooldown_minutes",
+        "buyer.dual_quote",
+    )
+)
+# The existing delegation ends independently of the market trading deadline.
+BUYER_REVIEW_DEADLINE: Final = 1794841200.0
+QUICK_ACCEPT_LIMITS: Final = Band(low=0.55, high=0.62)
+DEPTH_CODE_TRIGGERS: Final = frozenset(("cash_idle", "stock_stale"))
+OWNER_RESTOCK_REVIEW_NOTE: Final = "owner review controls restock policy"
 STRATEGY_MODEL_ENV: Final = "AX_R3_STRATEGY_MODEL"
 TACTICAL_MODEL_ENV: Final = "AX_R3_TACTICAL_MODEL"
 GATE_ENV: Final = "AX_R3_MANAGER_MODEL"
+BUYER_SCORING_RULES: Final = (
+    "Current official buyer ALL uses saved rate at weight 0.5, forum reputation "
+    "0.3, deals 0.1 and posts 0.1. Patch 3.5 uses the forum rating itself "
+    "(0..1), not its percentile; only saved, deals and posts use percentiles. "
+    "A 0.01 forum rating improvement adds 0.003 points regardless of forum rank. "
+    "Use the official "
+    "board saved value: sum(normalized deal credit) / (deals + 100). The current "
+    "market rule describes normalized savings by list price. A settled deal "
+    "that served nothing counts -1, or 0 if refunded. Failed or unpaid orders "
+    "are not settled deals and must not be assigned a -1 Saved credit. "
+    "Do not substitute raw currency totals. "
+    "A sofa and a "
+    "snack at the same percentage saving contribute equally before this denominator. "
+    "Raw currency surplus remains a financial diagnostic, not the graded buyer "
+    "metric. Judge buyer changes by official saved rate, mature normalized savings "
+    "and settlement rate, including large orders without sacrificing small orders. "
+    "Use derived buyer points only when standing.buyer_reconstruction.status is "
+    "matched and the shop reconstruction is also matched; otherwise rely on "
+    "official Players total and record insufficient "
+    "evidence. Old saved currency totals and current saved rates are different "
+    "metrics; do not join their histories. Forum scoring now requires 50 settled "
+    "deals by a different GitHub owner and uses one stance per account per author; "
+    "the newest 100 posts cannot reconstruct the author's reputation. Do not "
+    "request votes or change the existing posting/voting path. "
+    "Paid dislike power costs unit * (N - 1)^2 in total, paying only the "
+    "difference when raised. The unit is 3% of the account's largest Book, "
+    "at least 20000; actual inventory.dislike_power_unit is authoritative. "
+    "This irreversibly spends shop cash and reduces Book. A missing unit is "
+    "unknown, not free. No new vote, reciprocal trade, loan or message path "
+    "is authorized. Preserve Book/revenue and prioritize verified Saved and "
+    "account-level review improvements over speculative forum attacks. "
+    "Execution direction: late_accept_share is the elapsed fraction at which "
+    "the buyer starts accepting above quick_accept_ratio up to max_price_ratio. "
+    "Lowering it starts that more expensive acceptance earlier, not later; "
+    "raising it delays that phase. Do not call a reduction a Saved improvement "
+    "without measured price and settlement evidence. "
+    "The owner controls buyer.max_price_ratio and buyer.late_accept_share for "
+    "Saved experiments; do not propose either value or band. Other allowed "
+    "buyer fields remain adjustable. "
+)
+CLASS_SCORING_RULES: Final = (
+    "The graded view is official Players Class, among student GitHub owners. "
+    "standing.total/rank/components use Class and the official student_shop, "
+    "student_buyer and student_total values. standing.all_diagnostic is an "
+    "All-population reference, not the grade; never compare its points or old "
+    "All history with Class. Missing Class membership or official fields mean "
+    "unavailable, not zero or an All fallback. Seller reviews contribute one "
+    "mean per GitHub account; repeating 5-star sales to an account already "
+    "averaging 5 does not increase that account's mean. Judge the cheap-item "
+    "pilot by changes in account means/new reviewing accounts, official "
+    "stars_rank, mature refund/storage profit and displaced core supply, not "
+    "review count alone. A short review sample cannot reconstruct the official "
+    "adjusted stars_rank. Keep Book and revenue strengths while improving Saved "
+    "and account-level ratings. Unsold stock retains its cost in Book; do not "
+    "assume a below-cost liquidation is automatically better than holding it. "
+)
 PROMPT: Final = (
+    "The owner has locked seller.* and restock.* and their bands against model "
+    "changes. Propose only buyer changes. "
+    + BUYER_SCORING_RULES
+    + CLASS_SCORING_RULES
+    + "The owner's buyer.quick_accept_ratio limits are 0.55..0.62; neither "
+    "strategy bands nor tactical values may extend that range. "
     "You manage the trading policy of one shop and one buyer agent in a simulated "
-    "market. Shops rank by profit, revenue and stars; buyers by surplus (list price "
-    "minus price paid, zero for broken or expired goods), forum reputation and deal "
-    "count. All ranks are percentiles. "
-    "The grade is our Players-table rank (shop ALL + buyer ALL) at 11/17 23:59 KST. "
+    "market. Shops rank by book (cash profit plus inventory cost), revenue and "
+    "adjusted stars_rank; buyers use the saved-rate contract above. "
+    "Forum contributes its raw rating times 0.3; other scoring metrics use "
+    "percentiles. Compare history only within the same verified scoring version. "
+    "The grade is our official student-only Players Class rank at 11/17 23:59 KST. "
     "The standing table rebuilds it per component (rank, percentile, points, "
     "points_left, gap_up, role, and the ranks about an hour ago). Work it as a loop: "
     "defend every strength (do not trade away a component ranked high, above all "
-    "shop profit at weight 0.5) and spend each change on the weakness with the most "
-    "points_left that a field can move (shop stars, buyer deals and surplus on "
-    "11/4). In the reason, name the component the change serves and the rank move "
+    "shop book value at weight 0.5) and spend each change on the weakness with "
+    "the most "
+    "points_left that a field can move, using matched current components only. "
+    "In the reason, name the component the change serves and the rank move "
     "you expect; next run, check standing.about_an_hour_ago and keep, extend or "
     "undo it by what moved. "
     "You own the strategy fields and the bands "
@@ -136,7 +278,10 @@ PROMPT: Final = (
     "hour. You see the last 6 and 24 hours: settlements, refusals and reasons, "
     "break rates by grade, category medians, the scout's trust picture, and the "
     "tactical layer's recent moves with their results, and a leaders' table (top "
-    "shops by profit and buyers by surplus next to ours, now and a day ago). Learn "
+    "student Class representative shops by Book and buyers by Saved next to "
+    "ours, now and a day ago). Missing Class membership or obsolete benchmark "
+    "versions are unavailable, not All-population substitutes. Raw profit and "
+    "currency surplus remain diagnostics, not the graded leader rankings. Learn "
     "from leaders' measurable choices (price share of list, median_list_price i.e. "
     "ticket size, top_categories, warranty_share, grade_mix, repeat_buyer_share, "
     "food share; on 2026-11-03 the profit leaders sold 199,000-279,000 bedding and "
@@ -187,34 +332,64 @@ PROMPT: Final = (
     "list rather than many cheap ones. Stock follows the money: restock may hold "
     "stock up to restock.stock_share of equity (cash plus stock at cost), with "
     "restock.seed_budget only a floor and the cash reserve kept; there is no fixed "
-    "cap. The final board counts cash only (stock scores zero) at 11/17 23:59 "
-    "KST, so code tapers the stock budget to nothing from 72 to 36 hours before "
-    "the end and slides prices toward half of cost in the last 24 hours; do not "
-    "fight it by raising stock_share then. The owner set buyer.goods_warranty_hours "
+    "cap. The current board counts Book (cash plus stock at cost), including at "
+    "the end, and the graded Class view uses student percentiles except for "
+    "the raw forum rating. Keep existing "
+    "seller/endgame/restock code unchanged in this buyer-only task. The owner "
+    "set buyer.goods_warranty_hours "
     "to 0 on 11/4: per unit, grade A goods break 4% and B 13% within 6 hours, so "
     "an A or B unit without warranty still pays, while the 6 h demand left ~130 "
     "agreed deals a day unpaid (buyer_unpaid_by_reason_24h); keep it at 0 and C "
     "out of buyer.goods_grades (C breaks ~36%). Stars are 20% of the shop's "
     "score and ours ranked 32nd of 47 on 11/4 while profit and revenue ranked 7th "
-    "and 5th, so the owner capped asks at seller.max_ask_ratio 0.79 of list "
-    "(deals at 0.8+ drew 4.3-4.4 stars, 0.6-0.79 drew 4.7-4.8); do not raise it "
-    "above 0.79, and goods under seller.cheap_list_price (50k) open at "
-    "seller.cheap_max_ask_ratio 0.70: their reviews weigh the same as a mattress's "
-    "while they earn about 1% of margin. Raise it back when food "
+    "and 5th, so the owner capped asks at seller.max_ask_ratio (deals at 0.8+ "
+    "drew 4.3-4.4 stars, 0.6-0.79 drew 4.7-4.8). The owner set it to 0.76 on "
+    "11/4: the market's 200k+ goods fell to 0.755 of list, and at 0.76 our dear "
+    "sales went 69 -> 102 an hour and margin per hour rose 37%; do not raise it "
+    "above 0.76, and goods under seller.cheap_list_price (50k) open at "
+    "seller.cheap_max_ask_ratio 0.70. Review means are weighted per GitHub account, "
+    "so cheap sales to an already-five-star account do not add rating weight. "
+    "The market assigns each buyer its order "
+    "categories and our buyer already takes the dearest acceptable SKU in each "
+    "order. A buyer minimum list price would discard valid orders, and higher "
+    "ticket size alone does not improve saved rate: do not ask for one. "
+    "best_sellers lists the market's top goods SKUs with what we "
+    "hold, the depth target and our sales in the last hour: a seller near zero "
+    "stock with a fast pace needs more depth (units_per_sku), a full shelf with no "
+    "sales needs less. Idle cash should become stock that sells: when "
+    "shop.aging.cash_share_pct stays at 40 or more and shop.aging.stale_value_pct "
+    "(goods unsold past the stale line, at cost, C weighted 1.5 and B 1.2, as a "
+    "share of cash + stock) is at most 8, raise restock.depth_skus and "
+    "units_per_sku; when stale_value_pct reaches 15, lower them "
+    "(code also steps depth_skus by itself through the cash_idle and stock_stale "
+    "triggers). shop.aging.units_ask_at_accept_line_above_cap counts stock "
+    "whose accept line (cost x (1 + accept_margin)) is above the ask cap: those "
+    "asks already sit at the accept line, so a lower max_ask_ratio does not move "
+    "them; only accept_margin, or buying those SKUs at a lower cost, does. "
+    "보증은 A·B·C 모두 72시간(사용자 11/5 최신 결정). "
+    "고장은 판매 후 6시간 안에만 나므로 A·B는 추가 비용이 없다. 줄이지 말 것. "
+    "Raise it back when food "
     "write-offs in the policy reviews exceed what that food earned. Use the "
-    "set_strategy tool once; an empty change map keeps the policy."
+    "set_strategy tool once; an empty change map keeps the policy. Write the "
+    "reason and every engineer note in Korean, in plain words the shop owner reads "
+    "on a phone (keep numbers and field names as they are)."
 )
 TACTICAL_PROMPT: Final = (
-    "You run the fifteen-minute tactical adjustment for one shop and one buyer agent "
+    "The owner has locked seller.* and restock.* and their bands against model "
+    "changes. Propose only buyer changes; an empty change map is valid. "
+    + BUYER_SCORING_RULES
+    + CLASS_SCORING_RULES
+    + "You run the fifteen-minute tactical adjustment for one shop and one buyer agent "
     "in a simulated market. You may change at most three tactical fields, each inside "
     "the band shown for it, and the change lasts one hour. "
-    "The grade is our Players-table rank (shop ALL + buyer ALL) at 11/17 23:59 KST. "
+    "The grade is our official student-only Players Class rank at 11/17 23:59 KST. "
     "The standing table rebuilds it per component (rank, percentile, points, "
     "points_left, gap_up, role, and the ranks about an hour ago). Work it as a loop: "
     "defend every strength (do not trade away a component ranked high, above all "
-    "shop profit at weight 0.5) and spend each change on the weakness with the most "
-    "points_left that a field can move (shop stars, buyer deals and surplus on "
-    "11/4). In the reason, name the component the change serves and the rank move "
+    "shop book value at weight 0.5) and spend each change on the weakness with "
+    "the most "
+    "points_left that a field can move, using matched current components only. "
+    "In the reason, name the component the change serves and the rank move "
     "you expect; next run, check standing.about_an_hour_ago and keep, extend or "
     "undo it by what moved. "
     "Read the last hour: our "
@@ -231,7 +406,9 @@ TACTICAL_PROMPT: Final = (
     "for each trigger, move its field one step in its direction unless a number "
     "says otherwise, and name that number in the reason. If you propose nothing "
     "while a trigger stands, code makes the first trigger's move itself. Use the "
-    "set_tactical tool once; with no trigger, an empty change map means no change."
+    "set_tactical tool once; with no trigger, an empty change map means no change. "
+    "Write the reason in Korean, in plain words the shop owner reads on a phone "
+    "(keep numbers and field names as they are)."
 )
 # A tactical field pinned at a band limit for this many tactical runs (45 min)
 # gets its band widened by code when the strategy has not moved it.
@@ -251,11 +428,30 @@ TRIGGER_FOOD_NEAR: Final = 8
 # "near", which fired the trigger again (0.32 -> 0.43 on 11/4 06:17-09:20). The
 # trigger stops once the ratio reaches the line, and code never widens its band.
 FOOD_NEAR_PCT: Final = 30
+# Owner rule (11/4): idle cash grows the stock goal by itself. When cash is at
+# least this share of cash + stock at cost and few goods sit unsold, the tactical
+# loop widens restock.depth_skus a step; when unsold goods pile up it narrows it.
+CASH_IDLE_PCT: Final = 40
+CASH_IDLE_MIN_UNITS: Final = 20
+# Stale stock is judged by value, not count (owner, 11/4): goods unsold past the
+# stale line, at cost, weighted by how hard the grade is to sell, as a share of
+# cash + stock. A 2.3M sofa and a 50k duvet are not the same risk.
+STALE_GRADE_WEIGHT: Final = {"A": 1.0, "B": 1.2, "C": 1.5}
+STALE_VALUE_GROW_MAX_PCT: Final = 8.0
+STALE_VALUE_SHRINK_PCT: Final = 15.0
 # The graded standing is snapshotted at most every 10 minutes, 2 hours kept.
 STANDING_EVERY: Final = 600.0
 STANDING_KEEP: Final = 12
 STANDING_HOUR_AGO: Final = 3000.0
-NO_CODE_WIDEN: Final = frozenset({"seller.clearance_shelf_ratio"})
+BEST_SELLERS_FILE: Final = "r3-best-sellers.json"
+BEST_SELLERS_HISTORY: Final = "r3-best-sellers.jsonl"
+BEST_SELLERS_EVERY: Final = 1800.0
+ECON_WINDOW: Final = 12 * 3600.0
+# buyer.quick_accept_ratio too (11/5): code widened its 0.55-0.62 band at 03:05 and
+# the tactical model walked it to 0.86, so we paid 0.77 of list against 0.74.
+NO_CODE_WIDEN: Final = frozenset(
+    {"seller.clearance_shelf_ratio", "buyer.quick_accept_ratio"}
+)
 SCOUT_PROMPT: Final = (
     "You are the scout for one shop and one buyer agent in a simulated market. You "
     "receive numbers computed by code (per-shop settlements, dishonest grade "
@@ -273,6 +469,15 @@ SCOUT_PROMPT: Final = (
     "categories only from the given list, using forum requests and settlement "
     "counts. Do not repeat review text. Use the write_picture tool once."
 )
+
+
+def owner_buyer_limit_note(key: str, low: float, high: float) -> str:
+    """Keep model and code moves inside the owner's immediate-accept range."""
+    if key == "buyer.quick_accept_ratio" and not (
+        QUICK_ACCEPT_LIMITS.low <= low <= high <= QUICK_ACCEPT_LIMITS.high
+    ):
+        return "owner quick_accept limits 0.55..0.62"
+    return ""
 
 
 def policy_schema(fields: Iterable[str] | None = None) -> dict[str, object]:
@@ -329,7 +534,9 @@ def strategy_fields() -> frozenset[str]:
     changes = schema["properties"]
     assert isinstance(changes, dict)  # noqa: S101 - shape built above
     inner = changes["changes"]["properties"]
-    return frozenset(k for k in inner if k not in TACTICAL_FIELDS)
+    return frozenset(
+        k for k in inner if k not in TACTICAL_FIELDS and k != SAVED_PRICE_CAP_FIELD
+    )
 
 
 def strategy_schema() -> dict[str, object]:
@@ -342,7 +549,7 @@ def strategy_schema() -> dict[str, object]:
             "required": ["low", "high"],
             "additionalProperties": False,
         }
-        for key in sorted(TACTICAL_FIELDS)
+        for key in sorted(TACTICAL_FIELDS - SAVED_OWNER_FIELDS)
     }
     properties = schema["properties"]
     assert isinstance(properties, dict)  # noqa: S101 - shape built above
@@ -361,7 +568,7 @@ def strategy_schema() -> dict[str, object]:
 
 def tactical_schema() -> dict[str, object]:
     """Build the tactical tool: at most three tactical fields and a short reason."""
-    schema = policy_schema(TACTICAL_FIELDS)
+    schema = policy_schema(TACTICAL_FIELDS - SAVED_OWNER_FIELDS)
     properties = schema["properties"]
     assert isinstance(properties, dict)  # noqa: S101 - shape built above
     properties["changes"]["maxProperties"] = MAX_TACTICAL
@@ -599,6 +806,30 @@ def tactical_triggers(
                 "why": f"no sale in 1h after {six_hours['seller_receipts']} in 6h",
             }
         )
+    stale_pct = float(aging.get("stale_value_pct", 0))
+    if (
+        aging.get("cash_share_pct", 0) >= CASH_IDLE_PCT
+        and stale_pct <= STALE_VALUE_GROW_MAX_PCT
+        and aging.get("units", 0) >= CASH_IDLE_MIN_UNITS
+    ):
+        found.append(
+            {
+                "name": "cash_idle",
+                "field": "restock.depth_skus",
+                "direction": 1,
+                "why": f"cash is {aging.get('cash_share_pct')}% of cash + stock, "
+                f"grade-weighted stale stock {stale_pct}% of it",
+            }
+        )
+    elif stale_pct >= STALE_VALUE_SHRINK_PCT:
+        found.append(
+            {
+                "name": "stock_stale",
+                "field": "restock.depth_skus",
+                "direction": -1,
+                "why": f"grade-weighted stale stock is {stale_pct}% of cash + stock",
+            }
+        )
     near = aging.get("food_near_clearance", 0)
     if (
         near >= TRIGGER_FOOD_NEAR
@@ -761,6 +992,161 @@ class Manager:
                 )
         return body
 
+    def best_sellers(self) -> list[dict[str, object]]:
+        """Market best sellers against our shelf: what sells, what we hold, our pace.
+
+        One row per depth SKU (top restock.depth_skus goods by 24 h market
+        takings): market settles, our units, the depth target and our own sales
+        in the last hour, so a model can see a near stock-out or a full shelf
+        that does not move (owner request, 11/4).
+        """
+        try:
+            catalog = read_catalog(self.market_dir)
+            policy = load_policy(self.policy_file).restock
+            by_category, by_sku = self.ledger.demand_counts(catalog, 24)
+            targets = restock_depth(catalog, DemandSignal(by_category, by_sku), policy)
+            inventory = read_inventory(self.market_dir)
+            state = load_restock_state(
+                self.market_dir.resolve().parent / RESTOCK_STATE_FILE
+            )
+        except (OSError, ValueError, sqlite3.Error):
+            return []
+        held: dict[str, int] = {}
+        for unit in inventory.units:
+            held[unit.sku] = held.get(unit.sku, 0) + 1
+        now = time.time()
+        rows: list[dict[str, object]] = [
+            {
+                "sku": item.sku,
+                "name": item.name[:40],
+                "list_price": item.list_price,
+                "market_settles_24h": by_sku.get(item.sku, 0),
+                "we_hold": held.get(item.sku, 0),
+                "depth_target": target,
+                "we_sold_1h": sum(
+                    1
+                    for t in state.sold_log.get(item.sku, ())
+                    if now - t <= OWN_RATE_WINDOW
+                ),
+            }
+            for item, target in targets
+        ]
+        self.record_best_sellers(rows, now, inventory.balance)
+        self.record_economics(now)
+        self.record_stockouts(held, now)
+        self.record_overpriced(now)
+        self.record_rater_demand(now)
+        self.record_fresh_list(now)
+        return rows
+
+    def record_stockouts(self, held: dict[str, int], now: float) -> None:
+        """Write the sales we missed at zero stock; restock sizes those SKUs up."""
+        try:
+            rows = missed_sales(
+                ledger_path(self.market_dir), self.shop_url, self.shop_name, held, now
+            )
+        except (OSError, ValueError, sqlite3.Error):
+            return
+        write_stockouts(self.run_dir / STOCKOUTS_FILE, rows, now)
+
+    def record_rater_demand(self, now: float) -> None:
+        """Write the SKUs our key raters buy (r3/rater_demand.py, task 2-T)."""
+        try:
+            skus = find_rater_demand(ledger_path(self.market_dir), now)
+        except (OSError, ValueError, sqlite3.Error):
+            return
+        write_rater_demand(self.run_dir / RATER_DEMAND_FILE, skus, now)
+
+    def record_fresh_list(self, now: float) -> None:
+        """Write the buyer-02 food SKU list (r3/fresh_list.py, owner 11/15 15:0x)."""
+        try:
+            skus = find_fresh_list(ledger_path(self.market_dir), self.shop_url, now)
+        except (OSError, ValueError, sqlite3.Error):
+            return
+        write_fresh_list(self.run_dir / FRESH_LIST_FILE, skus, now)
+        try:
+            needs = find_buyer02_needs(ledger_path(self.market_dir), self.shop_url, now)
+        except (OSError, ValueError, sqlite3.Error):
+            return
+        write_fresh_list(self.run_dir / NEEDS_FILE, needs, now)
+
+    def record_overpriced(self, now: float) -> None:
+        """Write SKUs the market sells below our cost; restock stops buying them."""
+        try:
+            rows = find_overpriced(
+                ledger_path(self.market_dir), self.shop_url, self.shop_name, now
+            )
+        except (OSError, ValueError, sqlite3.Error):
+            return
+        try:
+            ledger = LedgerDB(ledger_path(self.market_dir))
+            since = now - STUCK_MEDIAN_SECONDS
+            held = stuck(
+                read_inventory(self.market_dir).units,
+                lambda sku: ledger.median_price(sku, since),
+                now,
+                own_sales(
+                    ledger_path(self.market_dir),
+                    self.shop_url,
+                    now - STUCK_SALES_HOURS * 3600,
+                ),
+            )
+        except (OSError, ValueError, sqlite3.Error):
+            held = {}
+        for sku, row in held.items():
+            _ = rows.setdefault(sku, row)
+        write_overpriced(self.run_dir / OVERPRICED_FILE, rows, now)
+
+    def record_economics(self, now: float) -> None:
+        """Write our per-SKU net per unit (price - cost - refunds) over 12 h.
+
+        Restock reads it to stop rebuying a SKU that loses money and to deepen
+        one that earns well and turns fast (owner, 11/4).
+        """
+        since = now - ECON_WINDOW
+        try:
+            costs = self.events.receipt_costs(since - ECON_WINDOW)
+            sales: dict[str, list[tuple[int, int, int]]] = {}
+            refunds = self.ledger.refunds_by_unit(since, self.shop_url)
+            for sku, amount, unit in self.ledger.shop_sales(since, self.shop_url):
+                cost = costs.get(unit)
+                if cost is None:
+                    continue
+                sales.setdefault(sku, []).append((amount, cost, refunds.get(unit, 0)))
+        except (OSError, sqlite3.Error):
+            return
+        skus = {
+            sku: {
+                "net_per_unit": round(sum(a - c - r for a, c, r in rows) / len(rows)),
+                "sold_12h": len(rows),
+            }
+            for sku, rows in sales.items()
+        }
+        with contextlib.suppress(OSError):
+            _ = (self.run_dir / ECONOMICS_FILE).write_text(
+                json.dumps({"ts": now, "skus": skus}), "utf-8"
+            )
+
+    def record_best_sellers(
+        self, rows: list[dict[str, object]], now: float, cash: int
+    ) -> None:
+        """Keep the latest table and a bounded history for people to read later.
+
+        ``r3-best-sellers.json`` is the latest snapshot; ``r3-best-sellers.jsonl``
+        gets one line at most every BEST_SELLERS_EVERY seconds (owner, 11/4:
+        always on record, so Claude and the owner can check it at any time).
+        """
+        latest = self.run_dir / BEST_SELLERS_FILE
+        history = self.run_dir / BEST_SELLERS_HISTORY
+        snapshot = {"ts": now, "cash": cash, "rows": rows}
+        with contextlib.suppress(OSError):
+            _ = latest.write_text(json.dumps(snapshot, ensure_ascii=False), "utf-8")
+            last = float(self.events.get_value("best_sellers_ts") or 0)
+            if now - last >= BEST_SELLERS_EVERY:
+                with history.open("a", encoding="utf-8") as out:
+                    _ = out.write(json.dumps(snapshot, ensure_ascii=False) + "\n")
+                self.events.set_value("best_sellers_ts", str(now))
+
     def standing(self) -> dict[str, object]:
         """Our graded position now and about an hour ago (rank per component)."""
         board = self.cached_json(
@@ -770,20 +1156,47 @@ class Manager:
         if not now:
             return {}
         try:
-            past = json.loads(self.events.get_value("standing_history") or "[]")
+            raw_history = cast(
+                "object",
+                json.loads(self.events.get_value("standing_history") or "[]"),
+            )
         except ValueError:
-            past = []
+            raw_history = []
+        past: list[dict[str, object]] = []
+        if isinstance(raw_history, list):
+            for value in cast("list[object]", raw_history):
+                if not isinstance(value, dict):
+                    continue
+                row = cast("dict[str, object]", value)
+                try:
+                    ts = float(str(row.get("ts")))
+                except ValueError:
+                    continue
+                if isfinite(ts):
+                    past.append({**row, "ts": ts})
         stamp = time.time()
-        brief = {
+        series_scope = str(now.get("scope", "unknown"))
+        scoring_version = now.get("scoring_version")
+        scoring_verified = now.get("scoring_verified") is True
+        brief: dict[str, object] = {
             "ts": stamp,
+            "scope": series_scope,
+            "scoring_version": scoring_version,
+            "scoring_verified": scoring_verified,
             "rank": now.get("rank"),
             "total": now.get("total"),
             "ranks": {
                 f"{c['side']}.{c['metric']}": c["rank"]
-                for c in now["components"]  # pyright: ignore[reportGeneralTypeIssues]
+                for c in cast("list[dict[str, object]]", now["components"])
             },
         }
-        if not past or stamp - float(past[-1].get("ts", 0)) >= STANDING_EVERY:
+        if (
+            not past
+            or past[-1].get("scope") != series_scope
+            or past[-1].get("scoring_version") != scoring_version
+            or past[-1].get("scoring_verified") is not scoring_verified
+            or stamp - float(str(past[-1].get("ts", 0))) >= STANDING_EVERY
+        ):
             past = [*past, brief][-STANDING_KEEP:]
             with contextlib.suppress(OSError):
                 self.events.set_value("standing_history", json.dumps(past))
@@ -791,7 +1204,11 @@ class Manager:
             (
                 p
                 for p in reversed(past)
-                if stamp - float(p.get("ts", 0)) >= STANDING_HOUR_AGO
+                if stamp - float(str(p.get("ts", 0))) >= STANDING_HOUR_AGO
+                and p.get("scope") == series_scope
+                and scoring_verified
+                and p.get("scoring_verified") is True
+                and p.get("scoring_version") == scoring_version
             ),
             None,
         )
@@ -868,7 +1285,9 @@ class Manager:
                 "units": len(inventory.units),
                 "stock_cost": sum(u.cost for u in inventory.units),
                 "categories": len({u.category for u in inventory.units}),
-                "aging": aging,
+                # the prompt names cash_share_pct, stale_value_pct and the ask-cap
+                # conflict count: the strategy and advisor read them here too
+                "aging": {**aging, **self.summary_aging()},
             },
             "own_results_24h": self.events.summary(24, self.r3_opened_at()),
             "own_results_6h": self.events.summary(6, self.r3_opened_at()),
@@ -904,7 +1323,9 @@ class Manager:
                 our_buyer=self.buyer_name,
             ),
             "model_calls_24h": self.events.model_summary(24),
+            "buyer_performance": cached_buyer_report(self.run_dir / REPORT_FILE),
             "standing": self.standing(),
+            "best_sellers": self.best_sellers(),
             "leaders_now": compact(load_latest(self.benchmark_file)),
             "review_digest": load_digest(self.run_dir),
             "leaders_day_ago": compact(load_day_ago(self.benchmark_file)),
@@ -936,6 +1357,7 @@ class Manager:
         return {
             "own_results_1h": self.events.summary(1, self.r3_opened_at()),
             "own_results_6h": self.events.summary(6, self.r3_opened_at()),
+            "buyer_performance": cached_buyer_report(self.run_dir / REPORT_FILE),
             "policy_reviews": policy_reviews(
                 self.events,
                 self.ledger,
@@ -947,6 +1369,7 @@ class Manager:
             ),
             "review_digest": load_digest(self.run_dir),
             "standing": self.standing(),
+            "best_sellers": self.best_sellers(),
             "leaders_now": compact(load_latest(self.benchmark_file)),
             "tactical_values": {
                 key: field_value(history.current, key)
@@ -971,7 +1394,7 @@ class Manager:
             ),
         }
 
-    def summary_aging(self) -> dict[str, int]:
+    def summary_aging(self) -> dict[str, float]:
         """Count food near clearance (not yet in it) and stale goods.
 
         Near means under FOOD_NEAR_PCT of shelf life left but still at or above
@@ -981,12 +1404,23 @@ class Manager:
         inventory = read_inventory(self.market_dir)
         now = time.time()
         policy = load_policy(self.policy_file)
-        near = stale = 0
+        near = stale = above_cap = 0
+        stale_value = 0.0
         for unit in inventory.units:
             item = catalog.get(unit.sku)
-            ratio = unit.shelf_left_ratio(
-                now, float(item.shelf_hours) if item and item.shelf_hours else None
+            shelf = float(item.shelf_hours) if item and item.shelf_hours else None
+            ratio = unit.shelf_left_ratio(now, shelf)
+            # The ask cap cannot lower a unit whose accept line (cost x (1 + margin))
+            # is already above it: its ask sits at the accept line. On 11/4 118 of
+            # 195 units were like this, so moving max_ask_ratio alone moved nothing.
+            priced = quote(unit, now, shelf, policy.seller)
+            cap_share = (
+                policy.seller.cheap_max_ask_ratio
+                if unit.list_price < policy.seller.cheap_list_price
+                else policy.seller.max_ask_ratio
             )
+            if not priced.clearance and priced.accept_at > unit.list_price * cap_share:
+                above_cap += 1
             if (
                 ratio is not None
                 and policy.seller.clearance_shelf_ratio <= ratio < FOOD_NEAR_PCT / 100
@@ -997,10 +1431,16 @@ class Manager:
                 and now - unit.supplied_at > policy.seller.stale_goods_hours * 3600
             ):
                 stale += 1
+                stale_value += unit.cost * STALE_GRADE_WEIGHT.get(unit.grade, 1.5)
+        equity = max(1, inventory.balance + sum(u.cost for u in inventory.units))
         return {
             "food_near_clearance": near,
             "stale_goods": stale,
             "clearance_ratio_pct": round(policy.seller.clearance_shelf_ratio * 100),
+            "units_ask_at_accept_line_above_cap": above_cap,
+            "units": len(inventory.units),
+            "cash_share_pct": round(100 * inventory.balance / equity),
+            "stale_value_pct": round(100 * stale_value / equity, 1),
         }
 
     # -- scout ------------------------------------------------------------------
@@ -1248,7 +1688,7 @@ class Manager:
         history = load_history(self.policy_file)
         base = history.base()
         out: dict[str, dict[str, object]] = {}
-        for key in sorted(TACTICAL_FIELDS):
+        for key in sorted(TACTICAL_FIELDS - SAVED_OWNER_FIELDS):
             value = field_value(history.current, key)
             if not isinstance(value, (int, float)) or isinstance(value, bool):
                 continue
@@ -1281,8 +1721,19 @@ class Manager:
         by "code", so the tactical layer never stays stuck for lack of room.
         """
         edges = self.band_edges()
-        for key in sorted(TACTICAL_FIELDS):
+        buyer_review = bool(
+            owner_buyer_review_until(self.run_dir / SAVED_FEEDBACK_FILE, time.time())
+        )
+        for key in sorted(TACTICAL_FIELDS - SAVED_OWNER_FIELDS):
             runs_key = f"edge_runs:{key}"
+            if (
+                (buyer_review and key.startswith("buyer."))
+                or key in SAVED_OWNER_FIELDS
+                or key.startswith("seller.")
+                or (key.startswith("restock.") and key != "restock.depth_skus")
+            ):
+                self.events.set_value(runs_key, "0")
+                continue
             if key not in edges:
                 self.events.set_value(runs_key, "0")
                 continue
@@ -1296,12 +1747,27 @@ class Manager:
             wider = widen_band(key, band, str(edges[key]["side"]))
             if wider == band:
                 continue
+            why = f"pinned at band {edges[key]['side']} for {runs} tactical runs"
+            if self.defer_owner_restock_proposals(
+                {
+                    f"band:{key}": (
+                        {"low": band.low, "high": band.high},
+                        {"low": wider.low, "high": wider.high},
+                    )
+                },
+                why,
+            ):
+                self.events.set_value(runs_key, "0")
+                continue
             try:
-                _ = save_bands(self.policy_file, {**history.bands, key: wider})
+                _ = save_bands(
+                    self.policy_file,
+                    {**history.bands, key: wider},
+                    expected_version=history.current.version,
+                )
             except (ValueError, TypeError, ValidationError, OSError) as exc:
                 LOGGER.warning("band_widen_failed %s %s", key, type(exc).__name__)
                 continue
-            why = f"pinned at band {edges[key]['side']} for {runs} tactical runs"
             self.record(
                 actor="code",
                 layer="strategy",
@@ -1340,11 +1806,25 @@ class Manager:
             for c in self.events.recent_policy_changes(FOLD_WINDOW_HOURS)
             if c["layer"] == "strategy" and c["actor"] == "code" and c["accepted"]
         ]
-        for key in sorted(TACTICAL_FIELDS):
+        for key in sorted(TACTICAL_FIELDS - SAVED_OWNER_FIELDS):
+            # Repetition is not evidence of buyer improvement. Historical seller
+            # proposals must not become a permanent policy after the lock either.
+            if key != "restock.depth_skus":
+                continue
             last_fold = max((c["ts"] for c in folds if c["field"] == key), default=0)
             # only moves made after the last fold count (first night: the fold
             # fired every 15 min and walked the base up one step at a time)
-            mine = [c for c in rows if c["field"] == key and c["ts"] > last_fold]
+            mine = [
+                c
+                for c in rows
+                if c["field"] == key
+                and c["ts"] > last_fold
+                and c["actor"] == "code"
+                and any(
+                    str(c["reason"]).startswith(f"trigger {name}:")
+                    for name in DEPTH_CODE_TRIGGERS
+                )
+            ]
             if len(mine) < FOLD_RUNS:
                 continue
             directions: set[int] = set()
@@ -1371,11 +1851,19 @@ class Manager:
                 continue
             value: JsonValue = int(latest) if isinstance(current, int) else latest
             folded[key] = value
-        if not folded:
-            return {}
         why = f"code: fold recurring tactical moves {json.dumps(folded)}"
+        if not folded or self.defer_owner_restock_proposals(
+            {key: (field_value(base, key), value) for key, value in folded.items()},
+            why,
+        ):
+            return {}
         try:
-            published = save_policy(self.policy_file, apply_changes(base, folded), why)
+            published = save_policy(
+                self.policy_file,
+                apply_changes(base, folded),
+                why,
+                expected_version=history.current.version,
+            )
         except (ValueError, TypeError, ValidationError, OSError) as exc:
             LOGGER.warning("fold_failed %s", type(exc).__name__)
             return {}
@@ -1394,6 +1882,32 @@ class Manager:
         self.run_log("strategy", "nudged", why[:300])
         return folded
 
+    def defer_owner_restock_proposals(
+        self,
+        transitions: Mapping[str, tuple[JsonValue, JsonValue]],
+        reason: str,
+    ) -> bool:
+        """Record automatic restock candidates instead of publishing during review."""
+        if not owner_buyer_review_until(
+            self.run_dir / SAVED_FEEDBACK_FILE, time.time()
+        ):
+            return False
+        for field, (before, after) in transitions.items():
+            self.record(
+                actor="code",
+                layer="strategy",
+                field=field,
+                before=before,
+                after=after,
+                reason=reason,
+                expires_at=None,
+                version=None,
+                accepted=False,
+                note=OWNER_RESTOCK_REVIEW_NOTE,
+            )
+        self.run_log("strategy", "refused", reason[:300])
+        return True
+
     def run_log(self, role: str, outcome: str, detail: str = "") -> None:
         """Record one loop run for the Telegram digest; never stops the loop."""
         try:
@@ -1409,24 +1923,45 @@ class Manager:
         base = history.base()
         for trigger in triggers:
             key = str(trigger.get("field"))
+            if key.startswith("seller."):
+                continue
+            if key.startswith("restock.") and (
+                key != "restock.depth_skus"
+                or str(trigger.get("name")) not in DEPTH_CODE_TRIGGERS
+            ):
+                continue
             current = field_value(history.current, key)
             if key not in TACTICAL_FIELDS or not isinstance(current, (int, float)):
                 continue
             band = history.bands.get(key) or default_band(key, base)
             direction = int(trigger.get("direction", 0) or 0)  # pyright: ignore[reportArgumentType]
             target = trigger_step(float(current), band.low, band.high, direction)
+            if target is not None and isinstance(current, int):
+                # whole-number fields move by at least one whole step
+                whole = round(target)
+                if whole == current:
+                    whole = current + direction
+                target = float(whole) if band.low <= whole <= band.high else None
             if target is not None:
                 why = f"trigger {trigger.get('name')}: {trigger.get('why')}"
                 return {key: target}, why
         return {}, ""
 
     def filter_tactical(
-        self, changes: Mapping[str, JsonValue], actor: str, reason: str
+        self,
+        changes: Mapping[str, JsonValue],
+        actor: str,
+        reason: str,
+        *,
+        code_depth_trigger: bool = False,
     ) -> dict[str, JsonValue]:
         """Keep owned, in-band tactical changes that do not reverse a recent move."""
         history = load_history(self.policy_file)
         base = history.base()
         kept: dict[str, JsonValue] = {}
+        buyer_review = bool(
+            owner_buyer_review_until(self.run_dir / SAVED_FEEDBACK_FILE, time.time())
+        )
         for key, value in changes.items():
             if len(kept) >= MAX_TACTICAL:
                 break
@@ -1434,14 +1969,36 @@ class Manager:
                 field_value(history.current, key) if key in TACTICAL_FIELDS else None
             )
             note = ""
-            if key not in TACTICAL_FIELDS:
+            if (
+                (buyer_review and key.startswith(("buyer.", "restock.")))
+                or key in SAVED_OWNER_FIELDS
+                or (
+                    key.startswith(LOCKED_MODEL_PREFIXES)
+                    and not (code_depth_trigger and key == "restock.depth_skus")
+                )
+            ):
+                note = (
+                    OWNER_RESTOCK_REVIEW_NOTE
+                    if buyer_review and key.startswith("restock.")
+                    else "owner mature Saved review controls buyer policy"
+                    if buyer_review and key.startswith("buyer.")
+                    else "owner Saved acceptance timing locked"
+                    if key == SAVED_TIMING_FIELD
+                    else "owner emergency buyer field locked"
+                    if key in SAVED_OWNER_FIELDS
+                    else "seller/restock locked"
+                )
+                self.run_log("tactical", "refused", f"refused: {note}")
+            elif key not in TACTICAL_FIELDS:
                 note = "not a tactical field"
             elif isinstance(value, bool) or not isinstance(value, (int, float)):
                 note = "not a number"
             else:
                 band = history.bands.get(key) or default_band(key, base)
-                if not band.low <= float(value) <= band.high:
-                    note = f"outside band {band.low}..{band.high}"
+                owner_note = owner_buyer_limit_note(key, float(value), float(value))
+                if owner_note or not band.low <= float(value) <= band.high:
+                    note = owner_note or f"outside band {band.low}..{band.high}"
+                    self.run_log("tactical", "refused", f"refused: {note}")
                 elif isinstance(before, (int, float)) and float(value) != float(before):
                     direction = 1 if float(value) > float(before) else -1
                     last = self.events.last_direction(key, OSCILLATION_WINDOW)
@@ -1466,7 +2023,15 @@ class Manager:
 
     async def tactical(self) -> Policy | None:
         """One bounded tactical step; any failure leaves the policy unchanged."""
-        _ = expire_tactical(self.policy_file)
+        observed = load_history(self.policy_file)
+        try:
+            _ = expire_tactical(
+                self.policy_file, expected_version=observed.current.version
+            )
+        except (ValueError, OSError) as exc:
+            self.run_log("tactical", "refused", type(exc).__name__)
+            return None
+        observed = load_history(self.policy_file)
         client = self.client()
         if client is None:
             return None
@@ -1508,7 +2073,18 @@ class Manager:
         if not failure and not kept and triggers:
             nudge, why = self.trigger_moves(triggers)
             actor, proposal = "code", TacticalProposal(changes=nudge, reason=why)
-            kept = self.filter_tactical(nudge, actor, why)
+            kept = self.filter_tactical(
+                nudge,
+                actor,
+                why,
+                code_depth_trigger=(
+                    set(nudge) == {"restock.depth_skus"}
+                    and any(
+                        why.startswith(f"trigger {name}:")
+                        for name in DEPTH_CODE_TRIGGERS
+                    )
+                ),
+            )
         if not kept:
             if failure:
                 self.run_log("tactical", "failed", failure)
@@ -1519,11 +2095,17 @@ class Manager:
             return None
         before = load_policy(self.policy_file)
         try:
-            published = save_tactical(self.policy_file, kept, proposal.reason)
+            published = save_tactical(
+                self.policy_file,
+                kept,
+                proposal.reason,
+                expected_version=observed.current.version,
+            )
         except (ValueError, TypeError, ValidationError) as exc:
             LOGGER.warning("tactical_refused %s", type(exc).__name__)
             self.run_log("tactical", "refused", type(exc).__name__)
             return None
+        saved = load_history(self.policy_file)
         for key, value in kept.items():
             self.record(
                 actor=actor,
@@ -1532,9 +2114,7 @@ class Manager:
                 before=field_value(before, key),
                 after=value,
                 reason=proposal.reason,
-                expires_at=load_history(self.policy_file).tactical.expires_at
-                if load_history(self.policy_file).tactical
-                else None,
+                expires_at=saved.field_expiries.get(key),
                 version=published.version,
                 accepted=True,
             )
@@ -1559,7 +2139,40 @@ class Manager:
         """Drop changes to tactical fields (not owned) and record the refusal."""
         kept: dict[str, JsonValue] = {}
         current = load_policy(self.policy_file)
+        buyer_review = bool(
+            owner_buyer_review_until(self.run_dir / SAVED_FEEDBACK_FILE, time.time())
+        )
         for key, value in list(changes.items())[:MAX_CHANGES]:
+            if (
+                key.startswith(LOCKED_MODEL_PREFIXES)
+                or key in SAVED_OWNER_FIELDS
+                or (buyer_review and key.startswith("buyer."))
+            ):
+                note = (
+                    "owner mature Saved review controls buyer policy"
+                    if buyer_review and key.startswith("buyer.")
+                    else "owner Saved price cap locked"
+                    if key == SAVED_PRICE_CAP_FIELD
+                    else "owner Saved acceptance timing locked"
+                    if key == SAVED_TIMING_FIELD
+                    else "owner emergency buyer field locked"
+                    if key in SAVED_OWNER_FIELDS
+                    else "seller/restock locked"
+                )
+                self.record(
+                    actor=actor,
+                    layer="strategy",
+                    field=key,
+                    before=field_value(current, key),
+                    after=value,
+                    reason=reason,
+                    expires_at=None,
+                    version=None,
+                    accepted=False,
+                    note=note,
+                )
+                self.run_log("strategy", "refused", f"refused: {note}")
+                continue
             if key in TACTICAL_FIELDS:
                 self.record(
                     actor=actor,
@@ -1577,6 +2190,63 @@ class Manager:
             kept[key] = value
         return kept
 
+    def filter_model_bands(
+        self, bands: Mapping[str, Band], actor: str, reason: str
+    ) -> dict[str, Band]:
+        """Preserve locked seller/restock bands even when a model proposes them."""
+        kept: dict[str, Band] = {}
+        buyer_review = bool(
+            owner_buyer_review_until(self.run_dir / SAVED_FEEDBACK_FILE, time.time())
+        )
+        for key, band in bands.items():
+            if note := owner_buyer_limit_note(key, band.low, band.high):
+                self.record(
+                    actor=actor,
+                    layer="strategy",
+                    field=f"band:{key}",
+                    before=None,
+                    after=band.model_dump(),
+                    reason=reason,
+                    expires_at=None,
+                    version=None,
+                    accepted=False,
+                    note=note,
+                )
+                self.run_log("strategy", "refused", f"refused: {note}")
+                continue
+            if (
+                key.startswith(LOCKED_MODEL_PREFIXES)
+                or key in SAVED_OWNER_FIELDS
+                or (buyer_review and key.startswith("buyer."))
+            ):
+                note = (
+                    "owner mature Saved review controls buyer policy"
+                    if buyer_review and key.startswith("buyer.")
+                    else "owner Saved price cap locked"
+                    if key == SAVED_PRICE_CAP_FIELD
+                    else "owner Saved acceptance timing locked"
+                    if key == SAVED_TIMING_FIELD
+                    else "owner emergency buyer field locked"
+                    if key in SAVED_OWNER_FIELDS
+                    else "seller/restock locked"
+                )
+                self.record(
+                    actor=actor,
+                    layer="strategy",
+                    field=f"band:{key}",
+                    before=None,
+                    after=band.model_dump(),
+                    reason=reason,
+                    expires_at=None,
+                    version=None,
+                    accepted=False,
+                    note=note,
+                )
+                self.run_log("strategy", "refused", f"refused: {note}")
+                continue
+            kept[key] = band
+        return kept
+
     async def ask_model(  # noqa: C901 - one call, validation, notes, publish
         self, summary: Mapping[str, object]
     ) -> Policy | None:
@@ -1584,6 +2254,7 @@ class Manager:
         client = self.client()
         if client is None:
             return None
+        observed = load_history(self.policy_file)
         model = configured_model(STRATEGY_MODEL_ENV, SONNET_MODEL)
         reply = await client.call(
             Request(
@@ -1613,8 +2284,9 @@ class Manager:
         try:
             proposal = Proposal.model_validate(parsed)
             changes = self.filter_strategy(proposal.changes, actor, proposal.reason)
-            before = load_policy(self.policy_file)
-            base = load_history(self.policy_file).base()
+            bands = self.filter_model_bands(proposal.bands, actor, proposal.reason)
+            before = observed.current
+            base = observed.base()
             candidate = apply_changes(base, changes)
         except (ValueError, TypeError, ValidationError) as exc:
             LOGGER.warning(
@@ -1643,7 +2315,7 @@ class Manager:
             if added:
                 self.run_log("strategy", "noted", " | ".join(added)[:300])
                 LOGGER.info("engineer_notes_added=%s", len(added))
-        if not changes and not proposal.bands:
+        if not changes and not bands:
             held = proposal.reason or "no reason given"
             if dropped:
                 held = f"dropped={','.join(dropped)} {held}"
@@ -1655,7 +2327,8 @@ class Manager:
                 self.policy_file,
                 candidate,
                 f"model: {proposal.reason}",
-                bands=proposal.bands or None,
+                bands={**observed.bands, **bands} if bands else None,
+                expected_version=observed.current.version,
             )
         except (ValueError, TypeError, ValidationError) as exc:
             LOGGER.warning("manager_refused %s", type(exc).__name__)
@@ -1673,7 +2346,7 @@ class Manager:
                 version=published.version,
                 accepted=True,
             )
-        for key, band in proposal.bands.items():
+        for key, band in bands.items():
             self.record(
                 actor=actor,
                 layer="strategy",
@@ -1688,14 +2361,14 @@ class Manager:
         self.run_log(
             "strategy",
             "changed",
-            f"{json.dumps(changes)} bands={len(proposal.bands)}"
+            f"{json.dumps(changes)} bands={len(bands)}"
             f"{' dropped=' + ','.join(dropped) if dropped else ''} {proposal.reason}",
         )
         LOGGER.info(
             "manager_policy_v%s changes=%s bands=%s reason=%s",
             published.version,
             json.dumps(changes),
-            len(proposal.bands),
+            len(bands),
             proposal.reason,
         )
         return published
@@ -1786,11 +2459,46 @@ class Manager:
 
     # -- loop -------------------------------------------------------------------
 
-    async def tick(self, now: float) -> None:
+    def refresh_buyer_report(self) -> None:
+        """Publish a model-free bounded report; retain the previous file on failure."""
+        try:
+            report = write_buyer_report(
+                self.events.path,
+                self.ledger.path,
+                self.market_dir,
+                self.buyer_name,
+                self.run_dir / REPORT_FILE,
+            )
+        except (OSError, sqlite3.Error, ValueError) as exc:
+            self.run_log("buyer_report", "failed", type(exc).__name__)
+            return
+        self.run_log("buyer_report", "updated", report.summary[:300])
+        feedback_path = self.run_dir / SAVED_FEEDBACK_FILE
+        try:
+            publish_saved_feedback(
+                self.ledger.path,
+                (self.run_dir / REPORT_FILE).with_suffix(".sqlite"),
+                self.market_dir / "catalog.json",
+                self.buyer_name,
+                feedback_path,
+                observed_at=report.generated_at,
+                ledger_latest_at=report.ledger_latest_at,
+                ledger_fresh=report.ledger_fresh,
+                owner_control_until=owner_buyer_review_until(
+                    feedback_path, time.time()
+                ),
+            )
+        except (OSError, sqlite3.Error, ValueError) as exc:
+            self.run_log("saved_feedback", "failed", type(exc).__name__)
+
+    async def tick(self, now: float) -> None:  # noqa: C901, PLR0912 - one due-check per job
         """Run whatever is due at ``now``; timestamps persist across restarts."""
         added = await anyio.to_thread.run_sync(self.pull_ledger)
         if added:
             LOGGER.info("ledger_rows_added=%s cursor=%s", added, self.ledger.cursor)
+        if now - self.stamp("buyer_report_last_at") >= REPORT_EVERY:
+            self.mark("buyer_report_last_at", now)
+            await anyio.to_thread.run_sync(self.refresh_buyer_report)
         picture: Picture | None = None
         if now - self.stamp("scout_last_at") >= SCOUT_EVERY:
             self.mark("scout_last_at", now)
@@ -1804,7 +2512,15 @@ class Manager:
             picture = await self.scout(use_model=use_model)
         if now - self.stamp("tactical_last_at") >= TACTICAL_EVERY:
             self.mark("tactical_last_at", now)
-            _ = await self.tactical()
+            if MODEL_POLICY_EDITS:
+                _ = await self.tactical()
+            else:
+                # The tactical summary used to call best_sellers(), which also
+                # writes restock's economics, stockout and overpriced files. With
+                # the policy models off (11/10 20:05) those files froze for 28 h:
+                # stale economics, and an expired overpriced list that blocked
+                # nothing. Refresh them here on the same 15-minute beat (11/11).
+                _ = await anyio.to_thread.run_sync(self.best_sellers)
             _ = await anyio.to_thread.run_sync(self.track_band_edges)
             _ = await anyio.to_thread.run_sync(self.fold_recurring_moves)
         if now - self.stamp("benchmark_last_at") >= BENCHMARK_EVERY:
@@ -1824,6 +2540,11 @@ class Manager:
                 digest.get("our_stars"),
                 len(digest.get("our_complaints", []) or []),
             )
+        if now - self.stamp("watch_last_at") >= watcher.WATCH_EVERY:
+            self.mark("watch_last_at", now)
+            await self.watch(now)
+        if not MODEL_POLICY_EDITS:
+            return
         due = now - self.stamp("strategy_last_at") >= STRATEGY_EVERY
         alerted = (
             picture is not None
@@ -1840,6 +2561,107 @@ class Manager:
                 json.dumps(summary, ensure_ascii=False)[:2000],
             )
             _ = await self.ask_model(summary)
+
+    def market_signals(self) -> dict[str, str]:
+        """R4 switch signals: /api/chain opening and /agent.md changing."""
+        signals: dict[str, str] = {}
+        try:
+            chain = self.http.get(f"{self.market}/api/chain")
+            signals["chain"] = "live" if chain.status_code == 200 else "closed"  # noqa: PLR2004
+        except httpx.HTTPError:
+            signals["chain"] = "unknown"
+        try:
+            reply = self.http.get(f"{self.market}/agent.md")
+            text = reply.text if reply.status_code == 200 else None  # noqa: PLR2004
+        except httpx.HTTPError:
+            text = None
+        state, digest = watcher.agent_md_state(
+            text, self.events.get_value("watch_agent_md") or ""
+        )
+        if digest:
+            self.events.set_value("watch_agent_md", digest)
+        signals["agent_md"] = state
+        return signals
+
+    async def watch(self, now: float) -> list[str]:
+        """Code checks; Sonnet explains only alerts not sent in the last 3 h."""
+        prices = {
+            sku: item.list_price for sku, item in read_catalog(self.market_dir).items()
+        }
+        try:
+            metrics = await anyio.to_thread.run_sync(
+                lambda: watcher.collect(
+                    self.ledger.path,
+                    prices,
+                    buyer=self.buyer_name,
+                    shop_url=self.shop_url,
+                    now=now,
+                )
+            )
+        except (OSError, sqlite3.Error, ValueError) as exc:
+            self.run_log("watch", "failed", type(exc).__name__)
+            return []
+        signals = await anyio.to_thread.run_sync(self.market_signals)
+        found = watcher.checks(metrics, signals)
+        try:
+            sent = json.loads(self.events.get_value("watch_sent") or "{}")
+        except ValueError:
+            sent = {}
+        keys = watcher.fresh_keys(found, sent if isinstance(sent, dict) else {}, now)
+        if not keys:
+            self.run_log("watch", "held", json.dumps(metrics)[:300])
+            return []
+        explanations: dict[str, dict[str, str]] = {}
+        model = ""
+        client = self.client()
+        if client is not None:
+            reply = await client.call(
+                Request(
+                    role="strategy",
+                    model=configured_model(STRATEGY_MODEL_ENV, SONNET_MODEL),
+                    system=watcher.PROMPT,
+                    user=json.dumps(
+                        {
+                            "alerts": {key: found[key] for key in keys},
+                            "metrics": metrics,
+                            "market": signals,
+                            "facts": watcher.SCORE_FACTS,
+                        },
+                        ensure_ascii=False,
+                    ),
+                    tool=tool_param(
+                        "explain_alerts",
+                        "Explain each alert for the operator.",
+                        watcher.explain_schema(),
+                    ),
+                    max_tokens=1500,
+                    deadline_seconds=90,
+                    effort="low",
+                    summary="watch " + ",".join(keys),
+                )
+            )
+            if reply is not None:
+                explanations = watcher.explanations_by_key(
+                    parse_arguments(reply.arguments)
+                )
+                model = reply.model
+        watcher.write_alerts(
+            self.run_dir / watcher.WATCH_FILE,
+            keys,
+            found,
+            metrics,
+            explanations,
+            model=model,
+            now=now,
+        )
+        new_sent = (
+            {k: float(v) for k, v in sent.items()} if isinstance(sent, dict) else {}
+        )
+        new_sent.update(dict.fromkeys(keys, now))
+        self.events.set_value("watch_sent", json.dumps(new_sent))
+        self.run_log("watch", "noted", ",".join(keys))
+        LOGGER.info("watch_alerts=%s model=%s", ",".join(keys), model or "none")
+        return keys
 
     async def loop(self) -> None:
         """Run until stopped; every step is guarded so one failure skips one tick."""

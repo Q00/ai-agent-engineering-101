@@ -45,9 +45,12 @@ PAYMENT_REDIRECT: Final = re.compile(
     |\boutside\s+(?:the\s+)?(?:market|checkout|kit)\b""",
     re.IGNORECASE | re.VERBOSE,
 )
+# 11/11: the `#` below must stay escaped. Unescaped, VERBOSE mode read it as a
+# comment, so any "ledger" (dragonash's "reply with another shop's ledger price")
+# matched: 152 of our tries there were dropped as fake settlements since 11/3.
 FAKE_SETTLEMENT: Final = re.compile(
     r"""\bsig_seller\b|\bsig_buyer\b|\bmandate\b|\bverified\s*(?::|=)?\s*true\b
-    |\balready\s+(?:paid|settled|verified)\b|\bledger\s*#?\s*[0-9]+\s+(?:confirms|shows)
+    |\balready\s+(?:paid|settled|verified)\b|\bledger\s*\#?\s*[0-9]+\s+(?:confirms|shows)
     |\bcheckout\s+(?:is\s+)?complete[d]?\b""",
     re.IGNORECASE | re.VERBOSE,
 )

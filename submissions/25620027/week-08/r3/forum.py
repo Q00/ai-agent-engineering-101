@@ -24,8 +24,12 @@ if TYPE_CHECKING:
 
 STATE_FILE: Final = "r3-forum-state.json"
 BUYER_INTERVAL: Final = 300.0
-SHOP_INTERVAL: Final = 1800.0
+# Owner 11/13 12:3x: advertise the whole shelf. The kit allows one shop post per
+# five minutes; each post now lists one page of what we hold (category, name, SKU,
+# grade, units), cycling through every SKU, instead of a half-hourly summary.
+SHOP_INTERVAL: Final = 300.0
 MAX_POST_CHARS: Final = 900
+SHOP_NAME_CHARS: Final = 24
 
 
 class ForumState(FrozenModel):
@@ -34,6 +38,7 @@ class ForumState(FrozenModel):
     last_buyer_post: float = 0.0
     last_shop_post: float = 0.0
     last_deal_ts: float = 0.0
+    shop_page: int = 0
 
 
 def load_state(path: Path) -> ForumState:
@@ -97,20 +102,44 @@ def buyer_post(
     return text[:MAX_POST_CHARS], refs[:12]
 
 
-def shop_post(inventory: Inventory, shop_name: str, warranty_a: int) -> str:
-    """Honest stock summary for buyers reading the forum."""
-    categories = {u.category.split(">")[-1] for u in inventory.units if u.category}
-    food = sum(1 for u in inventory.units if u.kind == "food")
-    goods = len(inventory.units) - food
-    sample = ", ".join(sorted(categories)[:12])
+def shop_pages(inventory: Inventory) -> list[str]:
+    """Split everything we hold into post-sized pages, one category after another."""
+    held: dict[tuple[str, str], list[object]] = {}
+    for unit in inventory.units:
+        held.setdefault((unit.category.split(">")[-1], unit.sku), []).append(unit)
+    entries: list[str] = []
+    for (category, sku), units in sorted(held.items()):
+        first = units[0]
+        grades = sorted({str(getattr(u, "grade", "")) for u in units})
+        name = str(getattr(first, "name", "") or sku)[:SHOP_NAME_CHARS]
+        entries.append(f"[{category}] {name} ({sku}) {'/'.join(grades)} x{len(units)}")
+    pages: list[str] = []
+    page = ""
+    for entry in entries:
+        if page and len(page) + len(entry) + 2 > MAX_POST_CHARS - 260:
+            pages.append(page)
+            page = ""
+        page = f"{page}; {entry}" if page else entry
+    if page:
+        pages.append(page)
+    return pages
+
+
+def shop_post(
+    inventory: Inventory, shop_name: str, warranty_a: int, page: int = 0
+) -> str:
+    """Honest stock list for buyers reading the forum, one page per post."""
+    pages = shop_pages(inventory)
+    skus = len({u.sku for u in inventory.units})
     warranty = (
         f"{warranty_a}h warranty on A-grade goods" if warranty_a else "no warranty"
     )
+    body = pages[page % len(pages)] if pages else ""
     return (
-        f"{shop_name}: {len(inventory.units)} units in stock across {len(categories)} "
-        f"categories ({food} food, {goods} goods), e.g. {sample}. Market certificate "
-        f"attached to every unit, grade claims match the certificate, {warranty}. "
-        "Ask by SKU or name; matching metadata.ask closes at once."
+        f"{shop_name} stock {page % max(1, len(pages)) + 1}/{max(1, len(pages))} "
+        f"({len(inventory.units)} units, {skus} SKUs): {body}. Market certificate "
+        f"on every unit, grade claims match the certificate, {warranty}. "
+        "Ask by SKU for a quote; stock and price are not reserved."
     )[:MAX_POST_CHARS]
 
 
@@ -157,12 +186,14 @@ def maybe_post(  # noqa: PLR0913 - explicit inputs
         enqueue(
             market_dir,
             {
-                "post": shop_post(inventory, shop_name, warranty_a),
+                "post": shop_post(inventory, shop_name, warranty_a, state.shop_page),
                 "refs": [],
                 "as": "shop",
             },
         )
-        state = state.model_copy(update={"last_shop_post": stamp})
+        state = state.model_copy(
+            update={"last_shop_post": stamp, "shop_page": state.shop_page + 1}
+        )
         posted.append("shop")
     if posted:
         save_state(state_path, state)
