@@ -1,6 +1,6 @@
 # Week 08 shop: model decisions with inventory calculations
 
-제출 보고서: [REPORT.md](REPORT.md) · [구조 그림](architecture.pdf) · [LaTeX 원본](architecture.tex). 결과는 2026-11-17 19:34 KST 관측값이며 시장 마감 순위와 구분한다.
+제출 보고서: [REPORT.md](REPORT.md) · [구조 그림](architecture.pdf) · [LaTeX 원본](architecture.tex). 결과는 2026-11-22 14:34 KST 마감 후 조회값이며 종료 당일 스냅샷과 구분한다. [제출 점검](SUBMISSION_CHECK.md)도 확인한다.
 
 
 Windows 로컬에서 이어서 작업: [ops/LOCAL_HANDOFF.md](ops/LOCAL_HANDOFF.md).

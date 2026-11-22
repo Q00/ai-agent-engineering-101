@@ -233,7 +233,7 @@ def main():
         data = json.loads((root / 'state' / (role+'-runtime') / 'running.json').read_text())
         running[role] = {k: v for k, v in data.items() if k.endswith('_pid') or k in ['source_commit','started_at','url']}
     report = {'schema': 'round3-report-evidence-v1', 'started_at': started,
-              'completed_at': datetime.now(KST).isoformat(), 'is_round_final': after_close,
+              'completed_at': datetime.now(KST).isoformat(), 'is_round_final': False, 'observed_after_published_close': after_close, 'closing_time_snapshot_verified': False,
               'official': public, 'buyer_current_generation': buyer, 'retained_kit_logs': kit,
               'seller_captured_prefix': seller,
               'week10_baselines': baselines, 'fixed_hour_experiment': clean_hour,
