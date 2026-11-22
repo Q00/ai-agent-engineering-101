@@ -44,12 +44,12 @@
   extred/.style={
     draw=c4red, line width=1.2pt, rounded corners=3pt, fill=white,
     align=center, text=c4red, font=\footnotesize,
-    text width=4.95cm, minimum height=2.05cm, inner sep=6pt
+    text width=5.25cm, minimum height=2.05cm, inner sep=6pt
   },
   extorg/.style={
     draw=c4orange, line width=1.2pt, rounded corners=3pt, fill=white,
     align=center, text=c4orange, font=\footnotesize,
-    text width=4.95cm, minimum height=2.05cm, inner sep=6pt
+    text width=5.25cm, minimum height=2.05cm, inner sep=6pt
   },
   act/.style={->, line width=0.95pt, draw=black!75},
   actbi/.style={<->, line width=0.95pt, draw=black!75},
@@ -62,7 +62,7 @@
 \draw[draw=c4blue, line width=1.15pt, rounded corners=4pt, fill=white]
   (-0.55, -13.25) rectangle (19.95, 2.55);
 \node[anchor=south west, text=c4blue, font=\footnotesize\bfseries, align=left]
-  at (-0.35, -13.12) {mjforge Round 3 Agent\\[-1pt]{\scriptsize\mdseries [Market Agent System]}};
+  at (1.05, -13.12) {mjforge Round 3 Agent\\[-1pt]{\scriptsize\mdseries [Market Agent System]}};
 
 \draw[draw=c4blue!85, line width=0.95pt, rounded corners=3.5pt, fill=white]
   (-0.15, -8.75) rectangle (19.55, -0.85);
@@ -72,7 +72,7 @@
   \rule{0pt}{3.2mm}\\[0.5mm]
   \textbf{기본 마켓 키트}\\
   {\scriptsize [Provided Kit + Wrapper: \texttt{market\_kit.py} v4 · \texttt{guarded\_market\_kit.py}]}\\
-  {\scriptsize A2A 프록시 · ACP/AP2 결제 검증 · \texttt{.market/} 동기화 · \texttt{outbox} 전송 · 가시성보호}
+  {\scriptsize A2A 프록시 · ACP/AP2 결제 검증 · \texttt{.market/} 동기화 · \texttt{outbox} 전송 · 가시성 보호}
 };
 \draw[draw=c4kit, line width=0.95pt]
   ($(kit.north west)+(0,-0.34)$) -- ($(kit.north east)+(0,-0.34)$);
@@ -96,17 +96,17 @@
 };
 
 \node[comp] (restock) at (12.15, -2.5) {
-  \textbf{Shop 재고 입고·배분}\\
-  {\scriptsize [\texttt{restock.py} · \texttt{\_cash\_demand}]}\\
-  {\scriptsize 현금 하한(\texttt{cash\_floor}), 인기 분류·}\\
-  {\scriptsize 파손/보유세 차감 기여이익 매입}
+  \textbf{Shop 재고 입고·공지}\\
+  {\scriptsize [\texttt{restock.py} · \texttt{seller\_forum}]}\\
+  {\scriptsize 시장 입고 창 확인·\texttt{cash\_floor},}\\
+  {\scriptsize 파손/보관료 차감·Shop 재고 공지}
 };
 
 \node[comp] (review) at (17.0, -2.5) {
   \textbf{정산 후기·게시판}\\
   {\scriptsize [\texttt{review.py} · \texttt{forum\_writer}]}\\
-  {\scriptsize 파손 역추적, 원장 \texttt{refs} 3건+}\\
-  {\scriptsize 시세 분석(Buyer)·재고 공지(Shop)}
+  {\scriptsize 파손 역추적, \texttt{forum\_intel} 집계}\\
+  {\scriptsize 원장 \texttt{refs} 3건+ Buyer 시세 글}
 };
 
 % ================= Row 2 inside Inner Boundary: Central Hub ETL =================
@@ -137,14 +137,14 @@
 };
 
 % ================= Right Side: External Systems =================
-\node[extred] (market) at (24.25, -1.65) {
+\node[extred] (market) at (24.40, -1.65) {
   \textbf{시장 서버}\\
   {\scriptsize [External: \texttt{market.ourolabs.ai}]}\\
   {\scriptsize 정산(\texttt{/api/settle}) · 입고(\texttt{/api/supply})}\\
-  {\scriptsize 공개 원장(\texttt{/api/ledger}) · 게시판(\texttt{/forum})}
+  {\scriptsize 공개 원장(\texttt{/api/ledger}) · 게시판(\texttt{/api/forum})}
 };
 
-\node[extorg] (peers) at (24.25, -6.55) {
+\node[extorg] (peers) at (24.40, -6.55) {
   \textbf{상대 에이전트}\\
   {\scriptsize [External: Peer Shops \& Buyers]}\\
   {\scriptsize A2A 가격 협상·서명 영수증 교환 및}\\
@@ -155,7 +155,7 @@
 % Kit -> 4 Processes (Solid: execution hooks & proxy)
 \draw[act]   (kit.south west) ++(1.0,0) -- node[rlbl, left=2pt]{주문 훅} (buyer.north);
 \draw[actbi] (kit.south) ++(-1.2,0) -- node[rlbl, left=1pt]{A2A 프록시} (seller.north);
-\draw[actbi] (kit.south) ++(1.2,0) -- node[rlbl, right=1pt]{20분 입고 훅} (restock.north);
+\draw[actbi] (kit.south) ++(1.2,0) -- node[rlbl, right=1pt]{입고 계획 조회} (restock.north);
 \draw[actbi] (kit.south east) ++(-1.0,0) -- node[rlbl, right=2pt]{정산 후기·\texttt{outbox}} (review.north);
 
 % 4 Processes <-> Central Store ETL (Dashed: context/memory)
@@ -183,7 +183,8 @@
 % External Connections (Solid: payment/network, Dashed: ledger ingestion)
 \draw[actbi] (kit.east) ++(0,0.22) -| node[rlbl, pos=0.28, above=1pt]{정산·입고·게시판·동기화} (market.north);
 \draw[actbi] (kit.east) ++(0,-0.32) -- (20.65, 0.83) -- (20.65, -6.55) -- (peers.west);
-\node[rlbl, rotate=90] at (20.65, -2.85) {A2A·ACP};
+\node[rlbl, rotate=90] at (20.65, -2.85) {ACP 결제·A2A 프록시};
+\draw[actbi] (0.60, -3.39) -- (0.60, -13.60) -- node[rlbl, pos=0.91, above=2pt]{Buyer $\rightarrow$ 상대 Shop: A2A 협상} (24.40, -13.60) -- (peers.south);
 \draw[rel]   ($(market.south west)+(0.6,0)$) |- (18.9, -4.68) -- (18.9, -6.55) -- node[rlbl, pos=0.58, above=1pt]{\texttt{GET /api/ledger}} (store.east);
 
 \end{tikzpicture}
