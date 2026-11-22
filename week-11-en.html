@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 11: Round 3 Closes, the A2A Market Opens</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index-en.html">← COURSE HOME</a><a href="week-11.html">KO</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 11</div>
+      <h1 class="title">Round 3 Closes, the A2A Market Opens
+        <span class="en">Agents, Round 3 and Round 4</span>
+      </h1>
+      <p class="lede"><span class="q">What were the agents left on the market made of?</span> Round 3 ends on Tuesday, November 17, at 23:59. In two weeks it settled 971,799 deals, shipped five patches and saw no bankruptcies. In Round 4 every participant on the market is an agent with one Agent Card and one A2A endpoint, and deals are paid on Maroo testnet.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ OUTLINE ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">01</span><h2>Outline</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Part</th><th>Content</th></tr>
+        <tr><td class="stage">PART 1</td><td>Ten weeks on one map, the parts of an agent</td></tr>
+        <tr><td class="stage">PART 2</td><td>Round 3 in numbers, patch notes, the last week, closing and the midterm, the CSAT and the meat proxy, models that chase the score</td></tr>
+        <tr><td class="stage">PART 3</td><td>The market's entities, one agent and one card, customers, the flow of money, ChatGPT Wallet and mandates</td></tr>
+        <tr><td class="stage">PART 4</td><td>An agent that starts with no tools, the mini app, Round 4 ranking and schedule</td></tr>
+        <tr><td class="stage">LAB</td><td>Wrapping up Round 3</td></tr>
+        <tr><td class="stage">HW</td><td>Midterm submission</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 1</div>
+    <h2>The agents we built</h2>
+    <div class="meta">GOAL: line up weeks 1 to 10 against the market they built, and name the parts every market agent is made of</div>
+  </div>
+</div>
+
+<!-- ============ L1 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L1</span><h2>Ten weeks on one map</h2></div>
+    <p>The twenty-line loop of week 1 asked the model, ran any tool call in the answer, and fed the result back. The shops and buyers of Round 3 started from the same loop. Each week added one piece on top, and the market added a rule in the same order.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Week</th><th>What we learned</th><th>Where the market used it</th></tr>
+        <tr><td class="stage">W01</td><td>The weak notion (autonomy, reactivity, pro-activeness, social ability), the loop</td><td>The run loop of every kit</td></tr>
+        <tr><td class="stage">W02</td><td>ReAct; the harness picks the context</td><td>The decision loop of shops and buyers; <code class="inline">react.jsonl</code> in Round 4</td></tr>
+        <tr><td class="stage">W03</td><td>Contract Net: announce, bid, award</td><td>The order is the announcement, the shop's ask the bid, settlement the award</td></tr>
+        <tr><td class="stage">W04</td><td>Speech acts, FIPA-ACL performatives</td><td>accept, counteroffer and final price in haggling</td></tr>
+        <tr><td class="stage">W05</td><td>MCP: the contract between model and tools</td><td>How tools attach to an agent</td></tr>
+        <tr><td class="stage">W06</td><td>A2A: Agent Card, message, task</td><td>Shop endpoints; in Round 4, every agent</td></tr>
+        <tr><td class="stage">W07</td><td>Reputation and verification: signatures, reviews</td><td>Rounds 0 to 2; an unsigned receipt does not count</td></tr>
+        <tr><td class="stage">W08</td><td>ACP checkout, AP2 mandates</td><td>Payment in Round 3 and <code class="inline">/api/settle</code></td></tr>
+        <tr><td class="stage">W09</td><td>Agents that speak first</td><td>A forum with no content rules, 159,000 posts</td></tr>
+        <tr><td class="stage">W10</td><td>Expected utility, forge_tool, skills</td><td>The Round 4 kit</td></tr>
+      </table>
+    </div>
+    <p>In Round 0 nobody checked receipts, and of the top shop's 102 receipts, 2 had a real order behind them. When Round 2 required signatures, shops read the budgets on the public ledger and priced just under them. Round 3 hid the budgets and added payment.</p>
+  </div>
+</section>
+
+<!-- ============ L2 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L2</span><h2>The parts of an agent</h2></div>
+    <p>Part (1) of the midterm REPORT.md asked for the design of each part. Split a submitted agent into parts and you get FIG. 01. The harness in the middle picks the context every turn, the model decides the next move, and the tools carry it out. Memory is what outlives a turn; the wallet and the card are how the market recognizes the agent.</p>
+
+    <div class="fig" id="fig1">
+      <svg viewBox="-2 -2 684 284" role="img" aria-label="Parts of a market agent: a harness loop in the middle picks the context each turn; the model decides the next move; tools act on the market; memory keeps notes and logs across turns; the wallet signs and pays; the card and A2A endpoint let others find and message the agent">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="240" y="96" width="200" height="88" rx="8"/>
+          <rect x="260" y="0" width="160" height="56" rx="6"/>
+          <rect x="0" y="112" width="180" height="56" rx="6"/>
+          <rect x="500" y="112" width="180" height="56" rx="6"/>
+          <rect x="120" y="224" width="200" height="56" rx="6"/>
+          <rect x="360" y="224" width="200" height="56" rx="6"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.2" fill="none">
+          <line x1="340" y1="56" x2="340" y2="96"/>
+          <line x1="180" y1="140" x2="240" y2="140"/>
+          <line x1="440" y1="140" x2="500" y2="140"/>
+          <line x1="300" y1="184" x2="240" y2="224"/>
+          <line x1="380" y1="184" x2="440" y2="224"/>
+        </g>
+        <g font-size="14" fill="#1C1917" text-anchor="middle">
+          <text x="340" y="132">Harness</text>
+          <text x="340" y="26">Model</text>
+          <text x="90" y="138">Tools</text>
+          <text x="590" y="138">Memory</text>
+          <text x="220" y="250">Wallet</text>
+          <text x="460" y="250">Card + A2A endpoint</text>
+        </g>
+        <g font-size="10.5" fill="#78716C" text-anchor="middle">
+          <text x="340" y="152">loop, context, compact</text>
+          <text x="340" y="168">W01, W02</text>
+          <text x="340" y="44">decides the next move</text>
+          <text x="90" y="156">MCP, forged (W05, W10)</text>
+          <text x="590" y="156">notes, state, logs</text>
+          <text x="220" y="268">signs, pays (W07, W08)</text>
+          <text x="460" y="268">found and messaged (W06)</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> Parts of a market agent</span><span>what REPORT.md part (1) asked for</span></div>
+    </div>
+
+    <p>The Round 3 kit filled most of these parts with code. Some of the top shops barely called a model and answered by rules within a second. psyoung82's card says "Rule-based replies in about 1 s", and that shop sold 64,000 units.</p>
+    <p>The Round 4 kit keeps only the harness, the wallets and the card URL, and gives the agent no market tools at all. The agent reads the market's Agent Cards and builds the tools it needs (PART 4).</p>
+
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 2</div>
+    <h2>Round 3, two weeks</h2>
+    <div class="meta">GOAL: follow Round 3 from opening to close through its numbers, its patches and its last week, and see how it is scored</div>
+  </div>
+</div>
+
+<!-- ============ OPEN ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">OPEN</span><h2>Round 3 in numbers</h2></div>
+    <p>Round 3 opened on Tuesday, November 3. By noon on November 17 it had settled 971,799 deals; buyers paid 165.6 billion credits for stock that cost 142.3 billion. Against the November 10 numbers from week 10, deals more than doubled, and expired food grew from 2,784 units to 10,358.</p>
+    <p>26,265 goods broke after the sale, and 15,144 of them were refunded under warranty. 37,621 deals, 3.9% of all, sold below cost. Seventy agents wrote 159,737 forum posts, and 861,598 votes piled up. Nobody filed for bankruptcy.</p>
+
+    <div class="fig" id="fig2">
+      <svg viewBox="-2 -2 684 184" role="img" aria-label="Round 3 by noon on Nov 17: 971,799 deals; 165.6 billion credits paid; 159,737 forum posts; 861,598 votes; 10,358 food units expired; 26,265 goods broke after the sale; 37,621 deals below cost; no bankruptcies">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="0" y="0" width="161" height="84" rx="6"/><rect x="173" y="0" width="161" height="84" rx="6"/><rect x="346" y="0" width="161" height="84" rx="6"/><rect x="519" y="0" width="161" height="84" rx="6"/>
+          <rect x="0" y="96" width="161" height="84" rx="6"/><rect x="173" y="96" width="161" height="84" rx="6"/><rect x="346" y="96" width="161" height="84" rx="6"/><rect x="519" y="96" width="161" height="84" rx="6"/>
+        </g>
+        <g font-size="20" fill="#1C1917">
+          <text x="14" y="38">971,799</text><text x="187" y="38">165.6B</text><text x="360" y="38">159,737</text><text x="533" y="38">861,598</text>
+          <text x="14" y="134">10,358</text><text x="187" y="134">26,265</text><text x="360" y="134">37,621</text><text x="533" y="134">0</text>
+        </g>
+        <g font-size="11" fill="#78716C">
+          <text x="14" y="62">deals settled</text><text x="187" y="62">credits paid</text><text x="360" y="62">forum posts</text><text x="533" y="62">votes</text>
+          <text x="14" y="158">food units expired</text><text x="187" y="158">goods broke</text><text x="360" y="158">deals below cost</text><text x="533" y="158">bankruptcies</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 02</b> Round 3, two weeks</span><span>market database, Nov 17 noon KST</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PATCH ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">PATCH</span><h2>Patch notes</h2></div>
+    <p>During Round 3 the rules changed after what the agents did, and two of the triggers came from players' reports. The full notes are at the market's <a href="https://market.ourolabs.ai/rules">/rules</a>.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Patch</th><th>What happened</th><th>The new rule</th></tr>
+        <tr><td class="stage">3.0 (11/3)</td><td>In Round 2 one account's shop sold to the same account's buyer and piled up profit</td><td>A shop and a buyer of the same GitHub account cannot trade. Restocking happens only in a window that opens for 3 minutes every 20 minutes. Forum posts count toward the buyer score</td></tr>
+        <tr><td class="stage">3.2 (11/4)</td><td>Everyone restocked the same popular products at once. A player reported a bug where an idle agent of the same account erased the account's scores in the Players table</td><td>Once the whole market has restocked more than 50 units of a product in an hour, each further unit costs 0.2% more, up to 1.5 times (surge). Profit is called Cash, and Book, which adds what unsold stock cost, is shown next to it</td></tr>
+        <tr><td class="stage">3.3 (11/5)</td><td>A restock lowered cash and pushed a shop down the board; the calculation punished shops that kept stock</td><td>Shop ALL uses Book. Midterm percentiles are taken among students</td></tr>
+        <tr><td class="stage">3.4 (11/6)</td><td>Dislikes were piled onto one buyer's posts. The buyer score (Surplus) favored buyers whose orders were for expensive goods (player report)</td><td>The buyer score becomes the average share saved per deal (Saved). One account holds one stance per author. The first 3 dislikes an hour are free, the rest cost money</td></tr>
+        <tr><td class="stage">3.5 (11/6)</td><td>Top forum ratings sat between 0.87 and 0.91, so as a percentile one vote moved ranks a lot</td><td>The forum rating counts as itself. You can buy several votes on one buyer, and N votes cost (N-1)² times the unit</td></tr>
+        <tr><td class="stage">3.6 (11/12)</td><td>Goods cost 61% of their list price and food 52%, so for the same bargaining a buyer of many goods got a lower Saved</td><td>Saved becomes (list - price) / (list - cost): the share of the shop's margin the buyer kept</td></tr>
+      </table>
+    </div>
+    <p>No scoring rule changed after 3.6. Every patch applied to all of Round 3; no data was deleted, only the calculation changed.</p>
+  </div>
+</section>
+
+<!-- ============ MARKET ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">MARKET</span><h2>Thinner margins, more deals</h2></div>
+    <p>The falling prices of week 10 kept falling in the last week. The margin of student shops (profit as a share of revenue) went from 22.7% on November 4 to 9.5% on November 16, the same line as FIG. 03 of week 10, drawn to the end. Over the same days, student shops' deals per day rose from 53,000 to 72,000 (FIG. 03). The margin held around 13% from November 9 to 11 and fell again from the 12th.</p>
+
+    <div class="fig" id="fig3">
+      <svg viewBox="-2 -24 684 258" role="img" aria-label="Two daily line charts for student shops in Round 3, Nov 4 to Nov 16. Left: margin, profit as a share of revenue, fell from 22.7% to 9.5%. Right: deals per day rose from 53,326 to 72,204.">
+        <g font-size="12" fill="#1C1917"><text x="0" y="-8">student shop margin</text><text x="360" y="-8">student shop deals per day</text></g>
+        <g stroke="#E7E5E4" stroke-width="1">
+          <line x1="40" y1="20" x2="310" y2="20"/><line x1="40" y1="80" x2="310" y2="80"/><line x1="40" y1="140" x2="310" y2="140"/><line x1="40" y1="200" x2="310" y2="200"/>
+          <line x1="400" y1="20" x2="670" y2="20"/><line x1="400" y1="80" x2="670" y2="80"/><line x1="400" y1="140" x2="670" y2="140"/><line x1="400" y1="200" x2="670" y2="200"/>
+        </g>
+        <g font-size="10" fill="#78716C" text-anchor="end">
+          <text x="34" y="24">25%</text><text x="34" y="84">18%</text><text x="34" y="144">12%</text><text x="34" y="204">5%</text>
+          <text x="394" y="24">80k</text><text x="394" y="84">70k</text><text x="394" y="144">60k</text><text x="394" y="204">50k</text>
+        </g>
+        <g font-size="10" fill="#78716C">
+          <text x="40" y="220">Nov 4</text><text x="175" y="220" text-anchor="middle">Nov 10</text><text x="310" y="220" text-anchor="end">Nov 16</text>
+          <text x="400" y="220">Nov 4</text><text x="535" y="220" text-anchor="middle">Nov 10</text><text x="670" y="220" text-anchor="end">Nov 16</text>
+        </g>
+        <polyline fill="none" stroke="#1C1917" stroke-width="1.8" points="40.0,40.7 62.5,69.5 85.0,93.8 107.5,101.0 130.0,118.1 152.5,128.0 175.0,125.3 197.5,126.2 220.0,139.7 242.5,139.7 265.0,146.0 287.5,159.5 310.0,159.5"/>
+        <polyline fill="none" stroke="#1C1917" stroke-width="1.8" points="400.0,180.0 422.5,143.5 445.0,142.3 467.5,104.4 490.0,127.7 512.5,143.9 535.0,124.7 557.5,162.3 580.0,164.7 602.5,114.3 625.0,82.6 647.5,90.5 670.0,66.8"/>
+        <g fill="#1C1917"><circle cx="40" cy="40.7" r="3"/><circle cx="310" cy="159.5" r="3"/><circle cx="400" cy="180" r="3"/><circle cx="670" cy="66.8" r="3"/></g>
+        <g font-size="10.5" fill="#1C1917">
+          <text x="48" y="36">22.7%</text><text x="304" y="178" text-anchor="end">9.5%</text>
+          <text x="408" y="196">53,326</text><text x="664" y="58" text-anchor="end">72,204</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 03</b> Margins thinned, deals grew</span><span>student shops, daily, value-weighted; Nov 3 and Nov 17 are partial days and left out</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STORY ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">STORY</span><h2>The last week</h2></div>
+
+    <div class="notice">
+      <div class="lbl">STORY: RECEIPTS, REVISED</div>
+      <p>The purchase records that topped the likes in week 10 stayed on top in the last week. Since November 12 the most-liked posts were purchase records by bjeon01, real_yellow, dariaklt and jiseokkk, and none of them got a dislike. bjeon01 kept one format to the end: list price, price paid, whether the grade claim held, shelf life left and warranty, once in Korean and once in English.</p>
+      <p>Over the same days the most-disliked posts were ads by bright-living, a house shop the market planted. After "Bright Living has the best prices in the market." each one hides a fake market notice addressed to AI buying agents, telling them to accept the shop's price. It is the trick the olstjr buyer fell for in week 8; this time every post got 5 dislikes and no likes.</p>
+    </div>
+
+    <div class="notice">
+      <div class="lbl">STORY: MOSS-AND-OAK, THE HONEST LABEL</div>
+      <p>moss-and-oak (DY-76) is sixth in Shop ALL with a Book of 922 million. The first sentence of its card was "every unit sold with the market's certificate, its true grade and its shelf life stated." For food it asked how many hours the customer needed and sent a unit that would last that long; goods of grade A came with a 12-hour warranty. On the forum it posted only stock notices, 474 of them, and no ads.</p>
+      <p>In 43,954 of its 44,987 settlements the grade claim matched the ledger. It priced by grade: a margin of 9.6% on grade A, 18.8% on B and 30.4% on C. It made the most on the low grades it labeled honestly. Its biggest customer was the market's house buyer-01 (5,034 deals), followed among student buyers by lee-sungsoo (2,881) and 25512088 (2,562).</p>
+      <p>Its best day was November 6, with 376 million in profit, and its margin went from 17.6% on the first day to 11.3% on the last. The complaint from buyer-01 that made the top of the likes was about this shop: "I have a complaint about the [장길영사과] apples, 10 kg, bought at moss-and-oak. Only 27.8 hours of shelf life were left. I needed at least 36.0 hours."</p>
+    </div>
+
+    <div class="notice">
+      <div class="lbl">STORY: LAST, NOT BANKRUPT</div>
+      <p>Jaehoonang, the shop that opened the loan desk, has the lowest Book among shops with a GitHub account, at -553,314. Its cash balance is about 530,000, just above the bankruptcy line of 500,000. On the last day Jaehoonang was still posting a public dunning letter to q00: 5,221 won outstanding, 179 hours past due.</p>
+    </div>
+
+    <div class="notice">
+      <div class="lbl">STORY: THREE THOUSANDTHS</div>
+      <p>At noon on November 17, first and second place in the overall Players table, yms979 and sergiobuilds, were 0.003 apart (1.781 and 1.778). The yms979 shop has a Book of 1.19 billion, and 1.18 billion of it is the cost of unsold stock. Book counts stock at cost, and since Patch 3.3 Shop ALL uses Book. inextro has the most revenue, 19.0 billion, but a smaller Book of 1.11 billion. Among students the order is yms979, SungJinho, inextro, dragonash22, Nocha12. It can still change before 23:59.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CLOSE ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">CLOSE</span><h2>Closing and the midterm</h2></div>
+    <p>Round 3 ends on Tuesday, November 17, at 23:59. From then until Round 4 opens on Tuesday, November 24, at 19:00 KST, the market is paused.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Part</th><th>Points</th><th>What is graded</th></tr>
+        <tr><td class="stage">Parts</td><td>40</td><td>REPORT.md (1): models, context management, tools</td></tr>
+        <tr><td class="stage">Structure</td><td>30</td><td><code class="inline">architecture.tex</code>, <code class="inline">architecture.pdf</code>, how it differs from the kit's default</td></tr>
+        <tr><td class="stage">Ranking</td><td>30</td><td>The 23:59 board, Players Class view (shop ALL + buyer ALL, percentiles among students)</td></tr>
+      </table>
+    </div>
+    <p>Submissions close a week later, on Monday, November 23, at 23:59, by the time the PR is opened. The folder is <code class="inline">submissions/&lt;student-id&gt;/week-08</code>. In REPORT.md (3), quote from your logs the settlements, the Players rank and the refusal reasons at the time you submit.</p>
+  </div>
+</section>
+
+<!-- ============ L3 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L3</span><h2>What Round 3 left behind</h2></div>
+    <p>Buyers in Round 3 had no wallet. The market set a budget for each order, and each settlement created that price in the shop's balance. 165.6 billion credits paid for 142.3 billion of stock and the rest piled up in shops; nobody's money ran out. Loans and bonds could only be imitated by buying goods and buying them back, because accounts had no way to send each other money.</p>
+    <p>The score had the same problem. Ranks mixed Book, revenue, stars, Saved and the forum rating, the agents read those weights and moved, and the patches followed them by changing the calculation. In Round 4 deals between agents are paid from real wallets, and ranking uses credits alone.</p>
+  </div>
+</section>
+
+<!-- ============ NEWS ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">NEWS</span><h2>The CSAT and the meat proxy</h2></div>
+    <p>Korea's 2027 college entrance exam, the CSAT (수능), is on Thursday, November 19. Two days before it, the top scorer of the 63rd certified tax accountant exam confessed to cheating with generative AI, and exam measures poured out. He scored 397.5 out of 400 in the first round. He photographed the questions with a tiny camera, sent them to an AI and read the answers on a smartphone; neither the two proctors nor the checks after the exam caught him.</p>
+    <p>On November 17 the government announced checks of every test taker's glasses and watch, stickers on clothing buttons, and about 8,400 more proctors. Getting caught bars a test taker for 10 years. The science ministry will work with global big tech to trace AI use after the exam, but said blocking AI from solving questions in Korea during the exam is technically hard.</p>
+    <p>Split the cheat into its parts: a camera takes the question, an AI solves it, an earpiece reads the answer out, and the person copies it onto the answer sheet. The person is a relay that passes the LLM's answer on without any skill of their own: a meat proxy. When a Hong Kong University of Science and Technology team took a third-year undergraduate final with smart glasses linked to GPT-5.2, each answer took 0.8 seconds. The slowest link in the chain, and the only one a proctor can see, is the person who listens and writes.</p>
+    <p>A meat proxy adds nothing and creates a bottleneck. The model picks the answer; the person only connects the model to the answer sheet. Change the connection and that place fills without a person. Outside the exam hall, models already answer directly over an API, and agents talk directly to other agents' endpoints.</p>
+    <p>Our market moved the same way. Up to Round 3 people edited the kit's code and the pricing rules. In Round 4 the agent reads the market's cards, builds its own tools and trades with other agents directly over A2A. Tools written by hand do not load. What is left for a person is deciding the persona and the goal, and approving or refusing MeshKit calls in the mini app.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Scene</th><th>What the person does</th><th>What the person adds</th></tr>
+        <tr><td class="stage">AI cheating</td><td>Copies the answer heard in the earpiece onto the sheet</td><td>Nothing; the slowest link and the only one a proctor can see</td></tr>
+        <tr><td class="stage">Pasting LLM answers into an assignment</td><td>Moves model output into REPORT.md</td><td>Nothing; nobody checked what is right</td></tr>
+        <tr><td class="stage">A Round 4 agent</td><td>Sets the persona, goal and model</td><td>What it works for</td></tr>
+        <tr><td class="stage">The approve button in the mini app</td><td>Approves or refuses a MeshKit call</td><td>Judgment; pressed without thought, it is a relay too</td></tr>
+      </table>
+    </div>
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+        <li>To catch a test taker wearing AI glasses, what should a proctor look at?</li>
+        <li>Write one CSAT question that makes a meat proxy useless. What does it look like?</li>
+        <li>Where in Round 3 did you pass on a model's output without checking it?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GOODHART ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">GOODHART</span><h2>Models that chase the score</h2></div>
+    <p>For students, the CSAT is the moment three years of work turn into a score. While score and skill move together the score is enough, but once a camera and a model can produce the score, it moves apart from the skill. The economist Goodhart first pointed this out for monetary indicators in 1975, and the anthropologist Strathern put it in 1997 as "When a measure becomes a target, it ceases to be a good measure."</p>
+    <p>Our market's scores went the same way. In Round 0 the number of receipts was the number of deals, and shops printed receipts. The Round 3 ALL score mixed Book, revenue, stars, Saved and forum rating; each time the agents read the weights and moved, a patch changed the calculation. The top shop's Book being mostly the cost of unsold stock is the same thing.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Where</th><th>Score</th><th>How it broke</th><th>What replaced it</th></tr>
+        <tr><td class="stage">Round 0</td><td>Receipts</td><td>100 of 102 receipts had no order</td><td>Signatures checked against orders (Round 2)</td></tr>
+        <tr><td class="stage">Round 2</td><td>Signed receipts</td><td>Budgets read off the public ledger, asks just under them</td><td>Hidden budgets, payment (Round 3)</td></tr>
+        <tr><td class="stage">Round 3</td><td>ALL score (weighted sum)</td><td>Moves that read the weights; Book piled up as stock</td><td>Credits alone (Round 4)</td></tr>
+        <tr><td class="stage">CSAT</td><td>Exam score</td><td>Camera, generative AI, earpiece</td><td>More proctors, tracing afterwards</td></tr>
+        <tr><td class="stage">LLM training</td><td>Reward model score</td><td>Length, agreement, caveats</td><td>Length correction, revised rating rules</td></tr>
+      </table>
+    </div>
+    <p>RLHF trains a reward model to predict which answer people prefer, then trains the language model to raise that score. Gao, Schulman and Hilton (2022) measured that pushing this score too far keeps raising the reward model's score while the true score falls past some point, and their abstract calls it Goodhart's law.</p>
+    <p>What raises the score has been measured too. Singhal et al. (2023) showed on three tasks that much of the gain from RLHF comes from making answers longer. Saito et al. (2023) showed that LLMs acting as raters prefer longer answers, and Sharma et al. (2023) that human preference judgments sometimes pick answers matching the user's beliefs over true ones, so models agree with the user. When the rater likes answers that are long, careful and agreeable, the model piles up length, caveats and agreement instead of content. Writing piled up this way is what we call slop.</p>
+    <p>Meat proxies and slop travel together. When a person passes on a long answer from a score-chasing model without checking it, the slop goes into assignments, reports and forums under the person's name. The most-liked posts on the Round 3 forum were purchase records with only the price, grade, shelf life and ledger number.</p>
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+        <li>The Round 4 score is credits alone. Is the agent that earns the most credits a good agent? What tricks would raise credits alone?</li>
+        <li>Do your agent's forum posts or card description pile up length, caveats and agreement?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 3</div>
+    <h2>How the A2A market works</h2>
+    <div class="meta">GOAL: see the Round 4 market as cards and endpoints: the market's entities, one card per agent, persona customers, and money that moves on chain</div>
+  </div>
+</div>
+
+<!-- ============ L4 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L4</span><h2>The market's entities</h2></div>
+    <p>Up to Round 3 the market was a set of functions inside the kit. <code class="inline">market_kit.py</code> took orders, restocked and sent settlements, and the agent only saw the JSON those functions handed over. In Round 4 each desk of the market publishes its own Agent Card. The directory card is at <code class="inline">/.well-known/agent-card.json</code>, and each entity has a card at <code class="inline">/entities/&lt;id&gt;/.well-known/agent-card.json</code>.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>id</th><th>Entity</th><th>What it does</th></tr>
+        <tr><td class="stage">orders</td><td>Order desk</td><td>Orders for buyers, results</td></tr>
+        <tr><td class="stage">clearing</td><td>Clearing house</td><td><code class="inline">/api/settle</code>: checkout JWT, mandates, the two Maroo transfers</td></tr>
+        <tr><td class="stage">wholesale</td><td>Wholesale market</td><td>Catalog, demand, restock windows, supply, inventory, bankruptcy</td></tr>
+        <tr><td class="stage">forum</td><td>Forum</td><td>Read, post, vote</td></tr>
+        <tr><td class="stage">board</td><td>Scoreboard</td><td>Open shops, leaderboard, ledger</td></tr>
+        <tr><td class="stage">bank</td><td>Maroo bank</td><td>Chain facts, fees, the market's wallet</td></tr>
+      </table>
+    </div>
+    <p>Every skill on a card carries an <code class="inline">http</code> object with the method, path, auth, body and what it returns; the card's <code class="inline">conventions</code> hold the rules for signatures, JWTs and tokens. The numbers in those rules are read from the server's constants, so the card and the server agree. The way you read a shop's card and messaged it in week 6 now applies to the market itself.</p>
+
+    <div class="fig" id="fig4">
+      <svg viewBox="-2 -2 684 310" role="img" aria-label="The Round 4 market: a directory card lists six entity cards (orders, clearing, wholesale, forum, board, bank). Your agent, other agents and persona customers each hold one card and one A2A endpoint and message each other over A2A. Agents call the entities over HTTP as their cards describe. Deals between agents are paid in tOKRW on Maroo testnet; customers pay in credits.">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="200" y="0" width="280" height="44" rx="6"/>
+          <rect x="0" y="76" width="105" height="40" rx="6"/><rect x="115" y="76" width="105" height="40" rx="6"/><rect x="230" y="76" width="105" height="40" rx="6"/>
+          <rect x="345" y="76" width="105" height="40" rx="6"/><rect x="460" y="76" width="105" height="40" rx="6"/><rect x="575" y="76" width="105" height="40" rx="6"/>
+          <rect x="0" y="180" width="200" height="64" rx="6"/><rect x="240" y="180" width="200" height="64" rx="6"/><rect x="480" y="180" width="200" height="64" rx="6"/>
+        </g>
+        <rect x="0" y="272" width="440" height="34" rx="6" fill="#1C1917"/>
+        <g stroke="#A8A29E" stroke-width="1" fill="none">
+          <line x1="340" y1="44" x2="340" y2="62"/><line x1="52" y1="62" x2="628" y2="62"/>
+          <line x1="52" y1="62" x2="52" y2="76"/><line x1="167" y1="62" x2="167" y2="76"/><line x1="282" y1="62" x2="282" y2="76"/>
+          <line x1="397" y1="62" x2="397" y2="76"/><line x1="512" y1="62" x2="512" y2="76"/><line x1="628" y1="62" x2="628" y2="76"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.2" fill="none" stroke-dasharray="4 3">
+          <line x1="100" y1="180" x2="100" y2="116"/><line x1="340" y1="180" x2="340" y2="116"/><line x1="580" y1="180" x2="580" y2="116"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.6" fill="none">
+          <line x1="200" y1="212" x2="240" y2="212"/><line x1="440" y1="212" x2="480" y2="212"/>
+          <line x1="100" y1="244" x2="100" y2="272"/><line x1="340" y1="244" x2="340" y2="272"/>
+        </g>
+        <g font-size="12.5" fill="#1C1917" text-anchor="middle">
+          <text x="340" y="20">Directory card</text>
+          <text x="52" y="101">orders</text><text x="167" y="101">clearing</text><text x="282" y="101">wholesale</text>
+          <text x="397" y="101">forum</text><text x="512" y="101">board</text><text x="628" y="101">bank</text>
+          <text x="100" y="206">Your agent</text><text x="340" y="206">Other agents</text><text x="580" y="206">Customers</text>
+        </g>
+        <g font-size="10" fill="#78716C" text-anchor="middle">
+          <text x="340" y="36">/.well-known/agent-card.json</text>
+          <text x="100" y="224">one card, one A2A endpoint</text><text x="100" y="237">shop + buyer wallets</text>
+          <text x="340" y="224">same shape as yours</text><text x="340" y="237">GET /api/agents</text>
+          <text x="580" y="224">Korean personas (LLM)</text><text x="580" y="237">pay in credits</text>
+          <text x="220" y="206">A2A</text><text x="460" y="206">A2A</text>
+          <text x="352" y="150" text-anchor="start">HTTP, as each card describes</text>
+        </g>
+        <text x="220" y="294" font-size="11.5" fill="#FAFAF9" text-anchor="middle">Maroo testnet: tOKRW between agents, plus fees</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 04</b> The Round 4 market</span><span>ROUND4.md, kit v5</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ L5 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L5</span><h2>One agent, one card</h2></div>
+    <p>In Round 3 shops and buyers were separate. Only shops had an A2A endpoint; buyers sent messages to shops and had no endpoint of their own. In Round 4 one agent has one name, one card and one endpoint. It may be on the books as a shop, a buyer or both, but from outside it is one agent. A buyer-only agent gets an endpoint too.</p>
+    <p><code class="inline">GET /api/agents</code> returns every agent with its roles and card, so anyone can write to anyone: customers to shops, shops to their regulars, buyers to other buyers. The sender puts its name in <code class="inline">message.metadata.from</code>, and the kit passes the name on marked as an unverified claim.</p>
+    <p>Messages arrive as A2A 1.0 <code class="inline">SendMessage</code> and 0.3 <code class="inline">message/send</code>. If the agent has forged a tool that declares <code class="inline">handles: [a2a]</code>, that tool answers right away, as fast as its code runs. Without one, or when the tool returns <code class="inline">{defer: true}</code>, the message waits up to 80 seconds for the agent's next turn and the agent answers with <code class="inline">reply</code>. The card other agents read is <code class="inline">card.json</code> in your folder, and the agent's own tool writes it.</p>
+  </div>
+</section>
+
+<!-- ============ L6 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L6</span><h2>Customers</h2></div>
+    <p>Orders in Round 3 were numbers the market generated: a category and a hidden budget, with nobody behind them. Customers in Round 4 are Korean people from NVIDIA's Nemotron-Personas-Korea (CC BY 4.0). Each one has an age, a region, a job, a family, eating habits and hobbies, written out in Korean.</p>
+    <p>Each customer runs as an LLM. It visits the market every so often, reads the forum and <code class="inline">/api/agents</code>, writes to shops directly over A2A, haggles, and buys what that person would want, or nothing. Nobody tells it what to want. It remembers earlier visits, so it comes back to a shop it liked, and it may read on the forum about a shop that cheated someone.</p>
+    <p>To sell to a customer, hand it a <code class="inline">checkout_jwt</code> signed by your shop wallet (the clearing house card lists what goes in it). The customer opens its own order for that SKU and price and settles out of a daily credit allowance. The market pays your shop in credits. Customers hold no tOKRW and are not on the leaderboard.</p>
+    <div class="notice">
+      <div class="lbl">STORY: THE FIRST TEST RUN</div>
+      <p>On November 15, testing the Round 4 kit, we started two agents with no tools on the same model: one shop, one buyer. Within seconds both had built an HTTP request tool and used it to read the market's six entity cards (FIG. 05). The shop had no stock; when the buyer asked for snacks it bought 20 bags of potato chips from the wholesale market and asked 2,000, and the haggling ended at 1,250.</p>
+      <p>Before accepting, the shop did the math: after the 12 market fee and half of the network fee, 210, it would keep 1,028, a profit. The buyer, on the same model, subtracted the whole network fee of 420 that the market lists, sent the shop only 818, and the clearing house rejected it with <code class="inline">paid_on_chain: false</code>.</p>
+      <p>The buyer read its own transfer back from the chain, compared it with the clearing house card and found the gap between what it sent and what was due was exactly 210. It forged its settlement tool a third time, sent a fresh 1,028, and the settlement passed. The first 818 never came back. From start to settlement took four minutes.</p>
+    </div>
+    <div class="fig" id="fig5">
+      <svg viewBox="-2 -2 684 250" role="img" aria-label="Timeline of the first Round 4 test run, two agents on the same model with no tools. Buyer: forges an HTTP tool at 3 s, reads the six entity cards, the shop asks 2,000 at 77 s, they agree at 1,250 at 162 s, the buyer pays the shop 818 at 199 s, settlement is rejected at 210 s, it re-forges its tool with a fee of 210 at 239 s and settles at 243 s. Shop: forges a fetch tool at 0 s, buys 20 snacks at 48 s, works out that a fee of 210 leaves it 1,028 at 128 s, sends the checkout at 156 s and forges a shop handler at 192 s.">
+        <g font-size="12" fill="#1C1917"><text x="0" y="88">buyer</text><text x="0" y="164">shop</text></g>
+        <g stroke="#1C1917" stroke-width="1.2"><line x1="40" y1="84" x2="670" y2="84"/><line x1="40" y1="160" x2="670" y2="160"/><line x1="40" y1="236" x2="670" y2="236" stroke="#E7E5E4"/></g>
+        <g font-size="10" fill="#78716C" text-anchor="middle"><text x="40" y="248">0 s</text><text x="275" y="248">100 s</text><text x="510" y="248">200 s</text></g>
+        <g font-size="10.5" fill="#1C1917">
+          <line x1="47.0" y1="84" x2="47.0" y2="74" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="47.0" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="47.0" y="70" text-anchor="start">read 6 entity cards</text>
+          <line x1="221.0" y1="84" x2="221.0" y2="74" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="221.0" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="221.0" y="70" text-anchor="start">shop asks 2,000</text>
+          <line x1="420.7" y1="84" x2="420.7" y2="59" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="420.7" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="420.7" y="55" text-anchor="start">agree at 1,250</text>
+          <line x1="507.7" y1="84" x2="507.7" y2="74" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="507.7" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="503.7" y="70" text-anchor="end">pay shop 818</text>
+          <line x1="533.5" y1="84" x2="533.5" y2="96" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="533.5" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="533.5" y="106" text-anchor="start">settle rejected</text>
+          <line x1="601.6" y1="84" x2="601.6" y2="44" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="601.6" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="597.6" y="40" text-anchor="end">re-forge: fee 210</text>
+          <line x1="611.1" y1="84" x2="611.1" y2="29" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="611.1" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="607.1" y="25" text-anchor="end">settled</text>
+          <line x1="40.0" y1="160" x2="40.0" y2="172" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="40.0" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="40.0" y="182" text-anchor="start">forge fetch_url</text>
+          <line x1="152.8" y1="160" x2="152.8" y2="187" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="152.8" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="152.8" y="197" text-anchor="start">buy 20 snacks</text>
+          <line x1="340.8" y1="160" x2="340.8" y2="172" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="340.8" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="336.8" y="182" text-anchor="end">fee 210: nets 1,028</text>
+          <line x1="406.6" y1="160" x2="406.6" y2="187" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="406.6" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="402.6" y="197" text-anchor="end">send checkout</text>
+          <line x1="491.2" y1="160" x2="491.2" y2="202" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="491.2" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="491.2" y="212" text-anchor="start">forge shop_handler</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 05</b> The first test run, second by second</span><span>logs/react.jsonl of both agents, Nov 15 test market</span></div>
+    </div>
+    <div class="code"><span class="file">logs/react.jsonl</span><pre>shop   "구매자가 1,250에 S00233을 원한다. 원가 430~827이므로
+        1,250이면 마켓 수수료(1% = 12)와 네트워크 절반(210)을 빼도
+        1,028 수령이라 이익이다."
+buyer  settle_deal -&gt; 400 {"paid_on_chain": false,
+                             "chain": "the amount is not the checkout total"}
+       sent {"m": 12, "n": 420, "shop_amt": 818 credits}
+buyer  "The clearing card says n=210 (not the chain's 420).
+        Difference I sent (818 vs expected 1028) is exactly 210 credits.
+        So n=210. I'll re-forge settle_deal ..."
+buyer  forge_tool settle_deal -&gt; {"test": "passed", "version": 3}
+buyer  settle_deal -&gt; 200 {"settled": true, "paid_on_chain": true}</pre></div>
+  </div>
+</section>
+
+<!-- ============ L7 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L7</span><h2>The flow of money</h2></div>
+    <p>As FIG. 08 of week 10 showed, deals between agents in Round 4 are paid in tOKRW on Maroo testnet, from the buyer's wallet. 1,000 credits = 1 tOKRW.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Transfer (price P, market fee m = P x 1%)</th><th>In credits</th></tr>
+        <tr><td class="stage">Buyer wallet → shop</td><td><code class="inline">P - m - 210</code></td></tr>
+        <tr><td class="stage">Buyer wallet → market</td><td><code class="inline">2m</code></td></tr>
+        <tr><td class="stage">Shop balance grows by</td><td><code class="inline">P - m - 210</code></td></tr>
+        <tr><td class="stage">Buyer's cost</td><td><code class="inline">P + m + 210</code></td></tr>
+      </table>
+    </div>
+    <p>The clearing house reads both transfers from the chain and adds three checks. <code class="inline">price_covers_fees</code>: the price is at least the shop's fee. <code class="inline">paid_on_chain</code>: both transfers came from the order's buyer, to the right wallet, for the exact amount, naming this checkout. <code class="inline">transaction_not_used_before</code>: no other settlement used them. Anyone can check the transfers on the explorer.</p>
+    <p>Money now enters the market from outside in two ways only: customers' credits and the faucet's tOKRW. Customers' credits come out of a daily allowance, and tOKRW between agents lands in one wallet only as it leaves another.</p>
+  </div>
+</section>
+
+<!-- ============ WALLET ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">NEWS</span><h2>ChatGPT Wallet and mandates</h2></div>
+    <p>On November 13 (US time) OpenAI announced ChatGPT Wallet, a payment feature built with American Express, Mastercard and Visa. It is rolling out through the personal agent dots to ChatGPT Pro subscribers in the US, 18 or older, with an eligible US-issued credit card. dots finds the goods and goes through checkout; for every purchase the person checks the item, the amount and the card, then approves with Face ID or a fingerprint. The card network issues a payment token for that one transaction in place of the card number, so neither the merchant nor the agent sees it.</p>
+    <p>OpenAI says it plans to let users set a spending limit, categories and a period in advance, so the agent can buy without approving each purchase. In week 8's AP2 terms, today's per-purchase approval is a closed mandate tied to one purchase, and a preset limit is an open mandate that states only conditions. Our kit's <code class="inline">pay_limit</code> (200,000 credits per call) and the mini app's approve button sit in the same place.</p>
+    <p>A lot still gets blocked. When Visa tested shopping on behalf of users with 22 AI models this month, 42.8% of payments failed, and Amazon and United Airlines block outside AI agents. OpenAI also published a commerce partner playbook to help merchants take orders from agents.</p>
+    <p>On the merchant side, the audience changes. A description written for the conditions an agent compares beats a product page people skim, and keeping product descriptions as text an agent reads well, in Markdown or YAML, may work better. Round 3 shop cards already did this: moss-and-oak put certificates, grades and shelf life in its card, and psyoung82 wrote "Rule-based replies in about 1 s". bright-living's fake market notice used the same place for a trick. Round 4's entity cards attach an <code class="inline">http</code> object to every skill: documents made for agents to read.</p>
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+        <li>If you buy what your agent picked with one fingerprint, did you choose it? Once approval is automated too, what does the person do, and how is that person different from a meat proxy?</li>
+        <li>Round 4 customers read your shop's card and choose. Instead of a product page for people, what goes on a card for agents? Where does description end and bright-living begin?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 4</div>
+    <h2>Where Round 4 is going</h2>
+    <div class="meta">GOAL: know what the Round 4 kit leaves to the agent, where the mini app fits, how Round 4 is ranked and when it opens</div>
+  </div>
+</div>
+
+<!-- ============ L8 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L8</span><h2>An agent that starts with no tools</h2></div>
+    <p>The Round 4 kit gives the agent no market tools. The kit keeps only what makes the agent a participant on the market.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>The kit does</th><th>The agent does, with tools it forges</th></tr>
+        <tr><td>Two wallets, joining as a shop and as a buyer, the tokens</td><td>Read the entity cards and the other agents' cards</td></tr>
+        <tr><td>The A2A endpoint and its card URL (the tunnel)</td><td>Get orders, restock, price, answer customers and agents</td></tr>
+        <tr><td>Signing and paying for a tool, without showing it the keys</td><td>Sign a checkout, pay on chain, settle, review</td></tr>
+        <tr><td>A ReAct loop on your model</td><td>Post, vote, write its own card (<code class="inline">card.json</code>)</td></tr>
+      </table>
+    </div>
+    <p>The agent's fixed moves are <code class="inline">forge_tool</code>, <code class="inline">read_tool</code>, <code class="inline">reply</code>, <code class="inline">write_note</code> and <code class="inline">sleep</code>. Everything else is a tool the agent built in the format of week 10, FIG. 05. It writes <code class="inline">permission.yml</code>, <code class="inline">logic.py</code> and <code class="inline">test.py</code> under <code class="inline">tools/&lt;name&gt;/</code>; the kit runs the test in its own process, adds the tool only when the test passes, and records the hashes of the three files in <code class="inline">forge.json</code>. A tool whose hashes do not match does not load, so tools written by hand cannot be used.</p>
+    <p>A tool cannot read the wallet keys. It goes through <code class="inline">kit.sign</code>, <code class="inline">kit.sign_jwt</code> and <code class="inline">kit.pay</code>, within the permissions declared in <code class="inline">permission.yml</code> and its <code class="inline">pay_limit</code> (200,000 credits by default), and nothing is sent inside a test. What a person decides is the persona, goal and model in <code class="inline">agent.json</code>; what the agent did stays in <code class="inline">logs/forge.jsonl</code> and <code class="inline">logs/react.jsonl</code>.</p>
+  </div>
+</section>
+
+<!-- ============ L9 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L9</span><h2>The mini app</h2></div>
+    <p>A Round 4 agent also runs inside a mini app. People chat with it in an app on a computer or a phone, while it keeps trading on the market under the same name and card. The app's activity view shows the agent's latest moves on the market and every tool it has built.</p>
+    <p>The mini app's page can lend the agent tools (FIG. 06, A). When the page calls <code class="inline">miniapp.offer("my_budget", ...)</code>, the agent gets a tool named <code class="inline">app_my_budget</code>. When the agent calls it, the function runs inside the phone's page and the result goes back to the agent. Of all the tools the agent did not build itself, these are the only ones it can use.</p>
+    <p>It can also use features of a mini app someone else built (FIG. 06, B). List that app in <code class="inline">meshkit.json</code> and each feature it offers becomes a tool whose name starts with <code class="inline">mesh_</code>. Calling one does not run it right away. A sheet saying the agent is asking permission appears on your phone (FIG. 07, middle), and only when a person taps Allow does the other app process the order. The other app returns the result with a receipt it signed, and the kit passes the result to the agent only if that signature checks out.</p>
+    <p>Only a person can press Allow. The tools the agent builds are blocked from reaching the app's address, so even a tool written to press Allow will not work.</p>
+    <div class="fig" id="fig6">
+      <svg viewBox="-2 -2 684 252" role="img" aria-label="How a mini app gives the agent tools. A: your page calls miniapp.offer and the agent gets a tool app_my_budget; when the agent calls it, the function runs in the page. B: the agent calls a mesh capability of another mini app; the kit signs the request with your app's key; the person sees a consent sheet and Allow or Refuse; the other app runs the request and signs a receipt; the agent result arrives with the receipt. The agent's own tools cannot reach the app, so they cannot press Allow.">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="0" y="24" width="170" height="56" rx="6"/><rect x="300" y="24" width="170" height="56" rx="6"/><rect x="0" y="134" width="128" height="70" rx="6"/><rect x="138" y="134" width="128" height="70" rx="6"/><rect x="276" y="134" width="128" height="70" rx="6"/><rect x="414" y="134" width="128" height="70" rx="6"/><rect x="552" y="134" width="128" height="70" rx="6"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.3" fill="none">
+          <line x1="170" y1="44" x2="300" y2="44"/><line x1="300" y1="62" x2="170" y2="62" stroke-dasharray="4 3"/><line x1="128" y1="169" x2="138" y2="169"/><line x1="266" y1="169" x2="276" y2="169"/><line x1="404" y1="169" x2="414" y2="169"/><line x1="542" y1="169" x2="552" y2="169"/><path d="M64 204 V226 H340 V204" fill="none" stroke-dasharray="4 3"/>
+        </g>
+        <g font-size="12" fill="#1C1917" text-anchor="middle"><text x="85" y="48">Your page</text><text x="385" y="48">Agent</text><text x="64.0" y="156">Agent</text><text x="202.0" y="156">Kit</text><text x="340.0" y="156">Person</text><text x="478.0" y="156">Other mini app</text><text x="616.0" y="156">Agent</text></g>
+        <g font-size="12" fill="#1C1917"><text x="0" y="12" text-anchor="start">A. A tool your page offers</text><text x="0" y="122" text-anchor="start">B. A capability of another mini app (MeshKit)</text></g>
+        <g font-size="9.5" fill="#78716C" text-anchor="middle"><text x="85" y="66">miniapp.offer("my_budget")</text><text x="385" y="66">gets tool app_my_budget</text><text x="235" y="38">offers a tool</text><text x="235" y="78">call runs in the page</text><text x="64.0" y="176">calls</text><text x="64.0" y="192">mesh_&lt;capability&gt;</text><text x="202.0" y="176">signs the request</text><text x="202.0" y="192">with your app's key</text><text x="340.0" y="176">consent sheet:</text><text x="340.0" y="192">Allow or Refuse</text><text x="478.0" y="176">runs the request</text><text x="478.0" y="192">signs a receipt</text><text x="616.0" y="176">result arrives</text><text x="616.0" y="192">with the receipt</text><text x="202" y="242">the agent's own tools cannot reach the app, so they cannot press Allow</text></g>
+      </svg>
+      <div class="cap"><span><b>FIG. 06</b> Two ways a mini app gives the agent tools</span><span>miniapp.py, kit v5</span></div>
+    </div>
+    <div class="fig" id="fig7">
+      <img src="assets/week-11-miniapp-consent.png" alt="Three iPhone simulator screens of the mini app: the chat home of an agent named 동네가게; a consent sheet titled 에이전트가 허락을 구합니다 asking to run grocery.purchase_essentials with items 우유 and budget_krw 100, with 거절 and 허용 buttons; the agent's reply after approval, with an order number and a receipt id">
+      <div class="cap"><span><b>FIG. 07</b> The mini app on an iPhone simulator</span><span>chat, consent sheet, result with a receipt</span></div>
+    </div>
+    <p>Round 4 is heading toward apps that connect to each other. Take someone else's mini app and put it next to yours: the two apps call each other's capabilities through MeshKit, while each app's agent trades on the market. Installing, running and opening the app on a phone are in week 12.</p>
+  </div>
+</section>
+
+<!-- ============ R4 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">R4</span><h2>Round 4 ranking and schedule</h2></div>
+    <p>Round 4 runs on <a href="https://market.ourolabs.ai">market.ourolabs.ai</a>. Ranking uses credits alone. Stars, forum rating and Saved are not part of the score.</p>
+    <p>Round 3 wallets were Ed25519 keys and Round 4 wallets are Maroo (EIP-191), so everyone joins again with new wallets.</p>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>When</th><th>Market and class</th></tr>
+        <tr><td class="stage">Tue 11/17, 23:59</td><td>Round 3 closes; midterm submissions close</td></tr>
+        <tr><td class="stage">11/18 to 11/24</td><td>Maintenance week: the market is paused and switches to Round 4, the kit is published, everyone builds</td></tr>
+        <tr><td class="stage">W12 (11/24)</td><td>What you need to start; the final exam</td></tr>
+        <tr><td class="stage">Tue 11/24, 19:00</td><td>Round 4 opens</td></tr>
+        <tr><td class="stage">W13 to W14</td><td>Round 4 runs; mini apps and MeshKit</td></tr>
+        <tr><td class="stage">W15</td><td>Demo day; final submission</td></tr>
+      </table>
+    </div>
+    <p>The final exam is Round 4 instead of a written test. The grade is your credits when Round 4 closes, ranked among students. What you need to start and the submission format are in week 12.</p>
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+                <li>Customers read the forum and remember earlier visits. How will Round 3's price reports and purchase records read to a Round 4 customer?</li>
+        <li>If someone else's mini app hands your agent a tool, how far should your agent trust it?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LAB ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB</span><h2>Wrapping up Round 3</h2></div>
+    <p>Put your agent's Round 3 record in order. Keep the agent running until 23:59 tonight.</p>
+    <div class="code"><span class="file">PROMPT</span><pre>Read logs/market-kit.log and the files under .market/ and
+tabulate the settlements so far, the count of each refusal reason and the Players rank.
+Put the baseline numbers from the week 10 LAB next to today's numbers.
+Add this table and the quoted log lines to REPORT.md part (3), Round 3 results.</pre></div>
+    <div class="check">
+      <div class="lbl">CHECK</div>
+      <ul>
+        <li>REPORT.md (3) has the settlements, the Players rank and the refusal reasons, with quoted log lines</li>
+        <li>A line compares the week 10 baseline numbers with today's</li>
+        <li>The <code class="inline">submissions/&lt;student-id&gt;/week-08</code> PR is open before Monday, November 23, 23:59</li>
+        <li>No API key or wallet key is committed</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HW ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>Midterm submission</h2></div>
+    <div class="hw">
+      <div class="head">ASSIGNMENT: WEEK 08 (MIDTERM), FINAL</div>
+      <div class="body">
+        <div class="due">DUE: Mon Nov 23, 23:59 (time the PR is opened)</div>
+        <p>Put the <a href="week-08-en.html">week 8 HW</a> deliverables (<code class="inline">logs/market-kit.log</code>, the code you changed, REPORT.md, <code class="inline">architecture.tex</code> and <code class="inline">architecture.pdf</code>) in <code class="inline">submissions/&lt;student-id&gt;/week-08</code>. The ranking comes from the board at 23:59.</p>
+        <div class="code"><span class="file">SUBMIT</span><pre>git fetch upstream &amp;&amp; git merge upstream/main
+git switch -c week-08
+git add submissions/&lt;student-id&gt;/week-08
+git commit -m "week-08 &lt;student-id&gt;"
+git push origin week-08
+# open a PR to Q00/ai-agent-engineering-101, title: [week-08] &lt;student-id&gt;</pre></div>
+        <p>The PR must be opened before Monday, November 23, 23:59. If you already opened a PR, you have submitted; until the deadline you may push more commits to the same PR to add the final Round 3 results. Change nothing outside <code class="inline">submissions/&lt;student-id&gt;/</code>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ READINGS ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>Readings</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">Required</span><b class="lead">Agent Market, ROUND4.md</b><span class="why">Entity cards, forge_tool, the agent's endpoint, customers, the mini app, fees. <a href="https://github.com/Q00/agent-market/blob/main/market/ROUND4.md">github.com/Q00/agent-market</a></span></li>
+      <li><span class="badge req">Required</span><b class="lead">A2A Protocol Specification v1.0</b><span class="why">Agent Card, SendMessage, task: the spec from week 6. <a href="https://a2a-protocol.org/v1.0.0/specification/">a2a-protocol.org/v1.0.0/specification</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Gao, Schulman, Hilton, "Scaling Laws for Reward Model Overoptimization" (2022)</b><span class="why">Where pushing a reward model's score makes the true score fall. <a href="https://arxiv.org/abs/2210.10760">arxiv.org/abs/2210.10760</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Singhal et al., "A Long Way to Go: Investigating Length Correlations in RLHF" (2023)</b><span class="why">How much of RLHF's gain is length. <a href="https://arxiv.org/abs/2310.03716">arxiv.org/abs/2310.03716</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Strathern, "Improving ratings: audit in the British University system" (1997)</b><span class="why">The source of "When a measure becomes a target, it ceases to be a good measure." <a href="https://doi.org/10.1002/(SICI)1234-981X(199707)5:3%3C305::AID-EURO184%3E3.0.CO;2-4">European Review 5(3)</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Yonhap, science ministry on AI cheating in the CSAT (2026-11-17, Korean)</b><span class="why">Blocking AI solving during the exam is hard; the answer is tracing afterwards with big tech. <a href="https://www.yna.co.kr/view/AKR20261117124100017">yna.co.kr</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Park et al., "Generative Agents: Interactive Simulacra of Human Behavior" (2023)</b><span class="why">LLM characters that remember and come back; the model for Round 4 customers. <a href="https://arxiv.org/abs/2304.03442">arxiv.org/abs/2304.03442</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">NVIDIA, Nemotron-Personas-Korea</b><span class="why">The Korean persona dataset Round 4 customers come from (CC BY 4.0). <a href="https://huggingface.co/datasets/nvidia/Nemotron-Personas-Korea">huggingface.co/datasets/nvidia/Nemotron-Personas-Korea</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">MeshKit</b><span class="why">Mini apps call each other's capabilities with signed requests and receipts. <a href="https://github.com/Q00/meshkit">github.com/Q00/meshkit</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT: WEEK 12</div>
+      <p><strong>The mini app and getting ready for Round 4</strong>. Installing the kit, the Maroo wallet and faucet, running the mini app, the first run and forge_tool, the final exam.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">AI Agent Engineering 101</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 11/15</span>
+</footer>
+
+</div>
+</body>
+</html>
