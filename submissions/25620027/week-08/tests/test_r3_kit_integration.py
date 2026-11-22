@@ -38,7 +38,9 @@ def test_round3_receipt_settles_through_kit_v4_proxy_checkout_and_accept_policy(
     # signs its certificate.
     shop_key, buyer_key, market_key = (Ed25519PrivateKey.generate() for _ in range(3))
     now = time.time()
-    stock = [unit(KIMCHI, 1, grade="A", now=now, shelf_left_ratio=0.9)]
+    # A lower acquisition cost lets the seller's margin and buyer's credit line
+    # both pass while the real certificate, proxy and checkout remain in use.
+    stock = [unit(KIMCHI, 1, grade="A", cost=28000, now=now, shelf_left_ratio=0.9)]
     body = {
         "unit": stock[0]["unit"],
         "sku": KIMCHI,
@@ -152,7 +154,7 @@ def test_round3_receipt_settles_through_kit_v4_proxy_checkout_and_accept_policy(
                         assert ledger.events[-1]["kind"] == "settle"
                         assert ledger.events[-1]["data"]["amount"] == receipt["price"]
                         assert ledger.balances["shop"] == receipt["price"]
-                        assert 38000 <= receipt["price"] <= 49400
+                        assert 32200 <= receipt["price"] <= 34320
                     finally:
                         proxy.server.should_exit = True
 

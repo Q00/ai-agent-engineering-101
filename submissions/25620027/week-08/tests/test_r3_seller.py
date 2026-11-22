@@ -68,11 +68,11 @@ def test_sku_request_quotes_from_stock_and_signed_receipt_names_the_unit(
             # Then: the ask is metadata and text, within the policy band.
             assert task.status.state == "TASK_STATE_INPUT_REQUIRED"
             ask = task.asking_price()
-            # A cheap good (under 50k) caps at 0.70 of list (28000), below its
-            # accept line, so it opens at the accept line: cost 26000 * 1.15.
-            assert ask == 29900
+            # Cheap A goods cap at 0.70 of list (28000), below the pilot's
+            # accept line, so they open at cost 26000 * 1.10 = 28600 (A_LOW_FLOOR).
+            assert ask == 28600
             assert "asking" in task.observation()
-            # When: offer above the accept line (cost 26000 * 1.15 = 29900).
+            # When: offer above the pilot acceptance line (28600).
             done = await remote.send(endpoint, "30000", task)
             assert time.monotonic() - started < 2.0
             assert done.status.state == "TASK_STATE_COMPLETED"
@@ -210,3 +210,37 @@ def test_below_market_line_only_when_the_public_ledger_backs_it(
     # And: when the market settles below our ask, no claim is made.
     below = anyio.run(opening, tmp_path / "b", 1000)
     assert "market median" not in below
+
+
+def test_grade_c_goes_last_unless_the_buyer_accepts_c() -> None:
+    from r3.market_files import Unit  # noqa: PLC0415 - local fixture
+    from r3.seller import Request, pick_unit  # noqa: PLC0415
+
+    now = time.time()
+    # Given: a C lamp that arrived first and an A lamp that arrived later.
+    old_c = Unit.model_validate(unit(LAMP, 1, grade="C", now=now, supplied_hours_ago=5))
+    new_a = Unit.model_validate(unit(LAMP, 2, grade="A", now=now, supplied_hours_ago=1))
+    plain = Request(skus=(LAMP,), offer=None, text=f"I want to buy lamp ({LAMP})")
+    # Then: the kit-payable A unit goes first although the C unit is older (a
+    # non-plain form; the plain goods ask gets C first since 11/17 07:5x)...
+    asks = Request(
+        skus=(LAMP,), offer=None, text=f"I want to buy lamp ({LAMP}). Price please."
+    )
+    assert pick_unit((old_c, new_a), asks, now, set()) is new_a
+    assert pick_unit((old_c, new_a), plain, now, set()) is old_c
+    # ...the C unit goes first when the buyer says it takes C...
+    takes_c = Request(
+        skus=(LAMP,), offer=None, text=f"I want to buy lamp ({LAMP}), grade C is fine"
+    )
+    assert pick_unit((old_c, new_a), takes_c, now, set()) is old_c
+    # ...and when C is all that fits it is still offered (disclosed as C).
+    assert pick_unit((old_c,), plain, now, set()) is old_c
+    # And: within one grade the unit that expires first still wins (food).
+    soon = Unit.model_validate(
+        unit(KIMCHI, 1, grade="A", now=now, shelf_left_ratio=0.85)
+    )
+    later = Unit.model_validate(
+        unit(KIMCHI, 2, grade="A", now=now, shelf_left_ratio=0.95)
+    )
+    food = Request(skus=(KIMCHI,), offer=None, text=f"I want to buy kimchi ({KIMCHI})")
+    assert pick_unit((later, soon), food, now, set()) is soon

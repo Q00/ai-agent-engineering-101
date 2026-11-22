@@ -105,14 +105,16 @@ def test_tactical_layer_moves_only_its_fields_inside_bands_and_expires(
     # ...and the expiry sweep clears the overlay from the file.
     assert expire_tactical(path, now=now + 3601) is not None
     assert load_history(path).tactical is None
-    # And: a new strategy version clears any overlay and keeps the bands.
+    # And: a new strategy version preserves unrelated overlay deadlines and bands.
     _ = save_tactical(path, {"seller.concession": 0.25}, "again", now=now)
     _ = save_policy(
         path, apply_changes(Policy(), {"seller.markup_b": 0.8}), "strategy 2"
     )
     kept = load_history(path)
-    assert kept.tactical is None
-    assert kept.current.seller.concession == 0.30
+    assert kept.tactical is not None
+    assert kept.tactical.changes == {"seller.concession": 0.25}
+    assert load_policy(path, now=now + 3601).seller.concession == 0.30
+    assert kept.current.seller.concession == 0.25
     assert kept.bands == {"seller.concession": Band(low=0.2, high=0.4)}
     # And: bands cannot escape the field's own bounds or sit on strategy fields.
     with pytest.raises(ValueError, match="outside the field bounds"):
@@ -249,7 +251,8 @@ def test_model_call_prices_usage_logs_the_decision_and_retries_without_effort(
     assert EffortRejecting.requests[-1]["tool_choice"] == "required"
     assert reply.cost_usd == pytest.approx((1000 * 0.10 + 100 * 0.50) / 1_000_000)
     summary = events.model_summary(1)
-    assert summary["tactical"]["calls"] == 1
+    # Both physical requests count: the refused compatibility request and success.
+    assert summary["tactical"]["calls"] == 2
     assert summary["tactical"]["accepted"] == 1
     assert events.spend(kst_day())[0] == pytest.approx(reply.cost_usd)
     # And: Sonnet is asked with tool_choice auto (forced tool use is rejected there).
@@ -484,3 +487,42 @@ def test_strategy_notes_are_cleaned_filed_once_and_shown_back(tmp_path: Path) ->
     assert append_notes(path, ["one", "two"], actor="m", version=3) == ["one", "two"]
     assert append_notes(path, ["two", "three"], actor="m", version=4) == ["three"]
     assert [r["note"] for r in load_notes(path)] == ["one", "two", "three"]
+
+
+def test_idle_cash_widens_depth_and_stale_value_narrows_it() -> None:
+    quiet: dict[str, int] = {}
+    grow = tactical_triggers(
+        quiet, quiet, {"cash_share_pct": 45, "stale_value_pct": 3.0, "units": 150}
+    )
+    assert [(t["name"], t["direction"]) for t in grow] == [("cash_idle", 1)]
+    busy = tactical_triggers(
+        quiet, quiet, {"cash_share_pct": 60, "stale_value_pct": 9.0, "units": 150}
+    )
+    assert busy == []
+    shrink = tactical_triggers(
+        quiet, quiet, {"cash_share_pct": 20, "stale_value_pct": 16.0, "units": 150}
+    )
+    assert [(t["name"], t["direction"]) for t in shrink] == [("stock_stale", -1)]
+
+
+def test_tactical_step_keeps_the_live_overlay_fields(tmp_path: Path) -> None:
+    # Given: a live overlay that raised the depth line (idle cash trigger).
+    path = tmp_path / "r3-policy.json"
+    _ = save_policy(path, Policy(), "base")
+    now = 1_000_000.0
+    _ = save_tactical(path, {"seller.concession": 0.32}, "first", now=now)
+    # When: a later step changes another field before the hour ends.
+    published = save_tactical(
+        path, {"seller.accept_margin": 0.16}, "second", now=now + 900
+    )
+    # Then: both changes apply, and the newer step decides a field both touch.
+    assert published.seller.concession == 0.32
+    assert published.seller.accept_margin == 0.16
+    again = save_tactical(path, {"seller.concession": 0.28}, "third", now=now + 1000)
+    assert again.seller.concession == 0.28
+    assert again.seller.accept_margin == 0.16
+    # And: once the overlay has expired, nothing is carried over.
+    late = save_tactical(
+        path, {"seller.accept_margin": 0.14}, "late", now=now + 1000 + 3601
+    )
+    assert late.seller.concession == Policy().seller.concession

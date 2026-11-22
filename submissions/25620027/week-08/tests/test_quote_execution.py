@@ -26,8 +26,10 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("round_number", ["2", "3"])
 @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
 def test_persisted_quote_executes_without_another_model_response(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
-    round_number: str, acceptance: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    round_number: str,
+    acceptance: str,
 ) -> None:
     monkeypatch.setenv("AX_MARKET_ROUND", round_number)
     monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
@@ -52,10 +54,12 @@ def test_persisted_quote_executes_without_another_model_response(
             raw = TypeAdapter(dict[str, JsonValue]).validate_json(
                 MessageToJson(completed.artifacts[0].parts[0].data)
             )
-            receipt = SignedReceipt.model_validate({
-                **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
-                "price": price,
-            })
+            receipt = SignedReceipt.model_validate(
+                {
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                }
+            )
             assert raw["price"] == price
             assert raw["sku"] == "lamp"
             assert receipt.task == opened.id
@@ -93,15 +97,21 @@ def test_r3_lower_offer_still_requires_a_new_model_price(
 
 
 def test_repeated_infeasible_bid_cannot_raise_a_persisted_quote(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("AX_MARKET_ROUND", "3")
     monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
     monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
-    calls = scripted(monkeypatch, [
-        action("quote", 110), action("quote", 100),
-        action("quote", 130), action("quote", 100),
-    ])
+    calls = scripted(
+        monkeypatch,
+        [
+            action("quote", 110),
+            action("quote", 100),
+            action("quote", 130),
+            action("quote", 100),
+        ],
+    )
 
     async def scenario() -> None:
         async with AsyncOpenAI(api_key="offline-placeholder") as client:
@@ -111,8 +121,10 @@ def test_repeated_infeasible_bid_cannot_raise_a_persisted_quote(
                 lowered = task_from(await send(first, "90", opened.id))
             async with fresh_client(harness) as second:
                 repeated = task_from(await send(second, "90", opened.id))
-            assert [task.status.message.metadata["ask"] for task in
-                    (opened, lowered, repeated)] == [110, 100, 100]
+            assert [
+                task.status.message.metadata["ask"]
+                for task in (opened, lowered, repeated)
+            ] == [110, 100, 100]
             assert repeated.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
             assert not repeated.artifacts
             assert "100" in repeated.status.message.parts[0].text
@@ -125,10 +137,14 @@ def test_repricing_cannot_search_for_a_different_selected_product(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("AX_MARKET_ROUND", "3")
-    calls = scripted(monkeypatch, [
-        action("quote", 110), ("search_catalog", {"query": "chair"}),
-        action("quote", 108),
-    ])
+    calls = scripted(
+        monkeypatch,
+        [
+            action("quote", 110),
+            ("search_catalog", {"query": "chair"}),
+            action("quote", 108),
+        ],
+    )
     logs: list[str] = []
 
     async def scenario() -> None:

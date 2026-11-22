@@ -32,9 +32,10 @@ if TYPE_CHECKING:
 
 def test_first_restock_spreads_long_life_food_and_mid_priced_goods_within_cash(
     tmp_path: Path,
+    r3_restock_now: float,
 ) -> None:
     folder = write_market(tmp_path / ".market", [])
-    now = time.time()
+    now = r3_restock_now
     lines, state = plan(
         read_inventory(folder),
         read_catalog(folder),
@@ -56,8 +57,9 @@ def test_first_restock_spreads_long_life_food_and_mid_priced_goods_within_cash(
 
 def test_restock_replenishes_sold_units_and_stops_when_cash_is_at_the_reserve(
     tmp_path: Path,
+    r3_restock_now: float,
 ) -> None:
-    now = time.time()
+    now = r3_restock_now
     folder = write_market(
         tmp_path / ".market", [unit(KIMCHI, 1, now=now), unit(LAMP, 1, now=now)]
     )
@@ -98,8 +100,9 @@ def test_restock_replenishes_sold_units_and_stops_when_cash_is_at_the_reserve(
 
 def test_restock_follows_settled_demand_and_round_two_buys_nothing(
     tmp_path: Path,
+    r3_restock_now: float,
 ) -> None:
-    now = time.time()
+    now = r3_restock_now
     folder = write_market(tmp_path / ".market", [])
     signal = DemandSignal({"가구/침구>조명>스탠드": 40}, {LAMP: 40})
     lines, _ = plan(
@@ -120,10 +123,11 @@ def test_restock_follows_settled_demand_and_round_two_buys_nothing(
 
 def test_restock_prints_nothing_while_the_supply_window_is_shut(
     tmp_path: Path,
+    r3_restock_now: float,
 ) -> None:
     # Given: a Round 3 shop with cash and the market's supply window 10 min away.
     folder = tmp_path / ".market"
-    now = time.time()
+    now = r3_restock_now
     shut = {"open": False, "opens_at": now + 600, "closes_at": now + 780}
     _ = write_market(folder, [], window=shut)
     # When / Then: the hook buys nothing (each line would be a lost 429).
@@ -239,8 +243,9 @@ def test_review_rates_certified_facts_and_never_prints_the_budget(
 
 def test_restock_stocks_market_best_sellers_deep_and_skips_unsold_skus(
     tmp_path: Path,
+    r3_restock_now: float,
 ) -> None:
-    now = time.time()
+    now = r3_restock_now
     folder = write_market(
         tmp_path / ".market", [unit(CURTAIN, 1, now=now)], balance=30_000_000
     )
@@ -261,3 +266,100 @@ def test_restock_stocks_market_best_sellers_deep_and_skips_unsold_skus(
     by_sku = {line["sku"]: line["qty"] for line in lines}
     assert by_sku.get(CURTAIN) == 9  # depth min(10, 800 // 50), one already held
     assert LAMP not in by_sku
+
+
+def test_own_fast_sellers_are_replenished_even_while_still_in_stock(
+    tmp_path: Path,
+    r3_restock_now: float,
+) -> None:
+    now = r3_restock_now
+    folder = write_market(
+        tmp_path / ".market", [unit(CURTAIN, 1, now=now)], balance=30_000_000
+    )
+    policy = RestockPolicy(
+        goods_min_list_price=0,
+        goods_max_list_price=1_000_000,
+        units_per_sku=20,
+        replenish_qty=2,
+        depth_skus=1,
+    )
+    # Given: we sold 9 curtains in the last hour and hold one.
+    state = RestockState(
+        first_run_at=now - 7200,
+        last_sold_at={CURTAIN: now - 60},
+        sold_log={CURTAIN: [now - 60 * k for k in range(1, 10)]},
+    )
+    lines, updated = plan(
+        read_inventory(folder),
+        read_catalog(folder),
+        read_demand(folder),
+        policy,
+        state,
+        now,
+        None,
+    )
+    # Then: it is topped up to cover two supply windows: ceil(9 x 0.67) = 7 held.
+    assert {line["sku"]: line["qty"] for line in lines}.get(CURTAIN) == 6
+    assert len(updated.sold_log[CURTAIN]) == 9
+
+
+def test_a_sku_on_both_lists_gets_the_larger_target(
+    tmp_path: Path,
+    r3_restock_now: float,
+) -> None:
+    now = r3_restock_now
+    folder = write_market(
+        tmp_path / ".market", [unit(CURTAIN, 1, now=now)], balance=30_000_000
+    )
+    policy = RestockPolicy(
+        goods_min_list_price=0,
+        goods_max_list_price=1_000_000,
+        units_per_sku=20,
+        replenish_qty=2,
+        depth_skus=1,
+    )
+    # Market depth says 2 (100 settles // 50); our own pace (9 an hour) says 7.
+    signal = DemandSignal({}, {CURTAIN: 100})
+    state = RestockState(
+        first_run_at=now - 7200,
+        last_sold_at={CURTAIN: now - 60},
+        sold_log={CURTAIN: [now - 60 * k for k in range(1, 10)]},
+    )
+    lines, _ = plan(
+        read_inventory(folder),
+        read_catalog(folder),
+        read_demand(folder),
+        policy,
+        state,
+        now,
+        signal,
+    )
+    curtain = [line for line in lines if line["sku"] == CURTAIN]
+    assert len(curtain) == 1
+    assert curtain[0]["qty"] == 6  # 7 held after the buy, not 2
+
+
+def test_economics_stop_losers_and_deepen_fast_earners() -> None:
+    from r3.restock import economic_target  # noqa: PLC0415 - test only
+
+    econ = {
+        "loser": (-5_000.0, 4),
+        "earner": (90_000.0, 24),
+        "mid": (10_000.0, 6),
+        "slow_earner": (95_000.0, 3),
+        "new": (0.0, 1),
+    }
+    assert economic_target("loser", 6, econ, held=2) == 0
+    assert economic_target("earner", 6, econ, held=2) == 9  # top net, turns in 1 h
+    assert economic_target("mid", 6, econ, held=2) == 6
+    assert economic_target("slow_earner", 6, econ, held=10) == 6  # 10 held, slow
+    assert economic_target("new", 6, econ, held=0) == 6  # too few sales to judge
+
+
+def test_a_small_loss_does_not_stop_a_best_seller() -> None:
+    from r3.restock import economic_target  # noqa: PLC0415 - test only
+
+    econ = {"hot": (-3_672.0, 9), "loser": (-281_479.0, 4)}
+    assert economic_target("hot", 20, econ, held=1, list_price=545_930) >= 20
+    assert economic_target("loser", 11, econ, held=5, list_price=2_246_800) == 0
+    assert economic_target("hot", 20, econ, held=1) == 0  # no price: old rule

@@ -15,7 +15,6 @@ from r3 import buyer as fast
 from r3.manager import (
     EDGE_RUNS_TO_WIDEN,
     FOLD_RUNS,
-    PROMPT,
     Manager,
     Proposal,
     append_notes,
@@ -93,10 +92,15 @@ def test_market_buyer_cli_fast_mode_resolves_the_order_path_and_prints_json(
     assert line["receipt"]["price"] == 100
 
 
-def test_restock_and_review_commands_print_kit_shaped_json(tmp_path: Path) -> None:
-    now = time.time()
-    folder = write_market(tmp_path / ".market", [unit(KIMCHI, 1, now=now)])
-    plan = CliRunner().invoke(harness_app.app, ["restock", "--state", str(folder)])
+def test_restock_and_review_commands_print_kit_shaped_json(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    r3_restock_now: float,
+) -> None:
+    folder = write_market(tmp_path / ".market", [unit(KIMCHI, 1, now=r3_restock_now)])
+    with monkeypatch.context() as clock:
+        clock.setattr(time, "time", lambda: r3_restock_now)
+        plan = CliRunner().invoke(harness_app.app, ["restock", "--state", str(folder)])
     assert plan.exit_code == 0, plan.output
     lines = json.loads(plan.stdout.splitlines()[-1])["buy"]
     assert lines
@@ -185,7 +189,7 @@ def test_manager_summary_and_schema_work_without_network_or_model(
     assert manager.summary()["policy"]["version"] == 2
 
 
-def test_pinned_tactical_fields_are_reported_and_their_band_widened_by_code(
+def test_locked_seller_bands_remain_unchanged_when_pinned(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     now = time.time()
@@ -209,23 +213,19 @@ def test_pinned_tactical_fields_are_reported_and_their_band_widened_by_code(
     _ = save_tactical(manager.policy_file, {"seller.accept_margin": 0.165}, "up")
     assert manager.band_edges()["seller.accept_margin"]["side"] == "high"
     assert "tactical_at_band_edge" in manager.summary()
-    assert "tactical_at_band_edge" in PROMPT
     # When: the field stays pinned for three tactical runs.
     for _ in range(EDGE_RUNS_TO_WIDEN - 1):
         edges = manager.track_band_edges()
         assert edges["seller.accept_margin"]["band"]["high"] == 0.165
     edges = manager.track_band_edges()
-    # Then: code widens the band by half its span on that side, keeps the overlay,
-    # records the change as its own, and restarts the count.
-    assert edges["seller.accept_margin"]["band"] == {"low": 0.1, "high": 0.1975}
+    # Then: the buyer rollout does not widen a protected seller band or its TTL.
+    assert edges["seller.accept_margin"]["band"] == {"low": 0.1, "high": 0.165}
     history = load_history(manager.policy_file)
     assert history.tactical is not None
-    assert history.bands["seller.accept_margin"].high == 0.1975
+    assert history.bands["seller.accept_margin"].high == 0.165
     rows = [c for c in manager.events.recent_policy_changes(1) if c["actor"] == "code"]
-    assert rows
-    assert rows[-1]["field"] == "band:seller.accept_margin"
-    assert manager.events.loop_runs(0)[-1]["outcome"] == "nudged"
-    assert "seller.accept_margin" not in manager.band_edges()  # room again
+    assert not rows
+    assert "seller.accept_margin" in manager.band_edges()
     # And: widening never leaves the field's own bounds.
     assert widen_band("seller.accept_margin", Band(low=0.9, high=1.0), "high") == Band(
         low=0.9, high=1.0
@@ -360,7 +360,7 @@ def test_floor_bounds_fold_and_note_resolution(
         bands={"restock.replenish_qty": Band(low=1, high=3)},
     )
     assert "restock.replenish_qty" not in manager.band_edges()
-    # And: the same tactical move accepted three times becomes the base.
+    # And: repeated buyer proposals do not become a base without performance evidence.
     for _ in range(FOLD_RUNS):
         manager.events.record_policy_change(
             actor="m",
@@ -373,9 +373,9 @@ def test_floor_bounds_fold_and_note_resolution(
             version=None,
             accepted=True,
         )
-    assert manager.fold_recurring_moves() == {"buyer.quick_accept_ratio": 0.75}
-    assert load_history(manager.policy_file).base().buyer.quick_accept_ratio == 0.75
-    assert manager.fold_recurring_moves() == {}  # already the base
+    assert manager.fold_recurring_moves() == {}
+    assert load_history(manager.policy_file).base().buyer.quick_accept_ratio == 0.72
+    assert manager.fold_recurring_moves() == {}
     # And: after a fold only new moves count, so one more step does not refold
     # (first night: the fold fired every 15 min and walked the base up).
     manager.events.record_policy_change(
@@ -405,7 +405,7 @@ def test_floor_bounds_fold_and_note_resolution(
     signals = manager.events.tactical_signals(1)
     assert signals["buyer_attempts"] == 3
     assert signals["buyer_priced"] == 1
-    assert manager.events.loop_runs(0)[-1]["outcome"] == "nudged"
+    assert not manager.events.loop_runs(0)
     # And: a resolved note leaves the open list.
     path = tmp_path / "notes.jsonl"
     _ = append_notes(path, ["fix a", "fix b"], actor="m", version=1)

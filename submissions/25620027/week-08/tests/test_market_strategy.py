@@ -49,9 +49,7 @@ def test_opening_when_observed_market_has_room_uses_bounded_near_low_price(
                 name=f"Peer{index}",
                 url=f"https://peer{index}.example",
                 deals=100,
-                quotes=(
-                    ObservedQuote(item=item, ask=price, observed_at=now),
-                ),
+                quotes=(ObservedQuote(item=item, ask=price, observed_at=now),),
             )
             for index, price in enumerate(prices)
         ),
@@ -78,9 +76,7 @@ def test_first_feasible_counter_when_model_delays_completes_same_request(
 
     async def scenario() -> None:
         async with AsyncOpenAI(api_key="offline-placeholder") as model:
-            app = create_app(
-                "http://seller/", Harness(model, print), catalog, "Test"
-            )
+            app = create_app("http://seller/", Harness(model, print), catalog, "Test")
             async with httpx2.AsyncClient(
                 transport=httpx2.ASGITransport(app=app), base_url="http://seller"
             ) as client:

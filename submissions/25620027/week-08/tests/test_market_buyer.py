@@ -187,7 +187,8 @@ def test_failure_when_review_model_fails_preserves_trade_and_final_result(
     harness = ScriptedHarness(
         [
             ("select_shop", {"index": 0, "reason": "Try this shop"}),
-            ("offer", {"price": 120, "reason": "Accept the quote"}) if completed
+            ("offer", {"price": 120, "reason": "Accept the quote"})
+            if completed
             else ("walk_away", {"reason": "No affordable offer"}),
         ]
     )
@@ -206,18 +207,24 @@ def test_failure_when_review_model_fails_preserves_trade_and_final_result(
 
 
 def test_review_timeout_returns_the_completed_receipt_and_factual_review(
-    registry: Path, tmp_path: Path, wire: ShopTransport,
+    registry: Path,
+    tmp_path: Path,
+    wire: ShopTransport,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr("market_a2a.market_buyer.REVIEW_SECONDS", 0.02)
-    harness = ScriptedHarness([
-        ("select_shop", {"index": 0, "reason": "Known shop"}),
-        ("offer", {"price": 120, "reason": "Accept"}),
-    ])
+    harness = ScriptedHarness(
+        [
+            ("select_shop", {"index": 0, "reason": "Known shop"}),
+            ("offer", {"price": 120, "reason": "Accept"}),
+        ]
+    )
     original = harness.run
 
     async def run(
-        prompt: str, state: JsonValue, tools: tuple[ToolSpec, ...],
+        prompt: str,
+        state: JsonValue,
+        tools: tuple[ToolSpec, ...],
         dispatch: ToolDispatch,
     ) -> ToolResult:
         if tools[0].name == "leave_review":
@@ -243,7 +250,9 @@ def test_review_timeout_returns_the_completed_receipt_and_factual_review(
 
 
 def test_market_trade_uses_the_remaining_order_budget(
-    registry: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    registry: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr("market_a2a.market_buyer.MARKET_ORDER_SECONDS", 0.08)
     monkeypatch.setattr("market_a2a.market_buyer.REVIEW_SECONDS", 0.02)
@@ -258,10 +267,12 @@ def test_market_trade_uses_the_remaining_order_budget(
         return httpx2.AsyncClient(transport=httpx2.MockTransport(stall))
 
     monkeypatch.setattr("market_a2a.buyer.create_client", create_client)
-    harness = ScriptedHarness([
-        ("select_shop", {"index": 0, "reason": "Try the listed shop"}),
-        ("leave_review", {"stars": 3, "review": "No completed trade"}),
-    ])
+    harness = ScriptedHarness(
+        [
+            ("select_shop", {"index": 0, "reason": "Try the listed shop"}),
+            ("leave_review", {"stars": 3, "review": "No completed trade"}),
+        ]
+    )
     memory_path = tmp_path / "memory.json"
 
     async def scenario() -> None:

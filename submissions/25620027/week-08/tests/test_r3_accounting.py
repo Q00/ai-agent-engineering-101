@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from contextlib import closing
 from typing import TYPE_CHECKING
 
 import anyio
@@ -305,7 +306,20 @@ def test_more_revenue_with_less_profit_is_worsened_and_a_fold_merges_with_its_mo
     assert row["assessment"] == "worsened"
 
 
-def test_higher_profit_with_less_revenue_is_improved(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("field", "assessment", "basis"),
+    [
+        ("seller.markup_a", "improved", "shop_net_profit"),
+        (
+            "buyer.max_rounds",
+            "insufficient_evidence",
+            "buyer_mature_surplus_per_issued_order",
+        ),
+    ],
+)
+def test_higher_seller_profit_does_not_certify_a_buyer_change(
+    tmp_path: Path, field: str, assessment: str, basis: str
+) -> None:
     stock, ledger = (
         StockJournal(tmp_path / STOCK_FILE),
         LedgerDB(tmp_path / "ledger.db"),
@@ -325,10 +339,13 @@ def test_higher_profit_with_less_revenue_is_improved(tmp_path: Path) -> None:
         + [event(11, 2990, "order")]
     )
     change(events, 2, 2000)
+    with closing(sqlite3.connect(events.path)) as db, db:
+        db.execute("UPDATE policy_changes SET field=? WHERE version=2", (field,))
     row = policy_reviews(events, ledger, our_shop=SHOP, our_buyer="me", now=3000)[0]
     assert row["delta"]["shop_gross_revenue"] == -250
     assert row["delta"]["shop_net_profit"] == 125
-    assert row["assessment"] == "improved"
+    assert row["assessment"] == assessment
+    assert row["assessment_basis"] == basis
 
 
 def test_missing_observations_and_duplicate_breaks_block_an_improvement(

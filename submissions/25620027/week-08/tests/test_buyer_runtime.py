@@ -24,15 +24,21 @@ def test_promotional_buyer_excludes_own_registered_shop(
 ) -> None:
     peer = ShopTransport()
     registry = tmp_path / "shops.json"
-    _ = registry.write_text(json.dumps([
-        {"name": "Our shop", "url": own_url, "reviews": []},
-        {"name": "Other shop", "url": "http://other.test", "reviews": []},
-    ]))
-    harness = ScriptedHarness([
-        ("select_shop", {"index": 0, "reason": "Available other shop"}),
-        ("offer", {"price": 120, "reason": "Affordable"}),
-        ("leave_review", {"stars": 3, "review": "Receipt matched."}),
-    ])
+    _ = registry.write_text(
+        json.dumps(
+            [
+                {"name": "Our shop", "url": own_url, "reviews": []},
+                {"name": "Other shop", "url": "http://other.test", "reviews": []},
+            ]
+        )
+    )
+    harness = ScriptedHarness(
+        [
+            ("select_shop", {"index": 0, "reason": "Available other shop"}),
+            ("offer", {"price": 120, "reason": "Affordable"}),
+            ("leave_review", {"stars": 3, "review": "Receipt matched."}),
+        ]
+    )
 
     def create_client() -> httpx2.AsyncClient:
         return httpx2.AsyncClient(transport=httpx2.MockTransport(peer.handle))
@@ -40,7 +46,8 @@ def test_promotional_buyer_excludes_own_registered_shop(
     monkeypatch.setattr("market_a2a.buyer.create_client", create_client)
 
     result = anyio.run(
-        market_buy, harness,
+        market_buy,
+        harness,
         MarketRequest(
             registry, "lamp", 120, tmp_path / "memory.json", promote_shop=True
         ),
@@ -53,7 +60,8 @@ def test_promotional_buyer_excludes_own_registered_shop(
 
 
 def test_missing_shared_paid_ledger_blocks_market_buyer(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     registry = tmp_path / "shops.json"
     _ = registry.write_text("[]")
@@ -62,10 +70,21 @@ def test_missing_shared_paid_ledger_blocks_market_buyer(
     monkeypatch.setenv("AX_OPENAI_FALLBACK", "1")
     monkeypatch.setenv("AX_PAID_QUOTA_PATH", str(missing))
 
-    result = CliRunner().invoke(harness_app.app, [
-        "market-buyer", "--shops", str(registry), "--item", "lamp",
-        "--budget", "120", "--promote-shop", "--mode", "model",
-    ])
+    result = CliRunner().invoke(
+        harness_app.app,
+        [
+            "market-buyer",
+            "--shops",
+            str(registry),
+            "--item",
+            "lamp",
+            "--budget",
+            "120",
+            "--promote-shop",
+            "--mode",
+            "model",
+        ],
+    )
 
     assert result.exit_code != 0
     assert isinstance(result.exception, HarnessError)

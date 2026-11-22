@@ -64,7 +64,9 @@ def test_unknown_provider_and_missing_key_fail_closed(
     ],
 )
 def test_expired_promotion_uses_only_free_router(
-    model: str, now: datetime, expected: str,
+    model: str,
+    now: datetime,
+    expected: str,
 ) -> None:
     assert request_model(model, now) == expected
 
@@ -87,14 +89,27 @@ def test_missing_free_endpoint_falls_back_only_to_free_router(
         if route == FREE_MODEL:
             return httpx2.Response(404, json={"error": {"message": "Free retired"}})
         assert route == FREE_ROUTER
-        return httpx2.Response(200, json={
-            "id": "free-router", "object": "chat.completion", "created": 0,
-            "model": "offline-free-model",
-            "choices": [{"index": 0, "finish_reason": "stop",
-                         "message": {"role": "assistant", "content": "ok"}}],
-            "usage": {"prompt_tokens": 1, "completion_tokens": 1,
-                      "total_tokens": 2},
-        })
+        return httpx2.Response(
+            200,
+            json={
+                "id": "free-router",
+                "object": "chat.completion",
+                "created": 0,
+                "model": "offline-free-model",
+                "choices": [
+                    {
+                        "index": 0,
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": "ok"},
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 1,
+                    "completion_tokens": 1,
+                    "total_tokens": 2,
+                },
+            },
+        )
 
     async def scenario() -> None:
         async with (
@@ -126,9 +141,13 @@ def test_free_model_requires_matching_endpoint() -> None:
 
 
 @pytest.mark.parametrize("provider", ["openai", "openrouter-free"])
-@pytest.mark.parametrize("now", [
-    PROMOTION_END - timedelta(seconds=1), PROMOTION_END + timedelta(seconds=1),
-])
+@pytest.mark.parametrize(
+    "now",
+    [
+        PROMOTION_END - timedelta(seconds=1),
+        PROMOTION_END + timedelta(seconds=1),
+    ],
+)
 def test_sdk_request_uses_correct_host_model_and_zero_price_constraint(
     provider: str, now: datetime, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -146,9 +165,7 @@ def test_sdk_request_uses_correct_host_model_and_zero_price_constraint(
         if provider == "openrouter-free":
             assert request.url.host == "openrouter.ai"
             assert request.headers["authorization"] == "Bearer offline-openrouter"
-            assert body["model"] == (
-                FREE_MODEL if now < PROMOTION_END else FREE_ROUTER
-            )
+            assert body["model"] == (FREE_MODEL if now < PROMOTION_END else FREE_ROUTER)
             assert body["provider"] == {
                 "require_parameters": True,
                 "max_price": {"prompt": 0, "completion": 0, "request": 0},
@@ -174,19 +191,28 @@ def test_sdk_request_uses_correct_host_model_and_zero_price_constraint(
                 "object": "chat.completion",
                 "created": 0,
                 "model": body["model"],
-                "choices": [{
-                    "index": 0,
-                    "finish_reason": "tool_calls",
-                    "message": {
-                        "role": "assistant", "content": None,
-                        "tool_calls": [{
-                            "id": "offline-tool", "type": "function",
-                            "function": {"name": "accept", "arguments": "{}"},
-                        }],
-                    },
-                }],
-                "usage": {"prompt_tokens": 10, "completion_tokens": 5,
-                          "total_tokens": 15},
+                "choices": [
+                    {
+                        "index": 0,
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "role": "assistant",
+                            "content": None,
+                            "tool_calls": [
+                                {
+                                    "id": "offline-tool",
+                                    "type": "function",
+                                    "function": {"name": "accept", "arguments": "{}"},
+                                }
+                            ],
+                        },
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 5,
+                    "total_tokens": 15,
+                },
             },
         )
 

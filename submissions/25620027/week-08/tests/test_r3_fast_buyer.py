@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -13,10 +14,17 @@ from pydantic import JsonValue, TypeAdapter
 
 from r3 import buyer as fast
 from r3.market_files import Order, ShopEntry, read_order, read_shops
+from r3.policy import Policy, apply_changes, save_policy
 from tests.r3_stock import KIMCHI, LAMP, MILK, write_market
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+@pytest.fixture(autouse=True)
+def pre_patch_36_line(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pin the list-discount line; patch 3.6 is in test_r3_margin_line."""
+    monkeypatch.setattr(fast, "MARGIN_LINE", None)
 
 
 class SellerPeer:
@@ -67,7 +75,8 @@ class SellerPeer:
                 },
             }
         else:
-            offer = int(text)
+            # Real sellers read the offer keyword's number ("... My offer: N").
+            offer = int(re.findall(r"[0-9]+", text)[-1])
             self.offers.append(offer)
             if offer >= self.accept_at:
                 task["status"] = {
@@ -279,25 +288,43 @@ def test_receipt_validation_rejects_wrong_item_price_or_missing_signature() -> N
     assert fast.valid_receipt(signed, order, choice, 50) is None
 
 
-def test_late_in_the_order_budget_any_ask_within_the_cap_is_accepted(
+def test_late_credit_safe_ask_is_accepted_within_shared_deadline(
     market: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Given: a seller whose ask stays above the quick-accept line but under the cap,
     # and a clock that says most of the order budget is already gone.
-    peer = SellerPeer(ask=45000, accept_at=45000, sku=KIMCHI)
+    order = read_order(market / "order.json").model_copy(
+        update={"acceptable": (KIMCHI,)}
+    )
+    _ = (market / "order.json").write_text(order.model_dump_json())
+    peer = SellerPeer(ask=33000, accept_at=33000, sku=KIMCHI)
+    _ = save_policy(
+        market.parent / "p.json",
+        apply_changes(
+            Policy(),
+            {
+                "buyer.dual_quote": False,
+                "buyer.explore_rate": 0.0,
+                "buyer.max_price_ratio": 0.70,
+                "buyer.quick_accept_ratio": 0.58,
+                "buyer.first_offer_ratio": 0.48,
+            },
+        ),
+        "credit-safe late acceptance fixture",
+    )
     monkeypatch.setattr(
         fast,
         "create_client",
         lambda: httpx2.AsyncClient(transport=httpx2.MockTransport(peer.handle)),
     )
-    ticks = iter([0.0, 0.0])  # buy() and negotiate() start; later reads are late
+    ticks = iter([0.0, 0.0, 0.0])  # start, order allowance and initial-reply allowance
 
     class LateClock:
         """Only the buyer module sees this clock; the event loop keeps the real one."""
 
         @staticmethod
         def monotonic() -> float:
-            return next(ticks, 100.0)
+            return next(ticks, 10.0)
 
     monkeypatch.setattr(fast, "time", LateClock)
     outcome = anyio.run(
@@ -313,9 +340,9 @@ def test_late_in_the_order_budget_any_ask_within_the_cap_is_accepted(
             events_file=market.parent / "e.sqlite",
         )
     )
-    # Then: one turn, the ask taken as offered, still under the 0.95*list cap.
-    assert peer.offers == [45000]
-    assert outcome.agreed_price == 45000
+    # Then: one late turn inside the shared deadline, with sufficient food credit.
+    assert peer.offers == [33000]
+    assert outcome.agreed_price == 33000
 
 
 def test_failing_shops_cool_down_and_exploration_spreads_orders(
@@ -561,11 +588,13 @@ def test_food_requests_state_the_shelf_life_needed_and_goods_requests_do_not() -
     food = Order(item="김치", kind="food", use_within_hours=24, acceptable=(KIMCHI,))
     choice = fast.choose(food, shops, {}, {}, {})
     assert choice is not None
-    assert choice.request.endswith(f"({KIMCHI}), need 25 h")
+    assert f"({KIMCHI}), need 25 h" in choice.request
     goods = Order(item="김치", kind="goods", acceptable=(KIMCHI,))
     plain = fast.choose(goods, shops, {}, {}, {})
     assert plain is not None
-    assert plain.request.endswith(f"({KIMCHI})")
+    assert f"({KIMCHI})" in plain.request
+    assert "certified grade" in plain.request
+    assert "need " not in plain.request
 
 
 def test_shops_that_keep_saying_none_in_stock_lose_weight_and_can_recover() -> None:
@@ -593,14 +622,18 @@ def test_rivals_lose_weight_unless_cheap_and_bottom_half_shops_gain() -> None:
     }
     view = fast.rival_view(board, "25620027")
     assert view["leader"] == "rival"
-    assert view["close"] == "rival"  # within 0.05 below us
-    assert view["small"] == "underdog"
-    assert "upper" not in view  # the median: neither rival nor underdog
+    # The RIVALS_BELOW (4) players just below us are rivals too (owner 11/13).
+    assert view["close"] == "rival"
+    assert view["upper"] == "rival"
+    assert view["middle"] == "rival"
+    assert view["small"] == "rival"
+    assert view["tiny"] == "underdog"
     assert "house" not in view
-    assert fast.rival_factor("leader", view, cheap=False) == 0.5
-    assert fast.rival_factor("leader", view, cheap=True) == 0.8
-    assert fast.rival_factor("small", view, cheap=False) == 1.1
-    assert fast.rival_factor("upper", view, cheap=False) == 1.0
+    assert fast.rival_factor("leader", view, cheap=False) == fast.RIVAL_FACTOR
+    assert fast.rival_factor("leader", view, cheap=True) == fast.RIVAL_CHEAP_FACTOR
+    assert fast.RIVAL_FACTOR < 1.0
+    assert fast.rival_factor("tiny", view, cheap=False) == fast.UNDERDOG_FACTOR
+    assert fast.rival_factor("nobody", view, cheap=False) == 1.0
     assert fast.rival_view(None, "25620027") == {}
 
 
@@ -623,3 +656,102 @@ def test_thompson_draws_rarely_favour_a_shop_that_keeps_missing() -> None:
         for _ in range(400)
     )
     assert 20 < fresh < 380
+
+
+def test_surplus_factor_prices_shops_by_what_they_leave_us() -> None:
+    ratios = {"http://cheap": 0.70, "http://usual": 0.72, "http://dear": 0.80}
+    cheap = fast.surplus_factor("http://cheap/", ratios)
+    dear = fast.surplus_factor("http://dear", ratios)
+    assert fast.surplus_factor("http://usual", ratios) == 1.0
+    assert fast.surplus_factor("http://new", ratios) == 1.0
+    # 0.30 vs 0.20 of list left to us: 1.5x apart (the old factor: about 1.1x).
+    assert round(cheap / dear, 2) == 1.5
+    assert fast.surplus_factor("http://x", {"http://x": 0.99}) == 0.3
+
+
+def test_quote_value_prefers_the_first_quote_that_leaves_more_surplus() -> None:
+    from market_a2a.remote import Task  # noqa: PLC0415 - test only
+    from r3.policy import BuyerPolicy  # noqa: PLC0415 - test only
+
+    shop = ShopEntry.model_validate({"name": "a", "url": "http://a.test"})
+    choice = fast.Choice(shop, LAMP, "lamp", 40000, "I want to buy lamp", 1.0)
+    goods = Order(item="스탠드", kind="goods", acceptable=(LAMP,))
+
+    def quoted(ask: int, grade: str = "A") -> Task:
+        return Task.model_validate(
+            {
+                "id": "t",
+                "contextId": "c",
+                "status": {
+                    "state": "TASK_STATE_INPUT_REQUIRED",
+                    "message": {
+                        "messageId": "m",
+                        "role": "ROLE_AGENT",
+                        "parts": [
+                            {"text": f"lamp, certified grade {grade}: asking {ask}."},
+                            {"data": {"ask": ask, "grade": grade}},
+                        ],
+                        "metadata": {"ask": ask},
+                    },
+                },
+            }
+        )
+
+    policy = BuyerPolicy()
+    cheap = fast.quote_value(choice, quoted(28000), 50000, goods, policy)
+    dear = fast.quote_value(choice, quoted(34000), 50000, goods, policy)
+    assert cheap == 12000
+    assert dear == 6000
+    # A unit we would refuse at checkout is not a usable quote.
+    assert fast.quote_value(choice, quoted(20000, "C"), 50000, goods, policy) is None
+
+
+def test_a_price_wall_moves_the_order_to_the_next_shop(
+    market: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given: one quote at a time (live policy), and the kimchi shop (highest list
+    # price) never goes below 51,900, above our cap, while the milk shop sells at
+    # its first ask.
+    _ = save_policy(
+        market.parent / "p.json",
+        apply_changes(
+            Policy(), {"buyer.dual_quote": False, "buyer.surplus_score": True}
+        ),
+        "live buyer legacy selection",
+    )
+    shops = json.loads((market / "shops.json").read_text())
+    for entry in shops:
+        entry["reviews"] = [{"stars": 5 if entry["name"] == "Kimchi Shop" else 4}]
+    (market / "shops.json").write_text(json.dumps(shops))
+    wall = SellerPeer(ask=52000, accept_at=51900, sku=KIMCHI)
+    milk = SellerPeer(ask=15000, accept_at=15000, sku=MILK)
+
+    def route(request: httpx2.Request) -> httpx2.Response:
+        peer = wall if request.url.host == "kimchi.test" else milk
+        return peer.handle(request)
+
+    monkeypatch.setattr(
+        fast,
+        "create_client",
+        lambda: httpx2.AsyncClient(transport=httpx2.MockTransport(route)),
+    )
+    logs: list[str] = []
+    outcome = anyio.run(
+        partial(
+            fast.buy,
+            market / "shops.json",
+            "김치",
+            60000,
+            market / "order.json",
+            logs.append,
+            folder=market,
+            policy_file=market.parent / "p.json",
+            events_file=market.parent / "e.sqlite",
+        )
+    )
+    # Then: the order is not lost at the wall; it closes at the milk shop.
+    assert wall.offers
+    assert outcome.shop == "http://milk.test"
+    assert outcome.receipt is not None
+    assert any("retry shop=Milk Shop" in line for line in logs)

@@ -53,16 +53,75 @@ def test_leaders_table_measures_prices_breadth_and_flags_self_trade(
     )
     board = {
         "round": 3,
+        "players": [
+            {
+                "student": True,
+                "owner": {"login": "x"},
+                "shop": {"name": "Self"},
+                "buyer": {"name": "self-buyer"},
+            },
+            {
+                "student": True,
+                "owner": {"login": "g"},
+                "shop": {"name": "Good"},
+                "buyer": None,
+            },
+            {
+                "student": True,
+                "owner": {"login": "h"},
+                "shop": None,
+                "buyer": {"name": "b-honest"},
+            },
+            {
+                "student": True,
+                "owner": {"login": "me"},
+                "shop": {"name": "25620027"},
+                "buyer": {"name": "25620027"},
+            },
+        ],
         "shops": [
-            {"name": "Self", "profit": 900, "owner": {"login": "x"}},
-            {"name": "Good", "profit": 500, "owner": {"login": "g"}},
+            {
+                "name": "Self",
+                "book": 900,
+                "deals": 3,
+                "profit": 900,
+                "owner": {"login": "x"},
+            },
+            {
+                "name": "Good",
+                "book": 500,
+                "deals": 3,
+                "profit": 500,
+                "owner": {"login": "g"},
+            },
             {"name": "House", "profit": 9999, "house": True},
-            {"name": "25620027", "profit": 10, "owner": {"login": "me"}},
+            {
+                "name": "25620027",
+                "book": 10,
+                "deals": 1,
+                "profit": 10,
+                "owner": {"login": "me"},
+            },
         ],
         "buyers": [
-            {"name": "self-buyer", "saved": 50, "owner": {"login": "x"}},
-            {"name": "b-honest", "saved": 900, "owner": {"login": "h"}},
-            {"name": "25620027", "saved": 100, "owner": {"login": "me"}},
+            {
+                "name": "self-buyer",
+                "saved": 0.05,
+                "deals": 2,
+                "owner": {"login": " X "},
+            },
+            {
+                "name": "b-honest",
+                "saved": 0.9,
+                "deals": 2,
+                "owner": {"login": "h"},
+            },
+            {
+                "name": "25620027",
+                "saved": 0.1,
+                "deals": 1,
+                "owner": {"login": "me"},
+            },
         ],
     }
     urls = {"Self": "http://self", "Good": "http://good", "25620027": "http://us"}

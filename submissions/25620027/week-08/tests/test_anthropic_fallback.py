@@ -27,7 +27,9 @@ if TYPE_CHECKING:
 
 @pytest.mark.parametrize("status", [402, 404, 429])
 def test_free_exhaustion_dispatches_real_haiku_tool_without_retry_delay(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: int,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    status: int,
 ) -> None:
     # Given: the real SDK sees a free quota error and an authorized Haiku tool.
     requests: list[str] = []
@@ -52,19 +54,40 @@ def test_free_exhaustion_dispatches_real_haiku_tool_without_retry_delay(
         assert body["parallel_tool_calls"] is False
         assert "temperature" not in body
         assert "provider" not in body
-        return httpx2.Response(200, json={
-            "id": "haiku", "object": "chat.completion", "created": 0,
-            "model": HAIKU_MODEL,
-            "choices": [{"index": 0, "finish_reason": "tool_calls", "message": {
-                "role": "assistant", "content": None, "tool_calls": [{
-                    "id": "action", "type": "function", "function": {
-                        "name": "record", "arguments": '{"value":7}',
-                    },
-                }],
-            }}],
-            "usage": {"prompt_tokens": 10, "completion_tokens": 12,
-                      "total_tokens": 22},
-        })
+        return httpx2.Response(
+            200,
+            json={
+                "id": "haiku",
+                "object": "chat.completion",
+                "created": 0,
+                "model": HAIKU_MODEL,
+                "choices": [
+                    {
+                        "index": 0,
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "role": "assistant",
+                            "content": None,
+                            "tool_calls": [
+                                {
+                                    "id": "action",
+                                    "type": "function",
+                                    "function": {
+                                        "name": "record",
+                                        "arguments": '{"value":7}',
+                                    },
+                                }
+                            ],
+                        },
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 12,
+                    "total_tokens": 22,
+                },
+            },
+        )
 
     async def dispatch(name: str, arguments: str) -> ToolResult:
         assert name == "record"
@@ -74,22 +97,45 @@ def test_free_exhaustion_dispatches_real_haiku_tool_without_retry_delay(
     async def scenario() -> None:
         async with (
             httpx2.AsyncClient(transport=httpx2.MockTransport(respond)) as http,
-            AsyncOpenAI(api_key="free-only", base_url="https://openrouter.ai/api/v1",
-                        max_retries=0, http_client=http) as free,
-            AsyncOpenAI(api_key="paid-only", base_url=ANTHROPIC_URL,
-                        max_retries=0, http_client=http) as paid,
+            AsyncOpenAI(
+                api_key="free-only",
+                base_url="https://openrouter.ai/api/v1",
+                max_retries=0,
+                http_client=http,
+            ) as free,
+            AsyncOpenAI(
+                api_key="paid-only",
+                base_url=ANTHROPIC_URL,
+                max_retries=0,
+                http_client=http,
+            ) as paid,
         ):
             quota = DailyQuota(tmp_path / "quota.sqlite3", 1)
             logs: list[str] = []
-            harness = Harness(free, logs.append, model=FREE_ROUTER,
-                              fallback=AnthropicFallback(paid, quota))
+            harness = Harness(
+                free,
+                logs.append,
+                model=FREE_ROUTER,
+                fallback=AnthropicFallback(paid, quota),
+            )
             # When: run the existing typed tool loop across the real SDK wire.
-            result = await harness.run("offline", {}, (
-                ToolSpec(name="record", description="Record a value", parameters={
-                    "type": "object", "properties": {"value": {"type": "integer"}},
-                    "required": ["value"], "additionalProperties": False,
-                }),
-            ), dispatch)
+            result = await harness.run(
+                "offline",
+                {},
+                (
+                    ToolSpec(
+                        name="record",
+                        description="Record a value",
+                        parameters={
+                            "type": "object",
+                            "properties": {"value": {"type": "integer"}},
+                            "required": ["value"],
+                            "additionalProperties": False,
+                        },
+                    ),
+                ),
+                dispatch,
+            )
             # Then: the action commits, with one paid attempt and no retry sleep.
             assert result.data == 7
             assert requests == ["openrouter.ai", "api.anthropic.com"]
@@ -115,8 +161,12 @@ def test_failed_haiku_request_consumes_shared_legacy_quota(tmp_path: Path) -> No
     async def scenario() -> None:
         async with (
             httpx2.AsyncClient(transport=httpx2.MockTransport(fail)) as http,
-            AsyncOpenAI(api_key="offline", base_url=ANTHROPIC_URL,
-                        max_retries=0, http_client=http) as client,
+            AsyncOpenAI(
+                api_key="offline",
+                base_url=ANTHROPIC_URL,
+                max_retries=0,
+                http_client=http,
+            ) as client,
         ):
             fallback = AnthropicFallback(client, DailyQuota(path, 2))
             # When: the one remaining attempt fails at the HTTP boundary.
@@ -124,27 +174,35 @@ def test_failed_haiku_request_consumes_shared_legacy_quota(tmp_path: Path) -> No
                 _ = await fallback.complete([], [], print)
             # Then: reopening the ledger cannot refund it or send another request.
             with pytest.raises(HarnessError, match="limit reached"):
-                _ = await AnthropicFallback(
-                    client, DailyQuota(path, 2)
-                ).complete([], [], print)
+                _ = await AnthropicFallback(client, DailyQuota(path, 2)).complete(
+                    [], [], print
+                )
             assert requests == ["api.anthropic.com"]
 
     anyio.run(scenario)
 
 
-@pytest.mark.parametrize(("url", "model", "retries"), [
-    ("https://example.test/v1/", HAIKU_MODEL, 0),
-    ("http://api.anthropic.com/v1/", HAIKU_MODEL, 0),
-    (ANTHROPIC_URL, "claude-opus-5-5", 0),
-    (ANTHROPIC_URL, HAIKU_MODEL, 2),
-])
+@pytest.mark.parametrize(
+    ("url", "model", "retries"),
+    [
+        ("https://example.test/v1/", HAIKU_MODEL, 0),
+        ("http://api.anthropic.com/v1/", HAIKU_MODEL, 0),
+        (ANTHROPIC_URL, "claude-opus-5-5", 0),
+        (ANTHROPIC_URL, HAIKU_MODEL, 2),
+    ],
+)
 def test_unapproved_endpoint_model_or_retry_cannot_send_paid_request(
-    tmp_path: Path, url: str, model: str, retries: int,
+    tmp_path: Path,
+    url: str,
+    model: str,
+    retries: int,
 ) -> None:
     # Given: an unsupported paid configuration.
     async def scenario() -> None:
         async with AsyncOpenAI(
-            api_key="offline", base_url=url, max_retries=retries,
+            api_key="offline",
+            base_url=url,
+            max_retries=retries,
         ) as client:
             quota = DailyQuota(tmp_path / "quota.sqlite3", 1)
             # When: create the fallback before any network I/O.
@@ -156,11 +214,18 @@ def test_unapproved_endpoint_model_or_retry_cannot_send_paid_request(
     anyio.run(scenario)
 
 
-@pytest.mark.parametrize(("selected", "legacy"), [
-    ("anthropic", "1"), ("typo", "0"), ("none", "invalid"),
-])
+@pytest.mark.parametrize(
+    ("selected", "legacy"),
+    [
+        ("anthropic", "1"),
+        ("typo", "0"),
+        ("none", "invalid"),
+    ],
+)
 def test_conflicting_provider_configuration_fails_closed(
-    monkeypatch: pytest.MonkeyPatch, selected: str, legacy: str,
+    monkeypatch: pytest.MonkeyPatch,
+    selected: str,
+    legacy: str,
 ) -> None:
     # Given: ambiguous opt-ins or an unsupported provider.
     monkeypatch.setenv("AX_PAID_FALLBACK", selected)
@@ -171,7 +236,8 @@ def test_conflicting_provider_configuration_fails_closed(
 
 
 def test_actual_session_wires_haiku_only_after_free_failure(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Given: the same environment selection used by buyer and seller CLI sessions.
     quota = DailyQuota(tmp_path / "quota.sqlite3", 2)
@@ -194,13 +260,22 @@ def test_actual_session_wires_haiku_only_after_free_failure(
         if request.url.host == "openrouter.ai":
             return httpx2.Response(429, json={"error": {"message": "offline quota"}})
         assert request.headers["authorization"] == "Bearer offline-haiku"
-        return httpx2.Response(200, json={
-            "id": "session", "object": "chat.completion", "created": 0,
-            "model": HAIKU_MODEL, "choices": [{
-                "index": 0, "finish_reason": "stop",
-                "message": {"role": "assistant", "content": "configured"},
-            }],
-        })
+        return httpx2.Response(
+            200,
+            json={
+                "id": "session",
+                "object": "chat.completion",
+                "created": 0,
+                "model": HAIKU_MODEL,
+                "choices": [
+                    {
+                        "index": 0,
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": "configured"},
+                    }
+                ],
+            },
+        )
 
     def client(*, model: bool = False) -> httpx2.AsyncClient:
         assert model
@@ -221,7 +296,8 @@ def test_actual_session_wires_haiku_only_after_free_failure(
 
 
 def test_paid_traffic_does_not_postpone_free_recheck(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Given: free quota fails once, then recovers after the fixed cooldown.
     now = [100.0]
@@ -233,34 +309,56 @@ def test_paid_traffic_does_not_postpone_free_recheck(
         requests.append(request.url.host)
         if len(requests) == 1:
             return httpx2.Response(429, json={"error": {"message": "offline quota"}})
-        return httpx2.Response(200, json={
-            "id": "cooldown", "object": "chat.completion", "created": 0,
-            "model": HAIKU_MODEL if request.url.host == "api.anthropic.com"
-            else "recovered-free",
-            "choices": [{"index": 0, "finish_reason": "stop",
-                         "message": {"role": "assistant", "content": "ok"}}],
-        })
+        return httpx2.Response(
+            200,
+            json={
+                "id": "cooldown",
+                "object": "chat.completion",
+                "created": 0,
+                "model": HAIKU_MODEL
+                if request.url.host == "api.anthropic.com"
+                else "recovered-free",
+                "choices": [
+                    {
+                        "index": 0,
+                        "finish_reason": "stop",
+                        "message": {"role": "assistant", "content": "ok"},
+                    }
+                ],
+            },
+        )
 
     async def scenario() -> None:
         async with (
             httpx2.AsyncClient(transport=httpx2.MockTransport(respond)) as http,
-            AsyncOpenAI(api_key="free", base_url="https://openrouter.ai/api/v1",
-                        max_retries=0, http_client=http) as free,
-            AsyncOpenAI(api_key="paid", base_url=ANTHROPIC_URL,
-                        max_retries=0, http_client=http) as paid,
+            AsyncOpenAI(
+                api_key="free",
+                base_url="https://openrouter.ai/api/v1",
+                max_retries=0,
+                http_client=http,
+            ) as free,
+            AsyncOpenAI(
+                api_key="paid", base_url=ANTHROPIC_URL, max_retries=0, http_client=http
+            ) as paid,
         ):
-            harness = Harness(free, print, model=FREE_ROUTER,
-                              fallback=AnthropicFallback(
-                                  paid, DailyQuota(tmp_path / "quota.sqlite3", 3)
-                              ))
+            harness = Harness(
+                free,
+                print,
+                model=FREE_ROUTER,
+                fallback=AnthropicFallback(
+                    paid, DailyQuota(tmp_path / "quota.sqlite3", 3)
+                ),
+            )
             # When: requests continue during and after the original cooldown.
             for timestamp in [100.0, 120.0, 161.0]:
                 now[0] = timestamp
                 _ = await harness.complete([], [])
             # Then: the request at161 retries free instead of extending paid use.
             assert requests == [
-                "openrouter.ai", "api.anthropic.com",
-                "api.anthropic.com", "openrouter.ai",
+                "openrouter.ai",
+                "api.anthropic.com",
+                "api.anthropic.com",
+                "openrouter.ai",
             ]
 
     anyio.run(scenario)

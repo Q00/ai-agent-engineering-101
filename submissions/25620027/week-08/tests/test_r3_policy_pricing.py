@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from typing import TYPE_CHECKING
 
@@ -9,8 +10,16 @@ import pytest
 from pydantic import ValidationError
 
 from r3.market_files import Unit
-from r3.policy import Policy, apply_changes, load_history, load_policy, save_policy
+from r3.policy import (
+    Policy,
+    SellerPolicy,
+    apply_changes,
+    load_history,
+    load_policy,
+    save_policy,
+)
 from r3.pricing import claimed_grade, counter, decide, quote
+from r3.seller import card_warranty_line, warranty_words
 from tests.r3_stock import CURTAIN, KIMCHI, LAMP, unit
 
 if TYPE_CHECKING:
@@ -101,11 +110,11 @@ def test_decide_accepts_counters_then_rejects_after_max_rounds() -> None:
 def test_star_cap_never_quotes_below_the_accept_line() -> None:
     now = time.time()
     policy = Policy().seller
-    # A unit that cost 0.75 of list accepts at 0.8625 of list, above the 0.79 cap:
-    # the ask stays at the accept line rather than selling at a loss.
+    # Cheap A at cost 0.75 of list accepts at 0.81 of list in the rating pilot:
+    # the ask stays above even the 0.79 cap rather than crossing the accept line.
     dear = Unit.model_validate(unit(LAMP, 3, grade="A", now=now, cost=30000))
     quoted = quote(dear, now, None, policy)
-    assert quoted.accept_at == round(30000 * 1.15)
+    assert quoted.accept_at == round(30000 * 1.08)
     assert quoted.ask == quoted.accept_at > round(40000 * 0.79)
 
 
@@ -118,3 +127,76 @@ def test_cheap_goods_open_at_the_lower_star_cap_and_dear_goods_at_079() -> None:
     # A 236,900 curtain is dear: it keeps the 0.79 cap.
     dear = Unit.model_validate(unit(CURTAIN, 1, grade="A", now=now, cost=100000))
     assert quote(dear, now, None, policy).ask == round(236900 * 0.79)
+
+
+def test_grade_c_can_carry_its_own_accept_margin() -> None:
+    now = time.time()
+    base = Policy().seller.model_copy(update={"cheap_list_price": 0})
+    c = Unit.model_validate(unit(LAMP, 5, grade="C", now=now))
+    a = Unit.model_validate(unit(LAMP, 6, grade="A", now=now))
+    assert quote(c, now, None, base).accept_at == round(c.cost * 1.15)
+    trial = base.model_copy(update={"accept_margin_c": 0.35})
+    assert quote(c, now, None, trial).accept_at == round(c.cost * 1.35)
+    # And: other grades keep the shared margin.
+    assert quote(a, now, None, trial).accept_at == round(a.cost * 1.15)
+
+
+def test_a_week_long_warranty_is_allowed_and_named_without_digits() -> None:
+    # Given: goods break only within 6 h of a sale, so a week costs nothing more.
+    policy = SellerPolicy(warranty_a=72, warranty_b=72, warranty_c=72)
+    # Then: the policy takes it, and quotes and the card name it digit-free.
+    assert policy.warranty("C") == 72
+    assert warranty_words(168) == "seven-day"
+    assert warranty_words(72) == "three-day"
+    assert warranty_words(24) == "twenty-four-hour"
+    assert warranty_words(6) == "six-hour"
+    assert warranty_words(8760) == "lifetime"
+    assert SellerPolicy(warranty_a=72).warranty("A") == 72
+    line = card_warranty_line(policy)
+    assert "three-day warranty" in line
+    assert not any(ch.isdigit() for ch in line)
+    assert card_warranty_line(SellerPolicy(warranty_a=6, warranty_b=0)).startswith(
+        "goods carry"
+    )
+
+
+def test_high_ticket_goods_accept_on_their_own_lower_margin() -> None:
+    now = time.time()
+    # Given: a curtain listed at 236,900 that arrived at 76 % of list.
+    dear = Unit.model_validate(unit(CURTAIN, 7, grade="A", now=now, cost=180000))
+    lamp = Unit.model_validate(unit(LAMP, 8, grade="A", now=now, cost=15000))
+    c = Unit.model_validate(unit(CURTAIN, 9, grade="C", now=now, cost=80000))
+    base = Policy().seller
+    trial = base.model_copy(
+        update={
+            "high_list_price": 200000,
+            "accept_margin_high": 0.08,
+            "accept_margin_c": 0.35,
+        }
+    )
+    # Then: the shared margin holds it above what the market pays...
+    assert quote(dear, now, None, base).accept_at == round(180000 * 1.15)
+    # ...and the high-ticket margin brings the accept line down to cost * 1.08.
+    assert quote(dear, now, None, trial).accept_at == round(180000 * 1.08)
+    # And: cheap A goods use the rating pilot margin, grade C keeps its own.
+    assert quote(lamp, now, None, trial).accept_at == round(15000 * 1.08)
+    assert quote(c, now, None, trial).accept_at == round(80000 * 1.35)
+
+
+def test_an_old_version_that_no_longer_validates_does_not_reset_the_policy(
+    tmp_path: Path,
+) -> None:
+    # Given: a live policy whose previous version breaks a tighter bound now.
+    path = tmp_path / "r3-policy.json"
+    live = apply_changes(Policy(), {"seller.max_ask_ratio": 0.76})
+    _ = save_policy(path, live, "live")
+    data = json.loads(path.read_text())
+    old = dict(data["current"])
+    old["seller"] = {**old["seller"], "warranty_a": 8760}
+    data["previous"] = [old, *data["previous"]]
+    path.write_text(json.dumps(data))
+    # Then: the live values survive; only the bad old version is dropped.
+    history = load_history(path)
+    assert history.current.seller.max_ask_ratio == 0.76
+    assert all(p.seller.warranty_a <= 72 for p in history.previous)
+    assert load_policy(path).seller.max_ask_ratio == 0.76

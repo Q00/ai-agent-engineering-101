@@ -30,24 +30,44 @@ ROOT = Path(__file__).resolve().parents[1]
 def snapshot(item: str, reserve: int, mean: float, n: int = 100) -> ComparisonSnapshot:
     now = dt.datetime.now(dt.UTC)
     return ComparisonSnapshot(
-        observed_at=now, expires_at=now + dt.timedelta(minutes=15),
+        observed_at=now,
+        expires_at=now + dt.timedelta(minutes=15),
         market_round=2,
-        trade_prices={item: TradePrice(n=n, min=reserve, max=reserve+100, mean=mean)},
-        shops=tuple(ComparedShop(
-            rank=index + 1, name=f"shop{index}", url=f"https://shop{index}.example",
-            deals=100, quotes=(ObservedQuote.model_validate({
-                "item": item, "ask": reserve + index, "observed_at": now,
-            }),),
-        ) for index in range(5)),
+        trade_prices={item: TradePrice(n=n, min=reserve, max=reserve + 100, mean=mean)},
+        shops=tuple(
+            ComparedShop(
+                rank=index + 1,
+                name=f"shop{index}",
+                url=f"https://shop{index}.example",
+                deals=100,
+                quotes=(
+                    ObservedQuote.model_validate(
+                        {
+                            "item": item,
+                            "ask": reserve + index,
+                            "observed_at": now,
+                        }
+                    ),
+                ),
+            )
+            for index in range(5)
+        ),
     )
 
 
-@pytest.mark.parametrize(("item", "reserve", "mean", "expected"), [
-    ("lamp", 100, 102.8, 102), ("chair", 180, 184.0, 183),
-    ("bookshelf", 260, 266.7, 265),
-])
+@pytest.mark.parametrize(
+    ("item", "reserve", "mean", "expected"),
+    [
+        ("lamp", 100, 102.8, 102),
+        ("chair", 180, 184.0, 183),
+        ("bookshelf", 260, 266.7, 265),
+    ],
+)
 def test_current_trade_mean_allows_bounded_margin(
-    item: str, reserve: int, mean: float, expected: int,
+    item: str,
+    reserve: int,
+    mean: float,
+    expected: int,
 ) -> None:
     product = Catalog(ROOT / "catalog.json").get(item)
     feed = snapshot(item, reserve, mean)
@@ -66,9 +86,13 @@ def test_unusable_trade_statistics_do_not_change_prior_quote_rule(mode: str) -> 
     if mode == "no_round":
         feed = feed.model_copy(update={"market_round": None})
     if mode == "bad_range":
-        feed = feed.model_copy(update={
-            "trade_prices": {"lamp": TradePrice(n=100, min=105, max=110, mean=102.8)},
-        })
+        feed = feed.model_copy(
+            update={
+                "trade_prices": {
+                    "lamp": TradePrice(n=100, min=105, max=110, mean=102.8)
+                },
+            }
+        )
     now = feed.observed_at + dt.timedelta(minutes=16) if mode == "stale" else None
     quote = compare_price(Catalog(ROOT / "catalog.json").get("lamp"), feed, now)
     assert quote.market_trade_mean is None
@@ -81,7 +105,10 @@ def test_quote_states_trade_mean_scope_without_changing_last_ask() -> None:
     message = quote_message(
         TaskUpdater(EventCollector(), "task", "context"),
         QuoteNotice(
-            product=product, price=102, previous_ask=None, coupon_applied=False,
+            product=product,
+            price=102,
+            previous_ask=None,
+            coupon_applied=False,
             snapshot=snapshot("lamp", 100, 102.8),
         ),
     )
@@ -100,7 +127,9 @@ def test_quote_states_trade_mean_scope_without_changing_last_ask() -> None:
 
 @pytest.mark.parametrize("mode", ["valid", "different_round", "unavailable"])
 def test_monitor_binds_public_numeric_stats_to_current_round(
-    mode: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    mode: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     peer = MarketTransport()
 
@@ -109,12 +138,24 @@ def test_monitor_binds_public_numeric_stats_to_current_round(
             assert "authorization" not in request.headers
             if mode == "unavailable":
                 return httpx2.Response(503)
-            return httpx2.Response(200, json={
-                "round": 1 if mode == "different_round" else 2,
-                "rounds": {"2": {"items": {"lamp": {
-                    "n": 100, "min": 100, "max": 140, "mean": 102.8,
-                }}}},
-            })
+            return httpx2.Response(
+                200,
+                json={
+                    "round": 1 if mode == "different_round" else 2,
+                    "rounds": {
+                        "2": {
+                            "items": {
+                                "lamp": {
+                                    "n": 100,
+                                    "min": 100,
+                                    "max": 140,
+                                    "mean": 102.8,
+                                }
+                            }
+                        }
+                    },
+                },
+            )
         reply = await peer.handle(request)
         if str(request.url) == BOARD_URL:
             body = TypeAdapter(dict[str, JsonValue]).validate_json(reply.content)

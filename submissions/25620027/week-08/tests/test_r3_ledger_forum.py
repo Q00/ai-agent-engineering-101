@@ -6,9 +6,9 @@ import json
 import time
 from typing import TYPE_CHECKING
 
-from r3.forum import buyer_post, maybe_post
+from r3.forum import buyer_post, maybe_post, shop_pages, shop_post
 from r3.ledger_db import LedgerDB
-from r3.market_files import read_catalog, read_inventory
+from r3.market_files import Inventory, Unit, read_catalog, read_inventory
 from tests.r3_stock import KIMCHI, LAMP, unit, write_market
 
 if TYPE_CHECKING:
@@ -149,3 +149,29 @@ def test_forum_posts_cite_ledger_refs_and_respect_the_per_role_interval(
         now=now + 60,
     )
     assert again == []
+
+
+def test_shop_posts_cycle_through_every_held_sku() -> None:
+    units = tuple(
+        Unit(
+            unit=f"u-{n}",
+            sku=f"G{n:08x}",
+            name=f"상품 이름이 꽤 긴 테스트 상품 {n}",
+            category="식품>김치/반찬/즉석요리>김치"
+            if n % 2
+            else "가구/침구>가구>침대/매트리스",
+            grade="A",
+        )
+        for n in range(60)
+    )
+    inventory = Inventory(round=3, balance=1, units=units)
+    pages = shop_pages(inventory)
+    assert len(pages) > 1
+    posts = [
+        shop_post(inventory, "Sungjin Shop", 72, page) for page in range(len(pages))
+    ]
+    assert all(len(post) <= 900 for post in posts)
+    joined = " ".join(posts)
+    assert all(unit.sku in joined for unit in units)
+    assert "72h warranty" in posts[0]
+    assert "not reserved" in posts[-1]

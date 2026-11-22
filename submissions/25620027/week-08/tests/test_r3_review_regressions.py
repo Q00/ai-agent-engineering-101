@@ -178,19 +178,22 @@ def test_buyer_refuses_a_completed_receipt_it_never_offered_or_above_its_cap(
 
 def test_restock_quantity_is_cut_to_what_the_reserve_allows_at_worst_case_cost(
     tmp_path: Path,
+    r3_restock_now: float,
 ) -> None:
-    # Given: a valid policy asking for 20 lamps with 500,000 above the cash reserve.
+    # Given: a new lamp is bought as a 2-unit trial, with only 40,000 above the
+    # cash reserve.
     folder = write_market(tmp_path / ".market", [])
     catalog = read_catalog(folder)
     policy = apply_changes(Policy(), {"restock.units_per_sku": 20}).restock
-    inventory = Inventory(round=3, balance=2_000_000)
+    inventory = Inventory(round=3, balance=1_540_000)
     demand = (DemandRow(category=catalog[LAMP].category, item="lamp", kind="goods"),)
     lines, state = restock.plan(
-        inventory, catalog, demand, policy, restock.RestockState(), time.time()
+        inventory, catalog, demand, policy, restock.RestockState(), r3_restock_now
     )
-    # Then: 16 units at the official worst case (40,000 * 0.75 = 30,000) fit; 20 do not.
-    assert lines == [{"sku": LAMP, "qty": 16}]
-    assert state.planned_cost == 16 * 30_000 <= inventory.balance - policy.reserve_cash
+    # Then: one unit at the official worst case (40,000 * 0.75 = 30,000) fits; two
+    # do not.
+    assert lines == [{"sku": LAMP, "qty": 1}]
+    assert state.planned_cost == 30_000 <= inventory.balance - policy.reserve_cash
     # And: the model has no field that could lower the enforcement cost share.
     assert "cost_estimate_ratio" not in Policy().restock.model_dump()
 
@@ -200,6 +203,7 @@ def test_manager_survives_a_non_object_tool_payload(
 ) -> None:
     # Given: a fake SDK whose set_policy arguments are valid JSON but not an object.
     completion = SimpleNamespace(
+        usage=None,
         choices=[
             SimpleNamespace(
                 message=SimpleNamespace(
@@ -213,7 +217,7 @@ def test_manager_survives_a_non_object_tool_payload(
                     ]
                 )
             )
-        ]
+        ],
     )
 
     class FakeClient:
