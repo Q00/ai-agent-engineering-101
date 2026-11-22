@@ -28,6 +28,13 @@ def select(*args):
 
 class ExplorationTests(unittest.TestCase):
     def setUp(self):
+        # This class tests active-market behavior, independently of today's date.
+        # Production and the dedicated close-boundary tests keep the real deadline.
+        synthetic_end = time.time() + 48 * 3600
+        for target in ('capital_policy.ROUND_END', 'newsvendor_tool.ROUND_END'):
+            deadline = patch(target, synthetic_end)
+            deadline.start()
+            self.addCleanup(deadline.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.previous = Path.cwd()
         os.chdir(self.temp.name)

@@ -272,6 +272,15 @@ class BuyerPolicyTests(unittest.TestCase):
 
 
 class IntegrationTests(unittest.TestCase):
+    def setUp(self):
+        # This class tests active-market behavior, independently of today's date.
+        # Production and the dedicated close-boundary tests keep the real deadline.
+        synthetic_end = time.time() + 48 * 3600
+        for target in ('capital_policy.ROUND_END', 'newsvendor_tool.ROUND_END'):
+            deadline = patch(target, synthetic_end)
+            deadline.start()
+            self.addCleanup(deadline.stop)
+
     def test_a2a_model_choice_is_emitted_and_unit_is_held_after_receipt(self) -> None:
         async def exchange() -> None:
             app = seller_r3.build(9999)

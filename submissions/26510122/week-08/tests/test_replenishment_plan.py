@@ -23,6 +23,15 @@ def plan(now=1000):
 
 
 class PlanTests(unittest.TestCase):
+    def setUp(self):
+        # This class tests active-market behavior, independently of today's date.
+        # Production and the dedicated close-boundary tests keep the real deadline.
+        synthetic_end = time.time() + 48 * 3600
+        for target in ('capital_policy.ROUND_END', 'newsvendor_tool.ROUND_END'):
+            deadline = patch(target, synthetic_end)
+            deadline.start()
+            self.addCleanup(deadline.stop)
+
     def test_exact_unstocked_requests_enter_replenishment_candidates_once(self):
         history=[{'event':'request_seen','task_id':'t1','requested_skus':['F1']},
                  {'event':'no_stock','task_id':'t1','requested_skus':['F1']}]
