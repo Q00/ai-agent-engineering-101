@@ -261,6 +261,17 @@ figure에는 이 밖에 배포 구성(컨테이너 하나, 그 밖에서 도는 
 
 Round 3은 2026-11-17 23:59 KST에 끝났다. 아래 수치는 그 시각까지이고, board 값은 strategist의 11-18 00:11 실행(`20261118-0011`)이 읽은 것이다(`logs/strategist-home/runs.jsonl`의 `me`, `briefs/20261118-0011.json`의 `score.class`).
 
+한눈에 보면 이렇다. 왼쪽 숫자는 10주차 수업일의 기준값이다(3.3절).
+
+| 항목 | 10주차 기준 (11-10 18:55) | 최종 (종료 시점) | 근거 |
+|---|---|---|---|
+| 가게 정산 | 36,313건 | 67,673건 (로그 67,290건) | board, `[acp] settled` 줄 |
+| buyer 정산 | 9,510건 | 21,761건 (로그와 `payments.jsonl` 21,757건) | board, `[acp] paid` 줄, `.market/payments.jsonl` |
+| buyer가 결제하지 않은 checkout | 기록 없음 | 2,251건 (남은 기한 부족 1,723, 가게의 unit 품절 425, 증명서 없음 57, 그 밖 46) | `.market/payments.jsonl`의 `reason` |
+| 내 가게 쪽 정산 거부 | 기록 없음 | 183건 (이미 정산된 주문 95, 시장 오류 86, unit 없음 2) | `[acp] settle refused` 줄 |
+| Players 표, 학생끼리 | 합계 1.459, 백분위 0.733 | 합계 1.394, 백분위 0.689, 46명 중 15위 | strategist가 읽은 board |
+| Players 표, 전체 | 61명 중 14위 | 65명 중 16위 | 같음 |
+
 ### 3.1 정산 수와 기본 조건
 
 | 기본 조건 | 결과 | 근거 |
@@ -272,7 +283,9 @@ Round 3은 2026-11-17 23:59 KST에 끝났다. 아래 수치는 그 시각까지�
 
 **정산 줄은 보관 파일에 있다.** 내 키트 복사본은 로그가 20 MB가 되면 `market-kit.<시각>.log`로 넘기므로(`log-archive` 패치), Round 3의 로그는 세 보관 파일로 이어진다: `logs/market-kit.20261107-184911.log`, `logs/market-kit.20261114-004437.log`, `logs/market-kit.20261119-193956.log`. `logs/market-kit.log`에는 정산 줄이 없다. 종료 뒤에도 키트가 10초마다 주문을 요청했고, 시장의 503 응답 28,467줄이 마지막 보관 파일의 뒷부분과 이 파일을 채웠다. `logs/market-kit.20261103-000500.log`는 Round 3을 시작하며 보관한 그 전(week-07, Round 2) 로그다.
 
-가게 쪽 로그 수가 board보다 383건(0.6%) 적다. 원인은 확인하지 못했다. 로그에 키트 시작 줄이 54번 있으므로 재시작 사이의 정산으로 추정한다.
+buyer 쪽은 세 곳의 수가 맞는다. 키트 로그의 `[acp] paid` 줄에서 센 고유 ledger 번호와 `.market/payments.jsonl`의 `paid: true` 행이 둘 다 21,757건이고, board는 21,761건이다. 가게 쪽은 로그 수가 board보다 383건(0.6%) 적다. 원인은 확인하지 못했다. 로그에 키트 시작 줄이 54번 있으므로 재시작 사이의 정산으로 추정한다.
+
+`.market/inventory.json`으로 본 가게의 끝 상태는 잔액 179,116,289, 재고 1,388개(원가 287,816,438), 파산 0회다. 시작 자본은 5,000,000이었다.
 
 정산 줄(`logs/market-kit.20261119-193956.log`). 앞의 넷은 11-16, 뒤의 넷은 종료 직전과 종료 직후다:
 
@@ -327,19 +340,44 @@ kit starts: 54
 
 종료 뒤에는 거래가 없는데도 Book과 Saved가 내려갔다. 종료 직전에 판 물건의 고장(590 → 594개)과 남은 재고의 보관비 때문으로 추정한다. 과제가 정한 기준은 종료 시각의 board다.
 
-### 3.3 거부 사유
+### 3.3 10주차 기준 숫자와 최종 숫자
 
-키트 로그의 거부 줄(11-03 00:05 ~ 11-17 23:59, Round 3 전체):
+10주차 LAB에서 손으로 적어 둔 기준 숫자는 없다. 그날 새로 넣은 행동도 커밋 기록에 없다. 먼저 움직이는 행동(시세 글, 잘 팔리는 SKU의 선매입)은 11-07에 이미 들어가 있었다(1.3절 (e)). 대신 strategist가 30분마다 board에서 읽어 `logs/strategist-home/runs.jsonl`에 남긴 값 가운데 10주차 수업일인 11-10의 18:55 기록(실행 `20261110-1855`)을 기준으로 쓴다. 그때 기록된 값이고 나중에 고쳐 쓴 것이 아니다. LAB이 예로 든 숫자 중 매출과 게시판 평점은 있고, 답글 수는 기록하지 않았다.
 
-| 로그 줄 | 수 | 뜻 |
-|---|---|---|
-| `[acp] not paying: N h of shelf life left, the policy asks for N` | 1,723 | 내 buyer의 결제 직전 거절. 가게가 보낸 unit의 남은 기한이 주문의 사용 기한에 못 미친다 |
-| `[acp] not paying: no certificate, and the policy asks for one` | 57 | 내 buyer의 거절. 증명서가 없다 |
-| `[acp] checkout refused: 409 {"error":"unit … is not in stock for this order"}` | 478 | 상대 가게가 약속한 unit을 이미 다른 buyer에게 팔았다 |
-| `[acp] payment not completed: …` | 32 | 내 buyer의 결제가 끝나지 않았다. 24건은 오류 응답(빈 오류 13, Internal Server Error 8, 502 페이지 3)이고 8건은 시장의 정산 검사 실패다 |
-| `[acp] settle refused: ['not_settled_before']` | 95 | 내 가게 쪽. 같은 주문이 이미 정산됐다(buyer의 재시도) |
-| `[acp] settle refused: ['unit_in_stock']` | 2 | 내 가게 쪽. 정산 시점에 unit이 없었다 |
-| `[acp] settle refused` (시장 오류 응답) | 86 | 시장의 5xx 또는 빈 오류 |
+| 숫자 | 10주차 기준 (11-10 18:55) | 최종 (11-18 00:11, 종료 11분 뒤) | 변화 |
+|---|---|---|---|
+| 가게 매출 | 2,019,476,335 | 5,277,644,380 | 2.6배 |
+| 가게 정산 수 | 36,313 | 67,673 | +31,360 |
+| 가게 별점 | 4.63 | 4.61 | −0.02 |
+| 가게의 고장 / 환불 | 247 / 23 | 590 / 168 | +343 / +145 |
+| 가게 ALL | 0.758 (57곳 중 14위) | 0.787 (62곳 중 12위) | +0.029 |
+| buyer 정산 수 | 9,510 | 21,761 | +12,251 |
+| buyer의 글 수 | 1,529 | 3,349 | +1,820 |
+| 게시판 평점 | 0.91 | 0.922 | +0.012 |
+| Saved | 0.3106 (패치 3.4의 계산) | 0.7393 (패치 3.6의 계산) | 계산식이 달라 비교할 수 없다 |
+| buyer ALL | 0.771 (62명 중 16위) | 0.697 (69명 중 28위) | −0.074 |
+| Players 전체 | 1.529 (61명 중 14위) | 1.484 (65명 중 16위) | −0.045 |
+| Players 학생끼리 | 합계 1.459, 백분위 0.733 | 합계 1.394, 백분위 0.689 (46명 중 15위) | 백분위 −0.044 |
+
+같은 숫자를 다시 재 보면, 가게 쪽은 올랐고 buyer 쪽은 내렸다. 가게는 매출이 2.6배가 되면서 ALL이 0.758에서 0.787로 올랐다. buyer는 ALL이 0.771에서 0.697로 내려가 전체 합계와 학생 백분위를 끌어내렸다. 11-12의 패치 3.6이 Saved를 가게 마진 대비 비율로 다시 계산하면서, 그 전까지 싸게만 사던 내 buyer의 누적 평균이 다른 buyer들보다 낮게 나온 것이다(3.2절). 게시판 쪽은 글 수가 두 배가 되는 동안 평점이 0.91에서 0.922로 유지됐다. 시세 글 624건이 평점을 깎지 않았다는 것까지는 말할 수 있고, 올렸다고는 말할 수 없다.
+
+### 3.4 거부 사유
+
+키트 로그의 거부 줄(11-03 00:05 ~ 11-17 23:59, Round 3 전체). 내 buyer 쪽 사유는 `.market/payments.jsonl`의 `reason`으로도 세어 나란히 적었다. 두 곳의 수가 같다.
+
+| 로그 줄 | 키트 로그 | `payments.jsonl` | 뜻 |
+|---|---|---|---|
+| `[acp] not paying: N h of shelf life left, the policy asks for N` | 1,723 | 1,723 | 내 buyer의 결제 직전 거절. 가게가 보낸 unit의 남은 기한이 주문의 사용 기한에 못 미친다 |
+| `[acp] checkout refused: 409 {"error":"unit … is not in stock for this order"}` | 425 | 425 | 상대 가게가 내 buyer의 checkout을 거절했다. 약속한 unit을 이미 다른 buyer에게 팔았다 |
+| `[acp] not paying: no certificate, and the policy asks for one` | 57 | 57 | 내 buyer의 거절. 증명서가 없다 |
+| `[acp] payment not completed: …` | 32 | 32 | 내 buyer의 결제가 끝나지 않았다. 24건은 오류 응답(빈 오류 13, Internal Server Error 8, 502 페이지 3)이고 8건은 시장의 정산 검사 실패다 |
+| `[acp] the ACP endpoint … is not on the shop's host; not paying` | 11 | 11 | 키트의 거절. 가게 카드가 가리킨 결제 주소가 그 가게의 호스트가 아니다 |
+| `[acp] checkout refused: unit … is not in stock for this order` | 53 | (내 가게 쪽) | 내 가게가 상대 buyer의 checkout을 거절했다. 약속한 unit이 그 사이에 팔렸다 |
+| `[acp] settle refused: ['not_settled_before']` | 95 | (내 가게 쪽) | 같은 주문이 이미 정산됐다(buyer의 재시도) |
+| `[acp] settle refused: ['unit_in_stock']` | 2 | (내 가게 쪽) | 정산 시점에 unit이 없었다 |
+| `[acp] settle refused` (시장 오류 응답) | 86 | (내 가게 쪽) | 시장의 5xx 또는 빈 오류 |
+
+`payments.jsonl`에는 이 밖에 `checkout refused: 500 Internal Server Error` 2건과 `inventory` 오류 1건이 있어, 결제하지 않은 checkout은 모두 2,251건이다(전체 24,008건의 9.4%). `.market/broken.jsonl`에 따르면 내 buyer가 산 물건 중 669개가 종료 전에 고장 났다(정산 21,757건의 3.1%).
 
 인용(파일을 적지 않은 줄은 `logs/market-kit.20261119-193956.log`):
 
@@ -349,7 +387,18 @@ kit starts: 54
 11:47:35 [acp] settle refused: ['not_settled_before']
 01:34:18 [acp] not paying: no certificate, and the policy asks for one          (market-kit.20261107-184911.log)
 16:37:40 [acp] settle refused: ['unit_in_stock']                                 (market-kit.20261114-004437.log)
+15:41:52 [acp] the ACP endpoint https://assist-speech-string-half.trycloudflare.com/acp is not on the shop's host; not paying
+22:14:24 [acp] checkout refused: unit u-afbd1f00de70 is not in stock for this order
 ```
+
+`.market/payments.jsonl`의 행(`logs/market/payments.jsonl`):
+
+```json
+{"order": "o-da2416205ffc", "shop": "https://automated-favors-products-beer.trycloudflare.com", "item": "G97cd0437", "price": 20315, "paid": false, "reason": "not paying: 349.12 h of shelf life left, the policy asks for 361.0"}
+{"order": "o-9da623e812d2", "shop": "https://excuse-sandy-changes-buried.trycloudflare.com", "item": "Gd6fb41c7", "price": 36950, "paid": true, "ledger": 7896149}
+```
+
+둘째 행은 Round 3에서 내 buyer가 마지막으로 낸 결제이고, 3.1절의 `23:58:45 [acp] paid 36950 …` 줄과 같은 거래다.
 
 첫 줄은 `accept.min_hours_left`가 한 일이다. 사용 기한 540시간짜리 주문에 525시간 남은 unit이 왔고, 결제했다면 그 거래의 가치는 0이었다.
 
@@ -370,9 +419,9 @@ kit starts: 54
 
 아래 다섯 줄은 서명된 영수증을 받고도 결제하지 않은 경우다. 키트가 결제 단계에서 거절하면 그 주문은 끝나지만, hook 안에서 거절하면 다음 가게로 넘어갈 수 있다.
 
-### 3.4 운영 중 실패와 수정
+### 3.5 운영 중 실패와 수정
 
-week-08 폴더의 커밋 139개 중 29개가 `fix`다. 순위에 영향이 컸던 것만 적는다. 각 항목의 수치는 해당 커밋 메시지에 있다.
+week-08 폴더의 커밋 141개 중 29개가 `fix`다. 순위에 영향이 컸던 것만 적는다. 각 항목의 수치는 해당 커밋 메시지에 있다.
 
 | 날짜 | 무슨 일이 있었나 | 고친 것 |
 |---|---|---|
@@ -389,7 +438,7 @@ week-08 폴더의 커밋 139개 중 29개가 `fix`다. 순위에 영향이 컸�
 | 11-15 | 보증 상한의 집계가 같은 unit의 영수증을 여러 번 셌다. 실제 5,450만을 8,000만으로 읽어 보증 요청 366건을 거절했다 | unit마다 마지막 영수증만 센다 (`a6cad89`) |
 | 11-16 | 테스트 2개가 종료 48시간 전부터 실패했고, 종료 뒤에는 9개가 실패해 이미지 빌드가 막힐 상태였다 | 테스트의 임시 정책이 종료 시각을 지금부터 10일 뒤로 쓴다 (`95f80c5`) |
 
-### 3.5 한계
+### 3.6 한계
 
 - **모델의 기여를 분리해 재지 못했다.** strategist를 끈 대조 구간이 없다. 결과 점검 157건은 모두 "보고만"이고, 지표가 시간대에 따라 흔들려서 어느 변경이 순위를 올렸는지 말할 수 없다.
 - **buyer의 Saved.** 3.2절에 적은 대로 가장 큰 가중치의 항목이 가장 약하다. 등급별 하한과 영수증 검사는 11-12 이후에야 들어갔다.
@@ -410,7 +459,7 @@ API 키는 쓰지 않는다. 모델 호출은 Claude Code 로그인으로 하고
 | strategist 한 번 (쓰지 않는 모드) | `python -m strategist --once --mode propose --home /tmp/strategist-home` | 시장의 공개 API. brief, 프롬프트, 실행 기록이 `--home` 폴더에 남는다. `claude` 명령이 없으면 `llm error`로 기록하고 끝난다(11-16에 확인) |
 | 배포 이미지 | `podman compose build` (`compose.yaml`) | 빌드 중에 위 테스트를 돌린다. 실행에는 키 두 개와 claim code가 든 데이터 폴더가 필요하다. 그 폴더는 `MARKET_DATA_DIR`로 정하고(환경 변수나 `compose.yaml` 옆의 `.env`), 없으면 `./data`다 |
 | figure | `pdflatex architecture.tex`, `pdflatex architecture-ko.tex` | TeX Live (TikZ, 한글판은 kotex) |
-| 이 문서가 로그에서 센 수치 전부 | `python report_numbers.py` (약 7초) | `logs/`의 파일. 표준 라이브러리만 쓴다. 종료 시각까지만 세고, 종료 전후와 최신의 board 값도 같이 낸다 |
+| 이 문서가 로그에서 센 수치 전부 | `python report_numbers.py` (약 7초) | `logs/`의 파일. 표준 라이브러리만 쓴다. 종료 시각까지만 세고, 10주차 기준, 종료 전후, 최신의 board 값도 같이 낸다 |
 
 코드에는 특정 컴퓨터의 경로가 없다. `agent.json`은 PATH의 `python`을 쓰고, `docker/hot_update.sh`와 `docker/host_tunnel.py`는 `compose.yaml`과 같은 순서(환경 변수, `.env`, `./data`)로 데이터 폴더를 찾는다. launchd는 절대 경로만 받으므로 `docker/com.psyoung82.market-tunnel.plist`는 자리 표시자를 채워 설치하는 틀이다. 컨테이너 안에서는 `docker/agent.container.json`을 쓴다.
 
@@ -424,6 +473,7 @@ API 키는 쓰지 않는다. 모델 호출은 Claude Code 로그인으로 하고
 | `logs/strategist-home/{briefs,reports}/20261117-2341.*`, `20261118-0011.*`, `20261121-1007.*` | 종료 직전, 종료 직후, 최신 실행의 brief(학생 순위가 든 `score.class`)와 리포트 | 11-22 10:21 |
 | `logs/strategist-home/{briefs,prompts,raw,reports,analyst}/20261116-2140.*` | 1.2절이 인용한 실행 하나의 brief, 프롬프트, 모델의 답, 리포트, 수요 분석의 프롬프트와 답 | 11-16 23:53 |
 | `logs/strategy-live/SKILL.md` | 라운드 중 마지막으로 쓰인 정책 파일(11-17 23:41, 버전 653). 저장소의 `strategy/SKILL.md`는 이미지에 넣는 시작값(버전 2)이다 | 11-22 10:21 |
-| `logs/outbox.sent.jsonl` | 키트가 보낸 게시글과 시장의 응답 | 11-22 10:21 |
+| `logs/outbox.sent.jsonl` | 키트가 보낸 게시글과 시장의 응답 (`.market/outbox.sent.jsonl`) | 11-22 10:21 |
+| `logs/market/payments.jsonl`, `broken.jsonl`, `inventory.json` | 키트가 `.market/`에 쓰는 파일. 내 buyer의 모든 checkout과 결제하지 않은 사유, 산 물건의 고장, 가게의 재고와 잔액 | 11-22 11:07 |
 | `logs/strategist/changes.md`, `policy.json` | strategist가 가게 쪽에 남기는 숫자만의 변경 표와 정책. 종료 뒤에 다시 쓰였으므로 라운드 중의 사본을 그대로 두었다 | 11-16 23:53 |
 | `logs/memory/summary.json` | 1.2절의 파생 요약. 종료 뒤에는 시장 쪽 창이 비므로 라운드 중의 사본을 그대로 두었다 | 11-16 23:53 |
