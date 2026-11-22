@@ -5,7 +5,7 @@ import random
 import unittest
 
 import inventory_portfolio as portfolio
-from capital_policy import ROUND_END
+import capital_policy
 from market_memory import events
 from stock_policy import demand_forecast, replenishment_candidates, policy_view
 from test_ample_stock import history
@@ -93,7 +93,7 @@ class GrowthCoverageTests(unittest.TestCase):
         inv=inventory(portfolio.MIN_VARIETY);inv['balance']=2_000_000
         for unit in inv['units']:unit['cost']=100000
         self.assertEqual(demand_forecast('s1',catalog()['s1'],inv,history(),1000)['growth_coverage_options'],[])
-        self.assertEqual(demand_forecast('s1',catalog()['s1'],inventory(0),[],ROUND_END-3600)['growth_coverage_options'],[])
+        self.assertEqual(demand_forecast('s1',catalog()['s1'],inventory(0),[],capital_policy.ROUND_END-3600)['growth_coverage_options'],[])
 
     def test_category_pending_stock_and_second_trial_limits_still_apply(self):
         inv=inventory(0)

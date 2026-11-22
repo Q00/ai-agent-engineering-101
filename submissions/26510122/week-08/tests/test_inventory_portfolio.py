@@ -53,7 +53,7 @@ def approve(role, prompt, schema):
 class PortfolioTests(unittest.TestCase):
     def setUp(self):
         # This class tests active-market behavior, independently of today's date.
-        # Production and the dedicated close-boundary tests keep the real deadline.
+        # Production keeps its real deadline; only this fixture uses an active period.
         synthetic_end = time.time() + 48 * 3600
         for target in ('capital_policy.ROUND_END', 'newsvendor_tool.ROUND_END'):
             deadline = patch(target, synthetic_end)
