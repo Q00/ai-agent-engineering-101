@@ -8,6 +8,10 @@ logs/decisions/<role>.jsonl.gz       every decision row of the seller, buyer, re
 logs/strategist-home/runs.jsonl      one row per strategist run; changes.jsonl one per SKILL.md rewrite or outcome check
 logs/outbox.sent.jsonl               the forum posts the kit sent and the market's answers
 Nothing is written. A row that does not parse (a line cut by the copy) is skipped.
+
+Round 3 ended on 2026-11-17 at 23:59 KST (END_TS) and the agents kept running. Everything is counted up to the
+end: decision rows and strategist runs by their ts, the kit log (its stamps have no date) up to the market's
+first "Round 3 ended" answer. The board numbers are the ones the first strategist run after the end read.
 """
 import collections
 import gzip
@@ -19,7 +23,9 @@ import time
 from pathlib import Path
 
 LOGS = Path(__file__).resolve().parent / "logs"
-ROUND3_KIT = ("market-kit.20261107-184911.log", "market-kit.20261114-004437.log", "market-kit.log")
+END_TS = 1794927540                                 # 2026-11-17 23:59 KST, stock.end_ts
+KIT_FIRST = "market-kit.20261107-184911.log"        # the archive Round 3 starts in (the one before is Round 2)
+KIT_END = "Round 3 ended at"
 SELLER_WINDOW_H, BUYER_WINDOW_H = 12, 36
 
 
@@ -51,8 +57,16 @@ def pct(values, q):
 
 
 def kit():
-    text = "".join((LOGS / name).read_text(encoding="utf-8", errors="replace") for name in ROUND3_KIT)
-    lines = text.splitlines()
+    names = sorted(p.name for p in LOGS.glob("market-kit.2*.log") if p.name >= KIT_FIRST) + ["market-kit.log"]
+    lines, ended = [], None
+    for name in names:
+        for line in (LOGS / name).read_text(encoding="utf-8", errors="replace").splitlines():
+            if KIT_END in line:
+                ended = f"{name} at {line[:8]}"
+                break
+            lines.append(line)
+        if ended:
+            break
 
     def uniq(marker):
         return len({m.group(0) for line in lines if marker in line for m in [re.search(r"ledger #\d+", line)] if m})
@@ -61,7 +75,7 @@ def kit():
         rx = re.compile(pattern)
         return sum(1 for line in lines if rx.search(line))
 
-    print("== kit logs (Round 3 files)")
+    print(f"== kit logs, Round 3: {names[0]} up to the first '{KIT_END}' line ({ended or 'not reached'})")
     print("shop settlements, unique ledger numbers:", uniq("[acp] settled "))
     print("buyer settlements, unique ledger numbers:", uniq("[acp] paid "))
     print("orders received (round 3):", count(r"\[order o-.*round 3"))
@@ -92,8 +106,10 @@ def decisions():
         recent = collections.deque()            # (ts, row) of the window; the files are in time order
         window = {"seller": SELLER_WINDOW_H, "buyer": BUYER_WINDOW_H}.get(role)
         for row in rows(path):
-            n += 1
             ts = row.get("ts") or 0
+            if not 0 < ts <= END_TS:                # after the round's end, or a row without a time
+                continue
+            n += 1
             first, last = first or ts, ts
             if row.get("kind") == "llm_exception":
                 llm[str(row.get("why"))] += 1
@@ -135,8 +151,9 @@ def decisions():
 
 def strategist():
     home = LOGS / "strategist-home"
-    runs = list(rows(home / "runs.jsonl"))
-    print("== strategist")
+    every = list(rows(home / "runs.jsonl"))
+    runs = [r for r in every if r.get("ts", 0) <= END_TS]
+    print("== strategist, runs up to the round's end")
     print(f"runs: {len(runs)}, {runs[0]['run_id']} to {runs[-1]['run_id']}, policy version now {runs[-1].get('policy_ver_after')}")
     status = collections.Counter("waiting for an outcome" if str(r.get("status")).startswith("waiting") else r.get("status")
                                  for r in runs)
@@ -159,11 +176,32 @@ def strategist():
     print(f"analyst: {len(analyst)} runs wrote {sum(len(a) for a in analyst)} multipliers")
     ms = [r["elapsed_ms"] for r in runs if r.get("elapsed_ms")]
     print(f"run time median {statistics.median(ms) / 1000:.0f} s")
-    changes = list(rows(home / "changes.jsonl"))
+    changes = [c for c in rows(home / "changes.jsonl") if c.get("ts", 0) <= END_TS]
     checks = [c for c in changes if "outcome_of" in c]
     print(f"outcome checks: {len(checks)}, automatic reverts: {sum(1 for c in checks if c.get('reverted') or c.get('revert'))}")
     lists = sum(1 for c in changes if any(k in ("stock.focus_skus", "stock.trend_skus") for k in (c.get("diff") or {})))
     print("SKILL.md rewrites that changed the focus or trend list:", lists)
+    after = [r for r in every if r.get("ts", 0) > END_TS]
+    print(f"runs after the end (market paused): {len(after)}")
+    for label, run in (("last read before the end", runs[-1]), ("first read after the end", after[0] if after else None),
+                       ("latest read", every[-1])):
+        if run is None:
+            continue
+        me = run.get("me") or {}
+        shop, buyer, player = me.get("shop") or {}, me.get("buyer") or {}, me.get("player") or {}
+        brief = home / "briefs" / f"{run['run_id']}.json"
+        cls = ((json.loads(brief.read_text(encoding="utf-8")).get("score") or {}).get("class") or {}) if brief.is_file() else {}
+        print(f"board, {label} ({run['run_id']}):")
+        print(f"  class rank {cls.get('rank', '?')} of {cls.get('of', '?')}, student total {player.get('student_total')} "
+              f"(shop {player.get('student_shop')} + buyer {player.get('student_buyer')}), percentile {player.get('student_pct')}; "
+              f"all players rank {player.get('total_rank')} of {player.get('ranked')}, total {player.get('total')}")
+        print(f"  shop: ALL {shop.get('all')} rank {shop.get('all_rank')} of {shop.get('ranked')}, deals {shop.get('deals')} "
+              f"(rank {shop.get('deals_rank')}), revenue {shop.get('revenue')}, stars {shop.get('stars')}, "
+              f"honest claims {shop.get('honest_claims')} of {shop.get('claims')}, broken {shop.get('broken')}, refunds {shop.get('refunds')}")
+        print(f"  buyer: ALL {buyer.get('all')} rank {buyer.get('all_rank')} of {buyer.get('ranked')}, orders {buyer.get('orders')}, "
+              f"deals {buyer.get('deals')}, saved {buyer.get('saved')}, forum {buyer.get('forum')}, posts {buyer.get('posts')}")
+        for part, v in sorted((cls.get("parts") or {}).items()):
+            print(f"    class {part}: {v.get('value')} rank {v.get('rank')}")
 
 
 def forum():

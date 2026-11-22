@@ -1,11 +1,11 @@
 ---
 name: round3-sales-strategy
-version: 605
+version: 653
 description: Round 3 shop and buyer strategy for psyoung82. The numbers under policy are read by the rule engine on every call; the text below is read by the planner model.
 policy:
   seller:
     first_ask_list: 0.8          # D3 first ask = max(list x this, floor)
-    first_ask_big_list: 0.69      # D3 first ask for big-ticket goods (list above stock.big_ticket_list): the market clears them at 0.67-0.72
+    first_ask_big_list: 0.67      # D3 first ask for big-ticket goods (list above stock.big_ticket_list): the market clears them at 0.67-0.72
     floor_cost_mult: 1.0         # D3 floor = max(unit cost x this, list x floor_list)
     floor_list: 0.57
     food_clear_uwh_factor: 3.0    # D4 food below cost when hours left < factor x observed use_within median
@@ -21,10 +21,10 @@ policy:
     claim_food_margin_h: 1.0      # L5 claim a food grade only with this much margin to the next grade cut
     promise_ttl_s: 180            # a unit promised in an open negotiation is held this long
     intro_price_enabled: false    # L4 (conditional, day-1 data)
-    stale_floor_cost_mult: 0.9    # D4 stale goods floor as a share of cost: 1.0 while Book counts stock at cost; below 1 only when holding costs more than the margin
+    stale_floor_cost_mult: 1.0    # D4 stale goods floor as a share of cost: 1.0 while Book counts stock at cost; below 1 only when holding costs more than the margin
     warranty_q_mult: 1.25          # D5 safety on the measured breakage (memory: market.breakage, SKU x grade); without data the premium is warranty_premium
-    market_list_A: 0.7           # D3 the market's price/list for a grade: goods offer first a unit whose floor is at or under it
-    market_list_C: 0.43
+    market_list_A: 0.69           # D3 the market's price/list for a grade: goods offer first a unit whose floor is at or under it
+    market_list_C: 0.4
     market_list_B: 0.6
   stock:
     inventory_cap_share: 0.90     # D1 inventory cost <= share x (cash + inventory cost)
@@ -47,7 +47,7 @@ policy:
     end_ts: 1794927540            # D14 2026-11-17 23:59 KST
     taper_h: 0
     taper_factor: 0.5
-    goods_stop_h: 6
+    goods_stop_h: 0
     clear_cost_h: 60              # D14 floor = cost from T-48h
     clear_70_h: 0                # D14 floor = cost x 0.7 from T-24h
     clear_any_h: 0                # D14 floor = 1 from T-6h
@@ -55,18 +55,19 @@ policy:
     window_lead_s: 60             # supply opens every ~20 min for 3 min: plan only when open or opening this soon
     cover_min: 105                 # stock per SKU covers expected sales for this many minutes (until the next window)
     cover_safety: 2.5             # expected sales x this
-    focus_skus: [G05277ffe, G85a1a856, Gbec2b68f, G0667d440, G00327e80, G4a12722c, Ge04f5cab, G429bd69e, Gb5d0dde7, G07ec17d5, G8ec51935, G47788edd]                # trending SKUs from the ledger (set by the strategist): stocked deeper
+    focus_skus: [G05277ffe, G3434758a, G021aae64, G07ec17d5, G19a70f63, G114aefb6, Gf6b70da8, G0132ff94, G2560a8c9, G35351812, G9c9f8f94, G9718023b]                # trending SKUs from the ledger (set by the strategist): stocked deeper
     focus_max: 12
     focus_cover_mult: 1.25         # a focus SKU's cover target x this
     focus_cap_share: 0.5          # focus buys use at most this share of the D1 headroom
     focus_min_settles: 10         # market settles in 6 h a SKU needs before it can be a focus SKU
     big_ticket_share: 0.90        # goods above goods_max_list: held + planned cost <= this x inventory_cap_share x funds
-    trend_skus: [G200e39a3, G29fc9227, G53620cc2, G0b0ca441, G124d3ea5, G0be9ed07, G2560a8c9, G5c543233, G022ce883, G75f11c19, Gf6b70da8, G32bf9a8e, G90591723, G5b7be4e1, G04ee8423]                # the next best sellers (set by the strategist): picked like focus, ordered after it
+    trend_skus: [G29fc9227, Gef4d3036, G53620cc2, G124d3ea5, G022ce883, G582603b2, G74e686be, G32bf9a8e, Gb909a9c8, G5079f192, G64701e11, Gd1f907d6, G200e39a3, G66ded25b, G80435d53, G010744b7, G0b0ca441, G1f2acd72, Gbec2b68f, G1dd63027]                # the next best sellers (set by the strategist): picked like focus, ordered after it
     trend_share: 0.20             # focus/trend SKUs are stocked for at least this share of the market's settle rate (stockouts hide our own rate)
     bigticket_probe_qty: 8        # a big-ticket SKU holds at most this many units until we sold 2 of it in 6 h
     min_margin_share: 0.05        # surge: buy while clearing price - this covers cost x factor x floor_cost_mult
     max_hold: 20                  # units one SKU may hold (the cover target's cap)
     min_line_qty: 3               # skip a top-up of an in-stock SKU below min(this, target / 2): lines are scarce
+    trend_max: 20
   buyer:
     cap_goods_no_warranty: 0.8   # D6 price caps as a share of the shipped SKU's list price
     cap_goods_warranty: 0.94
@@ -83,10 +84,10 @@ policy:
     binding: true                 # D12 pre-payment binding check in the kit copy
     accept_cert: true
     step_list: 0.05               # added by the strategist (a policy.DEFAULTS key)
-    min_kept_C: 0.55               #    so the same kept scores 0.6-0.8); 0 leaves min_kept in charge
+    min_kept_C: 0.5               #    so the same kept scores 0.6-0.8); 0 leaves min_kept in charge
     min_kept_A: 0.27               # D6 the kept floor once a quote or receipt names the grade (Patch 3.6 Saved: an A
     min_kept_B: 0.4               #    costs 0.55-0.75 of list, so 0.45 kept already scores 1; a C costs 0.25-0.45,
-    break_penalty: 0.75            # a goods deal without the full warranty is capped so that a break, which Saved counts as -1, is priced in (0: off)
+    break_penalty: 0.5            # a goods deal without the full warranty is capped so that a break, which Saved counts as -1, is priced in (0: off)
   llm:
     planner_enabled: false        # D9 (P2)
     planner_every_min: 30
@@ -226,4 +227,4 @@ The reasoning behind each value is in `strategy.md` (local only, not committed).
 
 ## Strategist notes
 
-Saved is scored as margin_share. score_twin is paused, so min_kept is set by me. Changes: 14:40 stale_floor 1.0; 17:10 clear_cost_h 60 (floor = cost); 00:40 min_kept_A 0.27; 07:40 first_ask_big 0.69; 08:40 focus_cover_mult 1.25; 09:10 stale_floor 0.9; 11-16 17:10 warranty_premium 0.15; 19:40 min_kept_C 0.55; 20:40 market_list_A 0.70; 21:40 market_list_C 0.46; 23:10 market_list_C 0.43 (check pending; if big revenue or A/B first replies drop, go back to 0.46). 23:40 no change. Big signs pay 99% when the warranty was asked and offered, 45% when refused. The cap is at its 120M maximum, so it can't be raised. Window deals score 0.846, above saved 0.730. Do not lower min_kept: an A at kept 0.24 scores about 0.69 at the band's middle cost, under saved. Stale_floor stays 0.9: the 0.9 floor of a 0.73 A is already under the market's 0.687, so 0.8 gains little and risks the 35M book down-gap. Keep clear_70 and clear_any off. Class rank 16, gap_up 0.020, book up-gap 20.8M, revenue up-gap 146M, deals up-gap 159. 24.3h left.
+Saved = margin_share. score_twin is paused, so min_kept is mine; keep it at 0.27. Settings: market_list_A 0.69, C 0.40; stale_floor 1.0; first_ask_big 0.67; clear_cost_h 60 (on), clear_70_h 0, goods_stop_h 0. 23:41 (0.3 h left): class rank 15. Book is 6.5M under the next student up and only 0.53M over the one below. Never sell below cost, because Book weighs 0.5 and the lead below is thin. Revenue gap up 28.8M: out of reach. Saved 0.7392. Leave everything as is to the end.
