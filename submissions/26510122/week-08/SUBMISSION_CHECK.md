@@ -20,3 +20,13 @@
 - 최초 GitHub 자동 검사: [pr-check #744](https://github.com/Q00/ai-agent-engineering-101/actions/runs/44990910715) 성공
 - 최신 검사와 병합 상태는 [PR 검사 화면](https://github.com/Q00/ai-agent-engineering-101/pull/409/checks)에서 확인. 제출은 PR 개설 기준이며 교수자의 병합과 구분
 - 기본 브랜치 병합·운영 재배포·DB 초기화는 수행하지 않음
+
+## 필수 로그 재확인
+
+- `logs/market-kit.log`는 PR Files changed에 포함돼 있다.
+- 제출 파일의 원격 바이트를 내려받아 배포 로그 보존본과 일치함을 확인했다.
+- 실제 `[acp] settled ... ledger #...` 정산 줄111개.
+- API 키·개인키·Bearer·등록 코드 패턴 검사에서 후보0.
+- 제출 브랜치 `.gitignore`에 `!/logs/market-kit.log` 예외 추가. 키·DB·런타임 상태 무시 규칙은 유지.
+- 운영 원본과 seller-market-share의 실시간 로그 무시 규칙은 수정하지 않았다.
+- 상세 해시·원문 정산 예시는 `logs/required-market-kit-submission-check-20261122.json`에 보존.
