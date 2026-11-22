@@ -101,16 +101,16 @@
 
   % ================================================================ hub column
   \node[mem, text width=4.1cm, anchor=north west] (declog) at (11.3,15.9)
-    {\textbf{logs/decisions/*.jsonl}\\ 모든 결정과 그 입력,\\ \texttt{memory\_refs}, \texttt{policy\_ver}\\ (915,311행)};
+    {\textbf{logs/decisions/*.jsonl}\\ 모든 결정과 그 입력,\\ \texttt{memory\_refs}, \texttt{policy\_ver}\\ (1,015,573행)};
   \node[pol, text width=4.1cm, anchor=north west] (skill) at (11.3,11.75)
     {\textbf{strategy/SKILL.md}\\ 정책 숫자 (front matter)\\ + 전략 본문\\ + \emph{Strategist notes}\\[2pt]
-     \textbf{policy.py}: 읽을 때마다 검증.\\ 잘못된 파일은 쓰지 않는다\\ (마지막 통과 값, 다음은 기본값).\\ 버전 2 $\rightarrow$ 605};
+     \textbf{policy.py}: 읽을 때마다 검증.\\ 잘못된 파일은 쓰지 않는다\\ (마지막 통과 값, 다음은 기본값).\\ 버전 2 $\rightarrow$ 653};
   \node[mem, text width=4.1cm, anchor=north west] (summary) at (11.3,8.3)
     {\textbf{memory/summary.json}\\ 가게별 기록, 가게/등급별 가격 장부,\\ 고장률 표, 사용 기한,\\ SKU 판매 속도, 단골의 카테고리\\ (+ \texttt{demand\_forecast.json})};
 
   % ================================================================ loop 1: trading
   \node[rule, text width=4.6cm, anchor=north west] (seller) at (16.95,15.9)
-    {\textbf{seller.py} (A2A 가게)\\ \textbf{tools/pricing.py}: 하한, 첫 호가,\\ 양보 한 번, 좋은 등급 먼저,\\ 고장률 표로 값을 매긴 보증.\\ 답장 결정 13 ms (중앙값)};
+    {\textbf{seller.py} (A2A 가게)\\ \textbf{tools/pricing.py}: 하한, 첫 호가,\\ 양보 한 번, 좋은 등급 먼저,\\ 고장률 표로 값을 매긴 보증.\\ 답장 결정 16 ms (중앙값)};
   \node[rule, text width=4.6cm, anchor=north west] (buyer) at (22.3,15.9)
     {\textbf{market\_buyer.py}\\ \textbf{tools/buyer\_policy.py, negotiation.py}:\\ 정산가로 가게 순위, 3턴 협상,\\ 시간 제한, 영수증 직접 검사,\\ 안 되면 다음 가게 (10곳까지)};
   \node[model, text width=3.75cm, anchor=north west] (fallback) at (16.95,13.6)
@@ -222,9 +222,9 @@
   \node[anchor=west] at (6.85,2.8) {읽기 전용 조회};
 
   \node[anchor=north west, text=black!70, text width=15.4cm, align=left, inner sep=0pt] at (11.3,3.75)
-    {스냅샷 2026-11-16 KST. board(22:10): 가게 정산 61,296건(가게 61곳 중 거래 수 1위), buyer 정산 19,156건,
-     학생 46명 중 16위. 로그(23:53), strategist: 643회 실행, 모델의 변경 291건 적용. guard가 대기 시간으로 69건,
-     확신도 미달로 68건을 버렸다. 결과 점검 145건, 자동 되돌림 없음. 모델 예외 읽기: 14일 동안 2,792건.
+    {Round 3, 2026-11-03 ~ 11-17 23:59 KST. 최종 board: 가게 정산 67,673건(가게 62곳 중 거래 수 1위), buyer 정산
+     21,761건, 학생 46명 중 15위. strategist: 691회 실행, 모델의 변경 305건 적용. guard가 대기 시간으로 69건,
+     확신도 미달로 69건을 버렸다. 결과 점검 157건, 자동 되돌림 없음. 모델 예외 읽기: 15일 동안 3,029건.
      모든 수치는 \texttt{python report\_numbers.py}로 다시 센다.};
 \end{tikzpicture}
 \vspace*{\fill}

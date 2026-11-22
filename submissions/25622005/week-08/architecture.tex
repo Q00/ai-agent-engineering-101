@@ -95,16 +95,16 @@
 
   % ================================================================ hub column
   \node[mem, text width=4.1cm, anchor=north west] (declog) at (11.3,15.9)
-    {\textbf{logs/decisions/*.jsonl}\\ every decision with its inputs,\\ \texttt{memory\_refs} and \texttt{policy\_ver}\\ (915,311 rows)};
+    {\textbf{logs/decisions/*.jsonl}\\ every decision with its inputs,\\ \texttt{memory\_refs} and \texttt{policy\_ver}\\ (1,015,573 rows)};
   \node[pol, text width=4.1cm, anchor=north west] (skill) at (11.3,11.75)
     {\textbf{strategy/SKILL.md}\\ policy numbers (front matter)\\ + strategy prose\\ + \emph{Strategist notes}\\[2pt]
-     \textbf{policy.py}: validated on every\\ load; a bad file is never used\\ (last good values, then defaults).\\ Version 2 $\rightarrow$ 605};
+     \textbf{policy.py}: validated on every\\ load; a bad file is never used\\ (last good values, then defaults).\\ Version 2 $\rightarrow$ 653};
   \node[mem, text width=4.1cm, anchor=north west] (summary) at (11.3,8.3)
     {\textbf{memory/summary.json}\\ shop records, price book by shop\\ and grade, breakage table, use-within\\ hours, SKU rates, regular customers\\ (+ \texttt{demand\_forecast.json})};
 
   % ================================================================ loop 1: trading
   \node[rule, text width=4.6cm, anchor=north west] (seller) at (16.95,15.9)
-    {\textbf{seller.py} (A2A shop)\\ \textbf{tools/pricing.py}: floor, first ask, one\\ concession, best grade first, warranty\\ priced from the breakage table.\\ A reply is decided in 13 ms (median)};
+    {\textbf{seller.py} (A2A shop)\\ \textbf{tools/pricing.py}: floor, first ask, one\\ concession, best grade first, warranty\\ priced from the breakage table.\\ A reply is decided in 16 ms (median)};
   \node[rule, text width=4.6cm, anchor=north west] (buyer) at (22.3,15.9)
     {\textbf{market\_buyer.py}\\ \textbf{tools/buyer\_policy.py, negotiation.py}:\\ shops ranked by settled prices, 3-turn\\ haggle, time gate, own receipt check,\\ then the next shop (up to 10)};
   \node[model, text width=3.75cm, anchor=north west] (fallback) at (16.95,13.6)
@@ -216,10 +216,10 @@
   \node[anchor=west] at (6.85,2.8) {read-only fetch};
 
   \node[anchor=north west, text=black!70, text width=15.4cm, align=left, inner sep=0pt] at (11.3,3.75)
-    {Snapshot 2026-11-16 KST. Board at 22:10: 61,296 shop settlements (most deals of 61 shops), 19,156 buyer
-     settlements, class rank 16 of 46. Logs at 23:53, strategist: 643 runs, 291 model changes applied; the guard
-     dropped 69 for cooldown and 68 for low confidence; 145 outcome checks, no automatic revert.
-     Model fallback: 2,792 readings in 14 days. All counts: \texttt{python report\_numbers.py}.};
+    {Round 3, 2026-11-03 to 11-17 23:59 KST. Final board: 67,673 shop settlements (most deals of 62 shops), 21,761
+     buyer settlements, class rank 15 of 46. Strategist: 691 runs, 305 model changes applied; the guard dropped 69
+     for cooldown and 69 for low confidence; 157 outcome checks, no automatic revert.
+     Model fallback: 3,029 readings in 15 days. All counts: \texttt{python report\_numbers.py}.};
 \end{tikzpicture}
 \vspace*{\fill}
 \end{document}
