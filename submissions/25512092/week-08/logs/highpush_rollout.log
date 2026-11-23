@@ -1,0 +1,18 @@
+11-09 23:12:10 applied: STOCK_CAP 자동: 현금 16,796,335 + 재고 원가 34,970,909 - 300만 = 48,767,244 (나가는 기준 88% 42,915,174), 매 run 다시 계산
+11-09 23:12:10 applied: high_share 0.7 -> 0.85 (policy v{'purchasing': {'spend_share': 0.5, 'min_margin': 0.1, 'my_share': 0.5, 'wanted_qty': 3, 'min_sold_30m': 3, 'food_min_shelf_h': 24, 'max_break': 0.15, 'perishable_trial_market_30m': 3, 'perishable_trial_qty': 2, 'sofa_trial_start': 1793951508, 'sofa_trial_end': 1794797940, 'high_max': 100, 'high_share': 0.85}, 'sales': {'warranty_enabled': True, 'warranty_h': 48, 'warranty_max_break': 0.05, 'warranty_min_n': 5}, 'logistics': {'near_expiry_h': 12, 'clearance_cut_per_h': 0.1, 'clearance_max_cut': 0.9, 'aging_after_h': 24, 'aging_step_h': 6, 'aging_cut': 0.1, 'aging_min_cost': 0.9}, 'cs': {'post_every_s': 300, 'buyer_turns': ['purchase', 'purchase', 'report', 'purchase', 'callout']}, 'buyer': {'top_k': 3, 'min_offers': 3, 'first_offer': 0.6}, 'version': 21, 'ts': 1794233531, 'by': 'person', 'reason': "person's decision 11/09 ~23:10: high-price push: high_share 0.7 -> 0.85, ceilings 0.85 / 100"}), CEO·QC 자동 상한 0.85/100
+11-09 23:12:10 applied: 요청 기반 매입 run당 4줄 -> 2줄, 회전 1시간 이하 SKU만 (목표 수량 8 그대로)
+11-09 23:12:12 [alert] info highpush_on: 고가 몰아주기 적용 23:12:
+- STOCK_CAP 자동: 현금 16,796,335 + 재고 원가 34,970,909 - 300만 = 48,767,244 (나가는 기준 88% 42,915,174), 매 run 다시 계산
+- high_share 0.7 -> 0.85 (policy v{'purchasing': {'spend_share': 0.5, 'min_margin': 0.1, 'my_share': 0.5, 'wanted_qty': 3, 'min_sold_30m': 3, 'food_min_shelf_h': 24, 'max_break': 0.15, 'perishable_trial_market_30m': 3, 'perishable_trial_qty': 2, 'sofa_trial_start': 1793951508, 'sofa_trial_end': 1794797940, 'high_max': 100, 'high_share': 0.85}, 'sales': {'warranty_enabled': True, 'warranty_h': 48, 'warranty_max_break': 0.05, 'warranty_min_n': 5}, 'logistics': {'near_expiry_h': 12, 'clearance_cut_per_h': 0.1, 'clearance_max_cut': 0.9, 'aging_after_h': 24, 'aging_step_h': 6, 'aging_cut': 0.1, 'aging_min_cost': 0.9}, 'cs': {'post_every_s': 300, 'buyer_turns': ['purchase', 'purchase', 'report', 'purchase', 'callout']}, 'buyer': {'top_k': 3, 'min_offers': 3, 'first_offer': 0.6}, 'version': 21, 'ts': 1794233531, 'by': 'person', 'reason': "person's decision 11/09 ~23:10: high-price push: high_share 0.7 -> 0.85, ceilings 0.85 / 100"}), CEO·QC 자동 상한 0.85/100
+- 요청 기반 매입 run당 4줄 -> 2줄, 회전 1시간 이하 SKU만 (목표 수량 8 그대로)
+- 브레이크: 판매 중앙값·미판매 조건은 걸리면 자동 계산 끄고 20M, 현금은 300만 넘을 때까지 매입만 중지; 11/15 막판 예약 우선. 고가 브레이크 복귀값 0.7/60, 부패주의 규칙 그대로. 3시간 점검 예정 (telegram sent)
+11-10 02:13:35 [alert] daily highpush_report:1794233530: 고가 몰아주기 3.0시간 점검: 11-09 23:12 적용, 후 vs 직전 같은 길이
+- 시간당 Book +1,042,529 vs +836,302, 시간당 매출 +8,074,888 vs +6,431,244, 가게 순위 25 -> 25
+- 고가: 매입 62개 27,803,335 vs 44개 21,283,788, 판매 42개 17,697,281 vs 34개 14,697,701, 이익률(마진/매출) 12.2% vs 10.9%
+- 싼 물건(원가 10만 이하) 매출 비중 31.6% vs 24.0% (전체 매출 25,888,347 vs 19,346,123)
+- 별점 4.48 -> 4.47, 순위용 별점 4.42 -> 4.42
+- 막힌 매입 원인별 (후 vs 전): 부패주의 내 판매량 (줄) 120 vs 76, 고가 개수 한도 찬 run 7 vs 12, STOCK_CAP (run 예산 깎임/막힘) 3 vs 14, STOCK_CAP (run 매입 없음) 0 vs 5, CASH_RESERVE/STOCK_CAP (run 매입 없음) 0 vs 1, 10줄 한도 찬 run 0 vs 0
+- 재고 원가 34,970,909 -> 47,131,885 (고가 37,743,162 92개 / 일반 9,388,723 446개), 현금 16,796,335 -> 8,074,584
+- STOCK_CAP 자동 52,206,469 (나가는 기준 45,941,692)
+- 브레이크: STOCK_CAP 안 걸림; 고가 안 걸림 (걸리면 0.7/60) (telegram sent)
+11-10 02:13:35 report sent
