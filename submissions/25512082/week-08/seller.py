@@ -1,30 +1,48 @@
-"""Model-driven Week 06 seller exposed as an A2A v1.0 JSON-RPC server."""
+"""Inventory-backed A2A v1 Seller running the validated B-safe-1 policy."""
 from __future__ import annotations
 
 import argparse
 import base64
+import collections
+import contextlib
 import json
+import math
 import re
-from dataclasses import dataclass, field
+import time
 from pathlib import Path
 
 import uvicorn
 from cryptography.hazmat.primitives import serialization
 from starlette.applications import Starlette
 from a2a.helpers import get_message_text, new_data_part, new_task_from_user_message, new_text_part
-from a2a.server.agent_execution import AgentExecutor, RequestContext
-from a2a.server.events import EventQueue
+from a2a.server.agent_execution import AgentExecutor
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-from harness import HarnessError, NegotiationTurn, SellerDecisionContext, decide_seller
-from pricing import fallback_decision, load_policy, opening_ask, record_trade
-from protocol import RESERVES
+from ledger import LedgerError, TradeLedger
 
-SELLER_NAME = "Atlas Shop"
-TERMINAL_STATES = {"completed", "rejected", "canceled"}
+
+SELLER_NAME = "Atlas Shop B-safe-1"
+PENDING_RESERVATION_SECONDS = 15 * 60
+# A quote the buyer walked away from must not hold its unit in memory for ever.
+# Orders expire 10 minutes after they open, so no live negotiation is older.
+OPEN_QUOTE_SECONDS = 10 * 60
+GRADE_TARGET_SHARE = {"A": 0.78, "B": 0.72, "C": 0.65}
+# Existing slow-moving units have SKU-specific opening asks based on current
+# Round 3 settlements. The dynamic 5%-over-cost floor below remains unchanged.
+SKU_TARGET_SHARE = {
+    "Ge62449c9": 0.46,
+    "G53e73f8c": 0.70,
+}
+# User-approved 2-hour price experiment (2026-11-13 23:41 KST): decaf latte
+# grade A only opens at the latest grade-A market median (16,697, 9 settles in
+# the last hour). The 5%-over-cost floor still wins when it is higher, and the
+# override expires by itself at `until`, after which the default ask returns.
+PRICE_EXPERIMENT = {
+    ("G772009ce", "A"): {"ask": 16697, "until": 1794588276},
+}
 
 
 def canon(value: dict) -> bytes:
@@ -34,194 +52,323 @@ def canon(value: dict) -> bytes:
 def sign_receipt(receipt: dict, key_path: str | Path = "shop_key.pem") -> dict:
     key = serialization.load_pem_private_key(Path(key_path).read_bytes(), password=None)
     body = {name: receipt[name] for name in ("shop", "item", "price", "task")}
-    signed = dict(receipt)
-    signed["sig_seller"] = base64.b64encode(key.sign(canon(body))).decode()
-    return signed
+    return {**receipt, "sig_seller": base64.b64encode(key.sign(canon(body))).decode()}
 
 
-@dataclass
-class Negotiation:
-    item: str
-    reserve: int
-    ask: int | None = None
-    last_offer: int | None = None
-    history: list[NegotiationTurn] = field(default_factory=list)
-    rounds: int = 0
-    state: str = "new"
+def load_inventory(market_dir: Path) -> dict:
+    try:
+        value = json.loads((market_dir / "inventory.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def find_unit(
+    text: str,
+    inventory: dict,
+    taken: set[str] | None = None,
+    now: float | None = None,
+) -> dict | None:
+    """Pick an unexpired real unit, preferring an explicitly named SKU."""
+    if inventory.get("round", 0) < 3:
+        return None
+    want = text.casefold()
+    taken = taken or set()
+    current = time.time() if now is None else now
+    fit = [
+        unit
+        for unit in inventory.get("units", [])
+        if isinstance(unit, dict)
+        and isinstance(unit.get("unit"), str)
+        and unit["unit"] not in taken
+        and unit.get("grade") != "expired"
+        and isinstance(unit.get("cost"), (int, float))
+        and isinstance(unit.get("list_price"), (int, float))
+        and (not unit.get("expires_at") or unit["expires_at"] > current)
+        and (
+            (unit.get("category") or "").split(">")[-1].casefold() in want
+            or (unit.get("name") or "").casefold() in want
+            or str(unit.get("sku", "")).casefold() in want
+        )
+    ]
+    named = [unit for unit in fit if str(unit.get("sku", "")).casefold() in want]
+    return min(
+        named or fit,
+        key=lambda unit: (unit.get("expires_at") or math.inf, unit.get("supplied_at", 0)),
+        default=None,
+    )
+
+
+def terms(unit: dict, now: float | None = None, storage_per_day: float = 0.0) -> tuple[int, int]:
+    """B-safe-1 target with a floor that also recovers accrued storage."""
+    carrying_cost = 0
+    supplied_at = unit.get("supplied_at")
+    if (
+        unit.get("kind") != "food"
+        and isinstance(supplied_at, (int, float))
+        and storage_per_day > 0
+    ):
+        current = time.time() if now is None else now
+        age_days = max(0.0, current - supplied_at) / 86_400
+        carrying_cost = math.ceil(unit["cost"] * storage_per_day * age_days)
+    floor = math.ceil((unit["cost"] + carrying_cost) * 1.05)
+    target_share = SKU_TARGET_SHARE.get(
+        unit.get("sku"), GRADE_TARGET_SHARE.get(unit.get("grade"), 0.82)
+    )
+    ask = max(round(unit["list_price"] * target_share), floor)
+    experiment = PRICE_EXPERIMENT.get((unit.get("sku"), unit.get("grade")))
+    if experiment and (time.time() if now is None else now) < experiment["until"]:
+        ask = max(experiment["ask"], floor)
+    market_ask = market_price_ask(unit, time.time() if now is None else now)
+    if market_ask is not None:
+        ask = max(market_ask, floor)
+    return ask, floor
+
+
+# 2026-11-16 승인: A·B등급 시장 중앙가 호가 실험. 실험 제어 스크립트가 쓰는 파일이 있고,
+# 유효 기간(until) 안이며, 30분 안에 갱신된 경우에만 적용한다. C등급은 적용하지 않는다.
+# 파일이 없거나 형식이 틀리면 기존 호가를 그대로 쓴다. 원가 105% 하한은 호출부에서 항상 우선한다.
+PRICE_FILE_NAME = "price-experiment.json"
+
+
+def market_price_ask(unit: dict, now: float) -> int | None:
+    import os
+    if unit.get("grade") not in ("A", "B"):
+        return None
+    try:
+        path = Path(os.environ.get("MARKET_DIR", ".market")) / PRICE_FILE_NAME
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not (now < float(data["until"]) and now - float(data["written"]) <= 1800):
+            return None
+        value = data["asks"][unit["sku"]][unit["grade"]]
+        return int(value) if isinstance(value, (int, float)) and value > 0 else None
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+class SafeSeller(AgentExecutor):
+    def __init__(self, market_dir: Path, key_path: Path, ledger_path: Path) -> None:
+        self.market_dir = market_dir
+        self.key_path = key_path
+        self.open: dict[str, dict] = {}
+        self.ledger = TradeLedger(ledger_path)
+        # Receipts this seller signed, by A2A task id. The kit-free ACP checkout
+        # (acp_shop.py) takes unit/claim from here, never from the buyer's copy.
+        self.issued: "collections.OrderedDict[str, dict]" = collections.OrderedDict()
+
+    def _event(self, **fields) -> None:
+        """Measurement only: one JSON line per quote, counter, accept or reject."""
+        with contextlib.suppress(OSError, TypeError, ValueError):
+            with (self.market_dir / "seller-events.jsonl").open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps({"ts": time.time(), **fields}, ensure_ascii=False) + "\n")
+
+    def _failure(self, task_id: str, reason: str, unit_id: str | None = None) -> None:
+        # A rejection never carries the real unit id in unit_id: that column is the
+        # reservation key, and a rejected row must not lock the unit (see ledger.py).
+        with contextlib.suppress(LedgerError):
+            self.ledger.append(
+                {
+                    "transaction_id": task_id,
+                    "order_id": task_id,
+                    "unit_id": f"none:{task_id}",
+                    **({"unit": unit_id} if unit_id else {}),
+                    "status": "rejected",
+                    "rejection_reason": reason,
+                }
+            )
+        self._event(task=task_id, event="reject", reason=reason, unit=unit_id)
+
+    async def execute(self, context, event_queue) -> None:
+        task = context.current_task
+        if task is None:
+            task = new_task_from_user_message(context.message)
+            await event_queue.enqueue_event(task)
+        updater = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
+        say = lambda text: updater.new_agent_message(parts=[new_text_part(text)])
+        text = get_message_text(context.message) or ""
+        deal = self.open.get(task.id)
+
+        if deal is None:
+            inventory = load_inventory(self.market_dir)
+            now = time.time()
+            for stale in [k for k, row in self.open.items()
+                          if now - row.get("opened_at", now) >= OPEN_QUOTE_SECONDS]:
+                self.open.pop(stale, None)
+            taken = {row["unit"]["unit"] for row in self.open.values()}
+            taken.update(
+                row["unit_id"]
+                for row in self.ledger.rows
+                if row.get("status") == "a2a_agreed_pending_market_settlement"
+                and isinstance(row.get("unit_id"), str)
+                and (
+                    not isinstance(row.get("recorded_at"), (int, float))
+                    or now - row["recorded_at"] < PENDING_RESERVATION_SECONDS
+                )
+            )
+            unit = find_unit(text, inventory, taken, now)
+            if unit is None:
+                self._failure(task.id, "no_verified_inventory")
+                await updater.reject(say("No verified, unexpired inventory is available."))
+                return
+            ask, floor = terms(unit, now, float(inventory.get("storage_per_day", 0) or 0))
+            self.open[task.id] = {"unit": unit, "ask": ask, "floor": floor, "rounds": 0, "opened_at": now}
+            self._event(task=task.id, event="quote", unit=unit["unit"], sku=unit["sku"],
+                        grade=unit.get("grade"), cost=unit["cost"], ask=ask, floor=floor)
+            await updater.requires_input(say(f"{unit['sku']} asking price: {ask}"))
+            return
+
+        numbers = re.findall(r"\d+", text)
+        if not numbers:
+            self._failure(task.id, "invalid_offer", deal["unit"]["unit"])
+            self.open.pop(task.id, None)
+            await updater.reject(say("Offer has no valid price."))
+            return
+
+        offer = int(numbers[-1])
+        deal["rounds"] += 1
+        self._event(task=task.id, event="offer", unit=deal["unit"]["unit"], offer=offer,
+                    ask=deal["ask"], floor=deal["floor"], round=deal["rounds"])
+        if deal["floor"] <= offer <= deal["ask"]:
+            unit = deal["unit"]
+            # Re-check the official inventory at agreement time: a unit sold,
+            # expired or seized since the quote is never signed for again.
+            live = {
+                row.get("unit"): row
+                for row in load_inventory(self.market_dir).get("units", [])
+                if isinstance(row, dict)
+            }.get(unit["unit"])
+            if (
+                live is None
+                or live.get("grade") == "expired"
+                or (live.get("expires_at") and live["expires_at"] <= time.time())
+            ):
+                self._failure(task.id, "unit_not_in_inventory", unit["unit"])
+                self.open.pop(task.id, None)
+                await updater.reject(say("That unit is no longer in stock."))
+                return
+            try:
+                self.ledger.append(
+                    {
+                        "transaction_id": task.id,
+                        "order_id": task.id,
+                        "unit_id": unit["unit"],
+                        "status": "a2a_agreed_pending_market_settlement",
+                        "recorded_at": time.time(),
+                        "rejection_reason": "",
+                    },
+                    unit_window=PENDING_RESERVATION_SECONDS,
+                )
+            except LedgerError:
+                self._event(task=task.id, event="reject", reason="ledger_duplicate", unit=unit["unit"])
+                self.open.pop(task.id, None)
+                await updater.reject(say("Duplicate or unrecordable trade."))
+                return
+            receipt = sign_receipt(
+                {
+                    "shop": SELLER_NAME,
+                    "item": unit["sku"],
+                    "price": offer,
+                    "task": task.id,
+                    "unit": unit["unit"],
+                    **({"claim": unit["grade"]} if unit.get("grade") in GRADE_TARGET_SHARE else {}),
+                },
+                self.key_path,
+            )
+            self.issued[task.id] = receipt
+            while len(self.issued) > 2000:
+                self.issued.popitem(last=False)
+            self._event(task=task.id, event="accept", unit=unit["unit"], sku=unit["sku"], price=offer)
+            await updater.add_artifact(parts=[new_data_part(receipt)], name="receipt")
+            self.open.pop(task.id, None)
+            await updater.complete(say(f"Deal accepted at {offer}"))
+            return
+
+        if deal["rounds"] >= 3:
+            self._failure(task.id, "no_price_agreement", deal["unit"]["unit"])
+            self.open.pop(task.id, None)
+            await updater.reject(say("No price agreement."))
+            return
+        deal["ask"] = max(deal["floor"], round(deal["ask"] * 0.88))
+        await updater.requires_input(say(f"Counteroffer: {deal['ask']}"))
+
+    async def cancel(self, context, event_queue) -> None:
+        task = context.current_task
+        if task:
+            self.open.pop(task.id, None)
+            await TaskUpdater(
+                event_queue=event_queue,
+                task_id=task.id,
+                context_id=task.context_id,
+            ).cancel()
+
+
+def build_app(
+    port: int,
+    market_dir: Path = Path(".market"),
+    key_path: Path = Path("shop_key.pem"),
+    ledger_path: Path = Path(".market/seller-ledger.json"),
+    public_url: str | None = None,
+    extra_routes: list | None = None,
+    executor: "SafeSeller | None" = None,
+) -> Starlette:
+    """The A2A seller app. The kit path uses the defaults; acp_shop.py passes its
+    public URL, its own ACP routes and a shared executor (no kit involved)."""
+    url = f"{public_url.rstrip('/')}/" if public_url else f"http://127.0.0.1:{port}/"
+    card = AgentCard(
+        name=SELLER_NAME,
+        description=(
+            "Inventory-backed B-safe-1 shop. It sells only a real unexpired unit, "
+            "keeps a 5% cost floor, and returns Ed25519-signed receipts."
+        ),
+        version="3.0.0",
+        default_input_modes=["text/plain"],
+        default_output_modes=["application/json", "text/plain"],
+        capabilities=AgentCapabilities(streaming=False),
+        supported_interfaces=[
+            AgentInterface(protocol_binding="JSONRPC", url=url, protocol_version="1.0")
+        ],
+        skills=[
+            AgentSkill(
+                id="negotiate",
+                name="Negotiate an in-stock purchase",
+                description="Ask by SKU or product name, then send a whole-number offer.",
+                tags=["shopping", "inventory", "signed-receipt"],
+                examples=["I want to buy <product> (<sku>)"],
+            )
+        ],
+    )
+    handler = DefaultRequestHandler(
+        agent_executor=executor or SafeSeller(market_dir, key_path, ledger_path),
+        task_store=InMemoryTaskStore(),
+        agent_card=card,
+    )
+    return Starlette(
+        routes=list(extra_routes or [])
+        + create_agent_card_routes(card)
+        + create_jsonrpc_routes(handler, "/")
+    )
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run the Week 06 A2A seller")
-    parser.add_argument("--port", required=True, type=int)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, required=True)
+    parser.add_argument("--market-dir", type=Path, default=Path(".market"))
+    parser.add_argument("--key", type=Path, default=Path("shop_key.pem"))
+    parser.add_argument("--ledger", type=Path, default=Path(".market/seller-ledger.json"))
     args = parser.parse_args(argv)
     if not 1 <= args.port <= 65535:
         parser.error("--port must be between 1 and 65535")
     return args
 
 
-def build_card(port: int) -> AgentCard:
-    url = f"http://127.0.0.1:{port}/"
-    return AgentCard(
-        name=SELLER_NAME,
-        description="Sells lamps, chairs, and bookshelves and negotiates each price.",
-        version="1.0.0",
-        default_input_modes=["text/plain"],
-        default_output_modes=["application/json", "text/plain"],
-        capabilities=AgentCapabilities(streaming=False),
-        supported_interfaces=[AgentInterface(protocol_binding="JSONRPC", url=url, protocol_version="1.0")],
-        skills=[AgentSkill(id="negotiate", name="Negotiate a purchase",
-                           description="Name an item, then negotiate until a deal or rejection.",
-                           tags=["shopping", "negotiation"],
-                           examples=["I want to buy a lamp", "I offer 110"])],
-    )
-
-
-class Seller(AgentExecutor):
-    """A2A transport and state layer; Codex makes every pricing decision."""
-
-    def __init__(self) -> None:
-        self.negotiations: dict[str, Negotiation] = {}
-        self.policy = load_policy()
-        self.rule_tasks: set[str] = set()                # negotiations where the fallback rule decided
-
-    def _record(self, task_id: str, deal: Negotiation, price: int | None = None) -> None:
-        record_trade({"task": task_id, "item": deal.item, "reserve": deal.reserve,
-                      "opening_ask": deal.history[1].price if len(deal.history) > 1 else None,
-                      "last_offer": deal.last_offer, "price": price, "outcome": deal.state,
-                      "rounds": deal.rounds, "policy": (self.policy or {}).get("version"),
-                      "decided_by": "rule" if task_id in self.rule_tasks else "model"})
-
-    @staticmethod
-    def _item(text: str) -> str | None:
-        lowered = text.lower()
-        return next((item for item in RESERVES if item in lowered), None)
-
-    @staticmethod
-    def _offer(text: str) -> int | None:
-        numbers = re.findall(r"\d+", text)
-        return int(numbers[-1]) if numbers else None
-
-    @staticmethod
-    def _context(deal: Negotiation) -> SellerDecisionContext:
-        return SellerDecisionContext(item=deal.item, reserve=deal.reserve, state=deal.state,
-                                     last_buyer_offer=deal.last_offer, history=tuple(deal.history))
-
-    async def _safe_reject(self, updater: TaskUpdater, deal: Negotiation | None, message: str) -> None:
-        if deal is not None:
-            deal.state = "rejected"
-            deal.history.append(NegotiationTurn("seller", message))
-        await updater.reject(updater.new_agent_message(parts=[new_text_part(message)]))
-
-    async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
-        task = context.current_task
-        if task is None:
-            task = new_task_from_user_message(context.message)
-            await event_queue.enqueue_event(task)
-        updater = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
-        text = get_message_text(context.message) or ""
-        deal = self.negotiations.get(task.id)
-
-        if deal is not None and deal.state in TERMINAL_STATES:
-            raise RuntimeError("The negotiation is already terminal")
-
-        if deal is None:
-            item = self._item(text)
-            if item is None:
-                await self._safe_reject(updater, None, "Requested item is not sold here.")
-                return
-            deal = Negotiation(item=item, reserve=RESERVES[item], state="opening")
-            deal.history.append(NegotiationTurn("buyer", text))
-            self.negotiations[task.id] = deal
-            policy_ask = opening_ask(item, self.policy)
-            try:
-                decision = ({"action": "ask", "price": policy_ask} if policy_ask is not None
-                            else decide_seller(self._context(deal)))
-            except HarnessError:
-                await self._safe_reject(updater, deal, "Negotiation decision failed safely.")
-                return
-            if decision["action"] not in {"ask", "counter"}:
-                await self._safe_reject(updater, deal, "Opening decision was invalid.")
-                return
-            ask = decision["price"]
-            if ask < deal.reserve:
-                await self._safe_reject(updater, deal, "Opening price violated the reserve.")
-                return
-            deal.ask = ask
-            deal.state = "input_required"
-            message = f"{deal.item} asking price: {ask}"
-            deal.history.append(NegotiationTurn("seller", message, ask))
-            await updater.requires_input(updater.new_agent_message(parts=[new_text_part(message)]))
-            return
-
-        offer = self._offer(text)
-        if offer is None:
-            await self._safe_reject(updater, deal, "Buyer offer did not contain a price.")
-            return
-        deal.last_offer = offer
-        deal.rounds += 1
-        deal.state = "negotiating"
-        deal.history.append(NegotiationTurn("buyer", text, offer))
-        try:
-            decision = decide_seller(self._context(deal))
-        except HarnessError:
-            decision = fallback_decision(deal.item, deal.ask or offer, offer, deal.rounds)
-            self.rule_tasks.add(task.id)
-
-        action, price = decision["action"], decision["price"]
-        if action in {"ask", "counter"}:
-            if price < deal.reserve:
-                await self._safe_reject(updater, deal, "Counteroffer violated the reserve.")
-                return
-            deal.ask = price
-            deal.state = "input_required"
-            message = f"Counteroffer: {price}"
-            deal.history.append(NegotiationTurn("seller", message, price))
-            await updater.requires_input(updater.new_agent_message(parts=[new_text_part(message)]))
-            return
-        if action == "accept":
-            if price != offer or price < deal.reserve:
-                await self._safe_reject(updater, deal, "Acceptance violated the price contract.")
-                return
-            receipt = sign_receipt({
-                "shop": SELLER_NAME,
-                "item": deal.item,
-                "price": int(price),
-                "task": task.id,
-            })
-            await updater.add_artifact(parts=[new_data_part(receipt)], name="receipt")
-            message = f"Deal accepted at {price}"
-            deal.history.append(NegotiationTurn("seller", message, price))
-            deal.state = "completed"
-            self._record(task.id, deal, int(price))
-            await updater.complete(updater.new_agent_message(parts=[new_text_part(message)]))
-            return
-        if action == "reject":
-            await self._safe_reject(updater, deal, "Offer rejected.")
-            self._record(task.id, deal)
-            return
-        await self._safe_reject(updater, deal, "Seller decision was invalid.")
-
-    async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
-        task = context.current_task
-        if task is None:
-            raise RuntimeError("Cannot cancel a missing task")
-        deal = self.negotiations.get(task.id)
-        if deal is not None:
-            if deal.state in TERMINAL_STATES:
-                raise RuntimeError("The negotiation is already terminal")
-            deal.state = "canceled"
-        await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
-
-
-def build_app(port: int, executor: Seller | None = None) -> Starlette:
-    card = build_card(port)
-    handler = DefaultRequestHandler(agent_executor=executor or Seller(), task_store=InMemoryTaskStore(), agent_card=card)
-    return Starlette(routes=create_agent_card_routes(card) + create_jsonrpc_routes(handler, "/"))
-
-
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
-    uvicorn.run(build_app(args.port), host="127.0.0.1", port=args.port, log_level="warning")
+    uvicorn.run(
+        build_app(args.port, args.market_dir, args.key, args.ledger),
+        host="127.0.0.1",
+        port=args.port,
+        log_level="warning",
+    )
 
 
 if __name__ == "__main__":

@@ -1,3 +1,27 @@
 *.pem
 __pycache__/
 .market/
+
+# 2026-11-23 제출 범위 정리: 로컬 원본은 그대로 두고 커밋에서만 제외
+# 루트의 재입고 승인 기록 133개 → 원본 내용 그대로 logs/operations/seller/restock-approvals-archive.jsonl 에 묶음
+restock-approval.*.json
+# 7주차 폴더를 복사해 오며 함께 온 7주차 시험 로그(week-07 PR에 이미 제출됨)
+/test-report.json
+/backups/REPORT.week07-copy.md
+/logs/attempts/
+/logs/baseline-week06/
+/logs/challenge-1/
+/logs/challenge-2/
+/logs/buyer-under-test-*.log
+/logs/seller-under-test.log
+/logs/market-test.log
+/logs/trade-test.log
+/logs/environment-check.log
+/logs/environment-smoke.log
+/logs/lab1-unit-tests.log
+/logs/lab2-unit-tests.log
+/logs/final-verification.md
+/logs/operations/leaderboard.jsonl
+/logs/operations/rounds-own-rows.jsonl
+# 11-16 19:18 중간 스냅샷(최종본 operations/seller/ops15_state.json 과 중복)
+/logs/operations/seller/ops15_state.snapshot.json
