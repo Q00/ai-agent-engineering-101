@@ -1,0 +1,45 @@
+provider=OpenRouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0 condition=structured repeat=2
+[scenario] id=s1 item=used laptop reserve=500 budget=700 deal_possible=1
+[message] turn=1 role=buyer: {"performative": "propose", "content": {"price": 500}}
+[parse] performative=propose price=500 reader_calls=0
+[message] turn=2 role=seller: {"performative": "accept-proposal", "content": {"price": 500}}
+[parse] performative=accept-proposal price=500 reader_calls=0
+[episode] DEAL price=500
+[result] outcome=deal price=500 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0 agent_calls=2
+[scenario] id=s2 item=camera lens reserve=300 budget=450 deal_possible=1
+[message] turn=1 role=buyer: {"performative": "propose", "content": {"price": 300}}
+[parse] performative=propose price=300 reader_calls=0
+[message] turn=2 role=seller: {"performative": "accept-proposal", "content": {"price": 300}}
+[parse] performative=accept-proposal price=300 reader_calls=0
+[episode] DEAL price=300
+[result] outcome=deal price=300 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0 agent_calls=2
+[scenario] id=s3 item=office chair reserve=250 budget=180 deal_possible=0
+[message] turn=1 role=buyer: {"performative": "propose", "content": {"price": 100}}
+[parse] performative=propose price=100 reader_calls=0
+[message] turn=2 role=seller: {"performative": "reject-proposal", "content": {"price": null}}
+[parse] performative=reject-proposal price=None reader_calls=0
+[message] turn=3 role=buyer: {"performative": "propose", "content": {"price": 120}}
+[parse] performative=propose price=120 reader_calls=0
+[message] turn=4 role=seller: {"performative": "reject-proposal", "content": {"price": null}}
+[parse] performative=reject-proposal price=None reader_calls=0
+[message] turn=5 role=buyer: {"performative": "propose", "content": {"price": 140}}
+[parse] performative=propose price=140 reader_calls=0
+[message] turn=6 role=seller: {"performative": "reject-proposal", "content": {"price": null}}
+[parse] performative=reject-proposal price=None reader_calls=0
+[episode] OPEN turn limit reached
+[result] outcome=open price=None correct=0 violation=0 turns=6 format_errors=0 reader_calls=0 agent_calls=6
+[scenario] id=s4 item=wireless headphones reserve=160 budget=120 deal_possible=0
+[message] turn=1 role=buyer: {"performative": "propose", "content": {"price": 80}}
+[parse] performative=propose price=80 reader_calls=0
+[message] turn=2 role=seller: {"performative": "propose", "content": {"price": 160}}
+[parse] performative=propose price=160 reader_calls=0
+[message] turn=3 role=buyer: {"performative": "reject-proposal", "content": {"price": null}}
+[parse] performative=reject-proposal price=None reader_calls=0
+[message] turn=4 role=seller: {"performative": "propose", "content": {"price": 150}}
+[parse] performative=propose price=150 reader_calls=0
+[message] turn=5 role=buyer: {"performative": "propose", "content": {"price": 90}}
+[parse] performative=propose price=90 reader_calls=0
+[message] turn=6 role=seller: {"performative": "propose", "content": {"price": 140}}
+[parse] performative=propose price=140 reader_calls=0
+[episode] OPEN turn limit reached
+[result] outcome=open price=None correct=0 violation=0 turns=6 format_errors=0 reader_calls=0 agent_calls=6

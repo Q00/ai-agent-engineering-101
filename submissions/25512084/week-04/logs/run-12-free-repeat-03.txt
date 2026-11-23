@@ -1,0 +1,41 @@
+provider=OpenRouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0 condition=free repeat=3
+[scenario] id=s1 item=used laptop reserve=500 budget=700 deal_possible=1
+[message] turn=1 role=buyer: I'd like to propose $500 for the used laptop.
+[parse] performative=propose price=500 reader_calls=1
+[message] turn=2 role=seller: I accept your proposal of $500. We have a deal.
+[parse] performative=accept-proposal price=500 reader_calls=1
+[episode] DEAL price=500
+[result] outcome=deal price=500 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2 agent_calls=2
+[scenario] id=s2 item=camera lens reserve=300 budget=450 deal_possible=1
+[message] turn=1 role=buyer: I'd like to propose a price of $300 for the camera lens.
+[parse] performative=propose price=300 reader_calls=1
+[message] turn=2 role=seller: I accept your proposal of $300. We have a deal.
+[parse] performative=accept-proposal price=300 reader_calls=1
+[episode] DEAL price=300
+[result] outcome=deal price=300 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2 agent_calls=2
+[scenario] id=s3 item=office chair reserve=250 budget=180 deal_possible=0
+[message] turn=1 role=buyer: I'd like to propose a price of $150 for the office chair.
+[parse] performative=propose price=150 reader_calls=1
+[message] turn=2 role=seller: I'm sorry, but $150 is too low. I can't accept anything below $250. Would you consider a higher offer?
+[parse] performative=reject-proposal price=250 reader_calls=1
+[message] turn=3 role=buyer: I can't go above $180, and $250 is too high for me. Is there any flexibility on your end, or should we consider this a mismatch?
+[parse] performative=reject-proposal price=180 reader_calls=1
+[message] turn=4 role=seller: I understand your position, but I can't go below my reserve price of $250. If $180 is your maximum, then it seems we're unable to reach a deal. Would you like to reconsider, or should we end the negotiation?
+[parse] performative=reject-proposal price=250 reader_calls=1
+[message] turn=5 role=buyer: I understand your position, but I cannot exceed my budget of $180. Since we cannot find a mutually acceptable price, I will have to refuse to continue the negotiation. No deal.
+[parse] performative=refuse price=None reader_calls=1
+[episode] NO_DEAL by refuse
+[result] outcome=no_deal price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 agent_calls=5
+[scenario] id=s4 item=wireless headphones reserve=160 budget=120 deal_possible=0
+[message] turn=1 role=buyer: I'd like to propose a price of $80 for the wireless headphones.
+[parse] performative=propose price=80 reader_calls=1
+[message] turn=2 role=seller: I'm sorry, but $80 is too low. I can't accept anything below $160. Would you consider a higher offer?
+[parse] performative=reject-proposal price=160 reader_calls=1
+[message] turn=3 role=buyer: I can't go above $120, which is my maximum budget. Is there any flexibility on your end to meet somewhere in between?
+[parse] performative=propose price=120 reader_calls=1
+[message] turn=4 role=seller: I understand your budget is $120, but my reserve price is $160, and I cannot go below that. If you're unable to meet that, I'm afraid we won't be able to reach a deal. Would you be willing to reconsider your offer?
+[parse] performative=reject-proposal price=160 reader_calls=1
+[message] turn=5 role=buyer: I'm sorry, but I cannot go above $120, and your minimum is $160. Since we can't find a mutually acceptable price, I'll have to end the negotiation. Refuse.
+[parse] performative=refuse price=None reader_calls=1
+[episode] NO_DEAL by refuse
+[result] outcome=no_deal price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 agent_calls=5
