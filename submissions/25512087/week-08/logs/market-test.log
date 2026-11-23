@@ -1,0 +1,95 @@
+# week-07 market test, kit v1, 2026-11-08T22:09:08+00:00
+harness: rule-based code for shop (seller_r3.py, restock.py) and buyer (market_buyer.py, negotiation.py); no LLM in the trading loop
+
+## seller tests: python3 seller_r3.py --port 56508 --name ggari-shop
+  PASS  seller_card #1: name='ggari-shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_REJECTED | Sorry, we have none of that in stock right now.
+  FAIL  seller_opens #1: first message -> TASK_STATE_REJECTED, ask None
+  FAIL  seller_deal #1: TASK_STATE_REJECTED, receipt price None, asks None
+  FAIL  seller_signed_receipt #1: no completed task to check
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_REJECTED | Sorry, we have none of that in stock right now.
+  FAIL  seller_deal #2: TASK_STATE_REJECTED, receipt price None, asks None
+  FAIL  seller_signed_receipt #2: no completed task to check
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_REJECTED | Sorry, we have none of that in stock right now.
+  FAIL  seller_deal #3: TASK_STATE_REJECTED, receipt price None, asks None
+  FAIL  seller_signed_receipt #3: no completed task to check
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_REJECTED | Sorry, we have none of that in stock right now.
+  FAIL  seller_holds_reserve #1: TASK_STATE_REJECTED, asks None
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_REJECTED | Sorry, we have none of that in stock right now.
+  FAIL  seller_holds_reserve #2: TASK_STATE_REJECTED, asks None
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_REJECTED | Sorry, we have none of that in stock right now.
+  FAIL  seller_holds_reserve #3: TASK_STATE_REJECTED, asks None
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+
+### buyer_deal #1: python3 market_buyer.py --shops /Users/simgyuseong/AXtransformation/ai-agent-engineering-101/submissions/25512087/week-08/.market/test-shops-buyer_deal-1.json --item lamp --budget 120 --self-name ggari0703,ggari-shop
+    Kit Shop saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56517", "receipt": {"sig_seller": "PsKbPbPPoogifVWXtPGzUXx2/BfW5yMNPd5t6Ov/27TQFO8c9i82TeQq8XzKqTphmp0gJ1pMK+2Ul8dhp0O2Bg==", "item": "lamp", "task": "43c18e7f-73c4-4a0b-b733-1a0731ab29d8", "shop": "Kit Shop", "price": 100.0}, "stars": 5, "review": "Deal at 100 after 1 off
+  PASS  buyer_deal #1: offers [100], stars 5, receipt yes
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: python3 market_buyer.py --shops /Users/simgyuseong/AXtransformation/ai-agent-engineering-101/submissions/25512087/week-08/.market/test-shops-buyer_deal-2.json --item lamp --budget 120 --self-name ggari0703,ggari-shop
+    Kit Shop saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56521", "receipt": {"sig_seller": "WjmJGXR4UE4ax7/jRPqzVlk05YK48nR6UXtyOSqOagLkcAOmwRs8YSpLRRMvUMY7tReN/58dn5RT6jEofS9aBw==", "item": "lamp", "task": "25a6ce67-a2f1-4fc7-bf5c-ca4ea0ce4cc3", "shop": "Kit Shop", "price": 100.0}, "stars": 5, "review": "Deal at 100 after 1 off
+  PASS  buyer_deal #2: offers [100], stars 5, receipt yes
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: python3 market_buyer.py --shops /Users/simgyuseong/AXtransformation/ai-agent-engineering-101/submissions/25512087/week-08/.market/test-shops-buyer_deal-3.json --item lamp --budget 120 --self-name ggari0703,ggari-shop
+    Kit Shop saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56525", "receipt": {"sig_seller": "lfsQEizcGx4qNsV0Sgb02Cv6lKCgdmfeElf+/fC/sFC4EWnxPNbmDv2nxaJ+EvfSi+hRkDtmCCgKIfEoyhPeCw==", "item": "lamp", "task": "b49661a2-459e-48d6-bcc4-960b11dbf8c8", "shop": "Kit Shop", "price": 100.0}, "stars": 5, "review": "Deal at 100 after 1 off
+  PASS  buyer_deal #3: offers [100], stars 5, receipt yes
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: python3 market_buyer.py --shops /Users/simgyuseong/AXtransformation/ai-agent-engineering-101/submissions/25512087/week-08/.market/test-shops-buyer_holds_budget-1.json --item bookshelf --budget 230 --self-name ggari0703,ggari-shop
+    Kit Shop saw: offers [230], deals [], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56529", "receipt": null, "stars": 3, "review": "No deal: lowest ask 284 stayed above my budget 230."}
+  PASS  buyer_holds_budget #1: offers [230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #2: python3 market_buyer.py --shops /Users/simgyuseong/AXtransformation/ai-agent-engineering-101/submissions/25512087/week-08/.market/test-shops-buyer_holds_budget-2.json --item bookshelf --budget 230 --self-name ggari0703,ggari-shop
+    Kit Shop saw: offers [230], deals [], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56533", "receipt": null, "stars": 3, "review": "No deal: lowest ask 284 stayed above my budget 230."}
+  PASS  buyer_holds_budget #2: offers [230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #3: python3 market_buyer.py --shops /Users/simgyuseong/AXtransformation/ai-agent-engineering-101/submissions/25512087/week-08/.market/test-shops-buyer_holds_budget-3.json --item bookshelf --budget 230 --self-name ggari0703,ggari-shop
+    Kit Shop saw: offers [230], deals [], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56537", "receipt": null, "stars": 3, "review": "No deal: lowest ask 284 stayed above my budget 230."}
+  PASS  buyer_holds_budget #3: offers [230], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_reads_reviews #1: python3 market_buyer.py --shops /Users/simgyuseong/AXtransformation/ai-agent-engineering-101/submissions/25512087/week-08/.market/test-shops-buyer_reads_reviews-1.json --item lamp --budget 120 --self-name ggari0703,ggari-shop
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56542", "receipt": {"sig_seller": "aM7bPc8fkacKKP8NwkGk8dEkWsLVjWJ0ZNe9742W7Jw4BnNxUwqwkua58HRgaIEyUPg7qafzu2madLkyjNVSCw==", "item": "lamp", "task": "3a9c5702-df6c-4c1d-aad1-c85d13f5af76", "shop": "Kit Shop South", "price": 100.0}, "stars": 5, "review": "Deal at 100 after
+
+### buyer_reads_reviews #2: python3 market_buyer.py --shops /Users/simgyuseong/AXtransformation/ai-agent-engineering-101/submissions/25512087/week-08/.market/test-shops-buyer_reads_reviews-2.json --item lamp --budget 120 --self-name ggari0703,ggari-shop
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56549", "receipt": {"sig_seller": "sZFhHd5oX0vW0KZhibvUEcR+hUwCHxt2avNrYkCAuJO/VfBuyohEMSwqrdu5q+O9xyQ3dFtz/N+E2sLHKQZJDg==", "item": "lamp", "task": "5f5a5403-15f1-424b-a859-d93a433dd1df", "shop": "Kit Shop South", "price": 100.0}, "stars": 5, "review": "Deal at 100 after
+
+### buyer_reads_reviews #3: python3 market_buyer.py --shops /Users/simgyuseong/AXtransformation/ai-agent-engineering-101/submissions/25512087/week-08/.market/test-shops-buyer_reads_reviews-3.json --item lamp --budget 120 --self-name ggari0703,ggari-shop
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"shop": "http://127.0.0.1:56556", "receipt": {"sig_seller": "2I02cz3pvhYUZ1YWpF3qHoH/1cP+OW8VgirT3dMqYynfvgthUp4igsVczmfuJwZNgAANug2d1YFTVXUBp6lVCA==", "item": "lamp", "task": "2870b75f-c92b-40f8-bbc9-5a5b506db67d", "shop": "Kit Shop South", "price": 100.0}, "stars": 5, "review": "Deal at 100 after
+  PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
+
+14/24 passed -> FAIL
