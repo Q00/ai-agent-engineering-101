@@ -1,0 +1,11 @@
+Chair Market: 334 items, port 53479, chatty=False
+[seller ab403480] <- 'a shoe cabinet for at least 20 pairs of shoes'
+[seller d444aff9] <- 'an office chair with lumbar support'
+[seller d444aff9] call 2 (10.0s) -> '{"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["lumbar"], "keywords": ["office", "chair", "lumbar support", "ergonomic", "lumbar"]}'
+[seller d444aff9] query {"categories": ["office chair"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["lumbar"], "keywords": ["office", "chair", "lumbar support", "ergonomic", "lumbar"]} -> 8 candidates
+[seller ab403480] call 3 (10.2s) -> '{"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage"]}'
+[seller ab403480] query {"categories": ["shoe cabinet"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 20, "size": null, "features": [], "keywords": ["shoe storage"]} -> 8 candidates
+[seller ab403480] call 4 (7.2s) -> '{"sku": "SHO-10097", "price": 180, "say": "This grey particleboard cabinet holds 24 pairs of shoes, comfortably meeting your need for at least 20."}'
+[seller ab403480] -> item SHO-10097 (search+pick), reserve 134, open ask 180
+[seller d444aff9] call 4 (7.5s) -> '{"sku": "OFF-03033", "price": 205, "say": "Our Bauhaus office chair has lumbar support and adjustable height, and it\'s a great fit for your needs."}'
+[seller d444aff9] -> item OFF-03033 (search+pick), reserve 158, open ask 205
