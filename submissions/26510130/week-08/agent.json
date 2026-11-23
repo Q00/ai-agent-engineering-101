@@ -1,0 +1,8 @@
+{
+  "harness": "claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence (Claude Code CLI, claude-haiku-4-5)",
+  "seller": {"cmd": "python seller_r3.py --port {port}"},
+  "buyer": {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"},
+  "market_buyer": {"cmd": "python buyer_r3.py --shops {shops} --item {item} --budget {budget} --order {order}"},
+  "restock": {"cmd": "python restock.py --state {state}"},
+  "review": {"cmd": "python review_r3.py --deal {deal}"}
+}
