@@ -1,0 +1,9 @@
+buyer · harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence
+[lamp @ Kit Shop] card ok, budget 120
+  -> 'I want to buy a lamp'
+  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+    [harness] -> '```json\n{"action": "offer", "price": 110}\n```'
+  -> '110' (task fb89971b)
+  <- TASK_STATE_COMPLETED | Deal: lamp at 110.
+[lamp @ Kit Shop] bought at 110.0 after 1 offers
+[done] bought harness calls 1 fallbacks 0 (5s in harness)
