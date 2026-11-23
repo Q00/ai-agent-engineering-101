@@ -1,9 +1,23 @@
 {
- "written_at": 1793939947.553348,
+ "written_at": 1795402045.3753254,
  "policy": {
   "max_unit_list": 4000000,
   "buyer_hours_margin": 12,
-  "ask_premium": 0.03
+  "ask_premium": 0,
+  "cover_h": 0.3,
+  "buyer_shops_tried": 5,
+  "buyer_max": 0.74,
+  "window_spend_frac": 0.1,
+  "cash_reserve": 1500000,
+  "share_guess": 0.005,
+  "anchor_ratio": {
+   "A": 0.64,
+   "B": 0.64,
+   "C": 0.55
+  },
+  "min_margin": 0,
+  "floor_below_anchor": 0.01,
+  "min_sales": 8
  },
- "reason": "Market revenue is concentrated in goods listed at 0.9M to 4M, and our 700k cap excludes nearly all of it, so raising it lets restock cover those SKUs. Our ask of median + 0.06 sits near 0.77 of list, above buyer_max 0.76, which likely explains only 2 deals; lowering the premium brings asks within buyer reach. Buyer forum reports show food bought with too little shelf life left, so a larger hours margin should reduce the -1 food losses that drag down our saved score."
+ "reason": "The whole market settled zero deals in the last 2 hours, so the stall is not specific to this shop's pricing or restock settings. The 45 goods units and 24.6M stock cost are already limited by the current restock spend and cover window, and the buyer's refusals (grade C and 409 unit conflicts) are already handled by the current accept policy, so I'm leaving every key unchanged."
 }
