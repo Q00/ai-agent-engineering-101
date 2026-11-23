@@ -1,0 +1,17 @@
+[host] 3 tools: ['calculator', 'read_file', 'clock']
+  [tool] clock({}) -> 2026-10-05T13:09:33.270343+00:00 (unix=1791205773.271)
+  [tool] read_file({'path': 'notes.txt'}) -> Meeting memo, 2026-09-01
+
+Attendees: 4
+Pizza budget: 48000
+Drinks: 9500
+Reimbursed so far: 12000
+
+Sum the numbers above to get the total the agent should report.
+
+  [tool] calculator({'expression': '4 + 48000 + 9500 + 12000'}) -> 69504
+  [tool] clock({}) -> 2026-10-05T13:09:35.020588+00:00 (unix=1791205775.021)
+  [tool] calculator({'expression': '1791205775.021 - 1791205773.271'}) -> 1.75
+**Total: 69504**
+
+**Elapsed time between the two clock calls: 1.75 seconds** (from 13:09:33.270 UTC to 13:09:35.021 UTC)

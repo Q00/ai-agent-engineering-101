@@ -1,0 +1,26 @@
+### 1. full request: tools/list
+HTTP/1.1 200 OK
+date: Tue, 29 Sep 2026 11:44:43 GMT
+server: uvicorn
+content-length: 1008
+content-type: application/json
+
+{"jsonrpc":"2.0","id":2,"result":{"cacheScope":"private","resultType":"complete","tools":[{"description":"Evaluate an arithmetic expression such as '3 * (4 + 5)'. Numbers and + - * / ** only.","inputSchema":{"type":"object","properties":{"expression":{"title":"Expression","type":"string"}},"required":["expression"],"title":"calculatorArguments"},"name":"calculator","outputSchema":{"properties":{"result":{"title":"Result","type":"string"}},"required":["result"],"title":"calculatorOutput","type":"object"}},{"description":"Read a text file inside the server's working directory. Returns at most 4000 characters.","inputSchema":{"type":"object","properties":{"path":{"title":"Path","type":"string"}},"required":["path"],"title":"read_fileArguments"},"name":"read_file","outputSchema":{"properties":{"result":{"title":"Result","type":"string"}},"required":["result"],"title":"read_fileOutput","type":"object"}}],"ttlMs":0,"_meta":{"io.modelcontextprotocol/serverInfo":{"name":"week01-tools","version":""}}}}
+
+### 2. without Mcp-Method header
+HTTP/1.1 400 Bad Request
+date: Tue, 29 Sep 2026 11:44:43 GMT
+server: uvicorn
+content-length: 119
+content-type: application/json
+
+{"jsonrpc":"2.0","id":2,"error":{"code":-32020,"message":"mcp-method header does not match the request body's method"}}
+
+### 3. without _meta clientCapabilities
+HTTP/1.1 400 Bad Request
+date: Tue, 29 Sep 2026 11:44:43 GMT
+server: uvicorn
+content-length: 157
+content-type: application/json
+
+{"jsonrpc":"2.0","id":2,"error":{"code":-32602,"message":"params._meta is missing the required envelope key(s): io.modelcontextprotocol/clientCapabilities"}}
