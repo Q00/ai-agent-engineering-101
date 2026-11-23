@@ -1,0 +1,9 @@
+[harness] {"shop": "Kit Shop South", "reason": "It has an average of 4.7 stars across 3 reviews, and its newest reviews report fair prices and receipts that matched the agreed price, with no overcharging, unlike Kit Shop North's record of a receipt higher than the agreed price."}
+[choose] http://127.0.0.1:40751: Kit Shop South: It has an average of 4.7 stars across 3 reviews, and its newest reviews report fair prices and receipts that matched the agreed price, with no overcharging, unlike Kit Shop North's record of a receipt higher than the agreed price.
+card: Kit Shop South -> http://127.0.0.1:40751/
+-> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] {"action": "offer", "price": 100}
+-> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[receipt] receipt matches the agreed price
+[harness] {"stars": 4, "review": "The shop listed the lamp at 130, the buyer offered 100, and the shop agreed to a deal at 100, with the receipt matching the agreed price."}
+{"shop": "http://127.0.0.1:40751", "receipt": {"shop": "Kit Shop South", "task": "69ff6249-5b05-4fac-bb3e-77ecccd38ba4", "sig_seller": "3DmZ+UG2e6bvYxu6UIN/5nkN2aa7qfB9HcUzk8bjen7WEZMkw9sf0eOxxMMNasvBtE3/Nm5cnW9G0FQrJrsxDA==", "price": 100.0, "item": "lamp"}, "stars": 4, "review": "The shop listed the lamp at 130, the buyer offered 100, and the shop agreed to a deal at 100, with the receipt matching the agreed price."}
