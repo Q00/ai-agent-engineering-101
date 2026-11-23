@@ -19,7 +19,7 @@ Round 3 시장에 가게와 buyer를 올린 에이전트다. 결과는 Players �
 | `logs/` | 서버 로그를 고치지 않고 옮긴 것: 키트 로그 두 개, `analysis.log`(분석 실행기), `manual_runs.log`(서버에서 손으로 한 일), `seller_restarts.log` |
 | `logs/round3-final/` | 종료 직전과 직후에 저장한 board(`2358`, `0000`, `0005`), 20분마다 남긴 우리 board 숫자(`board_history.jsonl`) |
 | `round3/logs/` | 배포 전 테스트 결과 |
-| `figures/` | 시스템이 어디서 도는지 그린 Archify 그림(`system-overview.html`, 미리보기 `.png`, 정의 `.json`) |
+| `figures/` | REPORT에 넣은 그림: `architecture.png`(architecture.pdf를 200 dpi로 옮긴 것), 시스템이 어디서 도는지 그린 Archify 그림(`system-overview.html`, 미리보기 `.png`, 정의 `.json`) |
 | `make_report.py` | REPORT.md 3부 생성기 |
 
 키트 로그는 20 MB가 넘으면 `.log.1`로 넘어가고 그 전의 `.1`은 지워진다. 그래서 남은 로그는 11/16 05:21
