@@ -1,0 +1,61 @@
+# challenge 1: 2800 items (935 KB of JSON) behind Harness Furniture Shop
+
+## request 1: 'something wooden to keep about 40 books, not taller than my desk'
+  <- TASK_STATE_INPUT_REQUIRED | I have a beautiful walnut bookshelf that holds exactly the capacity you need and sits at desk height. Item: Nordal Walnut Bookshelf BX-043. Send your offer as a number. Asking price: 395
+  -> 198 | <- TASK_STATE_INPUT_REQUIRED ask=360 | I can come down from my opening price, but let's meet somewhere closer to the middle. 198 is too low. Counteroffer: 360
+  -> 257 | <- TASK_STATE_INPUT_REQUIRED ask=330 | I appreciate you meeting me halfway, let's continue closing the gap. 257 is too low. Counteroffer: 330
+  -> 330 | <- TASK_STATE_COMPLETED ask=330 | Deal: Nordal Walnut Bookshelf BX-043 at 330.
+  picked BX-043 (Industrial bookshelf in navy. 2 shelves, holds about 40 books, 74 cm tall, 60 cm wide. Solid walnut wood, wooden.) attrs={"material": "walnut", "wooden": true, "color": "navy", "shelves": 2, "width_cm": 60, "height_cm": 74, "books": 40}
+  CHECK item fits request: OK | reserve 316, asks [395, 360, 330], deal 330.0 -> OK
+
+## request 2: 'a bright light for reading at my desk, at least 600 lumen'
+  <- TASK_STATE_INPUT_REQUIRED | This modern aluminum lamp delivers exactly the brightness you need for comfortable reading and desk work. Item: Hagen Aluminum Desk Lamp DL-096. Send your offer as a number. Asking price: 65
+  -> 32 | <- TASK_STATE_INPUT_REQUIRED ask=58 | I can come down a bit, but that's a strong starting position from you. 32 is too low. Counteroffer: 58
+  -> 58 | <- TASK_STATE_COMPLETED ask=58 | Deal: Hagen Aluminum Desk Lamp DL-096 at 58.
+  picked DL-096 (Modern desk lamp in natural. LED desk lamp, 600 lumen, 45 cm tall, adjustable arm. Aluminum frame, metal.) attrs={"material": "aluminum", "wooden": false, "color": "natural", "height_cm": 45, "lumens": 600}
+  CHECK item fits request: OK | reserve 46, asks [65, 58], deal 58.0 -> OK
+
+## request 3: 'a wooden table where four of us can have dinner'
+  <- TASK_STATE_INPUT_REQUIRED | Perfect for four, this solid pine table in honey tone is elegant and durable. Item: Tavik Pine Dining Table DT-034. Send your offer as a number. Asking price: 525
+  -> 262 | <- TASK_STATE_INPUT_REQUIRED ask=475 | I can come down a bit, but let's find middle ground here. 262 is too low. Counteroffer: 475
+  -> 341 | <- TASK_STATE_INPUT_REQUIRED ask=435 | I appreciate you coming up, let's meet closer to the middle. 341 is too low. Counteroffer: 435
+  -> 435 | <- TASK_STATE_COMPLETED ask=435 | Deal: Tavik Pine Dining Table DT-034 at 435.
+  picked DT-034 (Minimalist dining table in honey. Dining table for 4 people, 150 cm long. Solid pine wood, wooden.) attrs={"material": "pine", "wooden": true, "color": "honey", "seats": 4, "width_cm": 150, "height_cm": 73}
+  CHECK item fits request: OK | reserve 405, asks [525, 475, 435], deal 435.0 -> OK
+
+## request 4: 'a big wool rug for the living room, roughly two by three meters'
+  <- TASK_STATE_INPUT_REQUIRED | We have a beautiful industrial wool rug in that exact size! Item: Solen Wool Rug RX-021. Send your offer as a number. Asking price: 268
+  -> 134 | <- TASK_STATE_INPUT_REQUIRED ask=245 | I can come down a bit, but this is a quality wool rug that's worth more. 134 is too low. Counteroffer: 245
+  -> 174 | <- TASK_STATE_INPUT_REQUIRED ask=225 | I appreciate your strong interest-let's meet closer to the middle. 174 is too low. Counteroffer: 225
+  -> 225 | <- TASK_STATE_COMPLETED ask=225 | Deal: Solen Wool Rug RX-021 at 225.
+  picked RX-021 (Industrial rug in navy. Rug 200 x 300 cm. Wool.) attrs={"material": "wool", "wooden": false, "color": "navy", "width_cm": 200, "length_cm": 300}
+  CHECK item fits request: OK | reserve 214, asks [268, 245, 225], deal 225.0 -> OK
+
+## request 5: 'a chair for long work days at the computer; I weigh 130 kg'
+  <- TASK_STATE_INPUT_REQUIRED | This mid-century cotton office chair with lumbar support is designed exactly for the extended comfort you need during long computer work sessions. Item: Tavik Cotton Office Chair OC-053. Send your offer as a number. Asking price: 189
+  -> 94 | <- TASK_STATE_INPUT_REQUIRED ask=165 | That's quite a bit lower than we can do, but let's work toward something fair for both of us. 94 is too low. Counteroffer: 165
+  -> 165 | <- TASK_STATE_COMPLETED ask=165 | Deal: Tavik Cotton Office Chair OC-053 at 165.
+  picked OC-053 (Mid-century office chair in beige. Swivel office chair with lumbar support, seat height 51 cm, for users up to 130 kg. Cotton.) attrs={"material": "cotton", "wooden": false, "color": "beige", "seat_height_cm": 51, "height_cm": 114, "max_user_kg": 150}
+  CHECK item fits request: OK | reserve 136, asks [189, 165], deal 165.0 -> OK
+
+## request 6: 'something to put my 65 inch TV on'
+  <- TASK_STATE_INPUT_REQUIRED | We have some beautiful modern TV stands that would be perfect for your television. Item: Mirel Glass Tv Stand TS-044. Send your offer as a number. Asking price: 279
+  -> 140 | <- TASK_STATE_INPUT_REQUIRED ask=250 | I can come down a bit, but let's meet somewhere in the middle. 140 is too low. Counteroffer: 250
+  -> 250 | <- TASK_STATE_COMPLETED ask=250 | Deal: Mirel Glass Tv Stand TS-044 at 250.
+  picked TS-044 (Modern tv stand in white. TV stand for screens up to 65 inch, 150 cm wide. Glass.) attrs={"material": "glass", "wooden": false, "color": "white", "max_tv_inch": 65, "width_cm": 150, "height_cm": 49}
+  CHECK item fits request: OK | reserve 215, asks [279, 250], deal 250.0 -> OK
+
+## request 7: 'a lockable cabinet for A4 paper folders, three drawers'
+  <- TASK_STATE_INPUT_REQUIRED | I have a great steel filing cabinet in beige that meets all your requirements. Item: Hagen Steel Filing Cabinet FC-002. Send your offer as a number. Asking price: 225
+  -> 112 | <- TASK_STATE_REJECTED ask=112 | That's far below what we can accept for this item. No deal at 112.
+  picked FC-002 (Minimalist filing cabinet in beige. Lockable filing cabinet, 3 drawers for A4 folders. Steel frame, metal.) attrs={"material": "steel", "wooden": false, "color": "beige", "drawers": 3, "height_cm": 100}
+  CHECK item fits request: OK | reserve 178, asks [225], deal None -> OK
+
+## request 8: 'a full length mirror, metal frame'
+  <- TASK_STATE_INPUT_REQUIRED | I have a beautiful full-length steel mirror that matches exactly what you're looking for. Item: Solen Steel Mirror MX-001. Send your offer as a number. Asking price: 139
+  -> 70 | <- TASK_STATE_INPUT_REQUIRED ask=125 | That's well below what this premium piece is worth. 70 is too low. Counteroffer: 125
+  -> 125 | <- TASK_STATE_COMPLETED ask=125 | Deal: Solen Steel Mirror MX-001 at 125.
+  picked MX-001 (Industrial mirror in green. Full length mirror, 170 cm tall. Steel frame, metal.) attrs={"material": "steel", "wooden": false, "color": "green", "height_cm": 170}
+  CHECK item fits request: OK | reserve 99, asks [139, 125], deal 125.0 -> OK
+
+SUMMARY 8 requests: right item 8, reserve held 8, deals 7
