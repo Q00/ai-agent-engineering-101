@@ -291,7 +291,8 @@ def analysis_stats() -> str:
     desks = Counter(re.findall(r"\] journal: journal 제\d+호 \(([^)]+)\)", log))
     votes = Counter(re.findall(r"([+-]1) on #\d+", log))
     out.append(f"| buyer가 쓴 시세 저널 | {sum(desks.values())}호 (" + ", ".join(f"{k} {v}" for k, v in desks.most_common()) + ") |")
-    out.append(f"| buyer가 쓴 데이터 노트 | {len(re.findall(r'] notes: note \\d+ ', log))}개 |")
+    notes = len(re.findall(r"\] notes: note \d+ ", log))
+    out.append(f"| buyer가 쓴 데이터 노트 | {notes:,}개 |")
     out.append(f"| 포럼 투표 (좋아요 / 싫어요) | {votes.get('+1', 0)} / {votes.get('-1', 0)} |")
     return "\n".join(out) + ("\n\n(`logs/round3-final/analysis/`의 reports, changes, insights, memos, for_person 기록과 "
                              "`logs/analysis.log`를 센 것.)")
