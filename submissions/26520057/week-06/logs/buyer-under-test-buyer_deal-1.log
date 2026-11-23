@@ -1,0 +1,14 @@
+card: Kit Shop at http://127.0.0.1:61237/
+-> I want to buy a lamp
+<- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] offer 65
+-> 65
+<- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
+[harness] offer 95
+-> 95
+<- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 100.
+[harness] offer 100
+-> 100
+<- TASK_STATE_COMPLETED | Deal: lamp at 100.
+artifact receipt: [{"item": "lamp", "seller": "Kit Shop", "price": 100.0}]
+end: TASK_STATE_COMPLETED
