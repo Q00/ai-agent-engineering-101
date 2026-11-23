@@ -1,0 +1,33 @@
+Week 06 manual development/debug log
+
+1. Initial lab seller failure
+
+Error: failed to send message: TaskUpdater.update_status() got an unexpected keyword argument 'final'
+
+Cause:
+The installed a2a-sdk 1.2.2 TaskUpdater API did not accept final=True in update_status().
+
+Fix:
+Replaced update_status(..., final=True) with TaskUpdater.requires_input(...).
+
+Result:
+The seller then returned TASK_STATE_INPUT_REQUIRED successfully.
+
+
+2. Initial final seller instability
+
+Error: failed to send message: Error code: 400
+
+Observation:
+A later retry of the same seller request succeeded, but the client-side message did not expose the underlying server-side reason.
+
+Fix:
+Hardened the GroqCloud harness with API/JSON retries and semantic validation retries.
+
+Verification after the fix:
+Three consecutive seller opening tests succeeded with TASK_STATE_INPUT_REQUIRED and a valid asking price.
+
+
+3. Final official trade test
+
+21/21 passed -> PASS
