@@ -1,0 +1,18 @@
+{
+  "harness": "Round 3 deterministic policies; historical Codex batch planner retained; automated model calls disabled by credit-policy.json",
+  "seller": {
+    "cmd": "python seller_r3.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "python market_buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python buyer_r3.py --shops {shops} --item {item} --budget {budget} --order {order}"
+  },
+  "restock": {
+    "cmd": "python round3.py --state {state}"
+  },
+  "review": {
+    "cmd": "python round3.py --deal {deal}"
+  }
+}
