@@ -1,0 +1,10 @@
+[shops]
+Kit Shop | no reviews | 8 trades, 5 deals, paid lamp 100,100,100. Last: lamp: asks [130], my offers [100], paid 100.0
+-> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[quote] Kit Shop: TASK_STATE_INPUT_REQUIRED | ask 130
+[compare] Kit Shop 130 -> negotiating with Kit Shop
+[harness] {"action": "offer", "price": 100}
+-> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[check] outcome: TASK_STATE_COMPLETED; shop asks: [130]; my offers: [100]; receipt: {"item": "lamp", "shop": "Kit Shop", "price": 100.0, "task": "a9bba022-8605-42ff-a2b1-a855ea5eaaab"}; receipt matches what we agreed and is signed
+[harness] review {"stars": 4, "review": "I bought a lamp from Kit Shop for 100.0 after offering 100 against the shop's asking price of 130, and the sale completed with a receipt that matched the agreed terms."}
+{"shop": "http://127.0.0.1:34133", "receipt": {"item": "lamp", "sig_seller": "st3AIAl7cj6q4PlDFB7bUoY9Surs6+tGtL9PjnWAxKdMlLUCvBam/Bx0QANVNum9Sf/Z8QJzNKUuIdBITtUJAw==", "shop": "Kit Shop", "price": 100.0, "task": "a9bba022-8605-42ff-a2b1-a855ea5eaaab"}, "stars": 4, "review": "I bought a lamp from Kit Shop for 100.0 after offering 100 against the shop's asking price of 130, and the sale completed with a receipt that matched the agreed terms."}

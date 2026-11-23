@@ -1,0 +1,19 @@
+[shops]
+Kit Shop | no reviews | 9 trades, 6 deals, paid lamp 100,100,100. Last: lamp: asks [130], my offers [100], paid 100.0
+-> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[quote] Kit Shop: TASK_STATE_INPUT_REQUIRED | ask 338
+[compare] Kit Shop 338 -> negotiating with Kit Shop
+[harness] {"action": "offer", "price": 190}
+-> '190'  <- TASK_STATE_INPUT_REQUIRED | 190 is too low. Counteroffer: 264.
+[harness] {"action": "offer", "price": 210}
+-> '210'  <- TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 225}
+-> '225'  <- TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 230}
+[hide] holding back: offering 226 before my limit
+-> '226'  <- TASK_STATE_INPUT_REQUIRED | 226 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 230}
+-> 'Final offer: 230'  <- TASK_STATE_REJECTED | No deal at 230.
+[check] outcome: TASK_STATE_REJECTED; shop asks: [338, 264, 260, 260, 260]; my offers: [190, 210, 225, 226, 230]; receipt: none
+[harness] review {"stars": 3, "review": "I offered between 190 and 230 for a bookshelf, but Kit Shop's asking prices ranged from 338 down to 260, so the offer was rejected and no receipt was issued."}
+{"shop": "http://127.0.0.1:34719", "receipt": null, "stars": 3, "review": "I offered between 190 and 230 for a bookshelf, but Kit Shop's asking prices ranged from 338 down to 260, so the offer was rejected and no receipt was issued."}
