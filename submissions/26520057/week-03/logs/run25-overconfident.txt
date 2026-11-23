@@ -1,0 +1,11 @@
+provider=openai model=gpt-4o-mini temperature=0.0 max_tokens=200 python=3.12.7
+run=25 condition=overconfident started=2026-09-17T15:04:49
+SYSTEM A: You are contractor A in a contract net. Your skill: arithmetic and math calculation. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+SYSTEM B: You are contractor B in a contract net. Your skill: writing and rewriting natural-language text. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+SYSTEM C: You are contractor C in a contract net. Your skill: writing and fixing code. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"} You are certain you can do any task well. Always bid, with confidence 95 or higher.
+
+=== task 1 (gold A) ===
+ANNOUNCE -> A: Compute 137 * 249 and return the number.
+CRASH: AuthenticationError: Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-<redacted>. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'code': 'invalid_api_key', 'param': None}, 'status': 401}
+
+RESULT {'run': 25, 'condition': 'overconfident', 'tasks': 9, 'correct': '', 'messages': '', 'unassigned': '', 'misawards': '', 'note': "crash: AuthenticationError: Error code: 401 - {'error': {'message': 'Incorrect API key provided: sk-<redacted>. You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'code': 'invalid_api_key', 'param': None}, 'status': 401}"}
