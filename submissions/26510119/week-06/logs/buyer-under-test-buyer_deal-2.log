@@ -1,0 +1,8 @@
+buyer: lamp, budget 120, seller http://127.0.0.1:58755, harness: claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence, budget guard on
+card: 'Kit Shop', JSONRPC at http://127.0.0.1:58755/, skills ['negotiate']
+  -> 'I want to buy a lamp'
+  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+  [harness 3.9s] '{"action": "offer", "price": 100}'
+  -> '100' (taskId 5e048969)
+  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+result: TASK_STATE_COMPLETED, bought at 100.0, 4s
