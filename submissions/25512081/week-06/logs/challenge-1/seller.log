@@ -1,0 +1,129 @@
+[seller] Opus Furniture Warehouse: 3200 items, harness model opus
+[803ccc5b] <- 'something wooden to keep about 40 books, not taller than my desk'
+    [harness 7.2s] {"category": "bookshelf", "materials": ["bamboo", "beech", "birch", "oak", "pine", "teak", "walnut"], "colors": [], "min": {"capacity_books": 40}, "max": {"height_cm": 75}, "flags_true": [], "keywords": "low wooden bookshelf"}
+[803ccc5b] query {"category": "bookshelf", "materials": ["bamboo", "beech", "birch", "oak", "pine", "teak", "walnut"], "colors": [], "min": {"capacity_books": 40}, "max": {"height_cm": 75}, "flags_true": [], "keywords": "low wooden bookshelf"} -> ['BBO-0110', 'BBO-0029', 'BBO-0057', 'BBO-0044', 'BBO-0016', 'BBO-0176', 'BBO-0125', 'BBO-0133', 'BBO-0085', 'BBO-0022'] (10 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 13.0s] {"item_id": "BBO-0029", "ask": 165, "reason": "Solid birch (true wood), 68 cm tall so it stays below a typical 72-75 cm desk, and holds ~52 books, comfortably covering the ~40 needed. The bamboo Alder shelf is closer in capacity but bamboo isn't strictly wood and its 72 cm height risks matching or exceeding desk height. Ask \u22481.3x the 125 reserve."}
+[803ccc5b] picked BBO-0029 (Brook birch bookshelf, reserve 125) from 10 candidates
+[803ccc5b] -> Brook birch bookshelf: asking 165. Send your offer as a number.
+[803ccc5b] <- '99'
+    [harness 4.1s] {"action": "counter", "price": 152}
+[803ccc5b] -> 99 is too low for the Brook birch bookshelf. Counteroffer: 152.
+[803ccc5b] <- '152.0'
+[803ccc5b] -> Deal: Brook birch bookshelf at 152.
+[803ccc5b] DEAL BBO-0029 at 152 (reserve 125)
+[8a5ed781] <- 'a high seat for the kitchen counter, metal if possible'
+    [harness 6.0s] {"category": "bar stool", "materials": ["aluminum", "iron", "steel"], "colors": [], "min": {"seat_height_cm": 65}, "max": {}, "flags_true": ["counter_height"], "keywords": "kitchen counter stool metal"}
+[8a5ed781] query {"category": "bar stool", "materials": ["aluminum", "iron", "steel"], "colors": [], "min": {"seat_height_cm": 65}, "max": {}, "flags_true": ["counter_height"], "keywords": "kitchen counter stool metal"} -> ['BSST-0158', 'BSST-0001', 'BSST-0164', 'BSST-0111', 'BSST-0082', 'BSST-0057', 'BSST-0141', 'BSST-0086', 'BSST-0186', 'BSST-0177'] (8 matched every constraint; kept ['materials', 'numbers'])
+    [harness 5.4s] {"item_id": "BSST-0158", "ask": 68, "reason": "The buyer wants a counter-height stool for the kitchen, metal if possible. The Aster is an iron bar stool made for a kitchen counter, with a 66 cm seat height. It also has a backrest, which makes it more comfortable. The bar-height stools at 77 cm don't fit this request. Asking 68 is about 1.33 times the reserve of 51."}
+[8a5ed781] picked BSST-0158 (Aster minimal iron bar stool, reserve 51) from 10 candidates
+[8a5ed781] -> Aster minimal iron bar stool: asking 68. Send your offer as a number.
+[8a5ed781] <- '41'
+    [harness 5.0s] {"action": "counter", "price": 62}
+[8a5ed781] -> 41 is too low for the Aster minimal iron bar stool. Counteroffer: 62.
+[8a5ed781] <- '62.0'
+[8a5ed781] -> Deal: Aster minimal iron bar stool at 62.
+[8a5ed781] DEAL BSST-0158 at 62 (reserve 51)
+[e2da67fc] <- 'a rug I can throw in the washing machine, for a hallway'
+    [harness 4.4s] {"category": "rug", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["washable"], "keywords": "hallway runner machine washable"}
+[e2da67fc] query {"category": "rug", "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": ["washable"], "keywords": "hallway runner machine washable"} -> ['RRU-0199', 'RRU-0197', 'RRU-0196', 'RRU-0194', 'RRU-0191', 'RRU-0188', 'RRU-0183', 'RRU-0182', 'RRU-0181', 'RRU-0177'] (83 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 6.5s] {"item_id": "RRU-0181", "ask": 125, "reason": "Every candidate is machine washable, so the hallway is what decides it. At 60 x 150 cm, the Sable nordic wool rug is the narrowest and longest, so it has the best runner shape for a hallway. It is also wool, which is soft and hard-wearing for a busy walkway. The opening ask is about 1.36 times the 92 reserve."}
+[e2da67fc] picked RRU-0181 (Sable nordic wool rug, reserve 92) from 10 candidates
+[e2da67fc] -> Sable nordic wool rug: asking 125. Send your offer as a number.
+[e2da67fc] <- '75'
+    [harness 3.9s] {"action": "counter", "price": 115}
+[e2da67fc] -> 75 is too low for the Sable nordic wool rug. Counteroffer: 115.
+[e2da67fc] <- '115.0'
+[e2da67fc] -> Deal: Sable nordic wool rug at 115.
+[e2da67fc] DEAL RRU-0181 at 115 (reserve 92)
+[27b160cf] <- 'a sofa that turns into a bed for guests, room for three people'
+    [harness 4.4s] {"category": "sofa", "materials": [], "colors": [], "min": {"seats": 3}, "max": {}, "flags_true": ["sleeper"], "keywords": "sofa bed, sleeper, guest bed, three-seater"}
+[27b160cf] query {"category": "sofa", "materials": [], "colors": [], "min": {"seats": 3}, "max": {}, "flags_true": ["sleeper"], "keywords": "sofa bed, sleeper, guest bed, three-seater"} -> ['SSO-0200', 'SSO-0189', 'SSO-0188', 'SSO-0182', 'SSO-0165', 'SSO-0151', 'SSO-0150', 'SSO-0144', 'SSO-0142', 'SSO-0137'] (24 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 8.7s] {"item_id": "SSO-0142", "ask": 1120, "reason": "Buyer wants a 3-seat sofa bed. Six candidates fit and the buyer gave no style preference, so I picked the one with the highest reserve, the Kiruna classic black leather sofa (seats 3, folds out into a bed). The ask is about 1.3x the 862 reserve."}
+[27b160cf] picked SSO-0142 (Kiruna classic leather sofa, reserve 862) from 10 candidates
+[27b160cf] -> Kiruna classic leather sofa: asking 1120. Send your offer as a number.
+[27b160cf] <- '672'
+    [harness 3.6s] {"action": "counter", "price": 1065}
+[27b160cf] -> 672 is too low for the Kiruna classic leather sofa. Counteroffer: 1065.
+[27b160cf] <- '806'
+    [harness 7.0s] {"action": "counter", "price": 995}
+[27b160cf] -> 806 is too low for the Kiruna classic leather sofa. Counteroffer: 995.
+[27b160cf] <- '995.0'
+[27b160cf] -> Deal: Kiruna classic leather sofa at 995.
+[27b160cf] DEAL SSO-0142 at 995 (reserve 862)
+[dcc81b36] <- 'a dimmable light for reading at my desk, at least 600 lumens'
+    [harness 4.7s] {"category": "desk lamp", "materials": [], "colors": [], "min": {"brightness_lm": 600}, "max": {}, "flags_true": ["dimmable"], "keywords": "reading desk lamp dimmable"}
+[dcc81b36] query {"category": "desk lamp", "materials": [], "colors": [], "min": {"brightness_lm": 600}, "max": {}, "flags_true": ["dimmable"], "keywords": "reading desk lamp dimmable"} -> ['DLLA-0200', 'DLLA-0199', 'DLLA-0194', 'DLLA-0190', 'DLLA-0189', 'DLLA-0186', 'DLLA-0180', 'DLLA-0179', 'DLLA-0176', 'DLLA-0175'] (79 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 5.4s] {"item_id": "DLLA-0175", "ask": 50, "reason": "All the candidates are dimmable desk/reading lamps with at least 600 lumens. The Ember mid-century iron desk lamp is the brightest at 1200 lumens, which gives the most room to dim for reading, and at 62 cm it's tall enough to light a desk well. Its reserve is 37, so an opening ask of 50 is about 1.35 times the reserve."}
+[dcc81b36] picked DLLA-0175 (Ember mid-century iron desk lamp, reserve 37) from 10 candidates
+[dcc81b36] -> Ember mid-century iron desk lamp: asking 50. Send your offer as a number.
+[dcc81b36] <- '30'
+    [harness 5.1s] {"action": "counter", "price": 45}
+[dcc81b36] -> 30 is too low for the Ember mid-century iron desk lamp. Counteroffer: 45.
+[dcc81b36] <- '45.0'
+[dcc81b36] -> Deal: Ember mid-century iron desk lamp at 45.
+[dcc81b36] DEAL DLLA-0175 at 45 (reserve 37)
+[75438398] <- 'a dining table for six that can be made bigger for holidays'
+    [harness 5.2s] {"category": "dining table", "materials": [], "colors": [], "min": {"seats": 6}, "max": {}, "flags_true": ["extendable"], "keywords": "extendable dining table six seats holidays"}
+[75438398] query {"category": "dining table", "materials": [], "colors": [], "min": {"seats": 6}, "max": {}, "flags_true": ["extendable"], "keywords": "extendable dining table six seats holidays"} -> ['DTTA-0195', 'DTTA-0193', 'DTTA-0192', 'DTTA-0185', 'DTTA-0182', 'DTTA-0174', 'DTTA-0169', 'DTTA-0166', 'DTTA-0164', 'DTTA-0157'] (30 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 9.3s] {"item_id": "DTTA-0192", "ask": 680, "reason": "The buyer wants a table for six that extends for holidays. Only two candidates seat exactly 6 and are extendable: Yara beech (DTTA-0195) and Sable oak (DTTA-0192). Both are 192 cm, so they fit equally well. I chose Sable because solid oak is a premium, hard-wearing wood that justifies a higher price. Opening ask is 680, about 1.3x the 525 reserve, which leaves room to negotiate."}
+[75438398] picked DTTA-0192 (Sable oak dining table, reserve 525) from 10 candidates
+[75438398] -> Sable oak dining table: asking 680. Send your offer as a number.
+[75438398] <- '408'
+    [harness 4.9s] {"action": "counter", "price": 640}
+[75438398] -> 408 is too low for the Sable oak dining table. Counteroffer: 640.
+[75438398] <- '640.0'
+[75438398] -> Deal: Sable oak dining table at 640.
+[75438398] DEAL DTTA-0192 at 640 (reserve 525)
+[91215a71] <- 'a desk I can stand at, at least 140 cm wide'
+    [harness 4.3s] {"category": "desk", "materials": [], "colors": [], "min": {"width_cm": 140}, "max": {}, "flags_true": ["standing"], "keywords": "standing desk, wide"}
+[91215a71] query {"category": "desk", "materials": [], "colors": [], "min": {"width_cm": 140}, "max": {}, "flags_true": ["standing"], "keywords": "standing desk, wide"} -> ['DDE-0198', 'DDE-0191', 'DDE-0189', 'DDE-0175', 'DDE-0161', 'DDE-0156', 'DDE-0144', 'DDE-0142', 'DDE-0132', 'DDE-0121'] (23 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 7.1s] {"item_id": "DDE-0144", "ask": 269, "reason": "Every candidate is an adjustable standing desk at least 140 cm wide. The Cove aluminum desk fits especially well: it's 160 cm wide, comfortably over the minimum, and its listed height of 119 cm suits standing work. Some other desks are listed at only 70\u201372 cm. It also has a drawer and a modern aluminum build. The opening ask of 269 is about 1.36 times the 198 reserve."}
+[91215a71] picked DDE-0144 (Cove aluminum desk, reserve 198) from 10 candidates
+[91215a71] -> Cove aluminum desk: asking 269. Send your offer as a number.
+[91215a71] <- '161'
+    [harness 4.7s] {"action": "counter", "price": 249}
+[91215a71] -> 161 is too low for the Cove aluminum desk. Counteroffer: 249.
+[91215a71] <- '249.0'
+[91215a71] -> Deal: Cove aluminum desk at 249.
+[91215a71] DEAL DDE-0144 at 249 (reserve 198)
+[96dae8e9] <- 'a leather chair for my home office, with armrests'
+    [harness 4.2s] {"category": "office chair", "materials": ["leather"], "colors": [], "min": {}, "max": {}, "flags_true": ["armrests"], "keywords": "leather office chair armrests home office"}
+[96dae8e9] query {"category": "office chair", "materials": ["leather"], "colors": [], "min": {}, "max": {}, "flags_true": ["armrests"], "keywords": "leather office chair armrests home office"} -> ['OCCH-0195', 'OCCH-0193', 'OCCH-0184', 'OCCH-0178', 'OCCH-0167', 'OCCH-0164', 'OCCH-0152', 'OCCH-0146', 'OCCH-0144', 'OCCH-0140'] (24 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 5.2s] {"item_id": "OCCH-0144", "ask": 310, "reason": "Every candidate is a leather office chair with armrests. The Moor modern brown chair also has adjustable height, which helps for long days at a desk, and its classic brown leather and modern style suit most home offices. The opening ask of 310 is about 1.3 times the 239 reserve."}
+[96dae8e9] picked OCCH-0144 (Moor modern leather office chair, reserve 239) from 10 candidates
+[96dae8e9] -> Moor modern leather office chair: asking 310. Send your offer as a number.
+[96dae8e9] <- '186'
+    [harness 4.7s] {"action": "counter", "price": 290}
+[96dae8e9] -> 186 is too low for the Moor modern leather office chair. Counteroffer: 290.
+[96dae8e9] <- '290.0'
+[96dae8e9] -> Deal: Moor modern leather office chair at 290.
+[96dae8e9] DEAL OCCH-0144 at 290 (reserve 239)
+[3e2cf51d] <- 'a tall wardrobe with a mirror on it'
+    [harness 5.0s] {"category": "wardrobe", "materials": [], "colors": [], "min": {"height_cm": 180}, "max": {}, "flags_true": ["mirror"], "keywords": "tall wardrobe mirror"}
+[3e2cf51d] query {"category": "wardrobe", "materials": [], "colors": [], "min": {"height_cm": 180}, "max": {}, "flags_true": ["mirror"], "keywords": "tall wardrobe mirror"} -> ['WWA-0199', 'WWA-0188', 'WWA-0186', 'WWA-0181', 'WWA-0178', 'WWA-0175', 'WWA-0174', 'WWA-0168', 'WWA-0155', 'WWA-0149'] (40 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 5.8s] {"item_id": "WWA-0178", "ask": 605, "reason": "Buyer wants a tall wardrobe with a mirror. Every candidate has a mirror, so height decides. The Ness classic beech wardrobe is one of the two tallest at 220 cm, has 4 doors and is the cheaper of the two (reserve 450). The opening ask is about 1.34 times the reserve."}
+[3e2cf51d] picked WWA-0178 (Ness classic beech wardrobe, reserve 450) from 10 candidates
+[3e2cf51d] -> Ness classic beech wardrobe: asking 605. Send your offer as a number.
+[3e2cf51d] <- '363'
+    [harness 3.9s] {"action": "counter", "price": 565}
+[3e2cf51d] -> 363 is too low for the Ness classic beech wardrobe. Counteroffer: 565.
+[3e2cf51d] <- '565.0'
+[3e2cf51d] -> Deal: Ness classic beech wardrobe at 565.
+[3e2cf51d] DEAL WWA-0178 at 565 (reserve 450)
+[88456db2] <- 'a low stand for a 65 inch TV with some storage'
+    [harness 4.5s] {"category": "tv stand", "materials": [], "colors": [], "min": {"max_tv_in": 65}, "max": {}, "flags_true": ["storage"], "keywords": "low, media console"}
+[88456db2] query {"category": "tv stand", "materials": [], "colors": [], "min": {"max_tv_in": 65}, "max": {}, "flags_true": ["storage"], "keywords": "low, media console"} -> ['TSST-0197', 'TSST-0200', 'TSST-0072', 'TSST-0093', 'TSST-0163', 'TSST-0144', 'TSST-0176', 'TSST-0101', 'TSST-0159', 'TSST-0133'] (97 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 9.8s] {"item_id": "TSST-0197", "ask": 145, "reason": "Lark pine TV stand is a storage TV stand rated for TVs up to 75 inches, so a 65-inch TV fits with room to spare. At 130 cm wide it gives a 65-inch TV a steadier base than the 110 cm Tamsin, which is rated for exactly 65 inches. The wider stands (150-200 cm) are made for much larger TVs. No listing gives a height, so the 'low' requirement couldn't be checked. Opening ask of 145 is about 1.36x the 107 reserve."}
+[88456db2] picked TSST-0197 (Lark pine tv stand, reserve 107) from 10 candidates
+[88456db2] -> Lark pine tv stand: asking 145. Send your offer as a number.
+[88456db2] <- '87'
+    [harness 3.8s] {"action": "counter", "price": 135}
+[88456db2] -> 87 is too low for the Lark pine tv stand. Counteroffer: 135.
+[88456db2] <- '135.0'
+[88456db2] -> Deal: Lark pine tv stand at 135.
+[88456db2] DEAL TSST-0197 at 135 (reserve 107)
+[66cf723e] <- 'a grand piano for my living room'
+    [harness 4.4s] {"category": null, "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": [], "keywords": "grand piano living room"}
+[66cf723e] query {"category": null, "materials": [], "colors": [], "min": {}, "max": {}, "flags_true": [], "keywords": "grand piano living room"} -> ['DLLA-0010', 'DLLA-0062', 'DLLA-0067', 'DLLA-0007', 'DLLA-0094', 'DLLA-0136', 'DLLA-0199', 'DLLA-0068', 'DLLA-0129', 'DLLA-0144'] (3200 matched every constraint; kept ['colors', 'flags', 'materials', 'numbers'])
+    [harness 4.2s] {"item_id": "none", "ask": 0, "reason": "The buyer wants a grand piano, but every candidate is a plastic desk lamp. None of them comes close to the request, so I'm not recommending any item or setting a price."}
+[66cf723e] -> Sorry, we have nothing like that. We sell: Alder aluminum desk, Alder bamboo bookshelf, Alder bamboo coffee table, Alder bamboo tv stand, Alder beech bar stool, Alder beech bed frame, Alder beech coffee table, Alder beech dining chair and more.

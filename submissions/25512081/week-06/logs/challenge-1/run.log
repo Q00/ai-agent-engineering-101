@@ -1,0 +1,77 @@
+# challenge 1: 3200-item catalog, seller card 'Opus Furniture Warehouse'
+[R01] buyer: 'something wooden to keep about 40 books, not taller than my desk'
+   <- TASK_STATE_INPUT_REQUIRED | Brook birch bookshelf: asking 165. Send your offer as a number.
+   offered BBO-0029 Brook birch bookshelf (reserve 125): An Industrial red birch bookshelf: 68 cm tall and 105 cm wide, with 2 shelves that hold about 52 books.
+   -> 99  <- TASK_STATE_INPUT_REQUIRED | 99 is too low for the Brook birch bookshelf. Counteroffer: 152.
+   -> 152.0  <- TASK_STATE_COMPLETED | Deal: Brook birch bookshelf at 152.
+  => PASS: fits; asks [165.0, 152.0] vs reserve 125; deal at 152.0; 24s
+
+[R02] buyer: 'a high seat for the kitchen counter, metal if possible'
+   <- TASK_STATE_INPUT_REQUIRED | Aster minimal iron bar stool: asking 68. Send your offer as a number.
+   offered BSST-0158 Aster minimal iron bar stool (reserve 51): A Minimal beige iron bar stool: seat height 66 cm, made for a kitchen counter, with a backrest.
+   -> 41  <- TASK_STATE_INPUT_REQUIRED | 41 is too low for the Aster minimal iron bar stool. Counteroffer: 62.
+   -> 62.0  <- TASK_STATE_COMPLETED | Deal: Aster minimal iron bar stool at 62.
+  => PASS: fits; asks [68.0, 62.0] vs reserve 51; deal at 62.0; 16s
+
+[R03] buyer: 'a rug I can throw in the washing machine, for a hallway'
+   <- TASK_STATE_INPUT_REQUIRED | Sable nordic wool rug: asking 125. Send your offer as a number.
+   offered RRU-0181 Sable nordic wool rug (reserve 92): A Nordic beige wool rug: 60 x 150 cm, machine washable.
+   -> 75  <- TASK_STATE_INPUT_REQUIRED | 75 is too low for the Sable nordic wool rug. Counteroffer: 115.
+   -> 115.0  <- TASK_STATE_COMPLETED | Deal: Sable nordic wool rug at 115.
+  => PASS: fits; asks [125.0, 115.0] vs reserve 92; deal at 115.0; 15s
+
+[R04] buyer: 'a sofa that turns into a bed for guests, room for three people'
+   <- TASK_STATE_INPUT_REQUIRED | Kiruna classic leather sofa: asking 1120. Send your offer as a number.
+   offered SSO-0142 Kiruna classic leather sofa (reserve 862): A Classic black leather sofa: seats 3, 263 cm wide, folds out into a bed.
+   -> 672  <- TASK_STATE_INPUT_REQUIRED | 672 is too low for the Kiruna classic leather sofa. Counteroffer: 1065.
+   -> 806  <- TASK_STATE_INPUT_REQUIRED | 806 is too low for the Kiruna classic leather sofa. Counteroffer: 995.
+   -> 995.0  <- TASK_STATE_COMPLETED | Deal: Kiruna classic leather sofa at 995.
+  => PASS: fits; asks [1120.0, 1065.0, 995.0] vs reserve 862; deal at 995.0; 24s
+
+[R05] buyer: 'a dimmable light for reading at my desk, at least 600 lumens'
+   <- TASK_STATE_INPUT_REQUIRED | Ember mid-century iron desk lamp: asking 50. Send your offer as a number.
+   offered DLLA-0175 Ember mid-century iron desk lamp (reserve 37): A Mid-century beige iron desk lamp: 62 cm tall, 1200 lumens, dimmable, for reading or a desk.
+   -> 30  <- TASK_STATE_INPUT_REQUIRED | 30 is too low for the Ember mid-century iron desk lamp. Counteroffer: 45.
+   -> 45.0  <- TASK_STATE_COMPLETED | Deal: Ember mid-century iron desk lamp at 45.
+  => PASS: fits; asks [50.0, 45.0] vs reserve 37; deal at 45.0; 15s
+
+[R06] buyer: 'a dining table for six that can be made bigger for holidays'
+   <- TASK_STATE_INPUT_REQUIRED | Sable oak dining table: asking 680. Send your offer as a number.
+   offered DTTA-0192 Sable oak dining table (reserve 525): A Minimal beige oak dining table: seats 6, 192 cm long, extendable.
+   -> 408  <- TASK_STATE_INPUT_REQUIRED | 408 is too low for the Sable oak dining table. Counteroffer: 640.
+   -> 640.0  <- TASK_STATE_COMPLETED | Deal: Sable oak dining table at 640.
+  => PASS: fits; asks [680.0, 640.0] vs reserve 525; deal at 640.0; 19s
+
+[R07] buyer: 'a desk I can stand at, at least 140 cm wide'
+   <- TASK_STATE_INPUT_REQUIRED | Cove aluminum desk: asking 269. Send your offer as a number.
+   offered DDE-0144 Cove aluminum desk (reserve 198): A Modern beige aluminum desk: an adjustable standing desk 119 cm high and 160 cm wide with 1 drawers.
+   -> 161  <- TASK_STATE_INPUT_REQUIRED | 161 is too low for the Cove aluminum desk. Counteroffer: 249.
+   -> 249.0  <- TASK_STATE_COMPLETED | Deal: Cove aluminum desk at 249.
+  => PASS: fits; asks [269.0, 249.0] vs reserve 198; deal at 249.0; 16s
+
+[R08] buyer: 'a leather chair for my home office, with armrests'
+   <- TASK_STATE_INPUT_REQUIRED | Moor modern leather office chair: asking 310. Send your offer as a number.
+   offered OCCH-0144 Moor modern leather office chair (reserve 239): A Modern brown leather office chair: seat height 49 cm, with armrests, adjustable height.
+   -> 186  <- TASK_STATE_INPUT_REQUIRED | 186 is too low for the Moor modern leather office chair. Counteroffer: 290.
+   -> 290.0  <- TASK_STATE_COMPLETED | Deal: Moor modern leather office chair at 290.
+  => PASS: fits; asks [310.0, 290.0] vs reserve 239; deal at 290.0; 14s
+
+[R09] buyer: 'a tall wardrobe with a mirror on it'
+   <- TASK_STATE_INPUT_REQUIRED | Ness classic beech wardrobe: asking 605. Send your offer as a number.
+   offered WWA-0178 Ness classic beech wardrobe (reserve 450): A Classic grey beech wardrobe: 220 cm tall with 4 doors, with a mirror.
+   -> 363  <- TASK_STATE_INPUT_REQUIRED | 363 is too low for the Ness classic beech wardrobe. Counteroffer: 565.
+   -> 565.0  <- TASK_STATE_COMPLETED | Deal: Ness classic beech wardrobe at 565.
+  => PASS: fits; asks [605.0, 565.0] vs reserve 450; deal at 565.0; 15s
+
+[R10] buyer: 'a low stand for a 65 inch TV with some storage'
+   <- TASK_STATE_INPUT_REQUIRED | Lark pine tv stand: asking 145. Send your offer as a number.
+   offered TSST-0197 Lark pine tv stand (reserve 107): A Modern grey pine tv stand: 130 cm wide, holds a TV up to 75 inches, with storage.
+   -> 87  <- TASK_STATE_INPUT_REQUIRED | 87 is too low for the Lark pine tv stand. Counteroffer: 135.
+   -> 135.0  <- TASK_STATE_COMPLETED | Deal: Lark pine tv stand at 135.
+  => PASS: fits; asks [145.0, 135.0] vs reserve 107; deal at 135.0; 18s
+
+[R11] buyer: 'a grand piano for my living room'
+   <- TASK_STATE_REJECTED | Sorry, we have nothing like that. We sell: Alder aluminum desk, Alder bamboo bookshelf, Alder bamboo coffee table, Alder bamboo tv stand, Alder beech bar stool, Alder beech bed frame, Alder beech coffee table, Alder beech dining chair and more.
+  => PASS: declined, as expected
+
+# 11/11 passed
