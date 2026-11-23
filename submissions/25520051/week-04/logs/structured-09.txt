@@ -1,0 +1,137 @@
+=== run 9: condition=structured repeat=3 (4 scenarios) ===
+
+--- scenario s1 (mountain bike, reserve=150, budget=220) ---
+[buyer ] ```json
+{"performative": "propose", "content": {"price": 130}}
+```
+            [read] performative=propose price=130
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": 200}}
+```
+            [read] performative=reject-proposal price=200
+[buyer ] ```json
+{"performative": "propose", "content": {"price": 160}}
+```
+            [read] performative=propose price=160
+[seller] ```json
+{"performative": "propose", "content": {"price": 180}}
+```
+            [read] performative=propose price=180
+[buyer ] ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+            [read] performative=accept-proposal price=None
+            [episode] DEAL at 180
+
+--- scenario s2 (used laptop, reserve=480, budget=500) ---
+[buyer ] ```json
+{"performative": "propose", "content": {"price": 280}}
+```
+            [read] performative=propose price=280
+[seller] ```json
+{"performative": "propose", "content": {"price": 650}}
+```
+            [read] performative=propose price=650
+[buyer ] ```json
+{"performative": "propose", "content": {"price": 380}}
+```
+            [read] performative=propose price=380
+[seller] ```json
+{"performative": "propose", "content": {"price": 550}}
+```
+            [read] performative=propose price=550
+[buyer ] ```json
+{"performative": "propose", "content": {"price": 450}}
+```
+            [read] performative=propose price=450
+[seller] ```json
+{"performative": "propose", "content": {"price": 510}}
+```
+            [read] performative=propose price=510
+[buyer ] ```json
+{"performative": "propose", "content": {"price": 500}}
+```
+            [read] performative=propose price=500
+[seller] ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+            [read] performative=accept-proposal price=None
+            [episode] DEAL at 500
+
+--- scenario s3 (acoustic guitar, reserve=320, budget=300) ---
+[buyer ] ```json
+{"performative": "propose", "content": {"price": 150}}
+```
+            [read] performative=propose price=150
+[seller] ```json
+{"performative": "propose", "content": {"price": 450}}
+```
+            [read] performative=propose price=450
+[buyer ] ```json
+{"performative": "reject-proposal", "content": {"price": 220}}
+```
+            [read] performative=reject-proposal price=220
+[seller] ```json
+{"performative": "propose", "content": {"price": 380}}
+```
+            [read] performative=propose price=380
+[buyer ] ```json
+{"performative": "reject-proposal", "content": {"price": 260}}
+```
+            [read] performative=reject-proposal price=260
+[seller] ```json
+{"performative": "propose", "content": {"price": 340}}
+```
+            [read] performative=propose price=340
+[buyer ] ```json
+{"performative": "reject-proposal", "content": {"price": 280}}
+```
+            [read] performative=reject-proposal price=280
+[seller] ```json
+{"performative": "propose", "content": {"price": 330}}
+```
+            [read] performative=propose price=330
+            [episode] turn limit (8) reached -> open
+
+--- scenario s4 (antique clock, reserve=600, budget=400) ---
+[buyer ] ```json
+{"performative": "propose", "content": {"price": 280}}
+```
+            [read] performative=propose price=280
+[seller] ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+
+Wait, let me reconsider. The buyer proposed 280. I should reject and counter-propose at a better price.
+
+```json
+{"performative": "propose", "content": {"price": 850}}
+```
+            [parse-fail] unreadable message; treated as reject-proposal
+[buyer ] ```json
+{"performative": "propose", "content": {"price": 350}}
+```
+            [read] performative=propose price=350
+[seller] ```json
+{"performative": "propose", "content": {"price": 700}}
+```
+            [read] performative=propose price=700
+[buyer ] ```json
+{"performative": "propose", "content": {"price": 380}}
+```
+            [read] performative=propose price=380
+[seller] ```json
+{"performative": "propose", "content": {"price": 620}}
+```
+            [read] performative=propose price=620
+[buyer ] ```json
+{"performative": "propose", "content": {"price": 390}}
+```
+            [read] performative=propose price=390
+[seller] ```json
+{"performative": "propose", "content": {"price": 605}}
+```
+            [read] performative=propose price=605
+            [episode] turn limit (8) reached -> open
+
+[done] run 9 in 211.5s

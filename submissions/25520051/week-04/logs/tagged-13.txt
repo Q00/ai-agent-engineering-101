@@ -1,0 +1,73 @@
+=== run 13: condition=tagged repeat=1 (4 scenarios) ===
+
+--- scenario s1 (mountain bike, reserve=150, budget=220) ---
+[buyer ] (propose) I can offer 150 for it.
+            [read] performative=propose price=150
+[seller] (propose) I'm asking 250 for it.
+            [read] performative=propose price=250
+[buyer ] (propose) I can offer 185 for it.
+            [read] performative=propose price=185
+[seller] (propose) I can come down to 220 for it.
+            [read] performative=propose price=220
+[buyer ] (accept-proposal) I'll take it at 220.
+            [read] performative=accept-proposal price=None
+            [episode] DEAL at 220
+
+--- scenario s2 (used laptop, reserve=480, budget=500) ---
+[buyer ] (propose) I can offer 250 for it.
+            [read] performative=propose price=250
+[seller] (propose) I can offer this laptop for 750.
+            [read] performative=propose price=750
+[buyer ] (reject-proposal) I can offer 350 for it.
+            [read] performative=reject-proposal price=None
+[seller] (propose) I can offer this laptop for 580.
+            [read] performative=propose price=580
+[buyer ] (propose) I can offer 420 for it.
+            [read] performative=propose price=420
+[seller] (propose) I can offer this laptop for 530.
+            [read] performative=propose price=530
+[buyer ] (propose) I can offer 470 for it.
+            [read] performative=propose price=470
+[seller] (propose) I can offer this laptop for 485.
+            [read] performative=propose price=485
+            [episode] turn limit (8) reached -> open
+
+--- scenario s3 (acoustic guitar, reserve=320, budget=300) ---
+[buyer ] (propose) I can offer 180 for it.
+            [read] performative=propose price=180
+[seller] (propose) That's too low. I'm asking 450 for it.
+            [read] performative=propose price=450
+[buyer ] (propose) I can offer 220 for it.
+            [read] performative=propose price=220
+[seller] (propose) I can offer 360 for it.
+            [read] performative=propose price=360
+[buyer ] (propose) I can offer 250 for it.
+            [read] performative=propose price=250
+[seller] (propose) I can offer 340 for it.
+            [read] performative=propose price=340
+[buyer ] (propose) I can offer 280 for it.
+            [read] performative=propose price=280
+[seller] (propose) I can offer 330 for it.
+            [read] performative=propose price=330
+            [episode] turn limit (8) reached -> open
+
+--- scenario s4 (antique clock, reserve=600, budget=400) ---
+[buyer ] (propose) I can offer 200 for it.
+            [read] performative=propose price=200
+[seller] (propose) I can offer 900 for it.
+            [read] performative=propose price=900
+[buyer ] (reject-proposal) I can offer 250 for it.
+            [read] performative=reject-proposal price=None
+[seller] (propose) I can offer 750 for it.
+            [read] performative=propose price=750
+[buyer ] (propose) I can offer 300 for it.
+            [read] performative=propose price=300
+[seller] (propose) I can offer 650 for it.
+            [read] performative=propose price=650
+[buyer ] (propose) I can offer 350 for it.
+            [read] performative=propose price=350
+[seller] (propose) I can offer 620 for it.
+            [read] performative=propose price=620
+            [episode] turn limit (8) reached -> open
+
+[done] run 13 in 340.1s

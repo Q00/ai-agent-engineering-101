@@ -1,0 +1,77 @@
+=== run 33: condition=free repeat=3 (4 scenarios) ===
+
+--- scenario s1 (mountain bike, reserve=150, budget=220) ---
+[buyer ] I'd like to offer 150 for the mountain bike.
+            [read] performative=propose price=150
+[seller] 250.
+            [read] performative=propose price=250
+[buyer ] 180
+            [read] performative=propose price=180
+[seller] 220.
+            [read] performative=propose price=220
+[buyer ] 200
+            [read] performative=propose price=200
+[seller] 210.
+            [read] performative=propose price=210
+[buyer ] I accept 210
+            [read] performative=accept-proposal price=210
+            [episode] DEAL at 210
+
+--- scenario s2 (used laptop, reserve=480, budget=500) ---
+[buyer ] 300
+            [read] performative=propose price=300
+[seller] 550
+            [read] performative=propose price=550
+[buyer ] 400
+            [read] performative=propose price=400
+[seller] 500
+            [read] performative=propose price=500
+[buyer ] 500
+            [read] performative=propose price=500
+[seller] 500
+            [read] performative=propose price=500
+[buyer ] 500
+            [read] performative=propose price=500
+[seller] 500
+            [read] performative=propose price=500
+            [episode] turn limit (8) reached -> open
+
+--- scenario s3 (acoustic guitar, reserve=320, budget=300) ---
+[buyer ] 150
+            [read] performative=propose price=150
+[seller] 500
+            [read] performative=propose price=500
+[buyer ] 200
+            [read] performative=propose price=200
+[seller] 420
+            [read] performative=propose price=420
+[buyer ] 250
+            [read] performative=propose price=250
+[seller] 380
+            [read] performative=propose price=380
+[buyer ] 270
+            [read] performative=propose price=270
+[seller] 340
+            [read] performative=propose price=340
+            [episode] turn limit (8) reached -> open
+
+--- scenario s4 (antique clock, reserve=600, budget=400) ---
+[buyer ] 250
+            [read] performative=propose price=250
+[seller] 1000
+            [read] performative=propose price=1000
+[buyer ] 375
+            [read] performative=propose price=375
+[seller] 750
+            [read] performative=propose price=750
+[buyer ] 385
+            [read] performative=propose price=385
+[seller] 625
+            [read] performative=propose price=625
+[buyer ] 390
+            [read] performative=propose price=390
+[seller] 600
+            [read] performative=propose price=600
+            [episode] turn limit (8) reached -> open
+
+[done] run 33 in 419.5s
