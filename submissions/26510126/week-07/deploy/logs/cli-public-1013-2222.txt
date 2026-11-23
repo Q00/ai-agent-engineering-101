@@ -1,0 +1,30 @@
+$ a2a card get https://a2a-lamp-shop.thisjonghoon.workers.dev
+Error: failed to resolve agent card: card request failed: Get "https://a2a-lamp-shop.thisjonghoon.workers.dev/.well-known/agent-card.json": tls: failed to verify certificate: x509: OSStatus -26276
+hint: check the agent is running and the --agent-card reference is correct
+
+$ curl (no A2A-Version header)
+{"jsonrpc":"2.0","id":1,"error":{"code":-32009,"message":"A2A version '0.3' is not supported by this handler. Expected version '1.0'.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"VERSION_NOT_SUPPORTED","domain":"a2a-protocol.org","metadata":{}}]}}
+
+$ a2a send "I want to buy a lamp"
+Error: failed to resolve agent card: card request failed: Get "https://a2a-lamp-shop.thisjonghoon.workers.dev/.well-known/agent-card.json": tls: failed to verify certificate: x509: OSStatus -26276
+hint: check the agent is running and the --agent-card reference is correct
+$ a2a send --task-id  60
+Error: provide a message as text, or via --text-part, --file-part, --data-part, or --request-payload
+hint: if you are an agent, your a2a skill may be out of date — run `a2a skill` for the current commands and update your local copy
+$ a2a send --task-id  130 -o json (finished task)
+{
+  "error": {
+    "code": "A2ACLI_ERR_USAGE",
+    "message": "provide a message as text, or via --text-part, --file-part, --data-part, or --request-payload",
+    "hint": "if you are an agent, your a2a skill may be out of date — run `a2a skill` for the current commands and update your local copy"
+  }
+}
+[exit 2]
+Error: failed to resolve agent card: card request failed: Get "https://a2a-lamp-shop.thisjonghoon.workers.dev/.well-known/agent-card.json": tls: failed to verify certificate: x509: OSStatus -26276
+hint: check the agent is running and the --agent-card reference is correct
+$ a2a task cancel 
+Error: accepts 1 arg(s), received 0
+hint: if you are an agent, your a2a skill may be out of date — run `a2a skill` for the current commands and update your local copy
+$ a2a send "I want to buy a sofa"
+Error: failed to resolve agent card: card request failed: Get "https://a2a-lamp-shop.thisjonghoon.workers.dev/.well-known/agent-card.json": tls: failed to verify certificate: x509: OSStatus -26276
+hint: check the agent is running and the --agent-card reference is correct
