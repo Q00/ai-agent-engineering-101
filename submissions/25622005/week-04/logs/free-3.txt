@@ -1,0 +1,65 @@
+provider=anthropic base_url=https://factchat-cloud.mindlogic.ai/v1/gateway/claude model=claude-sonnet-5 temperature=provider-default max_tokens=400 turn_limit=8 condition=free run=free-3
+--- scenario 1 a used bicycle reserve=120 budget=150
+[buyer]  Hi there! I'm interested in your bicycle — would you consider $80 for it?
+  [reader] {'performative': 'propose', 'price': 80}
+[seller]  I appreciate your interest, but $80 is too low for this bike given its condition and value. I'd suggest $160 instead — let me know what you think!
+  [reader] {'performative': 'propose', 'price': 160}
+[buyer]  I understand, but $160 is a bit steep for my budget — could we meet somewhere around $110 instead?
+  [reader] {'performative': 'propose', 'price': 110}
+[seller]  I can't go that low, unfortunately — $110 doesn't work for me. How about we settle at $140, which is a fair price for both of us?
+  [reader] {'performative': 'propose', 'price': 140}
+[buyer]  That's much closer — I can do $130, and I'd be happy to close the deal right there.
+  [reader] {'performative': 'propose', 'price': 130}
+[seller]  Deal — $130 works for me. I accept your offer!
+  [reader] {'performative': 'accept-proposal', 'price': 130}
+[result] outcome=deal price=130 correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+[verifier] outcome=deal price=130 violator=none agree=1 (agree) :: Both parties agreed on $130, which is within the seller's reserve of 120 and the buyer's budget of 150.
+--- scenario 2 a desk lamp reserve=30 budget=45
+[buyer]  I'd like to open with an offer of $20 for the desk lamp—does that work for you?
+  [reader] {'performative': 'propose', 'price': 20}
+[seller]  I appreciate the offer, but $20 is too low for this lamp given its quality and condition. Could we meet closer to $45?
+  [reader] {'performative': 'propose', 'price': 45}
+[buyer]  I understand your position, but $45 is a bit steep for my budget—let's find a middle ground at $30, which I think fairly reflects both the lamp's value and a reasonable deal for us both.
+  [reader] {'performative': 'propose', 'price': 30}
+[seller]  That works for me—$30 is acceptable, so let's close the deal at that price.
+  [reader] {'performative': 'accept-proposal', 'price': 30}
+[result] outcome=deal price=30 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+[verifier] outcome=deal price=30 violator=none agree=1 (agree) :: Both parties agreed on $30, which is within the seller's reserve and the buyer's budget.
+--- scenario 3 a mechanical keyboard reserve=90 budget=70
+[buyer]  I'd like to open with an offer of $40 for the mechanical keyboard—let me know if that works for you.
+  [reader] {'performative': 'propose', 'price': 40}
+[seller]  Thanks for the offer, but $40 is well below what I can accept for this keyboard—I'd propose $150 instead, given its quality and condition.
+  [reader] {'performative': 'propose', 'price': 150}
+[buyer]  That's quite a jump from my initial offer—$150 is far more than I'm able to justify for this keyboard. I can come up to $50, which I think is a fair reflection of its value.
+  [reader] {'performative': 'propose', 'price': 50}
+[seller]  I appreciate you moving up, but $50 still doesn't come close to reflecting what this keyboard is worth. I can come down to $130—let's meet somewhere reasonable in that range.
+  [reader] {'performative': 'propose', 'price': 130}
+[buyer]  I understand you want fair value, but $130 is still far outside what I can work with. Let's try to close the gap—I can offer $58, which is a meaningful increase from my last proposal.
+  [reader] {'performative': 'propose', 'price': 58}
+[seller]  I appreciate the movement, but $58 is still quite far from a workable number. I can go down to $115, which reflects a genuine effort to meet you partway.
+  [reader] {'performative': 'propose', 'price': 115}
+[buyer]  I hear you, but $115 is still well beyond my budget for this piece. I can move to $63, which is a solid step up from my previous offer and represents a genuine effort on my end as well.
+  [reader] {'performative': 'propose', 'price': 63}
+[seller]  I recognize you're making steady progress, but $63 is still far short of a fair deal for this keyboard. I can offer $105 as a meaningful concession—let's try to find common ground closer to that number.
+  [reader] {'performative': 'propose', 'price': 105}
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+[verifier] outcome=open price=None violator=none agree=1 (agree) :: The negotiation ends without agreement, with buyer at $63 and seller at $105, no deal reached and no one has left.
+--- scenario 4 a 24-inch monitor reserve=200 budget=150
+[buyer]  I'd like to open with an offer of $90 for the monitor—it's a fair starting point given typical depreciation on used electronics. Let me know if that works for you.
+  [reader] {'performative': 'propose', 'price': 90}
+[seller]  I appreciate the offer, but $90 is far too low for this monitor's condition and value—I'd counter with $260 as a more reasonable starting point.
+  [reader] {'performative': 'propose', 'price': 260}
+[buyer]  $260 is quite a jump from my initial offer—I can raise my offer to $115 to help us move closer together, but that's a significant increase on my end already.
+  [reader] {'performative': 'propose', 'price': 115}
+[seller]  That's still a big gap between us—I can come down to $235, which reflects the monitor's quality and market value, but I'm not able to go much lower than that.
+  [reader] {'performative': 'propose', 'price': 235}
+[buyer]  I understand you feel the monitor is worth more, but $235 is still well outside my budget—I can move up to $130, which is a fair reflection of what similar monitors typically sell for.
+  [reader] {'performative': 'propose', 'price': 130}
+[seller]  We're still quite far apart, but I want to find a deal—I can lower my price to $215, which is close to my floor and a genuinely fair price for this monitor.
+  [reader] {'performative': 'propose', 'price': 215}
+[buyer]  I appreciate you moving down, but $215 is still beyond what I'm able to spend—I can offer $145 as my next step up, which is close to the top of what I can justify for this monitor.
+  [reader] {'performative': 'propose', 'price': 145}
+[seller]  I hear you, but $145 is still well below what this monitor is worth—I can meet you partway at $205, which is very close to my absolute minimum and a fair final adjustment on my part.
+  [reader] {'performative': 'propose', 'price': 205}
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+[verifier] outcome=no_deal price=None violator=none agree=0 (outcome open->no_deal) :: The buyer's max offer of $145 and seller's min offer of $205 never overlap, and the transcript ends without agreement or explicit withdrawal.

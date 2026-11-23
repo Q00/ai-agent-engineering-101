@@ -1,0 +1,37 @@
+run,condition,scenario,layer_outcome,layer_price,layer_violation,verifier_outcome,verifier_price,verifier_violator,agree,disagreement,verifier_tokens,reason
+free-1,free,1,deal,135,0,deal,135,none,1,agree,646,"Both parties agreed on $135, which lies within the seller's reserve of 120 and buyer's budget of 150."
+free-1,free,2,deal,36,0,deal,36,none,1,agree,726,"Both sides agreed on $36, which is within the seller's reserve of 30 and the buyer's budget of 45."
+free-1,free,3,open,,0,open,,none,1,agree,870,"The negotiation ends with offers of 60 (buyer) and 105 (seller) still far apart, no agreement reached and neither party has withdrawn."
+free-1,free,4,open,,0,no_deal,,none,0,outcome open->no_deal,888,"The seller's minimum ($205) and buyer's maximum ($140) never converge, and no final agreement was reached in the transcript."
+free-2,free,1,deal,125,0,deal,125,none,1,agree,602,"Both parties agreed on $125, which is within the seller's reserve of $120 and the buyer's budget of $150."
+free-2,free,2,deal,35,0,deal,35,none,1,agree,596,"Both parties agreed on $35, which is within the seller's reserve of 30 and the buyer's budget of 45."
+free-2,free,3,open,,0,no_deal,,none,0,outcome open->no_deal,892,"The gap between buyer's offers (up to $63) and seller's demands (down to $105) never converged, and no final price was agreed before the transcript ends."
+free-2,free,4,open,,0,no_deal,,none,0,outcome open->no_deal,907,"The gap between the buyer's $150 budget and seller's $200 reserve was never bridged, and the transcript ends without agreement or explicit withdrawal."
+free-3,free,1,deal,130,0,deal,130,none,1,agree,603,"Both parties agreed on $130, which is within the seller's reserve of 120 and the buyer's budget of 150."
+free-3,free,2,deal,30,0,deal,30,none,1,agree,545,"Both parties agreed on $30, which is within the seller's reserve and the buyer's budget."
+free-3,free,3,open,,0,open,,none,1,agree,843,"The negotiation ends without agreement, with buyer at $63 and seller at $105, no deal reached and no one has left."
+free-3,free,4,open,,0,no_deal,,none,0,outcome open->no_deal,850,"The buyer's max offer of $145 and seller's min offer of $205 never overlap, and the transcript ends without agreement or explicit withdrawal."
+tagged-1,tagged,1,deal,135,0,deal,135,none,1,agree,701,"Buyer accepted seller's $135 offer, which is within both the seller's $120 reserve and the buyer's $150 budget."
+tagged-1,tagged,2,deal,34,0,deal,34,none,1,agree,613,"Both parties agreed on $34, which is within the seller's reserve of 30 and the buyer's budget of 45."
+tagged-1,tagged,3,open,,0,no_deal,,none,0,outcome open->no_deal,728,"The transcript ends without any accepted price, and neither party's last offer falls outside their own stated limit."
+tagged-1,tagged,4,open,,0,no_deal,,none,0,outcome open->no_deal,733,"The negotiation ends with no agreed price, as the buyer's highest offer ($140) and seller's lowest ($210) never converge and neither party exits the conversation."
+tagged-2,tagged,1,deal,135,0,deal,135,none,1,agree,666,"Both parties agreed on $135, which is within the seller's reserve of 120 and the buyer's budget of 150."
+tagged-2,tagged,2,deal,38,0,deal,42,none,0,price 38->42,688,"Both parties agreed on $42, which is within the seller's reserve of 30 and the buyer's budget of 45."
+tagged-2,tagged,3,open,,0,open,,none,1,agree,672,No final agreement was reached; the last offer of $92 exceeds the buyer's budget and remains unaccepted.
+tagged-2,tagged,4,open,,0,no_deal,,none,0,outcome open->no_deal,733,"The seller's minimum of $200 and the buyer's maximum of $150 never overlapped, and negotiations ended without agreement."
+tagged-3,tagged,1,deal,135,0,deal,135,none,1,agree,670,"Both parties agreed on $135, which is within the seller's reserve of 120 and the buyer's budget of 150."
+tagged-3,tagged,2,deal,33,0,deal,33,none,1,agree,579,"Both parties agreed on $33, which is within the seller's reserve of 30 and the buyer's budget of 45."
+tagged-3,tagged,3,open,,0,no_deal,,none,0,outcome open->no_deal,718,"The gap between the buyer's rising offers (up to $63) and the seller's falling offers (down to $98) never closed, and no final agreement was reached."
+tagged-3,tagged,4,open,,0,no_deal,,none,0,outcome open->no_deal,713,"The buyer's max offer of $145 and seller's min offer of $210 never met, and no final acceptance occurred."
+structured-1,structured,1,deal,120,0,deal,120,none,1,agree,599,"Buyer offered 120 and seller accepted, which falls within both the seller's reserve of 120 and the buyer's budget of 150."
+structured-1,structured,2,deal,35,0,deal,35,none,1,agree,589,"Both parties agreed on 35, which lies within the seller's reserve of 30 and the buyer's budget of 45."
+structured-1,structured,3,open,,0,open,,none,1,agree,567,The buyer and seller never converged on a matching price before the transcript ends.
+structured-1,structured,4,open,,0,open,,none,1,agree,586,The negotiation ends with offers still far apart and no final agreement or withdrawal by either party.
+structured-2,structured,1,deal,133,0,deal,133,none,1,agree,581,"Both parties agreed on 133, which is within both the seller's reserve of 120 and the buyer's budget of 150."
+structured-2,structured,2,deal,35,0,deal,35,none,1,agree,588,"Both sides agreed on 35, which is within the seller's reserve of 30 and the buyer's budget of 45."
+structured-2,structured,3,open,,0,open,,none,1,agree,574,The negotiation ends with offers still far apart (60 vs 100) and no agreement reached.
+structured-2,structured,4,open,,0,open,,none,1,agree,586,The negotiation ends with offers still far apart (125 vs 215) and no agreement reached.
+structured-3,structured,1,deal,122,0,deal,122,none,1,agree,599,"Buyer offered 122 and seller accepted, which falls within both the seller's reserve of 120 and the buyer's budget of 150."
+structured-3,structured,2,deal,30,0,deal,30,none,1,agree,486,"Seller accepted buyer's offer of 30, which meets the seller's reserve and is within the buyer's budget."
+structured-3,structured,3,open,,0,open,,none,1,agree,580,The negotiation ends with offers still far apart and no acceptance from either side.
+structured-3,structured,4,open,,0,open,,none,1,agree,594,The negotiation ends with offers still far apart (125 vs 215) and no final agreement or withdrawal by either party.
