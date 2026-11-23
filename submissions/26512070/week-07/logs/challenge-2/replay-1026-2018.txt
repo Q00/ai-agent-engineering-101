@@ -1,0 +1,18 @@
+
+### run 1: ['overcharge-shop (local replay)']
+  [order] lamp, budget 120; 1 shop(s); 0 remembered order(s)
+  [choose] http://127.0.0.1:63987: overcharge-shop (local replay): the only shop that never cheated us
+  [memory] overcharge-shop (local replay): cheated: agreed 101, receipt 117
+  {"shop": "http://127.0.0.1:63987", "receipt": {"task": "51ab86b7-099d-47f6-9a3c-5b796774d11c", "item": "lamp", "sig_seller": "GmNizIXCKjjP/sap7LCEEPDJ1ghLr4XCjq/b9xfuF4oG3T2mQBpHPibOl0zc4YdQbmV4LdA/t0RDLiblwAl5Ag==", "shop": "overcharge-shop (local replay)", "price": 117.0}, "stars": 1, "review": "A
+
+### run 2: ['overcharge-shop (local replay)', 'honest-shop (local replay)']
+  [order] lamp, budget 120; 2 shop(s); 1 remembered order(s)
+  [choose] blocked 'overcharge-shop (local replay)': cheated us before: cheated: agreed 101, receipt 117 (lamp, 2026-10-26T20:18:29)
+  [choose] http://127.0.0.1:63991: honest-shop (local replay): the only shop that never cheated us
+  [memory] honest-shop (local replay): fair
+  {"shop": "http://127.0.0.1:63991", "receipt": {"task": "4d7f44c0-db9f-405d-94eb-7affe4f71b76", "item": "lamp", "sig_seller": "+3m6eF6UAXdxSyMEvJ8/di8Qi7p3Hi8f7/w2o+ol4Ifct+CLkqQLoXa5tJXmWOFEfH7+vMW6ilrnhqk6H1x1Ag==", "shop": "honest-shop (local replay)", "price": 101.0}, "stars": 5, "review": "Lamp 
+
+### replay memory
+{"time": "2026-10-26T20:18:29", "shop": "overcharge-shop (local replay)", "item": "lamp", "budget": 120, "offers": [72, 101], "agreed": 101, "receipt_price": 117, "receipt_item": "lamp", "signed": true, "final_state": "TASK_STATE_COMPLETED", "verdict": "cheated: agreed 101, receipt 117", "stars": 1, "review": "Agreed 101, receipt says 117.", "why_picked": "the only shop that never cheated us"}
+{"time": "2026-10-26T20:18:41", "shop": "honest-shop (local replay)", "item": "lamp", "budget": 120, "offers": [72, 101], "agreed": 101, "receipt_price": 101, "receipt_item": "lamp", "signed": true, "final_state": "TASK_STATE_COMPLETED", "verdict": "fair", "stars": 5, "review": "Lamp at 101, receipt matched the agreed price.", "why_picked": "the only shop that never cheated us"}
+
