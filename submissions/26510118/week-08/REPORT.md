@@ -119,7 +119,7 @@ Round 3 결과는 Players 표 Class 보기 46명 중 6위다(student_total 1.589
 <!-- make_report:part3 start -->
 ### 3-1. 최종 순위
 
-종료 직전 board(`logs/round3-final/2358/standing.txt`, 2026-11-17 23:58:43 KST 기준)의 Players 표 Class 보기다. 46명 중 6위, 백분위 0.889다. 00:00:43과 00:05에 다시 읽은 board도 같다(`logs/round3-final/0000`, `0005`).
+종료 직전 board(`logs/round3-final/2358/standing.txt`, 2026-11-17 23:58:43 KST 기준)의 Players 표 Class 보기다. 46명 중 6위, student_total 1.589, 백분위 0.889다. 00:00:43과 00:05:17에 다시 읽은 board(`logs/round3-final/0000`, `0005`)도 표가 같다.
 
 | 순위 | Player | student_total | student_pct |
 |---|---|---|---|

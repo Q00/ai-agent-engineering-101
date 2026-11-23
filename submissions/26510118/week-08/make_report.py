@@ -101,9 +101,18 @@ def part3() -> str:
     buyer = next(b for b in board["buyers"] if b["name"] == "Kiro729")
 
     out.append("### 3-1. 최종 순위\n")
+    table = lambda lines: [l for l in lines[1:] if not l.startswith("our ")]
+    ours = next(re.match(r"\s*(\d+)\. \S+\s+student_total ([\d.]+)\s+student_pct ([\d.]+)", l) for l in standing if l.endswith("<- us"))
+    whens, same = [], []
+    for label in ("0000", "0005"):
+        other = (LOGS / "round3-final" / label / "standing.txt").read_text(encoding="utf-8").splitlines()
+        whens.append(other[0].split(",")[0].replace("board read ", "").split(" ")[1])
+        same.append(table(other) == table(standing))
+    later = [f"{whens[0]}과 {whens[1]}에 다시 읽은 board(`logs/round3-final/0000`, `0005`)도 "
+             + ("표가 같다" if all(same) else "표가 다르다")]
     out.append(f"종료 직전 board(`logs/round3-final/2358/standing.txt`, {standing[0].split(',')[0].replace('board read ', '')} 기준)의 "
-               "Players 표 Class 보기다. 46명 중 6위, 백분위 0.889다. 00:00:43과 00:05에 다시 읽은 board도 같다"
-               "(`logs/round3-final/0000`, `0005`).\n")
+               f"Players 표 Class 보기다. {len(table(standing))}명 중 {ours[1]}위, student_total {ours[2]}, 백분위 {ours[3]}다. "
+               + ", ".join(later) + ".\n")
     out.append("| 순위 | Player | student_total | student_pct |")
     out.append("|---|---|---|---|")
     for line in standing[1:9]:
