@@ -38,6 +38,21 @@ journald 복구 방법: market-kit.service는 stdout을 파일과 journald 양�
 | `meetings/CONTINGENCY.md` | 11-11 07:52 | 컨틴전시 회의: 유닛별 감사, 교차 답변, 의장 순위 |
 | `meetings/hq_decisions.md` | 11-03 → 11-04 01:46 | HQ 결정 기록(조직, 가격, 게시판 규칙) |
 
+## 1.6 실행 상태 스냅숏 (`recovered/private-final/`)
+
+조직의 실행 상태(`private/`)는 VPS에만 두고 커밋하지 않았다. 원장 사본 `market.db`가 수백 MB라서다. 대신 REPORT가 이름으로 가리키는 작은 설정·계획 파일과 HQ 결정 기록 전체를 11-23에 VPS에서 그대로 복사했다. Round 3 종료(11-17 23:59) 뒤에도 팀 회의가 몇 번 돌아서, `marketing_plan.json`의 `follow_skus` 같은 값은 종료 시점과 조금 다를 수 있다.
+
+| 파일 | 내용 |
+|---|---|
+| `hq_decisions.md` | HQ 결정·경보 기록 전체(11-03 → 11-23, 447항목). 3.4절의 회의 일시 중지(11-10 03:03), 무기한 보증 사고(11-10 19:05), HQ 실험(11-11)의 근거 |
+| `owner_directives.md` | 매 회의 브리프에 들어간 HQ 지시(최대 20개) |
+| `owner_override.json` | HQ가 마지막에 덮어쓰는 설정(차단 목록, 보증·정리 규칙, 구매 r_min) |
+| `marketing_plan.json`, `finance_limits.json`, `scm_plan.json`, `buyer_plan.json` | 세일즈·재경·SCM·바이어팀이 회의로 쓴 마지막 계획 |
+| `emergency_agenda.json` | 마지막 비상 회의 안건 |
+| `enuri_book.json` | 에누리팀의 가격·품질 장부 |
+| `hr/targets.json` | 인사팀 KPI 목표 |
+| `model_block.json` | 모델 사용량 한도 상태(대체 모델 전환에 쓰임) |
+
 ## 2. 11-03 ~ 11-08 공백을 메우는 기록
 
 이 구간의 키트 콘솔 텍스트는 남아 있지 않다. 대신 거래 자체는 다른 경로로 전부 남아 있다.
