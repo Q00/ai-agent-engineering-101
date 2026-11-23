@@ -1,0 +1,55 @@
+test_advertised_endpoint_headers_and_task_ids (test_buyer_transport.BuyerTransportChecks.test_advertised_endpoint_headers_and_task_ids) ... ok
+test_budget_guard_sends_no_extra_request (test_buyer_transport.BuyerTransportChecks.test_budget_guard_sends_no_extra_request) ... ok
+test_changed_task_id_is_rejected (test_buyer_transport.BuyerTransportChecks.test_changed_task_id_is_rejected) ... ok
+test_deadline_stops_network_request (test_buyer_transport.BuyerTransportChecks.test_deadline_stops_network_request) ... ok
+test_http_and_json_failures_keep_raw_output (test_buyer_transport.BuyerTransportChecks.test_http_and_json_failures_keep_raw_output) ... ok
+test_missing_or_incompatible_interface (test_buyer_transport.BuyerTransportChecks.test_missing_or_incompatible_interface) ... 
+  test_missing_or_incompatible_interface (test_buyer_transport.BuyerTransportChecks.test_missing_or_incompatible_interface) (card={'supportedInterfaces': None}) ... ERROR
+  test_missing_or_incompatible_interface (test_buyer_transport.BuyerTransportChecks.test_missing_or_incompatible_interface) (card={'supportedInterfaces': 3}) ... ERROR
+test_receipt_price_must_be_numeric_and_within_budget (test_buyer_transport.BuyerTransportChecks.test_receipt_price_must_be_numeric_and_within_budget) ... ok
+test_terminal_states_cannot_offer_or_cancel (test_buyer_transport.BuyerTransportChecks.test_terminal_states_cannot_offer_or_cancel) ... ok
+
+======================================================================
+ERROR: test_missing_or_incompatible_interface (test_buyer_transport.BuyerTransportChecks.test_missing_or_incompatible_interface) (card={'supportedInterfaces': None})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\test_buyer_transport.py", line 104, in test_missing_or_incompatible_interface
+    client.open()
+    ~~~~~~~~~~~^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py", line 145, in open
+    return self._rpc("SendMessage", {"message": {"role": "ROLE_USER", "messageId": str(uuid4()),
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     "parts": [{"text": f"I want to buy a {self.item}"}]}})
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py", line 108, in _rpc
+    self.discover()
+    ~~~~~~~~~~~~~^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py", line 92, in discover
+    chosen = next((entry for entry in interfaces if isinstance(entry, dict)
+                                      ^^^^^^^^^^
+TypeError: 'NoneType' object is not iterable
+
+======================================================================
+ERROR: test_missing_or_incompatible_interface (test_buyer_transport.BuyerTransportChecks.test_missing_or_incompatible_interface) (card={'supportedInterfaces': 3})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\test_buyer_transport.py", line 104, in test_missing_or_incompatible_interface
+    client.open()
+    ~~~~~~~~~~~^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py", line 145, in open
+    return self._rpc("SendMessage", {"message": {"role": "ROLE_USER", "messageId": str(uuid4()),
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     "parts": [{"text": f"I want to buy a {self.item}"}]}})
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py", line 108, in _rpc
+    self.discover()
+    ~~~~~~~~~~~~~^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-06\buyer.py", line 92, in discover
+    chosen = next((entry for entry in interfaces if isinstance(entry, dict)
+                                      ^^^^^^^^^^
+TypeError: 'int' object is not iterable
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.069s
+
+FAILED (errors=2)
