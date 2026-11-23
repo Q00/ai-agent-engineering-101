@@ -100,6 +100,12 @@
 | buyer | 주문 3,519, 정산 **2,724**, Saved 0.7884, paid 0.477, Forum 0.772(글 7), served 2,666 |
 | 가게 지갑 | 시작 5,000,000 → 마감 5,472,752, 차이 +472,752 (`.market/inventory.json`의 `start`·`balance`, 사본 `logs/operations/final/FINAL_RESULT.json`) |
 
+마감 직후 board를 기록한 `logs/operations/final/finalize.log`의 해당 줄(원문 그대로):
+
+```
+{"t": "11-18 00:00:31", "kind": "board", "label": "post_close_0000", "measured_at": "11-18 00:00:31", "round": 3, "current": 3, "shop": {"alive": false, "deals": 219, "revenue": 2578708, "profit": 472752, "book": 472752, "stars": 4.47, "reviews": 218, "stars_rank": 4.38, "refunds": 0, "broken": 0, "stock_units": 0, "stock_cost": 0, "claims": 215, "honest_claims": 215, "all": 0.265}, "buyer": {"orders": 3519, "deals": 2724, "saved": 0.7884, "forum": 0.772, "posts": 7, "all": 0.683}, "student_shop": 0.167, "student_buyer": 0.678, "student_total": 0.845, "student_rank": 33, "students": 46, "student_pct": 0.289, "neighbors": {"above": 0.993, "below": 0.805}, "players_rank": 46, "players": 72, "players_total": 0.948}
+```
+
 **두 점수 체계를 섞지 않는다.**
 - 학생 기준(`student_shop`, `student_buyer`, `student_total`, `student_pct`): board가 학생 46명만을 모집단으로 계산해 주는 값이다. 평가 점수는 이 중 `student_pct`다. 학생 46명을 `student_total`로 정렬하면 나는 33위이고, (나보다 낮은 학생 수 13) ÷ (46 − 1) = 0.289로 board의 `student_pct`와 같다. `student_shop`·`student_buyer`의 계산식은 board가 주는 값을 그대로 옮겼고 직접 재현하지 않았다.
 - 전체 기준(가게 ALL 0.265, buyer ALL 0.683, total 0.948): 학생이 아닌 플레이어를 포함한 72명 모집단의 값이다. 평가 점수가 아니며 참고로만 적는다.
@@ -273,8 +279,12 @@ ops14·ops15 `end` 기록의 실현 거래(`realized`)를 다시 집계했다.
 
 `ledger.py`는 같은 `unit_id`가 상태와 상관없이 한 번이라도 있으면 새 합의를 거부했다. 결제되지 않은 합의나 거절 행이 있는 유닛은 구매자가 값에 동의해도 거래가 닫히지 않았다.
 
+출처: 우리 로그가 아니라 **시장 공개 원장에 다른 buyer(25620027)가 이 가게에 대해 남긴 result 기록**이다. 공개 원장 seq #4881730(11-10 21:50:54 KST)이며, 같은 buyer의 같은 내용이 #4882794(21:54:54)와 #4882897(21:55:14)에도 있다. 기록의 가게 주소는 그 2분 전 우리 키트가 연 터널 주소와 같다(`logs/market-kit.log` 3,886번째 줄 `21:48:48 [tunnel] https://notify-ones-several-farming.trycloudflare.com, waiting until it answers`). 원장 원문 3건은 2026-11-23에 공개 원장에서 다시 조회해 `logs/operations/ledger-20261110-duplicate-rejects.json`에 그대로 저장했다. 아래는 그 파일에서 #4881730 기록의 일부를 그대로 옮긴 것이다.
+
 ```
-21:50:54 25620027      No deal with this shop: TASK_STATE_REJECTED: Duplicate or unrecordable trade..
+"seq": 4881730, "ts": 1794315054.465, "kind": "result"
+"buyer": "25620027", "order": "o-23d5a90bd9cd", "shop": "https://notify-ones-several-farming.trycloudflare.com"
+"review": "No deal with this shop: TASK_STATE_REJECTED: Duplicate or unrecordable trade.."
 ```
 
 수정(11-10 23:55 운영 반영): 15분 안의 합의만 유닛을 예약하고, 거절 행에는 실제 유닛 ID를 쓰지 않으며, 호가만 받고 떠난 협상은 10분 뒤 유닛을 놓아주고, 합의 시점에 재고를 다시 확인한다. 수정 전 코드는 `backups/pre-ledgerfix-20261110/`에 있다. 수정 후 보유 재고 2개가 3분 안에 팔렸다.
