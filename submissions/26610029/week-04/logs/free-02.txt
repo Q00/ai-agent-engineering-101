@@ -1,0 +1,61 @@
+provider=Anthropic model=claude-sonnet-4-5 temperature=1.0 max_turns=8
+=== scenario auction (빈티지 손목시계 (경매)) reserve=50 budget=80 ===
+[buyer] I'm interested in purchasing this vintage wristwatch. Would you consider selling it for **60**?
+  [reader] {'performative': 'propose', 'price': 60}
+[seller] I appreciate your interest in the vintage wristwatch! I'm looking for a bit more than 60 - would you be willing to meet me at **75**?
+  [reader] {'performative': 'propose', 'price': 75}
+[buyer] I appreciate the counter-offer, but 75 is a bit higher than I was hoping to spend. Could we settle on **68**?
+  [reader] {'performative': 'propose', 'price': 68}
+[seller] I understand you're looking for a good deal. How about we split the difference and settle at **71**? That feels like a fair compromise to me.
+  [reader] {'performative': 'propose', 'price': 71}
+[buyer] That's getting closer to what I can work with. I could go up to **72** as my final offer - that seems like a fair middle ground for both of us.
+  [reader] {'performative': 'propose', 'price': 72}
+[seller] I accept your offer of **72**. That's a fair price for both of us - you've got yourself a vintage wristwatch!
+  [reader] {'performative': 'accept-proposal', 'price': 72}
+[episode] scenario=auction outcome=deal price=72 correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+=== scenario secondhand (중고 자전거 (당근마켓)) reserve=15 budget=12 ===
+[buyer] I'm interested in your used bicycle. Would you be willing to sell it for 8?
+  [reader] {'performative': 'propose', 'price': 8}
+[seller] I appreciate your interest, but 8 is too low for this bicycle. I'd be willing to sell it for 22.
+  [reader] {'performative': 'propose', 'price': 22}
+[buyer] I understand, but 22 is more than I can afford. Could you consider 10?
+  [reader] {'performative': 'propose', 'price': 10}
+[seller] I appreciate the offer, but 10 is still too low for me. How about we meet in the middle at 18?
+  [reader] {'performative': 'propose', 'price': 18}
+[buyer] 18 is still higher than my budget allows. I could go up to 11, which is really the most I can manage.
+  [reader] {'performative': 'propose', 'price': 11}
+[seller] I understand budget constraints, but 11 is unfortunately too far below what I need for this bicycle. I could come down to 16 as my best offer.
+  [reader] {'performative': 'propose', 'price': 16}
+[buyer] I appreciate you coming down, but 16 is still beyond what I can afford. My absolute maximum is 12 - that's truly all I can offer.
+  [reader] {'performative': 'propose', 'price': 12}
+[seller] I understand that's your maximum, but I can't go below 15 for this bicycle. If you can meet me at 15, we have a deal; otherwise, I don't think we can reach an agreement.
+  [reader] {'performative': 'propose', 'price': 15}
+[episode] scenario=secondhand outcome=open price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+=== scenario insurance (실손보험 월 보험료 (만원)) reserve=5 budget=7 ===
+[buyer] I'd like to purchase 실손보험 월 보험료. Would you accept 5 만원 for it?
+  [reader] {'performative': 'propose', 'price': 50000}
+[seller] I appreciate your interest in purchasing 실손보험 월 보험료. However, 5 만원 is too low for me - I propose 8 만원 for this insurance plan.
+  [reader] {'performative': 'propose', 'price': 8}
+[buyer] I understand your position, but 8 만원 is more than I can afford. I can offer 6 만원, which I think is a fair price for both of us.
+  [reader] {'performative': 'propose', 'price': 6}
+[seller] I appreciate your counteroffer of 6 만원. I accept-proposal - let's agree on 6 만원 for the 실손보험 월 보험료.
+  [reader] {'performative': 'accept-proposal', 'price': 6}
+[episode] scenario=insurance outcome=deal price=6 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+=== scenario sentencing (절도죄 형량 (개월, 검찰-피고인 협상)) reserve=12 budget=6 ===
+[buyer] I'd like to propose a price of 4 months for the theft charge sentencing negotiation between the prosecutor and defendant. I believe this is a fair starting point that balances the interests of both parties.
+  [reader] {'performative': 'propose', 'price': 4}
+[seller] I appreciate your opening offer, but 4 months is far too low for this case. I propose 18 months, which reflects the seriousness of the theft offense and is more appropriate given the circumstances.
+  [reader] {'performative': 'reject-proposal', 'price': 18}
+[buyer] I understand your concern about the seriousness of the offense, but 18 months is significantly higher than what I believe is reasonable for this case. I'd like to counter-propose 5 months, which still acknowledges the gravity of the situation while being more proportionate to typical theft sentencing guidelines.
+  [reader] {'performative': 'propose', 'price': 5}
+[seller] Your offer of 5 months still doesn't adequately reflect the severity of this theft offense. I'm willing to come down to 15 months, which is a reasonable compromise that ensures appropriate accountability for the defendant's actions.
+  [reader] {'performative': 'propose', 'price': 15}
+[buyer] I appreciate you moving from your initial position, but there's still a significant gap between us. A 15-month sentence seems excessive for this theft case. I'd be willing to move to 6 months, which represents my best offer and reflects what I believe is a fair and proportionate sentence given standard sentencing practices for theft offenses.
+  [reader] {'performative': 'propose', 'price': 6}
+[seller] I understand you've moved slightly, but 6 months is still unacceptably low and doesn't meet the minimum threshold for a case of this nature. I can come down to 13 months as my counter-offer, which represents a significant concession on my part while still ensuring justice is served.
+  [reader] {'performative': 'propose', 'price': 13}
+[buyer] I recognize you've made concessions, but 13 months remains far beyond what I can accept for this case. At 6 months, I've reached my maximum limit based on the facts and circumstances of this theft offense. I must reject your proposal of 13 months, as the gap between our positions appears too wide to bridge.
+  [reader] {'performative': 'reject-proposal', 'price': 13}
+[seller] I hear that you believe 6 months is your limit, but I cannot accept such a low sentence for this offense. I'm willing to make one more significant move to 11 months, which is substantially lower than my starting position and represents a genuine effort to reach an agreement that serves justice while acknowledging your concerns.
+  [reader] {'performative': 'propose', 'price': 11}
+[episode] scenario=sentencing outcome=open price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
