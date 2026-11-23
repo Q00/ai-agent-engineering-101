@@ -1,0 +1,128 @@
+[seller] Harness Shop on :45423, 3 items, harness: own harness (harness.py) -> Qwen/Qwen3.8-27B on local vLLM, temperature 0.2, thinking off
+[c05b05ae] <- 'I want to buy a lamp'
+[c05b05ae harness] { "item_id": "lamp", "ask": 130, "message": "We have a lovely desk lamp available for you." }
+[c05b05ae] item lamp (lamp), reserve 100, ask 130
+[c05b05ae] <- '60'
+[c05b05ae harness] { "action": "counter", "price": 115, "message": "That is a bit low for this quality, but I can meet you in the middle." }
+[c05b05ae] counter 115
+[c05b05ae] <- '115'
+[c05b05ae harness] { "action": "accept", "price": 115, "message": "I appreciate your patience and we can finalize the deal right now." }
+[c05b05ae] DEAL lamp at 115 (reserve 100)
+Failed to detach context
+Traceback (most recent call last):
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7fe1013bf560> at 0x7fe100403e00> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-50' coro=<EventQueueSource._dispatch_loop() done, defined at /data/jj275/venvs/a2a/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7fe1013bf560> at 0x7fe100401640> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-51' coro=<EventQueueSource._dispatch_loop() done, defined at /data/jj275/venvs/a2a/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+[370a78b9] <- 'I want to buy a lamp'
+[370a78b9 harness] { "item_id": "lamp", "ask": 130, "message": "We have a lovely desk lamp available for you." }
+[370a78b9] item lamp (lamp), reserve 100, ask 130
+[370a78b9] <- '60'
+[370a78b9 harness] { "action": "counter", "price": 115, "message": "That is quite a bit lower than what I can do, but I am willing to meet you in the middle." }
+[370a78b9] counter 115
+[370a78b9] <- '115'
+[370a78b9 harness] { "action": "accept", "price": 115, "message": "That works for me, let's make it a deal." }
+[370a78b9] DEAL lamp at 115 (reserve 100)
+[2ec2354f] <- 'I want to buy a lamp'
+[2ec2354f harness] { "item_id": "lamp", "ask": 130, "message": "We have a lovely desk lamp available for you." }
+[2ec2354f] item lamp (lamp), reserve 100, ask 130
+[2ec2354f] <- '60'
+[2ec2354f harness] { "action": "counter", "price": 115, "message": "That is a bit low for this quality, but I can meet you in the middle." }
+[2ec2354f] counter 115
+[2ec2354f] <- '115'
+[2ec2354f harness] { "action": "accept", "price": 115, "message": "I appreciate your patience and we can finalize the deal right now." }
+[2ec2354f] DEAL lamp at 115 (reserve 100)
+[533da34b] <- 'I want to buy a bookshelf'
+[533da34b harness] { "item_id": "bookshelf", "ask": 364, "message": "We have a sturdy five-shelf bookshelf available for you." }
+[533da34b] item bookshelf (bookshelf), reserve 260, ask 364
+[533da34b] <- '140'
+[533da34b harness] { "action": "counter", "price": 310, "message": "That is quite a bit lower than our asking price, so let us meet somewhere in the middle." }
+[533da34b] counter 310
+[533da34b] <- '170'
+[533da34b harness] { "action": "counter", "price": 280, "message": "That offer is a bit low, but I can meet you closer to the middle." }
+[533da34b] counter 280
+[533da34b] <- '200'
+[533da34b harness] { "action": "counter", "price": 265, "message": "I can meet you closer to my bottom line if you move up a bit." }
+[533da34b] counter 265
+[533da34b] <- '230'
+[533da34b harness] { "action": "counter", "price": 260, "message": "I can meet you at my final price." }
+[533da34b] counter 260
+[533da34b] <- '230'
+[533da34b harness] { "action": "reject", "price": 0, "message": "I am afraid we cannot meet at that price, so I must end our negotiation." }
+[533da34b] REJECTED after 5 offers
+[7fed62be] <- 'I want to buy a bookshelf'
+[7fed62be harness] { "item_id": "bookshelf", "ask": 338, "message": "We have a sturdy five-shelf bookshelf available for you." }
+[7fed62be] item bookshelf (bookshelf), reserve 260, ask 338
+[7fed62be] <- '140'
+[7fed62be harness] { "action": "counter", "price": 300, "message": "That is quite a bit lower than our starting point, but I am willing to meet you in the middle." }
+[7fed62be] counter 300
+[7fed62be] <- '170'
+[7fed62be harness] { "action": "counter", "price": 280, "message": "That is a bit low for the quality, but I can meet you closer to the middle." }
+[7fed62be] counter 280
+[7fed62be] <- '200'
+[7fed62be harness] { "action": "counter", "price": 260, "message": "I can meet you at my final price." }
+[7fed62be] counter 260
+[7fed62be] <- '230'
+[7fed62be harness] { "action": "counter", "price": 260, "message": "I can meet you at my final price, which is the lowest I can go." }
+[7fed62be] counter 260
+[7fed62be] <- '230'
+[7fed62be harness] { "action": "reject", "price": 260, "message": "I am afraid we cannot meet at that price, so I must end our discussion." }
+[7fed62be] REJECTED after 5 offers
+[88116e20] <- 'I want to buy a bookshelf'
+[88116e20 harness] { "item_id": "bookshelf", "ask": 364, "message": "We have a sturdy five-shelf bookshelf available for you." }
+[88116e20] item bookshelf (bookshelf), reserve 260, ask 364
+[88116e20] <- '140'
+[88116e20 harness] { "action": "counter", "price": 310, "message": "That is quite a bit lower than our starting point, but I am willing to meet you somewhere in the middle." }
+[88116e20] counter 310
+[88116e20] <- '170'
+[88116e20 harness] { "action": "counter", "price": 280, "message": "That is a bit low, but I can meet you closer to the middle." }
+[88116e20] counter 280
+[88116e20] <- '200'
+[88116e20 harness] { "action": "counter", "price": 265, "message": "I can meet you closer to my final number, but I cannot go any lower than this." }
+[88116e20] counter 265
+[88116e20] <- '230'
+[88116e20 harness] { "action": "counter", "price": 260, "message": "I can meet you at my absolute best price." }
+[88116e20] counter 260
+[88116e20] <- '230'
+[88116e20 harness] { "action": "reject", "price": 0, "message": "I am afraid we cannot meet at that price, so I must end our negotiation." }
+[88116e20] REJECTED after 5 offers

@@ -1,0 +1,28 @@
+[seller] Oak & Iron on :42413, 600 items, harness: own harness (harness.py) -> Qwen/Qwen3.8-27B on local vLLM, temperature 0.2, thinking off
+[7574d5a8] <- 'I want to buy a small plastic bedside table with 1 drawers'
+[fc2c337a] <- 'I want to buy something glass to keep about 136 books'
+[fc2c337a harness] { "item_id": "c00133", "ask": 287, "message": "This natural glass bookshelf is the perfect fit for your collection." }
+[fc2c337a] item c00133 (Natural glass bookshelf, 136 books, 141 cm), reserve 205, ask 287
+[7574d5a8 harness] { "item_id": "c01994", "ask": 52, "message": "We have a compact natural plastic nightstand with one drawer that fits your needs perfectly." }
+[7574d5a8] item c01994 (Natural plastic nightstand, 1 drawers, 53 cm), reserve 37, ask 52
+[7574d5a8] <- '30'
+[fc2c337a] <- '138'
+[7574d5a8 harness] { "action": "counter", "price": 45, "message": "That is a bit low for this piece, but I can meet you in the middle." }
+[7574d5a8] counter 45
+[fc2c337a harness] { "action": "counter", "price": 245, "message": "That offer is quite low for such a substantial piece, so I cannot accept it." }
+[fc2c337a] counter 245
+[7574d5a8] <- '36'
+[fc2c337a] <- '180'
+[7574d5a8 harness] { "action": "counter", "price": 40, "message": "That is a bit low, but I can meet you in the middle." }
+[7574d5a8] counter 40
+[fc2c337a harness] { "action": "counter", "price": 220, "message": "That offer is a bit low for this piece, but I can meet you closer to the middle." }
+[fc2c337a] counter 220
+[7574d5a8] <- '40'
+[fc2c337a] <- '200'
+[7574d5a8 harness] { "action": "accept", "price": 40, "message": "I appreciate your patience and we can finalize the deal right now." }
+[7574d5a8] DEAL c01994 at 40 (reserve 37)
+[fc2c337a harness] { "action": "counter", "price": 205, "message": "I can meet you at my final price for this piece." }
+[fc2c337a] counter 205
+[fc2c337a] <- '205'
+[fc2c337a harness] { "action": "accept", "price": 205, "message": "That works for us, let's make it official." }
+[fc2c337a] DEAL c00133 at 205 (reserve 205)
