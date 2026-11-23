@@ -1,0 +1,27 @@
+{"condition": "baseline", "event": "meta", "model": "nvidia/nemotron-3.5-lightning:free", "provider": "https://openrouter.ai/api/v1", "temperature": 0}
+{"contractor": "A", "description": "Compute 137 * 249 and return the number.", "event": "announcement", "task": 1}
+{"bid": true, "confidence": 100, "contractor": "A", "event": "bid", "parsed": true, "reason": "Arithmetic multiplication is within my calculation skill.", "task": 1}
+{"contractor": "B", "description": "Compute 137 * 249 and return the number.", "event": "announcement", "task": 1}
+{"bid": false, "confidence": 0, "contractor": "B", "event": "bid", "parsed": true, "reason": "Task requires math computation, outside my plain-language rewriting skill.", "task": 1}
+{"contractor": "C", "description": "Compute 137 * 249 and return the number.", "event": "announcement", "task": 1}
+{"bid": true, "confidence": 100, "contractor": "C", "event": "bid", "parsed": true, "reason": "Python can easily compute arithmetic expressions.", "task": 1}
+{"contractor": "A", "correct": true, "event": "award", "gold": "A", "task": 1}
+{"contractor": "A", "description": "Compute (840 - 216) / 8 and return the number.", "event": "announcement", "task": 2}
+{"bid": true, "confidence": 100, "contractor": "A", "event": "bid", "parsed": true, "reason": "Simple arithmetic: (840 - 216) / 8 = 78", "task": 2}
+{"contractor": "B", "description": "Compute (840 - 216) / 8 and return the number.", "event": "announcement", "task": 2}
+{"bid": false, "confidence": 100, "contractor": "B", "event": "bid", "parsed": true, "reason": "Task is arithmetic computation, outside my plain-language rewriting and short-form writing skill.", "task": 2}
+{"contractor": "C", "description": "Compute (840 - 216) / 8 and return the number.", "event": "announcement", "task": 2}
+{"bid": true, "confidence": 100, "contractor": "C", "event": "bid", "parsed": true, "reason": "Arithmetic computation (840 - 216) / 8 is a basic Python programming task.", "task": 2}
+{"contractor": "A", "correct": true, "event": "award", "gold": "A", "task": 2}
+{"contractor": "A", "description": "Rewrite this sentence in plain English for a 10-year-old: Photosynthesis converts light energy into chemical energy.", "event": "announcement", "task": 3}
+{"bid": false, "confidence": 0, "contractor": "A", "event": "bid", "parsed": true, "reason": "My skill is arithmetic and numerical calculation, not language rewriting.", "task": 3}
+{"contractor": "B", "description": "Rewrite this sentence in plain English for a 10-year-old: Photosynthesis converts light energy into chemical energy.", "event": "announcement", "task": 3}
+{"bid": true, "confidence": 95, "contractor": "B", "event": "bid", "parsed": true, "reason": "This task directly matches my skill in plain-language rewriting for young audiences.", "task": 3}
+{"contractor": "C", "description": "Rewrite this sentence in plain English for a 10-year-old: Photosynthesis converts light energy into chemical energy.", "event": "announcement", "task": 3}
+{"bid": false, "confidence": 0, "contractor": "C", "event": "bid", "parsed": true, "reason": "Task does not fall within Python programming and debugging skill.", "task": 3}
+{"contractor": "B", "correct": true, "event": "award", "gold": "B", "task": 3}
+{"contractor": "A", "description": "Write a two-sentence welcome message for new students joining an AI engineering course.", "event": "announcement", "task": 4}
+{"bid": false, "confidence": 0, "contractor": "A", "event": "bid", "parsed": true, "reason": "Task requires writing, not arithmetic or numerical calculation.", "task": 4}
+{"contractor": "B", "description": "Write a two-sentence welcome message for new students joining an AI engineering course.", "event": "announcement", "task": 4}
+{"bid": true, "confidence": 95, "contractor": "B", "event": "bid", "parsed": true, "reason": "This task directly aligns with my expertise in plain-language rewriting and short-form writing.", "task": 4}
+{"contractor": "C", "description": "Write a two-sentence welcome message for new students joining an AI engineering course.", "event": "announcement", "task": 4}

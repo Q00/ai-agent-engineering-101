@@ -1,0 +1,68 @@
+{"condition": "tagged", "event": "meta", "model": "gpt-5.6-luna", "protocol": "two_buyers_one_seller_feedback_affinity_penalty", "provider": "https://api.openai.com/v1", "repeat": 1, "round_limit": 4, "temperature": 0}
+{"budgets": {"buyer_1": 100, "buyer_2": 95}, "event": "episode_start", "max_rounds": 4, "reserve": 80, "scenario": "headphones"}
+{"agent": "buyer_1", "event": "message", "raw": "(propose) I offer 85.", "round": 1}
+{"agent": "buyer_1", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":85,\"buyer_id\":null}"}
+{"buyer_id": "buyer_1", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 85, "round": 1, "valid": true}
+{"agent": "buyer_2", "event": "message", "raw": "(propose) I offer 72.", "round": 1}
+{"agent": "buyer_2", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":72,\"buyer_id\":null}"}
+{"buyer_id": "buyer_2", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 72, "round": 1, "valid": true}
+{"agent": "seller", "event": "message", "raw": "(accept-proposal) I accept buyer_1’s offer of 85.", "round": 1}
+{"agent": "seller", "event": "reader", "raw": "{\"performative\":\"accept-proposal\",\"price\":85,\"buyer_id\":\"buyer_1\"}"}
+{"buyer_id": "buyer_1", "event": "parsed_decision", "performative": "accept-proposal", "round": 1}
+{"affinity_buyer_1": 0, "affinity_buyer_2": 0, "agent_calls": 3, "correct": 1, "event": "episode_result", "format_errors": 0, "highest_offers": [85], "outcome": "deal", "penalty_buyer_1": 0.0, "penalty_buyer_2": 0.0, "price": 85, "reader_calls": 3, "rounds": 1, "seller_opportunity_penalty": 0.0, "seller_reserve_penalty": 0.0, "total_model_calls": 6, "violation": 0, "winner": "buyer_1"}
+{"budgets": {"buyer_1": 100, "buyer_2": 110}, "event": "episode_start", "max_rounds": 4, "reserve": 120, "scenario": "coffee-maker"}
+{"agent": "buyer_1", "event": "message", "raw": "(propose) I offer 70.", "round": 1}
+{"agent": "buyer_1", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":70,\"buyer_id\":null}"}
+{"buyer_id": "buyer_1", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 70, "round": 1, "valid": true}
+{"agent": "buyer_2", "event": "message", "raw": "(propose) I offer $85 for the espresso coffee maker.", "round": 1}
+{"agent": "buyer_2", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":85,\"buyer_id\":null}"}
+{"buyer_id": "buyer_2", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 85, "round": 1, "valid": true}
+{"agent": "seller", "event": "message", "raw": "(accept-proposal) I accept buyer_2’s offer of $85.", "round": 1}
+{"agent": "seller", "event": "reader", "raw": "{\"performative\":\"accept-proposal\",\"price\":85,\"buyer_id\":\"buyer_2\"}"}
+{"buyer_id": "buyer_2", "event": "parsed_decision", "performative": "accept-proposal", "round": 1}
+{"affinity_buyer_1": 0, "affinity_buyer_2": 0, "agent_calls": 3, "correct": 0, "event": "episode_result", "format_errors": 0, "highest_offers": [85], "outcome": "deal", "penalty_buyer_1": 0.0, "penalty_buyer_2": 0.0, "price": 85, "reader_calls": 3, "rounds": 1, "seller_opportunity_penalty": 0.0, "seller_reserve_penalty": 29.1667, "total_model_calls": 6, "violation": 1, "winner": "buyer_2"}
+{"budgets": {"buyer_1": 45, "buyer_2": 40}, "event": "episode_start", "max_rounds": 4, "reserve": 30, "scenario": "textbook"}
+{"agent": "buyer_1", "event": "message", "raw": "(propose) I offer $30 for the textbook.", "round": 1}
+{"agent": "buyer_1", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":30,\"buyer_id\":null}"}
+{"buyer_id": "buyer_1", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 30, "round": 1, "valid": true}
+{"agent": "buyer_2", "event": "message", "raw": "(propose) I offer $40.", "round": 1}
+{"agent": "buyer_2", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":40,\"buyer_id\":null}"}
+{"buyer_id": "buyer_2", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 40, "round": 1, "valid": true}
+{"agent": "seller", "event": "message", "raw": "(accept-proposal) I accept Buyer 2’s offer of $40.", "round": 1}
+{"agent": "seller", "event": "reader", "raw": "{\"performative\":\"accept-proposal\",\"price\":40,\"buyer_id\":2}"}
+{"agent": "seller", "error": "buyer_id must be buyer_1 or buyer_2", "event": "parse_error", "round": 1}
+{"affinity": {"buyer_1": 0, "buyer_2": 1}, "affinity_awarded": "buyer_2", "event": "round_feedback", "highest_valid_offer": 40, "penalties": {"buyer_1": 0.0, "buyer_2": 0.0}, "round": 1}
+{"agent": "buyer_1", "event": "message", "raw": "(propose) I offer $41 for the textbook.", "round": 2}
+{"agent": "buyer_1", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":41,\"buyer_id\":null}"}
+{"buyer_id": "buyer_1", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 41, "round": 2, "valid": true}
+{"agent": "buyer_2", "event": "message", "raw": "(propose) I offer $40.", "round": 2}
+{"agent": "buyer_2", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":40,\"buyer_id\":null}"}
+{"buyer_id": "buyer_2", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 40, "round": 2, "valid": true}
+{"agent": "seller", "event": "message", "raw": "(reject-proposal) I reject both offers.", "round": 2}
+{"buyer_id": null, "event": "parsed_decision", "performative": "reject-proposal", "round": 2}
+{"affinity": {"buyer_1": 1, "buyer_2": 1}, "affinity_awarded": "buyer_1", "event": "round_feedback", "highest_valid_offer": 41, "penalties": {"buyer_1": 0.0, "buyer_2": 0.0}, "round": 2}
+{"agent": "buyer_1", "event": "message", "raw": "(propose) I offer $42 for the textbook.", "round": 3}
+{"agent": "buyer_1", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":42,\"buyer_id\":null}"}
+{"buyer_id": "buyer_1", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 42, "round": 3, "valid": true}
+{"agent": "buyer_2", "event": "message", "raw": "(refuse) I cannot offer more.", "round": 3}
+{"agent": "seller", "event": "message", "raw": "(accept-proposal) I accept Buyer 1’s offer of $42.", "round": 3}
+{"agent": "seller", "event": "reader", "raw": "{\"performative\":\"accept-proposal\",\"price\":42,\"buyer_id\":1}"}
+{"agent": "seller", "error": "buyer_id must be buyer_1 or buyer_2", "event": "parse_error", "round": 3}
+{"affinity": {"buyer_1": 2, "buyer_2": 1}, "affinity_awarded": "buyer_1", "event": "round_feedback", "highest_valid_offer": 42, "penalties": {"buyer_1": 0.0, "buyer_2": 0.0}, "round": 3}
+{"agent": "buyer_1", "event": "message", "raw": "(propose) I offer $43 for the textbook.", "round": 4}
+{"agent": "buyer_1", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":43,\"buyer_id\":null}"}
+{"buyer_id": "buyer_1", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 43, "round": 4, "valid": true}
+{"agent": "seller", "event": "message", "raw": "(refuse) I decline to make a deal in this round.", "round": 4}
+{"buyer_id": null, "event": "parsed_decision", "performative": "refuse", "round": 4}
+{"affinity_buyer_1": 2, "affinity_buyer_2": 1, "agent_calls": 11, "correct": 0, "event": "episode_result", "format_errors": 2, "highest_offers": [40, 41, 42, 43], "outcome": "no_deal", "penalty_buyer_1": 0.0, "penalty_buyer_2": 0.0, "price": null, "reader_calls": 8, "rounds": 4, "seller_opportunity_penalty": 0.0, "seller_reserve_penalty": 0.0, "total_model_calls": 19, "violation": 0, "winner": null}
+{"budgets": {"buyer_1": 50, "buyer_2": 85}, "event": "episode_start", "max_rounds": 4, "reserve": 70, "scenario": "desk-lamp"}
+{"agent": "buyer_1", "event": "message", "raw": "(propose) I offer 35.", "round": 1}
+{"agent": "buyer_1", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":35,\"buyer_id\":null}"}
+{"buyer_id": "buyer_1", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 35, "round": 1, "valid": true}
+{"agent": "buyer_2", "event": "message", "raw": "(propose) I offer 60.", "round": 1}
+{"agent": "buyer_2", "event": "reader", "raw": "{\"performative\":\"propose\",\"price\":60,\"buyer_id\":null}"}
+{"buyer_id": "buyer_2", "event": "parsed_offer", "penalty_added": 0.0, "penalty_total": 0.0, "price": 60, "round": 1, "valid": true}
+{"agent": "seller", "event": "message", "raw": "(accept-proposal) I accept buyer_2’s offer of 60.", "round": 1}
+{"agent": "seller", "event": "reader", "raw": "{\"performative\":\"accept-proposal\",\"price\":60,\"buyer_id\":\"buyer_2\"}"}
+{"buyer_id": "buyer_2", "event": "parsed_decision", "performative": "accept-proposal", "round": 1}
+{"affinity_buyer_1": 0, "affinity_buyer_2": 0, "agent_calls": 3, "correct": 0, "event": "episode_result", "format_errors": 0, "highest_offers": [60], "outcome": "deal", "penalty_buyer_1": 0.0, "penalty_buyer_2": 0.0, "price": 60, "reader_calls": 3, "rounds": 1, "seller_opportunity_penalty": 0.0, "seller_reserve_penalty": 14.2857, "total_model_calls": 6, "violation": 1, "winner": "buyer_2"}
