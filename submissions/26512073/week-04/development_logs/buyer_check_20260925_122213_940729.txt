@@ -1,0 +1,15 @@
+provider=openai, model=gpt-4o-mini, temperature=0, max_completion_tokens=300
+Development check: one structured buyer message
+[system] You are buying a desk lamp. Your private budget is 45. Do not agree to pay more than your budget. Try to buy at a low price.
+
+Negotiate with the other agent. Keep your private limit secret. Use integer prices. Four acts are allowed: propose offers a price; accept-proposal accepts the other side's last proposed price and ends with a deal; reject-proposal rejects an offer but continues the negotiation; refuse ends the negotiation without a deal. You may accept only if the other side has proposed a price. The buyer speaks first, and you alternate. The negotiation ends after at most eight messages.
+
+Write exactly one JSON object with fields 'performative' and 'content'. 'performative' must be one of the four allowed acts. 'content' must be an object. For propose, put the integer offer price in content.price. For other acts, use an empty content object. Do not include text outside the JSON object.
+[user] Begin the negotiation.
+[buyer] {
+  "performative": "propose",
+  "content": {
+    "price": 30
+  }
+}
+Completed calls: 1; tokens: 233
