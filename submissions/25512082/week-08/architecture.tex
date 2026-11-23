@@ -1,114 +1,132 @@
-% One-page architecture figure, Week 08 midterm (25512082 / sohyunkim11).
-% Updated 2026-11-16 to the structure actually run in Round 3 (previous draft: backups/pre-submit-20261116/).
-% Final update 2026-11-23: adds the sell-only guard, the buyer Saved guard and the close recorder used on 11-16/11-17
-% (previous version: backups/pre-final-20261123/).
-% Build: tectonic architecture.tex (rebuilt 2026-11-23 with Tectonic 0.17.0); pdflatex with standalone + tikz also works. ASCII text only.
+% 한 페이지 아키텍처 그림, Week 08 중간 평가 (25512082 / sohyunkim11).
+% 2026-11-23 한글판: Round 3에서 실제로 돌린 구조(11-16~11-17 판매 전용 감시, buyer Saved 감시, 마감 기록 포함).
+% 모델 부품(gpt-6.1-sol, Round 2까지 사용, Round 3 거래 경로에서 제외)과 상자별 부품 표시([모델]·[컨텍스트·메모리]·[툴])는 REPORT 1.1~1.3절과 같은 구분이다.
+% 이전 영어판: backups/pre-korean-20261123/architecture.tex
+% 빌드: tectonic architecture.tex (Tectonic 0.17.0, XeTeX). fontspec 없이 XeTeX \font로 시스템 글꼴
+%       나눔바른고딕·나눔고딕코딩(우분투 fonts-nanum 패키지, /usr/share/fonts/truetype/nanum/)을 불러온다.
 \documentclass[tikz,border=8pt]{standalone}
-\usetikzlibrary{positioning,arrows.meta,fit,backgrounds}
+\usetikzlibrary{positioning,arrows.meta}
+\font\kr="[/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf]" at 7.4pt
+\font\krb="[/usr/share/fonts/truetype/nanum/NanumBarunGothicBold.ttf]" at 7.4pt
+\font\krs="[/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf]" at 6.6pt
+\font\mono="[/usr/share/fonts/truetype/nanum/NanumGothicCoding.ttf]" at 6.7pt
+\newcommand{\B}[1]{{\krb #1}}
+\newcommand{\T}[1]{{\mono #1}}
+\newcommand{\Pt}[1]{{\krs\textcolor{black!55}{[#1]}}\ }
 \begin{document}
 \begin{tikzpicture}[
-  font=\sffamily\scriptsize, node distance=5mm and 6mm,
-  box/.style={draw, rounded corners=2pt, align=left, inner sep=4pt, text width=#1},
-  box/.default=58mm,
-  mem/.style={draw, dashed, align=left, inner sep=3pt, text width=58mm, fill=yellow!8},
-  gate/.style={draw, thick, fill=red!8, align=left, inner sep=4pt, text width=#1},
-  gate/.default=58mm,
-  ops/.style={draw, thick, rounded corners=2pt, fill=green!7, align=left, inner sep=4pt, text width=58mm},
-  arr/.style={-{Latex[length=2mm]}, thick},
-  darr/.style={-{Latex[length=2mm]}, thick, dashed},
+  x=1mm, y=1mm,
+  base/.style={draw, rounded corners=2pt, align=left, inner sep=3.2pt, text width=61mm, anchor=north,
+               font=\kr, execute at begin node={\baselineskip=9.6pt}},
+  kit/.style={base, fill=blue!6},
+  rule/.style={base, fill=white},
+  mem/.style={base, dashed, fill=yellow!10},
+  gate/.style={base, thick, fill=red!8},
+  ops/.style={base, thick, fill=green!8},
+  arr/.style={-{Latex[length=1.8mm]}, thick},
+  darr/.style={-{Latex[length=1.8mm]}, thick, dashed},
+  lab/.style={font=\krs, fill=white, inner sep=1pt},
 ]
-% ---------------- Market ----------------
-\node[box=206mm, fill=gray!12] (market) {\textbf{Market (external facts)}\quad
-order desk (open AP2 mandates, budget hidden) \quad /api/settle (signature chain, amount in range, one settle per order)\\
-public ledger /api/ledger (supply, settle, broken, result) \quad board /api/board (Book, revenue, stars\_rank, Saved, forum) \quad supply windows + surge};
+% 열 x 좌표와 행 y 좌표 (상자 위쪽 기준)
+\def\cA{0} \def\cB{74} \def\cC{148}
+\def\rI{-16} \def\rII{-44} \def\rIII{-80} \def\rIV{-114} \def\rV{-142}
 
-% ---------------- top row: shop kit | human | buyer kit ----------------
-\node[box, fill=blue!6, below=6mm of market.south west, anchor=north west] (kitS) {\textbf{market\_kit v4, \texttt{-{}-shop-only}} (unchanged)\\
-tunnel, ACP checkout, inventory sync (.market/), restock hook};
-\node[gate, right=14mm of kitS.north east, anchor=north west] (human) {\textbf{Human approval, per run (never per trade)}\\
-SKUs + unit cost caps, units, spend, held cost, end time, buyer order cap, grade policy, stop thresholds.\\
-STOP halts new buys/orders only; no auto restart.};
-\node[box, fill=blue!6, right=14mm of human.north east, anchor=north west] (kitB) {\textbf{market\_kit v4, \texttt{-{}-buyer-only}} (unchanged, separate dir)\\
-runs \texttt{-{}-orders 100} per block};
+% ---------- 시장 ----------
+\node[base, text width=210mm, fill=gray!12] (market) at (\cB,0) {%
+\Pt{컨텍스트}\B{시장 (외부 사실)}\quad 주문 창구(AP2 mandate) · /api/settle(서명 확인, 주문당 1회 정산) · 공개 원장 /api/ledger · 순위표 /api/board · 공급 창과 surge};
 
-% ---------------- Seller column (left) ----------------
-\node[box, below=8mm of kitS.south west, anchor=north west] (seller) {\textbf{Seller} \texttt{seller.py}\\
-1 pick real unit, earliest expiry\\
-2 ask = max(A/B market median if fresh,\\
-\phantom{2 ask = max(}else list$\times$grade target; floor)\\
-\phantom{2 }floor = (cost + storage)$\times$1.05\\
-3 $\le$3 rounds, 12\% concession, never below floor\\
-4 at agreement: unit still in inventory.json?\\
-5 Ed25519 receipt + unit + honest grade claim};
-\node[mem, below=of seller] (sl) {\textbf{memory} seller-ledger.json (fresh $<$15 min agreement reserves a unit), seller-events.jsonl (quote / offer / accept / reject reason), inventory.json};
-\node[gate, below=of sl] (restock) {\textbf{Rule gate} \texttt{safe\_restock.py}\\
-reads single-use approval file; qty 1 / SKU;\\
-worst cost = list$\times$0.75$\times$surge $\le$ cap;\\
-atomic claim (os.link) $\Rightarrow$ no replay};
+% ---------- 1행: 키트 | 사람 | 키트 ----------
+\node[kit, minimum height=17mm] (kitS) at (\cA,\rI) {\B{공식 키트 v4, 가게 전용} (수정 없음)\\ 터널, ACP checkout, 재고 동기화, 재입고 훅};
+\node[gate, minimum height=17mm] (human) at (\cB,\rI) {\B{사람 승인: 운영 구간마다 (거래마다 아님)}\\ SKU·단가 상한, 수량, 예산, 종료 시각, 중단 기준\\ 결제 등급 정책. STOP은 신규 매입·주문만 멈춤};
+\node[kit, minimum height=17mm] (kitB) at (\cC,\rI) {\B{공식 키트 v4, buyer 전용} (수정 없음, 별도 폴더)\\ 100주문 단위로 실행};
 
-% ---------------- Middle column: supervisors ----------------
-\node[ops, below=8mm of human.south west, anchor=north west] (ops) {\textbf{Seller supervisor} \texttt{ops15.py} (rules, no LLM)\\
-per supply window, per SKU, from public ledger:\\
-3 h sell rate $\ge$ 70\% (right-censored cohort),\\
-realized profit median $\ge$ 1{,}000, below cost $\le$ 15\%,\\
-$\ge$ 20 market settles / 3 h, worst cost $\le$ cap\\
-$\Rightarrow$ write restock-approval.json, reconcile used/unused\\
-STOP: loss, refund, breakage, expiry, duplicate settle,\\
-stars\_rank $<$ 3.93, 2 low paid reviews, 2 h no settle};
-\node[ops, below=of ops] (price) {\textbf{Price experiment} \texttt{price\_exp.py}\\
-every 5 min: 3 h market median per SKU, grade A/B\\
-$\Rightarrow$ price-experiment.json (ignored if stale $>$30 min)\\
-auto revert: avg profit $<$ 800, paid stars $<$ 4.3,\\
-settles/h $<$ 1.82 after 6 h; ends after 12 h};
-\node[ops, below=of price] (sguard) {\textbf{Sell-only guard + close} \texttt{sell\_guard\_2355.py}\\
-no new buys after 19:00 on the last day; STOP if an approval\\
-file or new unit appears, below-cost or duplicate settle,\\
-refund/breakage rises, stars\_rank $<$ 3.93 twice in a row;\\
-ends 23:55. \texttt{finalize}: board at 23:58 and 00:00, ledger recount};
+% ---------- 2행 ----------
+\node[rule, minimum height=26mm] (seller) at (\cA,\rII) {\Pt{툴}\B{Seller} \T{seller.py}\\
+1. 재고에 실제로 있는 유닛, 만료 임박 순\\
+2. 호가: 등급별 목표가 (실험 중 A·B는 시장 중앙가)\\
+\phantom{2. }하한: (원가 + 보관비) × 1.05\\
+3. 최대 3라운드, 매번 12\% 양보, 하한 아래 금지\\
+4. 합의 때 재고 재확인 → 서명 영수증, 정직한 등급};
+\node[ops, minimum height=26mm] (price) at (\cB,\rII) {\Pt{툴}\B{호가 실험} \T{price\_exp.py}\\
+11-16 17:06부터 12시간\\
+5분마다 SKU·등급별 3시간 시장 중앙가 파일 갱신\\
+자동 원복: 평균 이익 800 미만, 리뷰 4.3 미만,\\
+\phantom{자동 원복: }6시간 뒤 시간당 정산 1.82 미만};
+\node[rule, minimum height=26mm] (buyer) at (\cC,\rII) {\Pt{툴}\B{Buyer} \T{market\_buyer.py}\\
+1. 재고 있는 가게들에 병렬 호가\\
+2. 순위: 정산 확률 × Saved 증가량\\
+3. 결제 직전 검사: 영수증, 예산, 보증\\
+4. 결제 조건: 식품 A·B, 굿즈 A만,\\
+\phantom{4. }남은 유통기한, 굿즈 보증 6시간 이상};
 
-% ---------------- Buyer column (right) ----------------
-\node[box, below=8mm of kitB.south west, anchor=north west] (buyer) {\textbf{Buyer} \texttt{market\_buyer.py}\\
-1 parallel quotes from stocked shops\\
-2 rank: P(settle) $\times$ $\Delta$Saved\\
-3 precheck receipt, budget, warranty\\
-4 accept: cert, food A/B, goods A only,\\
-\phantom{4 }hours left, goods warranty $\ge$ 6 h};
-\node[mem, below=of buyer] (bm) {\textbf{memory} payments.jsonl, broken.jsonl, buyer-memory.json: per-shop P(settle), 409 stock-out pairs};
-\node[ops, below=of bm] (bops) {\textbf{Buyer supervisor} \texttt{buyer\_ops7.py} + \texttt{stop\_guard7.sh}\\
-every 100 orders: board deals and Saved before/after\\
-$\Rightarrow$ segment settle rate, Saved/deal, breakage\\
-gates: first 100 and every 500 orders\\
-STOP: Saved/deal $<$ 0.65, $-1$ deals $>$ 2\%, 3 market 402s,\\
-board mismatch; guard kills at end time / order cap};
-\node[gate, below=of bops] (saved) {\textbf{Saved guard} \texttt{saved\_guard7.py} (every 2 min, board)\\
-my Saved vs the next student below me\\
-STOP if Saved $\le$ 0.7885 or gap $\le$ 0.0004 (4 dp)\\
-$\Rightarrow$ SIGTERM supervisor + buyer kit; no restart};
+% ---------- 3행 ----------
+\node[mem, minimum height=25mm] (sl) at (\cA,\rIII) {\Pt{컨텍스트·메모리}\B{메모리 (가게 파일)}\\
+\T{seller-ledger.json}: 15분 안의 합의만 유닛 예약\\
+\T{seller-events.jsonl}: 호가·제안·수락·거절 사유\\
+\T{inventory.json}: 원가·등급·만료\\
+\T{price-experiment.json}: 중앙가};
+\node[ops, minimum height=25mm] (ops) at (\cB,\rIII) {\Pt{툴}\B{Seller 감독} \T{ops15.py} (규칙, LLM 없음)\\
+공급 창마다 공개 원장으로 SKU 검증\\
+\phantom{· }판매율 70\% 이상, 이익 중앙값 1,000 이상\\
+\phantom{· }원가 미만 15\% 이하, 시장 정산 20건 이상\\
+통과하면 1회용 승인 파일 작성\\
+STOP: 손실·환불·파손, stars\_rank 3.93 미만 등};
+\node[ops, minimum height=25mm] (bops) at (\cC,\rIII) {\Pt{툴}\B{Buyer 감독} \T{buyer\_ops7.py}\\
+100주문마다 순위표 전후 비교\\
+\phantom{· }정산률, 거래당 Saved, 파손(보증 환불과 -1 구분)\\
+STOP: 거래당 Saved 0.65 미만, -1 파손 2\% 초과,\\
+\phantom{STOP: }결제 거절 402 연속 3회, 순위표 불일치\\
+\T{stop\_guard7.sh}: 종료 시각에 강제 종료};
 
-% ---------------- arrows ----------------
-\draw[arr] (market.south -| kitS.north) -- (kitS.north);
-\draw[arr] (market.south -| kitB.north) -- (kitB.north);
-\draw[darr] (market.south -| human.north) -- node[right]{ledger, board} (human.north);
-\draw[arr] (kitS) -- node[right]{A2A negotiate} (seller);
-\draw[arr] (seller) -- (sl);
-\draw[arr] (kitS.west) to[out=210,in=150] node[left, align=right]{restock\\hook} (restock.west);
-\draw[arr, red!70!black] (human) -- node[right]{scope} (ops);
-\draw[arr, red!70!black] (human.east) -- ++(5mm,0) |- node[pos=0.25, right, font=\sffamily\tiny]{scope} (bops.west);
-\draw[arr] (ops.west) -- ++(-4mm,0) |- node[pos=0.85, above, font=\sffamily\tiny, align=center]{approval\\file} (restock.east);
-\draw[arr] (price.west) -- ++(-9mm,0) |- node[pos=0.85, below, font=\sffamily\tiny, align=center]{median\\ask} (seller.east);
-\draw[darr] (ops) -- node[right]{state} (price);
-\draw[arr] (kitB) -- node[right]{order} (buyer);
-\draw[arr] (buyer) -- (bm);
-\draw[arr] (bm) -- (bops);
-\draw[arr] (bops.east) -- ++(4mm,0) |- node[pos=0.25, right, align=left]{next\\block} (kitB.east);
-\draw[arr, red!70!black] (saved) -- node[right]{STOP} (bops);
-\draw[darr] (sguard.west) -- ++(-6mm,0) |- node[pos=0.8, below, font=\sffamily\tiny]{watch} (restock.south east);
+% ---------- 4행 ----------
+\node[gate, minimum height=21mm] (restock) at (\cA,\rIV) {\Pt{툴}\B{규칙 게이트 (매입)} \T{safe\_restock.py}\\
+승인 파일이 있을 때만, SKU당 1개\\
+최악 원가 = 정가 × 0.75 × surge, 상한 이하만\\
+승인 파일은 한 번만 소진(os.link)};
+\node[ops, minimum height=21mm] (sguard) at (\cB,\rIV) {\Pt{툴}\B{판매 전용 감시·마감 기록} \T{sell\_guard\_2355.py}\\
+11-17 19:00 이후 남은 재고만 판매\\
+STOP: 새 재고, 원가 미만·중복 정산, 환불·파손,\\
+\phantom{STOP: }stars\_rank 3.93 미만 연속 2회\\
+23:55 종료, 마감 순위표 저장};
+\node[gate, minimum height=21mm] (saved) at (\cC,\rIV) {\Pt{툴}\B{Saved 감시} \T{saved\_guard7.py} (2분마다)\\
+내 Saved와 바로 아래 학생의 차이 확인\\
+Saved 0.7885 이하 또는 차이 0.0004 이하\\
+→ 감독과 buyer 키트 종료, 재시작 없음};
 
-% ---------------- caption ----------------
-\node[align=left, text width=206mm, anchor=north west] at ([yshift=-4mm]current bounding box.south west) {
-\textbf{Differs from the kit default:} the kit lets a model harness choose every negotiation move and restocks random SKUs. Here no model runs in the trading path
-(0 runtime LLM calls in Round 3); a human approves each run's scope, and rule supervisors decide inside it using public ledger and board facts.
-Every money movement passes a rule gate (\texttt{safe\_restock} for supply, \texttt{accept} policy for payment), and each supervisor checks its own results
-against the board before expanding. Shop and buyer run as two separate kit processes under one name.};
+% ---------- 5행: 모델 ----------
+\node[base, dashed, thick, fill=gray!8, minimum height=17mm] (model) at (\cA,\rV) {\Pt{모델}\B{gpt-6.1-sol} (Codex CLI, \T{harness.py})\\
+Round 2 연습까지 흥정 결정, buyer 호출 49/55 실패\\
+Round 3: 거래 경로에서 제외 (거래 중 호출 0회)\\
+재입고 제안 자리: \T{restock\_model\_advisor.py}\\
+\phantom{재입고 제안 자리: }(설계·테스트, Round 3 미실행)};
+
+% ---------- 화살표 ----------
+\draw[arr] (market.south -| kitS) -- (kitS);
+\draw[arr] (market.south -| kitB) -- (kitB);
+\draw[darr] (market.south -| human) -- node[lab, right=1mm]{원장·순위표 조회} (human);
+\draw[arr] (kitS) -- node[lab, right=1mm]{A2A 흥정} (seller);
+\draw[arr] (seller) -- node[lab, right=1mm]{기록·조회} (sl);
+\draw[arr] ([yshift=-8mm]price.north west) -- node[lab, above]{중앙가} ([yshift=-8mm]price.north west -| seller.east);
+\draw[arr] (kitS.west) .. controls +(-16,-10) and +(-16,10) .. node[lab, left=0.5mm, align=right]{재입고\\훅} (restock.west);
+\draw[arr] ([yshift=-8mm]ops.north west) -- ++(-6,0) |- node[lab, pos=0.3, left=0.5mm, align=right]{승인\\파일} ([yshift=-6mm]restock.north east);
+% 사람 → 두 감독: 가운데와 오른쪽 열 사이의 한 줄
+\draw[red!70!black, thick] (human.east) -- ++(7,0) coordinate (bus) -- (bus |- ops.north) coordinate (b2) -- ([yshift=-8mm]b2) coordinate (b3);
+\node[lab, text=red!70!black, rotate=90] at ([yshift=-20mm]bus) {범위 승인};
+\draw[arr, red!70!black] (b3) -- (b3 -| ops.east);
+\draw[arr, red!70!black] (b3) -- (b3 -| bops.west);
+\draw[arr] (kitB) -- node[lab, right=1mm]{주문} (buyer);
+\draw[arr] (buyer) -- node[lab, right=1mm]{결제·파손 기록} (bops);
+\draw[arr, red!70!black] (saved) -- node[lab, right=1mm, text=red!70!black]{STOP} (bops);
+\draw[arr] (bops.east) -- ++(6,0) |- node[lab, pos=0.25, right=0.5mm, align=left]{다음\\100주문} (kitB.east);
+\draw[darr, black!55] (model) -- node[lab, right=1mm, text=black!70]{후보 순서 제안 (Round 3 미실행)} (restock);
+
+% ---------- 범례와 설명 ----------
+\node[anchor=north west, align=left, text width=210mm, font=\kr, execute at begin node={\baselineskip=10pt}]
+  at ([yshift=-5mm]current bounding box.south west -| market.west) {%
+\B{색}: 파랑 = 공식 키트(수정 없음) · 흰색 = 에이전트 규칙 코드 · 초록 = 규칙 감독(LLM 없음) · 빨강 = 돈이 움직이기 전 게이트와 STOP · 노랑 점선 = 파일 메모리 · 회색 점선 = 모델\\
+\B{부품 표시}: [모델] [컨텍스트·메모리] [툴]은 REPORT 1.1절부터 1.3절까지의 모델·컨텍스트·툴 구분과 같다\\[3pt]
+\B{키트 기본형과 다른 점}: 키트 기본형은 모델 하네스가 흥정의 매 수를 정하고 무작위 SKU를 재입고한다. 이 에이전트는 거래 경로에서 모델을 부르지 않는다(Round 3 런타임 LLM 호출 0회).\\
+사람이 운영 구간마다 범위를 승인하고, 규칙 감독이 그 안에서 공개 원장과 순위표를 근거로 판단한다. 돈이 움직이는 지점(매입은 \T{safe\_restock}, 결제는 결제 조건)은 모두 규칙을\\
+거치고, 감독은 순위표로 자기 성과를 확인한 뒤에만 다음 단계로 넘어간다. 가게와 buyer는 같은 이름의 두 키트 프로세스로 따로 돈다.};
 \end{tikzpicture}
 \end{document}
