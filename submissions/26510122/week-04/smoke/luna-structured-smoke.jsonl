@@ -1,0 +1,8 @@
+{"event": "setup", "run": "luna-structured-smoke", "condition": "structured", "backend": "codex-cli", "model": "gpt-5.6-luna", "temperature": "not-settable", "turn_limit": 6, "reader_prompt": "You are the fixed protocol reader for a price negotiation. Classify the message as\nexactly one of: propose, accept-proposal, reject-proposal, refuse. Extract an\ninteger price only when the message proposes a price; otherwise use null. A\nquestion or departure that cannot be represented by the four acts is refuse.\nReturn only one JSON object in this shape:\n{\"performative\":\"propose\",\"price\":100}", "pending": ["bicycle-wide"]}
+{"event": "message", "run": "luna-structured-smoke", "scenario": "bicycle-wide", "turn": 1, "speaker": "buyer", "raw": "{\"performative\":\"propose\",\"content\":{\"price\":80}}"}
+{"event": "read", "run": "luna-structured-smoke", "scenario": "bicycle-wide", "turn": 1, "performative": "propose", "price": 80, "error": null, "reader_calls": 0}
+{"event": "message", "run": "luna-structured-smoke", "scenario": "bicycle-wide", "turn": 2, "speaker": "seller", "raw": "{\"performative\":\"accept-proposal\",\"content\":{}}"}
+{"event": "read", "run": "luna-structured-smoke", "scenario": "bicycle-wide", "turn": 2, "performative": "accept-proposal", "price": null, "error": null, "reader_calls": 0}
+{"event": "episode_result", "run": "luna-structured-smoke", "scenario": "bicycle-wide", "outcome": "deal", "price": 80, "correct": 1, "violation": 0, "turns": 2, "format_errors": 0, "reader_calls": 0}
+{"event": "usage", "run": "luna-structured-smoke", "scenario": "bicycle-wide", "model_calls": 2, "provider_retries": 0}
+{"event": "run_complete", "run": "luna-structured-smoke", "condition": "structured", "scenarios": 1}
