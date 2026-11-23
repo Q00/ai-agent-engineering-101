@@ -1,0 +1,9 @@
+run=verified-20260924-135607-1 turn_limit=8
+protocol=JSON acts + unique offer IDs + explicit acceptance reference
+verification=field schema, ID ownership/status, private limits
+scenario 1: reserve=120 budget=300
+  [1] buyer: {"act": "propose", "offer_id": "B1", "price": 155, "responds_to": null, "reason": "scripted buyer offer"}
+       verifier: record offer_id=B1 price=155
+  [2] seller: {"act": "accept", "offer_id": null, "price": null, "responds_to": "B1", "reason": "accept feasible opposing offer"}
+       verifier: valid accept responds_to=B1; close at 155
+  -> outcome=deal price=155 correct=1 violation=0 turns=2 format_errors=0
