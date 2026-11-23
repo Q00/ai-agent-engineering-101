@@ -71,12 +71,12 @@ BUYER = [("paid", re.compile(r"\[acp\] paid \d+ through .* settled at ledger #\d
          ("result_no_deal", re.compile(r"\[market\] ledger #\d+: no deal, stars")),
          ("order_failed", re.compile(r"\[market\] order failed: "))]
 # The shops' answers when they turned our buyer down, by reason (checked in this order).
-REFUSAL = [("stock: held in another talk", re.compile(r"held in another", re.I)),
-           ("food: too little shelf life", re.compile(r"shelf life|h left|keep at most", re.I)),
-           ("price: under the shop's floor", re.compile(r"No deal|lowest|below|floor|price|meet (that|your) offer|meet at that", re.I)),
-           ("stock: none in stock or no unit fits", re.compile(r"in.stock|available|no unit|Reserved|matching|fits your order|not the SKU", re.I)),
-           ("conditions: warranty or grade", re.compile(r"warranty|grade", re.I)),
-           ("verification", re.compile(r"verif|signature", re.I))]
+REFUSAL = [("재고: 다른 흥정에 잡혀 있음", re.compile(r"held in another", re.I)),
+           ("식품: 남은 유통기한 부족", re.compile(r"shelf life|h left|keep at most", re.I)),
+           ("가격: 가게 하한 아래", re.compile(r"No deal|lowest|below|floor|price|meet (that|your) offer|meet at that", re.I)),
+           ("재고: 없음 또는 맞는 단위 없음", re.compile(r"in.stock|available|no unit|Reserved|matching|fits your order|not the SKU", re.I)),
+           ("조건: 보증이나 등급", re.compile(r"warranty|grade", re.I)),
+           ("검증 실패", re.compile(r"verif|signature", re.I))]
 
 
 def classify_refusal(text: str) -> str:
@@ -84,7 +84,7 @@ def classify_refusal(text: str) -> str:
     for label, rx in REFUSAL:
         if rx.search(said):
             return label
-    return "other"
+    return "기타"
 
 
 def quote(row) -> str:
@@ -151,7 +151,7 @@ def part3() -> str:
                 shop_c[key] += 1
                 shop_q.setdefault(key, r)
                 if key == "checkout_refused":
-                    chk["unit not in stock for the order" if "not in stock" in text else text.split("refused: ", 1)[1][:60]] += 1
+                    chk["주문한 단위가 재고에 없음" if "not in stock" in text else text.split("refused: ", 1)[1][:60]] += 1
                 if key == "settle_refused":
                     setl[text.split("refused: ", 1)[1][:60]] += 1
                 break
@@ -202,9 +202,9 @@ def part3() -> str:
         out.append(f"checkout 거절 예: {quote(shop_q['checkout_refused'])}\n")
     if "settle_refused" in shop_q:
         out.append(f"settle 거절 예: {quote(shop_q['settle_refused'])}\n")
-    after = [r for r in dated_lines() if r[2] > ROUND_END and "Round 3 ended at" in r[3]]
+    after = [r for r in dated_lines() if r[2] > ROUND_END and "order failed: 503" in r[3] and "Round 3 ended at" in r[3]]
     if after:
-        out.append(f"종료 뒤에는 시장이 주문을 503으로 돌려보냈다: {quote(after[0])}\n")
+        out.append(f"종료 뒤에는 시장이 새 주문을 503으로 돌려보냈다({n(len(after))}번, 키트를 멈출 때까지): {quote(after[0])}\n")
 
     out.append("### 3-4. 10주차 기준 숫자와 비교\n")
     hist = [json.loads(l) for l in open(LOGS / "round3-final" / "board_history.jsonl", encoding="utf-8") if l.strip()]
