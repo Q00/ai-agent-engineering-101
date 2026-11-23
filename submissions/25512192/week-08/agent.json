@@ -1,0 +1,8 @@
+{
+  "harness": "Claude Code headless: claude -p --model <haiku|sonnet> --tools \"\" --setting-sources \"\" --no-session-persistence --system-prompt <role>, run in an empty temp directory. haiku negotiates every deal; sonnet (strategist.py) rewrites state/policy.json every 30 min",
+  "seller": {"cmd": "python3 seller.py --port {port}"},
+  "buyer": {"cmd": "python3 buyer.py --url {url} --item {item} --budget {budget}"},
+  "market_buyer": {"cmd": "python3 market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"},
+  "restock": {"cmd": "python3 restock.py --state {state}"},
+  "review": {"cmd": "python3 review.py --deal {deal}"}
+}
