@@ -1,0 +1,27 @@
+{
+  "base_prices": {
+    "lamp": 110,
+    "chair": 200,
+    "bookshelf": 285
+  },
+  "first_purchase": {
+    "lamp": 100,
+    "chair": 180,
+    "bookshelf": 260
+  },
+  "second_purchase": {
+    "lamp": 105,
+    "chair": 190,
+    "bookshelf": 271
+  },
+  "third_and_later": {
+    "lamp": 110,
+    "chair": 200,
+    "bookshelf": 285
+  },
+  "rounding": "ceil to whole unit, then max with course reserve",
+  "customer_identity": "Optional client-supplied customer_id in message/request metadata; self-reported, not authenticated. Anonymous buyers get welcome quote.",
+  "counting": "Completed sales across all items for the supplied ID, unique task IDs, persisted in append-only seller memory. Canceled and open tasks do not count. Tier locked when a task is opened; concurrent tasks may receive the same tier.",
+  "memory_failure": "Welcome quote if memory cannot be loaded; no claim of verified purchase history.",
+  "consent": "User selected historical-base maximum 10%/5% discounts with reserves retained."
+}

@@ -1,0 +1,191 @@
+......EEEEEE.........................EEEEEEEEEEEE...............
+======================================================================
+ERROR: test_absent_local_code_preserves_inherited_environment (test_market_owner_config.MarketOwnerConfigTests.test_absent_local_code_preserves_inherited_environment)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_market_owner_config.py", line 15, in setUp
+    private.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_invalid_input_retains_existing_code (test_market_owner_config.MarketOwnerConfigTests.test_invalid_input_retains_existing_code)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_market_owner_config.py", line 15, in setUp
+    private.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_invalid_local_file_error_does_not_disclose_contents (test_market_owner_config.MarketOwnerConfigTests.test_invalid_local_file_error_does_not_disclose_contents)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_market_owner_config.py", line 15, in setUp
+    private.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_saved_code_is_private_and_used_without_mutating_caller_environment (test_market_owner_config.MarketOwnerConfigTests.test_saved_code_is_private_and_used_without_mutating_caller_environment)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_market_owner_config.py", line 15, in setUp
+    private.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_compare_two_good_cards_but_buy_only_once_from_cheapest (test_market_purchase_flow.MarketPurchaseFlowTests.test_compare_two_good_cards_but_buy_only_once_from_cheapest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_market_purchase_flow.py", line 79, in test_compare_two_good_cards_but_buy_only_once_from_cheapest
+    final, memory, calls = self.run_buyer()
+                           ^^^^^^^^^^^^^^^^
+  File "/opt/agent/tests/test_market_purchase_flow.py", line 27, in run_buyer
+    private.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_mismatched_receipt_is_remembered_as_invalid_and_preserved_as_evidence (test_market_purchase_flow.MarketPurchaseFlowTests.test_mismatched_receipt_is_remembered_as_invalid_and_preserved_as_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_market_purchase_flow.py", line 89, in test_mismatched_receipt_is_remembered_as_invalid_and_preserved_as_evidence
+    final, memory, _ = self.run_buyer(bad_receipt=True)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/agent/tests/test_market_purchase_flow.py", line 27, in run_buyer
+    private.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_concurrent_records_survive_reload (test_seller_memory.SellerMemoryTests.test_concurrent_records_survive_reload)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_seller_memory.py", line 21, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_corrupt_memory_is_reported_without_overwriting_it (test_seller_memory.SellerMemoryTests.test_corrupt_memory_is_reported_without_overwriting_it)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_seller_memory.py", line 21, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_interrupted_task_is_not_counted_as_failure (test_seller_memory.SellerMemoryTests.test_interrupted_task_is_not_counted_as_failure)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_seller_memory.py", line 21, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_rejects_sale_without_price (test_seller_memory.SellerMemoryTests.test_rejects_sale_without_price)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_seller_memory.py", line 21, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_restart_counts_each_task_once (test_seller_memory.SellerMemoryTests.test_restart_counts_each_task_once)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_seller_memory.py", line 21, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_buyer_time_boundaries_and_invalid_receipts (test_strategy_metrics.StrategyMetricsTests.test_buyer_time_boundaries_and_invalid_receipts)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_strategy_metrics.py", line 19, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_cli_emits_only_json_and_invalid_row_does_not_crash (test_strategy_metrics.StrategyMetricsTests.test_cli_emits_only_json_and_invalid_row_does_not_crash)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_strategy_metrics.py", line 19, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_incomplete_line_is_reported_without_editing_memory (test_strategy_metrics.StrategyMetricsTests.test_incomplete_line_is_reported_without_editing_memory)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_strategy_metrics.py", line 19, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_invalid_latest_seller_snapshot_does_not_resurrect_an_old_deal (test_strategy_metrics.StrategyMetricsTests.test_invalid_latest_seller_snapshot_does_not_resurrect_an_old_deal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_strategy_metrics.py", line 19, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_missing_budget_does_not_invent_savings (test_strategy_metrics.StrategyMetricsTests.test_missing_budget_does_not_invent_savings)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_strategy_metrics.py", line 19, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_profit_and_savings_are_normalized_to_hours (test_strategy_metrics.StrategyMetricsTests.test_profit_and_savings_are_normalized_to_hours)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_strategy_metrics.py", line 19, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+======================================================================
+ERROR: test_seller_cohort_uses_latest_outcome_and_keeps_pending_in_denominator (test_strategy_metrics.StrategyMetricsTests.test_seller_cohort_uses_latest_outcome_and_keeps_pending_in_denominator)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/agent/tests/test_strategy_metrics.py", line 19, in setUp
+    cache.mkdir(exist_ok=True)
+  File "/usr/lib/python3.11/pathlib.py", line 1117, in mkdir
+    os.mkdir(self, mode)
+PermissionError: [Errno 13] Permission denied: '/opt/agent/.market'
+
+----------------------------------------------------------------------
+Ran 64 tests in 0.039s
+
+FAILED (errors=18)

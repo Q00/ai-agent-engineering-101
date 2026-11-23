@@ -1,0 +1,61 @@
+{
+  "scope": "Official local fixed-buyer tests only, not live sales metrics.",
+  "before_opening": [
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 25519"
+    }
+  ],
+  "after_opening": [
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 100"
+    }
+  ],
+  "before_deals": [
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [25519, 25519, 25519]"
+    }
+  ],
+  "after_deals": [
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [100]"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [100]"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 100.0, asks [100]"
+    }
+  ],
+  "all_market_tests_passed": true,
+  "quote_metadata_regression_passed_items": 3
+}

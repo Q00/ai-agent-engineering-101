@@ -1,0 +1,88 @@
+{
+  "generated_at": "2026-10-22T00:35:41.942127+00:00",
+  "sources": [
+    "buyer-memory.json",
+    "logs/market-kit.log"
+  ],
+  "memory_record": {
+    "time": "2026-10-21T12:39:25+00:00",
+    "shop_name": "ggari-shop",
+    "item": "chair",
+    "budget": 185,
+    "price": 184,
+    "outcome": "invalid_receipt",
+    "stars": 1,
+    "review": "Receipt does not match the ordered item, budget, task, or last offer.",
+    "receipt": {
+      "shop": "ggari0703",
+      "item": "chair",
+      "price": 184,
+      "task": "30b7c264-2277-4a0e-aaa0-3f8757305516",
+      "sig_seller": "grrJ+wihkM32CmNWCkFuX6R6RVU2DC9t0/1E7OTOfrRE5Q7FlszPp2b6sr69bqIx56hZVamM+iCQkJo7+dBlBg=="
+    }
+  },
+  "raw_trade_lines": [
+    {
+      "line": 37914,
+      "text": "21:39:22 [buyer] {\"action\": \"offer\", \"price\": 175}"
+    },
+    {
+      "line": 37915,
+      "text": "21:39:22 [buyer] ```"
+    },
+    {
+      "line": 37916,
+      "text": "21:39:22 [buyer] -> '175'  <- TASK_STATE_INPUT_REQUIRED | 175 is too low. Counteroffer: 184."
+    },
+    {
+      "line": 37917,
+      "text": "21:39:24 [buyer] [harness] ```json"
+    },
+    {
+      "line": 37918,
+      "text": "21:39:24 [buyer] {\"action\": \"offer\", \"price\": 185}"
+    },
+    {
+      "line": 37919,
+      "text": "21:39:24 [buyer] ```"
+    },
+    {
+      "line": 37920,
+      "text": "21:39:25 [buyer] -> '185'  <- TASK_STATE_COMPLETED | Deal: chair at 184. Signed receipt attached."
+    },
+    {
+      "line": 37921,
+      "text": "21:39:25 [buyer] [memory] saved invalid_receipt for ggari-shop in /Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/buyer-memory.json"
+    },
+    {
+      "line": 37922,
+      "text": "21:39:25 [buyer] {\"shop\": \"https://ggari0703-shop.ggari0703.workers.dev\", \"receipt\": {\"shop\": \"ggari0703\", \"item\": \"chair\", \"price\": 184, \"task\": \"30b7c264-2277-4a0e-aaa0-3f8757305516\", \"sig_seller\": \"grrJ+wihkM32CmNWCkFuX6R6RVU2DC9t0/1E7OTOfrRE5Q7FlszPp2b6sr69bqIx56hZVamM+iCQkJo7+dBlBg==\"}, \"stars\": 1, \"review\": \"Receipt does not match the ordered item, budget, task, or last offer.\"}"
+    },
+    {
+      "line": 37923,
+      "text": "21:39:25 [sign] sig_seller ok, sig_buyer added"
+    },
+    {
+      "line": 37924,
+      "text": "21:39:25 [market] ledger #128721: chair at 184, stars 1, verified True, review accepted"
+    }
+  ],
+  "observed_avoidance": [
+    {
+      "line": 41768,
+      "text": "09:35:01 [buyer] [compare] {\"item\": \"chair\", \"budget\": 185, \"excluded\": [{\"name\": \"maple-home\", \"reason\": \"recent review mean below 3\"}, {\"name\": \"kcwarni\", \"reason\": \"repeated public lookup failures within cooldown\"}, {\"name\": \"ggari-shop\", \"reason\": \"receipt mismatch within cooldown\"}], \"comparisons\": [{\"name\": \"lee-sungsoo\", \"history_price\": 180.0, \"public_price\": 180, \"source\": \"advertised card text\", \"expected_price\": 180, \"reachable\": true, \"error\": null}, {\"name\": \"dragonash\", \"history_price\": 182, \"public_price\": null, \"source\": \"unknown\", \"expected_price\": 182, \"reachable\": true, \"error\": null}, {\"name\": \"bjeon01\", \"history_price\": 182.0, \"public_price\": null, \"source\": \"unknown\", \"expected_price\": 182.0, \"reachable\": true, \"error\": null}], \"selected\": \"lee-sungsoo\", \"reason\": \"affordable known item prices first, unknown prices next; lower price then experience/reviews break ties\"}"
+    },
+    {
+      "line": 41784,
+      "text": "09:35:22 [buyer] [compare] {\"item\": \"lamp\", \"budget\": 140, \"excluded\": [{\"name\": \"maple-home\", \"reason\": \"recent review mean below 3\"}, {\"name\": \"kcwarni\", \"reason\": \"repeated public lookup failures within cooldown\"}, {\"name\": \"ggari-shop\", \"reason\": \"receipt mismatch within cooldown\"}], \"comparisons\": [{\"name\": \"lee-sungsoo\", \"history_price\": 100.0, \"public_price\": 100, \"source\": \"advertised card text\", \"expected_price\": 100, \"reachable\": true, \"error\": null}, {\"name\": \"dragonash\", \"history_price\": 101, \"public_price\": null, \"source\": \"unknown\", \"expected_price\": 101, \"reachable\": true, \"error\": null}, {\"name\": \"25620027\", \"history_price\": 102.0, \"public_price\": 100, \"source\": \"advertised card text\", \"expected_price\": 100, \"reachable\": true, \"error\": null}], \"selected\": \"lee-sungsoo\", \"reason\": \"affordable known item prices first, unknown prices next; lower price then experience/reviews break ties\"}"
+    }
+  ],
+  "interpretation": {
+    "last_offer": 185,
+    "receipt_price": 184,
+    "market_verified": true,
+    "observed_problem": "Exact-last-offer check marked a lower receipt price as invalid.",
+    "dishonesty_proven": false,
+    "limit": "This is a conservative false-positive example, not evidence of overcharging or forged signatures."
+  }
+}

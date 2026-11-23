@@ -1,0 +1,156 @@
+{
+  "scope": "WATCH Round 1; observations from saved public dashboard snapshots, not experimental causal claims",
+  "share_changes": [
+    {
+      "shop": "corner-store",
+      "r0": {
+        "shop": "corner-store",
+        "url": "https://market.ourolabs.ai/shop/corner-store",
+        "deals": 58,
+        "share": 0.046,
+        "receipts": 58,
+        "receipts_with_order": 58,
+        "visits": 84,
+        "reviews": 0,
+        "stars": null
+      },
+      "r1": {
+        "shop": "corner-store",
+        "url": "https://market.ourolabs.ai/shop/corner-store",
+        "deals": 59,
+        "share": 0.434,
+        "receipts": 59,
+        "receipts_with_order": 59,
+        "visits": 74,
+        "reviews": 71,
+        "stars": 4.04
+      }
+    },
+    {
+      "shop": "grand-furniture",
+      "r0": {
+        "shop": "grand-furniture",
+        "url": "https://market.ourolabs.ai/shop/grand-furniture",
+        "deals": 114,
+        "share": 0.091,
+        "receipts": 114,
+        "receipts_with_order": 2,
+        "visits": 95,
+        "reviews": 0,
+        "stars": null
+      },
+      "r1": {
+        "shop": "grand-furniture",
+        "url": "https://market.ourolabs.ai/shop/grand-furniture",
+        "deals": 7,
+        "share": 0.051,
+        "receipts": 7,
+        "receipts_with_order": 0,
+        "visits": 11,
+        "reviews": 14,
+        "stars": 3.71
+      }
+    },
+    {
+      "shop": "psyoung82",
+      "r0": {
+        "shop": "psyoung82",
+        "url": "https://2996eab2bd78dc.lhr.life",
+        "deals": 19,
+        "share": 0.015,
+        "receipts": 19,
+        "receipts_with_order": 19,
+        "visits": 36,
+        "reviews": 0,
+        "stars": null
+      },
+      "r1": {
+        "shop": "psyoung82",
+        "url": "https://2996eab2bd78dc.lhr.life",
+        "deals": 0,
+        "share": 0.0,
+        "receipts": 0,
+        "receipts_with_order": 0,
+        "visits": 1,
+        "reviews": 0,
+        "stars": null
+      }
+    }
+  ],
+  "receipt_review_mismatch": [
+    {
+      "shop": "corner-store",
+      "receipts": 59,
+      "receipts_with_order": 59,
+      "reviews": 71,
+      "stars": 4.04
+    },
+    {
+      "shop": "grand-furniture",
+      "receipts": 7,
+      "receipts_with_order": 0,
+      "reviews": 14,
+      "stars": 3.71
+    }
+  ],
+  "new_shop_waits": [
+    {
+      "shop": "kingsssik",
+      "joined_kst": "2026-10-20T20:31:39+09:00",
+      "window_complete": true,
+      "first_result": null,
+      "counted_deals_before_first_result_or_snapshot": 35,
+      "wait_seconds": 50.9,
+      "status": "no reported result in captured data"
+    },
+    {
+      "shop": "danayoou",
+      "joined_kst": "2026-10-20T20:30:07+09:00",
+      "window_complete": true,
+      "first_result": {
+        "id": 2367,
+        "ts": 1792495891.0,
+        "round": 1,
+        "shop": "danayoou",
+        "item": null,
+        "price": null,
+        "order": true,
+        "verified": false,
+        "counted": false,
+        "stars": null
+      },
+      "counted_deals_before_first_result_or_snapshot": 65,
+      "wait_seconds": 84.0,
+      "status": "first reported result observed"
+    },
+    {
+      "shop": "ddolcom",
+      "joined_kst": "2026-10-20T20:29:02+09:00",
+      "window_complete": true,
+      "first_result": null,
+      "counted_deals_before_first_result_or_snapshot": 141,
+      "wait_seconds": 207.9,
+      "status": "no reported result in captured data"
+    }
+  ],
+  "limitations": [
+    "Round 1 is ongoing; snapshots were captured at different times. Use stats.json for the share and receipt/review comparison.",
+    "Reviews can be left after no deal. More reviews than receipts does not prove review fraud.",
+    "Public trade results provide completion timestamps, not first A2A arrival times. New-shop waiting counts use first reported result as a proxy.",
+    "Shops with no result in the captured data are right-censored; the wait is a lower bound, not time to first customer."
+  ],
+  "our_buyer_evidence": {
+    "source": "market-kit.log",
+    "observed_choice": "corner-store",
+    "example_choice_score": "own=4.33 (3 trades), reviews=3.70 (10 reviews), score=4.02",
+    "example_deal": {
+      "ledger": 4696,
+      "item": "bookshelf",
+      "price": 290,
+      "budget": 325,
+      "stars": 4,
+      "verified": true,
+      "review_accepted": true
+    }
+  }
+}

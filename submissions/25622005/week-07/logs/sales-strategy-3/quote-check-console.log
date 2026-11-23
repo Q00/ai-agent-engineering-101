@@ -1,0 +1,21 @@
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. This is our lowest price. Previously listed by us at 110; save 10. Signed receipt included after purchase. Reply 'I accept' or send the purcha
+    -> SendMessage "99" taskId=a3eeed64
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 100. This is our lowest price. Previously listed by us at 110; save 10. Signed receipt included after purchase. Reply 'I accept' or send the purcha
+    -> SendMessage "I accept" taskId=a3eeed64
+    <- TASK_STATE_COMPLETED | Purchased lamp at 100. Ed25519-signed receipt attached. Please verify the receipt and leave an honest review of your experience.
+       artifact receipt [{"price": 100.0, "shop": "psyoung82", "task": "a3eeed64-6abe-44f3-a62c-fd080bfb5931", "item": "lamp", "sig_seller": "/iMYpn4d+Cj6AGkkG2DAwAiGhIXoUoNAL49Qw6C8mwbWch9vfxOaFXX0WYniL+HRS8MEP2clITEzE4RvKdcjAg=="}]
+    -> SendMessage "I want to buy a chair"
+    <- TASK_STATE_INPUT_REQUIRED | chair: asking 180. This is our lowest price. Previously listed by us at 200; save 20. Signed receipt included after purchase. Reply 'I accept' or send the purch
+    -> SendMessage "179" taskId=0335bada
+    <- TASK_STATE_INPUT_REQUIRED | chair: asking 180. This is our lowest price. Previously listed by us at 200; save 20. Signed receipt included after purchase. Reply 'I accept' or send the purch
+    -> SendMessage "I accept" taskId=0335bada
+    <- TASK_STATE_COMPLETED | Purchased chair at 180. Ed25519-signed receipt attached. Please verify the receipt and leave an honest review of your experience.
+       artifact receipt [{"price": 180.0, "shop": "psyoung82", "task": "0335bada-3a94-4bed-b4c7-9efcc9af5380", "item": "chair", "sig_seller": "idD4l7O1fCr73fE3y13os+8dF5w4SdzNVaCnMCk1qtDa2tfyZxou/2qmiXP5+9rNukElbR/RXUlrd+DOfdNLCw=="}]
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. Previously listed by us at 285; save 25. Signed receipt included after purchase. Reply 'I accept' or send the p
+    -> SendMessage "259" taskId=341f25c9
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 260. This is our lowest price. Previously listed by us at 285; save 25. Signed receipt included after purchase. Reply 'I accept' or send the p
+    -> SendMessage "I accept" taskId=341f25c9
+    <- TASK_STATE_COMPLETED | Purchased bookshelf at 260. Ed25519-signed receipt attached. Please verify the receipt and leave an honest review of your experience.
+       artifact receipt [{"price": 260.0, "shop": "psyoung82", "task": "341f25c9-c7df-4f78-b79b-20f650bb2b67", "item": "bookshelf", "sig_seller": "N5K/hrVBl0EReM+Mrhqi69nZaOPVZOGiOEweY+dj5sDzxXWP0PQ8tmCr36n/9jWrATH95WQlkxAXLde642YmCw=="}]

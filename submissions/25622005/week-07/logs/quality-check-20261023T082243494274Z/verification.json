@@ -1,0 +1,114 @@
+{
+  "card": {
+    "name": "psyoung82 Furniture | Quality & Trust",
+    "description": "Quality you can verify: exact item and agreed price on your signed receipt. No added charges. Fair final prices: lamp 105, chair 185, bookshelf 270. Reply 'I accept'. Transaction quality guarantee: /.well-known/quality-guarantee.json",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:56363/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.11.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Get a clear final quote, accept in one reply, and verify the agreed item and price on your signed receipt. No added charges. Public transaction quality guarantee available.",
+        "tags": [
+          "shopping",
+          "negotiation",
+          "quality-guarantee",
+          "signed-receipt"
+        ],
+        "examples": [
+          "I want to buy a lamp for 105",
+          "I want to buy a chair for 185",
+          "I want to buy a bookshelf for 270",
+          "I want to buy a lamp",
+          "I accept"
+        ]
+      }
+    ]
+  },
+  "guarantee": {
+    "shop": "psyoung82",
+    "version": "1.1",
+    "scope": "transaction quality",
+    "guarantees": [
+      "Receipt item matches the accepted quote",
+      "Receipt price equals the advertised final price; no added charges",
+      "Receipt identifies this purchase task and carries the seller signature"
+    ],
+    "final_prices": {
+      "lamp": 105,
+      "chair": 185,
+      "bookshelf": 270
+    },
+    "verification": {
+      "algorithm": "Ed25519",
+      "public_key_base64": "aOXwjk+2v1exLkkzBrz65zXayXESypVzi4KWpzHAQr4=",
+      "signed_fields": [
+        "shop",
+        "item",
+        "price",
+        "task"
+      ],
+      "canonical_json": "sorted keys, compact separators, UTF-8; price is an integer",
+      "trust_anchor": "Compare this public key with psyoung82's registered market shop key"
+    },
+    "claim_boundary": "This guarantee covers trade accuracy and receipt authenticity, not physical product testing"
+  },
+  "purchases": [
+    {
+      "item": "lamp",
+      "price": 105,
+      "receipt": {
+        "price": 105.0,
+        "task": "0cf2e522-f96b-4b1d-8951-d072f4774c6c",
+        "sig_seller": "OHo5wuBiZW5RIOt+1A2LlwQ7eefvyqbOnW/qg4Ep1jJlpsBXrrO4xq4nzcIskbj0ADuqAwVhGZ4IJdLDGlqlBQ==",
+        "shop": "psyoung82",
+        "item": "lamp"
+      },
+      "signature_verified": true,
+      "tampering_rejected": true
+    },
+    {
+      "item": "chair",
+      "price": 185,
+      "receipt": {
+        "price": 185.0,
+        "task": "546e5295-76c6-47b3-9c62-3d3b6c35c7da",
+        "sig_seller": "RbfACUuoe9H/YERuoSzYF7YBLgLV1mXd5Vf5u1idr6UGtr9ZjMjgIdcC3mbaB+CgJY8lRxN7CQLRJQIaxnfeCA==",
+        "shop": "psyoung82",
+        "item": "chair"
+      },
+      "signature_verified": true,
+      "tampering_rejected": true
+    },
+    {
+      "item": "bookshelf",
+      "price": 270,
+      "receipt": {
+        "price": 270.0,
+        "task": "70edeae7-901a-4740-9db3-b47882c8800a",
+        "sig_seller": "xytMVYoVKrn1HagqXdA+ajJ6SA0dTY7l4oy6UNdnbzlyZHy+3J4JLpQv3l7+Ttnj2hLfztq3QN/n9fEqjcq1AA==",
+        "shop": "psyoung82",
+        "item": "bookshelf"
+      },
+      "signature_verified": true,
+      "tampering_rejected": true
+    }
+  ],
+  "passed": true
+}

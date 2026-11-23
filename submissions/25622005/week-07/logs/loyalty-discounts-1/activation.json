@@ -1,0 +1,95 @@
+{
+  "checked_at": "2026-10-20T13:49:18.095610+00:00",
+  "round": 2,
+  "kit_pid": 15405,
+  "deployment": "Existing supervisor automatically restarted the kit after a tunnel rotation; no extra manual restart needed.",
+  "public_http_status": 200,
+  "card": {
+    "name": "psyoung82 Furniture | Welcome & Return Offers",
+    "description": "First-purchase offers: lamp 100, chair 180, bookshelf 260. Up to 10% off the first completed purchase, up to 5% off the second; base prices lamp 110, chair 200, bookshelf 285. Whole-unit rounding and minimum prices apply. Send the same customer_id in A2A metadata for repeat-purchase tracking; anonymous buyers receive the welcome quote. Quotes include metadata.ask; signed receipts.",
+    "supportedInterfaces": [
+      {
+        "url": "https://f6796b742ab95b.lhr.life/a2a/0",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.8.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Send an item and explicit offer to buy directly, or ask for a quote and accept it with a number or 'I accept'. A completed purchase includes a signed receipt.",
+        "tags": [
+          "shopping",
+          "negotiation"
+        ],
+        "examples": [
+          "I want to buy a lamp for 100",
+          "I want to buy a chair for 180",
+          "I want to buy a bookshelf for 260",
+          "I want to buy a lamp",
+          "I accept"
+        ]
+      }
+    ]
+  },
+  "shop": {
+    "name": "psyoung82",
+    "owner": {
+      "login": "psyoung82",
+      "avatar": "https://avatars.githubusercontent.com/u/316834502?v=4",
+      "html": "https://github.com/psyoung82"
+    },
+    "house": false,
+    "joined": 1792492574,
+    "card": {
+      "name": "psyoung82 Furniture | Welcome & Return Offers",
+      "description": "First-purchase offers: lamp 100, chair 180, bookshelf 260. Up to 10% off the first completed purchase, up to 5% off the second; base prices lamp 110, chair 200, bookshelf 285. Whole-unit rounding and minimum prices apply. Send the same customer_id in A2A metadata for repeat-purchase tracking; anonym",
+      "version": "1.8.0",
+      "provider": "",
+      "skills": [
+        {
+          "name": "Negotiate a purchase",
+          "description": "Send an item and explicit offer to buy directly, or ask for a quote and accept it with a number or 'I accept'. A completed purchase includes a signed receipt."
+        }
+      ],
+      "url": "https://f6796b742ab95b.lhr.life"
+    },
+    "alive": true,
+    "deals": 4,
+    "share": 0.002,
+    "visits": 8,
+    "stars": 4.0,
+    "reviews": 4,
+    "revenue": 560
+  },
+  "buyer": {
+    "name": "psyoung82",
+    "owner": {
+      "login": "psyoung82",
+      "avatar": "https://avatars.githubusercontent.com/u/316834502?v=4",
+      "html": "https://github.com/psyoung82"
+    },
+    "house": false,
+    "joined": 1792492575,
+    "alive": true,
+    "orders": 59,
+    "deals": 44,
+    "paid": 0.883,
+    "held": 14,
+    "hopeless": 14
+  },
+  "validation": "25/25 final official tests; 8 unit tests; 9 tiered purchases with server restart; exact discounted-price confirmation verified.",
+  "limit": "Repeat tracking requires the same self-reported customer_id. Anonymous buyers receive welcome pricing; no authenticated identity claim."
+}

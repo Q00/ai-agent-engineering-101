@@ -1,0 +1,22 @@
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: best available price 100. No further discount is available. Send this price as a number to buy.
+    -> SendMessage "99" taskId=d4b024b6
+    <- TASK_STATE_INPUT_REQUIRED | lamp: best available price 100. No further discount is available. Send this price as a number to buy.
+    -> SendMessage "100" taskId=d4b024b6
+    <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+       artifact receipt [{"sig_seller": "FROuQEw9pVtaEbccdXKVpi9JqWxDD/ROHL079NiLE55QZ1ST/6RblnR27L+UhNoBUBJAPaCRqesnkwwc1F8LAQ==", "price": 100.0, "task": "d4b024b6-9ed3-48d7-9595-e1eda33ede24", "item": "lamp", "shop": "psyoung82"}]
+    -> SendMessage "I want to buy a chair"
+    <- TASK_STATE_INPUT_REQUIRED | chair: best available price 180. No further discount is available. Send this price as a number to buy.
+    -> SendMessage "179" taskId=87c1b6e8
+    <- TASK_STATE_INPUT_REQUIRED | chair: best available price 180. No further discount is available. Send this price as a number to buy.
+    -> SendMessage "180" taskId=87c1b6e8
+    <- TASK_STATE_COMPLETED | Deal: chair at 180.
+       artifact receipt [{"sig_seller": "TK/yjTXEXuP9CxpJSbCEZAr+JG4InThDL3QtGa4e+1GW8ST0HsBxM6iGZU941G3pU08C6iq5Mrz7Ef/yBw7+Ag==", "price": 180.0, "task": "87c1b6e8-8fda-462a-9384-c9e678a92963", "item": "chair", "shop": "psyoung82"}]
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Send this price as a number to buy.
+    -> SendMessage "259" taskId=7a73bfe9
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: best available price 260. No further discount is available. Send this price as a number to buy.
+    -> SendMessage "260" taskId=7a73bfe9
+    <- TASK_STATE_COMPLETED | Deal: bookshelf at 260.
+       artifact receipt [{"sig_seller": "kLBowTGgCfvy5NsbTLEyTjZONvLIAv8z41qSmy8MIpL4i8VdcQq8qSeTWLleac5DhdjnHtZ5zOVUOGWlik9zCw==", "price": 260.0, "task": "7a73bfe9-4418-4aeb-b754-e9838031e590", "item": "bookshelf", "shop": "psyoung82"}]
+PASS: all three items open at floor, hold below-floor offers, complete at floor, and sign valid receipts without model calls.

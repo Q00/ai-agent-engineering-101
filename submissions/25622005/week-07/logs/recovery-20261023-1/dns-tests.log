@@ -1,0 +1,25 @@
+.E....
+======================================================================
+ERROR: test_failed_tunnel_lookup_resolves_only_socket_address (test_tunnel_dns.TunnelDnsTests.test_failed_tunnel_lookup_resolves_only_socket_address)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/tests/test_tunnel_dns.py", line 34, in test_failed_tunnel_lookup_resolves_only_socket_address
+    self.assertEqual(socket.getaddrinfo('shop.trycloudflare.com', 443),
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/soony-home/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/soony-home/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/soony-home/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/unittest/mock.py", line 1204, in _execute_mock_call
+    result = effect(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/soony-home/seoul-tech-project/ai-agent-engineering-101/submissions/25622005/week-07/tests/test_tunnel_dns.py", line 29, in native
+    raise socket.gaierror('cached negative lookup')
+socket.gaierror: cached negative lookup
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.005s
+
+FAILED (errors=1)
