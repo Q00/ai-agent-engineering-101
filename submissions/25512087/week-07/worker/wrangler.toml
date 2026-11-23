@@ -1,0 +1,21 @@
+name = "ggari0703-shop"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+SHOP_NAME = "ggari0703"
+
+[[durable_objects.bindings]]
+name = "SHOP"
+class_name = "Shop"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Shop"]
+
+[observability]
+enabled = true
+
+[triggers]
+crons = ["*/10 * * * *"]   # market scan: hourly, or at once on a share surge

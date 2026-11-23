@@ -1,0 +1,79 @@
+{"event": "opening", "task_id": "fa1cdd8e-f507-4d1c-8ba0-825e60f9546a", "item": "lamp", "ask": 100, "reserve": 100}
+{"event": "response", "task_id": "fa1cdd8e-f507-4d1c-8ba0-825e60f9546a", "item": "lamp", "offer": 100, "reserve": 100, "decision": "accept", "decision_price": 100}
+{"event": "deal", "ts": 1793078029.2, "item": "lamp", "markup": 1.21, "ask": 100, "visits": 15, "deals": 13, "avg_price": 103.9, "price": 100, "rounds": 0, "launch": true, "markup_change": 0.0}
+{"event": "deal", "task_id": "fa1cdd8e-f507-4d1c-8ba0-825e60f9546a", "item": "lamp", "price": 100, "rounds": 0}
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10787f650> at 0x110d7fbc0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-40' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10787f650> at 0x110d88100> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-41' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/simgyuseong/AXtransformation/agent-market/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+{"event": "opening", "task_id": "3ff135b0-b1be-4945-b878-c9f79ed1feee", "item": "lamp", "ask": 100, "reserve": 100}
+{"event": "response", "task_id": "3ff135b0-b1be-4945-b878-c9f79ed1feee", "item": "lamp", "offer": 100, "reserve": 100, "decision": "accept", "decision_price": 100}
+{"event": "deal", "ts": 1793078029.3, "item": "lamp", "markup": 1.21, "ask": 100, "visits": 16, "deals": 14, "avg_price": 103.6, "price": 100, "rounds": 0, "launch": true, "markup_change": 0.0}
+{"event": "deal", "task_id": "3ff135b0-b1be-4945-b878-c9f79ed1feee", "item": "lamp", "price": 100, "rounds": 0}
+{"event": "opening", "task_id": "838d1d94-34a6-42e4-b7a2-0136f8aa84fd", "item": "lamp", "ask": 100, "reserve": 100}
+{"event": "response", "task_id": "838d1d94-34a6-42e4-b7a2-0136f8aa84fd", "item": "lamp", "offer": 100, "reserve": 100, "decision": "accept", "decision_price": 100}
+{"event": "deal", "ts": 1793078029.4, "item": "lamp", "markup": 1.21, "ask": 100, "visits": 17, "deals": 15, "avg_price": 103.4, "price": 100, "rounds": 0, "launch": true, "markup_change": 0.0}
+{"event": "deal", "task_id": "838d1d94-34a6-42e4-b7a2-0136f8aa84fd", "item": "lamp", "price": 100, "rounds": 0}
+{"event": "opening", "task_id": "f4ceb933-6cbb-4243-9f65-152039cd182b", "item": "bookshelf", "ask": 260, "reserve": 260}
+{"event": "response", "task_id": "f4ceb933-6cbb-4243-9f65-152039cd182b", "item": "bookshelf", "offer": 140, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "response", "task_id": "f4ceb933-6cbb-4243-9f65-152039cd182b", "item": "bookshelf", "offer": 170, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "response", "task_id": "f4ceb933-6cbb-4243-9f65-152039cd182b", "item": "bookshelf", "offer": 200, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "response", "task_id": "f4ceb933-6cbb-4243-9f65-152039cd182b", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "lost", "ts": 1793078029.6, "item": "bookshelf", "markup": 1.15, "ask": 260, "visits": 13, "deals": 1, "avg_price": 266.0, "offers": [140, 170, 200, 230], "why": "best offer below reserve", "markup_change": 0.0}
+{"event": "ended", "task_id": "f4ceb933-6cbb-4243-9f65-152039cd182b", "item": "bookshelf", "offers": [140, 170, 200, 230]}
+{"event": "opening", "task_id": "9a84e1a1-cae9-48c2-af3a-4dd13ceefba2", "item": "bookshelf", "ask": 260, "reserve": 260}
+{"event": "response", "task_id": "9a84e1a1-cae9-48c2-af3a-4dd13ceefba2", "item": "bookshelf", "offer": 140, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "response", "task_id": "9a84e1a1-cae9-48c2-af3a-4dd13ceefba2", "item": "bookshelf", "offer": 170, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "response", "task_id": "9a84e1a1-cae9-48c2-af3a-4dd13ceefba2", "item": "bookshelf", "offer": 200, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "response", "task_id": "9a84e1a1-cae9-48c2-af3a-4dd13ceefba2", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "lost", "ts": 1793078029.7, "item": "bookshelf", "markup": 1.15, "ask": 260, "visits": 14, "deals": 1, "avg_price": 266.0, "offers": [140, 170, 200, 230], "why": "best offer below reserve", "markup_change": 0.0}
+{"event": "ended", "task_id": "9a84e1a1-cae9-48c2-af3a-4dd13ceefba2", "item": "bookshelf", "offers": [140, 170, 200, 230]}
+{"event": "opening", "task_id": "ddfbee66-f424-408f-b0ef-91cbdbf427e6", "item": "bookshelf", "ask": 260, "reserve": 260}
+{"event": "response", "task_id": "ddfbee66-f424-408f-b0ef-91cbdbf427e6", "item": "bookshelf", "offer": 140, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "response", "task_id": "ddfbee66-f424-408f-b0ef-91cbdbf427e6", "item": "bookshelf", "offer": 170, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "response", "task_id": "ddfbee66-f424-408f-b0ef-91cbdbf427e6", "item": "bookshelf", "offer": 200, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "response", "task_id": "ddfbee66-f424-408f-b0ef-91cbdbf427e6", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "lost", "ts": 1793078029.9, "item": "bookshelf", "markup": 1.15, "ask": 260, "visits": 15, "deals": 1, "avg_price": 266.0, "offers": [140, 170, 200, 230], "why": "best offer below reserve", "markup_change": 0.0}
+{"event": "ended", "task_id": "ddfbee66-f424-408f-b0ef-91cbdbf427e6", "item": "bookshelf", "offers": [140, 170, 200, 230]}
