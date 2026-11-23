@@ -1,0 +1,13 @@
+[buyer] card: 'Kit Shop' binding=JSONRPC v1.0 url=http://127.0.0.1:51301/
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] 4.6s rc=0 answer='{"action":"offer","price":65}'
+[buyer] harness said action='offer' price=65 (ask 130, budget 120)
+[buyer] -> '65' (task 583ddfdc)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
+[harness] 5.1s rc=0 answer='{"action": "accept", "price": 100}'
+[buyer] harness said action='accept' price=100 (ask 100, budget 120)
+[buyer] -> '100' (task 583ddfdc)
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[buyer]    artifact receipt: [{'seller': 'Kit Shop', 'item': 'lamp', 'price': 100.0}]
+[buyer] done: TASK_STATE_COMPLETED after 10s

@@ -1,0 +1,19 @@
+[buyer] card: 'Kit Shop' binding=JSONRPC v1.0 url=http://127.0.0.1:51366/
+[buyer] -> 'I want to buy a bookshelf'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[harness] 4.7s rc=0 answer='{"action":"offer","price":169}'
+[buyer] harness said action='offer' price=169 (ask 338, budget 230)
+[buyer] -> '169' (task dfa7b6f7)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 169 is too low. Counteroffer: 260.
+[harness] 5.2s rc=0 answer='{"action": "offer", "price": 200}'
+[buyer] harness said action='offer' price=200 (ask 260, budget 230)
+[buyer] -> '200' (task dfa7b6f7)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 260.
+[harness] 5.0s rc=0 answer='{"action": "offer", "price": 230}'
+[buyer] harness said action='offer' price=230 (ask 260, budget 230)
+[buyer] -> '230' (task dfa7b6f7)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness] 6.1s rc=0 answer='{"action": "walk", "price": 0}'
+[buyer] harness said action='walk' price=0 (ask 260, budget 230)
+[buyer] walking away
+[buyer] done: TASK_STATE_CANCELED after 21s
