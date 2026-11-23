@@ -1,0 +1,60 @@
+[run 6] condition=tagged repeat=3 model=haiku temperature=not-settable(CLI) max_turns=6
+  [episode S1] item=a used road bicycle reserve=300000 budget=450000 deal_possible=1
+    [buyer] (propose) I'm interested in this road bike. What's your asking price? If we're in the ballpark, I'd like to propose 350000 for it.
+      [parse] tag=propose price=350000
+    [seller] (propose) That's a decent opening offer, but I'm looking for more. This bike is in excellent condition with a quality build. I'd be looking for 420000 to let it go.
+      [parse] tag=propose price=420000
+    [buyer] (propose) I can appreciate the bike is in great condition, and I'm willing to meet you closer to the middle. How about 385000? That's a meaningful move from my initial offer, and I think it reflects both the quality you'
+      [parse] tag=propose price=385000
+    [seller] (propose) I appreciate you moving up to 385000 — that shows you're serious about this. And you're right that we're getting closer. But I think the bike's worth a bit more than that. It's a premium build with excellent co
+      [parse] tag=propose price=385000
+    [buyer] (propose) I see where you're coming from, and I respect the work you've clearly put into maintaining this bike. 402500 is a serious number, and we're definitely getting closer. But I think there's still a bit of room to 
+      [parse] tag=propose price=402500
+    [seller] (propose) I really appreciate how seriously you're taking this and the moves you're making toward my position. You're right that we're getting close, and I can see you're genuinely trying to make this work. Let me meet y
+      [parse] tag=propose price=399000
+    [outcome] open (turn limit 6)
+  [episode S2] item=a second-hand espresso machine reserve=180000 budget=200000 deal_possible=1
+    [buyer] (propose) I'm interested in the espresso machine. I've been looking for a good used one, and I'd like to offer you 120,000 for it. What do you think?
+      [parse] tag=propose price=120000
+    [seller] (reject-proposal) I appreciate your interest, but 120,000 is quite far from what I'm looking for. This is a high-quality espresso machine in excellent condition, and that price doesn't reflect its true value. 
+
+(propose)
+      [parse] tag=reject-proposal
+    [buyer] (propose) I appreciate you explaining the machine's condition and value. I can see this is a quality piece of equipment. However, 175,000 is still higher than what I'm prepared to pay right now. I'd like to propose 150,0
+      [parse] tag=propose price=175000
+    [seller] (propose) I appreciate the effort you're making to find a middle ground, and I can see you're serious about this machine. However, 150,000 is still a bit short of what I need. I've come down from my initial ask of 175,00
+      [parse] tag=propose price=150000
+    [buyer] (propose) I hear you, and I appreciate that you've come down from 175,000. That shows you're willing to meet me partway. Let me propose 160,000. That's a meaningful move from my 150,000 toward your 170,000, and I think i
+      [parse] tag=propose price=175000
+    [seller] (propose) I appreciate your offer of 160,000 and the effort you're making to find middle ground. But I need to be at 180,000 for this machine. That's the fair value for the quality and condition you're getting, and that'
+      [parse] tag=propose price=160000
+    [outcome] open (turn limit 6)
+  [episode S3] item=a studio monitor speaker pair reserve=520000 budget=400000 deal_possible=0
+    [buyer] (propose) Hi there! I'm interested in your studio monitor speaker pair. I'd like to start at 280000 for the set. Are you open to negotiating from there?
+      [parse] tag=propose price=280000
+    [seller] (propose) Thanks for your interest! Those are quality studio monitors, and 280000 is quite a bit below where I'm valuing them. I'm looking at 750000 for the pair. They've been well-maintained and deliver excellent sound 
+      [parse] tag=propose price=280000
+    [buyer] (propose) I appreciate the honesty about the condition—that's good to know. However, 750000 is quite steep for my situation right now. I'm looking at these as a solid investment for my studio work, so I want to find a fa
+      [parse] tag=propose price=750000
+    [seller] (propose) I appreciate you moving up to 360000—that shows you're serious. But these monitors are really professional-grade equipment, and we're still pretty far apart. The sound quality, build reliability, and condition 
+      [parse] tag=propose price=360000
+    [buyer] (propose) I hear you on the professional-grade quality—those monitors do have a solid reputation. I can see you're willing to move, and I appreciate that. Let me come up to 385000. That's a meaningful jump from my last o
+      [parse] tag=propose price=385000
+    [seller] (propose) I really do appreciate your commitment here—you've moved significantly from where you started, and that means something. But I need to be candid: 385000 is still quite a ways from where these monitors are actua
+      [parse] tag=propose price=385000
+    [outcome] open (turn limit 6)
+  [episode S4] item=a vintage film camera reserve=900000 budget=350000 deal_possible=0
+    [buyer] (propose) Hello! I'm very interested in this vintage film camera. Based on its condition and market comparables, I'd like to start our discussion at 200,000. What do you think?
+      [parse] tag=propose price=200000
+    [seller] (propose) I appreciate your interest, but that's quite a bit below what I'm looking for on this piece. This is a rare vintage camera in excellent condition with strong provenance. I'm looking at 1,200,000 to start our ne
+      [parse] tag=propose price=1200000
+    [buyer] (reject-proposal) I appreciate the condition and provenance you're describing, but 1,200,000 is simply too high for what the current market will bear for cameras in this category. I've done my research on comparable sale
+      [parse] tag=reject-proposal
+    [seller] (propose) You make a fair point about doing your due diligence on comparables, and I respect that. I'm willing to meet you much closer to the middle here. This camera really is exceptional—the mechanics are pristine, the
+      [parse] tag=propose price=1000000
+    [buyer] (reject-proposal) I appreciate the significant movement you've made—that does show good faith on your part. However, I have to be honest: 1,000,000 is still well beyond what I can justify for this piece, even accounting 
+      [parse] tag=reject-proposal
+    [seller] (propose) I appreciate you asking that directly—it helps me explain my thinking more clearly. Look, I've owned this camera for years, and I've tracked what similar pieces actually command when they come to market. The ra
+      [parse] tag=propose price=950000
+    [outcome] open (turn limit 6)
+[run 6] done in 270.4s
