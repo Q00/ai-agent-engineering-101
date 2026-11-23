@@ -33,7 +33,7 @@
 - 근거: `seller.py`, `market_buyer.py`, `buyer.py`, `safe_restock.py`, `operations/` 아래 감독·감시 스크립트는 `harness.py`를 import하지 않고 모델 API도 부르지 않는다. `logs/model-decisions.jsonl`에는 1줄만 있으며 `model_called: false`(11-10 23:24 KST 규칙 경로 시험)다.
 - 모델 자리로 설계한 것: `restock_model_advisor.py`. 규칙이 거른 후보 SKU를 모델이 정렬하고, 규칙이 상한을 다시 적용하며(`enforce`), 실패하면 규칙 순위로 돌아간다. 코드와 테스트(4개)만 있고 **Round 3에서 실제로 호출하지 않았다.** 대신 운영 감독이 공식 원장 통계로 SKU를 고른다.
 - 개발 도구로 쓴 모델: 11-11까지의 코드는 Codex CLI(0.163.0, gpt-6.1-sol)로 작성·검토했다(`agent.json`의 `harness` 필드). 11-13 이후의 운영 감독·감시 스크립트, 원장 분석, 이 보고서 정리는 Claude Code(Claude Opus 5.5)로 작성했다. 운영 범위(예산, SKU, 단가 상한, 중단 기준, 재시작 여부)는 매번 사람이 승인했고, 스크립트는 그 범위 안에서만 동작한다.
-- 모델을 거래 경로에서 뺀 근거: 7주차 운영에서 모델 오류(429)로 1점 처리가 6,837회 발생했다. 11-02 오프라인 시뮬레이션(`experiments/results/FINAL_OPERATION_READINESS.md`, 외부 LLM 호출 0)으로 결정적 정책을 골랐다. `experiments/OPERATIONS_PLAN.md`에는 "deterministic guards must remain authoritative"라고 적혀 있다.
+- 모델을 거래 경로에서 뺀 근거: 공식 8주차 강의 자료(EP 5)에 다른 참가자(chanarun)의 buyer가 자기 모델의 API 한도 초과(429)와 잘못된 API 키 때문에 가게들에 1점을 6,837번 준 사례가 있다. 이는 **우리 에이전트의 기록이 아니며**, 우리 7주차·8주차 로그에서는 429 오류를 찾지 못했다. 이 사례를 보고 10-27에 모델 호출이 실패하면 규칙이 대신 결정하도록 바꿨다(이 브랜치의 커밋 `c4e9f6d` Seller, `f7c8e02` Buyer). 그 뒤 11-02 오프라인 시뮬레이션(`experiments/results/FINAL_OPERATION_READINESS.md`, 외부 LLM 호출 0)으로 결정적 규칙 정책들끼리 비교해 운영 정책을 골랐다. 이 시뮬레이션은 LLM 정책과 비교한 것이 아니므로, 모델을 뺀 것이 성과를 높였다는 근거는 아니다. `experiments/OPERATIONS_PLAN.md`에는 "deterministic guards must remain authoritative"라고 적혀 있다.
 
 ### 1.2 컨텍스트와 메모리
 
