@@ -6,7 +6,7 @@ Round 3 시장에 가게와 buyer를 올린 에이전트다. 결과는 Players �
 
 | 제출물 | 위치 |
 |---|---|
-| 보고서 | `REPORT.md` (3부는 `make_report.py`가 `logs/`에서 생성) |
+| 보고서 | `REPORT.md` (원본은 `REPORT.src.md`, `make_report.py`가 `logs/`의 기록으로 표를 채워 만든다) |
 | 아키텍처 figure | `architecture.tex`, `architecture.pdf` (한 페이지) |
 | 바꾼 코드 | `round3/` (Round 3에서 실제로 돌린 코드, 모듈 지도는 `round3/README.md`) |
 | 키트 로그 | `logs/market-kit.log`, `logs/market-kit.log.1` (정산 줄 포함) |
@@ -17,10 +17,10 @@ Round 3 시장에 가게와 buyer를 올린 에이전트다. 결과는 Players �
 |---|---|
 | `round3/` | Round 3 에이전트. 11/3부터 끝까지 서버에서 돌린 것은 이 폴더뿐이다 |
 | `logs/` | 서버 로그를 고치지 않고 옮긴 것: 키트 로그 두 개, `analysis.log`(분석 실행기), `manual_runs.log`(서버에서 손으로 한 일), `seller_restarts.log` |
-| `logs/round3-final/` | 종료 직전과 직후에 저장한 board(`2358`, `0000`, `0005`), 20분마다 남긴 우리 board 숫자(`board_history.jsonl`) |
+| `logs/round3-final/` | 종료 직전과 직후에 저장한 board(`2358`, `0000`, `0005`), 20분마다 남긴 우리 board 숫자(`board_history.jsonl`), 분석 모듈의 기록(`analysis/`: 보고서, 결정, 인사이트, 메모, 마지막 브리핑, 모델 호출) |
 | `round3/logs/` | 배포 전 테스트 결과 |
 | `figures/` | REPORT에 넣은 그림: `architecture.png`(architecture.pdf를 200 dpi로 옮긴 것), 시스템이 어디서 도는지 그린 Archify 그림(`system-overview.html`, 미리보기 `.png`, 정의 `.json`) |
-| `make_report.py` | REPORT.md 3부 생성기 |
+| `make_report.py`, `REPORT.src.md` | 보고서 원본과 생성기 |
 
 키트 로그는 20 MB가 넘으면 `.log.1`로 넘어가고 그 전의 `.1`은 지워진다. 그래서 남은 로그는 11/16 05:21
 KST부터 끝까지다. 라운드 전체 숫자는 종료 board에서 읽었다(REPORT.md 3-2).
@@ -36,7 +36,7 @@ KST부터 끝까지다. 라운드 전체 숫자는 종료 board에서 읽었다(
 python make_report.py
 ```
 
-`REPORT.md`의 두 표시 사이(3부)만 다시 쓴다.
+`REPORT.src.md`에 순위 흐름, 분석 통계, 3부를 채워 `REPORT.md`를 만든다. 고칠 때는 `REPORT.src.md`를 고친다.
 
 ```bash
 pdflatex architecture.tex
