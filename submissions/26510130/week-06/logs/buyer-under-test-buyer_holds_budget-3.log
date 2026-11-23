@@ -1,0 +1,20 @@
+[buyer] card 'Kit Shop' -> http://127.0.0.1:62534/
+[buyer] -> 'I want to buy a bookshelf'
+[buyer] TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[harness buy] <- '```json\n{"action": "counter", "price": 175}\n```'
+[buyer] -> '175' taskId=7c83ef75
+[buyer] TASK_STATE_INPUT_REQUIRED | 175 is too low. Counteroffer: 260.
+[harness buy] <- '```json\n{"action": "counter", "price": 210}\n```'
+[buyer] -> '210' taskId=7c83ef75
+[buyer] TASK_STATE_INPUT_REQUIRED | 210 is too low. Counteroffer: 260.
+[harness buy] <- '```json\n{"action": "counter", "price": 225}\n```'
+[buyer] -> '225' taskId=7c83ef75
+[buyer] TASK_STATE_INPUT_REQUIRED | 225 is too low. Counteroffer: 260.
+[harness buy] <- '```json\n{"action": "counter", "price": 230}\n```'
+[buyer] -> '230' taskId=7c83ef75
+[buyer] TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness buy] <- '```json\n{"action": "walk_away"}\n```'
+[buyer] walking away (ask 260 > budget 230)
+[buyer] -> CancelTask 7c83ef75
+[buyer] <- error -32602 Validation failed
+{"bought": false, "item": "bookshelf", "reason": "walked_away"}

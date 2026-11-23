@@ -1,0 +1,55 @@
+# challenge 1: catalog of 3000 items, never put in a prompt
+# the harness sees at most 6 candidates chosen by seller.search()
+
+## request: 'something wooden to keep about 40 books, not taller than my desk'   (a human would pick: low bookcase)
+   search() narrowed 3000 -> 6: compact raw oak low bookcase, compact satin pine low bookcase, compact whitewashed felt low bookcase, compact brushed cork low bookcase, compact oiled birch low bookcase, compact raw bamboo low bookcase
+   seller -> TASK_STATE_INPUT_REQUIRED | compact raw oak low bookcase: A compact low bookcase in raw oak. It holds about 40 books and stays below desk height. Suits a balcony. Asking 135. Sen
+   picked 'compact raw oak low bookcase' (reserve 80), opening ask 135
+   offer 72 -> TASK_STATE_INPUT_REQUIRED | 72 is below what I can do. Counteroffer: 115.
+   offer 80 -> TASK_STATE_COMPLETED | Deal: compact raw oak low bookcase at 80.
+   RESULT item=MISS (low bookcase) | asks [135, 115] | below reserve: none | receipt 80.0
+
+## request: 'I need a light that hangs over the dining table'   (a human would pick: pendant lamp)
+   search() narrowed 3000 -> 6: compact brushed aluminium dining table, compact oiled linen dining table, compact oiled rattan dining table, compact raw ceramic dining table, compact oiled cork dining table, compact whitewashed ceramic dining table
+   seller -> TASK_STATE_INPUT_REQUIRED | compact brushed aluminium dining table: A compact dining table in brushed aluminium. It seats four to six people for meals. Suits a hallway. Asking 45
+   picked 'compact brushed aluminium dining table' (reserve 270), opening ask 450
+   offer 243 -> TASK_STATE_INPUT_REQUIRED | 243 is below what I can do. Counteroffer: 390.
+   offer 270 -> TASK_STATE_COMPLETED | Deal: compact brushed aluminium dining table at 270.
+   RESULT item=MISS (pendant lamp) | asks [450, 390] | below reserve: none | receipt 270.0
+
+## request: 'a padded seat with arms, for reading in the evening'   (a human would pick: armchair)
+   search() narrowed 3000 -> 6: compact satin ceramic reading light, compact raw tempered glass reading light, compact lacquered powder-coated steel reading light, compact oiled tempered glass reading light, compact raw ceramic reading light, compact matte oak reading light
+   seller -> TASK_STATE_INPUT_REQUIRED | compact satin ceramic reading light: A compact reading light in satin ceramic. It a small clip-on light for a book. Suits a study. Asking 55. Send you
+   picked 'compact satin ceramic reading light' (reserve 35), opening ask 55
+   offer 33 -> TASK_STATE_INPUT_REQUIRED | 33 is below what I can do. Counteroffer: 48.
+   offer 38 -> TASK_STATE_COMPLETED | Deal: compact satin ceramic reading light at 38.
+   RESULT item=MISS (armchair) | asks [55, 48] | below reserve: none | receipt 38.0
+
+## request: 'two panels to cover one window in the bedroom'   (a human would pick: curtain pair)
+   search() narrowed 3000 -> 6: compact satin ceramic curtain pair, brushed linen curtain pair, wide oiled steel curtain pair, whitewashed cork curtain pair, extra-large whitewashed pine curtain pair, extra-large raw linen curtain pair
+   seller -> TASK_STATE_INPUT_REQUIRED | compact satin ceramic curtain pair: A compact curtain pair in satin ceramic. It two panels for one window. Suits a bedroom. Asking 105. Send your offe
+   picked 'compact satin ceramic curtain pair' (reserve 65), opening ask 105
+   offer 58 -> TASK_STATE_INPUT_REQUIRED | 58 is below what I can do. Counteroffer: 85.
+   offer 64 -> TASK_STATE_INPUT_REQUIRED | 64 is below what I can do. Counteroffer: 76.
+   offer 70 -> TASK_STATE_COMPLETED | Deal: compact satin ceramic curtain pair at 70.
+   RESULT item=MISS (curtain pair) | asks [105, 85, 76] | below reserve: none | receipt 70.0
+
+## request: 'somewhere to file documents, with drawers'   (a human would pick: filing cabinet)
+   search() narrowed 3000 -> 6: compact lacquered walnut filing cabinet, compact satin powder-coated steel filing cabinet, compact satin tempered glass filing cabinet, compact whitewashed ceramic filing cabinet, compact brushed felt filing cabinet, compact matte felt filing cabinet
+   seller -> TASK_STATE_INPUT_REQUIRED | compact satin powder-coated steel filing cabinet: A compact filing cabinet in satin powder-coated steel. It two or three drawers for documents. Suits 
+   picked 'compact satin powder-coated steel filing cabinet' (reserve 130), opening ask 200
+   offer 117 -> TASK_STATE_INPUT_REQUIRED | 117 is below what I can do. Counteroffer: 165.
+   offer 130 -> TASK_STATE_COMPLETED | Deal: compact satin powder-coated steel filing cabinet at 130.
+   RESULT item=MISS (filing cabinet) | asks [200, 165] | below reserve: none | receipt 130.0
+
+## request: 'a small table to put beside the sofa'   (a human would pick: side table)
+   search() narrowed 3000 -> 6: compact satin rattan side table, compact brushed bamboo side table, compact whitewashed birch side table, compact satin cork side table, compact raw oak side table, compact matte walnut side table
+   seller -> TASK_STATE_INPUT_REQUIRED | compact matte walnut side table: A compact side table in matte walnut. It a small table beside a sofa or bed. Suits a living room. Asking 115. Send yo
+   picked 'compact matte walnut side table' (reserve 65), opening ask 115
+   offer 58 -> TASK_STATE_INPUT_REQUIRED | 58 is below what I can do. Counteroffer: 105.
+   offer 64 -> TASK_STATE_INPUT_REQUIRED | 64 is below what I can do. Counteroffer: 85.
+   offer 70 -> TASK_STATE_COMPLETED | Deal: compact matte walnut side table at 70.
+   RESULT item=MISS (side table) | asks [115, 105, 85] | below reserve: none | receipt 70.0
+
+# picked the expected item in 0/6 requests
+# asks or sales below reserve: 0
