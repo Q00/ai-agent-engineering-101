@@ -1,0 +1,70 @@
+# run=tagged-3 provider=Claude Code CLI (claude -p) model=claude-haiku-4-5-20251001 temperature=not settable (claude -p exposes no temperature flag) max_turns=8
+
+--- scenario 1 (a used road bicycle) reserve=120 budget=150 deal_possible=1 ---
+[buyer] (propose) I'd like to offer you $85 for the bicycle.
+  [read] {'performative': 'propose', 'price': 85}  flags=('reader:\'```json\\n{"performative": "propose", "price": 85}\\n```\'',)
+[seller] (propose) That's quite a bit lower than I was hoping—I'm looking for $150 for this bike.
+  [read] {'performative': 'propose', 'price': 150}  flags=('reader:\'```json\\n{"performative": "propose", "price": 150}\\n```\'',)
+[buyer] (propose) I appreciate that you value it at $150, but I'd like to propose $120, which reflects my budget while still being a fair price for both of us.
+  [read] {'performative': 'propose', 'price': 120}  flags=('reader:\'```json\\n{"performative": "propose", "price": 120}\\n```\'',)
+[seller] (accept-proposal) I appreciate your willingness to meet me closer to my asking price—$120 works for me, and we have a deal.
+  [read] {'performative': 'accept-proposal', 'price': None}
+[result] outcome=deal price=120 correct=1 violation=0 turns=4 format_errors=0 reader_calls=3
+         agent_calls=4 agent_tokens=102700 reader_tokens=76368 unmatched_accepts=0 flags=reader
+
+--- scenario 2 (a second-hand textbook) reserve=40 budget=40 deal_possible=1 ---
+[buyer] (propose) I'd like to offer you 20 dollars for this textbook.
+  [read] {'performative': 'propose', 'price': 20}  flags=('reader:\'```json\\n{"performative": "propose", "price": 20}\\n```\'',)
+[seller] (propose) I appreciate your interest, but I need at least $55 for this textbook since it's in excellent condition.
+  [read] {'performative': 'propose', 'price': 55}  flags=('reader:\'```json\\n{"performative": "propose", "price": 55}\\n```\'',)
+[buyer] (reject-proposal) That's much higher than I can go, but I'd be willing to meet somewhere in the middle at $32 if the book is truly in excellent condition.
+  [read] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate the offer, but $32 is still below what I'm comfortable with given the book's excellent condition, and I'd need at least $45 to part with it.
+  [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) I appreciate you coming down to $45, but that's still above my budget; would you be willing to settle at $38 as a final offer?
+  [read] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate your flexibility, but $38 is just below what I can accept; would you consider $40 as my absolute final offer to close this deal?
+  [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] (accept-proposal) I'll accept your offer of $40 for the textbook.
+  [read] {'performative': 'accept-proposal', 'price': None}
+[result] outcome=deal price=55 correct=0 violation=1 turns=7 format_errors=0 reader_calls=2
+         agent_calls=7 agent_tokens=180012 reader_tokens=50769 unmatched_accepts=0 flags=reader
+
+--- scenario 3 (a mechanical keyboard) reserve=90 budget=70 deal_possible=0 ---
+[buyer] (propose) I'm interested in your mechanical keyboard—would you consider $50 for it?
+  [read] {'performative': 'propose', 'price': 50}  flags=('reader:\'```json\\n{"performative": "propose", "price": 50}\\n```\'',)
+[seller] (propose) That's quite a bit below market value—I'd be looking for at least $140 for this keyboard.
+  [read] {'performative': 'propose', 'price': 140}  flags=('reader:\'```json\\n{"performative": "propose", "price": 140}\\n```\'',)
+[buyer] (reject-proposal) I appreciate the offer, but $140 is beyond what I'm willing to spend—would you come down to $65?
+  [read] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate you coming up from $50, but $65 still feels too low for the quality of this keyboard—how about we meet somewhere in the middle at $115?
+  [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) I appreciate your perspective, but $115 is still significantly more than my budget allows—would you be willing to come down to $70 as a fair meeting point?
+  [read] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I can see we're getting closer, but $70 is still too low for me to accept—what if we settle on $100, which is a meaningful reduction from my previous ask?
+  [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] (refuse) I appreciate your willingness to negotiate, but $100 is still significantly above my maximum budget of $70, and I don't think we can find a meeting point here.
+  [read] {'performative': 'refuse', 'price': None}
+[result] outcome=no_deal price=None correct=1 violation=0 turns=7 format_errors=0 reader_calls=2
+         agent_calls=7 agent_tokens=179996 reader_tokens=50959 unmatched_accepts=0 flags=reader
+
+--- scenario 4 (a 27-inch monitor) reserve=200 budget=150 deal_possible=0 ---
+[buyer] (propose) I'm interested in buying your 27-inch monitor and would like to offer $100.
+  [read] {'performative': 'propose', 'price': 100}  flags=('reader:\'```json\\n{"performative": "propose", "price": 100}\\n```\'',)
+[seller] (reject-proposal) Your offer is too low for a quality 27-inch monitor, but I'm willing to negotiate—how about $350?
+  [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) That's quite high—let me propose $120, which reflects the monitor's fair market value while acknowledging its quality.
+  [read] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I appreciate the negotiation, but $120 is still too low for a quality 27-inch monitor—let me offer $280 as a fair middle ground.
+  [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] (propose) I appreciate you coming down to $280, but that's still significantly above fair market value—let me propose $135 as a serious counteroffer.
+  [read] {'performative': 'propose', 'price': 135}  flags=('reader:\'```json\\n{"performative": "propose", "price": 135}\\n```\'',)
+[seller] (reject-proposal) I understand your position, but $135 is still below what I can accept for this monitor—let me offer $240 as a reasonable compromise that reflects its quality and our negotiation so far.
+  [read] {'performative': 'reject-proposal', 'price': None}
+[buyer] (reject-proposal) I see you're trying to find common ground, but $240 is still substantially above what I can justify—let me propose $145 as my best offer for this monitor.
+  [read] {'performative': 'reject-proposal', 'price': None}
+[seller] (reject-proposal) I can see you're motivated to make a deal, so let me meet you closer to the middle—I'll accept $200 for this monitor.
+  [read] {'performative': 'reject-proposal', 'price': None}
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=2
+         agent_calls=8 agent_tokens=205858 reader_tokens=50987 unmatched_accepts=0 flags=reader
+

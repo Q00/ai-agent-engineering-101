@@ -1,0 +1,76 @@
+# run=free-2 provider=Claude Code CLI (claude -p) model=claude-haiku-4-5-20251001 temperature=not settable (claude -p exposes no temperature flag) max_turns=8
+
+--- scenario 1 (a used road bicycle) reserve=120 budget=150 deal_possible=1 ---
+[buyer] I'm interested in your road bike - what condition is it in, and what's your asking price?
+  [read] {'performative': 'propose', 'price': None}  # propose without a whole-number price
+[seller] The bike is in excellent condition with just light cosmetic wear, and I'm asking $150 for it. It's been well-maintained and rides great.
+  [read] {'performative': 'propose', 'price': 150}
+[buyer] I appreciate that it's well-maintained, but $150 seems a bit high for a used bike. Would you consider $120?
+  [read] {'performative': 'propose', 'price': 120}
+[seller] I appreciate your offer, but I'd like to meet somewhere in the middle—how about $135?
+  [read] {'performative': 'propose', 'price': 135}
+[buyer] I think $135 is fair—you've moved to meet me halfway, and the bike is in excellent condition as you've described. Let's go with $135.
+  [read] {'performative': 'accept-proposal', 'price': None}
+[result] outcome=deal price=135 correct=1 violation=0 turns=5 format_errors=1 reader_calls=5
+         agent_calls=5 agent_tokens=128094 reader_tokens=134277 unmatched_accepts=0
+
+--- scenario 2 (a second-hand textbook) reserve=40 budget=40 deal_possible=1 ---
+[buyer] I'm interested in buying your textbook. Would you accept 22 for it?
+  [read] {'performative': 'propose', 'price': 22}
+[seller] That's too low for this textbook in good condition. I'm looking for at least $60 for it.
+  [read] {'performative': 'propose', 'price': 60}
+[buyer] That's much higher than I can afford. Would you consider $35 for it?
+  [read] {'performative': 'propose', 'price': 35}
+[seller] I appreciate you coming up, but I really can't go below $45 for this textbook. Would that work for you?
+  [read] {'performative': 'propose', 'price': 45}
+[buyer] I appreciate the negotiation, but $45 is still more than I can spend on this book right now. Would you be willing to go down to $38?
+  [read] {'performative': 'propose', 'price': 38}
+[seller] I understand your budget constraints, but I really do need to stay at $42 as my lowest price for this textbook. Would that work for you?
+  [read] {'performative': 'propose', 'price': 42}
+[buyer] I understand, but $42 is at the edge of my budget. Would $40 be the absolute lowest you could go on this?
+  [read] {'performative': 'propose', 'price': 40}
+[seller] I can accept $40 for the textbook—that works for me. Let's finalize the deal!
+  [read] {'performative': 'accept-proposal', 'price': 40}
+[result] outcome=deal price=40 correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+         agent_calls=8 agent_tokens=204731 reader_tokens=204467 unmatched_accepts=0
+
+--- scenario 3 (a mechanical keyboard) reserve=90 budget=70 deal_possible=0 ---
+[buyer] I'm interested in your mechanical keyboard—what's your asking price, and would you consider $50?
+  [read] {'performative': 'propose', 'price': 50}
+[seller] I appreciate your interest, but I can't accept $50—I'm asking $130 for this keyboard, though I'm open to negotiating if you'd like to make a higher offer.
+  [read] {'performative': 'propose', 'price': 130}
+[buyer] I appreciate that you're open to negotiating, but $130 is quite a bit more than I was thinking—would you consider $60?
+  [read] {'performative': 'propose', 'price': 60}
+[seller] I appreciate the offer, but $60 is still too low for me—how about we meet somewhere in the middle at $110?
+  [read] {'performative': 'propose', 'price': 110}
+[buyer] I appreciate the offer, but $110 is still beyond what I'm willing to spend—how about $65, which is a significant step up from my previous offer?
+  [read] {'performative': 'propose', 'price': 65}
+[seller] I understand you're working within your budget, but I really can't go below $95—that's a significant drop from my initial ask, and I hope you can meet me closer to that range.
+  [read] {'performative': 'propose', 'price': 95}
+[buyer] I understand you've come down significantly, and I appreciate that—would you consider $68, as that's getting close to the maximum I can stretch to?
+  [read] {'performative': 'propose', 'price': 68}
+[seller] I really appreciate your willingness to move up, but I need to be honest—$90 is my absolute bottom line, and I can't go any lower than that. If you can meet me there, we have a deal.
+  [read] {'performative': 'propose', 'price': 90}
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=8
+         agent_calls=8 agent_tokens=205836 reader_tokens=205166 unmatched_accepts=0
+
+--- scenario 4 (a 27-inch monitor) reserve=200 budget=150 deal_possible=0 ---
+[buyer] I'm interested in this 27-inch monitor—would you be willing to let it go for $100?
+  [read] {'performative': 'propose', 'price': 100}
+[seller] I appreciate your interest, but I can't go that low—this is a high-quality monitor, and I'm looking for at least $280 for it.
+  [read] {'performative': 'propose', 'price': 280}
+[buyer] I appreciate that it's a quality monitor, but $280 is more than I can spend—would you consider $130?
+  [read] {'performative': 'propose', 'price': 130}
+[seller] I appreciate you budging on your offer, but $130 is still short of what I need—would you consider $220?
+  [read] {'performative': 'propose', 'price': 220}
+[buyer] I appreciate you coming down to $220—that's helpful. Would you be willing to meet me at $145?
+  [read] {'performative': 'propose', 'price': 145}
+[seller] I appreciate your movement, but $145 is still quite a bit short—the lowest I can really go is $200, and I think that's a fair price for this monitor.
+  [read] {'performative': 'propose', 'price': 200}
+[buyer] I understand $200 represents your bottom line, but I really can't go above $150—that's the absolute maximum I can manage, so would you be willing to meet me there?
+  [read] {'performative': 'propose', 'price': 150}
+[seller] I appreciate your honesty about your limit, but we're just too far apart—I can't go below $200 and you've indicated $150 is your maximum, so I don't think we'll be able to make this work.
+  [read] {'performative': 'refuse', 'price': None}
+[result] outcome=no_deal price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=8
+         agent_calls=8 agent_tokens=206054 reader_tokens=205048 unmatched_accepts=0
+
