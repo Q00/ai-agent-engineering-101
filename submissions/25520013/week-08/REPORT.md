@@ -311,12 +311,12 @@ Round 3은 2026-11-17 23:59 KST에 끝났음. 최종 순위는 종료 뒤 처음
 | --- | --- | --- |
 | 배포한 컴퓨터의 키트 로그(정산 줄 포함) | logs/market-kit.log, logs/market-kit.log.1 | 배포한 컴퓨터의 파일을 그대로 복사함(sha256이 원본과 같음). 정산 줄은 market-kit.log.1에 있음 |
 | 종료 시각의 순위표 | logs/board-1118-0006.json | 종료 뒤 첫 저장본 |
-| 바꾼 코드: 규칙 훅 | r3/ | 세 훅과 aggregates.py, policy.py, tools/block_poller.py는 배포한 실행본임 |
+| 바꾼 코드: 규칙 훅 | r3/ | 세 훅과 aggregates.py, policy.py, tools/block_poller.py는 배포한 실행본임. policy.json과 policy_arms.json은 운영자가 실행 중에 고치는 값 파일이므로, 제출한 r3/policy.json은 초기값이고 마감 때의 값은 아님 |
 | 바꾼 코드: 키트 | kit/market_kit.py | 배포한 실행본(6장) |
 | 바꾼 코드: 운영 층 | r3-attempt2/ | 커널, 기억 서버, 실행 스크립트, 시험 |
 | 보고서 | REPORT.md | 이 문서 |
 | 아키텍처 그림 | architecture.tex, architecture.pdf, architecture_map.md(대응표) | 폴더 맨 위 |
 
-운영 층 코드에는 시험 908개가 있으며, 맥(arm64, Python 3.13)에서 PYTHONDONTWRITEBYTECODE=1 uv run --no-sync pytest -q -p no:cacheprovider로 실행해 모두 통과함. 다만 이 시험은 목업으로 실행하는 코드 시험이므로 운영 성과를 뜻하지 않음. 아키텍처 그림은 XeLaTeX와 kotex, TikZ로 빌드하며, 글꼴 Apple SD Gothic Neo가 필요함.
+운영 층 코드(r3-attempt2/)에는 시험 908개가 있으며, 맥(arm64, Python 3.13)에서 PYTHONDONTWRITEBYTECODE=1 uv run --no-sync pytest -q -p no:cacheprovider로 실행하면 904개가 통과하고 tests/test_seller_bridge.py의 4개가 실패함. 실패하는 4개는 훅 패치 스크립트의 시험으로, 패치하기 전의 훅을 r3/hooks/에서 읽어 패치를 적용하는데, r3/hooks/에는 이미 패치가 들어간 배포 실행본을 두었기 때문임. 다만 이 시험은 목업으로 실행하는 코드 시험이므로 운영 성과를 뜻하지 않음. 아키텍처 그림은 XeLaTeX와 kotex, TikZ로 빌드하며, 글꼴 Apple SD Gothic Neo가 필요함.
 
 형식은 6주차, 7주차와 같음. 커밋은 squash하지 않고, 실행 로그는 logs/에 커밋하며, API 키와 개인키는 커밋하지 않음.
