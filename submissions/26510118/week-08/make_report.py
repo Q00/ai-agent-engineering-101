@@ -228,10 +228,39 @@ def part3() -> str:
     return "\n".join(out)
 
 
+TRAJ_START, TRAJ_END = "<!-- make_report:trajectory start -->", "<!-- make_report:trajectory end -->"
+# The moments the strategy story in part (2) refers to (KST): exploration, the turn to focus, and after it.
+TRAJ_AT = [("2026-11-04 13:52", "탐색기, 첫날 낮"), ("2026-11-04 19:35", "탐색기 끝, 집중기 전환 직전"),
+           ("2026-11-05 09:09", "고가 라인을 연 다음 날 아침"), ("2026-11-07 03:00", "Class 보기 1위였던 때"),
+           ("2026-11-10 11:59", "10주차 LAB 무렵"), ("2026-11-17 23:41", "종료 직전")]
+
+
+def trajectory() -> str:
+    """Our place and trade over the round, from logs/round3-final/board_history.jsonl (written every 20 min)."""
+    hist = [json.loads(l) for l in open(LOGS / "round3-final" / "board_history.jsonl", encoding="utf-8") if l.strip()]
+    hist = [h for h in hist if h.get("ts")]
+    out = ["| 시각 (KST) | 시점 | 전체 순위 | Class 보기 순위 | 가게 거래 | 가게 매출 | buyer 거래 |", "|---|---|---|---|---|---|---|"]
+    for when, label in TRAJ_AT:
+        t = calendar.timegm(time.strptime(when, "%Y-%m-%d %H:%M")) - KST
+        h = min(hist, key=lambda x: abs(x["ts"] - t))
+        p, c, s, b = h.get("player") or {}, h.get("class") or {}, h.get("shop") or {}, h.get("buyer") or {}
+        cls = f"{c['place']}/{c['players']}" if c.get("place") else "(Class 보기 전)"
+        out.append(f"| {kst(h['ts'])} | {label} | {p.get('place')}/{h.get('players')} | {cls} | {n(s.get('deals', 0))} | "
+                   f"{s.get('revenue', 0) / 1e6:,.0f}M | {n(b.get('deals', 0))} |")
+    return "\n".join(out) + "\n\n(`logs/round3-final/board_history.jsonl`, `analysis.py`가 20분마다 남긴 우리 board 숫자. "\
+        "Class 보기는 11/5 Patch 3.3부터 생겼고 우리 기록에는 11/5 17:07부터 있다.)"
+
+
+def fill(body: str, start: str, end: str, text: str) -> str:
+    head, rest = body.split(start, 1)
+    _, tail = rest.split(end, 1)
+    return head + start + "\n" + text + "\n" + end + tail
+
+
 def main() -> int:
     text = part3()
     if "--print" in sys.argv:
-        print(text)
+        print(trajectory() + "\n\n" + text)
         return 0
     report = HERE / "REPORT.md"
     body = report.read_text(encoding="utf-8")
@@ -239,10 +268,11 @@ def main() -> int:
         print("REPORT.md has no part (3) markers; printing instead\n")
         print(text)
         return 1
-    head, rest = body.split(START, 1)
-    _, tail = rest.split(END, 1)
-    report.write_text(head + START + "\n" + text + "\n" + END + tail, encoding="utf-8")
-    print(f"REPORT.md part (3) rewritten ({len(text.splitlines())} lines)")
+    body = fill(body, START, END, text)
+    if TRAJ_START in body and TRAJ_END in body:
+        body = fill(body, TRAJ_START, TRAJ_END, trajectory())
+    report.write_text(body, encoding="utf-8")
+    print(f"REPORT.md part (3) rewritten ({len(text.splitlines())} lines)" + (", trajectory table too" if TRAJ_START in body else ""))
     return 0
 
 
