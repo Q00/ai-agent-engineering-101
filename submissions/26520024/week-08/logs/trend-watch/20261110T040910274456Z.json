@@ -1,0 +1,133 @@
+{
+  "generated_at": 1794283750.2744555,
+  "next_due_at": 1794290950.2744555,
+  "status": "insufficient_data",
+  "mode": "applied",
+  "summary": {
+    "window_seconds": 7200,
+    "recent_sales": 0,
+    "previous_sales": 0,
+    "coverage_sufficient": false,
+    "rows_capped": false,
+    "covered_quarter_hours": 0,
+    "share_shift": null,
+    "categories": [],
+    "top_skus": [],
+    "related_hypotheses": [],
+    "evidence_refs": [],
+    "own_recent_counts": {
+      "negotiations": 162,
+      "signed_receipts_not_payment_proof": 61,
+      "paid": 59,
+      "customer_review_claims": 3,
+      "payment_rejected": 1
+    },
+    "inventory": {
+      "balance": 6962653,
+      "units": 2,
+      "stock_cost": 45066,
+      "aging_cost": 0,
+      "expiring_food_cost": 0,
+      "blocked_cost": 15757,
+      "blocked_note": "Included in capital risk, excluded from price/demand inference"
+    },
+    "held_category_price_ratio": null,
+    "limits": [
+      "Observed ledger sample, not complete market demand or causal evidence.",
+      "No individual shop is blamed using unsigned reviews.",
+      "No Players percentile or final surplus is inferred from local counts."
+    ],
+    "seller_funnel": {
+      "seller_action:ask": 67,
+      "seller_action:reject": 13,
+      "seller_failure:ValueError": 17,
+      "seller_checkout:complete": 3,
+      "seller_checkout:create": 4,
+      "seller_action:accept": 7,
+      "seller_checkout:cancel": 1
+    },
+    "own_sale_performance": {
+      "settled_units": 0,
+      "margin_after_estimated_storage": 0,
+      "limitation": "Only linked own sales; refund adjustments live in portfolio memory. No causal baseline lift."
+    },
+    "funnel_limit": "Action counts, not unique visits; inventory lock failures are not lack of demand."
+  },
+  "proposed": {},
+  "changes": {},
+  "reasons": [
+    "Insufficient fresh two-window coverage: hold current settings."
+  ],
+  "score_evaluation": {
+    "status": "ok",
+    "scenario_score": {
+      "total": 0.7965807377049181,
+      "components": {
+        "shop.book": 0.16015625,
+        "shop.revenue": 0.11015625,
+        "shop.stars_rank": 0.045312500000000006,
+        "buyer.saved": 0.1598360655737705,
+        "buyer.forum": 0.2703,
+        "buyer.deals": 0.01721311475409836,
+        "buyer.posts": 0.03360655737704918
+      }
+    },
+    "previous_prediction_comparison": {
+      "on_schedule": false,
+      "predicted_delta": 0.0036363636363636598,
+      "realized_fixed_cohort_delta": 0.0319031347962383,
+      "prediction_error": null,
+      "official_all_delta": {
+        "shop": -0.006000000000000005,
+        "buyer": -0.06600000000000006
+      },
+      "metric_errors": {
+        "shop": {
+          "all": -0.006000000000000005,
+          "deals": 6,
+          "book": 20802.04333629948,
+          "stars_rank": -0.019999999999999574,
+          "revenue": 11236.699498705566
+        },
+        "buyer": {
+          "deals": 76.83489688245663,
+          "all": -0.06600000000000006,
+          "forum": 0.0030000000000000027,
+          "posts": 21.929241521052802,
+          "saved": 0.004399999999999987
+        }
+      },
+      "attribution": "Observed before/after; not causal policy lift. Official rules may differ."
+    },
+    "next_prediction": {
+      "made_at": 1794283750.2744555,
+      "due_at": 1794290950.2744555,
+      "rule": "announced_patch_3_5_raw_forum",
+      "method": "cold_start_persistence",
+      "projected_own": {
+        "shop": {
+          "deals": 221,
+          "stars_rank": 4.2,
+          "revenue": 24474126,
+          "book": 2007719,
+          "all": 0.313,
+          "name": "leeuichann"
+        },
+        "buyer": {
+          "posts": 419,
+          "forum": 0.901,
+          "saved": 0.2228,
+          "deals": 1286,
+          "all": 0.479,
+          "name": "leeuichann"
+        }
+      },
+      "expected_delta": 0.0,
+      "policy_lift_assumed": 0,
+      "limits": "Savings, rating and star quality held constant; peer positions frozen. Not final rank."
+    }
+  },
+  "source_edits": false,
+  "network_requests": 0,
+  "model_calls": 0
+}
