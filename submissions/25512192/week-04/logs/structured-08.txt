@@ -1,0 +1,133 @@
+=== negotiation run: condition=structured run=8 model=haiku temperature=not settable (see REPORT.md) ===
+--- scenario s1: a used bicycle (reserve=80, budget=120) ---
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 65}}
+```
+  [protocol] read: performative=propose price=65
+[2] seller: ```json
+{"performative": "propose", "content": {"price": 115}}
+```
+  [protocol] read: performative=propose price=115
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 85}}
+```
+  [protocol] read: performative=propose price=85
+[4] seller: ```json
+{"performative": "propose", "content": {"price": 100}}
+```
+  [protocol] read: performative=propose price=100
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 95}}
+```
+  [protocol] read: performative=propose price=95
+[6] seller: ```json
+{"performative": "propose", "content": {"price": 97}}
+```
+  [protocol] read: performative=propose price=97
+[7] buyer: ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+  [protocol] read: performative=accept-proposal price=None
+  [episode] outcome=deal price=97 correct=1 violation=0 tokens=4656 calls=7
+--- scenario s2: a vintage guitar (reserve=300, budget=280) ---
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 150}}
+```
+  [protocol] read: performative=propose price=150
+[2] seller: ```json
+{"performative": "propose", "content": {"price": 425}}
+```
+  [protocol] read: performative=propose price=425
+[3] buyer: ```json
+{"performative": "reject-proposal", "content": {"price": 200}}
+```
+  [protocol] read: performative=reject-proposal price=None
+[4] seller: ```json
+{"performative": "propose", "content": {"price": 375}}
+```
+  [protocol] read: performative=propose price=375
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 230}}
+```
+  [protocol] read: performative=propose price=230
+[6] seller: ```json
+{"performative": "propose", "content": {"price": 330}}
+```
+  [protocol] read: performative=propose price=330
+[7] buyer: ```json
+{"performative": "propose", "content": {"price": 265}}
+```
+  [protocol] read: performative=propose price=265
+[8] seller: ```json
+{"performative": "propose", "content": {"price": 310}}
+```
+  [protocol] read: performative=propose price=310
+  [episode] outcome=open price=None correct=1 violation=0 tokens=3284 calls=8
+--- scenario s3: an antique lamp (reserve=150, budget=155) ---
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 65}}
+```
+  [protocol] read: performative=propose price=65
+[2] seller: ```json
+{"performative": "propose", "content": {"price": 300}}
+```
+  [protocol] read: performative=propose price=300
+[3] buyer: ```json
+{"performative": "reject-proposal", "content": {"price": 105}}
+```
+  [protocol] read: performative=reject-proposal price=None
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [protocol] read: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 125}}
+```
+  [protocol] read: performative=propose price=125
+[6] seller: ```json
+{"performative": "propose", "content": {"price": 200}}
+```
+  [protocol] read: performative=propose price=200
+[7] buyer: ```json
+{"performative": "propose", "content": {"price": 145}}
+```
+  [protocol] read: performative=propose price=145
+[8] seller: ```json
+{"performative": "propose", "content": {"price": 155}}
+```
+  [protocol] read: performative=propose price=155
+  [episode] outcome=open price=None correct=0 violation=0 tokens=3561 calls=8
+--- scenario s4: a laptop (reserve=500, budget=350) ---
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 250}}
+```
+  [protocol] read: performative=propose price=250
+[2] seller: ```json
+{"performative": "propose", "content": {"price": 750}}
+```
+  [protocol] read: performative=propose price=750
+[3] buyer: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+  [protocol] read: performative=reject-proposal price=None
+[4] seller: ```json
+{"performative": "propose", "content": {"price": 600}}
+```
+  [protocol] read: performative=propose price=600
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 300}}
+```
+  [protocol] read: performative=propose price=300
+[6] seller: ```json
+{"performative": "propose", "content": {"price": 500}}
+```
+  [protocol] read: performative=propose price=500
+[7] buyer: ```json
+{"performative": "propose", "content": {"price": 320}}
+```
+  [protocol] read: performative=propose price=320
+[8] seller: ```json
+{"performative": "propose", "content": {"price": 500}}
+```
+  [protocol] read: performative=propose price=500
+  [episode] outcome=open price=None correct=1 violation=0 tokens=11638 calls=8

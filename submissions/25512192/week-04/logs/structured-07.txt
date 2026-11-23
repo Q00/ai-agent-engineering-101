@@ -1,0 +1,103 @@
+=== negotiation run: condition=structured run=7 model=haiku temperature=not settable (see REPORT.md) ===
+--- scenario s1: a used bicycle (reserve=80, budget=120) ---
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 65}}
+```
+  [protocol] read: performative=propose price=65
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+
+```json
+{"performative": "propose", "content": {"price": 125}}
+```
+
+Wait, I need to take exactly ONE communicative act per turn. Let me correct that:
+
+```json
+{"performative": "propose", "content": {"price": 125}}
+```
+  [protocol] FORMAT ERROR: unparseable seller message at turn 2
+  [episode] outcome=no_deal price=None correct=0 violation=0 tokens=547 calls=2
+--- scenario s2: a vintage guitar (reserve=300, budget=280) ---
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 150}}
+```
+  [protocol] read: performative=propose price=150
+[2] seller: ```json
+{"performative": "propose", "content": {"price": 550}}
+```
+  [protocol] read: performative=propose price=550
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 200}}
+```
+  [protocol] read: performative=propose price=200
+[4] seller: ```json
+{"performative": "propose", "content": {"price": 420}}
+```
+  [protocol] read: performative=propose price=420
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 240}}
+```
+  [protocol] read: performative=propose price=240
+[6] seller: ```json
+{"performative": "propose", "content": {"price": 360}}
+```
+  [protocol] read: performative=propose price=360
+[7] buyer: ```json
+{"performative": "propose", "content": {"price": 270}}
+```
+  [protocol] read: performative=propose price=270
+[8] seller: ```json
+{"performative": "propose", "content": {"price": 340}}
+```
+  [protocol] read: performative=propose price=340
+  [episode] outcome=open price=None correct=1 violation=0 tokens=3532 calls=8
+--- scenario s3: an antique lamp (reserve=150, budget=155) ---
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 95}}
+```
+  [protocol] read: performative=propose price=95
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+
+```json
+{"performative": "propose", "content": {"price": 350}}
+```
+  [protocol] FORMAT ERROR: unparseable seller message at turn 2
+  [episode] outcome=no_deal price=None correct=0 violation=0 tokens=695 calls=2
+--- scenario s4: a laptop (reserve=500, budget=350) ---
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 200}}
+```
+  [protocol] read: performative=propose price=200
+[2] seller: ```json
+{"performative": "propose", "content": {"price": 850}}
+```
+  [protocol] read: performative=propose price=850
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 250}}
+```
+  [protocol] read: performative=propose price=250
+[4] seller: ```json
+{"performative": "propose", "content": {"price": 700}}
+```
+  [protocol] read: performative=propose price=700
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 300}}
+```
+  [protocol] read: performative=propose price=300
+[6] seller: ```json
+{"performative": "propose", "content": {"price": 600}}
+```
+  [protocol] read: performative=propose price=600
+[7] buyer: ```json
+{"performative": "propose", "content": {"price": 325}}
+```
+  [protocol] read: performative=propose price=325
+[8] seller: ```json
+{"performative": "propose", "content": {"price": 550}}
+```
+  [protocol] read: performative=propose price=550
+  [episode] outcome=open price=None correct=1 violation=0 tokens=3413 calls=8
