@@ -11,6 +11,8 @@ cookie, and a page opened without it asks for it. The agent never sees the code.
 
 What the page does:
   - people chat with the agent (each message reaches the agent; it answers with reply),
+  - the agent may speak first: app_say puts a message in the chat that nobody asked for (an offer, a warning, news
+    from the market), at most once every SPEAK_GAP seconds; logs/app.jsonl keeps what it said unprompted,
   - the page offers the agent tools that run in the page (window.miniapp.offer(name, description, handler)),
   - MeshKit: every capability of the MeshKit mini apps listed in meshkit.json becomes a tool for the agent
     (mesh_<capability>). A call is signed with the app's MeshKit identity and waits for a person to approve it on
@@ -42,6 +44,7 @@ from starlette.routing import Route
 CHAT_WAIT = 120
 CALL_WAIT = 90
 CONSENT_WAIT = 180
+SPEAK_GAP = 60                                      # seconds between two messages the agent sends without being asked
 COOKIE = "miniapp_access"
 PUBLIC_PATHS = {"/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"}
 
@@ -203,10 +206,32 @@ def app(root, mind, toolbox, Event, name="agent", key=None):
     page_seen = threading.Event()                  # the page has offered its tools: the agent's first run can start
     chat, chat_lock = [], threading.Lock()         # what the page shows: [{who, text, ts}]
 
-    def say(who, text):
+    def say(who, text, first=False):
         with chat_lock:
-            chat.append({"who": who, "text": text, "ts": int(time.time())})
+            chat.append(dict({"who": who, "text": text, "ts": int(time.time())}, **({"first": True} if first else {})))
             del chat[:-200]
+
+    page_polled, spoke = [0.0], [0.0]              # when the page last asked for the state; when the agent last spoke up
+
+    def speak(args):
+        """The agent speaks first: a message in the chat that answers nobody."""
+        text = str((args or {}).get("text") or "").strip()[:600]
+        if not text:
+            return "app_say needs text"
+        wait = SPEAK_GAP - (time.time() - spoke[0])
+        if wait > 0:
+            return f"you spoke up {int(SPEAK_GAP - wait)} s ago; wait {int(wait) + 1} s before speaking up again"
+        spoke[0] = time.time()
+        say("agent", text, first=True)
+        seen = time.time() - page_polled[0] < 6
+        (root / "logs").mkdir(exist_ok=True)
+        with open(root / "logs" / "app.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": int(time.time()), "said_first": text, "page_open": seen}, ensure_ascii=False) + "\n")
+        return "said" if seen else "said; nobody has the app open right now, so they will see it when they come back"
+
+    mind.app_tools["app_say"] = ("speak first to the people in your app, without being asked: an offer, a warning, news from "
+                                 f"the market, a question. args {{text}}. At most once every {SPEAK_GAP} s; say only what "
+                                 "is worth interrupting someone for.", speak)
 
     cfg, mesh_tools = load_meshkit(root)
     if isinstance(cfg, str):
@@ -276,6 +301,7 @@ def app(root, mind, toolbox, Event, name="agent", key=None):
         return JSONResponse(ev.answer)
 
     async def get_state(_req):
+        page_polled[0] = time.time()
         with chat_lock:
             msgs = list(chat)
         return JSONResponse({"agent": name, "chat": msgs, "calls": bridge.pending(), "offered": bridge.offered,
@@ -599,6 +625,8 @@ let me = 'guest-' + Math.random().toString(36).slice(2, 6);
 try { me = localStorage.getItem('miniapp-user') || me; localStorage.setItem('miniapp-user', me) } catch (e) {}
 const touch = matchMedia('(pointer: coarse)').matches;
 let view = {chat: [], consents: [], moves: [], forged: {}, app_tools: {}}, cards = [], pending = [], waiting = 0, seen = 0, drawn = '';
+let heard = 0, unread = 0;                           // messages the agent sent first: how many are known, how many came while away
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { unread = 0; document.title = view.agent || 'Agent'; } });
 const handled = new Set();
 
 // An example page tool: the agent can show the person a card in the chat.
@@ -607,6 +635,15 @@ miniapp.offer('show_card', 'show the person a card in the chat; args {title, bod
 });
 
 function draw() {
+  const firsts = view.chat.filter(m => m.first);
+  if (firsts.length > heard) {                       // the agent spoke first: say so when the person is looking elsewhere
+    if (document.hidden) {
+      unread += firsts.length - heard;
+      document.title = `(${unread}) ${view.agent || 'Agent'}`;
+      try { if (Notification.permission === 'granted') new Notification(view.agent || 'Agent', {body: firsts.at(-1).text}) } catch (e) {}
+    }
+    heard = firsts.length;
+  }
   const items = view.chat.concat(cards).sort((a, b) => a.ts - b.ts);
   const mine = view.chat.filter(m => m.who === me).length;
   pending = pending.filter(p => mine <= p.base);
@@ -692,6 +729,7 @@ $('activity').onclick = e => { if (e.target === $('activity')) $('activity').hid
 async function send(text) {
   text = text.trim();
   if (!text) return;
+  try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission() } catch (e) {}
   pending.push({text, base: view.chat.filter(m => m.who === me).length + pending.length});
   waiting++; draw(); status();
   try { await miniapp.chat(text, me) } catch (e) {}

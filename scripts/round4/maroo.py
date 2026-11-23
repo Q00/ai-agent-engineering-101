@@ -116,6 +116,11 @@ def balance(address):
     return int(rpc("eth_getBalance", address, "latest"), 16)
 
 
+async def balance_async(address):
+    async with httpx.AsyncClient(timeout=15) as c:
+        return int(_result(await c.post(RPC_URL, json=_body("eth_getBalance", [address, "latest"]))), 16)
+
+
 def pay(wallet, to, wei, data: bytes = b""):
     """Send wei to an address and wait for the receipt. Returns the transaction hash; raises when it did not succeed."""
     tx = {"from": wallet.address, "to": to, "value": hex(wei), "data": "0x" + data.hex()}

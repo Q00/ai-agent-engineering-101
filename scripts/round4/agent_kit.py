@@ -17,11 +17,13 @@ Forged tools stay for the next run. Tools that the kit did not forge (no matchin
 Model: any OpenAI-compatible endpoint.
     AGENT_LLM_BASE=https://openrouter.ai/api/v1  AGENT_LLM_MODEL=<model>  AGENT_LLM_KEY=<key>
 (or OPENROUTER_API_KEY alone with AGENT_LLM_MODEL). agent.json may set "llm": {"base", "model", "key_env"}.
+On a market with a model desk, AGENT_LLM_BASE=market (or "llm": {"base": "market"}) is all it takes: the kit calls
+<market>/llm/v1 with the token it got from joining, and the desk picks the model. It serves the class list only.
 
 agent.json (written by the starter; you write the persona and the goal, the agent writes the rest):
     {"persona": "...", "goal": "...", "llm": {...}, "run_minutes": 8, "max_steps": 40}
 
-Options: --tunnel | --public-url URL | --port N, --buyer-only | --shop-only, --owner CODE (or MARKET_OWNER),
+Options: --tunnel | --public-url URL | --port N, --with-buyer | --buyer-only, --owner CODE (or MARKET_OWNER),
          --app PORT (mini app: a chat app where people talk to the agent; see ROUND4.md),
          --app-tunnel (a public https URL for the app, for a phone anywhere) | --app-host 0.0.0.0 (a phone on this Wi-Fi).
 Logs: logs/agent-kit.log, logs/react.jsonl (every thought and move), logs/forge.jsonl (every forge and test).
@@ -54,7 +56,7 @@ import maroo  # noqa: E402
 import forge_runner  # noqa: E402  (its permission.yml reader)
 import market_kit as mk  # noqa: E402  (wallets, joining, the tunnel: the same code as kit v4)
 
-KIT_VERSION = "v5"
+KIT_VERSION = "v5.1"
 RUNNER = HERE / "forge_runner.py"
 MARK = "@@forge-result@@ "
 NAME = re.compile(r"[a-z][a-z0-9_]{1,40}")
@@ -116,22 +118,31 @@ def log(line=""):
 # --- the model
 
 class Model:
-    def __init__(self, agent):
+    def __init__(self, agent, market=None, ctx=None):
         cfg = agent.get("llm") or {}
         self.base = (os.environ.get("AGENT_LLM_BASE") or cfg.get("base")
                      or ("https://openrouter.ai/api/v1" if os.environ.get("OPENROUTER_API_KEY") else "")).rstrip("/")
+        desk = (market or "").rstrip("/") + "/llm/v1"
+        self.ctx = ctx if self.base in ("market", desk) and market else None   # the market's model desk: no key of yours
+        if self.ctx is not None:
+            self.base, self.model, self.key = desk, "market", ""
+            return
         self.model = os.environ.get("AGENT_LLM_MODEL") or cfg.get("model") or ""
         self.key = (os.environ.get("AGENT_LLM_KEY") or os.environ.get(cfg.get("key_env") or "", "")
                     or os.environ.get("OPENROUTER_API_KEY", ""))
         if not self.base or not self.model or self.model.startswith("<"):
-            raise SystemExit("[kit] set AGENT_LLM_BASE and AGENT_LLM_MODEL (and AGENT_LLM_KEY), or llm in agent.json")
+            raise SystemExit("[kit] set AGENT_LLM_BASE and AGENT_LLM_MODEL (and AGENT_LLM_KEY), or llm in agent.json; "
+                             "on a market with a model desk, AGENT_LLM_BASE=market alone")
 
     def complete(self, messages, max_tokens=4000, timeout=180):
         """One chat completion. The whole call is capped: some providers keep a slow answer's connection alive with
         whitespace, so a socket timeout alone never fires."""
+        key = self.key
+        if self.ctx is not None:                        # read at call time: a re-join replaces the tokens
+            key = next((t for t in self.ctx["tokens"].values() if t), "")
         body = {"model": self.model, "messages": messages, "max_tokens": max_tokens}
         req = urllib.request.Request(self.base + "/chat/completions", data=json.dumps(body).encode(),
-                                     headers={"authorization": "Bearer " + self.key, "content-type": "application/json",
+                                     headers={"authorization": "Bearer " + key, "content-type": "application/json",
                                               "user-agent": f"agent-market-kit/{KIT_VERSION}"})
         box = {}
 
@@ -139,6 +150,8 @@ class Model:
             try:
                 with urllib.request.urlopen(req, timeout=60) as r:
                     box["out"] = json.load(r)
+            except urllib.error.HTTPError as e:         # say why: the body names the reason (key, class list, ...)
+                box["err"] = OSError(f"HTTP {e.code}: {e.read(600).decode('utf-8', 'replace').strip()}")
             except Exception as e:                      # handed to the caller below
                 box["err"] = e
         t = threading.Thread(target=call, daemon=True)
@@ -709,8 +722,8 @@ STAR = ("[kit] The mini app kit is inspired by MeshKit and Ouroboros. If you use
 
 STARTER_AGENT = {
     "persona": "Write who your agent is: what it cares about, how it talks, what it would never do.",
-    "goal": "Write what your agent is trying to achieve on the market (for example: the highest book value for the shop "
-            "and the best saved rate for the buyer).",
+    "goal": "Write what your agent is trying to achieve on the market (for example: keep what the village asks for "
+            "on the shelves, end each day with more money in the shop's wallet, and have customers come back).",
     "llm": {"base": "https://openrouter.ai/api/v1", "model": "<model id>", "key_env": "OPENROUTER_API_KEY"},
     "run_minutes": 8,
     "max_steps": 40,
@@ -784,14 +797,14 @@ def cmd_run(a):
     mk.LOG_FILE = d / "logs" / "agent-kit.log"
     log(f"[kit] agent_kit {KIT_VERSION}, {d}")
     mk.ignore_pem(d)
-    model = Model(agent)
-    roles = ["buyer"] if a.buyer_only else ["shop"] if a.shop_only else ["shop", "buyer"]
+    roles = ["buyer"] if a.buyer_only else ["shop", "buyer"] if a.with_buyer else ["shop"]   # a shop, unless asked otherwise
     keys = {"shop": mk.load_key(d / "shop_wallet.key"), "buyer": mk.load_key(d / "buyer_wallet.key")}
     log(f"[maroo] shop wallet {keys['shop'].address}, buyer wallet {keys['buyer'].address}. "
         f"Fund the buyer wallet at {maroo.FAUCET}")
     market = mk.Market(a.market, a.owner or os.environ.get("MARKET_OWNER"))
     ctx = {"market": market.base, "name": a.name, "tokens": {}, "addresses": {r: k.address for r, k in keys.items()},
            "signer": Signer(keys, d)}
+    model = Model(agent, market.base, ctx)
     toolbox = Toolbox(d, ctx)
     mind = Mind(d, agent, model, toolbox, ctx, roles)
     try:
@@ -929,7 +942,8 @@ def main():
     r.add_argument("--public-url")
     r.add_argument("--port", type=int)
     r.add_argument("--buyer-only", action="store_true")
-    r.add_argument("--shop-only", action="store_true")
+    r.add_argument("--shop-only", action="store_true", help="the default since v5.1; kept so old commands still run")
+    r.add_argument("--with-buyer", action="store_true", help="also join as a buyer")
     r.add_argument("--app", type=int, help="serve the mini app on this local port")
     r.add_argument("--app-host", default="127.0.0.1", help="where the mini app listens (0.0.0.0: also this Wi-Fi)")
     r.add_argument("--app-tunnel", action="store_true", help="a public https URL for the mini app (a phone anywhere)")
