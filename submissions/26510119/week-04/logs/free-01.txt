@@ -1,0 +1,23 @@
+provider=openrouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.7 max_turns=8
+
+--- scenario 1 (a used bicycle), reserve=80, budget=120 ---
+[buyer] I’d like to offer $80 for the bicycle. Is that acceptable?
+  [reader] perf=propose price=80 ok=True reader_calls=1
+[error] 'NoneType' object is not subscriptable
+
+--- scenario 2 (a desk lamp), reserve=30, budget=45 ---
+[buyer] I'm interested in the desk lamp; I can offer $20 for it.
+[error] 'NoneType' object is not subscriptable
+
+--- scenario 3 (a mechanical keyboard), reserve=90, budget=70 ---
+[buyer] I’m interested in the keyboard—how about $45?
+  [reader] perf=propose price=45 ok=True reader_calls=1
+[error] 'NoneType' object is not subscriptable
+
+--- scenario 4 (a second-hand textbook), reserve=25, budget=20 ---
+[buyer] I’d like to buy the textbook—would $12 work for you?
+  [reader] perf=propose price=12 ok=True reader_calls=1
+[seller] I was hoping for around $28 for the textbook. Does that sound acceptable?
+[error] 'NoneType' object is not subscriptable
+
+log saved to /work/ai-agent-engineering-101/submissions/26510119/week-04/logs/free-01.txt
