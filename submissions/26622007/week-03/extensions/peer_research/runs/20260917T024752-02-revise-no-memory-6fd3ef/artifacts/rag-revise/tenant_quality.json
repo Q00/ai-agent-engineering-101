@@ -1,0 +1,34 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "## tenant 필터 및 검색 품질 검증 계획 (pgvector vs 자체 호스팅 Qdrant)\n\n### 1. 이번 조사에서 확인한 변경점\n- 배포 환경이 **폐쇄망**으로 전환되어 외부 관리형 SaaS 사용 불가 → `external_saas_allowed=false`. 두 후보 모두 **자체 호스팅(셀프호스팅)** 전제로만 비교했다.\n- PostgreSQL은 이미 운영 중이고 stateful 저장소 운영 인력 증원이 불가하므로, **운영 부담이 낮은 쪽**에 가중치를 둔다.\n- 과거 메모리(personal/handoff)가 비어 있어 내부 결정 ID·백업 담당 팀·기존 규모·품질 목표는 **unknown**으로 남긴다(추측 금지).\n\n### 2. tenant/namespace 필터링 방식 비교\n\n| 항목 | pgvector (PostgreSQL 확장) | Qdrant (자체 호스팅) |\n|---|---|---|\n| tenant 격리 단위 | `tenant_id` 컬럼 + B-tree/partial index, 필요 시 RLS 정책 | payload 필드 `tenant_id` + payload index, 컬렉션/샤드 분리 가능 |\n| 필터 결합 | SQL WHERE로 벡터 검색과 결합, 플래너가 인덱스 선택 | `filter` + `is_tenant`/`is_empty` 조건, payload index로 사전 필터 |\n| 격리 강도 | RLS로 DB 레벨 강제 가능(앱 버그 방어) | 애플리케이션/API 레벨 필터, 컬렉션 분리 시 물리 격리 |\n| 인덱스 | HNSW / IVFFlat, 필터 선택도에 따라 recall·지연 변동 | HNSW, 필터링된 검색에서도 별도 인덱스로 처리 |\n| 운영 부담 | 기존 PostgreSQL 재사용 → 신규 인력 불필요 | 신규 stateful 서비스 운영 필요(인력 증원 불가 제약과 충돌) |\n\n핵심 트레이드오프: pgvector는 **필터 선택도가 낮을 때(테넌트당 데이터 적음)** 인덱스 스캔 후 필터링으로 recall이 흔들릴 수 있어 partial index·RLS·`hnsw.ef_search` 튜닝이 필요하다. Qdrant는 payload index 기반 사전 필터로 테넌트 격리가 명확하지만 **신규 운영 대상**이 늘어난다.\n\n### 3. 검색 품질 검증 계획 (지표·절차)\n\n**지표**\n- `recall@k`, `nDCG@k`, `MRR` — 필터 적용/미적용 각각 측정\n- **tenant 누출률**(다른 테넌트 문서가 top-k에 포함된 비율) — 목표 0\n- `p95` 지연(필터 적용 시), 필터 선택도 구간별(1%, 10%, 50%) 분리 측정\n\n**절차**\n1. 골든셋 구성: 테넌트별 질의-정답 쌍, 경계 케이스(테넌트 1건만 보유, 교차 테넌트 유사 문서) 포함\n2. 교차검증: 테넌트 단위 hold-out으로 필터 누출·recall 편향 확인\n3. 회귀 게이트: recall@k 하락 임계·누출률>0 시 배포 차단\n4. A/B: pgvector vs Qdrant 동일 골든셋·동일 임베딩으로 비교\n\n> **실제 측정은 수행하지 않았다.** 벤치마크·복구 테스트 미실행 → `measured_latency=not_measured`, 품질 수치는 검증 필요.\n\n### 4. 폐쇄망·백업·복구 관점(요약)\n- pgvector: 기존 PostgreSQL의 `pg_dump`/물리 백업·PITR 체계 재사용, 확장은 오프라인 빌드/설치 필요.\n- Qdrant: 스냅샷 기반 백업, 자체 호스팅 배포 요건 별도 충족 필요.\n- 인력 증원 불가 제약에서 **기존 PostgreSQL 백업 체계 재사용**이 운영 리스크가 낮다.\n\n### 5. 미해결 항목\n- 기존 데이터 규모, 품질 목표(recall@k 임계), 내부 결정 ID, 백업 담당 팀 → **unknown**\n- 폐쇄망 내 확장/컨테이너 이미지 반입 절차, 실제 복구 리허설 → 검증 필요\n\n### 6. 최종 판단(이 조사 범위)\n폐쇄망 + 운영 인력 고정 제약에서는 **pgvector를 기본 권장**하되, 테넌트 격리 강도·필터 recall이 골든셋에서 기준 미달이면 Qdrant 자체 호스팅을 대안으로 검토한다. 최종 확정은 품질 검증 결과에 의존한다.",
+    "facts": {
+      "recommended_storage": "pgvector (폐쇄망·기존 PostgreSQL 재사용, Qdrant는 품질/격리 기준 미달 시 대안)",
+      "internal_decision_id": "unknown",
+      "backup_owner": "unknown",
+      "measured_latency": "not_measured",
+      "unresolved": "기존 데이터 규모, 품질 목표(recall@k 임계), 내부 결정 ID, 백업 담당 팀, 폐쇄망 확장/이미지 반입 절차, 실제 복구 리허설 미실행",
+      "memory_refs": "none",
+      "external_saas_allowed": false,
+      "tenant_filter_pgvector": "tenant_id 컬럼 + B-tree/partial index + RLS 정책으로 격리, HNSW/IVFFlat와 필터 결합",
+      "tenant_filter_qdrant": "payload index 기반 tenant_id 필터, is_tenant/is_empty 조건, 컬렉션 분리 가능",
+      "quality_metrics_planned": "recall@k, nDCG@k, MRR, tenant 누출률(목표 0), p95 지연",
+      "quality_measured": false,
+      "benchmark_executed": false,
+      "recovery_test_executed": false
+    },
+    "evidence": [
+      "pgvector 공식 저장소(README): https://github.com/pgvector/pgvector — HNSW/IVFFlat 인덱스, 필터링 검색, PostgreSQL 확장 설치(오프라인 빌드 가능) 근거",
+      "pgvector 필터링/인덱싱 문서: https://github.com/pgvector/pgvector#filtering — WHERE 조건과 벡터 검색 결합, partial index 활용 근거",
+      "Qdrant 공식 문서(필터링): https://qdrant.tech/documentation/concepts/filtering/ — payload 기반 필터, is_empty/is_null 등 조건 근거",
+      "Qdrant 멀티테넌시 가이드: https://qdrant.tech/documentation/guides/multiple-partitions/ — tenant_id payload index 및 멀티테넌시 권장 패턴 근거",
+      "Qdrant 스냅샷/백업 문서: https://qdrant.tech/documentation/concepts/snapshots/ — 스냅샷 기반 백업·복구 근거",
+      "PostgreSQL 백업/PITR 문서: https://www.postgresql.org/docs/current/continuous-archiving.html — pg_dump/물리 백업·PITR 복구 체계 근거",
+      "PostgreSQL RLS 문서: https://www.postgresql.org/docs/current/ddl-rowsecurity.html — row-level security로 테넌트 격리 강제 근거",
+      "memory: none — personal_memory/handoff_memory가 비어 있어 내부 결정 ID·백업 담당 팀은 unknown으로 처리(추측 금지)",
+      "측정 미실행: recall@k/nDCG/MRR/p95 및 복구 리허설은 실제 수행하지 않음 → not_measured/검증 필요"
+    ]
+  },
+  "error": ""
+}

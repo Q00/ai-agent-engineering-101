@@ -1,0 +1,30 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "결제 중복 사고를 재현 가능한 설계 문제로 통합 정리했다. 확정 사실: 동일 order_id에 1차 요청 504, 2초 뒤 재시도 200, 두 요청 모두 idempotency_key 공백, PG 승인 2건 vs DB 완료 1건, 웹훅 중복·순서 역전 가능, 타임아웃만으로 승인 확정 불가. 원인 가설은 H1(멱등 키 부재로 재시도가 새 승인 처리)이 주원인이며 H2(504=게이트웨이 타임아웃, 실제 승인 성공), H3(웹훅 중복/순서 역전), H4(DB 유니크 제약 부재)가 보조 가설이다. 설계 제안(모두 미구현·미검증): PaymentCommand(키 없으면 400 거부), IdempotencyStore(idempotency_key PK, UNIQUE(order_id, op), state NEW/IN_PROGRESS/DONE, DONE 재사용 시 저장 결과 반환), GatewayPort(authorize/cancel/getStatus, 타임아웃 시 UNKNOWN으로 성공·실패 단정 금지), WebhookHandler(event_id 멱등, occurred_at 기반 last_applied 비교로 순서 역전 시 상태 불변), ReconciliationJob(PG 승인 집합 − DB 완료 집합 대사, 불일치 분류·보정). 상태 전이: INITIATED→AUTHORIZED→CAPTURED→CANCELLED, UNKNOWN→PENDING_RECON, 취소 CAPTURED→CANCEL_REQUESTED→CANCELLED. 디렉터리: /payment/{command,idempotency,gateway,webhook,recon,domain}, /migration/backfill.ts, /tests/{duplicate,reorder,partial}.spec.ts. 테스트 행렬(중복/순서 역전/부분 실패/타임아웃)은 전부 미실행 설계 제안이다. 마이그레이션: 1,200,000÷5,000=240배치, 직렬 240×15=3,600초(60분), 2작업자 120×15=1,800초(30분), 중단 허용 20분=1,200초이므로 1·2작업자 모두 초과 → offline_backfill_fits=false. 따라서 온라인 준비(무중단 백필, 이중쓰기/읽기, 대사 잡, 72시간 공존)와 최종 전환(짧은 쓰기 차단, 스키마/플래그 스위치, 검증 후 해제)을 분리하고, 중단 예산은 최종 전환에서만 사용한다. 롤백·재시도 결제·취소 결제 검증 3건 미완료로 unverified_release_checks=3, can_release=false이며 배포는 보류한다. 운영 전환 순서·담당: 1단계 온라인 준비(A 구현, C 일정·공지), 2단계 최종 전환(A 구현, C 안내), 3단계 배포는 검증 3건과 PG-DB 대사 완료 후. B는 대사 불일치 영향·손익 재확인. 지원팀 전달 사실: 240배치, 직렬 3,600초, 2작업자 1,800초, 중단 예산 1,200초, 공존 72시간, 미검증 3건, offline_backfill_fits=false, can_release=false. 미확인 사항: 실제 PG·DB 조회 미수행, 롤백/재시도/취소 검증 미완료, 구버전 앱 키 미전송 시 서버 생성 키 가정 미검증, 실제 구현·테스트·배포 미수행. 선행 결과 간 숫자·boolean 키 8개는 모두 일치해 모순이 없고, 미검증 항목을 통과로 바꾸지 않았다.",
+    "facts": {
+      "backfill_batches": 240,
+      "serial_backfill_seconds": 3600,
+      "two_worker_backfill_seconds": 1800,
+      "downtime_budget_seconds": 1200,
+      "coexistence_hours": 72,
+      "unverified_release_checks": 3,
+      "offline_backfill_fits": false,
+      "can_release": false
+    },
+    "evidence": [
+      "배치 수 = 1,200,000 ÷ 5,000 = 240 (나머지 0)",
+      "직렬 시간 = 240 × 15초 = 3,600초 = 60분",
+      "2작업자 시간 = (240/2) × 15초 = 120 × 15 = 1,800초 = 30분",
+      "중단 허용 = 20분 = 1,200초; 3,600초 > 1,200초, 1,800초 > 1,200초 → offline_backfill_fits=false",
+      "공존 요구 = 72시간 → coexistence_hours=72",
+      "미완료 검증 3건(롤백·재시도 결제·취소 결제) → unverified_release_checks=3, can_release=false",
+      "합성 기록: 동일 order_id, 1차 504, 2초 뒤 200, 두 요청 idempotency_key 공백, PG 승인 2건 vs DB 완료 1건",
+      "tech_design·biz_migration·ops_integration의 숫자·boolean 키 8개 전부 일치(모순 없음)",
+      "온라인 준비(무중단 백필, 이중쓰기/공존 72시간, 대사 잡)는 중단 예산 미사용, 최종 전환(짧은 쓰기 차단, 스키마/플래그 스위치, 검증 후 해제)만 중단 예산 사용",
+      "실제 PG·DB 조회, 환불, 배포, 테스트 실행은 수행하지 않았으며 미검증을 통과로 처리하지 않음"
+    ]
+  },
+  "error": ""
+}

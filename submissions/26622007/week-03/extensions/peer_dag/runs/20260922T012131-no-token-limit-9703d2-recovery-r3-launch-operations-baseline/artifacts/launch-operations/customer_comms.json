@@ -1,0 +1,50 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "확정 정책('상담 접수 후 영업일 2일 안에 처리 시작', 처리 완료·PG 반영 시간 미보장)에 맞춘 고객 안내문·FAQ·상담 분류 기준과 광고·상담·랜딩 단일 기준 문서, 변경 전달·승인 흐름, 담당·기한·선행조건이 연결된 운영 일정을 텍스트로 작성했다. '즉시 자동 환불' 표현은 전면 배제했고, 미승인 충원·환불·배포는 완료로 쓰지 않았다. 실제 고객 연락·외부 시스템 변경·구현·테스트는 수행하지 않았으며(미검증), 아래 일정·문구는 설계 제안이다.\n\n[1] 단일 기준 문서(SSOT) 개요\n- 문서명: 신규 서비스 출시 커뮤니케이션 단일 기준서 v1(목요일 14시 제품팀 확정 사양 반영 후 동결).\n- 적용 범위: 광고 문구, 상담 스크립트/교육자료, 랜딩 페이지 문구. 세 채널은 이 문서의 '고객 노출 문구' 섹션만 인용하며 임의 변형 금지.\n- 필수 포함: 확정 정책 1건(영업일 2일 내 처리 시작), 미보장 항목(처리 완료 시점, PG 반영 시점), 알려진 제한(제품팀 14시 전달분), 금지 표현 목록('즉시 자동 환불', '즉시 환불', '당일 환불 보장', '100% 자동 처리').\n- 버전 규칙: v1.0(14시 사양 반영) → 변경 시 v1.1, 변경 이력에 시각·변경자·승인자 기록.\n\n[2] 변경 전달·승인 흐름(목요일)\n- 14:00 제품팀 → 운영·커뮤니케이션(C)에 확정 사양·알려진 제한 전달. C가 SSOT v1.0 작성(14:00~14:30).\n- 14:30 C → 광고 담당에 광고 인용 문구 전달, 상담 리드에 스크립트·FAQ 전달, 랜딩 담당에 랜딩 문구 전달(동시 발송).\n- 15:00 광고 문구 마감: 광고업체 최종본 제출. C가 SSOT 대조 검수(금지 표현 0건 확인) 후 승인.\n- 17:00 상담 교육: 상담 리드가 상담원 4명 대상 SSOT 기반 교육 완료, 분류 기준·FAQ 숙지 확인.\n- 18:00 랜딩 수정 마감: 랜딩 담당이 SSOT 문구 반영 완료, C 최종 대조.\n- 승인권: 정책 문구 변경은 C 검수 + 제품팀 확인 필요. 미승인 상태로 광고/랜딩 게시 금지.\n- 미확인: 기술 배포 승인, 결제 검증 결과는 미제공 → 해당 문구는 '확인 후 게시' 보류 항목으로 표기.\n\n[3] 고객 안내문(확정 정책 기반)\n\"안녕하세요. 문의를 접수해 주셔서 감사합니다. 접수하신 상담은 영업일 기준 2일 안에 처리 시작됩니다. 다만 처리 완료 시점과 결제(PG) 반영 시점은 보장되지 않으며, 순차 처리로 지연될 수 있습니다. 접수 순서와 긴급도에 따라 우선 처리되며, 진행 상황은 접수 채널로 안내드립니다. 불편을 드려 죄송합니다.\"\n- 금지: '즉시 자동 환불', '바로 환불', '당일 처리 보장'.\n\n[4] FAQ(확정 사실만)\nQ1. 언제 처리되나요? → 영업일 2일 안에 처리 시작됩니다. 완료 시점은 보장하지 않습니다.\nQ2. 환불은 자동인가요? → 자동 즉시 환불이 아닙니다. 접수 후 정해진 절차와 영업일 2일 내 처리 시작 정책에 따릅니다.\nQ3. 결제는 언제 반영되나요? → PG 반영 시점은 보장하지 않습니다.\nQ4. 문의가 많으면? → 접수 순서·긴급도 기준 우선순위로 처리하며, 대기 시 안내드립니다.\nQ5. 상담원 연결이 안 되면? → 접수 채널(채팅/폼)로 접수되며 순차 처리됩니다.\n- 미확인: 기술 배포 일정, 결제 검증 결과 관련 답변은 '확인 후 안내'로 보류.\n\n[5] 상담 분류 기준(4분류)\n- 환불: 환불 요청/정책 문의 → 정책 문구 안내, '즉시 자동 환불' 아님 명시, 접수 후 영업일 2일 내 처리 시작.\n- 결제: 결제 오류/중복/미반영 → PG 반영 시점 미보장 안내, 결제 검증 결과 미제공 상태 명시.\n- 기술: 오류/접속/기능 문의 → 제품팀 14시 전달된 알려진 제한 범위 내 안내, 배포 승인 미확인 시 보류.\n- 일반: 기타/사용법 → FAQ 기반 안내.\n- 우선순위: 결제·기술(서비스 중단) > 환불 > 일반. 급증 시 접수 순서+긴급도 병행.\n\n[6] 운영 일정표(담당·기한·선행조건)\n- 14:00 제품팀→C: 확정 사양·제한 전달 | 선행: 없음 | 담당: 제품팀.\n- 14:00~14:30 C: SSOT v1.0 작성 | 선행: 14:00 전달 | 담당: C.\n- 14:30 C→광고/상담/랜딩: 문구 배포 | 선행: SSOT v1.0 | 담당: C.\n- 15:00 광고: 문구 마감·제출 | 선행: 14:30 배포 | 담당: 광고 담당(검수 C).\n- 17:00 상담: 교육 완료 | 선행: 14:30 배포 | 담당: 상담 리드.\n- 18:00 랜딩: 수정 마감 | 선행: 14:30 배포 | 담당: 랜딩 담당(검수 C).\n- 출시 전: 기술 배포 승인·결제 검증 확인 | 선행: 미제공 | 담당: 제품팀(미확인).\n\n[7] 비상 계획\n- 광고 지연: 15시 미제출 시 금지 표현 포함 여부 우선 검수, 미승인 문구는 게시 보류, SSOT 문구로 대체.\n- 기술 승인 지연: 기술 관련 약속 문구 전면 보류, '확인 후 안내'로 통일, 상담은 알려진 제한만 안내.\n- 문의 급증: 우선순위(결제·기술>환불>일반) 적용, 대기 안내문 자동 발송, 미승인 충원은 완료로 쓰지 않고 '충원 미승인' 상태로 에스컬레이션.\n\n[8] 출시 직전 확인표\n- SSOT v1.0 동결 여부 / 광고·랜딩 금지 표현 0건 / 상담 교육 완료 / 기술 배포 승인 확인(미확인) / 결제 검증 확인(미확인) / 비상 계획 숙지.\n\n[용량 계산(참고, task 범위 외 수치 검산)]\nexpected_contacts=800*0.2=160, four_hour_capacity=4*5*4=80, backlog_without_hiring=160-80=80, required_total_agents=160/(5*4)=8, additional_agents=8-4=4, support_window_hours=4, launch_hour=10, immediate_refund_promised=false.",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false,
+      "ad_copy_deadline_hour": 15,
+      "support_training_hour": 17,
+      "landing_deadline_hour": 18,
+      "product_spec_delivery_hour": 14,
+      "policy_processing_start_business_days": 2,
+      "completion_time_guaranteed": false,
+      "pg_reflection_time_guaranteed": false,
+      "tech_deploy_approval_provided": false,
+      "payment_verification_provided": false,
+      "staffing_increase_approved": false,
+      "ssot_document_created": true,
+      "customer_notice_drafted": true,
+      "faq_drafted": true,
+      "classification_criteria_defined": true,
+      "ops_schedule_defined": true,
+      "contingency_plan_defined": true,
+      "prelaunch_checklist_defined": true,
+      "actual_customer_contact_performed": false,
+      "external_system_change_performed": false,
+      "implementation_or_test_performed": false
+    },
+    "evidence": [
+      "expected_contacts = 800 * 0.2 = 160 (source: 초대 800명, 첫 4시간 20% 문의 가정)",
+      "four_hour_capacity = 4명 * 5건/시간 * 4시간 = 80 (source: 상담원 4명, 시간당 5건)",
+      "backlog_without_hiring = 160 - 80 = 80",
+      "required_total_agents = 160 / (5*4) = 8",
+      "additional_agents = 8 - 4 = 4",
+      "support_window_hours = 4, launch_hour = 10 (source: 금요일 10시 출시, 첫 4시간)",
+      "immediate_refund_promised = false (source: 확정 정책은 '영업일 2일 안에 처리 시작', 광고 초안의 '즉시 자동 환불'은 정책과 다름)",
+      "일정 근거: 광고 문구 마감 목요일 15시, 상담 교육 목요일 17시, 랜딩 수정 마감 목요일 18시, 제품팀 사양 전달 목요일 14시 (source 명시)",
+      "미확인 근거: 기술 배포 승인과 결제 검증 결과는 아직 미제공(source 명시), 인원 충원은 미승인(source 명시)",
+      "실제 고객 연락·외부 시스템 변경·구현/테스트는 수행하지 않음(미검증), 본 산출물은 설계 제안 텍스트임"
+    ]
+  },
+  "error": ""
+}

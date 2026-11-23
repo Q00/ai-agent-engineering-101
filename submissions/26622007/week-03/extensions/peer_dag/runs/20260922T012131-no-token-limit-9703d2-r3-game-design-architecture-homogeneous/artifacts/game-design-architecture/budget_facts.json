@@ -1,0 +1,33 @@
+{
+  "status": "succeeded",
+  "worker": "B",
+  "artifact": {
+    "summary": "제공된 추정치로 개발자/QA 가용 시간과 기본·협동 포함 범위 총사람시간을 계산하고 예산 적합 여부를 판정했다. 개발자 가용 160시간, QA 가용 40시간. 기본 범위 합계는 24+24+32+24+20+24+12=160시간으로 개발자 가용 160시간과 정확히 일치하여 적합(예산 소진, 여유 0). 협동 포함 범위는 160+80=240시간으로 개발자 가용 160시간을 80시간 초과하여 부적합. 고정 사실(보드 6×6, 최대 12턴, seed 재현 필수, 오프라인 필수)도 확정했다.",
+    "facts": {
+      "developer_hours": 160,
+      "qa_hours": 40,
+      "core_scope_hours": 160,
+      "with_coop_hours": 240,
+      "coop_fits_budget": false,
+      "seeded_replay_required": true,
+      "offline_required": true,
+      "board_width": 6,
+      "board_height": 6,
+      "max_turns": 12,
+      "core_fits_budget": true,
+      "core_budget_margin_hours": 0,
+      "coop_over_budget_hours": 80,
+      "total_scope_items": 7
+    },
+    "evidence": [
+      "개발자 가용 시간: 2명 × 20시간/주 × 4주 = 160시간",
+      "QA 가용 시간: 1명 × 10시간/주 × 4주 = 40시간",
+      "기본 범위 합산: 이동/턴 24 + seed 기반 맵 24 + 전투 32 + 저장/복원 24 + 화면 20 + 자동 테스트 24 + 접근성 12 = 160시간",
+      "협동 포함 범위: 기본 160 + 온라인 협동 80 = 240시간 (병렬화해도 사람 시간 합계 불변)",
+      "예산 판정: 기본 160 ≤ 개발자 160 → 적합(여유 0시간), 협동 240 > 160 → 부적합, 초과분 240-160=80시간",
+      "고정 사실: 보드 6×6(board_width=6, board_height=6), 최대 12턴(max_turns=12), 같은 seed·같은 입력 순서 재현 필수(seeded_replay_required=true), 오프라인 동작 필수(offline_required=true)",
+      "QA 40시간은 기본 범위 160시간 대비 약 25% 수준으로 자동 테스트 24시간 항목과 별도로 QA 검증 여력을 제공함"
+    ]
+  },
+  "error": ""
+}

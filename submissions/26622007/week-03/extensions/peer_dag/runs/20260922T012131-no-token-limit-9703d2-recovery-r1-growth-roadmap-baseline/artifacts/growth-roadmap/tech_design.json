@@ -1,0 +1,41 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "S/E 확장안의 기술 설계(도메인·API·데이터·지표·MVP·일정)를 정리했다. 공통 필수 160h(요금/청구 64, 조직/좌석 40, 지표 수집 32, 운영 도구 24)를 기준선으로 확정. S=160+64=224h로 예산 240h 대비 16h 여유, E=160+96=256h로 16h 부족. 동시 개발로 총시간이 줄어든다는 가정은 배제했다. 도메인 변경: 요금제/구독(Plan, Subscription, BillingCycle), 조직/좌석(Organization, Member, SeatAssignment), 온보딩(S 셀프서비스: OnboardingFlow, InviteToken), 인증/감사(E: SSOConnection, AuditEvent). API 변경: 공통(요금/청구, 조직/좌석, 지표 이벤트)과 안별 전용(S 온보딩 API, E SSO/감사 API)을 구분. 데이터 변경: 신규 테이블/컬럼, 마이그레이션 순서, 지표 이벤트 스키마, 감사 로그 보존. 측정 지표: 활성 조직 수, 좌석 사용률, 온보딩 완료율(S), SSO 로그인 성공률·감사 이벤트 커버리지(E), 청구 성공률, 이탈률. MVP: 공통 4개 모듈 포함, S는 셀프 온보딩 포함, E는 SSO/감사 포함하되 16h 부족분 처리를 위해 감사 로그 고급 필터/리포트, SSO 다중 IdP 확장을 분기 밖으로 이월. 일정: 1) 공통 도메인·데이터 스키마 → 2) 공통 API·청구 → 3) 지표 수집 → 4) 운영 도구 → 5) S 온보딩 또는 E SSO/감사(안별 분기). E는 5단계 일부가 다음 분기로 이월. 모순 점검: E안은 256h>240h이므로 'E안 전체를 이번 분기에 출시' 권고는 성립하지 않음. 미확인 사항: 실제 개발 속도, SSO IdP별 난이도, 지표 수집 인프라 비용. 실제 구현/테스트는 수행하지 않았으며 설계 제안임을 명시한다.",
+    "facts": {
+      "common_dev_hours": 160,
+      "s_total_dev_hours": 224,
+      "e_total_dev_hours": 256,
+      "e_budget_shortfall_hours": 16,
+      "s_fits_budget": true,
+      "e_fits_budget": false,
+      "s_margin": 16,
+      "e_margin": -16,
+      "s_profit": 0,
+      "e_profit": 0,
+      "s_break_even": 0,
+      "e_break_even": 0,
+      "s_low_profit": 0,
+      "e_low_profit": 0,
+      "s_high_profit": 0,
+      "e_high_profit": 0
+    },
+    "evidence": [
+      "공통 필수: 64(요금/청구)+40(조직/좌석)+32(지표 수집)+24(운영 도구)=160h.",
+      "S 총 개발시간: 160+64(셀프 온보딩)=224h. 예산 240h 대비 여유 240-224=16h → s_fits_budget=true, s_margin=16.",
+      "E 총 개발시간: 160+96(SSO/감사)=256h. 예산 240h 대비 부족 256-240=16h → e_fits_budget=false, e_margin=-16, e_budget_shortfall_hours=16.",
+      "동시 개발로 총시간이 줄어든다는 가정은 배제(자료 지시).",
+      "도메인 변경 개요(엔터티·관계): 요금제/구독(Plan 1-N Subscription, Subscription 1-N BillingCycle), 조직/좌석(Organization 1-N Member, Organization 1-N SeatAssignment, Member 1-1 SeatAssignment), 온보딩 S(OnboardingFlow 1-N InviteToken, Organization 1-1 OnboardingFlow), 인증/감사 E(Organization 1-N SSOConnection, Organization 1-N AuditEvent).",
+      "API 변경 개요: 공통 - 요금/청구 API(GET /plans, POST /subscriptions, POST /billing/charge), 조직/좌석 API(GET/POST /organizations, POST /organizations/{id}/seats), 지표 이벤트 API(POST /metrics/events). S 전용 - 온보딩 API(POST /onboarding/start, POST /onboarding/complete). E 전용 - SSO API(POST /sso/connections, GET /sso/login), 감사 API(GET /audit/events). 권한: 공통은 org_admin, S는 self-service, E는 org_admin+security_admin.",
+      "데이터 변경 개요: 신규 테이블 plans, subscriptions, billing_cycles, organizations, members, seat_assignments, metric_events, onboarding_flows, invite_tokens, sso_connections, audit_events. 마이그레이션 순서: plans→organizations→members→seat_assignments→subscriptions→billing_cycles→metric_events→(S)onboarding_flows→invite_tokens / (E)sso_connections→audit_events. 지표 이벤트 스키마: event_id, org_id, event_type, occurred_at, payload(json). 감사 로그 보존: audit_events는 append-only, 보존 기간 정책 필요(미확정).",
+      "측정 지표: 활성 조직 수(일 1회), 좌석 사용률=할당 좌석/구매 좌석(일 1회), 온보딩 완료율(S, 온보딩 종료 시), SSO 로그인 성공률(E, 로그인 시), 감사 이벤트 커버리지(E, 일 1회), 청구 성공률(청구 시), 이탈률(월 1회).",
+      "MVP 포함/제외: 포함 - 공통 4개 모듈, S 셀프 온보딩, E SSO/감사 기본. 제외(분기 밖 이월) - 감사 로그 고급 필터/리포트, SSO 다중 IdP 확장. 이는 E 16h 부족분을 처리하기 위함.",
+      "단계별 일정(선후 관계): 1) 공통 도메인·데이터 스키마 → 2) 공통 API·청구 → 3) 지표 수집 → 4) 운영 도구 → 5) S 온보딩 또는 E SSO/감사(안별 분기). 1→2→3→4는 순차, 5는 4 이후. E는 5단계 일부(고급 필터/리포트, 다중 IdP)가 다음 분기로 이월.",
+      "모순 점검: E안은 256h>240h로 예산 초과이므로 'E안 전체를 이번 분기에 출시'라는 권고는 성립하지 않음. S안은 224h≤240h로 이번 분기 출시 가능.",
+      "미확인 사항: 실제 개발 속도, SSO IdP별 난이도, 지표 수집 인프라 비용, 감사 로그 보존 기간 정책.",
+      "실제 구현/테스트는 수행하지 않았으며, 본 산출물은 설계 제안임. 코드 조각은 summary/evidence 문자열로만 제시."
+    ]
+  },
+  "error": ""
+}

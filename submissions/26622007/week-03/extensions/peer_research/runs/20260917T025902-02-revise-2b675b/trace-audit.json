@@ -1,0 +1,105 @@
+{
+  "passed": true,
+  "errors": [],
+  "mode": "research-live",
+  "peak_calls": 3,
+  "peak_execution_calls": 1,
+  "calls_by_phase": {
+    "propose": 12,
+    "review": 4,
+    "execute": 3,
+    "synthesize": 1
+  },
+  "task_statuses": {
+    "rag-revise/closednet_backup_review": "succeeded",
+    "rag-revise/tenant_quality_plan": "succeeded",
+    "rag-revise/adr_and_checklist": "succeeded",
+    "rag-revise": "succeeded"
+  },
+  "awards": {
+    "rag-revise": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "delegate",
+      "dependencies": {
+        "closednet_backup_review": [],
+        "tenant_quality_plan": [],
+        "adr_and_checklist": [
+          "closednet_backup_review",
+          "tenant_quality_plan"
+        ]
+      }
+    },
+    "rag-revise/closednet_backup_review": {
+      "requester": "C",
+      "worker": "B",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "rag-revise/tenant_quality_plan": {
+      "requester": "C",
+      "worker": "B",
+      "mode": "execute",
+      "dependencies": {}
+    },
+    "rag-revise/adr_and_checklist": {
+      "requester": "C",
+      "worker": "C",
+      "mode": "execute",
+      "dependencies": {}
+    }
+  },
+  "providers": {
+    "GMICloud": 2,
+    "DigitalOcean": 1,
+    "Novita": 1,
+    "Morph": 2,
+    "Parasail": 2,
+    "Reka": 1,
+    "Modal": 2,
+    "DeepInfra": 2,
+    "Fireworks": 1,
+    "OpenAI": 3,
+    "Relace": 1,
+    "Alibaba": 2
+  },
+  "models": {
+    "deepseek/deepseek-v4.1-flash": 20
+  },
+  "evaluation": {
+    "passed": false,
+    "checks": {
+      "root_succeeded": true,
+      "required_string_facts": true,
+      "decision_id": true,
+      "backup_owner": false,
+      "no_invented_latency": true,
+      "report_length": true,
+      "comparison_table": true,
+      "two_independent_then_join": true,
+      "verified_url_count": true,
+      "fresh_search_cited": true,
+      "search_tool_used": true,
+      "no_unretrieved_evidence_urls": true,
+      "both_products_sourced": true,
+      "memory_refs_delivered": true,
+      "new_constraint": true,
+      "memory_used_or_explicitly_absent": true
+    },
+    "cited_verified_urls": [
+      "https://github.com/pgvector/pgvector",
+      "https://github.com/pgvector/pgvector/blob/master/src/hnsw.h",
+      "https://github.com/pgvector/pgvector/blob/master/src/ivfflat.h",
+      "https://qdrant.tech/documentation/snapshots",
+      "https://qdrant.tech/documentation/tutorials-operations/create-snapshot",
+      "https://www.postgresql.org/docs/current/app-pgbasebackup.html",
+      "https://www.postgresql.org/docs/current/backup-dump.html",
+      "https://www.postgresql.org/docs/current/backup.html"
+    ],
+    "unretrieved_urls": [],
+    "memory_refs": [
+      "mem-32d20f79baea194f"
+    ],
+    "limits": "Checks trace source retrieval and known scenario facts, not claim entailment, measured performance or statistical reproducibility."
+  }
+}

@@ -1,0 +1,41 @@
+COMMAND: /Users/junseok/Desktop/AX의 이해와 활용/.venv/bin/python submissions/26622007/week-03/run.py plan
+{
+  "model": "deepseek/deepseek-v4.1-flash",
+  "task_count": 6,
+  "conditions": [
+    "baseline",
+    "homogeneous",
+    "overconfident"
+  ],
+  "runs": 9,
+  "expected_calls": 162,
+  "max_calls_with_retries": 324,
+  "request_budget": 324,
+  "config": {
+    "model": "deepseek/deepseek-v4.1-flash",
+    "temperature": 0,
+    "max_tokens": 512,
+    "reasoning": {
+      "enabled": false
+    },
+    "provider": {
+      "only": [
+        "deepseek"
+      ],
+      "allow_fallbacks": false,
+      "require_parameters": true,
+      "max_price": {
+        "prompt": 0.3,
+        "completion": 1.2
+      }
+    },
+    "timeout_seconds": 30,
+    "max_attempts": 2,
+    "retry_delay_seconds": 2,
+    "max_http_requests": 324
+  },
+  "experiment_id": "958189e439f076a6",
+  "credential": "OpenRouter key is not configured. No API request was sent."
+}
+
+EXIT_CODE: 0

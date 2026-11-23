@@ -1,0 +1,66 @@
+{
+  "git_commit": "3ba444c7b088e05ead02b2ddbd22abdc8e533ecb",
+  "case": "02-revise",
+  "case_sha": "5daec318e3e514fbb6a97cfe228a9daf11eedfaaaa8520ccd529eebe9847a0c5",
+  "config": {
+    "max_depth": 2,
+    "max_tasks": 10,
+    "max_steps": 3,
+    "max_calls": 60,
+    "max_parallel": 3,
+    "memory_top_k": 3,
+    "memory_ttl_days": 7,
+    "scope": "rag-vector-adoption",
+    "transport": {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "temperature": 0,
+      "max_tokens": 3800,
+      "reasoning": {
+        "enabled": false
+      },
+      "provider": {
+        "allow_fallbacks": true,
+        "require_parameters": true,
+        "max_price": {
+          "prompt": 0.3,
+          "completion": 1.2
+        }
+      },
+      "timeout_seconds": 45,
+      "retry_delay_seconds": 1,
+      "max_attempts": 2
+    },
+    "search": {
+      "engine": "exa",
+      "max_results": 3,
+      "max_total_results": 3,
+      "max_uses": 1,
+      "max_characters": 2200,
+      "allowed_domains": [
+        "github.com",
+        "postgresql.org",
+        "qdrant.tech"
+      ]
+    }
+  },
+  "requester": "C",
+  "memory_enabled": false,
+  "memory_snapshot_sha": "ceb0bf40d708e8e976b4bd0d9230e165ee817c1e8ee6951d1f11853e0686a8bd",
+  "process_id": 58077,
+  "sources": {
+    "peer_research/cli.py": "c2dd589da546716b56d62ec0129d24e18037c6ba618a786a06aa47e2a3be79ae",
+    "peer_research/common.py": "099a6355c803754bb6e417e7b646255d333e1470123fce141a922d0f28f2ed1b",
+    "peer_research/memory.py": "8d208fb69b085372d918d41e98f67dcc82e24d5876f064ba26e9f61b9f60f05a",
+    "peer_research/probe_web.py": "7549af0e99e64e4baa2afbfea09663cc3198dbac4039b92502c807789f054c43",
+    "peer_research/research_audit.py": "b6c79b0afcbf2efc26834bb3a55cbb3151a87860ffa1b7fa9c25b80506ba2dd8",
+    "peer_research/research_model.py": "b1c3eb1b65a2a4bd16d4cc0f1bbd0018ed9a06ce7d64b4d0e725836e11399b32",
+    "peer_research/test_research.py": "9b369869e9f1b3304537614dea23c586952363231c62503c9c19e97e033bc7b2",
+    "peer_research/web_transport.py": "d566db7adea3c031e75e78ce9803547fb244a960bcd5478aae4fcc7064b5ca4b",
+    "peer_dag/audit.py": "88fd3e0e4c70b5040b41edd5981bb83c7e0a194fef5abe61e681408dc65c514f",
+    "peer_dag/cli.py": "e841e3906207645989498bfe42c5df26a5fe044bed516aa3f19679fb784383b4",
+    "peer_dag/core.py": "30be82201cc3172c0a25fa67ab92ec97077c65c2e01ff5ba517ed8c806359590",
+    "peer_dag/fixtures.py": "06928c693f9a16b24d82486a5d7dbba70846fce973349d07ca5e3ac0f19ad692",
+    "peer_dag/models.py": "cb9eebf5e11eb447d18dcf7a579628b2fc80814da1d63c2a36fa754cd416130a",
+    "peer_dag/test_peer_dag.py": "c86636e3c5f0ddee12368056b102dccb0559dd7f7640d8243150afffd8698928"
+  }
+}

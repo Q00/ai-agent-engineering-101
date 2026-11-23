@@ -1,0 +1,38 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "## rag-vector-adoption 후속 검토: 폐쇄망 전환 ADR 및 배포/복구 체크리스트\n\n### 1. 이전 대비 변경점\n\n| 구분 | 이전 실행(mem-32d20f79baea194f) | 이번 통합(폐망 전환) |\n|---|---|---|\n| 판단 기준 | 인덱스 유형·필터·tenant 분리 중심 | **폐쇄망 배포 + 백업/복구 + 운영 인력 증원 불가** 우선 |\n| Qdrant 출처 | 공식 URL 공백(unresolved) | 스냅샷 공식 문서 확보로 **출처 공백 해소** |\n| 외부 SaaS | 제약 미명시 | `external_saas_allowed=false` 명시, 관리형 비용 비교는 무의미 |\n| 추천 | pgvector 1순위 | **pgvector 1순위 유지**(새 제약과 충돌 없음, 근거는 백업·운영 부담으로 보강) |\n| 미검증 항목 | recall/latency, 복구 리허설 | 동일하게 **not_measured / 미실행** 유지 |\n\n이전 추천을 관성적으로 유지한 것이 아니라, 새 제약(폐쇄망·인력 고정)을 기준으로 재검증한 결과 동일 결론에 도달했다. Qdrant는 필터 통합(filterable HNSW)에서 기술적 우위가 있으나, 신규 stateful 저장소 운영·스샷 버전 관리 부담이 증원 불가 조건과 충돌한다.\n\n### 2. pgvector vs 자체 호스팅 Qdrant 비교 (6축)\n\n| 축 | pgvector (기존 PostgreSQL 확장) | 자체 호스팅 Qdrant |\n|---|---|---|\n| 폐쇄망 배포 | 기존 PostgreSQL에 확장 설치만. 신규 stateful 컴포넌트·외부 호출 없음 | 단일 노드 바이너리/Docker 내부 배포 가능, 외부 SaaS 불필요 |\n| 백업 방식 | SQL 덤프(pg_dump, 단일 DB), 파일시스템 수준 백업, 연속 아카이빙(PITR) 3방식. 클러스터 전체는 pg_basebackup(개별 DB 선택 불가) | 컬렉션/전체 스냅샷 생성 후 로컬 파일 또는 URL 보관 |\n| 복구 절차 | 스트 덤프는 psql, 비텍스트는 pg_restore. `-1/--single-transaction` 전량 롤백 가능. 역할/소유자 사전 존재 필요 | 스냅샷 복구 3방식: URL/로컬 파일, 업로드 파일, 단일 노드 기동 시 `--snapshot` 인자. 대상 컬렉션 부재 필요 |\n| 버전 제약 | PostgreSQL 메이저 버전 정책에 따름 | 스냅샷은 **동일 minor 또는 다음 minor** 클러스터로만 복구 가능 |\n| 운영 부담 | 기존 DBA/절차 재사용, 추가 인력 불필요 | 신규 stateful 저장소·스샷 스케·버전 관리 필요 → 증원 불가 조건에서 부담 |\n| tenant 필터 | 근사 인덱스는 post-filter. 선택도 낮으면 recall 저하. 0.8.0+ iterative index scan(`hnsw.iterative_scan`, `hnsw.max_scan_tuples`, `ivfflat.max_probes`)으로 보완. LIST 파티셔닝 권장 | payload 인덱스 + filterable HNSW로 필터를 그래프 탐색에 통합. `hnsw_ef` 상향·exact fallback으로 보완 |\n\n### 3. 변경 ADR (ADR-RAG-7429 개정)\n\n- **상태**: 잠정(Proposed) — 실측 미완료\n- **결정**: `recommended_storage = pgvector` (tenant LIST 파티셔닝 + HNSW + iterative scan), Qdrant는 2순위 대안\n- **근거**: (1) 쇄망에서 신규 stateful 컴포넌트 불필요, (2) 기존 PostgreSQL 백업/복구 체계(PITR·pg_dump) 재사용, (3) 운영 인력 증원 불가 조건 충족, (4) Qdrant 스냅의 minor 버전 제약이 폐쇄망 장기 운영 리스크\n- **대안**: 자체 호스팅 Qdrant — 필터 통합 우위는 있으나 운영 부담·버전 제약\n- **결과·영향**: 신규 저장소 도입 없이 기존 DB 운영 절차 확장. 파티션별 인덱스 재구축 주기 정의 필요\n- **재검토 조건**: 실측 recall@10/latency 확보, 복구 리허설 완료, 파티션 재구축 주기 검증 시\n\n### 4. 배포/복구 체크리스트\n\n**pgvector (1순위)**\n- [ ] pg_dump 정기 덤프 + WAL 아카이빙(PITR) 조합 구성\n- [ ] 복구 시 역할/소유자 사전 생성, `-1` 단일 트랜잭션 옵션 검토\n- [ ] tenant LIST 파티셔닝 + 파티션별 HNSW 인덱스, iterative scan 파라미터 설정\n- [ ] 복구 리허설 **미실행** — RTO/RPO 미확정\n\n**Qdrant (2순위, 채택 시)**\n- [ ] 스냅샷 스케줄러, 복구 대상 minor 버전 일치 확인\n- [ ] 단일 노드 기동 복구 경로 문서화(다중 노드/클라우드에서는 사용 불가)\n\n**공통**\n- [ ] recall@10·p50/p95 latency 실측 **미실행(not_measured)**\n- [ ] 일 1% 갱신 후 재측정 계획 수립\n\n### 5. 미해결 항목\n\n실제 복구 리허설 미실행(RTO/RPO 미확정), 실측 recall@10/latency 미측정, Qdrant 다중 노드 스냅샷 복구 제약의 폐쇄망 적용성 미검증, pgvector 파티션별 인덱스 재구축 주기 미검증, 관리형 비용 비교 불가(폐쇄망으로 무의미). 본 문서는 공식 문서 기반 정성 판단이며 치마크·복구 성공을 주장하지 않는다.",
+    "facts": {
+      "recommended_storage": "pgvector",
+      "internal_decision_id": "ADR-RAG-7429",
+      "backup_owner": "플랫폼",
+      "measured_latency": "not_measured",
+      "unresolved": "실제 복구 리허설 미실행(RTO/RPO 미확정), 실측 recall@10/latency 미측정, Qdrant 다중 노드 스냅샷 복구 제약의 폐쇄망 적용성 미검증, pgvector 파티션별 인덱스 재구축 주기 미검증, 관리형 비용 비교 불가",
+      "memory_refs": "mem-32d20f79baea194f",
+      "external_saas_allowed": false,
+      "adr_status": "proposed",
+      "pgvector_rank": 1,
+      "qdrant_rank": 2,
+      "pgvector_backup_methods": 3,
+      "qdrant_restore_methods": 3,
+      "qdrant_snapshot_version_constraint": "same_or_next_minor",
+      "benchmark_executed": false,
+      "recovery_test_executed": false,
+      "qdrant_source_gap_resolved": true,
+      "previous_recommendation_retained": true
+    },
+    "evidence": [
+      "https://github.com/pgvector/pgvector — pgvector 공식 README: HNSW/IVFFlat 인덱스, 파라미터(m, ef_construction, ef_search, lists, probes), 필터링 및 iterative index scan 근거",
+      "https://github.com/pgvector/pgvector/blob/master/src/hnsw.h — pgvector HNSW 소스: 기본 파라미터 및 스캔 관련 상수 근거",
+      "https://github.com/pgvector/pgvector/blob/master/src/ivfflat.h — pgvector IVFFlat 소스: lists/probes 관련 근거",
+      "https://www.postgresql.org/docs/current/backup.html — PostgreSQL 백업 3방식(SQL 덤프, 파일시스템 수준, 연속 아카이빙) 근거",
+      "https://www.postgresql.org/docs/current/app-pgbasebackup.html — pg_basebackup은 클러스터 전체 백업, 개별 DB 선택 불가 근거",
+      "https://www.postgresql.org/docs/current/backup-dump.html — pg_dump/psql/pg_restore 복구 절차, -1 단일 트랜잭션, 역할 사전 생성 필요 근거",
+      "https://qdrant.tech/documentation/snapshots/ — Qdrant 스냅샷 복구 3방식, 동일/다음 minor 버전 제약, 단일 노드 기동 복구 제약 근거",
+      "https://qdrant.tech/documentation/tutorials-operations/create-snapshot/ — 스냅샷 생성/복구 실습 절차 및 priority=snapshot 근거",
+      "memory:mem-32d20f79baea194f — 이전 실행 장기 메모리: internal_decision_id=ADR-RAG-7429, backup_owner=플폼팀, measured_latency=not_measured, pgvector 1순위 추천, Qdrant 공식 출처 공백 기록 참조"
+    ]
+  },
+  "error": ""
+}

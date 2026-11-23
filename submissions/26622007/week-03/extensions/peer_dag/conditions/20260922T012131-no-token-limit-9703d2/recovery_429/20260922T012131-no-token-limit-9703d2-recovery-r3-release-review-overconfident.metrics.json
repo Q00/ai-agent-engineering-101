@@ -1,0 +1,231 @@
+{
+  "case_id": "release-review",
+  "condition": "overconfident",
+  "block": 3,
+  "source_run_id": "20260922T012131-no-token-limit-9703d2-r3-release-review-overconfident",
+  "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r3-release-review-overconfident",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 40.4303,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 12,
+  "checks_total": 12,
+  "wrong_or_missing": [],
+  "calls": 20,
+  "http_requests": 20,
+  "http_responses": 20,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 4,
+  "max_depth": 1,
+  "awards": {
+    "C": 3,
+    "A": 1
+  },
+  "root_award": "C",
+  "c_proposals": 4,
+  "c_high_bids": 4,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.013943162,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 40.253,
+  "canonical_facts": {
+    "can_release": false,
+    "migration_before_app": true,
+    "p_break_even": 200.0,
+    "p_high_profit": 3000000.0,
+    "p_low_profit": 1000000.0,
+    "p_margin": 10000.0,
+    "p_profit": 2000000.0,
+    "q_break_even": 125.0,
+    "q_high_profit": 3200000.0,
+    "q_low_profit": 1120000.0,
+    "q_margin": 16000.0,
+    "q_profit": 2160000.0
+  },
+  "artifact_sha": "0370be7df2715ebf25b2ce17062a7e30e73185e32c8cdab9e6155740e3b12669",
+  "root_plan_sha": "7b44111f8067b2805f8b09d099c622a2ec17f0e4b803013c7593f0441f66fa1d",
+  "award_sha": "742b04be7a6d310f6aaad832bc9e9cf55b9a2d2cfafada024e491e6349e894c9",
+  "controls_sha": "866f1e338c620fe84580e1012b56e58f73be28f4cf90e93d33c3ba57ea3488c4",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "수익성 검토와 기술 위험 검토를 상호 독립 작업으로 분리해 병렬 실행 가능하게 한다.",
+      "수익성 작업은 P/Q의 공헌이익, 월이익, 손익분기 고객수, 75%~125% 고객수 시나리오 이익을 계산하도록 지시한다.",
+      "기술 위험 작업은 마이그레이션 선행 조건과 미검증 3개 테스트를 사실 기반으로 정리하도록 지시한다.",
+      "두 결과를 입력으로 받는 출시 권고 작업을 선행 의존성과 함께 배치한다.",
+      "통합 작업에서 facts 필수 키와 boolean 판정, evidence 계산식 근거, 미확인 사항을 검증한다."
+    ],
+    "steps": [
+      {
+        "id": "profitability_review",
+        "goal": "요금 후보 P(15000원, 400명, 변동비 5000원)와 Q(22000원, 260명, 변동비 6000원), 고정비 2000000원 조건의 수익성을 계산하라. 공헌이익=가격-변동비, 월이익=공헌이익*고객수-고정비, 손익분기 고객수=ceil(고정비/공헌이익). 고객 수 75%~125% 시나리오의 월이익도 산출하라.",
+        "acceptance": "summary, facts, evidence 형식으로 반환. facts에 p_margin, q_margin, p_profit, q_profit, p_break_even, q_break_even, p_low_profit, q_low_profit, p_high_profit, q_high_profit를 숫자로 포함. evidence에 각 계산식과 입력값 근거를 명시.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "profitability_result"
+        ]
+      },
+      {
+        "id": "tech_risk_review",
+        "goal": "제공된 기술 자료만 사용해 출시 전 기술 위험과 선행 조건을 정리하라. 새 앱의 price_version 필요성, DB 마이그레이션 후 배포 순서, 구버전 앱의 마이그레이션 후 읽기 가능 여부, 미검증 항목(새 앱이 쓴 데이터의 롤백, 재시도 결제, 취소 결제 테스트)을 사실대로 요약하라.",
+        "acceptance": "summary, facts, evidence 형식으로 반환. facts에 migration_before_app(boolean)을 포함하고, 미검증 3개 테스트가 완료되어야 출시 가능하다는 조건을 명시. 없는 로그나 테스트 실행 결과를 만들지 말 것.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "tech_risk_result"
+        ]
+      },
+      {
+        "id": "release_recommendation",
+        "goal": "수익성 검토와 기술 위험 검토 결과를 통합해 출시 권고 자료를 작성하라. 수익성 facts와 기술 위험 facts를 결합하고, 미검증 3개 테스트 미완료 시 출시 불가 조건을 반영해 can_release를 판정하라.",
+        "acceptance": "summary에 출시 권고와 미확인 사항을 서술. facts에 p_margin, q_margin, p_profit, q_profit, p_break_even, q_break_even, p_low_profit, q_low_profit, p_high_profit, q_high_profit, migration_before_app, can_release를 모두 포함. margin/profit/break_even은 숫자, migration_before_app과 can_release는 boolean. evidence에 계산식과 제공 자료 근거를 명시.",
+        "depends_on": [
+          "profitability_review",
+          "tech_risk_review"
+        ],
+        "reads": [
+          "profitability_result",
+          "tech_risk_result"
+        ],
+        "writes": [
+          "release_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "release-review/profitability_review",
+      "worker": "C",
+      "start": "2026-09-22T03:45:44.378833+00:00",
+      "end": "2026-09-22T03:45:47.885297+00:00"
+    },
+    {
+      "task_id": "release-review/tech_risk_review",
+      "worker": "A",
+      "start": "2026-09-22T03:45:46.585172+00:00",
+      "end": "2026-09-22T03:45:51.682970+00:00"
+    },
+    {
+      "task_id": "release-review/release_recommendation",
+      "worker": "C",
+      "start": "2026-09-22T03:45:56.647197+00:00",
+      "end": "2026-09-22T03:46:03.479833+00:00"
+    },
+    {
+      "task_id": "release-review",
+      "worker": "C",
+      "start": "2026-09-22T03:46:03.480937+00:00",
+      "end": "2026-09-22T03:46:09.648203+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "release-review/profitability_review",
+      "right": "release-review/tech_risk_review",
+      "workers": [
+        "C",
+        "A"
+      ],
+      "seconds": 1.300125,
+      "both_tasks_succeeded": true
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 2,
+    "peak_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 2
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 0,
+      "C": 1
+    },
+    "calls_by_phase": {
+      "propose": 12,
+      "review": 4,
+      "execute": 3,
+      "synthesize": 1
+    },
+    "task_statuses": {
+      "release-review/profitability_review": "succeeded",
+      "release-review/tech_risk_review": "succeeded",
+      "release-review/release_recommendation": "succeeded",
+      "release-review": "succeeded"
+    },
+    "awards": {
+      "release-review": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "delegate",
+        "dependencies": {
+          "profitability_review": [],
+          "tech_risk_review": [],
+          "release_recommendation": [
+            "profitability_review",
+            "tech_risk_review"
+          ]
+        }
+      },
+      "release-review/profitability_review": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "release-review/tech_risk_review": {
+        "requester": "C",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "release-review/release_recommendation": {
+        "requester": "C",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 20
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 20
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "p_margin": true,
+        "q_margin": true,
+        "p_profit": true,
+        "q_profit": true,
+        "p_break_even": true,
+        "q_break_even": true,
+        "p_low_profit": true,
+        "q_low_profit": true,
+        "p_high_profit": true,
+        "q_high_profit": true,
+        "migration_before_app": true,
+        "can_release": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

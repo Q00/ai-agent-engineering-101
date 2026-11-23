@@ -1,0 +1,265 @@
+{
+  "case_id": "game-design-architecture",
+  "condition": "homogeneous",
+  "block": 3,
+  "run_id": "20260922T012131-no-token-limit-9703d2-r3-game-design-architecture-homogeneous",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 165.4498,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 10,
+  "checks_total": 10,
+  "wrong_or_missing": [],
+  "calls": 25,
+  "http_requests": 36,
+  "http_responses": 25,
+  "http_429": 11,
+  "http_errors": {
+    "429": 11
+  },
+  "retries": 11,
+  "transport_errors": 0,
+  "tasks": 5,
+  "max_depth": 1,
+  "awards": {
+    "A": 2,
+    "B": 2,
+    "C": 1
+  },
+  "root_award": "A",
+  "c_proposals": 5,
+  "c_high_bids": 1,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.026095314,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 165.2689,
+  "canonical_facts": {
+    "board_height": 6.0,
+    "board_width": 6.0,
+    "coop_fits_budget": false,
+    "core_scope_hours": 160.0,
+    "developer_hours": 160.0,
+    "max_turns": 12.0,
+    "offline_required": true,
+    "qa_hours": 40.0,
+    "seeded_replay_required": true,
+    "with_coop_hours": 240.0
+  },
+  "artifact_sha": "cfdcff959afeb705d696a9a9af1cca51becca8fb0ed10a84297b54a15d738f6e",
+  "root_plan_sha": "45a682ce61bfeccbf73daf0eaf1dc7a5778abed447966a29f4391cc5eabf24a0",
+  "award_sha": "9952fc3a69b66977dfdc4b4bd6808a461fd2a1623569077c1e654a8f7f2bc8e9",
+  "controls_sha": "cfd2ef459faf8ba173d8b03587b5b88883caeb14eee172ec0e868a281ecee942",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "제공된 수치로 개발/QA 예산과 범위별 총사람시간을 계산하고, 6×6·12턴·seed 재현·오프라인 요구를 사실로 고정한다.",
+      "기획(규칙·루프·승패·난이도·보상·튜토리얼·접근성)과 코드 구조(디렉터리·모듈 책임·의존 방향·타입 시그니처·턴 처리 의사코드)를 각각 독립 산출물로 분해한다.",
+      "규칙→모듈→테스트 대응, 저장 스키마 버전·재현 테스트·수용 기준, 개발/QA 일정·제외 범위를 별도 검증 작업으로 분리한다.",
+      "모든 하위 산출물을 통합해 모순·미확인 사항을 명시하고 facts 숫자/불리언 키를 채운 최종 보고서를 작성한다."
+    ],
+    "steps": [
+      {
+        "id": "budget_facts",
+        "goal": "제공된 추정치로 기본 범위와 협동 포함 범위의 총사람시간을 계산하고 예산 적합 여부를 판정한다.",
+        "acceptance": "developer_hours=160, qa_hours=40, core_scope_hours=160, with_coop_hours=240, coop_fits_budget=false, seeded_replay_required=true, offline_required=true, board_width=6, board_height=6, max_turns=12를 facts로 반환하고 각 계산식을 evidence에 제시한다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "budget_facts"
+        ]
+      },
+      {
+        "id": "game_design",
+        "goal": "규칙과 재미 가설이 연결된 간결한 게임 기획서를 작성한다: 핵심 루프(탐험→전투→보상→탈출), 승리/패배, 난이도, 전투·보상 규칙, 튜토리얼, 접근성.",
+        "acceptance": "6×6 보드와 최대 12턴 제약을 반영하고, 각 규칙에 재미 가설을 연결하며, 서버·로그인·결제·온라인 협동이 기본 범위 밖임을 명시한 텍스트를 반환한다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "game_design_doc"
+        ]
+      },
+      {
+        "id": "code_architecture",
+        "goal": "TypeScript/HTML Canvas 코드 구조를 설계한다: 디렉터리 트리, 모듈 책임, 의존 방향, GameState/Command/Event/Rng/SaveCodec 타입·함수 시그니처, 턴 처리 의사코드.",
+        "acceptance": "렌더링과 도메인 규칙 경계, 주입 가능한 Rng/Clock 인터페이스, seed 기반 재현과 저장/복원 재현을 지원하는 짧은 코드 조각과 시그니처를 텍스트로 반환한다. 실제 구현 완료로 서술하지 않는다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "code_architecture_doc"
+        ]
+      },
+      {
+        "id": "integration_report",
+        "goal": "기획·아키텍처·예산 산출물을 통합해 규칙→모듈→테스트 대응, 저장 스키마 버전·재현 테스트·수용 기준, 개발/QA 일정·제외 범위를 담은 최종 착수 자료를 작성한다.",
+        "acceptance": "summary와 evidence에 요구 문서·표·코드 구조를 간결한 텍스트로 제시하고, 실제 구현/테스트 수행과 설계 제안을 구분하며, 규칙·인터페이스·일정 사이 모순과 미확인 사항을 명시한다. facts에 필수 숫자·불리언 키를 모두 포함한다.",
+        "depends_on": [
+          "budget_facts",
+          "game_design",
+          "code_architecture"
+        ],
+        "reads": [
+          "budget_facts",
+          "game_design_doc",
+          "code_architecture_doc"
+        ],
+        "writes": [
+          "game_design_architecture_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "game-design-architecture/budget_facts",
+      "worker": "B",
+      "start": "2026-09-22T03:14:22.765268+00:00",
+      "end": "2026-09-22T03:14:26.746154+00:00"
+    },
+    {
+      "task_id": "game-design-architecture/game_design",
+      "worker": "C",
+      "start": "2026-09-22T03:14:24.562418+00:00",
+      "end": "2026-09-22T03:14:38.538119+00:00"
+    },
+    {
+      "task_id": "game-design-architecture/code_architecture",
+      "worker": "A",
+      "start": "2026-09-22T03:14:34.012666+00:00",
+      "end": "2026-09-22T03:14:43.482604+00:00"
+    },
+    {
+      "task_id": "game-design-architecture/integration_report",
+      "worker": "B",
+      "start": "2026-09-22T03:15:33.941198+00:00",
+      "end": "2026-09-22T03:15:41.995909+00:00"
+    },
+    {
+      "task_id": "game-design-architecture",
+      "worker": "A",
+      "start": "2026-09-22T03:15:41.996915+00:00",
+      "end": "2026-09-22T03:16:34.741469+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "game-design-architecture/budget_facts",
+      "right": "game-design-architecture/game_design",
+      "workers": [
+        "B",
+        "C"
+      ],
+      "seconds": 2.183736,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "game-design-architecture/game_design",
+      "right": "game-design-architecture/code_architecture",
+      "workers": [
+        "C",
+        "A"
+      ],
+      "seconds": 4.525453,
+      "both_tasks_succeeded": true
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 2,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 1,
+      "C": 1
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 1
+    },
+    "calls_by_phase": {
+      "propose": 15,
+      "review": 5,
+      "execute": 4,
+      "synthesize": 1
+    },
+    "task_statuses": {
+      "game-design-architecture/budget_facts": "succeeded",
+      "game-design-architecture/game_design": "succeeded",
+      "game-design-architecture/code_architecture": "succeeded",
+      "game-design-architecture/integration_report": "succeeded",
+      "game-design-architecture": "succeeded"
+    },
+    "awards": {
+      "game-design-architecture": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "delegate",
+        "dependencies": {
+          "budget_facts": [],
+          "game_design": [],
+          "code_architecture": [],
+          "integration_report": [
+            "budget_facts",
+            "game_design",
+            "code_architecture"
+          ]
+        }
+      },
+      "game-design-architecture/budget_facts": {
+        "requester": "A",
+        "worker": "B",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "game-design-architecture/game_design": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "game-design-architecture/code_architecture": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "game-design-architecture/integration_report": {
+        "requester": "A",
+        "worker": "B",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 25
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 25
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "board_width": true,
+        "board_height": true,
+        "max_turns": true,
+        "developer_hours": true,
+        "qa_hours": true,
+        "core_scope_hours": true,
+        "with_coop_hours": true,
+        "coop_fits_budget": true,
+        "seeded_replay_required": true,
+        "offline_required": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

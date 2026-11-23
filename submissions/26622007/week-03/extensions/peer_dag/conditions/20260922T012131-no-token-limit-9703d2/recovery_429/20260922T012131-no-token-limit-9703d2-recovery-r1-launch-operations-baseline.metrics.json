@@ -1,0 +1,306 @@
+{
+  "case_id": "launch-operations",
+  "condition": "baseline",
+  "block": 1,
+  "source_run_id": "20260922T012131-no-token-limit-9703d2-r1-launch-operations-baseline",
+  "run_id": "20260922T012131-no-token-limit-9703d2-recovery-r1-launch-operations-baseline",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 106.3104,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 8,
+  "checks_total": 8,
+  "wrong_or_missing": [],
+  "calls": 40,
+  "http_requests": 40,
+  "http_responses": 40,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 8,
+  "max_depth": 2,
+  "awards": {
+    "A": 2,
+    "B": 3,
+    "C": 3
+  },
+  "root_award": "A",
+  "c_proposals": 8,
+  "c_high_bids": 0,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.044803772,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 106.1244,
+  "canonical_facts": {
+    "additional_agents": 4.0,
+    "backlog_without_hiring": 80.0,
+    "expected_contacts": 160.0,
+    "four_hour_capacity": 80.0,
+    "immediate_refund_promised": false,
+    "launch_hour": 10.0,
+    "required_total_agents": 8.0,
+    "support_window_hours": 4.0
+  },
+  "artifact_sha": "f69061e681e1affd4ea1dae7d8807d6689bb336f5e14ec05723729597096f9b2",
+  "root_plan_sha": "da4af768cffbae4796971470be7b6acd7e73b3a2e034f85fc8a6ba3b890b18b0",
+  "award_sha": "4d2290f45841841b4426c16173e8aba7e5791f655b15c8053484ed3704d67529",
+  "controls_sha": "49bb0be4a0b09743a9cf6a6f417be6fc42680a4bfa26681e4b9bb36b72e14a07",
+  "root_plan": {
+    "mode": "delegate",
+    "actions": [
+      "용량 계산과 정책 모순 분석을 직접 수행할 작업으로 정의한다.",
+      "고객 안내문·FAQ·상담 분류 기준과 운영 일정·승인 흐름을 C에게 위임할 작업으로 분리한다.",
+      "C의 산출물과 내 계산 결과를 통합해 최종 launch_operations_report를 작성하고 facts 숫자/불리언 키를 검증한다."
+    ],
+    "steps": [
+      {
+        "id": "capacity_and_policy",
+        "goal": "제공된 수치로 첫 4시간 예상 문의, 처리 용량, 미처리량, 필요 총 상담원 수, 추가 인원을 계산하고, 확정 정책('영업일 2일 내 처리 시작')과 광고 초안('즉시 자동 환불')의 모순, 기술 배포 승인·결제 검증 미제공 상태를 정리한다. 충원 불가 시 대기열·우선순위 대안과 비상 계획(광고 지연/기술 승인 지연/문의 급증) 초안을 포함한다.",
+        "acceptance": "facts에 expected_contacts=160, four_hour_capacity=80, backlog_without_hiring=80, required_total_agents=8, additional_agents=4, support_window_hours=4, launch_hour=10, immediate_refund_promised=false를 모두 포함하고 계산식을 evidence에 제시한다. 정책-광고 모순과 미확인 사항(배포 승인, 결제 검증, 충원 승인)을 명시한다. 실제 구현/테스트를 수행했다고 주장하지 않는다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "capacity_analysis",
+          "policy_conflict_notes"
+        ]
+      },
+      {
+        "id": "customer_comms",
+        "goal": "확정 정책만 반영한 고객 안내문, FAQ, 상담 분류 기준(우선순위 포함)을 작성하고, 광고/상담/랜딩이 동일 약속을 쓰도록 단일 기준 문서와 변경 전달·승인 흐름, 담당·기한·선행조건이 연결된 운영 일정을 설계한다. 목요일 마감(광고 15시, 상담 교육 17시, 랜딩 18시, 제품팀 사양 14시)을 반영한다.",
+        "acceptance": "고객 안내문·FAQ·상담 분류 기준, 단일 기준 문서 구조, 변경 전달·승인 흐름, 담당·기한·선행조건이 있는 운영 일정을 텍스트로 반환한다. '즉시 자동 환불' 등 미확정 약속을 쓰지 않고, 충원·배포·환불을 완료된 것으로 표현하지 않는다. 실제 고객 연락이나 외부 시스템 변경을 수행하지 않는다.",
+        "depends_on": [],
+        "reads": [],
+        "writes": [
+          "customer_comms_pack",
+          "ops_schedule"
+        ]
+      },
+      {
+        "id": "integrate_report",
+        "goal": "capacity_and_policy와 customer_comms 산출물을 통합해 최종 launch_operations_report를 작성한다. 확정/미확인 사항표, 출시 직전 확인표, 비상 계획, 모순·미확인 사항을 포함하고 facts 숫자/불리언 키를 검증한다.",
+        "acceptance": "summary와 evidence에 요구 문서·표·코드 구조를 간결한 텍스트로 제시하고 실제 구현/테스트와 설계 제안을 구분한다. facts에 8개 숫자 키와 immediate_refund_promised 불리언을 포함하며 배열/객체를 넣지 않는다. 규칙·인터페이스·일정 간 모순과 미확인 사항을 명시한다.",
+        "depends_on": [
+          "capacity_and_policy",
+          "customer_comms"
+        ],
+        "reads": [
+          "capacity_analysis",
+          "policy_conflict_notes",
+          "customer_comms_pack",
+          "ops_schedule"
+        ],
+        "writes": [
+          "launch_operations_report"
+        ]
+      }
+    ]
+  },
+  "intervals": [
+    {
+      "task_id": "launch-operations/capacity_and_policy",
+      "worker": "B",
+      "start": "2026-09-22T03:22:18.771711+00:00",
+      "end": "2026-09-22T03:22:26.413449+00:00"
+    },
+    {
+      "task_id": "launch-operations/customer_comms/capacity_analysis",
+      "worker": "C",
+      "start": "2026-09-22T03:22:34.541532+00:00",
+      "end": "2026-09-22T03:22:40.707745+00:00"
+    },
+    {
+      "task_id": "launch-operations/customer_comms/comms_pack",
+      "worker": "C",
+      "start": "2026-09-22T03:22:36.477931+00:00",
+      "end": "2026-09-22T03:22:45.019295+00:00"
+    },
+    {
+      "task_id": "launch-operations/customer_comms/single_source",
+      "worker": "B",
+      "start": "2026-09-22T03:22:39.538173+00:00",
+      "end": "2026-09-22T03:22:48.777556+00:00"
+    },
+    {
+      "task_id": "launch-operations/customer_comms/ops_schedule",
+      "worker": "C",
+      "start": "2026-09-22T03:22:54.099850+00:00",
+      "end": "2026-09-22T03:23:05.640564+00:00"
+    },
+    {
+      "task_id": "launch-operations/customer_comms",
+      "worker": "B",
+      "start": "2026-09-22T03:23:05.641519+00:00",
+      "end": "2026-09-22T03:23:23.814848+00:00"
+    },
+    {
+      "task_id": "launch-operations/integrate_report",
+      "worker": "A",
+      "start": "2026-09-22T03:23:29.817042+00:00",
+      "end": "2026-09-22T03:23:41.445643+00:00"
+    },
+    {
+      "task_id": "launch-operations",
+      "worker": "A",
+      "start": "2026-09-22T03:23:41.446704+00:00",
+      "end": "2026-09-22T03:23:49.273277+00:00"
+    }
+  ],
+  "overlaps": [
+    {
+      "left": "launch-operations/customer_comms/capacity_analysis",
+      "right": "launch-operations/customer_comms/comms_pack",
+      "workers": [
+        "C",
+        "C"
+      ],
+      "seconds": 4.229814,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "launch-operations/customer_comms/capacity_analysis",
+      "right": "launch-operations/customer_comms/single_source",
+      "workers": [
+        "C",
+        "B"
+      ],
+      "seconds": 1.169572,
+      "both_tasks_succeeded": true
+    },
+    {
+      "left": "launch-operations/customer_comms/comms_pack",
+      "right": "launch-operations/customer_comms/single_source",
+      "workers": [
+        "C",
+        "B"
+      ],
+      "seconds": 5.481122,
+      "both_tasks_succeeded": true
+    }
+  ],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 3,
+    "peak_calls_by_worker": {
+      "A": 2,
+      "B": 2,
+      "C": 3
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 2
+    },
+    "calls_by_phase": {
+      "propose": 24,
+      "review": 8,
+      "execute": 6,
+      "synthesize": 2
+    },
+    "task_statuses": {
+      "launch-operations/capacity_and_policy": "succeeded",
+      "launch-operations/customer_comms/capacity_analysis": "succeeded",
+      "launch-operations/customer_comms/comms_pack": "succeeded",
+      "launch-operations/customer_comms/single_source": "succeeded",
+      "launch-operations/customer_comms/ops_schedule": "succeeded",
+      "launch-operations/customer_comms": "succeeded",
+      "launch-operations/integrate_report": "succeeded",
+      "launch-operations": "succeeded"
+    },
+    "awards": {
+      "launch-operations": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "delegate",
+        "dependencies": {
+          "capacity_and_policy": [],
+          "customer_comms": [],
+          "integrate_report": [
+            "capacity_and_policy",
+            "customer_comms"
+          ]
+        }
+      },
+      "launch-operations/capacity_and_policy": {
+        "requester": "A",
+        "worker": "B",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/customer_comms": {
+        "requester": "A",
+        "worker": "B",
+        "mode": "delegate",
+        "dependencies": {
+          "comms_pack": [],
+          "single_source": [],
+          "ops_schedule": [
+            "comms_pack",
+            "single_source"
+          ],
+          "capacity_analysis": []
+        }
+      },
+      "launch-operations/customer_comms/capacity_analysis": {
+        "requester": "B",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/customer_comms/comms_pack": {
+        "requester": "B",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/customer_comms/single_source": {
+        "requester": "B",
+        "worker": "B",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/customer_comms/ops_schedule": {
+        "requester": "B",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "launch-operations/integrate_report": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 40
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 40
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "expected_contacts": true,
+        "four_hour_capacity": true,
+        "backlog_without_hiring": true,
+        "required_total_agents": true,
+        "additional_agents": true,
+        "support_window_hours": true,
+        "immediate_refund_promised": true,
+        "launch_hour": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

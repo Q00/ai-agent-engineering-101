@@ -1,0 +1,30 @@
+{
+  "status": "succeeded",
+  "worker": "C",
+  "artifact": {
+    "summary": "금요일 10시 출시 통합 운영 패키지(설계 제안, 실제 구현·테스트·외부 연락 없음).\n\n[1] 용량 계산(제공 가정 기반)\n- expected_contacts = 800 × 0.20 = 160건\n- four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건\n- backlog_without_hiring = 160 − 80 = 80건\n- required_total_agents = 160 ÷ (5×4) = 8명\n- additional_agents = 8 − 4 = 4명\n- support_window_hours = 4, launch_hour = 10\n- immediate_refund_promised = false (광고 초안 '즉시 자동 환불'은 확정 정책과 불일치)\n\n[2] 단일 기준 문서(Single Source of Truth) 설계\n- 기준: 확정 정책 '상담 접수 후 영업일 2일 안에 처리 시작'. 처리 완료 시간·PG 반영 시간은 보장하지 않음.\n- 금지 표현: '즉시 자동 환불', '즉시 환불', '당일 환불 완료', '실시간 PG 반영', '처리 완료 보장'.\n- 허용 표현: '접수 후 영업일 2일 내 처리 시작', '처리 완료 및 PG 반영 시점은 보장되지 않음', '문의 유형별 우선순위에 따라 순차 처리'.\n- 변경 전달·승인 흐름(의사코드):\n  on Thursday 14:00: product_team -> publish(spec, known_limits)\n  update(sot_document) with spec\n  notify(ads, support, landing) with sot_version\n  ads: submit_copy(deadline 15:00) -> review_against(sot) -> approve|reject\n  support: training_material(deadline 17:00) -> review_against(sot) -> approve|reject\n  landing: edit(deadline 18:00) -> review_against(sot) -> approve|reject\n  if reject: return_to_owner with reason; no publish until approved\n- 모든 채널은 동일 sot_version을 참조하며, 불일치 시 게시 보류.\n\n[3] 고객 안내문·FAQ·상담 분류 기준(확정 사실만)\n- 안내문: '문의는 접수 후 영업일 2일 안에 처리 시작됩니다. 처리 완료 및 PG 반영 시점은 보장되지 않습니다.'\n- FAQ: (a) 환불은 언제 시작되나요? → 영업일 2일 내 처리 시작, 완료·PG 반영 미보장. (b) 즉시 환불되나요? → 아니요, 확정 정책상 즉시 자동 환불은 제공되지 않습니다. (c) 문의가 많으면? → 접수 순 및 우선순위 규칙에 따라 처리.\n- 상담 분류: 환불 / 결제 / 기능 / 기타. 우선순위: 결제·환불 오류 > 기능 > 기타, 동순위는 접수 순.\n\n[4] 인력 대안(충원 미승인 전제)\n- 대기열 운영: 접수 순, 정책 SLA(영업일 2일 내 처리 시작) 준수.\n- 우선순위: 결제·환불 오류 우선.\n- 고객 안내 대안: 예상 응답 시간 안내, 셀프서비스 안내.\n- 승인 필요 항목: 추가 4명 충원(미승인) — 미확인으로 표기.\n\n[5] 비상 계획(트리거·담당·완화)\n- 광고 문구 마감 지연: 트리거 목요일 15시 미제출 → 담당 광고/운영, 완화: sot 기준 임시 문구 사용, 승인 후 게시.\n- 기술 배포 승인 지연: 트리거 목요일 18시까지 미승인 → 담당 제품/기술, 완화: 출시 보류 또는 제한 기능 출시 검토(정책 결정 아님, 승인 필요).\n- 문의 급증(20% 초과): 트리거 실측 문의 > 160건 → 담당 운영, 완화: 우선순위 강화, 셀프서비스 확대, 충원 승인 요청.\n\n[6] 운영 일정표(담당·기한·선행조건)\n- 목 14:00 제품팀 사양 전달 → sot 반영(운영)\n- 목 15:00 광고 문구 마감(광고) ← sot 승인\n- 목 17:00 상담 교육(상담) ← sot 승인\n- 목 18:00 랜딩 수정 마감(랜딩) ← sot 승인\n- 금 10:00 출시(전체) ← 기술 배포 승인·결제 검증(미제공)\n\n[7] 확정/미확인 사항표\n- 확정: 정책 SLA, 마감 시각, 용량 가정.\n- 미확인: 기술 배포 승인, 결제 검증 결과, 충원 승인.\n\n[8] 출시 직전 확인표\n- sot 버전 일치, 광고/상담/랜딩 승인 완료, 기술 배포 승인, 결제 검증, 상담 인력 배치, 비상 계획 준비.\n\n[9] 모순·미확인 명시\n- 모순: 광고 초안 '즉시 자동 환불' vs 확정 정책.\n- 미확인: 기술 배포 승인·결제 검증 결과 미제공, 충원 미승인.\n- 실제 구현/테스트 수행 없음, 설계 제안만 제공.",
+    "facts": {
+      "expected_contacts": 160,
+      "four_hour_capacity": 80,
+      "backlog_without_hiring": 80,
+      "required_total_agents": 8,
+      "additional_agents": 4,
+      "support_window_hours": 4,
+      "launch_hour": 10,
+      "immediate_refund_promised": false
+    },
+    "evidence": [
+      "expected_contacts = 800 × 0.20 = 160건 (제공 가정: 초대 800명, 첫 4시간 문의율 20%)",
+      "four_hour_capacity = 4명 × 5건/시간 × 4시간 = 80건 (제공 가정: 상담원 4명, 시간당 5건)",
+      "backlog_without_hiring = 160 − 80 = 80건",
+      "required_total_agents = 160 ÷ (5×4) = 8명",
+      "additional_agents = 8 − 4 = 4명",
+      "support_window_hours = 4, launch_hour = 10 (제공 자료: 첫 4시간, 금요일 10시 출시)",
+      "immediate_refund_promised = false (광고 초안 '즉시 자동 환불'은 확정 정책 '영업일 2일 내 처리 시작'과 불일치)",
+      "확정 정책: '상담 접수 후 영업일 2일 안에 처리 시작', 처리 완료·PG 반영 미보장 (제공 자료)",
+      "마감: 광고 목 15시, 상담 교육 목 17시, 랜딩 목 18시, 제품팀 사양 목 14시 (제공 자료)",
+      "미확인: 기술 배포 승인, 결제 검증 결과, 충원 승인 (제공 자료에 없음)"
+    ]
+  },
+  "error": ""
+}

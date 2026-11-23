@@ -1,0 +1,432 @@
+{
+  "passed": true,
+  "checks": {
+    "fresh_processes": true,
+    "same_followup_case": true,
+    "same_followup_config": true,
+    "same_followup_code": true,
+    "same_requester": true,
+    "seed_memory_persisted": true,
+    "warm_recalled_prior_ids": true,
+    "cross_worker_memory_delivered": true,
+    "warm_all_acceptance_checks": true,
+    "disabled_all_acceptance_checks": true,
+    "disabled_received_no_memory": true,
+    "disabled_wrote_no_memory": true,
+    "no_private_answer_in_disabled_requests": true,
+    "all_dependency_and_resource_traces_valid": true
+  },
+  "runs": {
+    "seed": {
+      "id": "20260917T025324-01-investigate-9e7320",
+      "status": "succeeded",
+      "acceptance_passed": false,
+      "failed_acceptance_checks": [
+        "both_products_sourced"
+      ],
+      "calls": 20,
+      "reported_search_requests": 4,
+      "verified_cited_urls": 6,
+      "memory_before": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "memory_written": {
+        "A": 3,
+        "B": 1,
+        "C": 0
+      },
+      "peak_execution_calls": 2,
+      "process_id": 65665
+    },
+    "warm": {
+      "id": "20260917T030409-02-revise-0372e5",
+      "status": "succeeded",
+      "acceptance_passed": true,
+      "failed_acceptance_checks": [],
+      "calls": 20,
+      "reported_search_requests": 2,
+      "verified_cited_urls": 12,
+      "memory_before": {
+        "A": 3,
+        "B": 1,
+        "C": 0
+      },
+      "memory_written": {
+        "A": 3,
+        "B": 1,
+        "C": 0
+      },
+      "peak_execution_calls": 2,
+      "process_id": 75955
+    },
+    "disabled": {
+      "id": "20260917T030408-02-revise-no-memory-1b59c5",
+      "status": "succeeded",
+      "acceptance_passed": true,
+      "failed_acceptance_checks": [],
+      "calls": 20,
+      "reported_search_requests": 2,
+      "verified_cited_urls": 10,
+      "memory_before": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "memory_written": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "peak_execution_calls": 2,
+      "process_id": 75925
+    }
+  },
+  "cross_worker_transfers": [
+    {
+      "from": "A",
+      "to": "B",
+      "memory_id": "mem-228e3524f75d90b1"
+    },
+    {
+      "from": "A",
+      "to": "B",
+      "memory_id": "mem-4a1df38327a7d1de"
+    },
+    {
+      "from": "A",
+      "to": "B",
+      "memory_id": "mem-65823fff470a3d74"
+    },
+    {
+      "from": "A",
+      "to": "C",
+      "memory_id": "mem-228e3524f75d90b1"
+    },
+    {
+      "from": "A",
+      "to": "C",
+      "memory_id": "mem-4a1df38327a7d1de"
+    },
+    {
+      "from": "A",
+      "to": "C",
+      "memory_id": "mem-65823fff470a3d74"
+    }
+  ],
+  "trace_audits": {
+    "seed": {
+      "passed": true,
+      "errors": [],
+      "mode": "research-live",
+      "peak_calls": 3,
+      "peak_execution_calls": 2,
+      "calls_by_phase": {
+        "propose": 12,
+        "review": 4,
+        "execute": 3,
+        "synthesize": 1
+      },
+      "task_statuses": {
+        "rag-investigate/backup_ops_research": "succeeded",
+        "rag-investigate/index_tenant_research": "succeeded",
+        "rag-investigate/decision_synthesis": "succeeded",
+        "rag-investigate": "succeeded"
+      },
+      "awards": {
+        "rag-investigate": {
+          "requester": "A",
+          "worker": "A",
+          "mode": "delegate",
+          "dependencies": {
+            "index_tenant_research": [],
+            "backup_ops_research": [],
+            "decision_synthesis": [
+              "index_tenant_research",
+              "backup_ops_research"
+            ]
+          }
+        },
+        "rag-investigate/backup_ops_research": {
+          "requester": "A",
+          "worker": "A",
+          "mode": "execute",
+          "dependencies": {}
+        },
+        "rag-investigate/index_tenant_research": {
+          "requester": "A",
+          "worker": "B",
+          "mode": "execute",
+          "dependencies": {}
+        },
+        "rag-investigate/decision_synthesis": {
+          "requester": "A",
+          "worker": "A",
+          "mode": "execute",
+          "dependencies": {}
+        }
+      },
+      "providers": {
+        "Together": 2,
+        "Fireworks": 2,
+        "Relace": 2,
+        "BaseTen": 1,
+        "GMICloud": 4,
+        "Makora": 1,
+        "Modal": 2,
+        "OpenAI": 3,
+        "Novita": 1,
+        "Reka": 1,
+        "DeepInfra": 1
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "evaluation": {
+        "passed": false,
+        "checks": {
+          "root_succeeded": true,
+          "required_string_facts": true,
+          "decision_id": true,
+          "backup_owner": true,
+          "no_invented_latency": true,
+          "report_length": true,
+          "comparison_table": true,
+          "two_independent_then_join": true,
+          "verified_url_count": true,
+          "fresh_search_cited": true,
+          "search_tool_used": true,
+          "no_unretrieved_evidence_urls": true,
+          "both_products_sourced": false,
+          "memory_refs_delivered": true
+        },
+        "cited_verified_urls": [
+          "https://github.com/pgvector/pgvector",
+          "https://github.com/pgvector/pgvector/blob/master/src/hnsw.h",
+          "https://github.com/pgvector/pgvector/blob/master/src/ivfflat.h",
+          "https://www.postgresql.org/docs/18/app-pgrestore.html",
+          "https://www.postgresql.org/docs/current/backup.html",
+          "https://www.postgresql.org/docs/current/continuous-archiving.html"
+        ],
+        "unretrieved_urls": [],
+        "memory_refs": [],
+        "limits": "Checks trace source retrieval and known scenario facts, not claim entailment, measured performance or statistical reproducibility."
+      }
+    },
+    "warm": {
+      "passed": true,
+      "errors": [],
+      "mode": "research-live",
+      "peak_calls": 3,
+      "peak_execution_calls": 2,
+      "calls_by_phase": {
+        "propose": 12,
+        "review": 4,
+        "execute": 3,
+        "synthesize": 1
+      },
+      "task_statuses": {
+        "rag-revise/tenant_filter_quality_plan": "succeeded",
+        "rag-revise/closed_net_backup_research": "succeeded",
+        "rag-revise/revised_adr_checklist": "succeeded",
+        "rag-revise": "succeeded"
+      },
+      "awards": {
+        "rag-revise": {
+          "requester": "A",
+          "worker": "A",
+          "mode": "delegate",
+          "dependencies": {
+            "closed_net_backup_research": [],
+            "tenant_filter_quality_plan": [],
+            "revised_adr_checklist": [
+              "closed_net_backup_research",
+              "tenant_filter_quality_plan"
+            ]
+          }
+        },
+        "rag-revise/closed_net_backup_research": {
+          "requester": "A",
+          "worker": "B",
+          "mode": "execute",
+          "dependencies": {}
+        },
+        "rag-revise/tenant_filter_quality_plan": {
+          "requester": "A",
+          "worker": "A",
+          "mode": "execute",
+          "dependencies": {}
+        },
+        "rag-revise/revised_adr_checklist": {
+          "requester": "A",
+          "worker": "A",
+          "mode": "execute",
+          "dependencies": {}
+        }
+      },
+      "providers": {
+        "GMICloud": 2,
+        "Fireworks": 1,
+        "Reka": 1,
+        "Novita": 3,
+        "SiliconFlow": 1,
+        "Modal": 3,
+        "Makora": 1,
+        "Parasail": 2,
+        "Together": 1,
+        "Morph": 2,
+        "OpenAI": 3
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "evaluation": {
+        "passed": true,
+        "checks": {
+          "root_succeeded": true,
+          "required_string_facts": true,
+          "decision_id": true,
+          "backup_owner": true,
+          "no_invented_latency": true,
+          "report_length": true,
+          "comparison_table": true,
+          "two_independent_then_join": true,
+          "verified_url_count": true,
+          "fresh_search_cited": true,
+          "search_tool_used": true,
+          "no_unretrieved_evidence_urls": true,
+          "both_products_sourced": true,
+          "memory_refs_delivered": true,
+          "new_constraint": true,
+          "memory_used_or_explicitly_absent": true
+        },
+        "cited_verified_urls": [
+          "https://api.qdrant.tech/api-reference/snapshots/recover-from-snapshot.mdx",
+          "https://github.com/pgvector/pgvector",
+          "https://github.com/pgvector/pgvector/blob/master/src/hnsw.h",
+          "https://github.com/pgvector/pgvector/blob/master/src/ivfflat.h",
+          "https://qdrant.tech/documentation/concepts/filtering",
+          "https://qdrant.tech/documentation/concepts/indexing",
+          "https://qdrant.tech/documentation/manage-data/indexing",
+          "https://qdrant.tech/documentation/manage-data/multitenancy",
+          "https://qdrant.tech/documentation/snapshots",
+          "https://www.postgresql.org/docs/18/app-pgrestore.html",
+          "https://www.postgresql.org/docs/current/backup.html",
+          "https://www.postgresql.org/docs/current/continuous-archiving.html"
+        ],
+        "unretrieved_urls": [],
+        "memory_refs": [
+          "mem-228e3524f75d90b1",
+          "mem-32d20f79baea194f",
+          "mem-4a1df38327a7d1de",
+          "mem-65823fff470a3d74"
+        ],
+        "limits": "Checks trace source retrieval and known scenario facts, not claim entailment, measured performance or statistical reproducibility."
+      }
+    },
+    "disabled": {
+      "passed": true,
+      "errors": [],
+      "mode": "research-live",
+      "peak_calls": 3,
+      "peak_execution_calls": 2,
+      "calls_by_phase": {
+        "propose": 12,
+        "review": 4,
+        "execute": 3,
+        "synthesize": 1
+      },
+      "task_statuses": {
+        "rag-revise/tenant_quality": "succeeded",
+        "rag-revise/closed_net_backup": "succeeded",
+        "rag-revise/adr_checklist": "succeeded",
+        "rag-revise": "succeeded"
+      },
+      "awards": {
+        "rag-revise": {
+          "requester": "A",
+          "worker": "A",
+          "mode": "delegate",
+          "dependencies": {
+            "closed_net_backup": [],
+            "tenant_quality": [],
+            "adr_checklist": [
+              "closed_net_backup",
+              "tenant_quality"
+            ]
+          }
+        },
+        "rag-revise/closed_net_backup": {
+          "requester": "A",
+          "worker": "B",
+          "mode": "execute",
+          "dependencies": {}
+        },
+        "rag-revise/tenant_quality": {
+          "requester": "A",
+          "worker": "C",
+          "mode": "execute",
+          "dependencies": {}
+        },
+        "rag-revise/adr_checklist": {
+          "requester": "A",
+          "worker": "B",
+          "mode": "execute",
+          "dependencies": {}
+        }
+      },
+      "providers": {
+        "GMICloud": 2,
+        "Morph": 2,
+        "Together": 4,
+        "SiliconFlow": 2,
+        "Alibaba": 3,
+        "Modal": 2,
+        "OpenAI": 3,
+        "Makora": 1,
+        "Parasail": 1
+      },
+      "models": {
+        "deepseek/deepseek-v4.1-flash": 20
+      },
+      "evaluation": {
+        "passed": true,
+        "checks": {
+          "root_succeeded": true,
+          "required_string_facts": true,
+          "decision_id": true,
+          "backup_owner": true,
+          "no_invented_latency": true,
+          "report_length": true,
+          "comparison_table": true,
+          "two_independent_then_join": true,
+          "verified_url_count": true,
+          "fresh_search_cited": true,
+          "search_tool_used": true,
+          "no_unretrieved_evidence_urls": true,
+          "both_products_sourced": true,
+          "memory_refs_delivered": true,
+          "new_constraint": true,
+          "memory_used_or_explicitly_absent": true
+        },
+        "cited_verified_urls": [
+          "https://github.com/pgvector/pgvector",
+          "https://github.com/pgvector/pgvector/blob/master/README.md",
+          "https://qdrant.tech/documentation/concepts/snapshots",
+          "https://qdrant.tech/documentation/guides/installation",
+          "https://qdrant.tech/documentation/improve-search/retrieval-relevance",
+          "https://qdrant.tech/documentation/manage-data/payload",
+          "https://qdrant.tech/documentation/search/filtering",
+          "https://www.postgresql.org/docs/current/app-pgbasebackup.html",
+          "https://www.postgresql.org/docs/current/app-pgdump.html",
+          "https://www.postgresql.org/docs/current/continuous-archiving.html"
+        ],
+        "unretrieved_urls": [],
+        "memory_refs": [],
+        "limits": "Checks trace source retrieval and known scenario facts, not claim entailment, measured performance or statistical reproducibility."
+      }
+    }
+  },
+  "limits": "One matched follow-up pair is a functional memory test, not a reliability or latency benchmark. Seed limitations are preserved."
+}

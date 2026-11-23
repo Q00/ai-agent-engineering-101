@@ -1,0 +1,97 @@
+{
+  "batch_id": "20260921T051850-f6cc75",
+  "git_commit": "3f0ce0f0f3edfa3dfec3a438535e448281d92554",
+  "source_hashes": {
+    "submissions/26622007/week-03/contract_net.py": "37e4c9bf6f81fa2bb649c64de368906c6e93dfad8b4a3e15d1589e53833e9a34",
+    "submissions/26622007/week-03/extensions/peer_dag/audit.py": "4ee3128fb6adbc32bce7ffba0b9fe403994d95aae99966dca4f969e99fab16a2",
+    "submissions/26622007/week-03/extensions/peer_dag/case.json": "9a736726ad4c473c9b3e7bf41aa64708f7db99a094c3cfb155f8605d69050050",
+    "submissions/26622007/week-03/extensions/peer_dag/cli.py": "7a0ae96faf40f395dc8cb63e624cf3dc1b2f7fbb60b774ebb66eb2a8b6204078",
+    "submissions/26622007/week-03/extensions/peer_dag/condition_study.py": "99873a163584bf923cdeba459844c78a866a9b3b332ec9895fc32f3966edf5b6",
+    "submissions/26622007/week-03/extensions/peer_dag/conditions/PROTOCOL.md": "fff5a16afe5b88615de999d0fa042ca19fc8f297f35279550c3aa73e8e1cc67d",
+    "submissions/26622007/week-03/extensions/peer_dag/config.json": "59a52eb3e7b19a654e988bbb3e4f1df36f88cadda1a43ea6f4ce07a78463ca4d",
+    "submissions/26622007/week-03/extensions/peer_dag/core.py": "482cc5192c1458b1848113fe33d75fae8dc5738be7d78cc3bb1e50a54f5e70b5",
+    "submissions/26622007/week-03/extensions/peer_dag/expected.json": "46b1f137c64a2732e28fba70608f5844a8e27a9e662cf1bc2317d4b2c4459e29",
+    "submissions/26622007/week-03/extensions/peer_dag/fixtures.py": "06928c693f9a16b24d82486a5d7dbba70846fce973349d07ca5e3ac0f19ad692",
+    "submissions/26622007/week-03/extensions/peer_dag/models.py": "f631bee2650c6202a202d74520863ecc930a9f5c02659836953a02a1a173b355",
+    "submissions/26622007/week-03/extensions/peer_dag/test_condition_study.py": "58ac8e2dd9287ba9ea177e9a0aafb78b683dd7dab1ed46c6f765a9e388c65f7a",
+    "submissions/26622007/week-03/extensions/peer_dag/test_conditions.py": "c33fd4a629a335ef3feefbe3bdeceff75add21fc41d39481a803fd9eebae557c",
+    "submissions/26622007/week-03/extensions/peer_dag/test_peer_dag.py": "a12d1e4872b7a3dec82b36a947513f146bf10d2f830276d641b12153e1e1c459",
+    "submissions/26622007/week-03/openrouter_client.py": "3f62bec2254dd6f1ad3af599705af6a9d1bebb85505bddc296168d74361d7acb"
+  },
+  "config": {
+    "max_depth": 5,
+    "max_tasks": 12,
+    "max_steps": 4,
+    "max_calls": 64,
+    "max_parallel": 3,
+    "transport": {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "temperature": 0,
+      "max_tokens": 2200,
+      "reasoning": {
+        "enabled": false
+      },
+      "provider": {
+        "allow_fallbacks": true,
+        "require_parameters": true,
+        "max_price": {
+          "prompt": 0.3,
+          "completion": 1.2
+        }
+      },
+      "timeout_seconds": 30,
+      "max_attempts": 2,
+      "retry_delay_seconds": 2,
+      "max_http_requests": 2
+    }
+  },
+  "deadline_seconds": 600,
+  "parallel_runs_per_block": 3,
+  "schedule": [
+    {
+      "block": 1,
+      "condition": "baseline",
+      "run_id": "20260921T051850-f6cc75-1-baseline"
+    },
+    {
+      "block": 1,
+      "condition": "homogeneous",
+      "run_id": "20260921T051850-f6cc75-1-homogeneous"
+    },
+    {
+      "block": 1,
+      "condition": "overconfident",
+      "run_id": "20260921T051850-f6cc75-1-overconfident"
+    },
+    {
+      "block": 2,
+      "condition": "homogeneous",
+      "run_id": "20260921T051850-f6cc75-2-homogeneous"
+    },
+    {
+      "block": 2,
+      "condition": "overconfident",
+      "run_id": "20260921T051850-f6cc75-2-overconfident"
+    },
+    {
+      "block": 2,
+      "condition": "baseline",
+      "run_id": "20260921T051850-f6cc75-2-baseline"
+    },
+    {
+      "block": 3,
+      "condition": "overconfident",
+      "run_id": "20260921T051850-f6cc75-3-overconfident"
+    },
+    {
+      "block": 3,
+      "condition": "baseline",
+      "run_id": "20260921T051850-f6cc75-3-baseline"
+    },
+    {
+      "block": 3,
+      "condition": "homogeneous",
+      "run_id": "20260921T051850-f6cc75-3-homogeneous"
+    }
+  ]
+}

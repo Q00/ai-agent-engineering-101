@@ -1,0 +1,29 @@
+{
+  "status": "succeeded",
+  "worker": "A",
+  "artifact": {
+    "summary": "## pgvector vs Qdrant 백업·복구·운영 부담 조사 (backup_ops_research)\n\n가정: 100만×1536차원 벡터, 30 tenant, 일 1% 갱신, 기존 PostgreSQL 운영 인력 2명. 내부 결정 ID **ADR-RAG-7429**, 기존 PostgreSQL 백업 책임 **플랫폼팀**. 실제 latency/recall 벤치마크는 수행하지 않았으므로 성능 수치는 `not_measured`로 남긴다.\n\n### 1. pgvector 측 (PostgreSQL 백업 체계 재사용)\n\n| 항목 | 공식 문서 근거 요약 |\n|---|---|\n| PITR | PostgreSQL은 `pg_wal/`에 WAL을 유지하며, 파일시스템 백업 + WAL 아카이빙을 결합해 특정 시점으로 복구(PITR)할 수 있다. 문서는 이를 \"높은 신뢰성이 필요한 많은 상황에서 선호되는 백업 기법\"으로 설명한다. |\n| pg_dump/pg_restore | `pg_dump`/`pg_dumpall`은 논리 덤프이며 파일시스템 수준 백업이 아니고 WAL 리플레이에 쓸 수 없다. 즉 PITR 대체가 아니라 보조 수단이다. `pg_restore`는 비-plain 아카이브에서 선택적/재정렬 복원이 가능하지만 large object는 선택 복원이 불가하다. |\n| 복구 범위 | 연속 아카이빙 방식은 전체 클러스터 복원만 지원하고 부분집합 복원은 안 된다. 또한 base backup + WAL 아카이브 저장공간이 상당히 필요하다. |\n| 운영 부담(2명) | 백업 자동화·WAL 아카이빙·복구 리허설은 기존 플랫폼팀 PostgreSQL 운영 절차에 얹을 수 있어 신규 도구 학습이 적다. 다만 벡터 인덱스(HNSW/IVFFlat) 재구축 비용은 별도 검증이 필요하며, 이번 조사에서 측정하지 않았다. |\n\n### 2. Qdrant 측 (스냅샷/관리형)\n\n이번 실행에서 Qdrant 공식 문서 검색이 검색 한도(1회)로 수행되지 못했다. 따라서 Qdrant의 스냅샷 생성/복구, 분산 배포 일관성, Qdrant Cloud 관리형 백업 옵션, 자체 운영 부담에 대한 **공식 URL 근거를 확보하지 못했고**, 해당 항목은 `unresolved`로 남긴다. Qdrant 관련 서술은 이번 산출물에서 사실 주장으로 채택하지 않는다(비용 수치도 창작하지 않음).\n\n### 3. 정성 비교(확보된 근거 범위)\n\n- **pgvector**: 기존 PostgreSQL 백업/PITR 체계와 플랫폼팀 책임을 그대로 상속 → 2명 인력 기준 운영 부담이 상대적으로 낮고 복구 절차가 기존 런북과 일관. 단, 전체 클러스터 단위 복원 제약과 WAL 저장공간 부담, 벡터 인덱스 재구축 시간 미검증이 위험.\n- **Qdrant**: 스냅샷/관리형 옵션의 운영 편의 가능성은 있으나 공식 근거 미확보로 판단 보류. 자체 운영 시 신규 백업·복구 런북과 장애 대응 절차를 2명이 추가로 떠안는 부담은 검증 필요.\n\n### 4. 테스트 계획\n1. 스테이징에서 pgvector PITR 복구 리허설(백업 시점 → 복구 완료 시간, WAL 저장량) 측정.\n2. HNSW/IVFFlat 인덱스 재구축 소요 시간과 복구 후 recall 영향 측정.\n3. Qdrant 공식 문서 재검색 후 스냅샷 복구 리허설 및 관리형 백업 옵션 확인.\n4. 30 tenant 필터 검색의 백업/복구 후 정합성 확인.\n\n### 5. 미해결 항목\n- Qdrant 스냅샷/복구/관리형 백업 공식 근거 미확보(검색 한도).\n- 벡터 인덱스 재구축 비용, PITR 복구 시간, 관리형 비용 수치 모두 미측정.\n- 최종 저장소 권고는 인덱스·필터 조사(별도 하위 작업)와 Qdrant 근거 보강 후 확정 필요.\n\n### 체크리스트\n- [x] pgvector/PostgreSQL 공식 백업 문서 근거 확보\n- [ ] Qdrant 공식 문서 근거 확보 (미완)\n- [x] backup_owner=플랫폼팀, internal_decision_id=ADR-RAG-7429 기록\n- [x] measured_latency=not_measured 명시\n- [x] 비용 수치 창작 금지 준수",
+    "facts": {
+      "backup_owner": "플랫폼팀",
+      "measured_latency": "not_measured",
+      "unresolved": "Qdrant 스냅샷/복구/관리형 백업 공식 근거 미확보(검색 한도 1회); 벡터 인덱스 재구축 비용·PITR 복구 시간·관리형 비용 수치 미측정; 최종 저장소 권고는 인덱스·필터 조사 및 Qdrant 근거 보강 후 확정",
+      "memory_refs": "none",
+      "internal_decision_id": "ADR-RAG-7429",
+      "pgvector_pitr_supported": "true",
+      "pg_dump_is_logical_not_pitr": "true",
+      "pitr_restore_scope": "전체 클러스터 단위(부분집합 복원 불가)",
+      "qdrant_official_evidence_obtained": "false",
+      "recommended_storage": "미확정(추가 조사 필요)",
+      "cost_figures_fabricated": "false"
+    },
+    "evidence": [
+      "https://www.postgresql.org/docs/current/continuous-archiving.html — PostgreSQL은 pg_wal/에 WAL을 유지하고 파일시스템 백업+WAL 아카이빙 결합으로 PITR 가능, 높은 신뢰성이 필요한 상황에서 선호되는 백업 기법이라고 설명.",
+      "https://www.postgresql.org/docs/current/continuous-archiving.html — pg_dump/pg_dumpall은 논리 덤프로 파일시스템 수준 백업이 아니며 WAL 리플레이에 사용할 수 없음. 연속 아카이빙은 전체 클러스터 복원만 지원하고 상당한 아카이브 저장공간이 필요.",
+      "https://www.postgresql.org/docs/current/backup.html — 백업 방식 분류: SQL dump, 파일시스템 수준 백업, 연속 아카이빙(PITR).",
+      "https://www.postgresql.org/docs/18/app-pgrestore.html — pg_restore는 pg_dump 비-plain 아카이브에서 선택적/재정렬 복원 가능하나 large object는 선택 복원 불가.",
+      "memory:none — personal_memory/handoff_memory가 비어 있어 과거 내부 결정·담당 팀 정보는 참고하지 않았고, source에 명시된 backup_owner=플랫폼팀, internal_decision_id=ADR-RAG-7429만 사용.",
+      "Qdrant 공식 문서 검색은 이번 실행에서 검색 한도(1회)로 수행되지 않아 공식 URL 근거를 확보하지 못했으며, 해당 항목은 unresolved로 표기(비용·성능 수치 창작 없음)."
+    ]
+  },
+  "error": ""
+}

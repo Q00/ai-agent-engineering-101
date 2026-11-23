@@ -1,0 +1,133 @@
+{
+  "case_id": "game-design-architecture",
+  "condition": "homogeneous",
+  "block": 1,
+  "run_id": "20260922T012131-no-token-limit-9703d2-r1-game-design-architecture-homogeneous",
+  "exit_code": 0,
+  "timed_out": false,
+  "wall_seconds": 29.6813,
+  "status": "succeeded",
+  "passed": true,
+  "checks_passed": 10,
+  "checks_total": 10,
+  "wrong_or_missing": [],
+  "calls": 5,
+  "http_requests": 5,
+  "http_responses": 5,
+  "http_429": 0,
+  "http_errors": {},
+  "retries": 0,
+  "transport_errors": 0,
+  "tasks": 1,
+  "max_depth": 0,
+  "awards": {
+    "A": 1
+  },
+  "root_award": "A",
+  "c_proposals": 1,
+  "c_high_bids": 0,
+  "proposal_rejections": [],
+  "task_failures": [],
+  "reported_cost_usd": 0.006459652,
+  "cost_missing_responses": 0,
+  "elapsed_seconds": 29.5074,
+  "canonical_facts": {
+    "board_height": 6.0,
+    "board_width": 6.0,
+    "coop_fits_budget": false,
+    "core_scope_hours": 160.0,
+    "developer_hours": 160.0,
+    "max_turns": 12.0,
+    "offline_required": true,
+    "qa_hours": 40.0,
+    "seeded_replay_required": true,
+    "with_coop_hours": 240.0
+  },
+  "artifact_sha": "9e3680999fd8298dcbb6d9bf4cf6cedb2ceaea8c6edb4ce9410cc4ef98de9ba4",
+  "root_plan_sha": "5c14694f31542c46681dddd838c88a00c3eee25014b96ae61358aa72b29029dd",
+  "award_sha": "97150bcfad177a63c0ffaf5157b26557ce426e64aed5334e4cd6b1c30fb19cf9",
+  "controls_sha": "cfd2ef459faf8ba173d8b03587b5b88883caeb14eee172ec0e868a281ecee942",
+  "root_plan": {
+    "mode": "execute",
+    "actions": [
+      "제공 자료에서 확정 수치를 추출해 예산을 계산한다: 개발자 2명×20h×4주=160h, QA 1명×10h×4주=40h, 총 200h. 기본 범위 합계=24+24+32+24+20+24+12=160h. 협동 포함=160+80=240h. 기본 범위는 개발 160h에 정확히 맞고 QA 40h는 별도이므로 총 200h 내 충족. 협동 포함은 240h>200h로 예산 초과이며 병렬화해도 인적 시간은 줄지 않음.",
+      "게임 기획서를 작성한다: 6×6 보드, 최대 12턴, 탐험→전투→보상→탈출 루프, 승리(탈출)/패배(체력 0 또는 12턴 초과), 난이도 3단계, 전투 규칙(공격/방어/회피, 턴 소모), 보상 선택(3택1), 튜토리얼 3단계, 접근성(키보드 전용, 색맹 대비, 텍스트 크기, 스크린리더 라벨)을 규칙과 재미 가설로 연결한다.",
+      "아키텍처를 설계한다: src/domain(순수 규칙), src/app(오케스트레이션), src/infra(Rng/SaveCodec/Clock 구현), src/render(Canvas), src/ui(입력·접근성), tests/ 구조. 의존 방향은 render/ui→app→domain, infra는 domain 인터페이스 구현으로 역전.",
+      "TypeScript 시그니처 초안을 작성한다: GameState, Command(이동/공격/보상선택/대기), Event, Rng(next():number, fork(label):Rng), SaveCodec(encode/decode, schemaVersion), Clock(now():number). 턴 처리 의사코드는 입력→Command 검증→도메인 리듀서→Event 생성→상태 커밋→렌더 순으로 기술한다.",
+      "규칙→모듈→테스트 대응표를 만든다: 이동/턴→domain/turn.ts→turn.spec, seed 맵→domain/map.ts→map.determinism.spec, 전투→domain/combat.ts→combat.spec, 저장/복원→infra/saveCodec.ts→save.roundtrip.spec, 화면→render/→render.smoke.spec, 접근성→ui/a11y.ts→a11y.spec.",
+      "저장 스키마와 재현 테스트를 정의한다: schemaVersion=1, seed+commandLog+stateHash 저장, 동일 seed·동일 명령 시퀀스 재실행 시 stateHash 일치, 저장→로드→재개 시 동일 결과. 수용 기준을 명시한다.",
+      "일정표를 작성한다: 4주×2개발자, 주별 마일스톤(1주 도메인+맵, 2주 전투+턴, 3주 저장+화면, 4주 접근성+통합+QA), QA는 2주차부터 병행. 제외 범위(서버·로그인·결제·온라인 협동)를 명시한다.",
+      "통합 대조를 수행한다: 기획 규칙 각 항목이 모듈과 테스트에 매핑되는지 확인하고, 모순·미확인 사항(예: 12턴 초과 시 패배 처리와 보상 타이밍, 협동 예산 초과로 기본 범위 확정 필요)을 evidence에 기록한다. summary/evidence 문자열에 문서·표·코드 조각을 넣고 facts에는 숫자·boolean만 넣는다."
+    ],
+    "steps": []
+  },
+  "intervals": [
+    {
+      "task_id": "game-design-architecture",
+      "worker": "A",
+      "start": "2026-09-22T01:26:08.360277+00:00",
+      "end": "2026-09-22T01:26:21.159539+00:00"
+    }
+  ],
+  "overlaps": [],
+  "trace": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "concurrency_policy": "task-worker-isolated-v1",
+    "peak_calls": 3,
+    "peak_execution_calls": 1,
+    "peak_calls_by_worker": {
+      "A": 1,
+      "B": 1,
+      "C": 1
+    },
+    "peak_execution_calls_by_worker": {
+      "A": 1,
+      "B": 0,
+      "C": 0
+    },
+    "calls_by_phase": {
+      "propose": 3,
+      "review": 1,
+      "execute": 1
+    },
+    "task_statuses": {
+      "game-design-architecture": "succeeded"
+    },
+    "awards": {
+      "game-design-architecture": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 5
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 5
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "board_width": true,
+        "board_height": true,
+        "max_turns": true,
+        "developer_hours": true,
+        "qa_hours": true,
+        "core_scope_hours": true,
+        "with_coop_hours": true,
+        "coop_fits_budget": true,
+        "seeded_replay_required": true,
+        "offline_required": true
+      }
+    }
+  },
+  "request_checks_passed": true,
+  "response_checks_passed": true,
+  "verification_errors": [],
+  "error": "",
+  "recorded_case_condition_match": true
+}

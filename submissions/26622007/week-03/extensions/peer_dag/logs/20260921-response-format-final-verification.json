@@ -1,0 +1,169 @@
+{
+  "observed_at": "2026-09-21T07:18:57.257795+00:00",
+  "live_source_commit": "964a2195b7748f244223112ee138726fa5765d8d",
+  "peer_dag": {
+    "requests": 20,
+    "responses_validated": 20,
+    "phases": {
+      "propose": 12,
+      "review": 4,
+      "execute": 3,
+      "synthesize": 1
+    },
+    "providers": {
+      "Fireworks": 20
+    },
+    "errors": [],
+    "passed": true
+  },
+  "base_smoke": {
+    "requests": 3,
+    "responses_validated": 3,
+    "phases": {
+      "bid": 3
+    },
+    "providers": {
+      "Fireworks": 3
+    },
+    "errors": [],
+    "passed": true
+  },
+  "trace_audit": {
+    "passed": true,
+    "errors": [],
+    "mode": "live",
+    "peak_calls": 3,
+    "peak_execution_calls": 1,
+    "calls_by_phase": {
+      "propose": 12,
+      "review": 4,
+      "execute": 3,
+      "synthesize": 1
+    },
+    "task_statuses": {
+      "release-review/profitability_review": "succeeded",
+      "release-review/tech_risk_review": "succeeded",
+      "release-review/release_recommendation": "succeeded",
+      "release-review": "succeeded"
+    },
+    "awards": {
+      "release-review": {
+        "requester": "A",
+        "worker": "A",
+        "mode": "delegate",
+        "dependencies": {
+          "profitability_review": [],
+          "tech_risk_review": [],
+          "release_recommendation": [
+            "profitability_review",
+            "tech_risk_review"
+          ]
+        }
+      },
+      "release-review/profitability_review": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "release-review/tech_risk_review": {
+        "requester": "A",
+        "worker": "C",
+        "mode": "execute",
+        "dependencies": {}
+      },
+      "release-review/release_recommendation": {
+        "requester": "A",
+        "worker": "B",
+        "mode": "execute",
+        "dependencies": {}
+      }
+    },
+    "providers": {
+      "Fireworks": 20
+    },
+    "models": {
+      "deepseek/deepseek-v4.1-flash": 20
+    },
+    "evaluation": {
+      "passed": true,
+      "checks": {
+        "p_margin": true,
+        "q_margin": true,
+        "p_profit": true,
+        "q_profit": true,
+        "p_break_even": true,
+        "q_break_even": true,
+        "p_low_profit": true,
+        "q_low_profit": true,
+        "p_high_profit": true,
+        "q_high_profit": true,
+        "migration_before_app": true,
+        "can_release": true
+      }
+    }
+  },
+  "evaluation": {
+    "passed": true,
+    "checks": {
+      "p_margin": true,
+      "q_margin": true,
+      "p_profit": true,
+      "q_profit": true,
+      "p_break_even": true,
+      "q_break_even": true,
+      "p_low_profit": true,
+      "q_low_profit": true,
+      "p_high_profit": true,
+      "q_high_profit": true,
+      "migration_before_app": true,
+      "can_release": true
+    }
+  },
+  "replays": [
+    {
+      "parallel": 1,
+      "exit_code": 0,
+      "evaluation": {
+        "passed": true,
+        "checks": {
+          "p_margin": true,
+          "q_margin": true,
+          "p_profit": true,
+          "q_profit": true,
+          "p_break_even": true,
+          "q_break_even": true,
+          "p_low_profit": true,
+          "q_low_profit": true,
+          "p_high_profit": true,
+          "q_high_profit": true,
+          "migration_before_app": true,
+          "can_release": true
+        }
+      },
+      "replay_complete": true
+    },
+    {
+      "parallel": 3,
+      "exit_code": 0,
+      "evaluation": {
+        "passed": true,
+        "checks": {
+          "p_margin": true,
+          "q_margin": true,
+          "p_profit": true,
+          "q_profit": true,
+          "p_break_even": true,
+          "q_break_even": true,
+          "p_low_profit": true,
+          "q_low_profit": true,
+          "p_high_profit": true,
+          "q_high_profit": true,
+          "migration_before_app": true,
+          "can_release": true
+        }
+      },
+      "replay_complete": true
+    }
+  ]
+}

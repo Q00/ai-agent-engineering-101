@@ -1,0 +1,80 @@
+# game-design-architecture / homogeneous / 2회
+
+상태: succeeded. 필수 facts: 10/10.
+모델 원본의 열람용 사본이다. 실제 구현/실행 검증을 뜻하지 않는다.
+
+## game-design-architecture.json
+
+Worker: A; 상태: succeeded
+[원본 JSON](../../../runs/20260921T113158-suite-ab4e67-r2-game-design-architecture-homogeneous/artifacts/game-design-architecture.json)
+
+'유적의 열두 밤' 개발 착수 자료(설계 제안, 실제 구현/테스트 미수행).
+
+[1] 게임 기획서(규칙↔재미 가설)
+- 핵심 루프: 탐험→전투→보상→탈출. 6×6 보드, 최대 12턴. 각 턴=플레이어 1행동(이동/공격/대기/아이템)+적 1행동.
+- 턴 예산: 12턴 내 탈출구 도달 필요. 탐험 4~6턴, 전투 3~5턴, 보상 1~2턴, 탈출 1~2턴으로 배분. 가설: '짧은 런+명확한 탈출 목표'가 반복 플레이 동기를 높인다.
+- 승리: 탈출 타일에 도달. 패배: 체력 0 또는 12턴 초과(턴 소진).
+- 난이도 곡선: 턴 1~4 적 1체(HP 3), 5~8 적 2체(HP 4), 9~12 적 2~3체(HP 5)+보상 감소. 가설: 후반 압박이 탈출 결단을 유도.
+- 전투: 턴제 명령 기반. 공격=공격력-방어력(최소1), 이동=인접 1칸, 대기=턴 소모. 가설: 단순 수치 교환이 12턴 내 판단 부담을 낮춘다.
+- 보상: 전투 승리 시 3택1(공격+1/최대HP+2/턴+1). 가설: 빌드 선택이 런마다 변주를 만든다.
+- 튜토리얼: 1턴 이동, 2턴 공격, 3턴 보상 선택을 강제 시나리오로 안내.
+- 접근성: 키보드 전용 조작(방향키+Enter/Esc), 색맹 대비(형태+명도 이중 부호화), 텍스트 스케일 3단계, 애니메이션 감소 옵션.
+
+[2] 아키텍처(디렉터리/의존 방향)
+src/domain(규칙, render 미의존) ← src/app(턴 오케스트레이션) ← src/render(Canvas) / src/persistence(저장) / src/rng(주입 RNG) / tests.
+의존 방향: render→app→domain, persistence→domain, rng는 domain에 주입. domain은 render/clock을 모른다.
+
+[3] 타입/시그니처(짧은 조각)
+type Pos={x:number;y:number}; type GameState={seed:number;turn:number;board:{w:6;h:6};player:{pos:Pos;hp:number;atk:number};enemies:{pos:Pos;hp:number}[];exit:Pos;phase:'explore'|'combat'|'reward'|'won'|'lost';rngState:number};
+type Command={t:'move';dir:'N'|'S'|'E'|'W'}|{t:'attack';targetId:number}|{t:'wait'}|{t:'pickReward';idx:0|1|2};
+type Event={t:'moved';to:Pos}|{t:'damaged';who:'player'|'enemy';amount:number}|{t:'rewardOffered';options:number[]}|{t:'ended';result:'won'|'lost'};
+interface Rng{nextInt(maxExclusive:number):number;getState():number;setState(s:number):void;}
+interface Clock{now():number;}
+interface SaveCodec{encode(s:GameState):string;decode(raw:string):GameState;version:'v1';}
+턴 처리 의사코드: applyCommand(state,cmd,rng): {state',events} → validate(cmd) → resolvePlayer(cmd) → if enemy alive resolveEnemy(rng) → turn++ → checkEnd(탈출/HP0/turn>12) → return.
+
+[4] 규칙→모듈→테스트 대응
+이동/턴→domain/turn.ts→tests/turn.spec(턴 증가, 12턴 초과 패배). seed 맵→domain/map.ts+rng→tests/map.spec(동일 seed 동일 맵). 전투→domain/combat.ts→tests/combat.spec(최소1 데미지). 저장/복원→persistence/codec.ts→tests/save.spec(encode→decode 동일 상태). 화면→render/canvas.ts→tests/render.smoke(미검증, 설계만). 자동 테스트→tests/*. 접근성→render/a11y.ts→tests/a11y.spec(키보드 전용 포커스).
+
+[5] 저장 스키마 v1/재현/수용 기준
+스키마 v1: {version:'v1',seed,turn,board,player,enemies,exit,phase,rngState}. 재현 테스트: 같은 seed+같은 Command 시퀀스→동일 Event 시퀀스; 저장→복원 후 이어서 같은 Command→동일 결과. 수용 기준: (a) 12턴 내 승/패 판정, (b) 동일 seed 재현, (c) 저장/복원 재현, (d) 키보드만으로 전 조작, (e) 색맹 대비 이중 부호화.
+
+[6] 일정/제외 범위
+개발 2명×20h×4주=160h, QA 1명×10h×4주=40h. 기본 범위 합계=24+24+32+24+20+24+12=160h로 개발 예산과 정확히 일치(버퍼 0). QA 40h는 자동 테스트 24h+접근성 12h=36h 배정, 4h 여유. 협동 포함=160+80=240h>160h로 초과. 제외: 서버·로그인·결제·온라인 협동.
+
+[모순/미확인] 기본 범위 버퍼 0(리스크), QA 40h로 자동테스트+접근성 빠듯, 협동은 예산 초과로 기본 제외. 실제 구현/테스트는 미수행(설계 제안 단계).
+
+### Facts
+
+```json
+{
+  "board_width": 6,
+  "board_height": 6,
+  "max_turns": 12,
+  "developer_hours": 160,
+  "qa_hours": 40,
+  "core_scope_hours": 160,
+  "with_coop_hours": 240,
+  "coop_fits_budget": false,
+  "seeded_replay_required": true,
+  "offline_required": true
+}
+```
+
+### Evidence
+
+**1.** 개발 예산: 2명×20h×4주=160h. QA 예산: 1명×10h×4주=40h.
+
+**2.** 기본 범위 합계: 24(이동/턴)+24(seed 맵)+32(전투)+24(저장/복원)+20(화면)+24(자동 테스트)+12(접근성)=160h.
+
+**3.** 협동 포함: 160+80=240h. 240>160이므로 coop_fits_budget=false.
+
+**4.** 기본 범위 160h=개발 예산 160h로 여유 0. QA 40h 중 자동 테스트 24h+접근성 12h=36h 배정, 4h 여유.
+
+**5.** 보드 6×6, 최대 12턴은 source goal의 확정 수치.
+
+**6.** seed 기반 결정론과 저장/복원 재현은 source goal 요구사항.
+
+**7.** 오프라인 동작은 source goal의 '브라우저에서 오프라인으로 동작' 요구사항.
+
+**8.** 실제 코드 실행/게임 구현/테스트는 수행하지 않음(설계 제안 단계).

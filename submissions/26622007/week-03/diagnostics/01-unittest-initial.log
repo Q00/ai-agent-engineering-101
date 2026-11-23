@@ -1,0 +1,49 @@
+test_bad_gold_and_duplicate_ids_fail_before_any_call (test_harness.ContractTests.test_bad_gold_and_duplicate_ids_fail_before_any_call) ... ERROR
+test_bid_parser_rejects_invalid_types_ranges_and_json (test_harness.ContractTests.test_bid_parser_rejects_invalid_types_ranges_and_json) ... ok
+test_conditions_change_only_skill_or_one_overconfidence_suffix (test_harness.ContractTests.test_conditions_change_only_skill_or_one_overconfidence_suffix) ... ok
+test_gold_and_previous_dialogue_are_absent_from_requests (test_harness.ContractTests.test_gold_and_previous_dialogue_are_absent_from_requests) ... ok
+test_one_round_counts_ties_refusals_parse_failures_and_wrong_awards (test_harness.ContractTests.test_one_round_counts_ties_refusals_parse_failures_and_wrong_awards) ... ok
+test_very_large_confidence_is_an_invalid_bid_not_a_crash (test_harness.ContractTests.test_very_large_confidence_is_an_invalid_bid_not_a_crash) ... ERROR
+test_crash_is_retained_with_blank_counts_and_new_runs_do_not_overwrite (test_harness.PersistenceTests.test_crash_is_retained_with_blank_counts_and_new_runs_do_not_overwrite) ... ok
+test_explicit_blank_file_blocks_inherited_credentials (test_harness.PersistenceTests.test_explicit_blank_file_blocks_inherited_credentials) ... ok
+test_local_key_parser_accepts_quotes_and_never_executes_shell (test_harness.PersistenceTests.test_local_key_parser_accepts_quotes_and_never_executes_shell) ... ok
+test_recorder_keeps_raw_content_and_marks_missing_cost (test_harness.PersistenceTests.test_recorder_keeps_raw_content_and_marks_missing_cost) ... ok
+test_smoke_output_stays_out_of_scored_results (test_harness.PersistenceTests.test_smoke_output_stays_out_of_scored_results) ... ok
+test_401_does_not_retry_and_secret_is_redacted (test_harness.TransportTests.test_401_does_not_retry_and_secret_is_redacted) ... /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 401: 'auth'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+ok
+test_429_retries_once_with_identical_payload_and_keeps_error (test_harness.TransportTests.test_429_retries_once_with_identical_payload_and_keeps_error) ... /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 429: 'rate limit'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+ok
+test_bad_model_json_is_not_repaired_or_retried (test_harness.TransportTests.test_bad_model_json_is_not_repaired_or_retried) ... ok
+test_global_request_limit_prevents_an_extra_network_attempt (test_harness.TransportTests.test_global_request_limit_prevents_an_extra_network_attempt) ... ok
+test_transport_timeouts_stop_at_attempt_limit (test_harness.TransportTests.test_transport_timeouts_stop_at_attempt_limit) ... ok
+
+======================================================================
+ERROR: test_bad_gold_and_duplicate_ids_fail_before_any_call (test_harness.ContractTests.test_bad_gold_and_duplicate_ids_fail_before_any_call)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-03/test_harness.py", line 88, in test_bad_gold_and_duplicate_ids_fail_before_any_call
+    load_tasks(json.dumps(data))
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-03/contract_net.py", line 60, in load_tasks
+    if not isinstance(desc, str) or not desc.strip() or gold not in SKILLS:
+                                                        ^^^^^^^^^^^^^^^^^^
+TypeError: cannot use 'list' as a dict key (unhashable type: 'list')
+
+======================================================================
+ERROR: test_very_large_confidence_is_an_invalid_bid_not_a_crash (test_harness.ContractTests.test_very_large_confidence_is_an_invalid_bid_not_a_crash)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-03/test_harness.py", line 82, in test_very_large_confidence_is_an_invalid_bid_not_a_crash
+    parse_bid(bid(True, 10 ** 1000))
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-03/contract_net.py", line 111, in parse_bid
+    if type(confidence) not in (int, float) or not math.isfinite(confidence) or not 0 <= confidence <= 100:
+                                                   ~~~~~~~~~~~~~^^^^^^^^^^^^
+OverflowError: int too large to convert to float
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.009s
+
+FAILED (errors=2)
