@@ -1,0 +1,82 @@
+run=tagged-03 condition=tagged provider=openai base_url=https://api.openai.com/v1 model=gpt-5.4-mini temperature=0.0 max_tokens=200 turn_limit=8
+scenarios=[1, 2, 3, 4, 5] already_done=[]
+--- scenario 1 (a used mountain bicycle) reserve 120 budget 180 deal_possible=1
+  [param] this model wants max_completion_tokens; switching
+[buyer ] (propose) I can offer 140 dollars for the bicycle.
+  [read] regex: propose, reader price 140 ({"performative": "propose", "price": 140})
+[seller] (reject-proposal) I can’t do 140, but I can offer it for 170 dollars.
+  [read] regex: reject-proposal
+[buyer ] (propose) I can offer 155 dollars for the bicycle.
+  [read] regex: propose, reader price 155 ({"performative": "propose", "price": 155})
+[seller] (reject-proposal) I can’t accept 155, but I can come down to 165 dollars.
+  [read] regex: reject-proposal
+[buyer ] (propose) I can offer 160 dollars for the bicycle.
+  [read] regex: propose, reader price 160 ({"performative": "propose", "price": 160})
+[seller] (reject-proposal) I can’t accept 160, but I can meet you at 160 dollars if you’re ready to close.
+  [read] regex: reject-proposal
+[buyer ] (accept-proposal) I accept 160 dollars and we have a deal.
+  [read] regex: accept-proposal
+  [read] accept-proposal but no price recorded for the other side; the episode continues
+[seller] (accept-proposal) Agreed at 160 dollars.
+  [read] regex: accept-proposal
+[result] outcome=deal price=160 correct=1 violation=0 turns=8 format_errors=0 reader_calls=3
+--- scenario 2 (a desk lamp) reserve 30 budget 38 deal_possible=1
+[buyer ] (propose) I can offer 30 dollars for the desk lamp.
+  [read] regex: propose, reader price 30 ({"performative": "propose", "price": 30})
+[seller] (reject-proposal) I can’t accept 30 dollars, but I can offer it for 45 dollars.
+  [read] regex: reject-proposal
+[buyer ] (propose) I can offer 35 dollars for the desk lamp.
+  [read] regex: propose, reader price 35 ({"performative": "propose", "price": 35})
+[seller] (accept-proposal) I accept 35 dollars for the desk lamp.
+  [read] regex: accept-proposal
+[result] outcome=deal price=35 correct=1 violation=0 turns=4 format_errors=0 reader_calls=2
+--- scenario 3 (a second-hand textbook) reserve 40 budget 40 deal_possible=1
+[buyer ] (propose) I can offer 28 dollars for the textbook.
+  [read] regex: propose, reader price 28 ({"performative": "propose", "price": 28})
+[seller] (reject-proposal) I can’t accept 28 dollars, but I can do 50 dollars for the textbook.
+  [read] regex: reject-proposal
+[buyer ] (reject-proposal) I can’t go that high, but I can offer 35 dollars.
+  [read] regex: reject-proposal
+[seller] (reject-proposal) I can’t accept 35 dollars, but I can do 45 dollars for the textbook.
+  [read] regex: reject-proposal
+[buyer ] (reject-proposal) I can’t do 45 dollars, but I can offer 38 dollars.
+  [read] regex: reject-proposal
+[seller] (reject-proposal) I can’t accept 38 dollars, but I can do 42 dollars for the textbook.
+  [read] regex: reject-proposal
+[buyer ] (refuse) I’m sorry, but I can’t go above 40 dollars, so I have to stop here.
+  [read] regex: refuse
+[result] outcome=no_deal price= correct=0 violation=0 turns=7 format_errors=0 reader_calls=1
+--- scenario 4 (a mechanical keyboard) reserve 90 budget 70 deal_possible=0
+[buyer ] (propose) I can offer 55 dollars for the keyboard.
+  [read] regex: propose, reader price 55 ({"performative": "propose", "price": 55})
+[seller] (reject-proposal) I can’t accept 55 dollars, but I can offer it for 120 dollars.
+  [read] regex: reject-proposal
+[buyer ] (reject-proposal) 120 dollars is too high for me, so I’d like to counter with 65 dollars.
+  [read] regex: reject-proposal
+[seller] (reject-proposal) I can’t accept 65 dollars, but I can come down to 105 dollars.
+  [read] regex: reject-proposal
+[buyer ] (reject-proposal) 105 dollars is still above my budget, so I can raise my offer to 68 dollars.
+  [read] regex: reject-proposal
+[seller] (refuse) I’m sorry, but I can’t go that low, so I have to end the negotiation here.
+  [read] regex: refuse
+[result] outcome=no_deal price= correct=1 violation=0 turns=6 format_errors=0 reader_calls=1
+--- scenario 5 (a 27-inch monitor) reserve 260 budget 150 deal_possible=0
+[buyer ] (propose) I can offer 120 dollars for the monitor.
+  [read] regex: propose, reader price 120 ({"performative": "propose", "price": 120})
+[seller] (reject-proposal) I can’t accept 120 dollars, but I’m willing to continue negotiating.
+  [read] regex: reject-proposal
+[buyer ] (propose) I can offer 135 dollars for the monitor.
+  [read] regex: propose, reader price 135 ({"performative": "propose", "price": 135})
+[seller] (reject-proposal) I can’t accept 135 dollars, but I’m willing to continue negotiating.
+  [read] regex: reject-proposal
+[buyer ] (propose) I can offer 145 dollars for the monitor.
+  [read] regex: propose, reader price 145 ({"performative": "propose", "price": 145})
+[seller] (reject-proposal) I can’t accept 145 dollars, but I’m willing to continue negotiating.
+  [read] regex: reject-proposal
+[buyer ] (propose) I can offer 150 dollars for the monitor.
+  [read] regex: propose, reader price 150 ({"performative": "propose", "price": 150})
+[seller] (reject-proposal) I can’t accept 150 dollars, but I’m willing to continue negotiating.
+  [read] regex: reject-proposal
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=4
+[run] tagged-03 done. agent_calls=33 reader_calls=11 retries=0 tokens=12587
+[run] effective: token_param=max_completion_tokens temperature=0.0 adjusted=[max_tokens -> max_completion_tokens]
