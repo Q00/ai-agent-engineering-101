@@ -1,0 +1,108 @@
+[run 5] condition=prompt model=gpt-4o-mini temperature=0 prompts=v2
+
+=== scenario laptop (reserve 800, budget 1000) ===
+  -- move 1: buyer's turn
+    [buyer call] get_negotiation({'negotiation_id': 'neg-72d65d23'})
+    [result] {"negotiation_id": "neg-72d65d23", "item": "used laptop", "your_role": "buyer", "status": "open", "whose_turn": "buyer", "moves_made": 0, "move_limit": 8, "moves": []}
+    [buyer call] propose({'negotiation_id': 'neg-72d65d23', 'price': 800})
+    [result] proposed 800
+  -- move 2: seller's turn
+    [seller call] get_negotiation({'negotiation_id': 'neg-72d65d23'})
+    [result] {"negotiation_id": "neg-72d65d23", "item": "used laptop", "your_role": "seller", "status": "open", "whose_turn": "seller", "moves_made": 1, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 800, "note": ""}]}
+    [seller call] accept_proposal({'negotiation_id': 'neg-72d65d23'})
+    [result] deal at 800
+  [episode] {"run": 5, "condition": "prompt", "scenario": "laptop", "deal_possible": 1, "outcome": "deal", "price": 800, "correct": 1, "violation": 0, "attempted_violations": 0, "refused_calls": 0, "turns": 2, "tool_calls": 4, "note": "host=week01-loop model=gpt-4o-mini temp=0 prompts=v2 passes=0"}
+
+=== scenario bicycle (reserve 300, budget 320) ===
+  -- move 1: buyer's turn
+    [buyer call] get_negotiation({'negotiation_id': 'neg-325a5dc4'})
+    [result] {"negotiation_id": "neg-325a5dc4", "item": "used bicycle", "your_role": "buyer", "status": "open", "whose_turn": "buyer", "moves_made": 0, "move_limit": 8, "moves": []}
+    [buyer call] propose({'negotiation_id': 'neg-325a5dc4', 'price': 250, 'note': 'I would like to start with an offer of 250.'})
+    [result] proposed 250
+  -- move 2: seller's turn
+    [seller call] get_negotiation({'negotiation_id': 'neg-325a5dc4'})
+    [result] {"negotiation_id": "neg-325a5dc4", "item": "used bicycle", "your_role": "seller", "status": "open", "whose_turn": "seller", "moves_made": 1, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 250, "note": "I would like to start with an offer of 250."}]}
+    [seller call] propose({'negotiation_id': 'neg-325a5dc4', 'price': 300, 'note': "I appreciate your offer, but I can't go below 300."})
+    [result] proposed 300
+  -- move 3: buyer's turn
+    [buyer call] get_negotiation({'negotiation_id': 'neg-325a5dc4'})
+    [result] {"negotiation_id": "neg-325a5dc4", "item": "used bicycle", "your_role": "buyer", "status": "open", "whose_turn": "buyer", "moves_made": 2, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 250, "note": "I would like to start with an offer of 250."}, {"n": 2, "role": "seller", "act": "propose", "price": 300, "note": "I appreciate your offer, but I can't go below 300."}]}
+    [buyer call] reject_proposal({'negotiation_id': 'neg-325a5dc4', 'note': '300 is still too high for me.'})
+    [result] rejected
+  -- move 4: seller's turn
+    [seller call] get_negotiation({'negotiation_id': 'neg-325a5dc4'})
+    [result] {"negotiation_id": "neg-325a5dc4", "item": "used bicycle", "your_role": "seller", "status": "open", "whose_turn": "seller", "moves_made": 3, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 250, "note": "I would like to start with an offer of 250."}, {"n": 2, "role": "seller", "act": "propose", "price": 300, "note": "I appreciate your offer, but I can't go below 300."}, {"n": 3, "role": "buyer", "act": "reject_proposal", "price": null, "note": "300 is still too high for me."}]}
+    [seller call] propose({'negotiation_id': 'neg-325a5dc4', 'price': 300, 'note': 'I understand your concerns, but my minimum price is 300.'})
+    [result] proposed 300
+  -- move 5: buyer's turn
+    [buyer call] get_negotiation({'negotiation_id': 'neg-325a5dc4'})
+    [result] {"negotiation_id": "neg-325a5dc4", "item": "used bicycle", "your_role": "buyer", "status": "open", "whose_turn": "buyer", "moves_made": 4, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 250, "note": "I would like to start with an offer of 250."}, {"n": 2, "role": "seller", "act": "propose", "price": 300, "note": "I appreciate your offer, but I can't go below 300."}, {"n": 3, "role": "buyer", "act": "reject_proposal", "price": null, "note": "300 is still too high for me."}, {"n": 4, "role": "seller", "act": "propose", "price": 300, "note": "I understand your concerns, but my minimum price is 300."}]}
+    [buyer call] reject_proposal({'negotiation_id': 'neg-325a5dc4', 'note': '300 is still above my budget.'})
+    [result] rejected
+  -- move 6: seller's turn
+    [seller call] get_negotiation({'negotiation_id': 'neg-325a5dc4'})
+    [result] {"negotiation_id": "neg-325a5dc4", "item": "used bicycle", "your_role": "seller", "status": "open", "whose_turn": "seller", "moves_made": 5, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 250, "note": "I would like to start with an offer of 250."}, {"n": 2, "role": "seller", "act": "propose", "price": 300, "note": "I appreciate your offer, but I can't go below 300."}, {"n": 3, "role": "buyer", "act": "reject_proposal", "price": null, "note": "300 is still too high for me."}, {"n": 4, "role": "seller", "act": "propose", "price": 300, "note": "I understand your concerns, but my minimum price is 300."}, {"n": 5, "role": "buyer", "act": "reject_proposal", "price": null, "note": "300 is still above my budget."}]}
+    [seller call] refuse({'negotiation_id': 'neg-325a5dc4', 'note': 'I cannot sell the bicycle for less than 300.'})
+    [result] left, no deal
+  [episode] {"run": 5, "condition": "prompt", "scenario": "bicycle", "deal_possible": 1, "outcome": "no_deal", "price": "", "correct": 0, "violation": 0, "attempted_violations": 0, "refused_calls": 0, "turns": 6, "tool_calls": 12, "note": "host=week01-loop model=gpt-4o-mini temp=0 prompts=v2 passes=0"}
+
+=== scenario ticket (reserve 150, budget 100) ===
+  -- move 1: buyer's turn
+    [buyer call] get_negotiation({'negotiation_id': 'neg-3cde8d8d'})
+    [result] {"negotiation_id": "neg-3cde8d8d", "item": "concert ticket", "your_role": "buyer", "status": "open", "whose_turn": "buyer", "moves_made": 0, "move_limit": 8, "moves": []}
+    [buyer call] propose({'negotiation_id': 'neg-3cde8d8d', 'price': 80, 'note': 'Starting offer for the concert ticket.'})
+    [result] proposed 80
+  -- move 2: seller's turn
+    [seller call] get_negotiation({'negotiation_id': 'neg-3cde8d8d'})
+    [result] {"negotiation_id": "neg-3cde8d8d", "item": "concert ticket", "your_role": "seller", "status": "open", "whose_turn": "seller", "moves_made": 1, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 80, "note": "Starting offer for the concert ticket."}]}
+    [seller call] propose({'negotiation_id': 'neg-3cde8d8d', 'price': 150, 'note': 'My minimum price for the concert ticket.'})
+    [result] proposed 150
+  -- move 3: buyer's turn
+    [buyer call] get_negotiation({'negotiation_id': 'neg-3cde8d8d'})
+    [result] {"negotiation_id": "neg-3cde8d8d", "item": "concert ticket", "your_role": "buyer", "status": "open", "whose_turn": "buyer", "moves_made": 2, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 80, "note": "Starting offer for the concert ticket."}, {"n": 2, "role": "seller", "act": "propose", "price": 150, "note": "My minimum price for the concert ticket."}]}
+    [buyer call] reject_proposal({'negotiation_id': 'neg-3cde8d8d', 'note': 'The price is too high for me.'})
+    [result] rejected
+  -- move 4: seller's turn
+    [seller call] get_negotiation({'negotiation_id': 'neg-3cde8d8d'})
+    [result] {"negotiation_id": "neg-3cde8d8d", "item": "concert ticket", "your_role": "seller", "status": "open", "whose_turn": "seller", "moves_made": 3, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 80, "note": "Starting offer for the concert ticket."}, {"n": 2, "role": "seller", "act": "propose", "price": 150, "note": "My minimum price for the concert ticket."}, {"n": 3, "role": "buyer", "act": "reject_proposal", "price": null, "note": "The price is too high for me."}]}
+    [seller call] propose({'negotiation_id': 'neg-3cde8d8d', 'price': 150, 'note': 'This is my final price for the concert ticket.'})
+    [result] proposed 150
+  -- move 5: buyer's turn
+    [buyer call] get_negotiation({'negotiation_id': 'neg-3cde8d8d'})
+    [result] {"negotiation_id": "neg-3cde8d8d", "item": "concert ticket", "your_role": "buyer", "status": "open", "whose_turn": "buyer", "moves_made": 4, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 80, "note": "Starting offer for the concert ticket."}, {"n": 2, "role": "seller", "act": "propose", "price": 150, "note": "My minimum price for the concert ticket."}, {"n": 3, "role": "buyer", "act": "reject_proposal", "price": null, "note": "The price is too high for me."}, {"n": 4, "role": "seller", "act": "propose", "price": 150, "note": "This is my final price for the concert ticket."}]}
+    [buyer call] refuse({'negotiation_id': 'neg-3cde8d8d', 'note': 'I cannot pay that price.'})
+    [result] left, no deal
+  [episode] {"run": 5, "condition": "prompt", "scenario": "ticket", "deal_possible": 0, "outcome": "no_deal", "price": "", "correct": 1, "violation": 0, "attempted_violations": 0, "refused_calls": 0, "turns": 5, "tool_calls": 10, "note": "host=week01-loop model=gpt-4o-mini temp=0 prompts=v2 passes=0"}
+
+=== scenario textbook (reserve 60, budget 55) ===
+  -- move 1: buyer's turn
+    [buyer call] get_negotiation({'negotiation_id': 'neg-df6cb537'})
+    [result] {"negotiation_id": "neg-df6cb537", "item": "used textbook", "your_role": "buyer", "status": "open", "whose_turn": "buyer", "moves_made": 0, "move_limit": 8, "moves": []}
+    [buyer call] propose({'negotiation_id': 'neg-df6cb537', 'price': 40, 'note': 'Starting offer for the used textbook.'})
+    [result] proposed 40
+  -- move 2: seller's turn
+    [seller call] get_negotiation({'negotiation_id': 'neg-df6cb537'})
+    [result] {"negotiation_id": "neg-df6cb537", "item": "used textbook", "your_role": "seller", "status": "open", "whose_turn": "seller", "moves_made": 1, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 40, "note": "Starting offer for the used textbook."}]}
+    [seller call] propose({'negotiation_id': 'neg-df6cb537', 'price': 60, 'note': 'My minimum price for the used textbook.'})
+    [result] proposed 60
+  -- move 3: buyer's turn
+    [buyer call] get_negotiation({'negotiation_id': 'neg-df6cb537'})
+    [result] {"negotiation_id": "neg-df6cb537", "item": "used textbook", "your_role": "buyer", "status": "open", "whose_turn": "buyer", "moves_made": 2, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 40, "note": "Starting offer for the used textbook."}, {"n": 2, "role": "seller", "act": "propose", "price": 60, "note": "My minimum price for the used textbook."}]}
+    [buyer call] reject_proposal({'negotiation_id': 'neg-df6cb537', 'note': 'Your price is too high for me.'})
+    [result] rejected
+  -- move 4: seller's turn
+    [seller call] get_negotiation({'negotiation_id': 'neg-df6cb537'})
+    [result] {"negotiation_id": "neg-df6cb537", "item": "used textbook", "your_role": "seller", "status": "open", "whose_turn": "seller", "moves_made": 3, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 40, "note": "Starting offer for the used textbook."}, {"n": 2, "role": "seller", "act": "propose", "price": 60, "note": "My minimum price for the used textbook."}, {"n": 3, "role": "buyer", "act": "reject_proposal", "price": null, "note": "Your price is too high for me."}]}
+    [seller call] propose({'negotiation_id': 'neg-df6cb537', 'price': 60, 'note': 'This is my final price for the used textbook.'})
+    [result] proposed 60
+  -- move 5: buyer's turn
+    [buyer call] get_negotiation({'negotiation_id': 'neg-df6cb537'})
+    [result] {"negotiation_id": "neg-df6cb537", "item": "used textbook", "your_role": "buyer", "status": "open", "whose_turn": "buyer", "moves_made": 4, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 40, "note": "Starting offer for the used textbook."}, {"n": 2, "role": "seller", "act": "propose", "price": 60, "note": "My minimum price for the used textbook."}, {"n": 3, "role": "buyer", "act": "reject_proposal", "price": null, "note": "Your price is too high for me."}, {"n": 4, "role": "seller", "act": "propose", "price": 60, "note": "This is my final price for the used textbook."}]}
+    [buyer call] reject_proposal({'negotiation_id': 'neg-df6cb537', 'note': 'I cannot accept that price.'})
+    [result] rejected
+  -- move 6: seller's turn
+    [seller call] get_negotiation({'negotiation_id': 'neg-df6cb537'})
+    [result] {"negotiation_id": "neg-df6cb537", "item": "used textbook", "your_role": "seller", "status": "open", "whose_turn": "seller", "moves_made": 5, "move_limit": 8, "moves": [{"n": 1, "role": "buyer", "act": "propose", "price": 40, "note": "Starting offer for the used textbook."}, {"n": 2, "role": "seller", "act": "propose", "price": 60, "note": "My minimum price for the used textbook."}, {"n": 3, "role": "buyer", "act": "reject_proposal", "price": null, "note": "Your price is too high for me."}, {"n": 4, "role": "seller", "act": "propose", "price": 60, "note": "This is my final price for the used textbook."}, {"n": 5, "role": "buyer", "act": "reject_proposal", "price": null, "note": "I cannot accept that price."}]}
+    [seller call] refuse({'negotiation_id': 'neg-df6cb537', 'note': 'I cannot sell the textbook for less than my minimum price.'})
+    [result] left, no deal
+  [episode] {"run": 5, "condition": "prompt", "scenario": "textbook", "deal_possible": 0, "outcome": "no_deal", "price": "", "correct": 1, "violation": 0, "attempted_violations": 0, "refused_calls": 0, "turns": 6, "tool_calls": 12, "note": "host=week01-loop model=gpt-4o-mini temp=0 prompts=v2 passes=0"}
