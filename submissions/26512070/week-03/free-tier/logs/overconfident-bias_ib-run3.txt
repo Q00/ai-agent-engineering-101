@@ -1,0 +1,14 @@
+=== run overconfident-bias_ib-run3 ===
+provider=openai model=cohere/north-mini-code:free temperature=0.7
+condition=overconfident arm=bias+ib bias=on icebreak=on
+seed=20269203 veto_threshold=40 adj_range=(-100,20)
+contractors=['sql_analyst', 'text_editor', 'code_fixer']
+icebreak_tasks=['ib1', 'ib2', 'ib3']
+measure_tasks=['t1', 't2', 't3', 't4', 't5', 't6']
+fixtures={t1:sql, t2:none, t3:python, t4:sql, t5:none, t6:python}
+
+########## icebreaking (not scored) ##########
+[icebreak] ib1 -- all contractors execute, no award
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day-high-balance. ', 'code': 429, 'metadata': {'headers': {'X-Rate); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day-high-balance. ', 'code': 429, 'metadata': {'headers': {'X-Rate); retrying in 8s
+  [llm] attempt 3/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-day-high-balance. ', 'code': 429, 'metadata': {'headers': {'X-Rate); retrying in 16s

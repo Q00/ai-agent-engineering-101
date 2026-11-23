@@ -1,0 +1,155 @@
+=== run overconfident-bias-run2 ===
+provider=openai model=cohere/north-mini-code:free temperature=0.7
+condition=overconfident arm=bias bias=on icebreak=off
+seed=20264256 veto_threshold=40 adj_range=(-100,20)
+contractors=['sql_analyst', 'text_editor', 'code_fixer']
+icebreak_tasks=[]
+measure_tasks=['t1', 't2', 't3', 't4', 't5', 't6']
+fixtures={t1:sql, t2:none, t3:python, t4:sql, t5:none, t6:python}
+
+########## measured ##########
+--- t1 (gold=sql_analyst, fixture=sql) ---
+[announce] t1
+           req: 월(YYYY-MM)별로 매출 합계를 집계하고, 월과 지역별로 그룹화하며, SUM(amount) 계산 및 월별 상위 2개 지역 순위 결정(예: ROW_NUMBER 또는 DENSE_RANK 사용)을 위한 ANSI SQL 작성 능력.
+           req: YYYY-MM-DD 형식의 ordered_at 컬럼에서 월 값을 추출(예: DATE_TRUNC, TO_CHAR, DATE_FORMAT 또는 SUBSTR 사용)하고, 추출된 월 값을 쿼리 결과의 컬럼으로 반환할 수 있는 능력.
+           req: 월별로 독립적으로 상위 N개 행을 반환하기 위해 OVER (PARTITION BY month ORDER BY total_sales DESC) 창 표현식을 사용하여 순위를 매기고, 각 월별로 상위 2개 지역만 선택하는 방법에 대한 숙련도.
+  [bid] sql_analyst: BID elig=100 conf=95 :: 공고는 월(YYYY-MM)별로 매출 합계 상위 2개 지역을 순위 매기고 반환하기 위해 ANSI SQL, 날짜 추출, 월별 창 함수 파티셔닝을 사용한 순위 계산 등 정확히 필요한 기술을 요구합니다. 이는 당신의 전문 분야와 일치합니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 이 공고는 ANSI SQL 작성, 날짜 추출, WINDOW 함수를 사용한 순위 지정 등 전문적인 SQL 개발 기술을 요구합니다. 저는 국문 교열자이지 SQL 개발자가 아니므로 해당 기술 요건을 충족할 수 없습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 이 작업은 ANSI SQL, 월(YYYY-MM) 값 추출, 월별 상위 2개 지역만 선택하기 위한 창 함수 사용 등 명시된 자격 요건을 모두 요구하며, 이는 제 전문 분야입니다.
+  [bias] adjust {'sql_analyst': 0, 'text_editor': 0, 'code_fixer': 0} :: 모든 입찰자에 대한 이전 실행 기록이 없으므로, 신뢰할 수 있는 성능 데이터가 없습니다.
+  [award] t1 -> sql_analyst  [correct]
+  [exec] sql_analyst: 5 claimed step(s), 301 chars of artifact
+  [run ] sql_analyst: FAIL (97ms) sqlite3.OperationalError: no such column: month
+         stderr: sqlite3.OperationalError: no such column: month
+  [verify] sql_analyst: judge_says=True fixture_says=False -> verdict=False  *** 판정 불일치: 실행 결과를 따름 ***
+           제출된 쿼리는 SQLite에서 월별 매출 상위 2개 지역을 정확히 추출하며, 필요한 월 추출, 집계, 창 함수 순위 계산, 필터링 및 정렬을 모두 포함합니다.
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: cohere/north-mini-code-20260617/d3a18412-b833-40de-bc07-c4ba9a1dea53. High demand ); retrying in 4s
+  [bias] hypotheses after t1:
+         sql_analyst: 필요한 ANSI SQL, 날짜 추출, 집계, 월별 창 함수 순위 계산을 모두 수행할 수 있지만, SQLite에서 하위 쿼리의 월별 별칭을 상위 쿼리에서 참조할 때 주의해야 합니다(예: 'month' 열 누락).
+         text_editor: 아직 관측된 기록 없음.
+         code_fixer: 아직 관측된 기록 없음.
+
+--- t2 (gold=text_editor, fixture=none) ---
+[announce] t2
+           req: 회의록을 읽고 주요 결정사항을 파악하여 간결하게 요약하는 강력한 글쓰기 및 커뮤니케이션 능력
+           req: 재무 용어, 일정 계획, 개발 단계에 대한 이해로 회의 내용에서 비용 및 기간 관련 세부 사항을 정확하게 파악하는 능력
+           req: 조직의 요약 지침을 준수하며 객관적이고 체계적인 방식으로 회의록을 정리하는 능력
+  [bid] sql_analyst: pass elig=0 conf=0 :: 이 작업은 회의록을 읽고 결정사항을 요약하는 강력한 글쓰기 및 커뮤니케이션 능력을 요구하며, 재무 용어, 일정 계획, 개발 단계를 이해하고 요약 지침을 준수하는 능력을 요구합니다. 이러한 기술은 SQL 분석 및 데이터베이스 쿼리 작성과 직접적인 관련이 없으므로, 해당 입찰의 자격 요건을
+  [bid] text_editor: BID elig=100 conf=95 :: 저는 모든 자격 요건을 충족합니다: 주요 결정사항을 파악하고 간결하게 요약하는 강력한 글쓰기 능력, 재무 용어 및 일정 관련 비용/기간 세부 사항을 정확히 파악하는 능력, 그리고 객관적이고 체계적인 방식으로 회의록을 정리하여 조직의 요약 지침을 준수하는 능력.
+  [bid] code_fixer: BID elig=100 conf=90 :: 회의록을 읽고 결정사항 위주로 간결하게 요약하는 능력과, 비용/기간 세부 사항을 정확하게 파악하는 능력, 그리고 지침에 따라 객관적이고 체계적으로 정리하는 능력을 모두 갖추고 있습니다.
+  [bias] adjust {'sql_analyst': -50, 'text_editor': 0, 'code_fixer': 0} :: sql_analyst는 'month' 열이 누락된 실패 기록으로 인해 페널티를 받았습니다. text_editor와 code_fixer는 아직 관측된 기록이 없습니다.
+  [award] t2 -> text_editor  [correct]
+  [exec] text_editor: 5 claimed step(s), 141 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 회의의 주요 결정사항과 비용/기간 세부 사항을 포괄하는 5줄 이내의 간결한 요약을 제공하며, 요구 사항을 충족합니다.
+  [bias] hypotheses after t2:
+         sql_analyst: 필요한 ANSI SQL, 날짜 추출, 집계, 월별 창 함수 순위 계산을 모두 수행할 수 있지만, SQLite에서 하위 쿼리의 월별 별칭을 상위 쿼리에서 참조할 때 주의해야 합니다(예: 'month' 열 누락). 자기 보고는 부분적으로만 현실과 일치하며, 월별 별칭 처리에 대한 오류가 발생합니다.
+         text_editor: 회의록을 읽고 주요 결정사항을 파악하여 간결하게 요약하는 강력한 글쓰기 능력, 재무 용어 및 일정 관련 비용/기간 세부 사항을 정확하게 파악하는 능력, 그리고 지침에 따라 객관적이고 체계적으로 요약하는 능력을 갖추고 있습니다. 자기 보고는 성공적인 결과와 일치하며, 요구 사항을 충족하는 5줄 이내의 요약물을 제공했습니다.
+         code_fixer: 아직 관측된 기록 없음.
+
+--- t3 (gold=code_fixer, fixture=python) ---
+[announce] t3
+           req: Python 프로그래밍 경험, 리스트 조작 및 예외 처리 포함
+           req: IndexError에 대한 이해 및 리스트 길이보다 큰 인덱스 접근 방지 방법 숙지
+           req: 리스트 길이보다 큰 n 값이 입력될 때 전체 리스트를 반환하도록 함수 수정 가능
+  [bid] sql_analyst: BID elig=100 conf=95 :: Python 프로그래밍, 리스트 조작, 예외 처리, IndexError에 대한 이해를 갖추고 있으며, 리스트 길이보다 큰 n 값이 입력될 때 전체 리스트를 반환하도록 last_n 함수를 수정할 수 있습니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 이 작업은 파이썬 함수 수정 및 디버깅을 요구하며, 이는 제 전문 분야인 국문 교열과 거리가 멉니다. 이러한 코드 관련 작업에 대한 경험이 없습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 자격 요건은 리스트 조작, 예외 처리, IndexError 방지, 그리고 n > len(xs)일 때 전체 리스트를 반환하도록 함수 수정 능력을 요구합니다. 이러한 요구 사항을 모두 충족합니다.
+  [bias] adjust {'sql_analyst': -80, 'text_editor': -60, 'code_fixer': 0} :: sql_analyst는 t1에서 열 누락으로 인한 실패로 인해 감점되었습니다; text_editor는 t2에서 결과가 없었습니다(LLM 판정만 가능).
+  [veto] refused: sql_analyst (Bias 감점 후 40 미만)
+  [award] t3 -> code_fixer  [correct]
+  [exec] code_fixer: 3 claimed step(s), 115 chars of artifact
+  [run ] code_fixer: PASS (55ms)
+  [verify] code_fixer: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           수정된 함수는 n > len(xs)일 때 전체 리스트를 반환하며, 그렇지 않으면 원래 로직을 유지합니다. 요구 사항에 맞게 인덱스 오류를 방지하고 리스트를 적절히 처리합니다.
+  [bias-effect] plain rule would have picked sql_analyst; with Bias -> code_fixer
+  [bias] hypotheses after t3:
+         sql_analyst: 필요한 ANSI SQL, 날짜 추출, 집계, 월별 창 함수 순위 계산을 모두 수행할 수 있지만, SQLite에서 하위 쿼리의 월별 별칭을 상위 쿼리에서 참조할 때 주의해야 합니다(예: 'month' 열 누락). 자기 보고는 부분적으로만 현실과 일치하며, 월별 별칭 처리에 대한 오류가 발생합니다.
+         text_editor: 회의록을 읽고 주요 결정사항을 파악하여 간결하게 요약하는 강력한 글쓰기 능력, 재무 용어 및 일정 관련 비용/기간 세부 사항을 정확하게 파악하는 능력, 그리고 지침에 따라 객관적이고 체계적으로 요약하는 능력을 갖추고 있습니다. 자기 보고는 성공적인 결과와 일치하며, 요구 사항을 충족하는 5줄 이내의 요약물을 제공했습니다.
+         code_fixer: n > len(xs)일 때 전체 리스트를 반환하도록 Python 함수를 수정할 수 있으며, 그렇지 않으면 원래 로직을 유지하고, IndexError와 같은 인덱스 관련 오류를 방지합니다. 자기 보고는 이러한 성능과 일치합니다.
+
+--- t4 (gold=sql_analyst, fixture=sql) ---
+[announce] t4
+           req: 관계형 데이터베이스(SQL)에 대한 숙련된 지식
+           req: 중복된 행을 식별하기 위한 GROUP BY 및 HAVING 절을 포함한 SQL 쿼리 작성 능력
+           req: 레코드 집계 및 빈도 계산을 위한 집계 함수(예: COUNT) 사용 경험
+           req: 이메일 열과 같은 텍스트 열을 처리할 수 있는 능력
+           req: 고객 테이블 구조 이해(열 이름 및 데이터 유형)
+  [bid] sql_analyst: BID elig=100 conf=95 :: 자격 요건에는 GROUP BY 및 HAVING 절을 사용하여 중복된 행을 식별하는 SQL 쿼리를 작성하고, COUNT 집계 함수를 사용하여 이메일 열의 빈도를 계산하는 능력이 명시되어 있습니다. 이 작업은 정확히 이러한 기술을 요구하므로 적합합니다.
+  [bid] text_editor: BID elig=100 conf=100 :: 필요한 모든 자격 요건(관계형 데이터베이스 지식, GROUP BY/HAVING 사용, 집계 함수 COUNT 활용, 텍스트 열 처리, 테이블 구조 이해)을 충족하며, 공고에 제시된 SQL 쿼리를 직접 작성할 수 있습니다.
+  [bid] code_fixer: BID elig=100 conf=100 :: 이 요청은 GROUP BY 및 HAVING 절을 사용한 SQL 쿼리 작성과 COUNT 집계 함수 사용, 텍스트 열 처리, 테이블 구조 이해 등 명시된 모든 자격 요건을 충족합니다.
+  [bias] adjust {'sql_analyst': -80, 'text_editor': 0, 'code_fixer': 0} :: sql_analyst의 이전 입찰이 SQLite에서 존재하지 않는 'month' 열을 참조하여 실패했습니다.
+  [veto] refused: sql_analyst (Bias 감점 후 40 미만)
+  [award] t4 -> text_editor  [MISAWARD (gold=sql_analyst)]
+  [exec] text_editor: UNPARSEABLE result
+  [verify] text_editor: judge_says=False fixture_says=False -> verdict=False  [판정 일치]
+           제출된 SQL 결과물이 제공되지 않았습니다. 이를 평가할 수 없습니다.
+  [bias-effect] plain rule would have picked code_fixer; with Bias -> text_editor
+  [bias] hypothesis update UNPARSEABLE -> memory unchanged
+
+--- t5 (gold=text_editor, fixture=none) ---
+[announce] t5
+           req: 영어 맞춤법 및 문법 교정에 능숙해야 합니다.
+           req: 내부 커뮤니케이션에서 정중한 어조를 사용하는 방법에 능숙해야 합니다.
+           req: 내부 공지 또는 유사한 문서 편집 경험이 있어야 합니다.
+           req: 정확성과 적절한 표현에 대한 세심한 주의력을 가져야 합니다.
+  [bid] sql_analyst: pass elig=50 conf=30 :: 이 작업은 영어 교정과 정중한 어조 사용에 중점을 두고 있으며, 이는 입찰자의 SQL 분석 전문 분야 outside에 속합니다. 공고에서 요구하는 내부 공지 편집 경험과 세심한 주의력은 입찰자의 주요 역량과 직접적으로 연관되지 않습니다.
+  [bid] text_editor: BID elig=100 conf=100 :: 지원자는 모든 필수 자격 요건을 충족합니다: '영어 맞춤법 및 문법 교정에 능숙해야 합니다,' '내부 커뮤니케이션에서 정중한 어조를 사용하는 방법에 능숙해야 합니다,' '내부 공지 또는 유사한 문서 편집 경험이 있어야 합니다,' 및 '정확성과 적절한 표현에 대한 세심한 주의력을 가져야 
+  [bid] code_fixer: BID elig=100 conf=95 :: 이 작업은 영어 맞춤법 및 문법 교정, 정중한 어조 사용, 내부 공지 편집 경험, 정확성에 대한 세심한 주의력 등 네 가지 자격 요건을 요구합니다. 이러한 전문 분야를 충족하므로 입찰할 수 있습니다.
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [bias] advice UNPARSEABLE -> no adjustment applied
+  [award] t5 -> text_editor  [correct]
+  [exec] text_editor: 5 claimed step(s), 73 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           공지문은 정중한 어조로 수정되고 맞춤법이 올바르게 보정되었으나, 영어 교정 자격 요건과 달리 한국어로 작성되었습니다.
+  [bias] hypotheses after t5:
+         sql_analyst: 필요한 ANSI SQL, 날짜 추출, 집계, 월별 창 함수 순위 계산을 모두 수행할 수 있지만, SQLite에서 하위 쿼리의 월별 별칭을 상위 쿼리에서 참조할 때 주의해야 합니다(예: 'month' 열 누락). 자기 보고는 부분적으로만 현실과 일치하며, 월별 별칭 처리에 대한 오류가 발생합니다.
+         text_editor: 내부 공지문의 정중한 어조와 맞춤법을 교정할 수 있지만, 항상 영어 요건을 충족하지는 않습니다. 자기 보고는 부분적으로만 현실과 일치하며, 최근 작업에서 한국어로 작성된 결과물이 이를 보여줍니다.
+         code_fixer: n > len(xs)일 때 전체 리스트를 반환하도록 Python 함수를 수정할 수 있으며, 그렇지 않으면 원래 로직을 유지하고, IndexError와 같은 인덱스 관련 오류를 방지합니다. 자기 보고는 이러한 성능과 일치합니다.
+
+--- t6 (gold=code_fixer, fixture=python) ---
+[announce] t6
+           req: Python 함수 작성 및 수정 경험, 특히 while 루프 사용
+           req: 무한 루프 발생 원인과 적절한 종료 조건 파악 및 구현 능력
+           req: 리스트 생성, 값 추가, 반환 데이터 구조 처리
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건에는 무한 루프 디버깅 및 while 루프 수정을 위한 Python 함수 작성 및 수정 경험이 필요하지만, 저는 SQL 분석에 특화되어 있으며 Python 코드 수정 작업에 대한 경험이 없습니다.
+  [bid] text_editor: BID elig=95 conf=95 :: 파이썬 while 루프 사용, 리스트 생성, 종료 조건 처리, 그리고 함수 수정 경험과 같은 필요한 기술을 갖추고 있으며, 제공된 코드에서 무한 루프가 발생하는 이유를 파악하고 적절한 수정 사항을 제안할 수 있습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 이 작업은 무한 루프의 원인을 파악하고, while 루프 종료 조건을 수정하며, 리스트를 반환하는 Python 함수 수정을 요구합니다. 이는 제가 전문으로 하는 영역입니다.
+  [bias] adjust {'sql_analyst': 0, 'text_editor': -80, 'code_fixer': 10} :: text_editor의 최근 입찰에서 실행 실패(빈 아티팩트)가 발생했으며, code_fixer는 t3에서 일관되게 성공적인 실행을 기록했으므로 이러한 조정이 이루어졌습니다.
+  [veto] refused: text_editor (Bias 감점 후 40 미만)
+  [award] t6 -> code_fixer  [correct]
+  [exec] code_fixer: 3 claimed step(s), 99 chars of artifact
+  [run ] code_fixer: PASS (57ms)
+  [verify] code_fixer: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           루프 조건을 `n > 0`으로 변경하여 모든 양의 n에 대해 종료되도록 하고, 2씩 감소시키며 양수만 리스트로 반환합니다.
+  [bias-effect] plain rule would have picked text_editor; with Bias -> code_fixer
+  [bias] hypotheses after t6:
+         sql_analyst: 필요한 ANSI SQL, 날짜 추출, 집계, 월별 창 함수 순위 계산을 모두 수행할 수 있지만, SQLite에서 하위 쿼리의 월별 별칭을 상위 쿼리에서 참조할 때 주의해야 합니다(예: 'month' 열 누락). 자기 보고는 부분적으로만 현실과 일치하며, 월별 별칭 처리에 대한 오류가 발생합니다.
+         text_editor: 내부 공지문의 정중한 어조와 맞춤법을 교정할 수 있지만, 항상 영어 요건을 충족하지는 않습니다. 자기 보고는 부분적으로만 현실과 일치하며, 최근 작업에서 한국어로 작성된 결과물이 이를 보여줍니다.
+         code_fixer: 무한 루프가 발생하는 Python 함수를 수정할 수 있으며, while 루프 종료 조건을 조정(예: `n != 0`을 `n > 0`으로 변경)하여 올바른 리스트 출력을 보장합니다. 자기 보고는 이러한 성능과 일치합니다.
+
+=== summary ===
+  run: overconfident-bias-run2
+  condition: overconfident
+  tasks: 6
+  correct: 5
+  messages: 42
+  unassigned: 0
+  misawards: 1
+  note: tokens=45511 llm_calls=48 seed=20264256 delivered=2/4 judge_disagree=1
+  arm: bias
+  bias_messages: 12
+  icebreak_messages: 0
+  unassigned_nobid: 0
+  unassigned_veto: 0
+  veto_hit_gold: 1
+  bias_helped: 2
+  bias_hurt: 0
+  first_intervention: 2
+  first_flip: 3
+  final hypotheses:
+    sql_analyst: 필요한 ANSI SQL, 날짜 추출, 집계, 월별 창 함수 순위 계산을 모두 수행할 수 있지만, SQLite에서 하위 쿼리의 월별 별칭을 상위 쿼리에서 참조할 때 주의해야 합니다(예: 'month' 열 누락). 자기 보고는 부분적으로만 현실과 일치하며, 월별 별칭 처리에 대한 오류가 발생합니다.
+    text_editor: 내부 공지문의 정중한 어조와 맞춤법을 교정할 수 있지만, 항상 영어 요건을 충족하지는 않습니다. 자기 보고는 부분적으로만 현실과 일치하며, 최근 작업에서 한국어로 작성된 결과물이 이를 보여줍니다.
+    code_fixer: 무한 루프가 발생하는 Python 함수를 수정할 수 있으며, while 루프 종료 조건을 조정(예: `n != 0`을 `n > 0`으로 변경)하여 올바른 리스트 출력을 보장합니다. 자기 보고는 이러한 성능과 일치합니다.

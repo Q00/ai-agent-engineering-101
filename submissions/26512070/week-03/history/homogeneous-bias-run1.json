@@ -1,0 +1,540 @@
+{
+  "run": "homogeneous-bias-run1",
+  "condition": "homogeneous",
+  "arm": "bias",
+  "seed": 20270423,
+  "model": "openai/gpt-4o-mini",
+  "temperature": 0.7,
+  "bias_adj_range": [
+    -60,
+    20
+  ],
+  "final_hypotheses": {
+    "sql_analyst": "sql_analyst는 모든 자격 요건을 충족합니다.",
+    "text_editor": "text_editor는 SQL 쿼리를 작성할 수 있는 능력이 있으나, 이전 실패 판정으로 인해 신뢰도가 낮아진 상태입니다.",
+    "code_fixer": "code_fixer는 모든 자격 요건을 충족하며, 최근 업무에서 성공적으로 낙찰되었습니다."
+  },
+  "icebreak": [],
+  "records": [
+    {
+      "task_id": "t1",
+      "desc": "주문 테이블(orders: id INTEGER, region TEXT, amount INTEGER, ordered_at TEXT 'YYYY-MM-DD')에서 월(YYYY-MM)별로 매출 합계 상위 2개 지역을 뽑는 SQL을 작성하라. 월, 지역, 매출합 세 컬럼을 반환할 것.",
+      "gold": "sql_analyst",
+      "announce": {
+        "task_id": "t1",
+        "desc": "주문 테이블(orders: id INTEGER, region TEXT, amount INTEGER, ordered_at TEXT 'YYYY-MM-DD')에서 월(YYYY-MM)별로 매출 합계 상위 2개 지역을 뽑는 SQL을 작성하라. 월, 지역, 매출합 세 컬럼을 반환할 것.",
+        "eligibility": [
+          "SQL 쿼리를 작성할 수 있는 능력",
+          "데이터베이스에서 집계 함수 및 그룹화 기능을 이해하고 활용할 수 있는 능력",
+          "주어진 요구사항에 따라 결과를 정렬하고 필터링할 수 있는 능력"
+        ],
+        "artifact_spec": "결과물(artifact)은 실행 가능한 단일 SQL SELECT 문이어야 합니다. SQLite 문법을 사용하고, 설명이나 마크다운 펜스는 넣지 마십시오."
+      },
+      "bids": [
+        {
+          "contractor": "sql_analyst",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "공고의 자격 요건 중 'SQL 쿼리를 작성할 수 있는 능력'과 '데이터베이스에서 집계 함수 및 그룹화 기능을 이해하고 활용할 수 있는 능력'을 충족합니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"공고의 자격 요건 중 'SQL 쿼리를 작성할 수 있는 능력'과 '데이터베이스에서 집계 함수 및 그룹화 기능을 이해하고 활용할 수 있는 능력'을 충족합니다.\"\n}"
+        },
+        {
+          "contractor": "text_editor",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "모든 자격 요건을 충족합니다. SQL 쿼리를 작성하고, 집계 함수 및 그룹화 기능을 이해하고 활용할 수 있으며, 요구사항에 따라 결과를 정렬하고 필터링할 수 있습니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"모든 자격 요건을 충족합니다. SQL 쿼리를 작성하고, 집계 함수 및 그룹화 기능을 이해하고 활용할 수 있으며, 요구사항에 따라 결과를 정렬하고 필터링할 수 있습니다.\"\n}"
+        },
+        {
+          "contractor": "code_fixer",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "나는 'SQL 쿼리를 작성할 수 있는 능력'과 '데이터베이스에서 집계 함수 및 그룹화 기능을 이해하고 활용할 수 있는 능력'을 갖추고 있다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"나는 'SQL 쿼리를 작성할 수 있는 능력'과 '데이터베이스에서 집계 함수 및 그룹화 기능을 이해하고 활용할 수 있는 능력'을 갖추고 있다.\"\n}"
+        }
+      ],
+      "bid_checks": {
+        "sql_analyst": [],
+        "text_editor": [],
+        "code_fixer": []
+      },
+      "bias_advice": {
+        "sql_analyst": 0,
+        "text_editor": 0,
+        "code_fixer": 0
+      },
+      "winner": "text_editor",
+      "counterfactual_winner": "text_editor",
+      "result": {
+        "contractor": "text_editor",
+        "task_id": "t1",
+        "artifact": "SELECT strftime('%Y-%m', ordered_at) AS month, region, SUM(amount) AS total_sales FROM orders GROUP BY month, region ORDER BY month, total_sales DESC LIMIT 2;",
+        "claimed_plan": [
+          "주문 테이블에서 필요한 컬럼 선택",
+          "날짜를 월(YYYY-MM) 형식으로 변환",
+          "각 월별로 지역과 매출 합계 계산",
+          "매출 합계 기준으로 지역 정렬",
+          "상위 2개 지역을 선택"
+        ],
+        "log": {
+          "kind": "sql",
+          "ran": true,
+          "passed": false,
+          "returncode": 1,
+          "stdout": "ROWS [[\"2024-01\", \"seoul\", 150], [\"2024-01\", \"busan\", 120]]\nMISSING [[\"2024-02\", \"busan\", \"300\"]]\n",
+          "stderr": "",
+          "duration_ms": 63,
+          "note": ""
+        },
+        "parse_ok": true,
+        "raw": "{\n  \"plan\": [\n    \"주문 테이블에서 필요한 컬럼 선택\",\n    \"날짜를 월(YYYY-MM) 형식으로 변환\",\n    \"각 월별로 지역과 매출 합계 계산\",\n    \"매출 합계 기준으로 지역 정렬\",\n    \"상위 2개 지역을 선택\"\n  ],\n  \"artifact\": \"SELECT strftime('%Y-%m', ordered_at) AS month, region, SUM(amount) AS total_sales FROM orders GROUP BY month, region ORDER BY month, total_sales DESC LIMIT 2;\"\n}"
+      },
+      "traj_check": {
+        "supports_output": false,
+        "covers_eligibility": true,
+        "note": "결과물은 매출 합계 상위 2개 지역을 뽑기 위한 SQL 쿼리로, LIMIT 2가 잘못 적용되어 전체 월별 상위 지역을 반환하지 않음.",
+        "ground_truth": false
+      },
+      "messages": 7
+    },
+    {
+      "task_id": "t2",
+      "desc": "아래 회의록을 결정사항 중심으로 5줄 이내로 요약하라. 회의록: 신규 결제 모듈 도입 여부를 논의했고, 비용은 월 200만원, 개발 기간은 6주로 추산되었다. 재무팀은 3분기 예산 초과를 우려했고, 개발팀은 자체 구현 시 12주가 걸린다고 답했다. 최종적으로 도입하되 계약은 1년 단위로 하기로 했다.",
+      "gold": "text_editor",
+      "announce": {
+        "task_id": "t2",
+        "desc": "아래 회의록을 결정사항 중심으로 5줄 이내로 요약하라. 회의록: 신규 결제 모듈 도입 여부를 논의했고, 비용은 월 200만원, 개발 기간은 6주로 추산되었다. 재무팀은 3분기 예산 초과를 우려했고, 개발팀은 자체 구현 시 12주가 걸린다고 답했다. 최종적으로 도입하되 계약은 1년 단위로 하기로 했다.",
+        "eligibility": [
+          "회의록 요약 능력",
+          "결정 사항 파악 및 정리 능력",
+          "명료하고 간결한 문서 작성 능력"
+        ],
+        "artifact_spec": "결과물(artifact)은 완성된 텍스트여야 합니다."
+      },
+      "bids": [
+        {
+          "contractor": "sql_analyst",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "모든 자격 요건을 충족합니다. '회의록 요약 능력', '결정 사항 파악 및 정리 능력', '명료하고 간결한 문서 작성 능력'을 갖추고 있습니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"모든 자격 요건을 충족합니다. '회의록 요약 능력', '결정 사항 파악 및 정리 능력', '명료하고 간결한 문서 작성 능력'을 갖추고 있습니다.\"\n}"
+        },
+        {
+          "contractor": "text_editor",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "공고의 자격 요건을 충족하며, '회의록 요약 능력'과 '결정 사항 파악 및 정리 능력'이 요구되고 있습니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"공고의 자격 요건을 충족하며, '회의록 요약 능력'과 '결정 사항 파악 및 정리 능력'이 요구되고 있습니다.\"\n}"
+        },
+        {
+          "contractor": "code_fixer",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "회의록 요약 능력, 결정 사항 파악 및 정리 능력, 명료하고 간결한 문서 작성 능력을 모두 충족할 수 있습니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"회의록 요약 능력, 결정 사항 파악 및 정리 능력, 명료하고 간결한 문서 작성 능력을 모두 충족할 수 있습니다.\"\n}"
+        }
+      ],
+      "bid_checks": {
+        "sql_analyst": [],
+        "text_editor": [
+          "high_claim_without_reference"
+        ],
+        "code_fixer": []
+      },
+      "bias_advice": {
+        "sql_analyst": 0,
+        "text_editor": -20,
+        "code_fixer": 0
+      },
+      "winner": "code_fixer",
+      "counterfactual_winner": "text_editor",
+      "result": {
+        "contractor": "code_fixer",
+        "task_id": "t2",
+        "artifact": "신규 결제 모듈 도입이 결정되었으며, 비용은 월 200만원, 개발 기간은 6주로 설정되었다. 재무팀의 우려에도 불구하고 계약은 1년 단위로 체결하기로 하였다. 개발팀은 자체 구현 시 12주가 소요된다고 답변하였다.",
+        "claimed_plan": [
+          "회의록 검토",
+          "결정 사항 파악",
+          "간결하게 요약 작성",
+          "형식 점검",
+          "결과물 제출"
+        ],
+        "log": {
+          "kind": "none",
+          "ran": false,
+          "passed": null,
+          "returncode": null,
+          "stdout": "",
+          "stderr": "",
+          "duration_ms": 0,
+          "note": "이 업무에는 실행 가능한 fixture가 없음"
+        },
+        "parse_ok": true,
+        "raw": "{\n  \"plan\": [\n    \"회의록 검토\",\n    \"결정 사항 파악\",\n    \"간결하게 요약 작성\",\n    \"형식 점검\",\n    \"결과물 제출\"\n  ],\n  \"artifact\": \"신규 결제 모듈 도입이 결정되었으며, 비용은 월 200만원, 개발 기간은 6주로 설정되었다. 재무팀의 우려에도 불구하고 계약은 1년 단위로 체결하기로 하였다. 개발팀은 자체 구현 시 12주가 소요된다고 답변하였다.\"\n}"
+      },
+      "traj_check": {
+        "supports_output": true,
+        "covers_eligibility": true,
+        "note": "제출된 결과물은 결정 사항을 명확하고 간결하게 요약하였으며, 요구된 요약 능력과 문서 작성 능력을 충족합니다.",
+        "ground_truth": null
+      },
+      "messages": 7
+    },
+    {
+      "task_id": "t3",
+      "desc": "이 파이썬 함수는 n이 리스트 길이보다 크면 IndexError를 낸다. 리스트 전체를 반환하도록 고쳐라. def last_n(xs, n): return [xs[i] for i in range(len(xs) - n, len(xs))]",
+      "gold": "code_fixer",
+      "announce": {
+        "task_id": "t3",
+        "desc": "이 파이썬 함수는 n이 리스트 길이보다 크면 IndexError를 낸다. 리스트 전체를 반환하도록 고쳐라. def last_n(xs, n): return [xs[i] for i in range(len(xs) - n, len(xs))]",
+        "eligibility": [
+          "파이썬 프로그래밍 언어에 대한 이해",
+          "예외 처리 및 오류 관리에 대한 지식",
+          "리스트 및 인덱스 조작에 대한 경험"
+        ],
+        "artifact_spec": "결과물(artifact)은 실행 가능한 파이썬 코드여야 합니다. 원래 함수와 같은 이름의 고친 함수 정의만 넣으십시오. 설명, 마크다운 펜스, 예시 호출은 넣지 마십시오."
+      },
+      "bids": [
+        {
+          "contractor": "sql_analyst",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "모든 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '예외 처리 및 오류 관리에 대한 지식', '리스트 및 인덱스 조작에 대한 경험'을 충족합니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"모든 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '예외 처리 및 오류 관리에 대한 지식', '리스트 및 인덱스 조작에 대한 경험'을 충족합니다.\"\n}"
+        },
+        {
+          "contractor": "text_editor",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "공고의 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '예외 처리 및 오류 관리에 대한 지식', '리스트 및 인덱스 조작에 대한 경험'을 모두 충족합니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"공고의 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '예외 처리 및 오류 관리에 대한 지식', '리스트 및 인덱스 조작에 대한 경험'을 모두 충족합니다.\"\n}"
+        },
+        {
+          "contractor": "code_fixer",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "공고의 자격 요건에 '파이썬 프로그래밍 언어에 대한 이해', '예외 처리 및 오류 관리에 대한 지식', '리스트 및 인덱스 조작에 대한 경험'이 명시되어 있으며, 모두 충족합니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"공고의 자격 요건에 '파이썬 프로그래밍 언어에 대한 이해', '예외 처리 및 오류 관리에 대한 지식', '리스트 및 인덱스 조작에 대한 경험'이 명시되어 있으며, 모두 충족합니다.\"\n}"
+        }
+      ],
+      "bid_checks": {
+        "sql_analyst": [],
+        "text_editor": [],
+        "code_fixer": []
+      },
+      "bias_advice": {
+        "sql_analyst": 0,
+        "text_editor": -20,
+        "code_fixer": 20
+      },
+      "winner": "code_fixer",
+      "counterfactual_winner": "code_fixer",
+      "result": {
+        "contractor": "code_fixer",
+        "task_id": "t3",
+        "artifact": "def last_n(xs, n):\n    if n > len(xs):\n        return xs\n    return [xs[i] for i in range(len(xs) - n, len(xs))]",
+        "claimed_plan": [
+          "함수 정의 파악",
+          "리스트 길이에 따른 조건 추가",
+          "IndexError 대신 전체 리스트 반환 구현",
+          "코드 검토 및 테스트"
+        ],
+        "log": {
+          "kind": "python",
+          "ran": true,
+          "passed": true,
+          "returncode": 0,
+          "stdout": "HARNESS_OK\n",
+          "stderr": "",
+          "duration_ms": 52,
+          "note": ""
+        },
+        "parse_ok": true,
+        "raw": "{\n  \"plan\": [\n    \"함수 정의 파악\",\n    \"리스트 길이에 따른 조건 추가\",\n    \"IndexError 대신 전체 리스트 반환 구현\",\n    \"코드 검토 및 테스트\"\n  ],\n  \"artifact\": \"def last_n(xs, n):\\n    if n > len(xs):\\n        return xs\\n    return [xs[i] for i in range(len(xs) - n, len(xs))]\"\n}"
+      },
+      "traj_check": {
+        "supports_output": true,
+        "covers_eligibility": true,
+        "note": "제출된 결과물은 원래 함수의 요구사항을 충족하며, n이 리스트 길이보다 클 때 전체 리스트를 반환하도록 수정되었습니다. 계약자가 주장한 자격 요건도 모두 충족합니다.",
+        "ground_truth": true
+      },
+      "messages": 7
+    },
+    {
+      "task_id": "t4",
+      "desc": "고객 테이블(customers: id INTEGER, email TEXT, name TEXT)에서 같은 이메일이 두 번 이상 나타나는 이메일과 그 건수를 반환하는 SQL을 작성하라.",
+      "gold": "sql_analyst",
+      "announce": {
+        "task_id": "t4",
+        "desc": "고객 테이블(customers: id INTEGER, email TEXT, name TEXT)에서 같은 이메일이 두 번 이상 나타나는 이메일과 그 건수를 반환하는 SQL을 작성하라.",
+        "eligibility": [
+          "SQL 쿼리를 작성할 수 있어야 함",
+          "GROUP BY 및 COUNT 함수를 사용할 수 있어야 함",
+          "HAVING 절을 사용하여 조건을 설정할 수 있어야 함"
+        ],
+        "artifact_spec": "결과물(artifact)은 실행 가능한 단일 SQL SELECT 문이어야 합니다. SQLite 문법을 사용하고, 설명이나 마크다운 펜스는 넣지 마십시오."
+      },
+      "bids": [
+        {
+          "contractor": "sql_analyst",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "공고의 자격 요건에서 'SQL 쿼리를 작성할 수 있어야 함', 'GROUP BY 및 COUNT 함수를 사용할 수 있어야 함', 'HAVING 절을 사용하여 조건을 설정할 수 있어야 함'을 충족합니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"공고의 자격 요건에서 'SQL 쿼리를 작성할 수 있어야 함', 'GROUP BY 및 COUNT 함수를 사용할 수 있어야 함', 'HAVING 절을 사용하여 조건을 설정할 수 있어야 함'을 충족합니다.\"\n}"
+        },
+        {
+          "contractor": "text_editor",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "나는 SQL 쿼리를 작성할 수 있으며, GROUP BY, COUNT, HAVING 절을 사용할 수 있다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"나는 SQL 쿼리를 작성할 수 있으며, GROUP BY, COUNT, HAVING 절을 사용할 수 있다.\"\n}"
+        },
+        {
+          "contractor": "code_fixer",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "저는 SQL 쿼리를 작성할 수 있으며, GROUP BY 및 COUNT 함수, HAVING 절을 사용할 수 있습니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"저는 SQL 쿼리를 작성할 수 있으며, GROUP BY 및 COUNT 함수, HAVING 절을 사용할 수 있습니다.\"\n}"
+        }
+      ],
+      "bid_checks": {
+        "sql_analyst": [],
+        "text_editor": [],
+        "code_fixer": []
+      },
+      "bias_advice": {
+        "sql_analyst": 0,
+        "text_editor": -10,
+        "code_fixer": 20
+      },
+      "winner": "code_fixer",
+      "counterfactual_winner": "text_editor",
+      "result": {
+        "contractor": "code_fixer",
+        "task_id": "t4",
+        "artifact": "SELECT email, COUNT(*) as count FROM customers GROUP BY email HAVING count > 1;",
+        "claimed_plan": [
+          "고객 테이블에서 이메일과 그 건수를 선택한다.",
+          "이메일을 기준으로 그룹화한다.",
+          "이메일의 건수가 2 이상인 경우를 필터링한다."
+        ],
+        "log": {
+          "kind": "sql",
+          "ran": true,
+          "passed": true,
+          "returncode": 0,
+          "stdout": "ROWS [[\"a@x.com\", 3]]\nHARNESS_OK\n",
+          "stderr": "",
+          "duration_ms": 72,
+          "note": ""
+        },
+        "parse_ok": true,
+        "raw": "{\n  \"plan\": [\n    \"고객 테이블에서 이메일과 그 건수를 선택한다.\",\n    \"이메일을 기준으로 그룹화한다.\",\n    \"이메일의 건수가 2 이상인 경우를 필터링한다.\"\n  ],\n  \"artifact\": \"SELECT email, COUNT(*) as count FROM customers GROUP BY email HAVING count > 1;\"\n}"
+      },
+      "traj_check": {
+        "supports_output": true,
+        "covers_eligibility": true,
+        "note": "제출된 SQL 쿼리는 요구된 작업을 충족하며, GROUP BY, COUNT, HAVING 절을 올바르게 사용하고 있다.",
+        "ground_truth": true
+      },
+      "messages": 7
+    },
+    {
+      "task_id": "t5",
+      "desc": "사내 공지문의 맞춤법과 어투를 정중체로 교정하라. 원문: 내일 서버 점검함. 그동안 접속 안됨. 미리 백업 해놓을것.",
+      "gold": "text_editor",
+      "announce": {
+        "task_id": "t5",
+        "desc": "사내 공지문의 맞춤법과 어투를 정중체로 교정하라. 원문: 내일 서버 점검함. 그동안 접속 안됨. 미리 백업 해놓을것.",
+        "eligibility": [
+          "한국어 맞춤법 및 문법에 대한 이해가 필요합니다.",
+          "정중체로의 문장 교정 능력이 있어야 합니다.",
+          "업무 관련 내용을 정확하게 전달할 수 있어야 합니다."
+        ],
+        "artifact_spec": "결과물(artifact)은 완성된 텍스트여야 합니다."
+      },
+      "bids": [
+        {
+          "contractor": "sql_analyst",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "모든 자격 요건을 충족합니다. '한국어 맞춤법 및 문법에 대한 이해가 필요합니다'와 '정중체로의 문장 교정 능력이 있어야 합니다'를 충족할 수 있습니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"모든 자격 요건을 충족합니다. '한국어 맞춤법 및 문법에 대한 이해가 필요합니다'와 '정중체로의 문장 교정 능력이 있어야 합니다'를 충족할 수 있습니다.\"\n}"
+        },
+        {
+          "contractor": "text_editor",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "모든 자격 요건을 충족합니다. '한국어 맞춤법 및 문법에 대한 이해'와 '정중체로의 문장 교정 능력'이 필요하다는 조건을 만족합니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"모든 자격 요건을 충족합니다. '한국어 맞춤법 및 문법에 대한 이해'와 '정중체로의 문장 교정 능력'이 필요하다는 조건을 만족합니다.\"\n}"
+        },
+        {
+          "contractor": "code_fixer",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "나는 '한국어 맞춤법 및 문법에 대한 이해'와 '정중체로의 문장 교정 능력'을 갖추고 있으며, '업무 관련 내용을 정확하게 전달할 수 있어야' 하는 요건을 충족합니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"나는 '한국어 맞춤법 및 문법에 대한 이해'와 '정중체로의 문장 교정 능력'을 갖추고 있으며, '업무 관련 내용을 정확하게 전달할 수 있어야' 하는 요건을 충족합니다.\"\n}"
+        }
+      ],
+      "bid_checks": {
+        "sql_analyst": [],
+        "text_editor": [],
+        "code_fixer": []
+      },
+      "bias_advice": {
+        "sql_analyst": 0,
+        "text_editor": -20,
+        "code_fixer": 0
+      },
+      "winner": "code_fixer",
+      "counterfactual_winner": "text_editor",
+      "result": {
+        "contractor": "code_fixer",
+        "task_id": "t5",
+        "artifact": "내일 서버 점검이 예정되어 있습니다. 그 동안 접속이 불가능합니다. 미리 백업을 해주시면 감사하겠습니다.",
+        "claimed_plan": [
+          "원문 분석",
+          "맞춤법 교정",
+          "어투를 정중체로 변경",
+          "최종 문장 검토",
+          "결과물 작성"
+        ],
+        "log": {
+          "kind": "none",
+          "ran": false,
+          "passed": null,
+          "returncode": null,
+          "stdout": "",
+          "stderr": "",
+          "duration_ms": 0,
+          "note": "이 업무에는 실행 가능한 fixture가 없음"
+        },
+        "parse_ok": true,
+        "raw": "{\n  \"plan\": [\n    \"원문 분석\",\n    \"맞춤법 교정\",\n    \"어투를 정중체로 변경\",\n    \"최종 문장 검토\",\n    \"결과물 작성\"\n  ],\n  \"artifact\": \"내일 서버 점검이 예정되어 있습니다. 그 동안 접속이 불가능합니다. 미리 백업을 해주시면 감사하겠습니다.\"\n}"
+      },
+      "traj_check": {
+        "supports_output": true,
+        "covers_eligibility": true,
+        "note": "제출된 결과물은 맞춤법과 어투가 정중체로 교정되어 있으며, 업무 관련 내용을 정확하게 전달하고 있습니다.",
+        "ground_truth": null
+      },
+      "messages": 7
+    },
+    {
+      "task_id": "t6",
+      "desc": "이 파이썬 함수는 홀수를 넣으면 끝나지 않는다. n부터 2씩 줄이며 양수만 리스트로 반환하도록 고쳐라. def countdown(n):\n    out = []\n    while n != 0:\n        out.append(n)\n        n -= 2\n    return out",
+      "gold": "code_fixer",
+      "announce": {
+        "task_id": "t6",
+        "desc": "이 파이썬 함수는 홀수를 넣으면 끝나지 않는다. n부터 2씩 줄이며 양수만 리스트로 반환하도록 고쳐라. def countdown(n):\n    out = []\n    while n != 0:\n        out.append(n)\n        n -= 2\n    return out",
+        "eligibility": [
+          "파이썬 프로그래밍 언어에 대한 이해",
+          "조건문과 반복문 사용 능력",
+          "리스트 데이터 구조 활용 경험"
+        ],
+        "artifact_spec": "결과물(artifact)은 실행 가능한 파이썬 코드여야 합니다. 원래 함수와 같은 이름의 고친 함수 정의만 넣으십시오. 설명, 마크다운 펜스, 예시 호출은 넣지 마십시오."
+      },
+      "bids": [
+        {
+          "contractor": "sql_analyst",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "나는 '파이썬 프로그래밍 언어에 대한 이해', '조건문과 반복문 사용 능력', '리스트 데이터 구조 활용 경험'을 모두 충족할 수 있습니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"나는 '파이썬 프로그래밍 언어에 대한 이해', '조건문과 반복문 사용 능력', '리스트 데이터 구조 활용 경험'을 모두 충족할 수 있습니다.\"\n}"
+        },
+        {
+          "contractor": "text_editor",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "모든 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '조건문과 반복문 사용 능력', '리스트 데이터 구조 활용 경험'을 충족합니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"모든 자격 요건인 '파이썬 프로그래밍 언어에 대한 이해', '조건문과 반복문 사용 능력', '리스트 데이터 구조 활용 경험'을 충족합니다.\"\n}"
+        },
+        {
+          "contractor": "code_fixer",
+          "will_bid": true,
+          "eligibility_score": 100,
+          "confidence": 90,
+          "reason": "공고의 자격 요건에서 요구하는 '파이썬 프로그래밍 언어에 대한 이해', '조건문과 반복문 사용 능력', '리스트 데이터 구조 활용 경험'을 모두 충족합니다.",
+          "parse_ok": true,
+          "raw": "{\n  \"will_bid\": true,\n  \"eligibility_score\": 100,\n  \"confidence\": 90,\n  \"reason\": \"공고의 자격 요건에서 요구하는 '파이썬 프로그래밍 언어에 대한 이해', '조건문과 반복문 사용 능력', '리스트 데이터 구조 활용 경험'을 모두 충족합니다.\"\n}"
+        }
+      ],
+      "bid_checks": {
+        "sql_analyst": [],
+        "text_editor": [],
+        "code_fixer": []
+      },
+      "bias_advice": {
+        "sql_analyst": 0,
+        "text_editor": -20,
+        "code_fixer": 0
+      },
+      "winner": "sql_analyst",
+      "counterfactual_winner": "sql_analyst",
+      "result": {
+        "contractor": "sql_analyst",
+        "task_id": "t6",
+        "artifact": "def countdown(n):\n    out = []\n    while n > 0:\n        out.append(n)\n        n -= 2\n    return out",
+        "claimed_plan": [
+          "기존 함수 분석",
+          "홀수 처리 로직 수정",
+          "양수만 리스트에 추가",
+          "최종 코드 작성"
+        ],
+        "log": {
+          "kind": "python",
+          "ran": true,
+          "passed": true,
+          "returncode": 0,
+          "stdout": "HARNESS_OK\n",
+          "stderr": "",
+          "duration_ms": 54,
+          "note": ""
+        },
+        "parse_ok": true,
+        "raw": "{\n  \"plan\": [\"기존 함수 분석\", \"홀수 처리 로직 수정\", \"양수만 리스트에 추가\", \"최종 코드 작성\"],\n  \"artifact\": \"def countdown(n):\\n    out = []\\n    while n > 0:\\n        out.append(n)\\n        n -= 2\\n    return out\"\n}"
+      },
+      "traj_check": {
+        "supports_output": true,
+        "covers_eligibility": true,
+        "note": "제출된 결과물은 요구사항에 맞게 홀수를 처리하고 양수만 리스트에 추가하도록 수정되었습니다.",
+        "ground_truth": true
+      },
+      "messages": 7
+    }
+  ]
+}

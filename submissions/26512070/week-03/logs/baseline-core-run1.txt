@@ -1,0 +1,105 @@
+=== run baseline-core-run1 ===
+provider=openai model=openai/gpt-4o-mini temperature=0.7
+condition=baseline arm=core bias=off icebreak=off
+seed=20269746 bias_adj_range=(-60,20) veto=none
+contractors=['sql_analyst', 'text_editor', 'code_fixer']
+icebreak_tasks=[]
+measure_tasks=['t1', 't2', 't3', 't4', 't5', 't6']
+fixtures={t1:sql, t2:none, t3:python, t4:sql, t5:none, t6:python}
+
+########## measured ##########
+--- t1 (gold=sql_analyst, fixture=sql) ---
+[announce] t1
+           req: SQL 쿼리를 작성할 수 있는 능력
+           req: 데이터베이스에서 집계 함수와 그룹화를 이해하고 사용할 수 있는 능력
+           req: 조건부 집계를 위한 서브쿼리나 윈도우 함수를 활용할 수 있는 능력
+  [bid] sql_analyst: BID elig=100 conf=90 :: 공고의 자격 요건인 SQL 쿼리 작성, 집계 함수 및 그룹화 이해, 조건부 집계를 위한 서브쿼리나 윈도우 함수 활용 능력을 모두 충족합니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 공고의 자격 요건에 SQL 쿼리를 작성할 수 있는 능력이 포함되어 있어, 이는 제가 전문으로 하는 국문 교열과 관련이 없습니다.
+  [bid] code_fixer: pass elig=0 conf=0 :: 제공된 공고는 SQL 쿼리를 작성하는 능력을 요구하고 있으나, 이는 제 전문 분야가 아닙니다.
+  [award] t1 -> sql_analyst  [correct]
+  [exec] sql_analyst: 4 claimed step(s), 276 chars of artifact
+  [run ] sql_analyst: PASS (73ms)
+  [verify] sql_analyst: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 SQL 쿼리는 요구 사항을 충족하며, 월별로 상위 2개 지역의 매출 합계를 올바르게 계산하고 있습니다.
+
+--- t2 (gold=text_editor, fixture=none) ---
+[announce] t2
+           req: 회의록 분석 및 요약 능력
+           req: 결정사항 도출 능력
+           req: 명확한 의사소통 능력
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건은 '회의록 분석 및 요약 능력', '결정사항 도출 능력', '명확한 의사소통 능력'이 포함되어 있지만, 이는 제 전문 분야가 아닙니다.
+  [bid] text_editor: BID elig=100 conf=90 :: 회의록 분석 및 요약 능력, 결정사항 도출 능력, 명확한 의사소통 능력 등 모든 자격 요건을 충족합니다.
+  [bid] code_fixer: pass elig=0 conf=0 :: 공고의 자격 요건은 회의록 분석 및 요약 능력, 결정사항 도출 능력, 명확한 의사소통 능력으로, 이는 제 전문 분야가 아닙니다.
+  [award] t2 -> text_editor  [correct]
+  [exec] text_editor: 3 claimed step(s), 147 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 회의록의 결정사항을 포함하여 명확하게 요약하였으며, 자격 요건을 모두 충족합니다.
+
+--- t3 (gold=code_fixer, fixture=python) ---
+[announce] t3
+           req: 파이썬 프로그래밍 언어에 대한 이해
+           req: 리스트와 인덱싱 개념에 대한 지식
+           req: 예외 처리 및 오류 수정 경험
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건이 파이썬 프로그래밍 언어에 대한 이해와 관련되며, 이는 제가 전문 분야가 아닙니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 공고의 자격 요건이 '파이썬 프로그래밍 언어에 대한 이해' 및 '예외 처리 및 오류 수정 경험'을 요구하고 있으며, 이는 제 전문 분야가 아닙니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 모든 자격 요건을 충족합니다: '파이썬 프로그래밍 언어에 대한 이해', '리스트와 인덱싱 개념에 대한 지식', '예외 처리 및 오류 수정 경험'이 필요합니다.
+  [award] t3 -> code_fixer  [correct]
+  [exec] code_fixer: 4 claimed step(s), 57 chars of artifact
+  [run ] code_fixer: FAIL (92ms) AssertionError
+         stderr: AssertionError
+  [verify] code_fixer: judge_says=True fixture_says=False -> verdict=False  *** 판정 불일치: 실행 결과를 따름 ***
+           제출된 결과물은 n이 리스트 길이보다 클 때 전체 리스트를 반환하도록 수정되어 있으며, 파이썬 프로그래밍 언어 및 리스트와 인덱싱 개념에 대한 이해를 바탕으로 작성되었습니다.
+
+--- t4 (gold=sql_analyst, fixture=sql) ---
+[announce] t4
+           req: SQL 쿼리 작성 능력
+           req: 데이터베이스 구조 이해
+           req: 집계 함수 및 그룹화에 대한 이해
+  [bid] sql_analyst: BID elig=100 conf=90 :: 모든 자격 요건을 충족합니다. 'SQL 쿼리 작성 능력', '데이터베이스 구조 이해', '집계 함수 및 그룹화에 대한 이해'를 갖추고 있습니다.
+  [bid] text_editor: pass elig=0 conf=0 :: 공고의 자격 요건 중 'SQL 쿼리 작성 능력'과 '데이터베이스 구조 이해'는 제 전문 분야가 아닙니다.
+  [bid] code_fixer: pass elig=0 conf=0 :: 자격 요건 중 'SQL 쿼리 작성 능력'이 내 전문 분야가 아니므로 입찰할 수 없습니다.
+  [award] t4 -> sql_analyst  [correct]
+  [exec] sql_analyst: 4 claimed step(s), 82 chars of artifact
+  [run ] sql_analyst: PASS (63ms)
+  [verify] sql_analyst: judge_says=True fixture_says=True -> verdict=True  [판정 일치]
+           제출된 SQL 쿼리는 요구 사항을 충족하며, 이메일을 그룹화하고 건수를 세어 2 이상인 경우만 필터링하여 결과를 반환합니다.
+
+--- t5 (gold=text_editor, fixture=none) ---
+[announce] t5
+           req: 한글 맞춤법 및 문법에 대한 이해가 있어야 합니다.
+           req: 정중체로 문장을 교정할 수 있어야 합니다.
+           req: 커뮤니케이션 능력이 뛰어나야 합니다.
+  [bid] sql_analyst: pass elig=0 conf=0 :: 저는 SQL 분석가로, 맞춤법이나 문장을 교정하는 능력이 없습니다.
+  [bid] text_editor: BID elig=100 conf=100 :: 모든 자격 요건을 충족합니다. 한글 맞춤법 및 문법에 대한 이해, 정중체로 문장 교정 능력, 뛰어난 커뮤니케이션 능력을 갖추고 있습니다.
+  [bid] code_fixer: pass elig=0 conf=0 :: 나는 파이썬 디버거로서 예외와 무한 루프의 원인을 찾고 수정하는 전문 분야에 속하므로, '사내 공지문의 맞춤법과 어투를 정중체로 교정하라'는 자격 요건을 충족하지 못합니다.
+  [award] t5 -> text_editor  [correct]
+  [exec] text_editor: 4 claimed step(s), 48 chars of artifact
+  [run ] text_editor: fixture 없음 (LLM 판정만 가능)
+  [verify] text_editor: judge_says=True fixture_says=None -> verdict=True
+           제출된 결과물은 맞춤법 및 문법이 교정되었고, 정중체로 변경되어 자격 요건을 충족합니다.
+
+--- t6 (gold=code_fixer, fixture=python) ---
+[announce] t6
+           req: 파이썬 프로그래밍 언어에 대한 이해
+           req: 함수 작성 및 수정 능력
+           req: 조건문 및 반복문 사용 능력
+  [bid] sql_analyst: pass elig=0 conf=0 :: 자격 요건이 파이썬 프로그래밍과 관련된 내용을 요구하고 있으며, 나는 SQL 분석가로서 프로그래밍 언어에 대한 전문성이 없다.
+  [bid] text_editor: pass elig=0 conf=0 :: 공고의 자격 요건이 내 전문 분야인 국문 교열과 맞지 않기 때문에 입찰할 수 없습니다.
+  [bid] code_fixer: BID elig=100 conf=90 :: 공고의 자격 요건에 명시된 '파이썬 프로그래밍 언어에 대한 이해', '함수 작성 및 수정 능력', '조건문 및 반복문 사용 능력'을 모두 충족합니다.
+  [award] t6 -> code_fixer  [correct]
+  [exec] code_fixer: 5 claimed step(s), 126 chars of artifact
+  [run ] code_fixer: FAIL (88ms) AssertionError
+         stderr: AssertionError
+  [verify] code_fixer: judge_says=False fixture_says=False -> verdict=False  [판정 일치]
+           제출된 결과물은 홀수 처리와 양수 조건을 제대로 반영하지 못하고 있으며, 요구된 대로 '2씩 줄이며' 동작하지 않습니다.
+
+=== summary ===
+  run: baseline-core-run1
+  condition: baseline
+  tasks: 6
+  correct: 6
+  messages: 42
+  unassigned: 0
+  misawards: 0
+  note: tokens=16061 llm_calls=36 seed=20269746 delivered=2/4 judge_disagree=1

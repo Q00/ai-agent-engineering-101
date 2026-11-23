@@ -1,0 +1,163 @@
+"""One stateless model call, plus the JSON salvage the free models make necessary.
+
+Adapted from weeks/week-02/starter/tools_shared.py. Two deliberate changes:
+
+  * Tools are gone. The contract net negotiates in text; nobody calls a tool.
+  * Temperature is explicit and read from the environment, because the arms
+    are only comparable if every one of them ran at the same value. The default
+    is 0.7, not 0: at 0 the same prompt returns the same reply, three runs of an
+    arm collapse into one, and the replicates measure nothing but provider
+    nondeterminism. The cost is that an exact rerun is not reproducible -- these
+    APIs take no seed -- so reproducibility here means the trend, not the
+    transcript. Set AGENT_TEMPERATURE=0 to trade the spread back for determinism.
+
+Every agent here is stateless per call. The one piece of memory in the whole
+system is the Bias agent's hypothesis list, and it carries that in its own
+prompt text -- so the memory is visible in the log instead of hiding in an
+object. See bias.py.
+"""
+import json
+import os
+import re
+import threading
+import time
+
+PROVIDER = "anthropic" if os.environ.get("ANTHROPIC_API_KEY") else "openai"
+MODEL = os.environ.get(
+    "AGENT_MODEL",
+    "claude-sonnet-4-5" if PROVIDER == "anthropic" else "gpt-4o-mini")
+TEMPERATURE = float(os.environ.get("AGENT_TEMPERATURE", "0.7"))
+MAX_TOKENS = 900
+
+# A free-tier endpoint queues, rate-limits, and occasionally just stops
+# answering. With ~1000 calls in a full sweep, one hung request without a
+# deadline stalls the whole thing, so every call gets a wall clock and a few
+# backed-off retries. A call that still fails after those raises, the runner
+# catches it, and the run is written to the table as a crash -- which is a
+# result about the provider, not an error to paper over.
+REQUEST_TIMEOUT = float(os.environ.get("AGENT_TIMEOUT", "90"))
+MAX_ATTEMPTS = int(os.environ.get("AGENT_RETRIES", "4"))
+
+_client = None
+
+
+class Meter:
+    """Token and call cost. Negotiation cost in messages is counted by the
+    manager, not here -- these are two different notions of 'what it cost'.
+
+    Locked because the manager broadcasts to contractors concurrently, which
+    is what a broadcast announcement means anyway."""
+
+    def __init__(self):
+        self.tokens = 0
+        self.calls = 0
+        self.retries = 0
+        self._lock = threading.Lock()
+
+    def add(self, input_tokens, output_tokens):
+        with self._lock:
+            self.tokens += int(input_tokens or 0) + int(output_tokens or 0)
+            self.calls += 1
+
+    def bump_retry(self):
+        with self._lock:
+            self.retries += 1
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        if PROVIDER == "anthropic":
+            import anthropic
+            _client = anthropic.Anthropic(timeout=REQUEST_TIMEOUT, max_retries=0)
+        else:
+            from openai import OpenAI
+            _client = OpenAI(timeout=REQUEST_TIMEOUT, max_retries=0)
+    return _client
+
+
+def _once(system: str, user: str, meter: Meter) -> str:
+    client = _get_client()
+    if PROVIDER == "anthropic":
+        resp = client.messages.create(
+            model=MODEL, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
+            system=system, messages=[{"role": "user", "content": user}])
+        meter.add(resp.usage.input_tokens, resp.usage.output_tokens)
+        return "".join(b.text for b in resp.content if b.type == "text")
+
+    resp = client.chat.completions.create(
+        model=MODEL, temperature=TEMPERATURE, max_tokens=MAX_TOKENS,
+        messages=[{"role": "system", "content": system},
+                  {"role": "user", "content": user}])
+    usage = resp.usage
+    meter.add(getattr(usage, "prompt_tokens", 0), getattr(usage, "completion_tokens", 0))
+    return resp.choices[0].message.content or ""
+
+
+def ask(system: str, user: str, meter: Meter, log=None) -> str:
+    """One turn: a system prompt and a single user message. Returns raw text.
+
+    Retries transport failures with backoff. It does NOT retry a reply that
+    came back unparseable -- that is the model's answer, and the lab counts it.
+    """
+    delay = 4.0
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            return _once(system, user, meter)
+        except Exception as e:
+            meter.bump_retry()
+            if attempt == MAX_ATTEMPTS:
+                raise
+            msg = f"{type(e).__name__}: {e}"[:160]
+            if log:
+                log(f"  [llm] attempt {attempt}/{MAX_ATTEMPTS} failed ({msg}); "
+                    f"retrying in {delay:.0f}s")
+            time.sleep(delay)
+            delay *= 2
+    raise RuntimeError("unreachable")
+
+
+def extract_json(text: str):
+    """Pull the first balanced JSON object out of a reply, or return None.
+
+    The free models on OpenRouter often answer with their reasoning and bury
+    the object in it, or fence it. None is not an error to hide: the manager
+    counts it as a contractor that failed to bid, which is a result worth
+    reporting, not a bug worth retrying away.
+    """
+    if not text:
+        return None
+    fenced = re.search(r"```(?:json)?\s*(.*?)```", text, re.S)
+    body = fenced.group(1) if fenced else text
+    start = body.find("{")
+    if start < 0:
+        return None
+    depth = 0
+    for i in range(start, len(body)):
+        if body[i] == "{":
+            depth += 1
+        elif body[i] == "}":
+            depth -= 1
+            if depth == 0:
+                try:
+                    obj = json.loads(body[start:i + 1])
+                except json.JSONDecodeError:
+                    return None
+                return obj if isinstance(obj, dict) else None
+    return None
+
+
+def clamp_int(value, low=0, high=100, default=0) -> int:
+    """A model that answers "약 80%" or 8.5 or "high" should not crash the run."""
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        n = int(value)
+    elif isinstance(value, str):
+        m = re.search(r"-?\d+", value)
+        if not m:
+            return default
+        n = int(m.group())
+    else:
+        return default
+    return max(low, min(high, n))
