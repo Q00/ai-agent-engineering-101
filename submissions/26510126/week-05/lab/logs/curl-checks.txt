@@ -1,0 +1,15 @@
+== (a) 정상: Mcp-Method 헤더 + clientCapabilities
+{"jsonrpc":"2.0","id":2,"result":{"cacheScope":"private","resultType":"complete","tools":[{"description":"Evaluate an arithmetic expression such as '3 * (4 + 5)'. Numbers and + - * / ** only.","inputSchema":{"type":"object","properties":{"expression":{"title":"Expression","type":"string"}},"required":["expression"],"title":"calculatorArguments"},"name":"calculator","outputSchema":{"properties":{"result":{"title":"Result","type":"string"}},"required":["result"],"title":"calculatorOutput","type":"object"}},{"description":"Read a text file inside the server's working directory. Returns at most 4000 characters.","inputSchema":{"type":"object","properties":{"path":{"title":"Path","type":"string"}},"required":["path"],"title":"read_fileArguments"},"name":"read_file","outputSchema":{"properties":{"result":{"title":"Result","type":"string"}},"required":["result"],"title":"read_fileOutput","type":"object"}}],"ttlMs":0,"_meta":{"io.modelcontextprotocol/serverInfo":{"name":"week01-tools","version":""}}}}
+[HTTP 200]
+
+== (b) Mcp-Method 헤더 누락
+{"jsonrpc":"2.0","id":2,"error":{"code":-32020,"message":"mcp-method header does not match the request body's method"}}
+[HTTP 400]
+
+== (c) _meta.clientCapabilities 누락
+{"jsonrpc":"2.0","id":2,"error":{"code":-32602,"message":"params._meta is missing the required envelope key(s): io.modelcontextprotocol/clientCapabilities"}}
+[HTTP 400]
+
+== (d) 헤더와 본문 불일치 (헤더 tools/call, 본문 tools/list)
+{"jsonrpc":"2.0","id":2,"error":{"code":-32020,"message":"mcp-method header does not match the request body's method"}}
+[HTTP 400]

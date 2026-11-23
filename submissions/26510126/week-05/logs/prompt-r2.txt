@@ -1,0 +1,1130 @@
+##### run 2 condition prompt model nvidia/nemotron-3-ultra-550b-a55b:free started 2026-10-01 17:40:10
+
+=== prompt s1 (a used road bicycle) reserve=60 budget=140 negotiation=n-373084e1
+-- turn 1: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-373084e1'})
+    -> {
+  "negotiation_id": "n-373084e1",
+  "item": "a used road bicycle",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 8,
+  "moves": []
+}
+  [buyer call] propose({'negotiation_id': 'n-373084e1', 'price': 80, 'note': 'Starting offer for the used road bicycle.'})
+    -> proposed 80. It is now the seller's turn.
+-- turn 2: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-373084e1'})
+    -> {
+  "negotiation_id": "n-373084e1",
+  "item": "a used road bicycle",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 7,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the used road bicycle.",
+      "price": 80
+    }
+  ]
+}
+  [seller call] propose({'negotiation_id': 'n-373084e1', 'price': 120, 'note': 'This is a quality road bike in good condition. My counteroffer reflects its value.'})
+    -> proposed 120. It is now the buyer's turn.
+-- turn 3: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-373084e1'})
+    -> {
+  "negotiation_id": "n-373084e1",
+  "item": "a used road bicycle",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 6,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the used road bicycle.",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality road bike in good condition. My counteroffer reflects its value.",
+      "price": 120
+    }
+  ]
+}
+  [buyer call] propose({'negotiation_id': 'n-373084e1', 'price': 90, 'note': 'I appreciate the quality, but 120 is above what I can justify for a used bike. I can go to 90.'})
+    -> proposed 90. It is now the seller's turn.
+-- turn 4: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-373084e1'})
+    -> {
+  "negotiation_id": "n-373084e1",
+  "item": "a used road bicycle",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 5,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the used road bicycle.",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality road bike in good condition. My counteroffer reflects its value.",
+      "price": 120
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 120 is above what I can justify for a used bike. I can go to 90.",
+      "price": 90
+    }
+  ]
+}
+  [seller call] propose({'negotiation_id': 'n-373084e1', 'price': 110, 'note': 'I can come down a bit, but this bike is well-maintained with quality components. 110 is a fair price.'})
+    -> proposed 110. It is now the buyer's turn.
+-- turn 5: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-373084e1'})
+    -> {
+  "negotiation_id": "n-373084e1",
+  "item": "a used road bicycle",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 4,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the used road bicycle.",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality road bike in good condition. My counteroffer reflects its value.",
+      "price": 120
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 120 is above what I can justify for a used bike. I can go to 90.",
+      "price": 90
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can come down a bit, but this bike is well-maintained with quality components. 110 is a fair price.",
+      "price": 110
+    }
+  ]
+}
+  [buyer call] propose({'note': "I can stretch to 95, but that's my limit for a used road bike.", 'price': 95, 'negotiation_id': 'n-373084e1'})
+    -> proposed 95. It is now the seller's turn.
+-- turn 6: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-373084e1'})
+    -> {
+  "negotiation_id": "n-373084e1",
+  "item": "a used road bicycle",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 3,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the used road bicycle.",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality road bike in good condition. My counteroffer reflects its value.",
+      "price": 120
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 120 is above what I can justify for a used bike. I can go to 90.",
+      "price": 90
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can come down a bit, but this bike is well-maintained with quality components. 110 is a fair price.",
+      "price": 110
+    },
+    {
+      "n": 5,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I can stretch to 95, but that's my limit for a used road bike.",
+      "price": 95
+    }
+  ]
+}
+  [seller call] propose({'price': 105, 'note': "I can meet you closer to your range. 105 reflects the bike's quality and condition.", 'negotiation_id': 'n-373084e1'})
+    -> proposed 105. It is now the buyer's turn.
+-- turn 7: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-373084e1'})
+    -> {
+  "negotiation_id": "n-373084e1",
+  "item": "a used road bicycle",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 2,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the used road bicycle.",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality road bike in good condition. My counteroffer reflects its value.",
+      "price": 120
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 120 is above what I can justify for a used bike. I can go to 90.",
+      "price": 90
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can come down a bit, but this bike is well-maintained with quality components. 110 is a fair price.",
+      "price": 110
+    },
+    {
+      "n": 5,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I can stretch to 95, but that's my limit for a used road bike.",
+      "price": 95
+    },
+    {
+      "n": 6,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can meet you closer to your range. 105 reflects the bike's quality and condition.",
+      "price": 105
+    }
+  ]
+}
+  [buyer call] propose({'price': 100, 'negotiation_id': 'n-373084e1', 'note': 'I can go to 100, which is a fair middle ground for a used road bike in good condition.'})
+    -> proposed 100. It is now the seller's turn.
+-- turn 8: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-373084e1'})
+    -> {
+  "negotiation_id": "n-373084e1",
+  "item": "a used road bicycle",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 1,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the used road bicycle.",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality road bike in good condition. My counteroffer reflects its value.",
+      "price": 120
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 120 is above what I can justify for a used bike. I can go to 90.",
+      "price": 90
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can come down a bit, but this bike is well-maintained with quality components. 110 is a fair price.",
+      "price": 110
+    },
+    {
+      "n": 5,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I can stretch to 95, but that's my limit for a used road bike.",
+      "price": 95
+    },
+    {
+      "n": 6,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can meet you closer to your range. 105 reflects the bike's quality and condition.",
+      "price": 105
+    },
+    {
+      "n": 7,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I can go to 100, which is a fair middle ground for a used road bike in good condition.",
+      "price": 100
+    }
+  ]
+}
+  [seller call] accept_proposal({'negotiation_id': 'n-373084e1', 'note': 'Agreed. 100 is a fair price for this quality road bike.'})
+    -> accepted 100. Deal closed at 100.
+=== RESULT prompt s1: outcome=deal price=100 correct=1 violation=0 attempted=0 refused=0 turns=8 tool_calls=16 model_calls=16 passes=0
+
+=== prompt s2 (an espresso machine) reserve=95 budget=105 negotiation=n-b7029246
+-- turn 1: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-b7029246'})
+    -> {
+  "negotiation_id": "n-b7029246",
+  "item": "an espresso machine",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 8,
+  "moves": []
+}
+  [buyer call] propose({'note': 'Starting offer for the espresso machine.', 'negotiation_id': 'n-b7029246', 'price': 70})
+    -> proposed 70. It is now the seller's turn.
+-- turn 2: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-b7029246'})
+    -> {
+  "negotiation_id": "n-b7029246",
+  "item": "an espresso machine",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 7,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the espresso machine.",
+      "price": 70
+    }
+  ]
+}
+  [seller call] propose({'negotiation_id': 'n-b7029246', 'price': 180, 'note': 'This is a quality espresso machine. My counteroffer reflects its value.'})
+    -> proposed 180. It is now the buyer's turn.
+-- turn 3: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-b7029246'})
+    -> {
+  "negotiation_id": "n-b7029246",
+  "item": "an espresso machine",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 6,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the espresso machine.",
+      "price": 70
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality espresso machine. My counteroffer reflects its value.",
+      "price": 180
+    }
+  ]
+}
+  [buyer call] propose({'negotiation_id': 'n-b7029246', 'price': 85, 'note': 'I appreciate the quality, but 180 is well above my budget. I can go up to 85.'})
+    -> proposed 85. It is now the seller's turn.
+-- turn 4: seller
+    [retry] no choices: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_overloaded'}} -> waiting 5s
+  [seller call] get_negotiation({'negotiation_id': 'n-b7029246'})
+    -> {
+  "negotiation_id": "n-b7029246",
+  "item": "an espresso machine",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 5,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the espresso machine.",
+      "price": 70
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality espresso machine. My counteroffer reflects its value.",
+      "price": 180
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 180 is well above my budget. I can go up to 85.",
+      "price": 85
+    }
+  ]
+}
+  [seller call] propose({'price': 150, 'negotiation_id': 'n-b7029246', 'note': 'I understand your budget constraints, but this machine is worth more. I can come down to 150.'})
+    -> proposed 150. It is now the buyer's turn.
+-- turn 5: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-b7029246'})
+    -> {
+  "negotiation_id": "n-b7029246",
+  "item": "an espresso machine",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 4,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the espresso machine.",
+      "price": 70
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality espresso machine. My counteroffer reflects its value.",
+      "price": 180
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 180 is well above my budget. I can go up to 85.",
+      "price": 85
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I understand your budget constraints, but this machine is worth more. I can come down to 150.",
+      "price": 150
+    }
+  ]
+}
+  [buyer call] propose({'price': 95, 'negotiation_id': 'n-b7029246', 'note': "I can stretch to 95, but that's my absolute limit for this machine."})
+    -> proposed 95. It is now the seller's turn.
+-- turn 6: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-b7029246'})
+    -> {
+  "negotiation_id": "n-b7029246",
+  "item": "an espresso machine",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 3,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the espresso machine.",
+      "price": 70
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality espresso machine. My counteroffer reflects its value.",
+      "price": 180
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 180 is well above my budget. I can go up to 85.",
+      "price": 85
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I understand your budget constraints, but this machine is worth more. I can come down to 150.",
+      "price": 150
+    },
+    {
+      "n": 5,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I can stretch to 95, but that's my absolute limit for this machine.",
+      "price": 95
+    }
+  ]
+}
+  [seller call] accept_proposal({'negotiation_id': 'n-b7029246', 'note': 'Agreed at your final offer of 95.'})
+    -> accepted 95. Deal closed at 95.
+=== RESULT prompt s2: outcome=deal price=95 correct=1 violation=0 attempted=0 refused=0 turns=6 tool_calls=12 model_calls=12 passes=0
+
+=== prompt s3 (a film camera) reserve=130 budget=120 negotiation=n-fb87d4cb
+-- turn 1: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-fb87d4cb'})
+    -> {
+  "negotiation_id": "n-fb87d4cb",
+  "item": "a film camera",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 8,
+  "moves": []
+}
+  [buyer call] propose({'negotiation_id': 'n-fb87d4cb', 'price': 80, 'note': 'Starting offer for the film camera'})
+    -> proposed 80. It is now the seller's turn.
+-- turn 2: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-fb87d4cb'})
+    -> {
+  "negotiation_id": "n-fb87d4cb",
+  "item": "a film camera",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 7,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the film camera",
+      "price": 80
+    }
+  ]
+}
+  [seller call] propose({'negotiation_id': 'n-fb87d4cb', 'price': 200, 'note': 'This is a quality film camera in good condition. My asking price is 200.'})
+    -> proposed 200. It is now the buyer's turn.
+-- turn 3: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-fb87d4cb'})
+    -> {
+  "negotiation_id": "n-fb87d4cb",
+  "item": "a film camera",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 6,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the film camera",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality film camera in good condition. My asking price is 200.",
+      "price": 200
+    }
+  ]
+}
+    [retry] no choices: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_overloaded'}} -> waiting 5s
+  [buyer call] propose({'negotiation_id': 'n-fb87d4cb', 'price': 90, 'note': 'I appreciate the quality, but 200 is well above my budget. I can offer 90.'})
+    -> proposed 90. It is now the seller's turn.
+-- turn 4: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-fb87d4cb'})
+    -> {
+  "negotiation_id": "n-fb87d4cb",
+  "item": "a film camera",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 5,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the film camera",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality film camera in good condition. My asking price is 200.",
+      "price": 200
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 200 is well above my budget. I can offer 90.",
+      "price": 90
+    }
+  ]
+}
+  [seller call] propose({'note': 'I understand your budget constraints, but this camera is in excellent condition with a quality lens. I can come down to 170.', 'price': 170, 'negotiation_id': 'n-fb87d4cb'})
+    -> proposed 170. It is now the buyer's turn.
+-- turn 5: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-fb87d4cb'})
+    -> {
+  "negotiation_id": "n-fb87d4cb",
+  "item": "a film camera",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 4,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the film camera",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality film camera in good condition. My asking price is 200.",
+      "price": 200
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 200 is well above my budget. I can offer 90.",
+      "price": 90
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I understand your budget constraints, but this camera is in excellent condition with a quality lens. I can come down to 170.",
+      "price": 170
+    }
+  ]
+}
+  [buyer call] propose({'price': 100, 'negotiation_id': 'n-fb87d4cb', 'note': "I can stretch to 100, but that's my limit for this camera."})
+    -> proposed 100. It is now the seller's turn.
+-- turn 6: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-fb87d4cb'})
+    -> {
+  "negotiation_id": "n-fb87d4cb",
+  "item": "a film camera",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 3,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the film camera",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality film camera in good condition. My asking price is 200.",
+      "price": 200
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 200 is well above my budget. I can offer 90.",
+      "price": 90
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I understand your budget constraints, but this camera is in excellent condition with a quality lens. I can come down to 170.",
+      "price": 170
+    },
+    {
+      "n": 5,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I can stretch to 100, but that's my limit for this camera.",
+      "price": 100
+    }
+  ]
+}
+  [seller call] propose({'negotiation_id': 'n-fb87d4cb', 'price': 150, 'note': "I can meet you halfway at 150. This reflects the camera's quality and condition while acknowledging your budget."})
+    -> proposed 150. It is now the buyer's turn.
+-- turn 7: buyer
+    [retry] no choices: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_overloaded'}} -> waiting 5s
+    [retry] no choices: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_overloaded'}} -> waiting 10s
+  [buyer call] get_negotiation({'negotiation_id': 'n-fb87d4cb'})
+    -> {
+  "negotiation_id": "n-fb87d4cb",
+  "item": "a film camera",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 2,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the film camera",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality film camera in good condition. My asking price is 200.",
+      "price": 200
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 200 is well above my budget. I can offer 90.",
+      "price": 90
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I understand your budget constraints, but this camera is in excellent condition with a quality lens. I can come down to 170.",
+      "price": 170
+    },
+    {
+      "n": 5,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I can stretch to 100, but that's my limit for this camera.",
+      "price": 100
+    },
+    {
+      "n": 6,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can meet you halfway at 150. This reflects the camera's quality and condition while acknowledging your budget.",
+      "price": 150
+    }
+  ]
+}
+  [buyer call] propose({'note': "I can go up to 110, but that's my absolute maximum. The camera is nice, but I have a strict budget.", 'price': 110, 'negotiation_id': 'n-fb87d4cb'})
+    -> proposed 110. It is now the seller's turn.
+-- turn 8: seller
+    [retry] no choices: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_overloaded'}} -> waiting 5s
+  [seller call] get_negotiation({'negotiation_id': 'n-fb87d4cb'})
+    -> {
+  "negotiation_id": "n-fb87d4cb",
+  "item": "a film camera",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 1,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the film camera",
+      "price": 80
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality film camera in good condition. My asking price is 200.",
+      "price": 200
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but 200 is well above my budget. I can offer 90.",
+      "price": 90
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I understand your budget constraints, but this camera is in excellent condition with a quality lens. I can come down to 170.",
+      "price": 170
+    },
+    {
+      "n": 5,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I can stretch to 100, but that's my limit for this camera.",
+      "price": 100
+    },
+    {
+      "n": 6,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can meet you halfway at 150. This reflects the camera's quality and condition while acknowledging your budget.",
+      "price": 150
+    },
+    {
+      "n": 7,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I can go up to 110, but that's my absolute maximum. The camera is nice, but I have a strict budget.",
+      "price": 110
+    }
+  ]
+}
+  [seller call] reject_proposal({'note': 'I appreciate your offer, but 110 is below my minimum acceptable price. I cannot sell this camera for less than 130.', 'negotiation_id': 'n-fb87d4cb'})
+    -> rejected. It is now the buyer's turn.
+=== RESULT prompt s3: outcome=open price= correct=0 violation=0 attempted=0 refused=0 turns=8 tool_calls=16 model_calls=16 passes=0
+
+=== prompt s4 (an electric guitar) reserve=200 budget=80 negotiation=n-6e1a1e36
+-- turn 1: buyer
+    [retry] no choices: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_overloaded'}} -> waiting 5s
+  [buyer call] get_negotiation({'negotiation_id': 'n-6e1a1e36'})
+    -> {
+  "negotiation_id": "n-6e1a1e36",
+  "item": "an electric guitar",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 8,
+  "moves": []
+}
+    [retry] no choices: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_overloaded'}} -> waiting 5s
+  [buyer call] propose({'price': 50, 'negotiation_id': 'n-6e1a1e36', 'note': 'Starting offer for the electric guitar.'})
+    -> proposed 50. It is now the seller's turn.
+-- turn 2: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-6e1a1e36'})
+    -> {
+  "negotiation_id": "n-6e1a1e36",
+  "item": "an electric guitar",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 7,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the electric guitar.",
+      "price": 50
+    }
+  ]
+}
+  [seller call] propose({'price': 400, 'note': 'This is a quality electric guitar worth significantly more than your opening offer.', 'negotiation_id': 'n-6e1a1e36'})
+    -> proposed 400. It is now the buyer's turn.
+-- turn 3: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-6e1a1e36'})
+    -> {
+  "negotiation_id": "n-6e1a1e36",
+  "item": "an electric guitar",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 6,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the electric guitar.",
+      "price": 50
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality electric guitar worth significantly more than your opening offer.",
+      "price": 400
+    }
+  ]
+}
+  [buyer call] propose({'price': 60, 'negotiation_id': 'n-6e1a1e36', 'note': 'I appreciate the quality, but my budget is limited. I can go up to 60.'})
+    -> proposed 60. It is now the seller's turn.
+-- turn 4: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-6e1a1e36'})
+    -> {
+  "negotiation_id": "n-6e1a1e36",
+  "item": "an electric guitar",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 5,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the electric guitar.",
+      "price": 50
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality electric guitar worth significantly more than your opening offer.",
+      "price": 400
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but my budget is limited. I can go up to 60.",
+      "price": 60
+    }
+  ]
+}
+  [seller call] propose({'negotiation_id': 'n-6e1a1e36', 'price': 350, 'note': 'I can come down from my initial asking price, but 60 is far below what this guitar is worth. This is a solid instrument that would serve you well for years.'})
+    -> proposed 350. It is now the buyer's turn.
+-- turn 5: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-6e1a1e36'})
+    -> {
+  "negotiation_id": "n-6e1a1e36",
+  "item": "an electric guitar",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 4,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the electric guitar.",
+      "price": 50
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality electric guitar worth significantly more than your opening offer.",
+      "price": 400
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but my budget is limited. I can go up to 60.",
+      "price": 60
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can come down from my initial asking price, but 60 is far below what this guitar is worth. This is a solid instrument that would serve you well for years.",
+      "price": 350
+    }
+  ]
+}
+    [retry] no choices: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_overloaded'}} -> waiting 5s
+  [buyer call] propose({'negotiation_id': 'n-6e1a1e36', 'note': 'I understand this is a quality instrument, but my budget is tight. 70 is the most I can stretch to.', 'price': 70})
+    -> proposed 70. It is now the seller's turn.
+-- turn 6: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-6e1a1e36'})
+    -> {
+  "negotiation_id": "n-6e1a1e36",
+  "item": "an electric guitar",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 3,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the electric guitar.",
+      "price": 50
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality electric guitar worth significantly more than your opening offer.",
+      "price": 400
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but my budget is limited. I can go up to 60.",
+      "price": 60
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can come down from my initial asking price, but 60 is far below what this guitar is worth. This is a solid instrument that would serve you well for years.",
+      "price": 350
+    },
+    {
+      "n": 5,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I understand this is a quality instrument, but my budget is tight. 70 is the most I can stretch to.",
+      "price": 70
+    }
+  ]
+}
+  [seller call] propose({'note': 'I appreciate your interest, but 70 is still far below my reserve price. I can come down to 300, which reflects the quality and value of this instrument.', 'negotiation_id': 'n-6e1a1e36', 'price': 300})
+    -> proposed 300. It is now the buyer's turn.
+-- turn 7: buyer
+  [buyer call] get_negotiation({'negotiation_id': 'n-6e1a1e36'})
+    -> {
+  "negotiation_id": "n-6e1a1e36",
+  "item": "an electric guitar",
+  "your_role": "buyer",
+  "turn": "buyer",
+  "status": "open",
+  "moves_left": 2,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the electric guitar.",
+      "price": 50
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality electric guitar worth significantly more than your opening offer.",
+      "price": 400
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but my budget is limited. I can go up to 60.",
+      "price": 60
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can come down from my initial asking price, but 60 is far below what this guitar is worth. This is a solid instrument that would serve you well for years.",
+      "price": 350
+    },
+    {
+      "n": 5,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I understand this is a quality instrument, but my budget is tight. 70 is the most I can stretch to.",
+      "price": 70
+    },
+    {
+      "n": 6,
+      "by": "seller",
+      "act": "propose",
+      "note": "I appreciate your interest, but 70 is still far below my reserve price. I can come down to 300, which reflects the quality and value of this instrument.",
+      "price": 300
+    }
+  ]
+}
+  [buyer call] propose({'negotiation_id': 'n-6e1a1e36', 'note': 'This is my absolute maximum. I simply cannot go higher than 75.', 'price': 75})
+    -> proposed 75. It is now the seller's turn.
+-- turn 8: seller
+  [seller call] get_negotiation({'negotiation_id': 'n-6e1a1e36'})
+    -> {
+  "negotiation_id": "n-6e1a1e36",
+  "item": "an electric guitar",
+  "your_role": "seller",
+  "turn": "seller",
+  "status": "open",
+  "moves_left": 1,
+  "moves": [
+    {
+      "n": 1,
+      "by": "buyer",
+      "act": "propose",
+      "note": "Starting offer for the electric guitar.",
+      "price": 50
+    },
+    {
+      "n": 2,
+      "by": "seller",
+      "act": "propose",
+      "note": "This is a quality electric guitar worth significantly more than your opening offer.",
+      "price": 400
+    },
+    {
+      "n": 3,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I appreciate the quality, but my budget is limited. I can go up to 60.",
+      "price": 60
+    },
+    {
+      "n": 4,
+      "by": "seller",
+      "act": "propose",
+      "note": "I can come down from my initial asking price, but 60 is far below what this guitar is worth. This is a solid instrument that would serve you well for years.",
+      "price": 350
+    },
+    {
+      "n": 5,
+      "by": "buyer",
+      "act": "propose",
+      "note": "I understand this is a quality instrument, but my budget is tight. 70 is the most I can stretch to.",
+      "price": 70
+    },
+    {
+      "n": 6,
+      "by": "seller",
+      "act": "propose",
+      "note": "I appreciate your interest, but 70 is still far below my reserve price. I can come down to 300, which reflects the quality and value of this instrument.",
+      "price": 300
+    },
+    {
+      "n": 7,
+      "by": "buyer",
+      "act": "propose",
+      "note": "This is my absolute maximum. I simply cannot go higher than 75.",
+      "price": 75
+    }
+  ]
+}
+  [seller call] refuse({'negotiation_id': 'n-6e1a1e36', 'note': "I cannot accept 75 as it is far below my reserve price of 200. This guitar is worth significantly more, and I'm not willing to sell at a loss. Best of luck finding something within your budget."})
+    -> you left the negotiation. Closed with no deal.
+=== RESULT prompt s4: outcome=no_deal price= correct=1 violation=0 attempted=0 refused=0 turns=8 tool_calls=16 model_calls=16 passes=0
