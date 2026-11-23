@@ -1,0 +1,32 @@
+﻿**********************
+Windows PowerShell 기록 시작
+시작 시간: 20261020193531
+사용자 이름: DESKTOP-KO1SPDB\MASTER
+RunAs 사용자: DESKTOP-KO1SPDB\MASTER
+구성 이름: 
+Machine: DESKTOP-KO1SPDB (Microsoft Windows NT 10.0.26200.0)
+호스트 응용 프로그램: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$ErrorActionPreference = 'Stop'; $logPath = Join-Path 'submissions/26510121/week-07/logs/setup' ('verification-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.log'); Start-Transcript -Path $logPath | Out-Null; try { . .\.venv\Scripts\Activate.ps1; python --version; if ($LASTEXITCODE -ne 0) { throw 'Python version check failed' }; python -m pip check; if ($LASTEXITCODE -ne 0) { throw 'Dependency check failed' }; python -c "from importlib.metadata import version; import a2a, uvicorn, httpx, cryptography; print({p:version(p) for p in ['a2a-sdk','uvicorn','httpx','cryptography','pydantic']})"; if ($LASTEXITCODE -ne 0) { throw 'Required package imports failed' }; cloudflared --version; if ($LASTEXITCODE -ne 0) { throw 'cloudflared check failed' }; Write-Output ('cloudflared path: ' + (Get-Command cloudflared).Source); python -m py_compile submissions/26510121/week-07/seller.py submissions/26510121/week-07/buyer.py submissions/26510121/week-07/cart_buyer.py submissions/26510121/week-07/harness_cli.py; if ($LASTEXITCODE -ne 0) { throw 'Agent syntax check failed' }; Write-Output 'Syntax checks passed. Kit, seller and buyer --help checks passed earlier. No API or trade execution was performed.'; $files = @(git ls-files submissions/26510121/week-07); $forbidden = @($files | Where-Object { $_ -match '(^|/)(\.env|\.env\.local)$|\.pem$|(^|/)(\.venv|\.runtime)/' }); if ($forbidden.Count -gt 0) { throw 'Unexpected tracked secret or runtime file' }; Write-Output ('Tracked credential/runtime files: ' + $forbidden.Count); Write-Output 'SETUP steps 1 and 2 complete.' } finally { Stop-Transcript | Out-Null }
+프로세스 ID: 22012
+PSVersion: 5.1.26100.9711
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9711
+BuildVersion: 10.0.26100.9711
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+
+
+
+cloudflared path: C:\Users\MASTER\ai-agent-engineering-101\.venv\Scripts\cloudflared.exe
+
+Syntax checks passed. Kit, seller and buyer --help checks passed earlier. No API or trade execution was performed.
+Tracked credential/runtime files: 0
+SETUP steps 1 and 2 complete.
+**********************
+Windows PowerShell 기록 끝
+종료 시간: 20261020193536
+**********************

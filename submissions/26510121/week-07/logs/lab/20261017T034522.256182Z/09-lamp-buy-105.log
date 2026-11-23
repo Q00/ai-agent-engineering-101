@@ -1,0 +1,98 @@
+$ C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-06\.runtime\a2a\a2a.exe send -a http://127.0.0.1:9999 --task-id 66a98713-dfc2-496e-a041-57c1ea425483 105 -o json
+{
+  "task": {
+    "id": "66a98713-dfc2-496e-a041-57c1ea425483",
+    "artifacts": [
+      {
+        "artifactId": "781cd16f-be5b-493a-99ec-c7b02a41833d",
+        "name": "receipt",
+        "parts": [
+          {
+            "data": {
+              "item": "lamp",
+              "price": 105,
+              "seller": "Lamp Shop"
+            }
+          }
+        ]
+      }
+    ],
+    "contextId": "a3ae67eb-be65-43ea-a2b5-2af4f4fc75cc",
+    "history": [
+      {
+        "messageId": "01a147f6-ff17-7a51-918e-734816d40a16",
+        "contextId": "a3ae67eb-be65-43ea-a2b5-2af4f4fc75cc",
+        "parts": [
+          {
+            "text": "I want to buy a lamp"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "66a98713-dfc2-496e-a041-57c1ea425483"
+      },
+      {
+        "messageId": "49a59c0c-d57b-49fe-9994-6c0ee38a5456",
+        "contextId": "a3ae67eb-be65-43ea-a2b5-2af4f4fc75cc",
+        "parts": [
+          {
+            "text": "lamp: asking 130. Send your offer as a number."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "66a98713-dfc2-496e-a041-57c1ea425483"
+      },
+      {
+        "messageId": "01a147f6-ff5a-787f-b965-82bd9ebec433",
+        "contextId": "9249c1b0-d053-4b5c-ae81-d450ee9bd257",
+        "parts": [
+          {
+            "text": "80"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "66a98713-dfc2-496e-a041-57c1ea425483"
+      },
+      {
+        "messageId": "cc81c879-2d6a-4456-97f5-4f3077cc76ff",
+        "contextId": "a3ae67eb-be65-43ea-a2b5-2af4f4fc75cc",
+        "parts": [
+          {
+            "text": "80 is too low. Counteroffer: 105."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "66a98713-dfc2-496e-a041-57c1ea425483"
+      },
+      {
+        "messageId": "01a147f6-ff9d-7096-8e24-c3c6ceb833ac",
+        "contextId": "d4a062a7-b310-4877-ae34-fdaa5be5b518",
+        "parts": [
+          {
+            "text": "105"
+          }
+        ],
+        "role": "ROLE_USER",
+        "taskId": "66a98713-dfc2-496e-a041-57c1ea425483"
+      }
+    ],
+    "status": {
+      "message": {
+        "messageId": "75c538dd-a1cf-4d76-ab35-c54069e1eaeb",
+        "contextId": "a3ae67eb-be65-43ea-a2b5-2af4f4fc75cc",
+        "parts": [
+          {
+            "text": "Deal: lamp at 105."
+          }
+        ],
+        "role": "ROLE_AGENT",
+        "taskId": "66a98713-dfc2-496e-a041-57c1ea425483"
+      },
+      "state": "TASK_STATE_COMPLETED",
+      "timestamp": "2026-10-17T03:45:32.084736Z"
+    }
+  }
+}
+
+STDERR:
+
+exit code 0

@@ -1,0 +1,92 @@
+# week-06 trade test, kit v1, 2026-10-17T04:30:18+00:00
+harness: Python prompt/validation loop + OpenAI Responses API; gpt-4o-mini; strict JSON Schema; temperature 0
+
+## seller tests: python -u seller.py --port 57964
+  PASS  seller_card #1: name='Seochanit Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 150
+    -> SendMessage "60" taskId=155052b5
+    <- TASK_STATE_REJECTED | The seller ended this negotiation without a sale.
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 150
+  FAIL  seller_deal #1: TASK_STATE_REJECTED, receipt price None, asks [150]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=155052b5
+    <- error -32004 Task 155052b5-a3c3-41db-95b2-b07ddcfb94e2 is in terminal state: TASK_STATE_REJECTED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 120
+    -> SendMessage "120" taskId=0bc9399d
+    <- TASK_STATE_COMPLETED | Deal: lamp at 120
+       artifact receipt [{"item": "lamp", "price": 120.0, "seller": "Seochanit Shop"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 120.0, asks [120]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 150
+    -> SendMessage "60" taskId=24d5ff10
+    <- TASK_STATE_REJECTED | The seller ended this negotiation without a sale.
+  FAIL  seller_deal #3: TASK_STATE_REJECTED, receipt price None, asks [150]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 300
+    -> SendMessage "140" taskId=ec03f885
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260
+    -> SendMessage "170" taskId=ec03f885
+    <- TASK_STATE_REJECTED | The seller ended this negotiation without a sale.
+  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [300, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 300
+    -> SendMessage "140" taskId=e46e7813
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260
+    -> SendMessage "170" taskId=e46e7813
+    <- TASK_STATE_REJECTED | The seller ended this negotiation without a sale.
+  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [300, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 300
+    -> SendMessage "140" taskId=53a347f5
+    <- TASK_STATE_REJECTED | The seller ended this negotiation without a sale.
+  PASS  seller_holds_reserve #3: TASK_STATE_REJECTED, asks [300]
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: python -u buyer.py --url http://127.0.0.1:61657 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #1: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: python -u buyer.py --url http://127.0.0.1:61665 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #2: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: python -u buyer.py --url http://127.0.0.1:59081 --item lamp --budget 120
+    kit seller saw: offers [100], deals [100], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: python -u buyer.py --url http://127.0.0.1:59089 --item bookshelf --budget 230
+    kit seller saw: offers [200, 220], deals [], canceled 1, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_holds_budget #2: python -u buyer.py --url http://127.0.0.1:57516 --item bookshelf --budget 230
+    kit seller saw: offers [200, 220], deals [], canceled 1, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_holds_budget #3: python -u buyer.py --url http://127.0.0.1:53922 --item bookshelf --budget 230
+    kit seller saw: offers [200, 230], deals [], canceled 1, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 4, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+19/21 passed -> FAIL
