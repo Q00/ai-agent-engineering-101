@@ -1,0 +1,8 @@
+{
+  "harness": "Python agent loop using Gemini API; model configured by GEMINI_MODEL",
+  "seller": {"cmd": "python seller_r3.py --port {port}"},
+  "buyer": {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"},
+  "market_buyer": {"cmd": "python buyer_r3.py --shops {shops} --item {item} --budget {budget} --order {order}"},
+  "restock": {"cmd": "python restock_r3.py --state {state}"},
+  "review": {"cmd": "python review_r3.py --deal {deal}"}
+}
