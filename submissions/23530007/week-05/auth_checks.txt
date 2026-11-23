@@ -1,0 +1,4 @@
+1. tokenless request: HTTP 401, WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8001/.well-known/oauth-protected-resource/mcp"
+2. buyer token of check-a used on check-b: error: Error executing tool get_negotiation: this token is not a party to negotiation 'check-b'
+3. seller proposes while it is the buyer's turn: error: Error executing tool propose: not your turn: it is the buyer's turn
+4. buyer proposes 155 with a token limit of 150: error: Error executing tool propose: 155 is above the maximum your token allows
