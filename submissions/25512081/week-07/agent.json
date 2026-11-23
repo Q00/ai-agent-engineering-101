@@ -1,0 +1,12 @@
+{
+  "harness": "Claude Code 2.1.291, model opus (claude-opus-5-5): claude -p --model opus --tools \"\" --setting-sources \"\" --no-session-persistence --output-format json --json-schema <schema> --system-prompt <role>, prompt on stdin, run in an empty temp dir",
+  "seller": {
+    "cmd": "python seller.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "python buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"
+  }
+}

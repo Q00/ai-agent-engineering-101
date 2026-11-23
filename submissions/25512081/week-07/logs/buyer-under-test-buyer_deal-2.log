@@ -1,0 +1,11 @@
+[choose] http://127.0.0.1:39821: the only shop in the list I have not caught cheating
+[buyer] -> 'I want to buy a lamp.'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+    [harness 5.1s] {"action": "offer", "price": 65, "reason": "Opening low (65% of ~100 target) to anchor; will raise in shrinking steps."}
+[buyer] -> 65  <- TASK_STATE_INPUT_REQUIRED | 65 is too low. Counteroffer: 100.
+    [harness 5.9s] {"action": "offer", "price": 85, "reason": "Second step toward a target of about 100. The seller dropped 30 in one move, so there is likely more room to negotiate. Their current ask is already within budget."}
+[buyer] -> 85  <- TASK_STATE_INPUT_REQUIRED | 85 is too low. Counteroffer: 100.
+    [harness 5.6s] {"action": "offer", "price": 95, "reason": "My target price is about 100, and I'm raising toward it in shrinking steps (65, then 85, now 95). The seller dropped quickly from 130 to 100, so there may still be a little room. 95 is a fair move that stays well under my budget."}
+[buyer] [guard] seller held 100 twice, within budget; offering the ask
+[buyer] -> 100  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[buyer] DEAL lamp at 100.0 (budget 120) after 3 offers, 3 harness calls, 17s
+{"shop": "http://127.0.0.1:39821", "receipt": {"sig_seller": "AAkyxXMuLtlMy2qxgwVjhMzogsCYzXrqjvcfWgmneaKgdiG3buHiwrYE9J7pDI7l9FfU5LN3VFHndWGUInVeBg==", "shop": "Kit Shop", "item": "lamp", "price": 100.0, "task": "5d0a46fe-1628-42c3-b472-bef2baf843da"}, "stars": 5, "review": "Fair deal at 100 after 2 counters, receipt matched."}
