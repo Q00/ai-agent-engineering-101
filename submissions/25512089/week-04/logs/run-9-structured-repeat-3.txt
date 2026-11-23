@@ -1,0 +1,42 @@
+
+RUN 9 condition=structured repeat=3 model=openai/gpt-oss-120b temperature=0.0 turn_limit=4
+
+=== scenario=s1 item=Laptop stand reserve=60 budget=90 ===
+BUYER: {"performative":"propose","content":{"price":70}}
+PARSED: performative=propose price=70 format_error=0 reader_calls+=0
+SELLER: {"performative":"accept-proposal","content":{"price":70}}
+PARSED: performative=accept-proposal price=None format_error=0 reader_calls+=0
+RESULT: outcome=deal price=70 correct=1 violation=0 turns=2 format_errors=0 reader_calls=0
+
+=== scenario=s2 item=Wireless mouse reserve=35 budget=50 ===
+BUYER: {"performative":"propose","content":{"price":30}}
+PARSED: performative=propose price=30 format_error=0 reader_calls+=0
+SELLER: {"performative":"reject-proposal","content":{"price":null}}
+PARSED: performative=reject-proposal price=None format_error=0 reader_calls+=0
+BUYER: {"performative":"propose","content":{"price":45}}
+PARSED: performative=propose price=45 format_error=0 reader_calls+=0
+SELLER: {"performative":"propose","content":{"price":55}}
+PARSED: performative=propose price=55 format_error=0 reader_calls+=0
+RESULT: outcome=open price=None correct=0 violation=0 turns=4 format_errors=0 reader_calls=0
+
+=== scenario=s3 item=Mechanical keyboard reserve=80 budget=65 ===
+BUYER: {"performative":"propose","content":{"price":60}}
+PARSED: performative=propose price=60 format_error=0 reader_calls+=0
+SELLER: {"performative":"propose","content":{"price":85}}
+PARSED: performative=propose price=85 format_error=0 reader_calls+=0
+BUYER: {"performative":"propose","content":{"price":65}}
+PARSED: performative=propose price=65 format_error=0 reader_calls+=0
+SELLER: {"performative":"propose","content":{"price":80}}
+PARSED: performative=propose price=80 format_error=0 reader_calls+=0
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=0
+
+=== scenario=s4 item=USB-C hub reserve=55 budget=40 ===
+BUYER: {"performative":"propose","content":{"price":30}}
+PARSED: performative=propose price=30 format_error=0 reader_calls+=0
+SELLER: {"performative":"propose","content":{"price":70}}
+PARSED: performative=propose price=70 format_error=0 reader_calls+=0
+BUYER: {"performative":"propose","content":{"price":40}}
+PARSED: performative=propose price=40 format_error=0 reader_calls+=0
+SELLER: {"performative":"propose","content":{"price":65}}
+PARSED: performative=propose price=65 format_error=0 reader_calls+=0
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=0

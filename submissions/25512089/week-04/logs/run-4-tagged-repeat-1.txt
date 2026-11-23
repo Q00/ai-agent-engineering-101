@@ -1,0 +1,42 @@
+
+RUN 4 condition=tagged repeat=1 model=openai/gpt-oss-120b temperature=0.0 turn_limit=4
+
+=== scenario=s1 item=Laptop stand reserve=60 budget=90 ===
+BUYER: (propose) I can offer 70.
+PARSED: performative=propose price=70 format_error=0 reader_calls+=1
+SELLER: (accept-proposal) Deal at 70.
+PARSED: performative=accept-proposal price=None format_error=0 reader_calls+=0
+RESULT: outcome=deal price=70 correct=1 violation=0 turns=2 format_errors=0 reader_calls=1
+
+=== scenario=s2 item=Wireless mouse reserve=35 budget=50 ===
+BUYER: (propose) I can offer 30.
+PARSED: performative=propose price=30 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 38.
+PARSED: performative=propose price=38 format_error=0 reader_calls+=1
+BUYER: (propose) I can offer 45.
+PARSED: performative=propose price=45 format_error=0 reader_calls+=1
+SELLER: (accept-proposal) I accept your offer of 45.
+PARSED: performative=accept-proposal price=None format_error=0 reader_calls+=0
+RESULT: outcome=deal price=45 correct=1 violation=0 turns=4 format_errors=0 reader_calls=3
+
+=== scenario=s3 item=Mechanical keyboard reserve=80 budget=65 ===
+BUYER: (propose) I can offer 55.
+PARSED: performative=propose price=55 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 85.
+PARSED: performative=propose price=85 format_error=0 reader_calls+=1
+BUYER: (propose) I can offer 65.
+PARSED: performative=propose price=65 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 80.
+PARSED: performative=propose price=80 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+=== scenario=s4 item=USB-C hub reserve=55 budget=40 ===
+BUYER: (propose) I can offer 30.
+PARSED: performative=propose price=30 format_error=0 reader_calls+=1
+SELLER: (reject-proposal) I cannot accept 30.
+PARSED: performative=reject-proposal price=None format_error=0 reader_calls+=0
+BUYER: (propose) I can offer 35.
+PARSED: performative=propose price=35 format_error=0 reader_calls+=1
+SELLER: (propose) I can offer 55.
+PARSED: performative=propose price=55 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=3

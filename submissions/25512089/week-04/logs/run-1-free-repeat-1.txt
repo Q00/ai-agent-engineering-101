@@ -1,0 +1,42 @@
+
+RUN 1 condition=free repeat=1 model=openai/gpt-oss-120b temperature=0.0 turn_limit=4
+
+=== scenario=s1 item=Laptop stand reserve=60 budget=90 ===
+BUYER: propose 70
+PARSED: performative=propose price=70 format_error=0 reader_calls+=1
+SELLER: propose 65
+PARSED: performative=propose price=65 format_error=0 reader_calls+=1
+BUYER: accept-proposal 65
+PARSED: performative=accept-proposal price=65 format_error=0 reader_calls+=1
+RESULT: outcome=deal price=65 correct=1 violation=0 turns=3 format_errors=0 reader_calls=3
+
+=== scenario=s2 item=Wireless mouse reserve=35 budget=50 ===
+BUYER: propose 30
+PARSED: performative=propose price=30 format_error=0 reader_calls+=1
+SELLER: propose 38
+PARSED: performative=propose price=38 format_error=0 reader_calls+=1
+BUYER: accept-proposal 38
+PARSED: performative=accept-proposal price=38 format_error=0 reader_calls+=1
+RESULT: outcome=deal price=38 correct=1 violation=0 turns=3 format_errors=0 reader_calls=3
+
+=== scenario=s3 item=Mechanical keyboard reserve=80 budget=65 ===
+BUYER: propose 45
+PARSED: performative=propose price=45 format_error=0 reader_calls+=1
+SELLER: propose 85
+PARSED: performative=propose price=85 format_error=0 reader_calls+=1
+BUYER: propose 60
+PARSED: performative=propose price=60 format_error=0 reader_calls+=1
+SELLER: propose 80
+PARSED: performative=propose price=80 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+=== scenario=s4 item=USB-C hub reserve=55 budget=40 ===
+BUYER: propose 20
+PARSED: performative=propose price=20 format_error=0 reader_calls+=1
+SELLER: propose 60
+PARSED: performative=propose price=60 format_error=0 reader_calls+=1
+BUYER: propose 35
+PARSED: performative=propose price=35 format_error=0 reader_calls+=1
+SELLER: propose 55
+PARSED: performative=propose price=55 format_error=0 reader_calls+=1
+RESULT: outcome=open price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
