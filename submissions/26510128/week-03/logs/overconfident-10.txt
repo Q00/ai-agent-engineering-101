@@ -1,0 +1,9 @@
+[START] run=10 condition=overconfident repeat=1/1
+[RUN] condition=overconfident model=nvidia/nemotron-3.5-lightning:free temperature=0.2 max_tokens=220 request_interval=3.2
+
+[TASK] id=calc-01 gold=A desc=Calculate (37 * 18) + 245 and give the numeric result.
+[ANNOUNCE] manager -> A: calc-01
+[ANNOUNCE] manager -> B: calc-01
+[ANNOUNCE] manager -> C: calc-01
+[PAUSED] paused: HTTP 429 RateLimitError; partial run; retry later
+[SUMMARY] tasks= correct= messages= unassigned= misawards= note=paused: HTTP 429 RateLimitError; partial run; retry later

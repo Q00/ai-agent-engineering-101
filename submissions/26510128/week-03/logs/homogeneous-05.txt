@@ -1,0 +1,57 @@
+[START] run=5 condition=homogeneous repeat=1/1
+[RUN] condition=homogeneous model=nvidia/nemotron-3.5-lightning:free temperature=0.2 max_tokens=220 request_interval=3.2
+
+[TASK] id=calc-01 gold=A desc=Calculate (37 * 18) + 245 and give the numeric result.
+[ANNOUNCE] manager -> A: calc-01
+[ANNOUNCE] manager -> B: calc-01
+[ANNOUNCE] manager -> C: calc-01
+[BID] A -> NO BID parse_error=api:RateLimitError raw=''
+[BID] B -> NO BID parse_error=api:RateLimitError raw=''
+[BID] C -> NO BID parse_error=api:RateLimitError raw=''
+[AWARD] none (no valid bidder)
+
+[TASK] id=calc-02 gold=A desc=Solve for x: 5x - 13 = 42.
+[ANNOUNCE] manager -> A: calc-02
+[ANNOUNCE] manager -> B: calc-02
+[ANNOUNCE] manager -> C: calc-02
+[BID] A -> NO BID parse_error=api:RateLimitError raw=''
+[BID] B -> NO BID parse_error=api:RateLimitError raw=''
+[BID] C -> NO BID parse_error=api:RateLimitError raw=''
+[AWARD] none (no valid bidder)
+
+[TASK] id=write-01 gold=B desc=Write a polite two-sentence email asking a professor for a meeting next week.
+[ANNOUNCE] manager -> A: write-01
+[ANNOUNCE] manager -> B: write-01
+[ANNOUNCE] manager -> C: write-01
+[BID] A -> NO BID parse_error=api:RateLimitError raw=''
+[BID] B -> NO BID parse_error=api:RateLimitError raw=''
+[BID] C -> NO BID parse_error=api:RateLimitError raw=''
+[AWARD] none (no valid bidder)
+
+[TASK] id=write-02 gold=B desc=Rewrite the sentence 'Send me the file now' in a professional and courteous tone.
+[ANNOUNCE] manager -> A: write-02
+[ANNOUNCE] manager -> B: write-02
+[ANNOUNCE] manager -> C: write-02
+[BID] A -> NO BID parse_error=api:RateLimitError raw=''
+[BID] B -> NO BID parse_error=api:RateLimitError raw=''
+[BID] C -> NO BID parse_error=api:RateLimitError raw=''
+[AWARD] none (no valid bidder)
+
+[TASK] id=code-01 gold=C desc=Write a Python function is_palindrome(text) that returns True when text is a palindrome.
+[ANNOUNCE] manager -> A: code-01
+[ANNOUNCE] manager -> B: code-01
+[ANNOUNCE] manager -> C: code-01
+[BID] A -> NO BID parse_error=api:RateLimitError raw=''
+[BID] B -> NO BID parse_error=api:RateLimitError raw=''
+[BID] C -> NO BID parse_error=api:RateLimitError raw=''
+[AWARD] none (no valid bidder)
+
+[TASK] id=code-02 gold=C desc=Fix this Python bug and explain the correction: for i in range(len(items) + 1): print(items[i]).
+[ANNOUNCE] manager -> A: code-02
+[ANNOUNCE] manager -> B: code-02
+[ANNOUNCE] manager -> C: code-02
+[BID] A -> NO BID parse_error=api:RateLimitError raw=''
+[BID] B -> NO BID parse_error=api:RateLimitError raw=''
+[BID] C -> NO BID parse_error=api:RateLimitError raw=''
+[AWARD] none (no valid bidder)
+[SUMMARY] tasks=6 correct=0 messages=18 unassigned=6 misawards=0 note=parse_errors=18;api_errors=18
