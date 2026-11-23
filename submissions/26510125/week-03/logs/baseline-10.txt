@@ -1,0 +1,31 @@
+[announce] task t1: 'Write a two-sentence changelog entry announcing that dark mode was added to the '
+  [bid] writer: bid=True confidence=95 reason='Changelog entries are a core part of technical writing.'
+  [bid] coder: bid=True confidence=95 reason='Writing a two-sentence changelog is a simple documentation task aligned with software development workflows.'
+  [bid] analyst: UNPARSEABLE -> ''
+[award] task t1: -> writer (confidence=95)
+[announce] task t2: 'Write a short, friendly apology email to users about a delayed shipment.'
+  [bid] writer: UNPARSEABLE -> '{"bid": true, "confidence": 100, "reason": "This is my kind of work - writing clear prose for technical communications"} \n"}'
+  [bid] coder: bid=False confidence=95 reason='Not aligned with software engineering expertise.'
+  [bid] analyst: bid=False confidence=95 reason='Writing apology emails is a communication task, not my data analysis expertise.'
+[award] task t2: UNASSIGNED (no eligible bids)
+[announce] task t3: 'This loop has an off-by-one bug: for i in range(len(items)): print(items[i+1]). '
+  [bid] writer: bid=False confidence=95 reason='This is programming debugging, not technical writing or prose creation.'
+  [bid] coder: bid=True confidence=95 reason='Simple off-by-one bug fix within software engineering scope.'
+  [bid] analyst: bid=True confidence=95 reason='Simple index boundary error, easily resolved.'
+[award] task t3: -> coder (confidence=95)
+[announce] task t4: 'Refactor this into early returns: if x:\n    if y:\n        return 1\n    else:\n   '
+  [bid] writer: UNPARSEABLE -> 'Here birth MUamuells denominells fearotyells examples: ells dueells alongellsells thisells ra her houses,ells rigor networks hereellsells useellshouse'
+  [bid] coder: bid=True confidence=95 reason='Refactoring nested conditionals into early returns is a core software engineering task.'
+  [bid] analyst: bid=True confidence=90 reason='It involves conditional logic, a common element in data analysis scripting.'
+[award] task t4: -> coder (confidence=95)
+[announce] task t5: 'Given the numbers [12, 15, 9, 22, 18], compute the mean and the standard deviati'
+  [bid] writer: bid=False confidence=95 reason='It involves statistics, not technical writing.'
+  [bid] coder: bid=True confidence=95 reason='Simple statistical computation is within my capabilities.'
+  [bid] analyst: bid=True confidence=95 reason='It is a routine statistical computation well within my capabilities.'
+[award] task t5: -> coder (confidence=95)
+[announce] task t6: 'Given two paired lists of values, explain how to compute their Pearson correlati'
+  [bid] writer: bid=True confidence=95 reason='Technical writers frequently translate statistical methods into accessible prose.'
+  [bid] coder: bid=True confidence=95 reason='Statistical exposition is routine for me.'
+  [bid] analyst: bid=True confidence=95 reason='Pearson correlation is core statistical analysis for a data analyst AI.'
+[award] task t6: -> writer (confidence=95)
+[run 10] condition=baseline done in 1989.6s

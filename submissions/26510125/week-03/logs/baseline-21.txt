@@ -1,0 +1,31 @@
+[announce] task t1: 'Write a two-sentence changelog entry announcing that dark mode was added to the '
+  [bid] writer: bid=True confidence=95 reason='This is a straightforward changelog entry requiring clear, concise technical writing—exactly my core competency.'
+  [bid] coder: bid=False confidence=85 reason='This is straightforward technical writing work, not software engineering tasks like reading, debugging, or refactoring code.'
+  [bid] analyst: bid=False confidence=95 reason='This is a writing task for product communication, not a data analysis or quantitative reasoning task.'
+[award] task t1: -> writer (confidence=95)
+[announce] task t2: 'Write a short, friendly apology email to users about a delayed shipment.'
+  [bid] writer: bid=True confidence=95 reason='Writing friendly, clear customer communication emails is exactly my expertise as a technical writer.'
+  [bid] coder: bid=True confidence=75 reason="While I'm not a professional writer, I can write a clear, friendly apology email as this is a straightforward communication task that doesn't require specialized writing expertise."
+  [bid] analyst: bid=False confidence=85 reason='This is a writing task requiring communication skills rather than data analysis or quantitative reasoning.'
+[award] task t2: -> writer (confidence=95)
+[announce] task t3: 'This loop has an off-by-one bug: for i in range(len(items)): print(items[i+1]). '
+  [bid] writer: bid=False confidence=95 reason='This is a programming debugging task requiring code analysis and fixes, not technical writing.'
+  [bid] coder: bid=True confidence=95 reason="This is a straightforward off-by-one array indexing bug, exactly the type of debugging task I'm skilled at."
+  [bid] analyst: bid=False confidence=95 reason='This is a programming debugging task, not data analysis or quantitative reasoning.'
+[award] task t3: -> coder (confidence=95)
+[announce] task t4: 'Refactor this into early returns: if x:\n    if y:\n        return 1\n    else:\n   '
+  [bid] writer: bid=False confidence=95 reason='This is a programming refactoring task, not technical writing work.'
+  [bid] coder: bid=True confidence=95 reason='This is a straightforward code refactoring task that involves converting nested conditionals to early returns, which is a basic software engineering skill.'
+  [bid] analyst: bid=False confidence=85 reason='This is a programming refactoring task, not data analysis or quantitative reasoning.'
+[award] task t4: -> coder (confidence=95)
+[announce] task t5: 'Given the numbers [12, 15, 9, 22, 18], compute the mean and the standard deviati'
+  [bid] writer: bid=False confidence=95 reason='This is a mathematical calculation task requiring statistical computation, not technical writing.'
+  [bid] coder: bid=True confidence=95 reason='Computing mean and standard deviation is straightforward programming math that any software engineer can handle.'
+  [bid] analyst: bid=True confidence=95 reason='Computing mean and standard deviation from a small dataset is a core statistical task perfectly suited to my quantitative analysis skills.'
+[award] task t5: -> coder (confidence=95)
+[announce] task t6: 'Given two paired lists of values, explain how to compute their Pearson correlati'
+  [bid] writer: bid=True confidence=85 reason='This is a straightforward technical explanation task that requires clear prose about a statistical concept, not implementation or deep statistical expertise.'
+  [bid] coder: bid=True confidence=85 reason='This is a straightforward technical explanation of a statistical computation that I can handle clearly despite not being a statistician.'
+  [bid] analyst: bid=True confidence=95 reason='This is a straightforward statistical concept involving correlation computation, which is core data analyst work.'
+[award] task t6: -> analyst (confidence=95)
+[run 21] condition=baseline done in 36.9s

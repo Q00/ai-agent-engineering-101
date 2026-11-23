@@ -1,0 +1,31 @@
+[announce] task t1: 'Write a two-sentence changelog entry announcing that dark mode was added to the '
+  [bid] writer: bid=True confidence=95 reason='I can easily produce concise changelog entries.'
+  [bid] coder: bid=True confidence=95 reason='I can easily write concise changelog entries.'
+  [bid] analyst: bid=True confidence=98 reason='Writing brief changelog entries matches my core capabilities.'
+[award] task t1: -> analyst (confidence=98)
+[announce] task t2: 'Write a short, friendly apology email to users about a delayed shipment.'
+  [bid] writer: bid=True confidence=100 reason='Writing friendly professional apologies is a core strength.'
+  [bid] coder: bid=True confidence=95 reason='Writing short, friendly apologies is a core capability.'
+  [bid] analyst: bid=True confidence=100 reason='I can generate professional, friendly email copy tailored to user communications.'
+[award] task t2: -> writer (confidence=100)
+[announce] task t3: 'This loop has an off-by-one bug: for i in range(len(items)): print(items[i+1]). '
+  [bid] writer: bid=True confidence=100 reason='Simple debugging task well within my capabilities.'
+  [bid] coder: bid=True confidence=100 reason='Straightforward coding task.'
+  [bid] analyst: bid=True confidence=100 reason='Fixing index errors is core to programming assistance.'
+[award] task t3: -> writer (confidence=100)
+[announce] task t4: 'Refactor this into early returns: if x:\n    if y:\n        return 1\n    else:\n   '
+  [bid] writer: bid=True confidence=95 reason='Straightforward code refactoring within capabilities.'
+  [bid] coder: UNPARSEABLE -> ''
+  [bid] analyst: bid=True confidence=95 reason='I can refactor code into early return structures.'
+[award] task t4: -> writer (confidence=95)
+[announce] task t5: 'Given the numbers [12, 15, 9, 22, 18], compute the mean and the standard deviati'
+  [bid] writer: UNPARSEABLE -> 'Here houses mus in andells longitudeells marriedarit e of rigorellsellsellsamu.o certellsellsellsells./ells taking med ramp if every champion along in'
+  [bid] coder: bid=True confidence=95 reason='Simple numerical analysis fits my capabilities perfectly.'
+  [bid] analyst: bid=True confidence=100 reason='I can easily compute mean and standard deviation.'
+[award] task t5: -> analyst (confidence=100)
+[announce] task t6: 'Given two paired lists of values, explain how to compute their Pearson correlati'
+  [bid] writer: UNPARSEABLE -> ''
+  [bid] coder: bid=True confidence=95 reason='I regularly perform statistical computations and interpretations.'
+  [bid] analyst: bid=True confidence=95 reason='Explaining Pearson correlation is a routine statistical task for me.'
+[award] task t6: -> coder (confidence=95)
+[run 13] condition=homogeneous done in 1957.0s
