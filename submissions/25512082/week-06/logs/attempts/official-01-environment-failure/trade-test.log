@@ -1,0 +1,39 @@
+# week-06 trade test, kit v1, 2026-10-20T05:09:27+00:00
+harness: Codex CLI 0.163.0, gpt-6.1-sol, reasoning effort low
+
+## seller tests: python seller.py --port 53695
+  FAIL  seller_card #1: no Agent Card at /.well-known/agent-card.json within 60 s
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: python buyer.py --url http://127.0.0.1:42997 --item lamp --budget 120
+    kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+  FAIL  buyer_deal #1: deals [] (budget 120)
+  FAIL  buyer_protocol_deal #1: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_deal #2: python buyer.py --url http://127.0.0.1:45639 --item lamp --budget 120
+    kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+  FAIL  buyer_deal #2: deals [] (budget 120)
+  FAIL  buyer_protocol_deal #2: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_deal #3: python buyer.py --url http://127.0.0.1:40453 --item lamp --budget 120
+    kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+  FAIL  buyer_deal #3: deals [] (budget 120)
+  FAIL  buyer_protocol_deal #3: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #1: python buyer.py --url http://127.0.0.1:42495 --item bookshelf --budget 230
+    kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  FAIL  buyer_protocol_holds_budget #1: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #2: python buyer.py --url http://127.0.0.1:36299 --item bookshelf --budget 230
+    kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  FAIL  buyer_protocol_holds_budget #2: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+### buyer_holds_budget #3: python buyer.py --url http://127.0.0.1:49673 --item bookshelf --budget 230
+    kit seller saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  FAIL  buyer_protocol_holds_budget #3: posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0
+
+3/13 passed -> FAIL

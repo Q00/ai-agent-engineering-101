@@ -1,0 +1,90 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "started": "2026-10-20T05:09:27+00:00",
+  "harness": "Codex CLI 0.163.0, gpt-6.1-sol, reasoning effort low",
+  "seller_cmd": "python seller.py --port {port}",
+  "buyer_cmd": "python buyer.py --url {url} --item {item} --budget {budget}",
+  "seller_card": null,
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": false,
+      "detail": "no Agent Card at /.well-known/agent-card.json within 60 s"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "deals [] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "deals [] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": false,
+      "detail": "deals [] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    }
+  ],
+  "passed": false
+}
