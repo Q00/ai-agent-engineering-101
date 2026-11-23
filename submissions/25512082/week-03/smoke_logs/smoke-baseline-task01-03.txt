@@ -1,0 +1,41 @@
+[setup] provider=openrouter
+[setup] model=nvidia/nemotron-3.5-lightning
+[setup] base_url=https://openrouter.ai/api/v1
+[setup] temperature=0
+[setup] max_tokens=256
+[setup] reasoning_enabled=false
+[setup] diagnostic_only=true
+[setup] protocol_fingerprint=6d61736aac915c068a73c41d618452a310212006971160351a4b28c5c976ecc4
+[announcement] task_id=1 contractor=A
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[response_metadata] contractor=A {"actual_model": "nvidia/nemotron-3.5-lightning", "completion_tokens": 219, "content_empty": false, "content_null": false, "finish_reason": "stop", "prompt_tokens": 270, "reasoning_details_present": true, "reasoning_present": true, "request_response_format": {"json_schema": {"name": "contract_net_bid", "schema": {"additionalProperties": false, "properties": {"bid": {"type": "boolean"}, "confidence": {"maximum": 100, "minimum": 0, "type": "number"}, "reason": {"type": "string"}}, "required": ["bid", "confidence", "reason"], "type": "object"}, "strict": true}, "type": "json_schema"}, "total_tokens": 489}
+[raw_response_begin] contractor=A
+{"bid": true, "confidence": 100, "reason": "The task requires basic arithmetic (division, multiplication, addition, subtraction), which falls squarely within my numerical calculation and mathematical reasoning skills. The expression (384 / 12) + (17 * 6) - 29 evaluates to 28 + 102 - 29 = 101."}
+[raw_response_end] contractor=A
+[parse_success] contractor=A bid=true confidence=100 reason="The task requires basic arithmetic (division, multiplication, addition, subtraction), which falls squarely within my numerical calculation and mathematical reasoning skills. The expression (384 / 12) + (17 * 6) - 29 evaluates to 28 + 102 - 29 = 101."
+[announcement] task_id=1 contractor=B
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[response_metadata] contractor=B {"actual_model": "nvidia/nemotron-3.5-lightning", "completion_tokens": 164, "content_empty": false, "content_null": false, "finish_reason": "stop", "prompt_tokens": 269, "reasoning_details_present": true, "reasoning_present": true, "request_response_format": {"json_schema": {"name": "contract_net_bid", "schema": {"additionalProperties": false, "properties": {"bid": {"type": "boolean"}, "confidence": {"maximum": 100, "minimum": 0, "type": "number"}, "reason": {"type": "string"}}, "required": ["bid", "confidence", "reason"], "type": "object"}, "strict": true}, "type": "json_schema"}, "total_tokens": 433}
+[raw_response_begin] contractor=B
+{"bid": false, "confidence": 0, "reason": "The task requires arithmetic evaluation, which falls outside my skill of writing and sentence transformation."}
+[raw_response_end] contractor=B
+[parse_success] contractor=B bid=false confidence=0 reason="The task requires arithmetic evaluation, which falls outside my skill of writing and sentence transformation."
+[announcement] task_id=1 contractor=C
+TASK-ANNOUNCEMENT contract 1
+task-abstraction: Evaluate (384 / 12) + (17 * 6) - 29 and return the numeric result.
+eligibility-specification: any contractor whose skill covers this task
+bid-specification: JSON with bid, confidence (0-100), reason
+expiration-time: reply now
+[response_metadata] contractor=C {"actual_model": "nvidia/nemotron-3.5-lightning", "completion_tokens": 168, "content_empty": false, "content_null": false, "finish_reason": "stop", "prompt_tokens": 269, "reasoning_details_present": true, "reasoning_present": true, "request_response_format": {"json_schema": {"name": "contract_net_bid", "schema": {"additionalProperties": false, "properties": {"bid": {"type": "boolean"}, "confidence": {"maximum": 100, "minimum": 0, "type": "number"}, "reason": {"type": "string"}}, "required": ["bid", "confidence", "reason"], "type": "object"}, "strict": true}, "type": "json_schema"}, "total_tokens": 437}
+[raw_response_begin] contractor=C
+{"bid": true, "confidence": 100, "reason": "The task is a simple arithmetic evaluation that can be easily handled by Python programming and debugging skills."}
+[raw_response_end] contractor=C
+[parse_success] contractor=C bid=true confidence=100 reason="The task is a simple arithmetic evaluation that can be easily handled by Python programming and debugging skills."
