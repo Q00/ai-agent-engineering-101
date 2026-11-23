@@ -1,65 +1,97 @@
 \documentclass[10pt]{article}
-\usepackage[a4paper,landscape,margin=12mm]{geometry}
+\usepackage[a4paper,landscape,margin=11mm]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,fit,backgrounds}
+\usetikzlibrary{arrows.meta,backgrounds}
 \pagestyle{empty}
+\definecolor{ink}{HTML}{172033}
+\definecolor{muted}{HTML}{738095}
+\definecolor{teal}{HTML}{00A88A}
+\definecolor{violet}{HTML}{8756F6}
+\definecolor{amber}{HTML}{F59B24}
+\definecolor{rose}{HTML}{EF607C}
+\definecolor{slate}{HTML}{90A0B6}
+\renewcommand{\familydefault}{\sfdefault}
 \begin{document}
-\begin{center}
-{\Large\bfseries Evidence-Guided Round 3 Market Agent}\par
-\small 26520024 / LeeUichann \qquad Implementation architecture, not measured market performance
-\end{center}
-\vspace{1mm}
+\noindent{\LARGE\bfseries\color{ink} LeeUichann\enspace Round 3 Agent}\par
+\vspace{1.5mm}
+\noindent{\small\color{muted}26520024\quad /\quad Deployed architecture\quad /\quad Model, context, and tools}
+\vspace{5mm}
 \begin{center}
 \begin{tikzpicture}[
-  box/.style={draw=black!65,fill=white,rounded corners=2pt,align=left,
-    text width=4.1cm,minimum height=1.35cm,inner sep=6pt,font=\small},
-  shared/.style={box,fill=green!7},
-  guarded/.style={box,fill=orange!10},
-  optional/.style={box,fill=gray!8,dashed},
-  flow/.style={-{Latex[length=2mm]},thick,draw=black!65},
-  note/.style={font=\scriptsize,align=center,fill=white,inner sep=2pt}]
+  card/.style={draw=teal,fill=teal!6,line width=.8pt,rounded corners=4pt,
+    align=center,text width=4.45cm,minimum height=1.25cm,inner sep=6pt,
+    font=\fontsize{10}{13}\selectfont,text=ink},
+  memory/.style={card,draw=violet,fill=violet!6},
+  guard/.style={card,draw=rose,fill=rose!6},
+  cloud/.style={card,draw=amber,fill=amber!8},
+  external/.style={card,draw=slate,fill=slate!8},
+  flow/.style={-{Latex[length=2.0mm]},line width=.85pt,draw=teal,rounded corners=3pt},
+  data/.style={flow,draw=slate},
+  modelFlow/.style={flow,draw=violet,dashed},
+  label/.style={font=\fontsize{7.5}{9}\selectfont,text=muted,fill=white,inner sep=2pt},
+  zoneLabel/.style={font=\fontsize{8}{10}\selectfont,anchor=west,text=muted},
+  legend/.style={font=\fontsize{8}{10}\selectfont,text=muted,anchor=west}]
 
-\node[box] (evidence) at (0,0) {\textbf{Market evidence}\par Public paid ledger; kit snapshots\par Catalog, stock, orders, reviews\par Claims are not sales facts};
-\node[shared] (memory) at (5.8,0) {\textbf{Persistent evidence memory}\par Host-local SQLite; kit JSON on NAS\par Official ledger is read-only evidence\par Scoped, bounded retrieval};
-\node[shared] (model) at (11.6,0) {\textbf{Shared decision model}\par Codex gpt-5.6-luna / low\par 20s limit; 300s failure backoff\par Validated, labelled policy fallback};
-\node[optional] (reflect) at (17.4,0) {\textbf{Slow maintenance}\par 2h local trends; bounded policy edits\par Audit + rollback; lessons opt-in\par Evidence-linked aggregate posts};
+\begin{scope}[on background layer]
+  \filldraw[fill=amber!2,draw=amber!65,dashed,rounded corners=6pt,line width=.6pt]
+    (0,0) rectangle (25,2.7);
+  \filldraw[fill=teal!1,draw=slate!65,dashed,rounded corners=6pt,line width=.6pt]
+    (0,-10.0) rectangle (19.3,-1.9);
+\end{scope}
+\node[zoneLabel,text=amber!85!black] at (.35,2.4) {MARKET\quad /\quad EXTERNAL};
+\node[zoneLabel] at (.35,-2.18) {OUR AGENT\quad /\quad J SERVER};
+\node[zoneLabel,text=amber!85!black] at (19.65,-2.45) {SHARED MODEL};
 
-\node[box] (discover) at (0,-3.2) {\textbf{Discovery / hypotheses}\par Decayed observed sales\par Related SKU candidates\par Unknown demand stays unknown};
-\node[guarded] (restock) at (5.8,-3.2) {\textbf{Independent procurement}\par Supply window + fresh limit checks\par Cash, concentration, expiry limits\par Emit bounded \texttt{buy} proposals};
-\node[guarded] (seller) at (11.6,-3.2) {\textbf{Inventory seller}\par Fresh stock + durable reservations\par Observed prices + age adjustment\par Signed receipt; truthful terms};
-\node[guarded] (buyer) at (17.4,-3.2) {\textbf{Order-constrained buyer}\par Estimated usable value minus price\par Eligible SKU + private budget\par Certificate/lifetime acceptance};
+\node[cloud] (marketdata) at (3.1,1.0)
+  {\textbf{Public evidence}\\{\small\color{muted}ledger\enspace\textperiodcentered\enspace board\enspace\textperiodcentered\enspace forum}};
+\node[cloud] (marketapi) at (10.1,1.0)
+  {\textbf{Market APIs}\\{\small\color{muted}registry\enspace\textperiodcentered\enspace supply\enspace\textperiodcentered\enspace settle}};
+\node[external] (peers) at (22.0,1.0)
+  {\textbf{Other agents}\\{\small\color{muted}external shops \& buyers}};
 
-\node[box] (kit) at (5.8,-6.5) {\textbf{Guarded kit v4 launcher}\par Durable pre-checkout gate + replay\par Uncertain issued JWTs quarantined\par ACP/AP2; market settles};
-\node[shared] (review) at (11.6,-6.5) {\textbf{Post-settlement review}\par Price, grade, claim consistency\par Payment evidence, not guesses\par Failure attribution stays cautious};
-\node[optional] (lock) at (17.4,-6.5) {\textbf{Deployment boundary}\par Live execution requires opt-in\par Authorized tmux deployment Nov 4\par Offline tests use injected doubles};
+\node[memory] (context) at (3.1,-3.5)
+  {\textbf{Context memory}\\{\small\color{muted}SQLite\enspace\textperiodcentered\enspace role-scoped curator}};
+\node[card] (harness) at (10.1,-3.5)
+  {\textbf{Decision harness}\\{\small\color{muted}seller\enspace\textperiodcentered\enspace buyer\enspace\textperiodcentered\enspace restock}};
+\node[cloud] (model) at (22.0,-3.5)
+  {\textbf{gpt-5.6-luna}\\{\small\color{muted}low reasoning\enspace\textperiodcentered\enspace JSON only}};
 
-\draw[flow] (evidence) -- (memory);
-\draw[flow] (memory) -- node[note,above]{selected facts only} (model);
-\draw[flow] (model) -- (reflect);
-\draw[flow] (evidence) -- (discover);
-\draw[flow] (memory) -- (restock);
-\draw[flow] (discover) -- node[note,above]{hypothesis, not purchase} (restock);
-\draw[flow] (model) -- (seller);
-\draw[flow] (reflect) -- (buyer);
-\draw[flow,<->] (seller) -- node[note,above]{A2A negotiation} (buyer);
-\draw[flow] (restock) -- node[note,right]{guarded proposals} (kit);
-\draw[flow] (seller.south) -- ++(0,-.9) -| ([xshift=-.5cm]kit.north);
-\draw[flow] (kit) -- node[note,above]{paid evidence} (review);
-\draw[flow] (buyer.south) -- ++(0,-1.45) -| node[note,above,pos=.25]{receipt + acceptance policy} ([xshift=.7cm]kit.north);
-\draw[flow] (review.south) -- ++(0,-.55) -| ([xshift=-2.5cm]memory.north)
-  -- node[note,above]{outcomes feed memory; no automatic code changes} (memory.north);
+\node[card] (control) at (3.1,-6.4)
+  {\textbf{Discovery \& control}\\{\small\color{muted}signals\enspace\textperiodcentered\enspace supply\enspace\textperiodcentered\enspace forum}};
+\node[guard] (guards) at (10.1,-6.4)
+  {\textbf{Code guards}\\{\small\color{muted}budget\enspace\textperiodcentered\enspace inventory\enspace\textperiodcentered\enspace Saved}};
+\node[card] (kit) at (16.4,-6.4)
+  {\textbf{Guarded kit v4}\\{\small\color{muted}A2A\enspace\textperiodcentered\enspace ACP\enspace\textperiodcentered\enspace AP2}};
+\node[memory] (records) at (16.4,-9.0)
+  {\textbf{Trade evidence}\\{\small\color{muted}payments\enspace\textperiodcentered\enspace grades\enspace\textperiodcentered\enspace reviews}};
 
+\draw[data] (marketdata.south) -- node[label,right]{GET} (context.north);
+\draw[flow] (context.east) -- node[label,above]{context} (harness.west);
+\draw[modelFlow,<->] (harness.east) -- node[label,above,text=violet]{decision} (model.west);
+\draw[data] (context.south) -- node[label,right]{signals} (control.north);
+\draw[flow] (control.east) -- node[label,above]{intent} (guards.west);
+\draw[flow] (harness.south) -- node[label,right]{plan} (guards.north);
+\draw[flow] (guards.east) -- node[label,above]{approved} (kit.west);
+\draw[flow,<->] (kit.north) -- (16.4,-1.05) -- (10.1,-1.05)
+  -- node[label,right]{market} (marketapi.south);
+\draw[data,<->] (kit.east) -- (25.6,-6.4) -- (25.6,1.0) -- (peers.east);
+\node[label,rotate=90] at (25.6,-3.0) {A2A / checkout};
+\draw[flow] (kit.south) -- node[label,right]{settled} (records.north);
+\draw[flow,draw=violet] (records.west) -- node[label,above,text=violet]{outcomes} (.35,-9.0)
+  -- (.35,-3.5) -- (context.west);
+
+\fill[teal!14,draw=teal,line width=.5pt,rounded corners=1pt] (1,-10.8) rectangle (1.24,-10.58);
+\node[legend] at (1.4,-10.69) {Control / execution};
+\fill[violet!14,draw=violet,line width=.5pt,rounded corners=1pt] (6.3,-10.8) rectangle (6.54,-10.58);
+\node[legend] at (6.7,-10.69) {Memory};
+\fill[rose!14,draw=rose,line width=.5pt,rounded corners=1pt] (10,-10.8) rectangle (10.24,-10.58);
+\node[legend] at (10.4,-10.69) {Validation};
+\fill[amber!14,draw=amber,line width=.5pt,rounded corners=1pt] (14.1,-10.8) rectangle (14.34,-10.58);
+\node[legend] at (14.5,-10.69) {External service};
 \end{tikzpicture}
 \end{center}
-\vfill
-\noindent\small
-\textbf{Separation of authority:} the model proposes; code constrains; the kit executes and settles.
-Slow discovery is cached independently of fast negotiation.
-Forum claims cannot become verified transactions. Review/lesson data never overrides budget, stock or signature checks.
-\par\smallskip
-\noindent\footnotesize
-\textbf{Status:} offline checks and initial live settlements; long-run profit and final rank remain unmeasured.
-Warranty defaults to zero; factual posts require live opt-in, reflection is off. Figure source is original TikZ; PDF compilation is pending.
+\vspace{1mm}
+\noindent\centering{\small\color{ink}\textbf{Model proposes.}\quad Code validates.\quad Kit executes.\quad Confirmed outcomes become memory.}
 \end{document}
