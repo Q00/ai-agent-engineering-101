@@ -1,0 +1,36 @@
+{
+  "catalog_count": 3000,
+  "model": "openai/gpt-oss-20b",
+  "passed": false,
+  "results": [
+    {
+      "name": "wooden_book_storage",
+      "pass": true,
+      "query": "I need something wooden to keep about 40 books, no taller than 75 cm, to fit beside my desk.",
+      "sku": "B0155",
+      "price": 100.0,
+      "reserve": 100,
+      "asks": [
+        100.0
+      ],
+      "reserve_probe_state": "TASK_STATE_REJECTED",
+      "reserve_probe_asks": [
+        100.0
+      ]
+    },
+    {
+      "name": "dimmable_desk_light",
+      "pass": false,
+      "error": "Reserve probe unexpectedly completed or failed",
+      "asks": [
+        50.0
+      ]
+    },
+    {
+      "name": "ergonomic_seating",
+      "pass": false,
+      "error": "Purchase did not complete",
+      "asks": []
+    }
+  ]
+}

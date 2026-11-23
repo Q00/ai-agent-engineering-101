@@ -1,0 +1,94 @@
+2026-10-16 17:09:15,688 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:09:15,710 INFO task=70c76b6a-684a-41bb-beb5-bb2a8c00492e action=counter item=lamp price=130
+2026-10-16 17:09:16,473 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:09:16,483 INFO task=70c76b6a-684a-41bb-beb5-bb2a8c00492e action=counter item=lamp price=100
+2026-10-16 17:09:17,267 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:09:17,269 INFO task=70c76b6a-684a-41bb-beb5-bb2a8c00492e action=accept item=lamp price=100
+2026-10-16 17:09:17,330 ERROR Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x00000153E4D67B00> at 0x00000153E6D9B100> was created in a different Context
+2026-10-16 17:09:17,342 ERROR Task was destroyed but it is pending!
+task: <Task pending name='Task-48' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\bhj72\anaconda3\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+2026-10-16 17:09:17,342 ERROR Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\a2a\utils\telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "C:\Users\bhj72\anaconda3\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x00000153E4D67B00> at 0x00000153E6D9BC80> was created in a different Context
+2026-10-16 17:09:17,345 ERROR Task was destroyed but it is pending!
+task: <Task pending name='Task-49' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\bhj72\anaconda3\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+2026-10-16 17:09:18,085 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:09:18,087 INFO task=99aad4de-3e95-4e75-979b-a0dfbbb9c427 action=counter item=lamp price=150
+2026-10-16 17:09:25,809 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:09:25,811 INFO task=99aad4de-3e95-4e75-979b-a0dfbbb9c427 action=counter item=lamp price=100
+2026-10-16 17:10:10,876 INFO Retrying request to /chat/completions in 0.389616 seconds
+2026-10-16 17:10:12,153 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:12,155 INFO task=99aad4de-3e95-4e75-979b-a0dfbbb9c427 action=accept item=lamp price=100
+2026-10-16 17:10:19,392 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:19,394 INFO task=24dd7a9c-06cb-4813-86f4-52c502b87e22 action=counter item=lamp price=150
+2026-10-16 17:10:20,549 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:20,551 INFO task=24dd7a9c-06cb-4813-86f4-52c502b87e22 action=counter item=lamp price=110
+2026-10-16 17:10:28,186 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:28,188 INFO task=24dd7a9c-06cb-4813-86f4-52c502b87e22 action=accept item=lamp price=110
+2026-10-16 17:10:28,929 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:28,931 INFO task=cbf80a01-3e6a-4094-a2cd-768988609aa5 action=counter item=bookshelf price=300
+2026-10-16 17:10:29,970 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:29,972 INFO task=cbf80a01-3e6a-4094-a2cd-768988609aa5 action=counter item=bookshelf price=260
+2026-10-16 17:10:35,118 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:35,119 INFO task=cbf80a01-3e6a-4094-a2cd-768988609aa5 action=counter item=bookshelf price=260
+2026-10-16 17:10:36,390 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:36,395 INFO task=cbf80a01-3e6a-4094-a2cd-768988609aa5 action=counter item=bookshelf price=260
+2026-10-16 17:10:38,367 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-10-16 17:10:38,368 ERROR task=cbf80a01-3e6a-4094-a2cd-768988609aa5 decision_failed type=BadRequestError
+2026-10-16 17:10:39,185 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:39,187 INFO task=1de5b298-9d30-4e5d-aaef-43865eb3c81b action=counter item=bookshelf price=300
+2026-10-16 17:10:40,210 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:40,212 INFO task=1de5b298-9d30-4e5d-aaef-43865eb3c81b action=counter item=bookshelf price=260
+2026-10-16 17:10:41,847 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:41,849 INFO task=1de5b298-9d30-4e5d-aaef-43865eb3c81b action=counter item=bookshelf price=260
+2026-10-16 17:10:42,874 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:42,876 INFO task=1de5b298-9d30-4e5d-aaef-43865eb3c81b action=counter item=bookshelf price=260
+2026-10-16 17:10:44,716 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-10-16 17:10:44,717 ERROR task=1de5b298-9d30-4e5d-aaef-43865eb3c81b decision_failed type=BadRequestError
+2026-10-16 17:10:45,740 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:10:45,743 INFO task=a93b1d78-3ae5-41ea-9f10-161e78bfd602 action=counter item=bookshelf price=300
+2026-10-16 17:11:30,804 INFO Retrying request to /chat/completions in 0.464982 seconds
+2026-10-16 17:11:35,782 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:11:35,784 INFO task=a93b1d78-3ae5-41ea-9f10-161e78bfd602 action=counter item=bookshelf price=260
+2026-10-16 17:11:36,736 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-16 17:11:36,737 INFO task=a93b1d78-3ae5-41ea-9f10-161e78bfd602 action=counter item=bookshelf price=260
+2026-10-16 17:11:39,217 INFO HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
+2026-10-16 17:11:39,218 ERROR task=a93b1d78-3ae5-41ea-9f10-161e78bfd602 decision_failed type=BadRequestError
