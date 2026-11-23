@@ -58,7 +58,9 @@
 
 [한 페이지 아키텍처 PDF](architecture.pdf) · [LaTeX 원본](architecture.tex)
 
-도식의 세 열은 Shop, Buyer, 운영 분석을 나타낸다. 각 하네스는 저장된 근거에서 컨텍스트를 고르고, 모델의 판단을 받아 코드의 제약 검사를 통과시킨다. 아래의 공식 키트가 시장과 통신하고, 결과가 로그와 기억으로 돌아온다. 실선은 거래 실행 경로, 점선은 관측·제안 경로다. 운영 분석과 재고 계산은 구분했으며, 운영 제안이 자동으로 거래 정책에 반영되는 것처럼 그리지 않았다.
+![Round 3 에이전트 구조](architecture.png)
+
+도식은 외부 시장, 우리 서버, Claude CLI 모델 연결의 경계를 나눈다. 서버 안에서는 Shop·Buyer와 공식 키트·검증 도구가 거래 실행을 맡고, 결과가 역할별 상태·메모리에 쌓여 다음 판단과 수요 기반 재입고에 사용된다. 운영 전략가는 이 기록과 코드의 재고 분석을 읽어 개선안을 낸다. 초록 실선은 거래 실행, 회색 실선은 상태·관측, 보라 점선은 모델 호출, 분홍 점선은 제안·승인 경로다. Round 3의 정책 변경은 운영자 승인과 코드 검증을 거쳐 반영하는 조건부 경로로 표시했다.
 
 실행 진입점은 `run_round3.py → market_runtime.py → vendor/market_kit_v4.py`다. 원본 키트의 Git blob SHA를 먼저 검사하고 학생 코드의 `GuardedAcpShop`, 시장 시각 보정, Buyer 게시 처리를 연결한다. [원본 출처·해시](vendor/SOURCE.json)에 기록된 키트 바이트는 수정하지 않았다.
 
@@ -214,6 +216,6 @@ cd submissions/26510124/week-08
 tectonic architecture.tex
 ```
 
-아키텍처 PDF는 Tectonic 0.17.0으로 LaTeX 원본에서 빌드했다. 빌드·문서 검증 기록은 `logs/architecture-build-20261123-*.log`, `logs/report-validation-20261123.json`에 남긴다. 전체 에이전트의 기존 오프라인 검사 진입점은 `run_checks.py`이며, 마지막 코드 변경의 900개 통과 기록을 보존했다. 이번 보고서 작업은 거래 코드를 바꾸지 않는다. 공식 `scripts/check_week08.py`는 저장소에 없어 실행할 수 없었다.
+아키텍처 PDF는 Tectonic 0.17.0으로 LaTeX 원본에서 빌드했다. 한글 글꼴은 Noto Sans CJK KR, AppleGothic(macOS), Nanum Gothic 중 하나가 필요하며 이번 빌드는 AppleGothic을 사용했다. `architecture.png`는 같은 PDF의 미리보기다. 빌드·문서 검증 기록은 `logs/architecture-*-20261123-*.log`, `logs/report-validation-20261123.json`과 구조도 개편 후의 `logs/architecture-structure-validation-20261123.json`에 남긴다. 전체 에이전트의 기존 오프라인 검사 진입점은 `run_checks.py`이며, 마지막 코드 변경의 900개 통과 기록을 보존했다. 이번 보고서 작업은 거래 코드를 바꾸지 않는다. 공식 `scripts/check_week08.py`는 저장소에 없어 실행할 수 없었다.
 
 제출 파일은 `REPORT.md`, `architecture.tex`, `architecture.pdf`, `logs/market-kit.log` 및 이 디렉터리의 변경 코드다. 정책 실험·실패·성공 이력은 squash하지 않는다. 비공개 키와 환경 파일은 제출하지 않는다. 과제 기준: [8주차 HW](https://wpti.dev/ai-agent-engineering-101/week-08.html), [11주차 마무리 안내](https://wpti.dev/ai-agent-engineering-101/week-11.html), 저장소의 `weeks/week-11/README.md`.
