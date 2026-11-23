@@ -1,9 +1,0 @@
-BACKEND: claude-cli; model=claude-opus-5-5; tools=disabled
-INPUT_MESSAGES:
-{"messages": [{"role": "system", "content": "This is a connectivity test with no market and no tools. Return exactly one JSON action: {\"thought\":\"connection checked\",\"action\":\"sleep\",\"args\":{\"seconds\":30,\"why\":\"model probe only\"}}."}, {"role": "user", "content": "Return the action. Do not execute it."}], "requested_output_token_limit": 4000}
-EXIT: 1
-STDOUT:
-{"duration_api_ms":0,"stop_reason":"stop_sequence","session_id":"af8f2c45-f50e-4018-a4b0-556c9f69bee6","total_cost_usd":0,"usage":{"output_tokens_details":{"thinking_tokens":0},"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":0,"server_tool_use":{"web_search_requests":0,"web_fetch_requests":0},"service_tier":"standard","cache_creation":{"ephemeral_1h_input_tokens":0,"ephemeral_5m_input_tokens":0},"inference_geo":"","iterations":[],"speed":"standard","fallback_credit":null},"modelUsage":{},"permission_denials":[],"terminal_reason":"api_error","fast_mode_state":"off","fast_mode_disabled_reason":"sdk_opt_in_required","subagent_stats":{"spawned":0,"requested":{"background":0,"foreground":0,"unset":0},"started_in_background":0,"max_depth":0,"spawned_by_subagents":0,"completed":0,"failed":0,"killed":{"parent":0,"user":0,"system":0},"refused":{"depth_limit":0,"concurrency_limit":0,"budget":0},"by_type":{}},"is_error":true,"num_turns":1,"subtype":"success","api_error_status":null,"result":"Failed to authenticate: OAuth session expired and could not be refreshed","type":"result","duration_ms":52,"uuid":"76088103-abde-4ce9-b880-35ccaf91cccb","queued_turn_count":0,"result_index":0}
-
-STDERR:
-
