@@ -1,0 +1,20 @@
+{
+  "harness": "Claude Code 2.1.287 with haiku (claude -p --model haiku); both buyer and seller",
+  "seller": {
+    "cmd": ".venv/bin/python seller_agent.py --port {port}"
+  },
+  "buyer": {
+    "cmd": ".venv/bin/python buyer_agent.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "'/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/\u1109\u1165\u11a8\u1109\u1161 \u1109\u116e\u110b\u1165\u11b8/AX\u110b\u1175\u1112\u1162\u110b\u116a\u1112\u116a\u11af\u110b\u116d\u11bc/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python' market_buyer.py --shops {shops} --item {item} --budget {budget}"
+  },
+  "challenges": {
+    "1": {
+      "cmd": ".venv/bin/python run_challenges.py --challenge 1"
+    },
+    "2": {
+      "cmd": ".venv/bin/python run_challenges.py --challenge 2 --budget 450"
+    }
+  }
+}

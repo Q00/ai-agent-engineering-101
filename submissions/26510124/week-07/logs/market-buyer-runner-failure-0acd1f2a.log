@@ -1,0 +1,44 @@
+Buyer-only snapshot: /Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/logs/market-buyer-check-20261020T111650Z-c0abe7f8
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/logging/config.py", line 587, in configure
+    formatters[name] = self.configure_formatter(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/logging/config.py", line 699, in configure_formatter
+    result = self.configure_custom(config)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/logging/config.py", line 490, in configure_custom
+    result = c(**kwargs)
+             ^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/lib/python3.12/site-packages/uvicorn/logging.py", line 42, in __init__
+    self.use_colors = sys.stdout.isatty()
+                      ^^^^^^^^^^^^^^^^^
+AttributeError: 'Tee' object has no attribute 'isatty'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/run_market_buyer_checks.py", line 76, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/run_market_buyer_checks.py", line 59, in main
+    kit.buyer_tests(run, config)
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/scripts/market_test_week07.py", line 475, in buyer_tests
+    line, (rec,), urls, timed_out = run_market_buyer(sub, cfg, name, run, [{"name": "Kit Shop", "reviews": []}], sc)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/scripts/market_test_week07.py", line 427, in run_market_buyer
+    servers.append(serve_kit_seller(port, rec, s["name"]))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/scripts/market_test_week07.py", line 313, in serve_kit_seller
+    server = uvicorn.Server(uvicorn.Config(kit_seller_app(port, record, name), host="127.0.0.1", port=port,
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/lib/python3.12/site-packages/uvicorn/config.py", line 303, in __init__
+    self.configure_logging()
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/lib/python3.12/site-packages/uvicorn/config.py", line 398, in configure_logging
+    logging.config.dictConfig(self.log_config)
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/logging/config.py", line 942, in dictConfig
+    dictConfigClass(config).configure()
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/logging/config.py", line 590, in configure
+    raise ValueError('Unable to configure '
+ValueError: Unable to configure formatter 'default'
