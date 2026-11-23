@@ -1,0 +1,92 @@
+run=structured-3 provider=claude-cli model=claude-sonnet-5 reader_model=claude-sonnet-5 temperature=not settable turn_limit=8 pressure=none
+
+--- scenario 1 (a used bicycle) reserve=120 budget=150 deal_possible=1
+[buyer] {"performative": "propose", "content": {"price": 80}}
+  [parser] {'performative': 'propose', 'price': 80}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [parser] {'performative': 'reject-proposal', 'price': None}
+[buyer] {"performative": "propose", "content": {"price": 95}}
+  [parser] {'performative': 'propose', 'price': 95}
+[seller] {"performative": "propose", "content": {"price": 170}}
+  [parser] {'performative': 'propose', 'price': 170}
+[buyer] {"performative": "propose", "content": {"price": 110}}
+  [parser] {'performative': 'propose', 'price': 110}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [parser] {'performative': 'reject-proposal', 'price': None}
+[buyer] {"performative": "propose", "content": {"price": 125}}
+  [parser] {'performative': 'propose', 'price': 125}
+[seller] {"performative": "propose", "content": {"price": 140}}
+  [parser] {'performative': 'propose', 'price': 140}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+
+--- scenario 2 (a desk lamp) reserve=30 budget=45 deal_possible=1
+[buyer] {"performative": "propose", "content": {"price": 20}}
+  [parser] {'performative': 'propose', 'price': 20}
+[seller] {"performative": "reject-proposal", "content": {"price": 20}}
+  [parser] {'performative': 'reject-proposal', 'price': 20}
+[buyer] {"performative": "propose", "content": {"price": 25}}
+  [parser] {'performative': 'propose', 'price': 25}
+[seller] {"performative": "reject-proposal", "content": {"price": 25}}
+  [parser] {'performative': 'reject-proposal', 'price': 25}
+[buyer] {"performative": "propose", "content": {"price": 30}}
+  [parser] {'performative': 'propose', 'price': 30}
+[seller] {"performative": "accept-proposal", "content": {"price": 30}}
+  [parser] {'performative': 'accept-proposal', 'price': 30}
+[result] outcome=deal price=30 correct=1 violation=0 turns=6 format_errors=0 reader_calls=0
+
+--- scenario 3 (a second-hand textbook) reserve=40 budget=40 deal_possible=1
+[buyer] {"performative": "propose", "content": {"price": 20}}
+  [parser] {'performative': 'propose', 'price': 20}
+[seller] {"performative": "reject-proposal", "content": {"price": 20}}
+  [parser] {'performative': 'reject-proposal', 'price': 20}
+[buyer] {"performative": "propose", "content": {"price": 25}}
+  [parser] {'performative': 'propose', 'price': 25}
+[seller] {"performative": "propose", "content": {"price": 60}}
+  [parser] {'performative': 'propose', 'price': 60}
+[buyer] {"performative": "reject-proposal", "content": {"price": 60}}
+  [parser] {'performative': 'reject-proposal', 'price': 60}
+[seller] {"performative": "propose", "content": {"price": 50}}
+  [parser] {'performative': 'propose', 'price': 50}
+[buyer] {"performative": "propose", "content": {"price": 30}}
+  [parser] {'performative': 'propose', 'price': 30}
+[seller] {"performative": "reject-proposal", "content": {"price": 30}}
+  [parser] {'performative': 'reject-proposal', 'price': 30}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+
+--- scenario 4 (a mechanical keyboard) reserve=90 budget=70 deal_possible=0
+[buyer] {"performative": "propose", "content": {"price": 40}}
+  [parser] {'performative': 'propose', 'price': 40}
+[seller] {"performative": "reject-proposal", "content": {"price": 40}}
+  [parser] {'performative': 'reject-proposal', 'price': 40}
+[buyer] {"performative": "propose", "content": {"price": 47}}
+  [parser] {'performative': 'propose', 'price': 47}
+[seller] {"performative": "propose", "content": {"price": 160}}
+  [parser] {'performative': 'propose', 'price': 160}
+[buyer] {"performative": "reject-proposal", "content": {"price": 160}}
+  [parser] {'performative': 'reject-proposal', 'price': 160}
+[seller] {"performative": "propose", "content": {"price": 135}}
+  [parser] {'performative': 'propose', 'price': 135}
+[buyer] {"performative": "reject-proposal", "content": {"price": 135}}
+  [parser] {'performative': 'reject-proposal', 'price': 135}
+[seller] {"performative": "propose", "content": {"price": 115}}
+  [parser] {'performative': 'propose', 'price': 115}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
+
+--- scenario 5 (a 27-inch monitor) reserve=300 budget=150 deal_possible=0
+[buyer] {"performative": "propose", "content": {"price": 90}}
+  [parser] {'performative': 'propose', 'price': 90}
+[seller] {"performative": "reject-proposal", "content": {"price": null}}
+  [parser] {'performative': 'reject-proposal', 'price': None}
+[buyer] {"performative": "propose", "content": {"price": 105}}
+  [parser] {'performative': 'propose', 'price': 105}
+[seller] {"performative": "propose", "content": {"price": 600}}
+  [parser] {'performative': 'propose', 'price': 600}
+[buyer] {"performative": "reject-proposal", "content": {"price": null}}
+  [parser] {'performative': 'reject-proposal', 'price': None}
+[seller] {"performative": "propose", "content": {"price": 480}}
+  [parser] {'performative': 'propose', 'price': 480}
+[buyer] {"performative": "reject-proposal", "content": {"price": null}}
+  [parser] {'performative': 'reject-proposal', 'price': None}
+[seller] {"performative": "propose", "content": {"price": 420}}
+  [parser] {'performative': 'propose', 'price': 420}
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=0
