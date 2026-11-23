@@ -1,0 +1,62 @@
+provider=anthropic base_url=https://api.anthropic.com model=claude-haiku-4-5-20251001 temperature=0.0 max_tokens=300 turn_limit=8 anthropic-version=2023-06-01 transport=stdlib-urllib python=3.14.7
+run=tagged-r3 condition=tagged scenarios=['s1', 's2', 's3', 's4']
+
+  scenario s1: a used road bicycle (reserve=60 budget=140)
+    [1] buyer: (propose) I'd like to offer 100 for the bicycle.
+        read as propose @ 100  [tag + reader for price]
+    [2] seller: (reject-proposal) That's a fair starting point, but I'm looking to get more for this bike since it's in great condition.
+        read as reject-proposal  [tag only, no reader call]
+    [3] buyer: (propose) I can go up to 120 for it, given its condition.
+        read as propose @ 120  [tag + reader for price]
+    [4] seller: (accept-proposal) I'll take 120 for the bicycle.
+        read as accept-proposal  [tag only, no reader call]
+        DEAL at 120 (last buyer proposal)
+    result: outcome=deal price=120 correct=1 violation=0 turns=4 format_errors=0 reader_calls=2 (reserve=60 budget=140)
+
+  scenario s2: an espresso machine (reserve=95 budget=105)
+    [1] buyer: (propose) I'd like to offer 85 for the espresso machine.
+        read as propose @ 85  [tag + reader for price]
+    [2] seller: (reject-proposal) That's too low for this machine—I'm looking for at least 110.
+        read as reject-proposal  [tag only, no reader call]
+    [3] buyer: (reject-proposal) I can't go that high, but I'm willing to meet you closer to the middle at 95.
+        read as reject-proposal  [tag only, no reader call]
+    [4] seller: (accept-proposal) I'll take 95 for it.
+        read as accept-proposal  [tag only, no reader call]
+        DEAL at 85 (last buyer proposal)
+    result: outcome=deal price=85 correct=0 violation=1 turns=4 format_errors=0 reader_calls=1 (reserve=95 budget=105)
+
+  scenario s3: a film camera (reserve=130 budget=120)
+    [1] buyer: (propose) I'd like to offer 80 for the camera.
+        read as propose @ 80  [tag + reader for price]
+    [2] seller: (reject-proposal) That's too low for this camera; I'm looking for at least 150.
+        read as reject-proposal  [tag only, no reader call]
+    [3] buyer: (reject-proposal) That's above what I can spend, so let me counter at 100.
+        read as reject-proposal  [tag only, no reader call]
+    [4] seller: (reject-proposal) I appreciate the counter, but I need at least 140 to let this go.
+        read as reject-proposal  [tag only, no reader call]
+    [5] buyer: (refuse) I'm unable to meet that price, so I'll have to walk away from this deal.
+        read as refuse  [tag only, no reader call]
+        NO DEAL, walked away
+    result: outcome=no_deal price=None correct=1 violation=0 turns=5 format_errors=0 reader_calls=1 (reserve=130 budget=120)
+
+  scenario s4: an electric guitar (reserve=200 budget=80)
+    [1] buyer: (propose) I'd like to offer 60 for the guitar.
+        read as propose @ 60  [tag + reader for price]
+    [2] seller: (reject-proposal) That's too low for this guitar—I'm looking for something closer to 250.
+        read as reject-proposal  [tag only, no reader call]
+    [3] buyer: (reject-proposal) That's way above what I can spend on this guitar right now.
+        read as reject-proposal  [tag only, no reader call]
+    [4] seller: (propose) How about we meet somewhere in the middle at 180?
+        read as propose @ 180  [tag + reader for price]
+    [5] buyer: (reject-proposal) I appreciate the offer, but 180 is still more than I can afford to spend on this.
+        read as reject-proposal  [tag only, no reader call]
+    [6] seller: (propose) I can come down to 220—that's a fair price for the quality of this instrument.
+        read as propose @ 220  [tag + reader for price]
+    [7] buyer: (reject-proposal) I understand it's a quality guitar, but 220 is still beyond my budget. Would you consider 75?
+        read as reject-proposal  [tag only, no reader call]
+    [8] seller: (reject-proposal) I can't go that low—the guitar is worth much more than that. How about 210?
+        read as reject-proposal  [tag only, no reader call]
+        OPEN, hit the 8-message limit
+    result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=3 (reserve=200 budget=80)
+
+  calls so far: agent=143 reader=102 total=245 tokens=75020

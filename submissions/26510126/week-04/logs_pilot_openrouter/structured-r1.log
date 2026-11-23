@@ -1,0 +1,164 @@
+provider=openai base_url=https://openrouter.ai/api/v1 model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 max_tokens=300 turn_limit=8 reasoning=disabled sdk=sdk version unavailable python=3.14.7 free_daily=0/50
+run=structured-r1 condition=structured scenarios=['s1']
+
+  scenario s1: a used road bicycle (reserve=60 budget=140)
+    CRASHED: ModuleNotFoundError: No module named 'openai'
+Traceback (most recent call last):
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/run.py", line 133, in main
+    ep = negotiate.run_episode(s, condition, meter, chat, log)
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/negotiate.py", line 94, in run_episode
+    text = (chat(systems[speaker], view, meter, kind="agent") or "").strip()
+            ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/model.py", line 120, in chat
+    return _chat_once(system, messages, meter, kind)
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/model.py", line 142, in _chat_once
+    resp = _get_client().chat.completions.create(
+           ~~~~~~~~~~~^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/model.py", line 68, in _get_client
+    from openai import OpenAI
+ModuleNotFoundError: No module named 'openai'
+
+
+  calls so far: agent=0 reader=0 total=0 tokens=0
+provider=openai base_url=https://openrouter.ai/api/v1 model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 max_tokens=300 turn_limit=8 reasoning=disabled sdk=openai 3.6.0 python=3.12.14 free_daily=0/50
+run=structured-r1 condition=structured scenarios=['s1']
+
+  scenario s1: a used road bicycle (reserve=60 budget=140)
+    CRASHED: APIConnectionError: Connection error.
+Traceback (most recent call last):
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpx2/_transports/default.py", line 98, in map_httpcore_exceptions
+    yield
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpx2/_transports/default.py", line 245, in handle_request
+    resp = self._pool.handle_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpcore2/_sync/connection_pool.py", line 242, in handle_request
+    raise exc from None
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpcore2/_sync/connection_pool.py", line 224, in handle_request
+    response = connection.handle_request(pool_request.request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpcore2/_sync/http_proxy.py", line 301, in handle_request
+    stream = stream.start_tls(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpcore2/_sync/http11.py", line 354, in start_tls
+    return self._stream.start_tls(ssl_context, server_hostname, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpcore2/_backends/sync.py", line 154, in start_tls
+    with map_exceptions(exc_map):
+  File "/opt/homebrew/Cellar/python@3.12/3.12.14/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpcore2/_exceptions.py", line 17, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore2.ConnectError: ('OSStatus -26276',)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1076, in request
+    response = self._send_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/openai/_client.py", line 583, in _send_request
+    response = self._send_with_auth_retry(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/openai/_client.py", line 562, in _send_with_auth_retry
+    response = super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 999, in _send_request
+    return self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpx2/_client.py", line 980, in send
+    response = self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpx2/_client.py", line 1008, in _send_handling_auth
+    response = self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpx2/_client.py", line 1043, in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpx2/_client.py", line 1076, in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpx2/_transports/default.py", line 244, in handle_request
+    with map_httpcore_exceptions():
+  File "/opt/homebrew/Cellar/python@3.12/3.12.14/Frameworks/Python.framework/Versions/3.12/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/httpx2/_transports/default.py", line 115, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx2.ConnectError: ('OSStatus -26276',)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/run.py", line 142, in main
+    ep = negotiate.run_episode(s, condition, meter, chat, log)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/negotiate.py", line 94, in run_episode
+    text = (chat(systems[speaker], view, meter, kind="agent") or "").strip()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/model.py", line 120, in chat
+    return _chat_once(system, messages, meter, kind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/model.py", line 142, in _chat_once
+    resp = _get_client().chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/openai/_utils/_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py", line 1296, in create
+    return self._post(
+           ^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1368, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.venv/lib/python3.12/site-packages/openai/_base_client.py", line 1111, in request
+    raise APIConnectionError(request=request) from err
+openai.APIConnectionError: Connection error.
+
+
+  calls so far: agent=0 reader=0 total=0 tokens=0
+provider=openai base_url=https://openrouter.ai/api/v1 model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 max_tokens=300 turn_limit=8 reasoning=disabled sdk=stdlib urllib (no SDK) python=3.14.7 free_daily=0/50
+run=structured-r1 condition=structured scenarios=['s1']
+
+  scenario s1: a used road bicycle (reserve=60 budget=140)
+    [1] buyer: {"performative": "propose", "content": {"price": 120}}
+        read as propose @ 120  [json]
+    [2] seller: {"performative": "reject-proposal", "content": {"price": null}}
+        read as reject-proposal  [json]
+    CRASHED: ApiError: no choices in response: {"id": "gen-1790075658-jh5DPok7JAOT5RGAxFXn", "error": {"message": "Upstream error from Nvidia: Service temporarily overloaded", "code": 503, "metadata": {"error_type": "provider_overloaded"}}}
+Traceback (most recent call last):
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/run.py", line 142, in main
+    ep = negotiate.run_episode(s, condition, meter, chat, log)
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/negotiate.py", line 94, in run_episode
+    text = (chat(systems[speaker], view, meter, kind="agent") or "").strip()
+            ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/model.py", line 147, in chat
+    return _chat_once(system, messages, meter, kind)
+  File "/Users/hoon/Developer/ai-agent-engineering-101/.claude/worktrees/week-04/submissions/26510126/week-04/model.py", line 184, in _chat_once
+    raise ApiError(0, f"no choices in response: {json.dumps(data)[:300]}")
+model.ApiError: no choices in response: {"id": "gen-1790075658-jh5DPok7JAOT5RGAxFXn", "error": {"message": "Upstream error from Nvidia: Service temporarily overloaded", "code": 503, "metadata": {"error_type": "provider_overloaded"}}}
+
+
+  calls so far: agent=3 reader=0 total=3 tokens=621
+provider=openai base_url=https://openrouter.ai/api/v1 model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 max_tokens=300 turn_limit=8 reasoning=disabled sdk=stdlib urllib (no SDK) python=3.14.7 free_daily=1/50
+run=structured-r1 condition=structured scenarios=['s1']
+
+  scenario s1: a used road bicycle (reserve=60 budget=140)
+    [1] buyer: {"performative": "propose", "content": {"price": 120}}
+        read as propose @ 120  [json]
+    [2] seller: {"performative": "reject-proposal", "content": {"price": null}}
+        read as reject-proposal  [json]
+    [3] buyer: {"performative": "propose", "content": {"price": 110}}
+        read as propose @ 110  [json]
+    [4] seller: {"performative": "reject-proposal", "content": {"price": null}}
+        read as reject-proposal  [json]
+    [5] buyer: {"performative": "propose", "content": {"price": 100}}
+        read as propose @ 100  [json]
+    [6] seller: {"performative": "reject-proposal", "content": {"price": null}}
+        read as reject-proposal  [json]
+    [7] buyer: {"performative": "propose", "content": {"price": 90}}
+        read as propose @ 90  [json]
+    [8] seller: {"performative": "reject-proposal", "content": {"price": null}}
+        read as reject-proposal  [json]
+        OPEN, hit the 8-message limit
+    result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0 (reserve=60 budget=140)
+
+  calls so far: agent=8 reader=0 total=8 tokens=3043

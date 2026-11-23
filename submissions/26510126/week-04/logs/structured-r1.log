@@ -1,0 +1,120 @@
+provider=anthropic base_url=https://api.anthropic.com model=claude-haiku-4-5-20251001 temperature=0.0 max_tokens=300 turn_limit=8 anthropic-version=2023-06-01 transport=stdlib-urllib python=3.14.7
+run=structured-r1 condition=structured scenarios=['s1']
+
+  scenario s1: a used road bicycle (reserve=60 budget=140)
+    [1] buyer: ```json
+{"performative": "propose", "content": {"price": 100}}
+```
+        read as propose @ 100  [json embedded in other text]
+    [2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+        read as reject-proposal  [json embedded in other text]
+    [3] buyer: ```json
+{"performative": "propose", "content": {"price": 115}}
+```
+        read as propose @ 115  [json embedded in other text]
+    [4] seller: ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+        read as accept-proposal  [json embedded in other text]
+        DEAL at 115 (last buyer proposal)
+    result: outcome=deal price=115 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0 (reserve=60 budget=140)
+
+  calls so far: agent=4 reader=0 total=4 tokens=1386
+provider=anthropic base_url=https://api.anthropic.com model=claude-haiku-4-5-20251001 temperature=0.0 max_tokens=300 turn_limit=8 anthropic-version=2023-06-01 transport=stdlib-urllib python=3.14.7
+run=structured-r1 condition=structured scenarios=['s2', 's3', 's4']
+
+  scenario s2: an espresso machine (reserve=95 budget=105)
+    [1] buyer: ```json
+{"performative": "propose", "content": {"price": 85}}
+```
+        read as propose @ 85  [json embedded in other text]
+    [2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+        read as reject-proposal  [json embedded in other text]
+    [3] buyer: ```json
+{"performative": "propose", "content": {"price": 95}}
+```
+        read as propose @ 95  [json embedded in other text]
+    [4] seller: ```json
+{"performative": "accept-proposal", "content": {"price": null}}
+```
+        read as accept-proposal  [json embedded in other text]
+        DEAL at 95 (last buyer proposal)
+    result: outcome=deal price=95 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0 (reserve=95 budget=105)
+
+  scenario s3: a film camera (reserve=130 budget=120)
+    [1] buyer: ```json
+{"performative": "propose", "content": {"price": 100}}
+```
+        read as propose @ 100  [json embedded in other text]
+    [2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+        read as reject-proposal  [json embedded in other text]
+    [3] buyer: ```json
+{"performative": "propose", "content": {"price": 110}}
+```
+        read as propose @ 110  [json embedded in other text]
+    [4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+        read as reject-proposal  [json embedded in other text]
+    [5] buyer: ```json
+{"performative": "propose", "content": {"price": 115}}
+```
+        read as propose @ 115  [json embedded in other text]
+    [6] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+        read as reject-proposal  [json embedded in other text]
+    [7] buyer: ```json
+{"performative": "propose", "content": {"price": 120}}
+```
+        read as propose @ 120  [json embedded in other text]
+    [8] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+        read as reject-proposal  [json embedded in other text]
+        OPEN, hit the 8-message limit
+    result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0 (reserve=130 budget=120)
+
+  scenario s4: an electric guitar (reserve=200 budget=80)
+    [1] buyer: ```json
+{"performative": "propose", "content": {"price": 50}}
+```
+        read as propose @ 50  [json embedded in other text]
+    [2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+        read as reject-proposal  [json embedded in other text]
+    [3] buyer: ```json
+{"performative": "propose", "content": {"price": 65}}
+```
+        read as propose @ 65  [json embedded in other text]
+    [4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+        read as reject-proposal  [json embedded in other text]
+    [5] buyer: ```json
+{"performative": "propose", "content": {"price": 75}}
+```
+        read as propose @ 75  [json embedded in other text]
+    [6] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+        read as reject-proposal  [json embedded in other text]
+    [7] buyer: ```json
+{"performative": "propose", "content": {"price": 80}}
+```
+        read as propose @ 80  [json embedded in other text]
+    [8] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+        read as reject-proposal  [json embedded in other text]
+        OPEN, hit the 8-message limit
+    result: outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=0 (reserve=200 budget=80)
+
+  calls so far: agent=163 reader=102 total=265 tokens=82726

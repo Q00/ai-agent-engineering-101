@@ -1,0 +1,22 @@
+provider=openai base_url=https://openrouter.ai/api/v1 model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.0 max_tokens=300 turn_limit=8 reasoning=disabled sdk=stdlib urllib (no SDK) python=3.14.7 free_daily=11/50
+run=tagged-r1 condition=tagged scenarios=['s1']
+
+  scenario s1: a used road bicycle (reserve=60 budget=140)
+    [1] buyer: (propose) I'm interested in the bike—would you consider 100 for it?
+        read as propose @ 100  [tag + reader for price]
+    [2] seller: (propose) I can do 80 for the bike.
+        read as propose @ 80  [tag + reader for price]
+    [3] buyer: (propose) I can go up to 110—would that work for you?
+        read as propose @ 110  [tag + reader for price]
+    [4] seller: (propose) I’ll meet you at 90.
+        read as propose @ 90  [tag + reader for price]
+    [5] buyer: (propose) I can do 95—let’s split the difference and call it fair.
+        read as propose @ 95  [tag + reader for price]
+    [6] seller: (propose) I can go to 92.50—let’s settle there.
+        unreadable (tag (propose), reader returned no price: '{"price": null}')
+    [7] buyer: (accept-proposal) 92.50 works for me—we have a deal.
+        read as accept-proposal  [tag only, no reader call]
+        DEAL at 90 (last seller proposal)
+    result: outcome=deal price=90 correct=1 violation=0 turns=7 format_errors=1 reader_calls=6 (reserve=60 budget=140)
+
+  calls so far: agent=11 reader=8 total=19 tokens=2962
