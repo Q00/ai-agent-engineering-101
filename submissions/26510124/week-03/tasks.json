@@ -1,0 +1,85 @@
+[
+  {
+    "id": "calc-01",
+    "desc": "Use the calculator tool to compute 137 * 29 + 41. Return only the final number.",
+    "gold": "A",
+    "domain": "calculation",
+    "validator": {
+      "kind": "exact",
+      "expected": "4014"
+    }
+  },
+  {
+    "id": "calc-02",
+    "desc": "Read materials/quarterly_costs.txt, add the four quarterly costs with the calculator tool, and return only the total.",
+    "gold": "A",
+    "domain": "calculation",
+    "validator": {
+      "kind": "exact",
+      "expected": "4500"
+    }
+  },
+  {
+    "id": "writing-01",
+    "desc": "Read materials/incident_notes.txt and write a concise Korean incident summary that includes both the response-delay issue and the JSON parsing issue.",
+    "gold": "B",
+    "domain": "writing",
+    "validator": {
+      "kind": "contains_all",
+      "values": [
+        "응답 지연",
+        "JSON"
+      ],
+      "min_chars": 40
+    }
+  },
+  {
+    "id": "writing-02",
+    "desc": "Write a Korean handoff note of at least two sentences explaining why an unparseable contractor bid must be logged and excluded from award candidates.",
+    "gold": "B",
+    "domain": "writing",
+    "validator": {
+      "kind": "contains_all",
+      "values": [
+        "로그",
+        "후보"
+      ],
+      "min_chars": 60
+    }
+  },
+  {
+    "id": "code-01",
+    "desc": "Write a Python function clamp(value, low, high) that returns value limited to the inclusive range [low, high]. Return the complete Python code.",
+    "gold": "C",
+    "domain": "code",
+    "validator": {
+      "kind": "python_function",
+      "function": "clamp",
+      "cases": [
+        {"args": [5, 0, 10], "expected": 5},
+        {"args": [-2, 0, 10], "expected": 0},
+        {"args": [17, 0, 10], "expected": 10}
+      ]
+    }
+  },
+  {
+    "id": "code-02",
+    "desc": "Write a Python function count_severity(lines, severity) that returns how many strings in lines contain severity as a case-sensitive substring. Return the complete Python code.",
+    "gold": "C",
+    "domain": "code",
+    "validator": {
+      "kind": "python_function",
+      "function": "count_severity",
+      "cases": [
+        {
+          "args": [["INFO ready", "ERROR timeout", "ERROR parse"], "ERROR"],
+          "expected": 2
+        },
+        {
+          "args": [["warning", "WARNING", "WARN"], "WARN"],
+          "expected": 2
+        }
+      ]
+    }
+  }
+]
