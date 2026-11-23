@@ -1,4 +1,4 @@
-% R3 a2 구조 (2026-11-17 23:59 마감 시점. 운영 층은 r3-attempt2/ 코드, 훅과 키트는 labpc 배포본(r3/, kit/) 기준)
+% Round 3 최종 시스템 구조 (2026-11-17 23:59 마감 시점, 코드는 system/와 kit/)
 % 빌드: xelatex architecture.tex  (글꼴 Apple SD Gothic Neo 필요, 가로 A4 폭 안, 본문 8pt)
 \documentclass[10pt,border=6pt]{standalone}
 \usepackage{fontspec}
@@ -66,14 +66,14 @@
 
 % ======== 3행 왼쪽: 거래 경로 ========
 \node[new, L={trd}, text width=5.2cm] (hooks) at (0,-5.25) {%
-  \T{규칙 훅} (r3/)\\
+  \T{규칙 훅} (system/hooks/)\\
   판매, 구매, 재입고 훅\\
   정책 값을 읽고 거래를 결정};
 \node[new, L={trd}, text width=3.9cm] (policy) at (6.1,-7.15) {%
   \T{정책 파일}\\ policy.json: 정책 값\\ policy\_arms.json:\\ 시험군에 적용할 정책 값};
 \node[off, draw=trdD, text width=5.2cm] (live) at (0,-7.15) {%
   \T{모델 거래 경로} (훅에 연결)\\
-  새 거래 분기 조건: a2/LIVE\\
+  새 거래를 받는 조건: LIVE 파일\\
   마감 직전 모델 거래 이벤트 미관측};
 \begin{scope}[on background layer]
   \node[Z={trd}, fit=(hooks)(policy)(live)] (ztrd) {};
@@ -152,7 +152,7 @@
   \tikz[baseline=-0.6ex]{\draw[line width=1.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 직접 만든 부분, 키트에 없음\quad
   \tikz[baseline=-0.6ex]{\draw[line width=0.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 키트와 시장(키트에 더한 것은 차단 구매자 거절뿐)\quad
   \tikz[baseline=-0.6ex]{\draw[double, double distance=1.3pt, line width=0.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 사람이 쓰는 설명서\quad
-  \tikz[baseline=-0.6ex]{\draw[line width=1pt, dash pattern=on 4pt off 2.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 모델 거래 경로(새 거래 분기 조건 a2/LIVE, 마감 직전 모델 거래 이벤트 미관측)\\[2pt]
+  \tikz[baseline=-0.6ex]{\draw[line width=1pt, dash pattern=on 4pt off 2.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 모델 거래 경로(LIVE 파일이 있을 때만 새 거래를 받음, 마감 직전 모델 거래 이벤트 미관측)\\[2pt]
   층 색:\ \sw{mkt}{시장, 키트}\ \sw{trd}{거래 경로}\ \sw{llm}{운영 LLM}\ \sw{dev}{운영 기반}\ \sw{mem}{메모리}\ \sw{met}{메타하네스}\ \sw{hum}{사람}};
 
 \end{tikzpicture}

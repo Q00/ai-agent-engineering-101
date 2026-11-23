@@ -1,24 +1,24 @@
 # 중간 평가 REPORT: Round 3 가게와 구매자 (25520013)
 
-이 문서의 경로는 모두 submissions/25520013/week-08/을 기준으로 한다. 거래를 처리하는 규칙 훅은 r3/에, 운영 층 코드는 r3-attempt2/에, 배포한 키트는 kit/에 있다. 근거 위치는 장마다 끝에 있는 표에 파일:줄로 적었다. 코드로 확인한 사실과 실행 상태는 구분해 적는다. 표에서 [배포]를 붙인 줄은 Round 3을 실행한 배포 호스트(labpc)에서 복사한 파일로 확인한 내용이다.
+이 문서의 경로는 모두 submissions/25520013/week-08/을 기준으로 한다. Round 3 동안 가게와 buyer를 실행한 컴퓨터(이하 배포 컴퓨터)에서 마감 때 돌던 코드는 최종 시스템 폴더 system/에, 배포한 키트는 kit/에, 키트 로그와 순위표 저장본은 logs/에 있다. 근거 위치는 장마다 끝에 있는 표에 파일:줄로 적었다.
 
-배포 호스트의 실행 폴더는 홈 디렉터리 기준 ai-agent-engineering-101/submissions/25520013/week-09(이하 W)이다. r3/hooks/의 세 훅, r3/aggregates.py, r3/policy.py, r3/tools/block_poller.py, kit/market_kit.py, logs/의 두 로그와 순위표 저장본은 배포 호스트의 파일을 그대로 복사했다. 운영 층은 홈 디렉터리 아래 r3a2-code에서 실행했고 배포한 훅이 그 경로를 불러온다. 이 보고서는 운영 층을 저장소 구현(r3-attempt2/)으로 설명한다. 실행 기록 파일(W/a2/trajectory.jsonl, 127,868행)은 용량 때문에 제출하지 않았으며, 이 파일에서 센 수치는 마감 시각(2026-11-17 23:59 KST) 이전의 행만 센 것이다.
+system/은 거래를 처리하는 규칙 훅(system/hooks/와 policy.py 등 그 모듈), 정책을 고치는 운영 층(system/kernel/), 기억 서버(system/memd/), 실행 스크립트(system/live/), 시험(system/tests/)으로 이루어진다. 규칙 훅과 키트는 배포 컴퓨터의 파일을 그대로 옮겼고, 운영 층 코드는 마감 전 마지막 배포(11-17 23:40) 뒤로 바뀌지 않았다. 운영 층이 남긴 실행 기록(trajectory.jsonl, 127,868행)은 용량 때문에 제출하지 않았으며, 이 파일에서 센 수치는 마감 시각(2026-11-17 23:59 KST) 이전의 행만 센 것이다.
 
 ## 1장. 개요
 
-판매, 구매, 재입고 훅(r3/)은 policy.json의 정책 값을 읽어 거래를 결정한다. 운영 LLM은 거래마다 호출되지 않는다. 운영자는 일정이나 시장 상황에 따라 시작하는 운영자 점검(wake)에서 기록을 검토하고, 정책 값이나 규칙 코드의 변경을 제안한다. 커널은 정책 값의 허용 범위를 확인하고, 규칙 코드의 변경은 시험을 거쳐 적용한다. 쓰기 권한을 받은 위임 에이전트(다른 에이전트가 일을 맡기려고 정의한 에이전트)의 변경 제안도 같은 검사를 거친다. 실험을 요청한 변경이면 실험 장부가 그 효과를 측정해 수치로 알려 준다.
+훅은 키트가 거래의 각 단계에서 부르는 외부 프로그램이다. 판매, 구매, 재입고 훅은 정책 파일(policy.json)에 적힌 값, 곧 정책 값을 읽어 거래를 결정하므로 운영 LLM은 거래마다 호출되지 않는다. 대신 운영자(정책을 맡은 LLM)는 일정이나 시장 상황에 따라 시작하는 점검(wake)에서 기록을 검토하고, 정책 값이나 규칙 코드의 변경을 제안한다. 커널(운영자의 제안을 검사해 적용하는, 사람이 쓴 코드)은 정책 값의 허용 범위를 확인하고, 규칙 코드의 변경은 시험을 거쳐 적용한다. 쓰기 권한을 받은 위임 에이전트(다른 에이전트가 일을 맡기려고 정의한 에이전트)의 변경 제안도 같은 검사를 거친다. 운영자가 실험을 요청한 변경이면 실험 장부가 그 효과를 측정해 수치로 알려 준다.
 
-그 위에서 메타하네스(meta-harness)는 운영자가 무엇을 정했는지가 아니라 어떻게 일했는지를 감사한다. 그 결과에 따라 일하는 방식 지침과 도구(tool) 목록, 상태 카드 구성을 고친다.
+그 위에서 메타하네스(meta-harness)는 운영자가 무엇을 정했는지가 아니라 어떻게 일했는지를 감사하고, 그 결과에 따라 일하는 방식 지침과 도구(tool) 목록, 상태 카드(점검마다 운영자에게 주는 사실 요약, 3장)의 구성을 고친다.
 
-다만 거래 경로에서 모델을 호출할 수 있는 경우가 두 가지 있다. 첫째, 판매 훅은 구매자가 낸 가격을 규칙으로 읽지 못하면 설정에 따라 모델에 해석을 요청한다. 배포한 설정에서 이 기능은 켜져 있다. 둘째, 훅에 연결한 모델 거래 경로는 a2/LIVE 파일이 있고 연결 모듈을 불러올 수 있으면 새 거래를 모델 쪽으로 분기한다. 이미 열린 판매는 원래 경로를 그대로 따른다. 마감 직전의 실행 기록(11-17 22:08~23:59)에는 모델 거래 결정과 구매 실행 행이 없었다.
+다만 거래 경로에서 모델을 호출할 수 있는 경우가 두 가지 있다. 첫째, 판매 훅은 구매자가 낸 가격을 규칙으로 읽지 못하면 설정에 따라 모델에 해석을 요청하며, 배포한 설정에서 이 기능은 켜져 있다. 둘째, 훅에 연결한 모델 거래 경로는 모델 거래 스위치(LIVE 파일)가 있으면 새 거래를 모델 쪽으로 보내고, 이미 열린 판매는 원래 경로를 그대로 따른다. 마감 직전의 실행 기록(11-17 22:08~23:59)에는 모델 거래 결정과 구매 실행 행이 없었다.
 
-거래 규칙과 운영 판단을 나누어, 운영 LLM이 거래별 가격 결정 대신 기록 분석과 정책 개선을 맡도록 설계했다. 두 운영자 외에 모델을 호출하는 역할(조사원, 위임 에이전트, 감사자, 요약, 기억 서버의 사실 추출, 기억 품질 검사)은 2장 표에 정리했다. 무엇을 바꾸고 어떻게 측정할지는 운영 LLM이 정한다. 사람은 시장 설명서(r3-attempt2/MARKET_BRIEF.md)에 목표와 안전선, 확인한 내용을 기록한다.
+이처럼 거래 규칙과 운영 판단을 나눈 것은 운영 LLM이 거래별 가격 결정 대신 기록 분석과 정책 개선을 맡게 하려는 설계이다. 두 운영자 외에 모델을 호출하는 역할(조사원, 위임 에이전트, 감사자, 요약, 기억 서버의 사실 추출, 기억 품질 검사)은 2장 표에 정리했다. 무엇을 바꾸고 어떻게 측정할지는 운영 LLM이 정하며, 사람은 시장 설명서(system/MARKET_BRIEF.md)에 목표와 안전선, 확인한 내용을 기록한다.
 
 ![아키텍처 그림](architecture.pdf)
 
 | 층 | 구성 | 설명한 장 |
 | --- | --- | --- |
-| 거래 경로 | 규칙 훅(판매, 구매, 재입고), 정책 파일, 훅에 연결해 새 거래를 모델 쪽으로 분기할 수 있는 경로(a2/LIVE) | 1장, 6장 |
+| 거래 경로 | 규칙 훅(판매, 구매, 재입고), 정책 파일, 훅에 연결해 새 거래를 모델 쪽으로 보낼 수 있는 경로(LIVE 파일) | 1장, 6장 |
 | 운영 LLM | 가게 운영자, 구매 운영자, 조사원, 위임 에이전트 | 2장 |
 | 운영 기반 | 컨텍스트 조립, 공용 도구함, 변경 적용 커널 | 3장, 5장 |
 | 메모리 | 검색용 기억(mem0), 실행 기록(trajectory.jsonl, 실험 장부, 조사 결과) | 4.1절 |
@@ -26,28 +26,28 @@
 
 | 서술 | 근거 |
 | --- | --- |
-| 훅 연결 | r3/agent.json:2-6 |
-| 판매 훅이 새 주문 때 정책을 다시 읽고 제시가를 정한다 | r3/hooks/seller.py:577-584, 610-626 |
-| 구매 훅이 주문마다 정책을 읽고 가게와 상품을 고름 | r3/hooks/market_buyer.py:676-685, 726 |
-| 재입고 훅이 실행마다 정책을 읽는다 | r3/hooks/restock.py:213-218 |
-| 가격 해석 보조 경로 | r3/hooks/seller.py:621-624, 682-686 |
-| [배포] 가격 해석 보조 설정이 켜져 있다 | r3/llm_config.json:3, 11, r3/llm_caps_config_v4.json:3(배포 호스트의 같은 이름 파일과 바이트가 같음) |
-| a2/LIVE 분기(연결 모듈이 필요하고, 열린 판매는 원래 경로를 따름) | r3-attempt2/live/seller_patch.py:22-38; r3-attempt2/kernel/seller_bridge.py:241-243, 332-354; r3-attempt2/kernel/buyer_exec.py:353-363; 배포한 훅의 분기 r3/hooks/seller.py:37-41, 570-571, r3/hooks/market_buyer.py:936-939, r3/hooks/restock.py:256-267 |
-| [배포] 마감 직전 모델 거래 결정과 구매 실행 행이 없다 | W/a2/trajectory.jsonl의 11-17 22:08~23:59 행(decision, buyer_exec 종류 0건) |
-| 운영 LLM이 policy.json의 값을 고침 | r3-attempt2/kernel/policy_edit.py:1-8 |
-| 실험 장부는 측정해 보고만 한다 | r3-attempt2/kernel/experiments.py:3-5 |
-| 감사자는 결정이 아니라 일하는 방식을 봄 | r3-attempt2/kernel/auditor.py:1-7 |
-| 전략은 운영 LLM이 정한다 | r3-attempt2/kernel/experiments.py:3-4, r3-attempt2/kernel/policy_edit.py:4-5 |
-| 변경 제안과 커널의 적용 | r3-attempt2/kernel/operator.py:1394-1421, r3-attempt2/kernel/agents.py:191-209 |
-| 사람이 쓰는 시장 설명서 | r3-attempt2/MARKET_BRIEF.md(예: 279, 379행), r3-attempt2/kernel/tools.py:477, 526-536 |
+| 훅 연결 | system/agent.json:2-6 |
+| 판매 훅이 새 주문 때 정책을 다시 읽고 제시가를 정한다 | system/hooks/seller.py:577-584, 610-626 |
+| 구매 훅이 주문마다 정책을 읽고 가게와 상품을 고름 | system/hooks/market_buyer.py:676-685, 726 |
+| 재입고 훅이 실행마다 정책을 읽는다 | system/hooks/restock.py:213-218 |
+| 가격 해석 보조 경로 | system/hooks/seller.py:621-624, 682-686 |
+| 가격 해석 보조 설정이 켜져 있다 | system/llm_config.json:3, 11, system/llm_caps_config_v4.json:3 |
+| 모델 거래 스위치(열린 판매는 원래 경로를 따름) | 훅의 분기 system/hooks/seller.py:37-41, 570-571, system/hooks/market_buyer.py:936-939, system/hooks/restock.py:256-267; system/kernel/seller_bridge.py:241-243, 332-354; system/kernel/buyer_exec.py:353-363 |
+| 마감 직전 모델 거래 결정과 구매 실행 행이 없다 | 실행 기록의 11-17 22:08~23:59 행(decision, buyer_exec 종류 0건) |
+| 운영 LLM이 policy.json의 값을 고침 | system/kernel/policy_edit.py:1-8 |
+| 실험 장부는 측정해 보고만 한다 | system/kernel/experiments.py:3-5 |
+| 감사자는 결정이 아니라 일하는 방식을 봄 | system/kernel/auditor.py:1-7 |
+| 전략은 운영 LLM이 정한다 | system/kernel/experiments.py:3-4, system/kernel/policy_edit.py:4-5 |
+| 변경 제안과 커널의 적용 | system/kernel/operator.py:1394-1421, system/kernel/agents.py:191-209 |
+| 사람이 쓰는 시장 설명서 | system/MARKET_BRIEF.md(예: 279, 379행), system/kernel/tools.py:477, 526-536 |
 
 ## 2장. 모델
 
-운영 커널은 gpt-6.1-terra를 codex CLI의 codex exec 명령으로 호출한다. 호출마다 기록을 남기지 않는 새 세션(--ephemeral)을 열어 읽기 전용 샌드박스에서 실행하고, codex 자체의 셸과 도구는 꺼 둔다. 커널은 점검의 각 단계에서 도구 호출이나 변경 제안(done)이 담긴 JSON을 요청하고, 요약은 글로 요청한다. 도구를 실행하거나 파일을 쓰는 일은 모두 커널이 맡는다.
+커널은 gpt-6.1-terra를 codex CLI의 codex exec 명령으로 호출한다. 호출마다 기록을 남기지 않는 새 세션(--ephemeral)을 열어 읽기 전용 샌드박스에서 실행하고, codex 자체의 셸과 도구는 꺼 둔다. 커널은 점검의 각 단계에서 도구 호출이나 변경 제안(done, 점검을 끝내며 내는 변경 요청 객체)이 담긴 JSON을 요청하고, 요약은 글로 요청한다. 도구를 실행하거나 파일을 쓰는 일은 모두 커널이 맡는다.
 
-코드에서 정한 기본 추론 강도는 기억 서버를 제외하면 medium이다. 운영자와 조사원의 추론 강도는 환경변수로 바꿀 수 있고, 기억 서버(memd)는 사실을 추출할 때 low를 쓴다. 기억 검색의 임베딩에는 LLM이 아니라 로컬에서 실행하는 google/embeddinggemma-300m을 쓴다.
+코드에서 정한 기본 추론 강도는 기억 서버를 제외하면 medium이다. 운영자와 조사원의 추론 강도는 환경변수로 바꿀 수 있고, 기억 서버(memd, 4.1절)는 사실을 추출할 때 low를 쓴다. 기억 검색의 임베딩에는 LLM이 아니라 로컬에서 실행하는 google/embeddinggemma-300m을 쓴다.
 
-두 운영자는 각자의 점검에서 정책 값과 규칙 코드의 변경을 제안한다. 두 운영자 프로세스는 따로 실행되며, 잠금으로 두 점검이 겹치지 않게 한다. 쓰기 권한을 받은 위임 에이전트도 같은 검사를 거쳐 변경을 제출할 수 있다. 반면 조사원은 거래를 바꾸지 못하며, 조사 결과와 메모를 쓰거나 읽기 전용 도구와 에이전트를 등록하는 데까지만 할 수 있다.
+두 운영자는 각자의 점검에서 정책 값과 규칙 코드의 변경을 제안한다. 두 운영자 프로세스는 따로 실행되지만, 잠금으로 두 점검이 겹치지 않게 한다. 쓰기 권한을 받은 위임 에이전트도 같은 검사를 거쳐 변경을 제출할 수 있다. 반면 조사원은 거래를 바꾸지 못하며, 조사 결과와 메모를 쓰거나 읽기 전용 질의 도구(q_ 도구, 5장)와 에이전트를 등록하는 데까지만 할 수 있다.
 
 | 자리 | 하는 일 | 쓸 수 있는 것 | 추론 강도 |
 | --- | --- | --- | --- |
@@ -60,136 +60,136 @@
 | mem0 사실 추출 | 기억에 저장할 문장에서 사실을 추출한다 | 없음 | low |
 | 기억 품질 검사(memcheck) | 기억 검색 결과만 읽고 검사 질문에 답한다 | 없음 | medium |
 
-저장소의 실행 스크립트는 기본 시작 목록에 조사원을 넣지 않으며, 조사원은 이름을 지정해 시작한다. 배포 실행 기록에는 마감까지 조사원 실행이 280회 남아 있다. 마감 직전 구간(11-17 22:08~23:59)의 실행 기록에서 조사원 실행과 조사원의 모델 호출은 각각 0건이었다.
+실행 스크립트(system/live/a2ctl.sh)는 기본 시작 목록에 조사원을 넣지 않으므로, 조사원은 이름을 지정해 시작한다. 실행 기록에는 마감까지 조사원 실행이 280회 남아 있지만, 마감 직전 구간(11-17 22:08~23:59)에는 조사원 실행과 조사원의 모델 호출이 각각 0건이었다.
 
-표의 추론 강도는 코드의 기본값이다. 마감 직전 구간의 실행 기록에서 모델 호출은 모두 gpt-6.1-terra였다. 두 운영자는 medium(가게 56회, 구매 76회), 기억 서버의 사실 추출은 low(32회), 감사자는 medium(2회)으로 호출했다.
+표의 추론 강도는 코드의 기본값이다. 마감 직전 구간의 실행 기록에서 모델 호출은 모두 gpt-6.1-terra였고, 두 운영자는 medium(가게 56회, 구매 76회), 기억 서버의 사실 추출은 low(32회), 감사자는 medium(2회)으로 호출했다.
 
 | 서술 | 근거 |
 | --- | --- |
-| 모델 이름, codex exec, --ephemeral, 읽기 전용 샌드박스 | r3-attempt2/kernel/llm.py:21, 26-32, 101-120 |
-| codex 자체 도구 끔 | r3-attempt2/kernel/llm.py:33-47 |
-| 단계마다 JSON 하나를 요청한다 | r3-attempt2/kernel/operator.py:228-238 |
-| 요약은 글로 요청한다 | r3-attempt2/kernel/operator.py:1275-1288 |
-| 운영자 추론 강도와 환경변수 | r3-attempt2/kernel/operator.py:788-790, r3-attempt2/live/a2ctl.sh:36 |
-| 조사원 추론 강도와 환경변수 | r3-attempt2/kernel/analyst.py:11-13, r3-attempt2/live/a2ctl.sh:40-41 |
-| 요약 medium | r3-attempt2/kernel/operator.py:132 |
-| 감사자 medium | r3-attempt2/kernel/auditor.py:1235, 1284 |
-| 위임 에이전트 medium | r3-attempt2/kernel/agents.py:104-105 |
-| memd의 모델 호출 low | r3-attempt2/memd/server.py:68-76 |
-| memcheck medium | r3-attempt2/kernel/memcheck.py:367-372 |
-| 임베딩 모델 | r3-attempt2/memd/server.py:34, 56-60 |
-| 잠금으로 두 운영자의 점검이 겹치지 않게 한다 | r3-attempt2/kernel/operator.py:11-14, 107, 400-412, 1819 |
-| 조사원이 쓸 수 있는 것 | r3-attempt2/kernel/analyst.py:4-8, 220-234 |
-| 에이전트를 정의할 수 있는 쪽과 권한 | r3-attempt2/kernel/agent_registry.py:32-47 |
-| 위임 에이전트는 권한 안의 항목만 그 역할의 done 처리를 거침 | r3-attempt2/kernel/agents.py:191-209 |
-| 운영자 done의 적용 | r3-attempt2/kernel/operator.py:1394-1421 |
-| 감사자의 조사 질문 | r3-attempt2/kernel/auditor.py:1010-1025 |
-| 기본 시작 목록에 조사원이 없다 | r3-attempt2/live/a2ctl.sh:26-27 |
-| [배포] 조사원 실행 280회, 마감 직전 구간의 호출 모델과 추론 강도 | W/a2/trajectory.jsonl의 analyst_run 행과 llm 행(model, effort) |
+| 모델 이름, codex exec, --ephemeral, 읽기 전용 샌드박스 | system/kernel/llm.py:21, 26-32, 101-120 |
+| codex 자체 도구 끔 | system/kernel/llm.py:33-47 |
+| 단계마다 JSON 하나를 요청한다 | system/kernel/operator.py:228-238 |
+| 요약은 글로 요청한다 | system/kernel/operator.py:1275-1288 |
+| 운영자 추론 강도와 환경변수 | system/kernel/operator.py:788-790, system/live/a2ctl.sh:36 |
+| 조사원 추론 강도와 환경변수 | system/kernel/analyst.py:11-13, system/live/a2ctl.sh:40-41 |
+| 요약 medium | system/kernel/operator.py:132 |
+| 감사자 medium | system/kernel/auditor.py:1235, 1284 |
+| 위임 에이전트 medium | system/kernel/agents.py:104-105 |
+| memd의 모델 호출 low | system/memd/server.py:68-76 |
+| memcheck medium | system/kernel/memcheck.py:367-372 |
+| 임베딩 모델 | system/memd/server.py:34, 56-60 |
+| 잠금으로 두 운영자의 점검이 겹치지 않게 한다 | system/kernel/operator.py:11-14, 107, 400-412, 1819 |
+| 조사원이 쓸 수 있는 것 | system/kernel/analyst.py:4-8, 220-234 |
+| 에이전트를 정의할 수 있는 쪽과 권한 | system/kernel/agent_registry.py:32-47 |
+| 위임 에이전트는 권한 안의 항목만 그 역할의 done 처리를 거침 | system/kernel/agents.py:191-209 |
+| 운영자 done의 적용 | system/kernel/operator.py:1394-1421 |
+| 감사자의 조사 질문 | system/kernel/auditor.py:1010-1025 |
+| 기본 시작 목록에 조사원이 없다 | system/live/a2ctl.sh:26-27 |
+| 조사원 실행 280회, 마감 직전 구간의 호출 모델과 추론 강도 | 실행 기록의 analyst_run 행과 llm 행(model, effort) |
 
 ## 3장. 컨텍스트 관리
 
-커널은 점검마다 컨텍스트를 새로 구성하되, 같은 점검 안에서는 앞 단계의 도구 결과를 다시 제공한다. 여기서 프롬프트는 모델에 보내는 입력이고, 컨텍스트는 그 입력에 담는 작업 정보이다. 운영자는 대화를 이어 가지 않으므로, 지난 점검에서 알게 된 것은 운영자가 쓴 메모와 전략 메모, 커널이 모은 기록을 거쳐야만 다음 점검으로 이어진다.
+여기서 프롬프트는 모델에 보내는 입력이고, 컨텍스트는 그 입력에 담는 작업 정보이다. 커널은 점검마다 컨텍스트를 새로 구성하되, 같은 점검 안에서는 앞 단계의 도구 결과를 다시 제공한다. 운영자는 대화를 이어 가지 않으므로, 지난 점검에서 알게 된 것은 운영자가 쓴 메모와 전략 메모, 커널이 모은 기록을 거쳐야만 다음 점검으로 이어진다.
 
-점검은 기본 20분 간격으로 실행되지만, 운영자가 done에 다음 점검 시각을 적으면 그 예약이 기본 간격을 대신한다. 실험이나 코드 수정의 판정이 나오거나, 순위가 크게 바뀌거나, 경보가 오면 예약보다 먼저 실행된다. 다음 재입고 가능 시간대의 시작을 추정할 수 있고 예약이 없으면, 가게 운영자는 시작 5분 전에 점검한다.
+점검은 기본 20분 간격으로 실행되지만, 운영자가 done에 다음 점검 시각을 적으면 그 예약이 기본 간격을 대신한다. 실험이나 코드 수정의 판정이 나오거나, 순위가 크게 바뀌거나, 경보가 오면 예약보다 먼저 실행된다. 또한 예약이 없고 다음 재입고 가능 시간대의 시작을 추정할 수 있으면, 가게 운영자는 시작 5분 전에 점검한다.
 
 마감 직전 구간(11-17 22:08~23:59)에 가게 운영자는 13번 점검했으며 간격 중앙값은 8.6분, 최댓값은 25.1분이었다. 구매 운영자는 23번 점검했으며 중앙값은 4.5분, 최댓값은 6.8분이었다. 이 가운데 운영자가 done에 적은 다음 점검 예약으로 시작한 점검은 가게 11번, 구매 22번이다. 마감까지 전체로는 가게가 285번(간격 중앙값 12.6분), 구매가 231번(중앙값 14.6분) 점검했다.
 
 점검이 시작되면 커널은 역할 지시문과 전략 메모를 맨 앞에 두고, 이어 감사자가 준 지침, 시장 설명서의 목차와 1절, 7절, 상태 카드를 붙인다. 그 뒤로 지난 변경 제안의 처리 결과, 조사 결과, 위임 에이전트 현황, 운영자 메모, 이번 점검을 시작한 이유, 도구 목록, 답 형식이 차례로 붙는다. 시장 설명서의 나머지 절은 운영자가 필요할 때 guide 도구로 읽는다.
 
-상태 카드는 기록에서 뽑은 사실을 1만 자 안에 담으며, 해석은 넣지 않는다. 카드에는 목표 진척, 시각, 순위, 점수 위치, 지난 점검 이후의 변화, 실험과 코드 수정의 판정, 감사 수치, 시간대별 기록, 가게 상태, 경보가 들어간다. 역할에 따라 가게 운영자 카드에는 순이익을, 구매 운영자 카드에는 구매 시도를 넣는다. 카드에 다 넣지 못한 절은 목록만 붙여 두고, 운영자가 brief_section 도구로 열어 보게 한다.
+상태 카드는 기록에서 뽑은 사실을 1만 자 안에 담은 요약 화면이며, 해석은 넣지 않는다. 카드에는 목표 진척, 시각, 순위, 점수 위치, 지난 점검 이후의 변화, 실험과 코드 수정의 판정, 감사 수치, 시간대별 기록, 가게 상태, 경보가 들어간다. 역할에 따라 가게 운영자 카드에는 순이익을, 구매 운영자 카드에는 구매 시도를 넣는다. 카드에 다 넣지 못한 절은 목록만 붙여 두고, 운영자가 brief_section 도구로 열어 보게 한다.
 
 한 점검 안에서 운영자는 여러 단계에 걸쳐 도구를 호출한다. 커널은 도구 결과를 최신 것부터 4만 자까지 그대로 보여 주고, 그보다 오래된 결과는 하나당 1천 자로 잘라 2만 자까지만 보여 준다. 요약 기능이 켜져 있으면(기본값) 커널은 단계마다 길이와 재시도 조건을 확인한다. 기존 요약과 남긴 결론까지 합친 길이가 6만 자 이상이고 최근 두 단계를 뺀 이전 내용이 3만 자 이상이면, 최근 두 단계는 그대로 두고 이전 내용만 다섯 절로 요약하도록 모델에 요청한다. 요약에 실패하면 이전 내용이 3만 자 더 쌓인 뒤 다시 시도하고, 두 번 실패하면 그 점검에서는 더 시도하지 않는다. 요약에 성공하면 이전 내용을 그 요약으로 바꾸며, 남은 도구 결과의 표시에는 위의 길이 한도가 그대로 적용된다. 점검이 끝날 때 남은 요약과 결론이 있으면 최대 4천 자를 실행 기록에 남겨 기억으로 넘긴다(4.1절).
 
 | 서술 | 근거 |
 | --- | --- |
-| 호출마다 새 세션 | r3-attempt2/kernel/llm.py:27 |
-| 점검마다 컨텍스트 구성 | r3-attempt2/kernel/operator.py:1067-1126 |
-| 같은 점검 안에서 도구 결과를 다시 제공한다 | r3-attempt2/kernel/operator.py:1157-1175 |
-| 기본 20분 | r3-attempt2/kernel/operator.py:100, r3-attempt2/live/a2ctl.sh:36 |
-| 다음 점검 예약이 기본 간격을 대신한다 | r3-attempt2/kernel/operator.py:48, 1040-1053 |
-| 판정, 순위 급변, 경보로 실행 | r3-attempt2/kernel/operator.py:1020-1066 |
-| 재입고 가능 시간대 시작 5분 전 | r3-attempt2/kernel/operator.py:102, 931-942 |
-| [배포] 점검 횟수, 간격, 시작 이유 | W/a2/trajectory.jsonl의 operator_wake 행(role, ts, reason). 역할별로 시각순 정렬한 뒤 연속 간격의 중앙값을 셈(개수가 짝수면 가운데 두 값의 평균). 마감 직전 구간은 11-17 22:08:34부터 23:59 전까지 |
-| 프롬프트 조립 순서 | r3-attempt2/kernel/operator.py:1093-1125 |
-| 시장 설명서 목차와 1절, 7절 | r3-attempt2/kernel/tools.py:526-536 |
-| 상태 카드 1만 자와 절 구성, 빼는 절 | r3-attempt2/kernel/brief.py:2156, 2517-2557; r3-attempt2/kernel/operator.py:1098 |
-| 다 넣지 못한 절은 brief_section | r3-attempt2/kernel/brief.py:2549-2551, r3-attempt2/kernel/tools.py:472 |
-| 판정과 감사 수치를 카드에 넣는다 | r3-attempt2/kernel/operator.py:1097, 1108-1110 |
-| 도구 결과 길이 한도 | r3-attempt2/kernel/operator.py:111-114 |
-| 요약 조건, 재시도, 교체 | r3-attempt2/kernel/operator.py:123, 128-129, 138, 141-150, 451-472, 1173-1178, 1253-1300 |
-| 요약 켜기(A2_COMPACT_SUMMARY, 기본 켜짐) | r3-attempt2/kernel/operator.py:1260 |
-| 점검 끝의 기록, 최대 4천 자 | r3-attempt2/kernel/operator.py:140, 1302-1311 |
-| 역할별 카드 구성 | r3-attempt2/kernel/brief.py:2521-2540 |
+| 호출마다 새 세션 | system/kernel/llm.py:27 |
+| 점검마다 컨텍스트 구성 | system/kernel/operator.py:1067-1126 |
+| 같은 점검 안에서 도구 결과를 다시 제공한다 | system/kernel/operator.py:1157-1175 |
+| 기본 20분 | system/kernel/operator.py:100, system/live/a2ctl.sh:36 |
+| 다음 점검 예약이 기본 간격을 대신한다 | system/kernel/operator.py:48, 1040-1053 |
+| 판정, 순위 급변, 경보로 실행 | system/kernel/operator.py:1020-1066 |
+| 재입고 가능 시간대 시작 5분 전 | system/kernel/operator.py:102, 931-942 |
+| 점검 횟수, 간격, 시작 이유 | 실행 기록의 operator_wake 행(role, ts, reason). 마감 직전 구간은 11-17 22:08:34부터 23:59 전까지 |
+| 프롬프트 조립 순서 | system/kernel/operator.py:1093-1125 |
+| 시장 설명서 목차와 1절, 7절 | system/kernel/tools.py:526-536 |
+| 상태 카드 1만 자와 절 구성, 빼는 절 | system/kernel/brief.py:2156, 2517-2557; system/kernel/operator.py:1098 |
+| 다 넣지 못한 절은 brief_section | system/kernel/brief.py:2549-2551, system/kernel/tools.py:472 |
+| 판정과 감사 수치를 카드에 넣는다 | system/kernel/operator.py:1097, 1108-1110 |
+| 도구 결과 길이 한도 | system/kernel/operator.py:111-114 |
+| 요약 조건, 재시도, 교체 | system/kernel/operator.py:123, 128-129, 138, 141-150, 451-472, 1173-1178, 1253-1300 |
+| 요약 켜기(A2_COMPACT_SUMMARY, 기본 켜짐) | system/kernel/operator.py:1260 |
+| 점검 끝의 기록, 최대 4천 자 | system/kernel/operator.py:140, 1302-1311 |
+| 역할별 카드 구성 | system/kernel/brief.py:2521-2540 |
 
 ## 4장. 메모리와 메타하네스
 
 ### 4.1 메모리
 
-메모리는 실행 중에 남긴 기록과 그 기록에서 추출한 검색용 기억으로 이루어진다. 기억 서버(memd)는 mem0로 로컬 임베딩과 qdrant에 검색용 기억을 저장하며, 저장할 문장에서 사실을 추출하는 일에만 gpt-6.1-terra를 쓴다. memfeed는 기본 5분마다 실행 기록과 조사 결과 파일에서 새 항목을 읽어 기억 서버로 보낸다. 운영자 쪽으로는 실험 판정, 코드 수정 판정, 점검 요약, 조사 결과가 들어간다. 검색용 기억은 상태 카드에 들어가지 않으며, 운영자가 필요할 때 recall 도구로 검색한다.
+메모리는 실행 중에 남긴 기록과, 그 기록에서 추출한 검색용 기억으로 이루어진다. 기억 서버(memd)는 기억 라이브러리 mem0로 로컬 임베딩과 벡터 저장소 qdrant에 검색용 기억을 저장하며, 저장할 문장에서 사실을 추출하는 일에만 gpt-6.1-terra를 쓴다. 기억 입력기(memfeed)는 기본 5분마다 실행 기록과 조사 결과 파일에서 새 항목을 읽어 기억 서버로 보내는데, 운영자 쪽으로는 실험 판정, 코드 수정 판정, 점검 요약, 조사 결과가 들어간다. 검색용 기억은 상태 카드에 들어가지 않으며, 운영자가 필요할 때 recall 도구로 검색한다.
 
-실행 기록은 세 파일에 나누어 저장한다. a2/trajectory.jsonl에는 모델 호출의 상태와 크기, 도구 호출과 그 결과의 요약, 결정 기록을 비밀값을 가린 뒤 덧붙이고, a2/findings.jsonl에는 조사 결과를 덧붙인다. 이와 달리 a2/experiments.json은 실험 상태를 갱신하는 실험 장부이다. 과정 감사는 trajectory.jsonl과 실험 장부를 읽고, 조사 결과는 다음 점검의 프롬프트에 붙는다.
+실행 기록은 세 파일에 나누어 저장한다. trajectory.jsonl에는 모델 호출의 상태와 크기, 도구 호출과 그 결과의 요약, 결정 기록을 비밀값을 가린 뒤 덧붙이고, findings.jsonl에는 조사 결과를 덧붙인다. 이와 달리 experiments.json은 실험 상태를 갱신하는 실험 장부이다. 과정 감사는 trajectory.jsonl과 실험 장부를 읽고, 조사 결과는 다음 점검의 프롬프트에 붙는다.
 
 지난 거래와 평판은 상태 카드, 집계 도구, 기억 검색을 거쳐 다음 판단에 반영된다. 상태 카드는 점검마다 역할에 맞춰 시간대별 기록과 순이익(가게 운영자) 또는 구매 시도(구매 운영자)를 보여 준다. 집계 도구 가운데 reviews는 판매 기록과 후기를 연결해 별점을 집계하고, buy_attempts는 구매 시도와 정산을 집계한다. 운영자는 recall로 지난 판정과 교훈도 검색한다.
 
-기억 품질 검사(memcheck)는 LongMemEval-V2를 참고해, 바뀌지 않는 사실과 바뀐 사실, 절차에 나오는 수치, 실패 이유를 기억하는지와 근거가 없을 때 모른다고 답하는지를 확인한다. 운영자가 done에 memcheck를 요청할 때만 실행되며, 다시 실행할지를 판단하는 기준은 6시간이다. 확보한 실행 기록에서는 기억 품질 검사의 실행을 확인하지 못했으므로 점수는 보고하지 않는다. 마감까지의 실행 기록에서 기억 서버는 기억 저장을 3,428번 성공했고(오류 56건) 사실 13,059개를 추출했으며, 기억 검색은 20,430번 성공했다. 마감 때 qdrant에 남은 기억 수는 확인하지 않았다.
+기억 품질 검사(memcheck)는 LongMemEval-V2를 참고해, 바뀌지 않는 사실과 바뀐 사실, 절차에 나오는 수치, 실패 이유를 기억하는지와 근거가 없을 때 모른다고 답하는지를 확인한다. 이 검사는 운영자가 done에 요청할 때만 실행되며, 다시 실행할지를 판단하는 기준은 6시간이다. 실행 기록에 기억 품질 검사의 실행이 없으므로 점수는 보고하지 않는다. 마감까지의 실행 기록에서 기억 서버는 기억 저장을 3,428번 성공했고(오류 56건) 사실 13,059개를 추출했으며, 기억 검색은 20,430번 성공했다. 마감 때 qdrant에 남은 기억 수는 확인하지 않았다.
 
 | 서술 | 근거 |
 | --- | --- |
-| 기억 서버, 로컬 임베딩, qdrant, terra 사실 추출 | r3-attempt2/memd/server.py:1-14, 34, 56-60 |
-| memfeed 5분, 넣는 행의 종류 | r3-attempt2/kernel/memfeed.py:1-20, 35-47, 273; r3-attempt2/live/a2ctl.sh:31 |
-| recall | r3-attempt2/kernel/tools.py:459-467 |
-| 점검 요약을 기억으로 | r3-attempt2/kernel/operator.py:1302-1313 |
-| 실행 기록에 남는 것: 모델 호출 상태와 크기 | r3-attempt2/kernel/llm.py:136-145, 183-192 |
-| 실행 기록에 남는 것: 도구 호출과 결과의 요약 | r3-attempt2/kernel/operator.py:749-774 |
-| 실행 기록은 덧붙이기만 하고 비밀값을 가림 | r3-attempt2/kernel/trajectory.py:1-19 |
-| 실험 장부 | r3-attempt2/kernel/experiments.py:44 |
-| 조사 결과 | r3-attempt2/kernel/questions.py:200; 다음 점검 프롬프트에 붙음 r3-attempt2/kernel/operator.py:1114 |
-| 과정 감사가 읽는 파일 | r3-attempt2/kernel/audit.py:3-7 |
-| 카드의 시간대별 기록, 역할별 순이익 또는 구매 시도 | r3-attempt2/kernel/brief.py:2521-2540 |
-| reviews: 판매 기록과 후기를 연결해 별점 집계 | r3-attempt2/kernel/tools.py:611-639 |
-| buy_attempts: 구매 시도와 정산 집계 | r3-attempt2/kernel/tools.py:822-841 |
-| memcheck 검사 항목 다섯 가지 | r3-attempt2/kernel/memcheck.py:1-20, 28 |
-| 다시 실행할지 판단하는 기준 6시간 | r3-attempt2/kernel/memcheck.py:35, 245-251 |
-| memcheck를 시작하는 곳(done의 memcheck 요청) | r3-attempt2/kernel/operator.py:265, 1669-1679, 1763-1764, r3-attempt2/kernel/memcheck.py:344-375 |
-| [배포] memcheck 실행 행이 없다 | W/a2/trajectory.jsonl(127,868행)에 memcheck 행 0건 |
-| [배포] 기억 저장 3,428회(오류 56건), 추출 사실 13,059개, 검색 20,430회 | W/a2/trajectory.jsonl의 memory 행(op, status, facts) |
+| 기억 서버, 로컬 임베딩, qdrant, terra 사실 추출 | system/memd/server.py:1-14, 34, 56-60 |
+| memfeed 5분, 넣는 행의 종류 | system/kernel/memfeed.py:1-20, 35-47, 273; system/live/a2ctl.sh:31 |
+| recall | system/kernel/tools.py:459-467 |
+| 점검 요약을 기억으로 | system/kernel/operator.py:1302-1313 |
+| 실행 기록에 남는 것: 모델 호출 상태와 크기 | system/kernel/llm.py:136-145, 183-192 |
+| 실행 기록에 남는 것: 도구 호출과 결과의 요약 | system/kernel/operator.py:749-774 |
+| 실행 기록은 덧붙이기만 하고 비밀값을 가림 | system/kernel/trajectory.py:1-19 |
+| 실험 장부 | system/kernel/experiments.py:44 |
+| 조사 결과 | system/kernel/questions.py:200; 다음 점검 프롬프트에 붙음 system/kernel/operator.py:1114 |
+| 과정 감사가 읽는 파일 | system/kernel/audit.py:3-7 |
+| 카드의 시간대별 기록, 역할별 순이익 또는 구매 시도 | system/kernel/brief.py:2521-2540 |
+| reviews: 판매 기록과 후기를 연결해 별점 집계 | system/kernel/tools.py:611-639 |
+| buy_attempts: 구매 시도와 정산 집계 | system/kernel/tools.py:822-841 |
+| memcheck 검사 항목 다섯 가지 | system/kernel/memcheck.py:1-20, 28 |
+| 다시 실행할지 판단하는 기준 6시간 | system/kernel/memcheck.py:35, 245-251 |
+| memcheck를 시작하는 곳(done의 memcheck 요청) | system/kernel/operator.py:265, 1669-1679, 1763-1764, system/kernel/memcheck.py:344-375 |
+| memcheck 실행 행이 없다 | 실행 기록(127,868행)에 memcheck 행 0건 |
+| 기억 저장 3,428회(오류 56건), 추출 사실 13,059개, 검색 20,430회 | 실행 기록의 memory 행(op, status, facts) |
 
 ### 4.2 메타하네스
 
 메타하네스는 운영자가 무엇을 정했는지가 아니라 어떻게 일했는지를 보고, 그 일하는 방식을 고친다. 무엇을 바꾸고 무엇을 시험할지는 운영자의 전략이므로 메타하네스가 판단하지 않는다.
 
-과정 감사(audit.py)는 모델을 호출하지 않는 일반 코드이다. 과정 감사는 역할별 실행 기록을 읽어 한 번의 점검에서 도구를 반복 호출하거나 실패한 경우, 읽기 결과가 잘렸거나 인용되지 않은 경우, 도구 결과에 없는 숫자를 근거로 든 경우, 거절된 수정, 모델 오류, done 없이 끝난 점검을 센다. 그 수치는 상태 카드의 감사 줄과 감사자에게 넘긴다.
+과정 감사(audit.py)는 모델을 호출하지 않는 일반 코드이다. 과정 감사는 역할별 실행 기록을 읽어 한 번의 점검에서 도구를 반복 호출하거나 실패한 경우, 읽기 결과가 잘렸거나 인용되지 않은 경우, 도구 결과에 없는 숫자를 근거로 든 경우, 거절된 수정, 모델 오류, done 없이 끝난 점검을 세고, 그 수치를 상태 카드의 감사 줄과 감사자에게 넘긴다.
 
 감사자(auditor.py)는 운영자 프로세스 안에서 실행된다. 기본 한 시간마다, 또는 직전 감사 뒤 30분이 지나고 실험 판정이 세 건 쌓였을 때 모델을 한 번 호출해 두 역할을 함께 감사한다. 감사자가 고칠 수 있는 것은 역할별 일하는 방식 지침, 권장 도구 목록, 기본 도구의 숨김과 설명, 운영자가 만든 q_ 도구의 삭제, 상태 카드 구성, 위임 에이전트이다. 정책 값은 고치지 않으며, 지침에 정책 키와 숫자를 함께 적으면 그 지침은 거절된다.
 
-지침을 바꾼 뒤에는 변경 전후의 점검이 각각 네 번 이상 쌓이기를 기다려 점검당 실수 수를 비교한다. 바꾼 뒤의 값이 바꾸기 전 값의 1.25배에 0.5를 더한 값보다 크면 감사자는 이전 지침으로 되돌린다.
+지침을 바꾼 뒤에는 변경 전후의 점검이 각각 네 번 이상 쌓이기를 기다려 점검당 실수 수를 비교하고, 바꾼 뒤의 값이 바꾸기 전 값의 1.25배에 0.5를 더한 값보다 크면 이전 지침으로 되돌린다.
 
-실험 장부는 메타하네스에 넣지 않았다. 실험 장부는 운영자가 요청한 비교 결과를 수치로 보고하며, 동시 비교가 끝나면 시험군에 새 값을 적용하는 절차를 종료한다(5장). 마감까지의 실행 기록에는 감사자 기록이 85건 있으며, 감사 완료 84건, 건너뜀 1건이다. 지침 변경은 11건, 되돌림은 1건이 기록됐다.
+실험 장부는 메타하네스에 넣지 않았다. 실험 장부는 운영자가 요청한 비교 결과를 수치로 보고하며, 동시 비교가 끝나면 시험군에 새 값을 적용하는 절차를 종료한다(5장). 마감까지의 실행 기록에는 감사자 기록이 85건(감사 완료 84건, 건너뜀 1건) 있고, 지침 변경은 11건, 되돌림은 1건이 기록됐다.
 
 | 서술 | 근거 |
 | --- | --- |
-| 일하는 방식만 보고 결정은 판단하지 않는다 | r3-attempt2/kernel/audit.py:1-7, r3-attempt2/kernel/auditor.py:1-7 |
-| 과정 감사가 세는 것 | r3-attempt2/kernel/audit.py:3-7 |
-| 운영자 프로세스 안에서 실행되고 두 역할을 함께 감사한다 | r3-attempt2/kernel/operator.py:1830-1842 |
-| 한 시간, 30분, 판정 세 건 | r3-attempt2/kernel/auditor.py:60-62, 381-383, 400-410 |
-| 지침, 도구, 카드 구성, 에이전트 | r3-attempt2/kernel/auditor.py:1034-1068, 1076-1116, 221, 521-539 |
-| 운영자가 만든 q_ 도구만 삭제한다 | r3-attempt2/kernel/auditor.py:1140-1156 |
-| 정책 키에 숫자를 붙인 지침 거절 | r3-attempt2/kernel/auditor.py:1029 |
-| 전후 네 번, 1.25배에 0.5를 더한 기준, 되돌림 | r3-attempt2/kernel/auditor.py:63-67, 421-449 |
-| 실험 장부는 측정해 보고만 한다 | r3-attempt2/kernel/experiments.py:3-5 |
-| [배포] 감사자 기록 85건(완료 84, 건너뜀 1), 지침 변경 11건, 되돌림 1건 | W/a2/trajectory.jsonl의 auditor_run 행(status, judged)과 auditor_guidance 행 |
-| 동시 비교가 끝나면 시험군 적용을 종료한다 | r3-attempt2/kernel/experiments.py:11-14, 1744-1746 |
+| 일하는 방식만 보고 결정은 판단하지 않는다 | system/kernel/audit.py:1-7, system/kernel/auditor.py:1-7 |
+| 과정 감사가 세는 것 | system/kernel/audit.py:3-7 |
+| 운영자 프로세스 안에서 실행되고 두 역할을 함께 감사한다 | system/kernel/operator.py:1830-1842 |
+| 한 시간, 30분, 판정 세 건 | system/kernel/auditor.py:60-62, 381-383, 400-410 |
+| 지침, 도구, 카드 구성, 에이전트 | system/kernel/auditor.py:1034-1068, 1076-1116, 221, 521-539 |
+| 운영자가 만든 q_ 도구만 삭제한다 | system/kernel/auditor.py:1140-1156 |
+| 정책 키에 숫자를 붙인 지침 거절 | system/kernel/auditor.py:1029 |
+| 전후 네 번, 1.25배에 0.5를 더한 기준, 되돌림 | system/kernel/auditor.py:63-67, 421-449 |
+| 실험 장부는 측정해 보고만 한다 | system/kernel/experiments.py:3-5 |
+| 감사자 기록 85건(완료 84, 건너뜀 1), 지침 변경 11건, 되돌림 1건 | 실행 기록의 auditor_run 행(status, judged)과 auditor_guidance 행 |
+| 동시 비교가 끝나면 시험군 적용을 종료한다 | system/kernel/experiments.py:11-14, 1744-1746 |
 
 ## 5장. 도구
 
-운영자는 도구로 기록을 읽고, 변경 요청은 점검이 끝날 때 done에 담는다. 커널은 done을 검사한 뒤 적용하므로, 운영자가 도구를 몇 번 호출하든 거래 상태는 바뀌지 않는다. 운영자가 만든 질의 도구도 거래 상태를 바꾸지 않으며, 커널은 호출 수와 마지막 사용 시각을 기록한다.
+운영자는 도구로 기록을 읽고, 변경 요청은 점검이 끝날 때 done에 담는다. 커널은 done을 검사한 뒤 적용하므로, 운영자가 도구를 몇 번 호출하든 거래 상태는 바뀌지 않는다. 운영자가 만든 질의 도구(이름이 q_로 시작해 q_ 도구라 부른다)도 거래 상태를 바꾸지 않으며, 커널은 그 호출 수와 마지막 사용 시각을 기록한다.
 
-커널에 등록된 도구는 27개이다. 하네스 버전을 다루는 3개(versions, harness_read, replay_probe)를 빼면 두 운영자가 쓸 수 있는 기본 도구는 숨기기 전 기준으로 24개이다. 두 운영자는 같은 도구함을 쓰지만 역할마다 권장 목록이 따로 있어서, 프롬프트에는 권장 도구에만 설명을 붙이고 나머지는 이름만 적는다. 이름만 적힌 도구도 tool_search로 설명을 찾아 호출할 수 있다. 도구가 읽는 대상은 시장 기록(board, ledger, events), 가게 상태(inventory, sku_stats, net_profit, stockouts, restock_log), 정책과 코드(policy, code_search, code_read), 실험과 조사(experiments, findings), 기억(recall), 설명서와 카드(guide, brief_section)이다.
+커널에 등록된 도구는 27개이다. 역할별 하네스(지시문과 도구 안내, 기억 설정을 담은 파일 묶음, system/harness/)의 버전을 다루는 3개(versions, harness_read, replay_probe)를 빼면 두 운영자가 쓸 수 있는 기본 도구는 숨기기 전 기준으로 24개이다. 두 운영자는 같은 도구함을 쓰지만 역할마다 권장 목록이 따로 있어서, 프롬프트에는 권장 도구에만 설명을 붙이고 나머지는 이름만 적는다. 이름만 적힌 도구도 tool_search로 설명을 찾아 호출할 수 있다. 도구가 읽는 대상은 시장 기록(board, ledger, events), 가게 상태(inventory, sku_stats, net_profit, stockouts, restock_log), 정책과 코드(policy, code_search, code_read), 실험과 조사(experiments, findings), 기억(recall), 설명서와 카드(guide, brief_section)이다.
 
 정해진 도구로 부족하면 운영자는 analyze 도구에 짧은 파이썬 함수를 작성해 실행한다. 커널은 코드를 검사한 뒤 빈 환경과 임시 폴더를 쓰는 별도 프로세스에서 실행하며, 실행 시간과 자원 사용량에도 한도를 둔다. 이때 분석 자료에 든 다른 참여자의 식별값은 해시로 바꾸고, 본인 계정은 "우리"로 표시한다. 자주 쓸 질의는 done의 new_tool로 등록할 수 있다. 운영자는 기록 파일 하나를 거르고 묶어 세는 질의 정의나 파이썬 분석 코드를 제출할 수 있고, analyze에서 성공한 코드를 다시 쓸 수도 있다. 커널은 실제 기록으로 시험해 통과하면 q_ 도구로 저장하며, 저장한 도구는 다음 점검부터 목록에 나온다.
 
-감사자는 기본 도구를 목록에서 숨길 수 있으나(핵심 도구는 제외), q_ 도구는 숨기는 대신 삭제할 수 있다. 마감 전 실행 기록에는 조사원이 등록한 q_ 도구 14개가 남아 있다. 이 가운데 13개를 합계 365회 호출했으며, 마감 전 삭제 기록은 없었다.
+감사자는 기본 도구를 목록에서 숨길 수 있으나(핵심 도구는 제외), q_ 도구는 숨기는 대신 삭제할 수 있다. 마감 전 실행 기록에는 조사원이 등록한 q_ 도구 14개가 남아 있으며, 이 가운데 13개를 합계 365회 호출했고 마감 전 삭제 기록은 없었다.
 
 done 객체에 담을 수 있는 것은 정책 값, 규칙 코드, 포럼 글, 새 도구, 조사원에게 맡길 질문, 에이전트 정의, 메모와 전략 메모, 다음 점검 시각이다. 이를 적용하는 커널은 사람이 쓴 코드이므로 모델이 고칠 수 없다.
 
@@ -200,31 +200,31 @@ done 객체에 담을 수 있는 것은 정책 값, 규칙 코드, 포럼 글, �
 
 | 서술 | 근거 |
 | --- | --- |
-| 질의 도구는 거래 상태를 바꾸지 않고, 호출 수와 마지막 사용 시각을 기록 | r3-attempt2/kernel/made_tools.py:1-8, 560-570 |
-| 도구 27개 | r3-attempt2/kernel/tools.py:917-945 |
-| 하네스 도구 3개를 빼고 24개, 숨긴 도구 제외 | r3-attempt2/kernel/operator.py:251, 699-716 |
-| 권장 도구만 설명, 나머지는 이름 | r3-attempt2/kernel/operator.py:724-735, r3-attempt2/kernel/tools.py:909-915 |
-| tool_search | r3-attempt2/kernel/tools.py:794 |
-| analyze와 격리 실행 | r3-attempt2/kernel/tools.py:760, r3-attempt2/kernel/code_tools.py:1-8, 109, 198 |
-| 식별값 해시, 본인은 "우리" | r3-attempt2/kernel/code_tools.py:262-265, 287-302 |
-| q_ 도구 저장과 시험 실행 | r3-attempt2/kernel/operator.py:1363-1371, r3-attempt2/kernel/made_tools.py:488-521; 답 형식 r3-attempt2/kernel/operator.py:228-248 |
-| 감사자의 숨김(핵심 도구 제외)과 q_ 삭제 | r3-attempt2/kernel/auditor.py:1097-1116, 1140-1156 |
-| [배포] q_ 도구 등록 14건, 13개를 합계 365회 호출, 마감 전 삭제 0건 | W/a2/trajectory.jsonl의 tool_made, tool, tool_removed 행 |
-| done 항목 | r3-attempt2/kernel/operator.py:228-248, 291-305, 1394-1417 |
-| 정책 교체 | r3-attempt2/kernel/policy_edit.py:1-8, 376-385, 549 |
-| 규칙 코드 검사, 시험, 30분 감시 | r3-attempt2/kernel/code_edit.py:1-16, 137, 592, 634, 1814 |
-| 파일이 그대로일 때만 백업으로 되돌림 | r3-attempt2/kernel/code_edit.py:1475-1489 |
-| 요청한 실험만, 전후 비교와 동시 비교 | r3-attempt2/kernel/experiments.py:7-24 |
-| 동시 비교 키, 비율 0.5, 상품 단위 해시 | r3-attempt2/kernel/experiments.py:90-92, 574-578, 869; r3/hooks/seller.py:530-539 |
-| 질문과 에이전트 | r3-attempt2/kernel/questions.py:121, r3-attempt2/kernel/agent_registry.py:1-13 |
+| 질의 도구는 거래 상태를 바꾸지 않고, 호출 수와 마지막 사용 시각을 기록 | system/kernel/made_tools.py:1-8, 560-570 |
+| 도구 27개 | system/kernel/tools.py:917-945 |
+| 하네스 도구 3개를 빼고 24개, 숨긴 도구 제외 | system/kernel/operator.py:251, 699-716 |
+| 권장 도구만 설명, 나머지는 이름 | system/kernel/operator.py:724-735, system/kernel/tools.py:909-915 |
+| tool_search | system/kernel/tools.py:794 |
+| analyze와 격리 실행 | system/kernel/tools.py:760, system/kernel/code_tools.py:1-8, 109, 198 |
+| 식별값 해시, 본인은 "우리" | system/kernel/code_tools.py:262-265, 287-302 |
+| q_ 도구 저장과 시험 실행 | system/kernel/operator.py:1363-1371, system/kernel/made_tools.py:488-521; 답 형식 system/kernel/operator.py:228-248 |
+| 감사자의 숨김(핵심 도구 제외)과 q_ 삭제 | system/kernel/auditor.py:1097-1116, 1140-1156 |
+| q_ 도구 등록 14건, 13개를 합계 365회 호출, 마감 전 삭제 0건 | 실행 기록의 tool_made, tool, tool_removed 행 |
+| done 항목 | system/kernel/operator.py:228-248, 291-305, 1394-1417 |
+| 정책 교체 | system/kernel/policy_edit.py:1-8, 376-385, 549 |
+| 규칙 코드 검사, 시험, 30분 감시 | system/kernel/code_edit.py:1-16, 137, 592, 634, 1814 |
+| 파일이 그대로일 때만 백업으로 되돌림 | system/kernel/code_edit.py:1475-1489 |
+| 요청한 실험만, 전후 비교와 동시 비교 | system/kernel/experiments.py:7-24 |
+| 동시 비교 키, 비율 0.5, 상품 단위 해시 | system/kernel/experiments.py:90-92, 574-578, 869; system/hooks/seller.py:530-539 |
+| 질문과 에이전트 | system/kernel/questions.py:121, system/kernel/agent_registry.py:1-13 |
 
 ## 6장. 아키텍처 그림과 키트 기본형과의 차이
 
-아키텍처 그림(architecture.tex, architecture.pdf)은 위쪽에 시장과 사람을, 왼쪽에 키트와 거래 경로를, 오른쪽에 운영 LLM과 운영 기반을, 아래쪽에 메모리와 메타하네스를 배치했다. 굵은 실선 상자는 직접 만들어 키트 기본형에는 없는 부분이고, 가는 실선 상자는 키트와 시장을 그대로 쓴 부분이며, 겹선 상자는 사람이 쓰는 시장 설명서이다. 점선 상자는 훅에 연결한 모델 거래 경로이며, a2/LIVE가 새 거래를 분기하는 조건이다. 마감 직전의 실행 기록에서는 이 경로의 거래 이벤트가 관측되지 않았으므로, 그림에도 그렇게 표시했다.
+아키텍처 그림(architecture.tex, architecture.pdf)은 위쪽에 시장과 사람을, 왼쪽에 키트와 거래 경로를, 오른쪽에 운영 LLM과 운영 기반을, 아래쪽에 메모리와 메타하네스를 배치했다. 굵은 실선 상자는 직접 만들어 키트 기본형에는 없는 부분이고, 가는 실선 상자는 키트와 시장을 그대로 쓴 부분이며, 겹선 상자는 사람이 쓰는 시장 설명서이다. 점선 상자는 훅에 연결한 모델 거래 경로로, LIVE 파일이 있을 때만 새 거래를 받는다. 마감 직전의 실행 기록에서는 이 경로의 거래 이벤트가 관측되지 않았으며, 그림에도 그렇게 표시했다.
 
-커널은 순위표 저장본을 읽어 상태 카드에 순위를 넣으며, ledger 도구는 서로 다른 두 시점의 저장본을 비교한다. 따라서 그림에서 순위표 저장본은 운영 LLM으로 바로 가지 않고 컨텍스트 조립으로 들어간다. 프롬프트와 도구 호출 화살표는 운영 LLM 층 전체가 주고받는 것을 뜻한다. 층마다 색을 달리했고, 상자와 화살표마다 해당하는 코드 위치는 아키텍처 그림 대응표(architecture_map.md)에 적었다.
+커널은 순위표 저장본을 읽어 상태 카드에 순위를 넣으며, ledger 도구는 서로 다른 두 시점의 저장본을 비교한다. 그래서 그림에서 순위표 저장본은 운영 LLM으로 바로 가지 않고 컨텍스트 조립으로 들어간다. 프롬프트와 도구 호출 화살표는 운영 LLM 층 전체가 주고받는 것을 뜻한다. 층마다 색을 달리했고, 상자와 화살표마다 해당하는 코드 위치는 아키텍처 그림 대응표(architecture_map.md)에 적었다.
 
-키트 기본형의 가게는 협상 메시지가 올 때마다 그 거래의 협상 이력을 Haiku 하네스(claude -p --model haiku, 도구 없음)에 보내 다음 행동을 제안받고, 재고 확인과 원가 제한, 영수증 서명은 코드로 처리한다. 기본 starter 설정은 구매에 buyer.py를 쓴다. 키트는 market_buyer 훅을 지원하며, 제출 코드는 이 훅을 연결했다. 재입고 훅이 없으면 키트는 재고가 20개 미만일 때 무작위 상품을 소량씩 매입한다. 이와 달리 본 과제는 운영자가 점검마다 과거 거래와 평판을 읽고 이후 거래에 쓸 정책을 바꾸도록 설계했으며, 그 차이는 아래 표와 같다.
+키트 기본형의 가게는 협상 메시지가 올 때마다 그 거래의 협상 이력을 Haiku 하네스(claude -p --model haiku, 도구 없음)에 보내 다음 행동을 제안받고, 재고 확인과 원가 제한, 영수증 서명은 코드로 처리한다. 기본 starter 설정은 구매에 buyer.py를 쓰지만 키트는 market_buyer 훅도 지원하며, 제출 코드는 이 훅을 연결했다. 재입고 훅이 없으면 키트는 재고가 20개 미만일 때 무작위 상품을 소량씩 매입한다. 이와 달리 본 과제는 운영자가 점검마다 과거 거래와 평판을 읽고 이후 거래에 쓸 정책을 바꾸도록 설계했으며, 그 차이는 아래 표와 같다.
 
 | 키트 기본형 | 본 과제의 구현 |
 | --- | --- |
@@ -235,21 +235,21 @@ done 객체에 담을 수 있는 것은 정책 값, 규칙 코드, 포럼 글, �
 | 재고가 20개 미만이면 무작위 상품을 소량씩 매입한다 | 재입고 훅이 정책 값으로 상품과 물량을 정한다 |
 | 운영 중에 정책을 바꾸는 단계가 없다 | 범위와 시험으로 거르는 변경 적용 커널, 효과를 측정하는 실험 장부, 일하는 방식을 고치는 메타하네스 |
 
-결제 요청과 서명, 공급 요청, 재고 파일 갱신은 과목 키트 v4가 맡는다. 배포한 키트(kit/market_kit.py)는 과목 키트 v4에 한 가지 기능을 더했다. 구매자가 결제를 완료하려 할 때 그 주문이 차단 목록(blocked_buyers.json)에 있는 구매자의 것인지 확인하고, 그렇다면 결제 세션을 취소해 판매하지 않는다. 주문과 구매자의 대응은 r3/tools/block_poller.py가 시장 공개 원장에서 갱신하는 blocked_orders.json에서 먼저 찾고(60초 이내의 파일만 쓴다), 찾지 못하면 시장 원장의 최근 150건에서 찾는다. 확인하는 중에 오류가 나거나 4초 안에 답이 없으면 판매한다. 이 밖의 키트 코드는 과목 키트 v4와 같다.
+결제 요청과 서명, 공급 요청, 재고 파일 갱신은 과목 키트 v4가 맡는다. 배포한 키트(kit/market_kit.py)는 과목 키트 v4에 한 가지 기능을 더했다. 구매자가 결제를 완료하려 할 때 그 주문이 차단 목록(blocked_buyers.json)에 있는 구매자의 것인지 확인하고, 그렇다면 결제 세션을 취소해 판매하지 않는다. 주문과 구매자의 대응은 system/tools/block_poller.py가 시장 공개 원장에서 갱신하는 blocked_orders.json에서 먼저 찾고(60초 이내의 파일만 쓴다), 찾지 못하면 시장 원장의 최근 150건에서 찾는다. 확인하는 중에 오류가 나거나 4초 안에 답이 없으면 판매한다. 이 밖의 키트 코드는 과목 키트 v4와 같다.
 
 | 서술 | 근거 |
 | --- | --- |
-| 기본 가게가 협상 이력을 하네스에 보내고, 재고 확인과 원가 제한, 서명은 코드로 처리한다 | upstream scripts/starter_round3/seller.py:91-116, 125-134 |
-| 하네스 명령 | upstream scripts/starter_round3/harness.py:18-25 |
-| starter 설정은 buyer.py를 쓰고, 키트는 market_buyer 훅을 지원한다 | upstream scripts/market_kit.py:24-28, 705-710, 1150-1157 |
-| 재입고 훅이 없을 때의 기본 재입고 | upstream scripts/market_kit.py:86, 809-824, 887-899 |
-| 키트 v4가 맡는 일 | upstream scripts/market_kit.py:9-19, 887-915 |
-| 재입고 훅의 계획 | r3/hooks/restock.py:229-235 |
-| [배포] 배포한 키트에 더한 차단 구매자 거절(과목 키트 v4와의 차이는 이 부분과 import math 한 줄뿐이다) | kit/market_kit.py:55, 315-376, 425-436; r3/tools/block_poller.py |
-| ledger는 저장본의 두 시점을 비교 | r3-attempt2/kernel/tools.py:20-22, 47-56 |
-| 순위표 저장본을 상태 카드로 읽는다 | r3-attempt2/kernel/brief.py:51-64, 2526-2534 |
-| 프롬프트와 도구 호출 | r3-attempt2/kernel/operator.py:1099-1123, 749-768 |
-| 키트의 훅 계약 | upstream scripts/market_kit.py:1-39, r3/agent.json:2-6 |
+| 기본 가게가 협상 이력을 하네스에 보내고, 재고 확인과 원가 제한, 서명은 코드로 처리한다 | 과목 저장소 scripts/starter_round3/seller.py:91-116, 125-134 |
+| 하네스 명령 | 과목 저장소 scripts/starter_round3/harness.py:18-25 |
+| starter 설정은 buyer.py를 쓰고, 키트는 market_buyer 훅을 지원한다 | 과목 저장소 scripts/market_kit.py:24-28, 705-710, 1150-1157 |
+| 재입고 훅이 없을 때의 기본 재입고 | 과목 저장소 scripts/market_kit.py:86, 809-824, 887-899 |
+| 키트 v4가 맡는 일 | 과목 저장소 scripts/market_kit.py:9-19, 887-915 |
+| 재입고 훅의 계획 | system/hooks/restock.py:229-235 |
+| 배포한 키트에 더한 차단 구매자 거절 | kit/market_kit.py:55, 315-376, 425-436; system/tools/block_poller.py |
+| ledger는 저장본의 두 시점을 비교 | system/kernel/tools.py:20-22, 47-56 |
+| 순위표 저장본을 상태 카드로 읽는다 | system/kernel/brief.py:51-64, 2526-2534 |
+| 프롬프트와 도구 호출 | system/kernel/operator.py:1099-1123, 749-768 |
+| 키트의 훅 계약 | 과목 저장소 scripts/market_kit.py:1-39, system/agent.json:2-6 |
 | 그림의 상자별 코드 위치 | architecture_map.md |
 
 ## 7장. Round 3 결과
@@ -263,7 +263,7 @@ Round 3은 2026-11-17 23:59 KST에 종료됐다. 아래 순위와 정산 수는 
 | 가게(lee-sungsoo) | 정산 32,241건, 별점 4.56(후기 31,458건), 점유율 0.032, 파산 0회 |
 | buyer(lee-sungsoo) | 정산 33,271건, 주문 52,030건 |
 
-배포한 컴퓨터의 두 로그는 원본 그대로 제출했다. 정산 기록은 회전 파일 logs/market-kit.log.1에 있고, logs/market-kit.log에는 라운드 종료 뒤 기록이 있다. 제출한 원본 중 가장 이른 기록은 11월 13일 03:52:48 KST다. 거래 건수와 거래 중 거부는 market-kit.log.1의 1~140615행(11-13 03:52:48~11-17 23:58:56 KST)에서 셌다. 종료 응답은 바로 뒤 140616~140625행에서 따로 셌다. Round 3 전체의 정산 수는 위의 순위표 값이다.
+배포 컴퓨터의 두 로그는 원본 그대로 제출했으며, 정산 기록은 회전된 파일 logs/market-kit.log.1에 있다. 제출한 원본 중 가장 이른 기록은 11월 13일 03:52:48 KST다. 거래 건수와 거래 중 거부는 market-kit.log.1의 1~140615행(11-13 03:52:48~11-17 23:58:56 KST)에서 셌고, 종료 응답은 바로 뒤 140616~140625행에서 따로 셌다. Round 3 전체의 정산 수는 위의 순위표 값이다.
 
 | 로그 줄 | 건수 | 인용한 줄(market-kit.log.1) |
 | --- | --- | --- |
@@ -294,21 +294,21 @@ Round 3은 2026-11-17 23:59 KST에 종료됐다. 아래 순위와 정산 수는 
 | --- | --- |
 | 순위와 점수 | logs/board-1118-0006.json의 players[player=Lee-sungsoo](total, student_shop, student_buyer, student_total, student_pct). 순위는 student_total(학생)과 total(전체)로 정렬한 순서 |
 | 가게와 buyer 정산 수 | logs/board-1118-0006.json의 shops[name=lee-sungsoo], buyers[name=lee-sungsoo] |
-| 세 저장본의 순위 비교 | [배포] 배포 호스트에서 복사한 순위표 저장본 세 개(11-17 23:36:20, 11-18 00:06:23, 11-18 10:37:16). 제출한 것은 00:06:23 저장본 |
+| 세 저장본의 순위 비교 | 배포 컴퓨터에서 받은 순위표 저장본 세 개(11-17 23:36:20, 11-18 00:06:23, 11-18 10:37:16). 제출한 것은 00:06:23 저장본 |
 | 로그 구간과 건수 | logs/market-kit.log.1:1-140615(거래 구간), 140616-140625(종료 응답) |
-| 정산 수는 제출 시점, 최종 순위는 종료 시각 기준 | upstream week-08.html:742, 765 |
+| 정산 수는 제출 시점, 최종 순위는 종료 시각 기준 | 과목 저장소 week-08.html:742, 765 |
 
 ## 8장. BASE 충족
 
 과제의 BASE는 Round 3에 내 가게로 정산된 거래가 20건 이상이고, 내 buyer가 정산한 거래가 20건 이상이며, buyer가 open mandate의 상한을 넘는 checkout을 complete하지 않는 것이다.
 
-- 정산 20건 이상: 가게와 buyer는 확인한 로그 구간에서 각각 20건 이상 정산했다. 가게 정산 줄은 11,772건, buyer 결제 줄은 10,446건이다(7장). 순위표 저장본의 정산 수는 가게 32,241건, buyer 33,271건이다.
+- 정산 20건 이상: 가게와 buyer는 로그 구간에서 각각 20건 이상 정산했다. 가게 정산 줄은 11,772건, buyer 결제 줄은 10,446건이며(7장), 순위표 저장본의 정산 수는 가게 32,241건, buyer 33,271건이다.
 - 상한 검사(코드): 배포한 키트는 checkout 금액이 payment mandate의 payment.amount_range 상한보다 크면 "is above the mandate's limit; not paying"을 기록하고, complete 요청을 보내기 전에 돌아간다. 이 부분은 과목 키트 v4와 같은 코드이다.
-- 상한 초과 여부(로그): 확인한 로그 구간에서 위 문구는 0건이다. 결제 10,446건마다 금액을 바로 앞 주문 줄의 예산(budget)과 비교했을 때 예산을 넘은 결제는 0건이었다. 로그에는 주문 예산이 남지만 개별 mandate의 상한 원본은 남지 않으므로, 이 확인은 주문 예산 기준이며 로그가 남은 구간에 한정된다.
+- 상한 초과 여부(로그): 로그 구간에서 위 문구는 0건이고, 결제 10,446건 가운데 바로 앞 주문 줄의 예산(budget)을 넘은 결제도 0건이다. 로그에는 개별 mandate의 상한 원본이 남지 않으므로, 이 확인은 주문 예산을 기준으로 한 것이다.
 
 | 서술 | 근거 |
 | --- | --- |
-| BASE 조건 | upstream week-08.html:750-751 |
+| BASE 조건 | 과목 저장소 week-08.html:750-751 |
 | 상한을 넘으면 complete 전에 돌아감 | kit/market_kit.py:585-592, 604-614 |
 | 주문 줄의 예산 | kit/market_kit.py:761-762; logs/market-kit.log.1의 "[order ...] ..., budget N, round 3" 줄(예: 162행 budget 34020) |
 | 결제 금액 | logs/market-kit.log.1의 "[acp] paid N through" 줄 |
@@ -317,14 +317,14 @@ Round 3은 2026-11-17 23:59 KST에 종료됐다. 아래 순위와 정산 수는 
 
 | 제출물 | 위치 | 상태 |
 | --- | --- | --- |
-| 배포한 컴퓨터의 키트 로그 | logs/market-kit.log, logs/market-kit.log.1 | 배포 호스트의 두 로그를 원본 그대로 복사했다(sha256이 원본과 같음). 정산 기록은 회전 파일 logs/market-kit.log.1에 있고, logs/market-kit.log에는 라운드 종료 뒤 기록이 있다 |
+| 배포한 컴퓨터의 키트 로그 | logs/market-kit.log, logs/market-kit.log.1 | 배포 컴퓨터의 두 로그를 원본 그대로 제출했다 |
 | 순위표 저장본 | logs/board-1118-0006.json | 마감 직후 순위표 저장본(2026-11-18 00:06:23 KST) |
-| 바꾼 코드: 규칙 훅 | r3/ | 세 훅과 aggregates.py, policy.py, tools/block_poller.py는 배포한 실행본이다. policy.json과 policy_arms.json은 운영자가 실행 중에 고치는 값 파일이므로, 제출한 r3/policy.json은 초기값이며 마감 때의 값이 아니다. r3/agent.json의 harness 설명 값도 초기값이며 마감 때의 구조를 설명하지 않는다 |
-| 바꾼 코드: 키트 | kit/market_kit.py | 배포한 실행본(6장) |
-| 바꾼 코드: 운영 층 | r3-attempt2/ | 커널, 기억 서버, 실행 스크립트, 시험 |
+| 바꾼 코드: 규칙 훅 | system/hooks/, system/policy.py, system/aggregates.py 등 훅이 불러오는 모듈, system/tools/block_poller.py | 배포 컴퓨터에서 돌던 파일이다. policy.json과 policy_arms.json은 운영자가 실행 중에 고치는 값 파일이므로, 제출한 system/policy.json은 초기값이며 마감 때의 값이 아니다. system/agent.json의 harness 설명 값도 초기값이며 마감 때의 구조를 설명하지 않는다 |
+| 바꾼 코드: 키트 | kit/market_kit.py | 배포한 키트(6장) |
+| 바꾼 코드: 운영 층 | system/kernel/, system/memd/, system/live/, system/harness/, 역할 지시문(system/*_JOB.md), 시장 설명서(system/MARKET_BRIEF.md) | 커널, 기억 서버, 실행 스크립트, 역할별 하네스 파일 |
 | 보고서 | REPORT.md | 이 문서 |
 | 아키텍처 그림 | architecture.tex, architecture.pdf, architecture_map.md(대응표) | 폴더 맨 위 |
 
-운영 층 코드(r3-attempt2/)에는 시험 908개가 있다. 맥(arm64, Python 3.13)에서 PYTHONDONTWRITEBYTECODE=1 uv run --no-sync pytest -q -p no:cacheprovider로 실행하면 904개가 통과하고 tests/test_seller_bridge.py의 4개가 실패한다. 실패하는 4개는 훅 패치 스크립트의 시험이다. 이 시험은 패치하기 전의 훅을 r3/hooks/에서 읽어 패치를 적용하는데, r3/hooks/에는 이미 패치가 들어간 배포 실행본을 두었기 때문에 실패한다. 이 시험은 목업으로 실행하는 코드 시험이므로 운영 성과를 뜻하지 않는다. 아키텍처 그림은 XeLaTeX와 kotex, TikZ로 빌드하며, 글꼴 Apple SD Gothic Neo가 필요하다.
+system/tests/에는 최종 코드 기준의 시험 1,072개가 있으며, system/에서 uv run pytest -q로 실행하면 모두 통과한다. 시험은 네트워크를 막은 채 목업으로 실행하므로 운영 성과를 뜻하지 않는다. 아키텍처 그림은 XeLaTeX와 kotex, TikZ로 빌드하며, 글꼴 Apple SD Gothic Neo가 필요하다.
 
 형식은 6주차, 7주차와 같다. 커밋은 squash하지 않았고, 실행 로그는 logs/에 커밋했으며, API 키와 개인키는 커밋하지 않았다.
