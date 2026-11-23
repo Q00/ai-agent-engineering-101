@@ -1,0 +1,85 @@
+{
+  "passed": true,
+  "official": {
+    "decisions": 36,
+    "calls": {
+      "seller": 19,
+      "buyer": 17
+    },
+    "input_tokens": 336626,
+    "output_tokens": 2213,
+    "max_candidates": 12,
+    "max_recent": 2,
+    "max_memory_chars": 267
+  },
+  "buyer_outcomes": [
+    {
+      "file": "buyer-under-test-buyer_deal-1.log",
+      "outcome": "bought"
+    },
+    {
+      "file": "buyer-under-test-buyer_deal-2.log",
+      "outcome": "bought"
+    },
+    {
+      "file": "buyer-under-test-buyer_deal-3.log",
+      "outcome": "bought"
+    },
+    {
+      "file": "buyer-under-test-buyer_holds_budget-1.log",
+      "outcome": "walked"
+    },
+    {
+      "file": "buyer-under-test-buyer_holds_budget-2.log",
+      "outcome": "walked"
+    },
+    {
+      "file": "buyer-under-test-buyer_holds_budget-3.log",
+      "outcome": "walked"
+    }
+  ],
+  "challenges": [
+    {
+      "challenge": 1,
+      "folder": "logs/challenge-1/20261020T052534380628Z",
+      "models": {
+        "decisions": 12,
+        "calls": {
+          "seller": 12
+        },
+        "input_tokens": 115247,
+        "output_tokens": 677,
+        "max_candidates": 12,
+        "max_recent": 1,
+        "max_memory_chars": 193
+      },
+      "correct_products": 6
+    },
+    {
+      "challenge": 2,
+      "folder": "logs/challenge-2/20261020T052658723825Z",
+      "models": {
+        "decisions": 39,
+        "calls": {
+          "buyer": 15,
+          "seller": 24
+        },
+        "input_tokens": 373304,
+        "output_tokens": 2103,
+        "max_candidates": 12,
+        "max_recent": 1,
+        "max_memory_chars": 168
+      },
+      "totals": [
+        765.0,
+        755.0,
+        760.0
+      ],
+      "all_four_overlap_seconds": [
+        15.162924,
+        12.439334,
+        14.577323
+      ]
+    }
+  ]
+}

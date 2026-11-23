@@ -1,0 +1,92 @@
+test_accept_guard (test_week06.Guards) ... ok
+test_budget_guard (test_week06.Guards) ... ok
+test_catalog_size (test_week06.Guards) ... ok
+test_corrective_feedback (test_week06.Guards) ... ok
+test_description_retrieval (test_week06.Guards) ... ok
+test_generic_retrieval (test_week06.Guards) ... ok
+test_identity_guard (test_week06.Guards) ... ok
+test_no_fallback (test_week06.Guards) ... ok
+test_plan_guard (test_week06.Guards) ... ok
+test_price_parser (test_week06.Guards) ... ok
+test_reserve_guard (test_week06.Guards) ... ok
+test_strict_json (test_week06.Guards) ... ok
+test_valid_accept (test_week06.Guards) ... ok
+test_receipt_rejects_overcharge (test_week06.Protocol) ... ok
+test_sdk_task_lifecycle (test_week06.Protocol) ... /nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/test_week06.py:99: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+Producer[7ae250de-2d6d-4c98-8c45-969428ed7bc9]: Execution failed
+Traceback (most recent call last):
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/seller.py", line 41, in execute
+    candidates = [self.catalog.items[selected]] if selected else self.catalog.search(text)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/core.py", line 55, in search
+    rows = self.db.execute('SELECT id FROM products WHERE products MATCH ? ORDER BY bm25(products,0,8,3,1), id LIMIT ?',
+sqlite3.ProgrammingError: SQLite objects created in a thread can only be used in that same thread. The object was created in thread id 139777287734464 and this is thread id 139777233782528.
+Task 7ae250de-2d6d-4c98-8c45-969428ed7bc9 already exists. Ignoring task replacement.
+Consumer[7ae250de-2d6d-4c98-8c45-969428ed7bc9]: Failed
+Traceback (most recent call last):
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/seller.py", line 41, in execute
+    candidates = [self.catalog.items[selected]] if selected else self.catalog.search(text)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/core.py", line 55, in search
+    rows = self.db.execute('SELECT id FROM products WHERE products MATCH ? ORDER BY bm25(products,0,8,3,1), id LIMIT ?',
+sqlite3.ProgrammingError: SQLite objects created in a thread can only be used in that same thread. The object was created in thread id 139777287734464 and this is thread id 139777233782528.
+Unhandled exception
+Traceback (most recent call last):
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 320, in handle_requests
+    raw_result = await self._process_non_streaming_request(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/utils/version_validator.py", line 126, in async_wrapper
+    return await func(*args, **kwargs)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 518, in _process_non_streaming_request
+    return await self._handle_send_message(request_obj, context)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/routes/jsonrpc_dispatcher.py", line 410, in _handle_send_message
+    task_or_message = await self.request_handler.on_message_send(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/request_handlers/request_handler.py", line 285, in async_wrapper
+    return await method(self, params, context, *args, **kwargs)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/request_handlers/default_request_handler_v2.py", line 396, in on_message_send
+    async for raw_event in active_task.subscribe(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 739, in subscribe
+    raise event
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 221, in _process_event_inner
+    raise event
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/.venv/lib/python3.10/site-packages/a2a/server/agent_execution/active_task.py", line 610, in _run_producer
+    await self._agent_executor.execute(
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/seller.py", line 41, in execute
+    candidates = [self.catalog.items[selected]] if selected else self.catalog.search(text)
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/core.py", line 55, in search
+    rows = self.db.execute('SELECT id FROM products WHERE products MATCH ? ORDER BY bm25(products,0,8,3,1), id LIMIT ?',
+sqlite3.ProgrammingError: SQLite objects created in a thread can only be used in that same thread. The object was created in thread id 139777287734464 and this is thread id 139777233782528.
+Request Error (ID: c7f72c779795457b8341f6496dc2602f): Code=-32603, Message='SQLite objects created in a thread can only be used in that same thread. The object was created in thread id 139777287734464 and this is thread id 139777233782528.'
+Dispatcher task was cancelled or finished. Events may be lost.
+ERROR
+
+======================================================================
+ERROR: test_sdk_task_lifecycle (test_week06.Protocol)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-06/test_week06.py", line 115, in test_sdk_task_lifecycle
+    first = send(client, 'lamp')['result']['task']
+KeyError: 'result'
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.467s
+
+FAILED (errors=1)
