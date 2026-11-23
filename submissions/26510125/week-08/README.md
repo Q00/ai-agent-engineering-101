@@ -16,6 +16,8 @@ MARKET_DIR=/tmp/m/.market python seller.py --port 8979 &      # inventory.json /
 python market_buyer.py --shops shops.json --item lamp --budget 120 --order /tmp/m/.market/order.json
 ```
 
+로그: `logs/market-kit.log`(마지막 45 MB), `logs/market-kit-full.log.gz`(회전 스냅숏을 이어 붙인 전체), `logs/tuner.log`.
+
 라이브 (Round 3 동안 실제로 돌린 방법): `./run_kit.sh --background` (claim code는 `~/.market_owner`), `./watchdog.sh`.
 키는 `shop_key.pem`/`buyer_key.pem`(커밋하지 않음). 키트는 `market_kit.py`(v4에 `pay` 훅, 터널 재시도, outbox 상한, ACP 카드 JSON Schema 패치).
 
