@@ -1,158 +1,102 @@
-% nocha12 (26622007), Round 3: the shop and the buyer, what the kit does and what this folder adds.
-% Build: tectonic architecture.tex   (or pdflatex architecture.tex)
-\documentclass[tikz,border=8pt]{standalone}
-\usetikzlibrary{positioning,arrows.meta,calc}
+\documentclass[tikz,border=16pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{Apple SD Gothic Neo}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds,calc}
 \begin{document}
-\begin{tikzpicture}[font=\footnotesize, x=1cm, y=1cm,
-  box/.style={draw,rounded corners=2pt,align=left,inner sep=4pt,anchor=north},
-  ext/.style={box,fill=green!10,align=center},
-  kit/.style={box,fill=gray!15},
-  mine/.style={box,fill=blue!10,thick},
-  ctx/.style={box,fill=yellow!18,dashed},
-  tool/.style={box,fill=teal!10},
-  meta/.style={box,fill=red!8,thick,draw=red!60!black},
-  lim/.style={box,fill=black!80,text=white,thick},
-  llm/.style={box,fill=orange!18,align=center},
-  a/.style={-{Stealth},thick},
-  d/.style={-{Stealth},dashed},
-  m/.style={-{Stealth},thick,draw=red!60!black},
-  lbl/.style={font=\scriptsize,fill=white,inner sep=1pt}]
+\begin{tikzpicture}[font=\small,
+  card/.style={draw=black!35,rounded corners=3pt,fill=white,align=left,inner sep=5pt,text width=#1,anchor=north west},
+  card/.default=5.2cm,
+  zone/.style={draw=#1!70!black,line width=1.3pt,rounded corners=8pt,fill=#1!12,inner sep=8pt},
+  ztitle/.style={font=\bfseries\large,text=#1!60!black,anchor=south west,inner sep=3pt},
+  eff/.style={font=\footnotesize,text=black!75,align=left,text width=#1,anchor=north west},
+  flow/.style={-{Stealth[length=3.2mm]},line width=1.4pt,draw=black!70},
+  fix/.style={-{Stealth[length=3.2mm]},line width=1.4pt,draw=red!70!black,dashed},
+  lbl/.style={font=\footnotesize\bfseries,fill=white,inner sep=2pt,rounded corners=2pt}]
 
-% ---------- row 1: market ----------
-\node[ext] (market) at (0,0)
-  {\textbf{market.ourolabs.ai} \; (Trusted Surface, Credential Provider, Network)\\
-   orders + open mandates to the buyer only \;|\; \texttt{/api/settle} checks the mandate chain \;|\; public ledger \;|\; forum \;|\; board};
+% 열 x: 매매 0, 가운데 7.6, 오른쪽 15.2  /  행 y: 0, -5.6, -11.6
+% ===== 외부 마켓 =====
+\node[draw=green!50!black,line width=1pt,fill=green!8,rounded corners=6pt,minimum width=23.4cm,minimum height=1.3cm,align=center,anchor=north west] (mkt) at (-0.2,2.6)
+ {\textbf{\large 외부 마켓 market.ourolabs.ai}\quad 주문 · 결제 위임서 검증(/api/settle) · 공개 거래 장부 · 포럼 · 게시판};
 
-% ---------- row 2: kit ----------
-\node[kit] (kitb) at (-5.2,-2.0)
-  {\textbf{kit v4, buyer side}\\
-   reads the shop's \texttt{acp.json}, opens a checkout,\\
-   signs the closed Checkout + Payment mandates,\\
-   checks my \texttt{accept} before it pays;\\
-   a refusal and its reason $\rightarrow$ \texttt{.market/payments.jsonl}\\
-   \emph{patched: names the market check that failed}};
-\node[kit] (kits) at (5.2,-2.0)
-  {\textbf{kit v4, shop side}\\
-   serves \texttt{acp.json} + checkout, signs \texttt{checkout\_jwt},\\
-   sends the mandates to \texttt{/api/settle},\\
-   calls my restock hook every 60\,s, posts \texttt{outbox.jsonl}\\
-   \emph{patched: buyer refusal at checkout, cash re-read before}\\
-   \emph{each supply buy, paced supply (20 lines), 180\,s unpaid hold,}\\
-   \emph{seller restart over 3\,GB only after a drain}};
+% ===== ① 매매 =====
+\node[card] (buy) at (0,0)
+ {\textbf{구매자} \texttt{market\_buyer.py}\\ 가게 고르기는 규칙(11/07부터)\\ 흥정 답 일부만 LLM\\ 예산·정가 상한·영수증 검사는 코드};
+\node[card] (sell) at ($(buy.south west)+(0,-0.45)$)
+ {\textbf{가게 상담} \texttt{seller.py}\\ 원가 밑으로 안 팖\\ 실제 등급·인증서·보증을 말함};
+\node[card] (stock) at ($(sell.south west)+(0,-0.45)$)
+ {\textbf{재고 매입} \texttt{restock.py}\\ 수요 추정 → LLM이 결정\\ \texttt{guard()}가 줄마다 검사};
+\node[card] (forum) at ($(stock.south west)+(0,-0.45)$)
+ {\textbf{게시판} \texttt{forum.py}\\ 남의 글은 자료로만 읽음};
+\node[card,fill=black!4] (kit) at ($(forum.south west)+(0,-0.45)$)
+ {\textbf{수업 키트 v4} (고쳐 씀)\\ 체크아웃·위임서 서명·정산 요청};
+\node[eff=5.2cm] (e1) at ($(kit.south west)+(0,-0.35)$)
+ {\textbf{결과}: 가게 정산 57,292건\\ 구매 정산 20,650건 · 등급 주장 57,032건 중 57,030건 정직};
+\begin{scope}[on background layer]\node[zone=blue,fit=(buy)(e1)] (Z1) {};\end{scope}
+\node[ztitle=blue] at (Z1.north west) {① 매매};
 
-% ---------- row 3: my agents ----------
-\node[mine] (mb) at (-9.3,-5.2)
-  {\textbf{market\_buyer.py}\\
-   Luna picks the shop,\\
-   citing its tool calls\\
-   code: SKU that fits, budget,\\
-   never over list price,\\
-   receipt check, \texttt{accept}:\\
-   food: cert. + hours left\\
-   goods: warranty (+ grade)};
-\node[mine] (sl) at (-3.6,-5.2)
-  {\textbf{seller.py} (A2A)\\
-   Luna answers the talk\\
-   code: never under the\\
-   unit's floor; real grade,\\
-   certificate, warranty\\
-   \texttt{acp\_gate.py}: refuses\\
-   listed buyers};
-\node[mine] (rs) at (1.4,-5.2)
-  {\textbf{restock.py}\\
-   formula proposal from\\
-   \texttt{market\_model.py}\\
-   (ledger demand per SKU)\\
-   then a Luna decision\\
-   \texttt{guard()} on every line};
-\node[mine] (fo) at (5.9,-5.2)
-  {\textbf{forum.py}\\
-   Luna writes a post\\
-   and votes\\
-   forum text is data,\\
-   not orders};
-\node[box,fill=white] (pj) at (9.6,-5.2)
-  {\texttt{pricing.json}\\
-   settings every\\
-   part reads};
+% ===== ③ 컨텍스트 (가운데 위) =====
+\node[card=6.2cm] (ctx) at (8.6,0)
+ {\textbf{\texttt{select()} — 이번 결정에 넣을 것만}\\ 기억 전체가 아니라 관련 줄만\\ 최대 2,500자 (게시판 1,500자)\\ 설정 \texttt{pricing.json}은 결정마다 다시 읽음};
+\begin{scope}[on background layer]\node[zone=yellow,fit=(ctx)] (Z3) {};\end{scope}
+\node[ztitle=yellow!70!black] at (Z3.north west) {③ 컨텍스트 관리};
 
-% ---------- row 4: harness ----------
-\node[llm] (h) at (0,-8.6)
-  {\textbf{harness.py} \;\; \texttt{openai/gpt-6-luna} on OpenRouter, OpenAI endpoint only, strict \texttt{json\_schema}, effort low (buyer offers: none)\\
-   \textbf{agent\_loop.py} \;\; a decision may call tools first and must cite the calls it used; uncited answers go back $\rightarrow$ \texttt{decisions.jsonl}};
+% ===== ④ 메모리 (오른쪽 위) =====
+\node[card] (m1) at (17.4,0) {\textbf{가게 노트} \texttt{MEMORY.md} · 일일 기록 · 교훈};
+\node[card] (m2) at ($(m1.south west)+(0,-0.35)$) {\textbf{거래 기억} 흥정 기록 · SKU·가게별 구매};
+\node[card] (m3) at ($(m2.south west)+(0,-0.35)$) {\textbf{결정의 결과} 팔림·남음·폐기 · 이익 묶음};
+\node[card] (m4) at ($(m3.south west)+(0,-0.35)$) {\textbf{시장 추정} 공개 장부로 수요 추정};
+\begin{scope}[on background layer]\node[zone=violet,fit=(m1)(m4)] (Z4) {};\end{scope}
+\node[ztitle=violet] at (Z4.north west) {④ 메모리 관리};
 
-% ---------- row 5: context + tools ----------
-\node[ctx] (ctx) at (-5.0,-10.3)
-  {\textbf{context (memory)}\\
-   \texttt{agent\_memory.py}: MEMORY.md (long term), daily notes,\\
-   \quad strategies/ (lessons with triggers)\\
-   \quad \texttt{select()}: only the matching lines, 2{,}500 chars\\
-   \quad (forum decisions 1{,}500)\\
-   \texttt{shop\_memory.py}, buyer memory by SKU and shop\\
-   \texttt{decision\_memory.py}: asked / sold / left / thrown away\\
-   \texttt{profit\_cohorts.py}, \texttt{scorecard.py}: paid-sale cohorts};
-\node[tool] (tools) at (5.0,-10.3)
-  {\textbf{tools/\textless name\textgreater/} \; manifest.json + tool.py (18 now)\\
-   ledger\_search, my\_state, my\_customers, cohort\_profit,\\
-   \quad market\_opportunity, supply\_audit, forum\_read, \dots\\
-   \texttt{agent\_tools.py}: sandbox-exec, no network, no keys,\\
-   \quad writes to a fresh folder only; failing tools dropped\\
-   \texttt{tool\_forge.py}: every 6\,h Luna writes \texttt{auto\_*} tools\\
-   \quad for repeated work; selftest before first use};
+% ===== ② 판단 엔진 (가운데 아래) =====
+\node[card=6.2cm,fill=orange!8] (brain) at (8.6,-5.9)
+ {\textbf{\large LLM 판단 루프}\\ \texttt{harness.py} + \texttt{agent\_loop.py}\\ 모델 gpt-6-luna (OpenRouter)\\[2pt]
+ 1) 필요하면 도구부터 부름\\ 2) 답은 정해진 JSON으로만\\ 3) 도구 결과를 인용 못 하면 \textbf{되돌림}\\[2pt]
+ \textbf{코드가 결과를 정하는 차례는 LLM 없이}\\ 가게 고르기·한 방 제안·호가 읽기·정확한 제안 수락};
+\node[eff=6.2cm] (e2) at ($(brain.south west)+(0,-0.3)$)
+ {\textbf{결과}: 정산 1건당 LLM 호출 4.02 → 0.46\\ 시간당 정산 169 → 223건 (11/05–07 → 11/11–17)};
+\begin{scope}[on background layer]\node[zone=orange,fit=(brain)(e2)] (Z2) {};\end{scope}
+\node[ztitle=orange] at (Z2.north west) {② 판단 엔진};
 
-% ---------- row 6: meta ----------
-\node[meta] (mh) at (-2.2,-14.0)
-  {\textbf{meta\_harness.py} \; (ran 11/03 21:05 -- 11/11 20:27)\\
-   \textbf{Terra} (\texttt{gpt-6.1-terra}), every hour: settings, memory, broken tools\\
-   \textbf{Astra} (\texttt{gpt-6-astra}), every 12\,h: strategy, new tools, grades Terra\\
-   scorecard $\rightarrow$ change $\rightarrow$ citations + tests $\rightarrow$ commit $\rightarrow$ 10 min watch\\
-   a failed change is committed, then reverted (kept in history)};
-\node[lim] (hl) at (6.6,-14.0)
-  {\textbf{hard\_limits.py} \; (only a person edits it)\\
-   no buy may take cash under the\\
-   \quad bankruptcy line + refunds still owed\\
-   bounded falls in \texttt{pricing.json}\\
-   the tool sandbox rules};
+% ===== ⑤ 도구 (오른쪽 아래) =====
+\node[card] (tools) at (17.4,-5.9)
+ {\textbf{읽기 도구 18개} \texttt{tools/}\\ 장부 검색 · 내 상태 · 고객 · 이익 묶음 · 공급 점검 …\\ 샌드박스: 네트워크·키 없음\\ \texttt{tool\_forge}: 6시간마다 새 도구 자동 생성};
+\node[eff=5.2cm] (e5) at ($(tools.south west)+(0,-0.3)$)
+ {\textbf{교훈}: 자동 도구가 668번 실패 0인데\\ 틀린 값을 줌 → 의미 검사 추가};
+\begin{scope}[on background layer]\node[zone=teal,fit=(tools)(e5)] (Z5) {};\end{scope}
+\node[ztitle=teal] at (Z5.north west) {⑤ 도구};
 
-% ---------- row 7: the loop after the meta-harness ----------
-\node[box,fill=violet!8,align=left] (ab) at (-1.2,-16.8)
-  {\textbf{outside the meta-harness: timed A/B trials} (from 11/07; the only path after 11/11 20:27) \; (a person with reviewing agents; \texttt{*\_TRIAL.md})\\
-   a change goes in with its switch OFF $\rightarrow$ runs for a set window on one arm $\rightarrow$ kept as the default only on its pre-set measure, otherwise switched back};
+% ===== ⑥ 자기 개선 (가운데 맨 아래) =====
+\node[card=6.2cm] (meta) at (8.6,-13.0)
+ {\textbf{\texttt{meta\_harness.py}} (11/03–11/11)\\ Terra 매시간 · Astra 12시간마다\\ 점수표 → 고침 → 시험 → 커밋 → 10분 감시\\[2pt]
+ \textbf{11/11 이후}: 스위치 끈 채 넣고 A/B 시험};
+\node[eff=6.2cm] (e6) at ($(meta.south west)+(0,-0.3)$)
+ {\textbf{결과}: 168번 시도 중 40번 통과 → 11/11에 끔};
+\begin{scope}[on background layer]\node[zone=red,fit=(meta)(e6)] (Z6) {};\end{scope}
+\node[ztitle=red] at (Z6.north west) {⑥ 자기 개선};
 
-% ---------- arrows ----------
-\draw[a] (market.south -| kitb.north) -- node[lbl,right]{order, open mandates} (kitb.north);
-\draw[a] (kits.north) -- node[lbl,right]{mandates $\rightarrow$ settle} (market.south -| kits.north);
+% ===== ⑦ 안전장치 (오른쪽 맨 아래) =====
+\node[card,fill=black!82,text=white,draw=black] (lim) at (17.4,-13.0)
+ {\textbf{\texttt{hard\_limits.py}} (사람만 수정)\\ 파산선 밑으로 사지 않기\\ 환불할 돈 남겨 두기\\ 설정 변경 폭 · 도구 샌드박스};
+\node[eff=5.2cm] (e7) at ($(lim.south west)+(0,-0.3)$)
+ {\textbf{결과}: 2주 동안 파산 0회};
+\begin{scope}[on background layer]\node[zone=gray,fit=(lim)(e7)] (Z7) {};\end{scope}
+\node[ztitle=gray] at (Z7.north west) {⑦ 안전장치};
 
-\draw[a] (kitb.south -| mb.north) -- node[lbl,left]{order, shops} (mb.north);
-\draw[a] ($(mb.north)+(0.9,0)$) -- node[lbl,right]{\texttt{accept}} (kitb.south -| {$(mb.north)+(0.9,0)$});
-\draw[a] ($(kits.south)+(-3.5,0)$) -- node[lbl,above,sloped]{starts, tunnel} (sl.north east);
-\draw[a] (kits.south -| rs.north) -- node[lbl,left]{state} (rs.north);
-\draw[a] (kits.south -| fo.north) -- node[lbl,right]{outbox} (fo.north);
-\draw[a] ($(mb.east)+(0,0.5)$) -- ++(0.55,0) node[lbl,right,align=left,font=\tiny]{other\\shops};
-\draw[a] ($(sl.west)+(-0.55,-0.5)$) node[lbl,left,align=right,font=\tiny]{other\\buyers} -- ($(sl.west)+(0,-0.5)$);
+% ===== 최종 결과 =====
+\node[anchor=north west,draw=black!60,line width=1pt,rounded corners=6pt,fill=yellow!20,inner sep=6pt,font=\bfseries] at (0,-13.3)
+ {Round 3 최종: 72명 중 6위 · 학생 46명 중 5위};
 
-\draw[a] (mb.south) |- (h.west);
-\foreach \n in {sl,rs,fo} \draw[a] (\n.south) -- (\n.south |- h.north);
-
-\draw[a] (h.south -| ctx.north) -- node[lbl,right]{\texttt{select()}} (ctx.north);
-\draw[a] (h.south -| tools.north) -- node[lbl,right]{tool calls} (tools.north);
-\draw[d] (tools.west) -- node[lbl,above]{read} (tools.west -| ctx.east);
-\draw[d] (pj.south) |- node[lbl,pos=0.3,right]{read} (h.east);
-
-\draw[m] (mh.west) -| ($(ctx.west)+(-0.5,0)$) node[lbl,pos=0.75,left,text=red!60!black]{edits} -- (ctx.west);
-\draw[m] ($(mh.north)+(3.2,0)$) |- ($(tools.south)+(-2.5,-0.6)$) -- node[lbl,right,text=red!60!black]{repairs, removes} ($(tools.south)+(-2.5,0)$);
-\draw[m] ($(mh.north)+(1.0,0)$) -- ++(0,0.45) -- ++(12.4,0) node[lbl,pos=0.6,above,text=red!60!black]{settings} |- (pj.east);
-\draw[a] (hl.west) -- node[lbl,above]{rejects} (hl.west -| mh.east);
-\draw[d] (ab.east) -| node[lbl,pos=0.25,above]{switches} ($(pj.south)+(0.6,0)$);
-
-% ---------- legend ----------
-\node[font=\scriptsize,align=left,anchor=north west] at (-10.6,-18.3)
-  {\tikz\node[kit,anchor=center,inner sep=2pt]{kit};\ course kit (\emph{italics}: my patches to \texttt{scripts/market\_kit.py}, copy in \texttt{kit/}) \qquad
-   \tikz\node[mine,anchor=center,inner sep=2pt]{agent};\ my agents \qquad
-   \tikz\node[ctx,anchor=center,inner sep=2pt]{context};\ context \qquad
-   \tikz\node[tool,anchor=center,inner sep=2pt]{tools};\ tools \qquad
-   \tikz\node[meta,anchor=center,inner sep=2pt]{meta};\ meta-harness (red arrows: what it changes) \qquad
-   \tikz\node[lim,anchor=center,inner sep=2pt]{limits};\ fixed by a person\\[2pt]
-   kit default (\texttt{seller\_r3.py}, no restock hook): random restock, never sells under cost, no quality talk, no warranty, no memory, no tools};
+% ===== 흐름 =====
+\draw[flow] ($(mkt.south west)+(1.6,0)$) -- node[lbl,right]{주문} ($(Z1.north west)+(1.4,0)$);
+\draw[flow] ($(Z1.north west)+(4.2,0)$) -- node[lbl,right]{정산} ($(mkt.south west)+(4.4,0)$);
+\draw[flow] (Z1.east |- brain) -- node[lbl,above]{결정 요청} (Z2.west |- brain);
+\draw[flow] (Z4.west |- ctx) -- node[lbl,above]{관련 줄 검색} (Z3.east |- ctx);
+\draw[flow] (Z3.south) -- node[lbl,right]{필요한 것만 넣음} (Z2.north);
+\draw[flow] (Z2.east |- brain) -- node[lbl,above]{도구 호출} (Z5.west |- brain);
+\draw[flow] ($(Z2.north east)+(-0.4,0)$) to[out=60,in=210] node[lbl,pos=0.45]{결과 기록} ($(Z4.south west)+(0.6,0)$);
+\draw[fix] (Z6.north) -- node[lbl,right,text=red!70!black]{설정·기억·코드 고침} (Z2.south);
+\draw[fix] ($(Z6.north east)+(-0.3,0)$) to[out=40,in=230] node[lbl,text=red!70!black,pos=0.55]{도구 수리} ($(Z5.south west)+(0.5,0)$);
+\draw[-{Stealth[length=3.2mm]},line width=1.4pt] (Z7.west) -- node[lbl,above]{위험한 변경 거부} (Z6.east |- Z7.west);
 \end{tikzpicture}
 \end{document}
