@@ -1,0 +1,24 @@
+{
+  "started": "20261025T103804_120131Z",
+  "purpose": "official market test; simulated counterparts",
+  "seller_data_dir": "C:\\Users\\user\\AgenticAI\\ai-agent-engineering-101\\submissions\\26512073\\week-07\\logs\\test-runs\\20261025T103804_120131Z\\seller-data",
+  "buyer_memory_path": "C:\\Users\\user\\AgenticAI\\ai-agent-engineering-101\\submissions\\26512073\\week-07\\logs\\test-runs\\20261025T103804_120131Z\\buyer-memory.jsonl",
+  "test_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
+  "agent_config": {
+    "harness": "Codex CLI, gpt-6.1-sol",
+    "seller": {
+      "cmd": ".venv\\Scripts\\python.exe seller.py --port {port}"
+    },
+    "buyer": {
+      "cmd": ".venv\\Scripts\\python.exe buyer.py --url {url} --item {item} --budget {budget}"
+    },
+    "market_buyer": {
+      "cmd": ".venv\\Scripts\\python.exe market_buyer.py --shops {shops} --item {item} --budget {budget}"
+    }
+  },
+  "live_before": {
+    "pricing_state.json": null,
+    "logs\\seller-history.jsonl": null,
+    "buyer_memory.jsonl": "b0997f3c27959fbc307923b5d479cd0a681ed63cc2ba51b95d1b98fe3c9308d8"
+  }
+}
