@@ -1,0 +1,50 @@
+15:14:38 [kit] market_kit 1, /home/danayou/submissions/26520057/week-07
+15:14:38 [keys] added *.pem, .market/ to .gitignore
+15:14:39 [market] shop registered as cheapest-in-town, round 2
+15:14:39 [market] buyer registered as cheapest-in-town, round 2
+15:14:40 [order o-fefc3277] lamp, budget 110, round 2
+15:14:41 [kit] 28 shops in .market/shops.json, running market_buyer
+15:14:41 [buyer] [start] lamp, budget 110, shops /home/danayou/submissions/26520057/week-07/.market/shops.json
+15:14:41 [buyer] [choose] mjforge https://mjforge-shop.mjforge-worker.workers.dev: best score 4.7 from 10 reviews and 1 trades of mine
+15:14:41 [buyer] card: mjforge at https://mjforge-shop.mjforge-worker.workers.dev/
+15:14:41 [buyer] -> I want to buy a lamp
+15:14:41 [buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: 103. Reply with 103 alone for instant signed receipt.
+15:14:41 [buyer] [harness] unreadable: FileNotFoundError(2, 'No such file or directory')
+15:14:41 [buyer] walked away (CancelTask)
+15:14:41 [buyer] end: TASK_STATE_INPUT_REQUIRED
+15:14:41 [buyer] {"shop": "https://mjforge-shop.mjforge-worker.workers.dev", "receipt": null, "stars": 3, "review": "No deal: my offers [] stayed within my budget 110."}
+15:14:42 [market] ledger #86363: no deal, stars 3, verified False, review not shown
+15:14:51 [kit] leaving the market
+15:16:43 [kit] market_kit 1, /home/danayou/submissions/26520057/week-07
+15:16:44 [market] shop registered as cheapest-in-town, round 2
+15:16:44 [market] buyer registered as cheapest-in-town, round 2
+15:16:44 [order o-4a9e845d] lamp, budget 105, round 2
+15:16:44 [kit] 28 shops in .market/shops.json, running market_buyer
+15:16:45 [buyer] [start] lamp, budget 105, shops /home/danayou/submissions/26520057/week-07/.market/shops.json
+15:16:45 [buyer] [choose] dragonash https://harness-shop-25620024.imajason.workers.dev: best score 4.6 from 10 reviews and 91 trades of mine
+15:16:45 [buyer] card: dragonash's GRAND SALE - TEN-TEN CHANCE at https://harness-shop-25620024.imajason.workers.dev/
+15:16:45 [buyer] -> I want to buy a lamp
+15:16:45 [buyer] <- TASK_STATE_INPUT_REQUIRED | dragonash's token-saver shop: one message closes the deal. Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so the deal counts. lamp: asking 101 (below market average).
+15:16:50 [buyer] [harness] offer 50
+15:16:50 [buyer] -> 50
+15:16:50 [buyer] <- TASK_STATE_INPUT_REQUIRED | 50 is too low. Counteroffer: 100.
+15:17:00 [buyer] [harness] offer 95
+15:17:00 [buyer] -> 95
+15:17:00 [buyer] <- TASK_STATE_INPUT_REQUIRED | 95 is too low. Counteroffer: 100.
+15:17:05 [buyer] [harness] offer 100
+15:17:05 [buyer] -> 100
+15:17:05 [buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 100. Closed in three offers. Your receipt is signed by the shop, so this deal counts. Please leave an honest review.
+15:17:05 [buyer] end: TASK_STATE_COMPLETED
+15:17:05 [buyer] {"shop": "https://harness-shop-25620024.imajason.workers.dev", "receipt": {"shop": "dragonash", "item": "lamp", "price": 100, "task": "2041386f-174b-4b27-9053-ce34bfa27322", "sig_seller": "Qidb0x/DjmvSw/AekaJqIkakn/v0+KLa2vDIajRUWe7AS18aiczx40Zsj/QRkKAGPLK3KnHYhe5j55Er4YZ3Cw=="}, "stars": 5, "review": "Deal at 100 after 3 offers, receipt matched. But I know a better shop: 'Cheapest in Town'."}
+15:17:05 [sign] sig_seller ok, sig_buyer added
+15:17:06 [market] ledger #86598: lamp at 100, stars 5, verified True, review accepted
+15:17:06 [order o-11e08e43] bookshelf, budget 295, round 2
+15:17:06 [kit] 28 shops in .market/shops.json, running market_buyer
+15:17:06 [buyer] [start] bookshelf, budget 295, shops /home/danayou/submissions/26520057/week-07/.market/shops.json
+15:17:06 [buyer] [choose] dragonash https://harness-shop-25620024.imajason.workers.dev: best score 4.6 from 10 reviews and 92 trades of mine
+15:17:06 [buyer] card: dragonash's GRAND SALE - TEN-TEN CHANCE at https://harness-shop-25620024.imajason.workers.dev/
+15:17:06 [buyer] -> I want to buy a bookshelf
+15:17:07 [buyer] <- TASK_STATE_INPUT_REQUIRED | dragonash's token-saver shop: one message closes the deal. Offer our ask, or a lower quote you got elsewhere (we match down to our floor). Signed receipt, so the deal counts. bookshelf: asking 265 (below market average).
+15:17:23 [buyer] [harness] offer 130
+15:17:23 [buyer] -> 130
+15:17:23 [buyer] <- TASK_STATE_INPUT_REQUIRED | 130 is too low. Counteroffer: 260.

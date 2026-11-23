@@ -1,0 +1,18 @@
+[Unit]
+Description=Week 07 GPT API shop (pending public cutover)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/submissions/26520057/week-07
+EnvironmentFile=%h/submissions/26520057/week-07/.market/gpt.env
+ExecStart=/usr/bin/node server/gpt_shop.mjs
+Restart=on-failure
+RestartSec=15
+UMask=0077
+StandardOutput=append:%h/submissions/26520057/week-07/logs/gpt-shop.log
+StandardError=append:%h/submissions/26520057/week-07/logs/gpt-shop.log
+
+[Install]
+WantedBy=default.target

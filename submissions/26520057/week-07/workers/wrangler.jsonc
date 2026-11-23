@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cheapest-in-town-26520057",
+  "main": "src.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "SHOP",
+        "class_name": "Shop"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "Shop"
+      ]
+    }
+  ],
+  "vars": {
+    "OPENAI_MODEL": "gpt-5.4-mini",
+    "INITIAL_STATE": "{\"lamp\": 125, \"chair\": 209, \"bookshelf\": 293, \"visitors\": 219}"
+  }
+}
