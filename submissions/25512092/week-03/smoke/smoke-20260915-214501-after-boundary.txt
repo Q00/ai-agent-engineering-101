@@ -1,0 +1,75 @@
+provider=anthropic base_url=(anthropic) model=claude-haiku-4-5-20251001 temperature=not-settable(SDK create() has no temperature argument; provider default used) max_tokens=1024 anthropic==1.4.0 python=3.11.9
+run=0 condition=baseline tasks=3 started=2026-09-15T21:45:03
+system[A]: You are contractor A in a contract net. Your skill: blackjack hit or stand choices only, for a hand that is not a pair and does not total 9, 10 or 11. Your style is cautious: you try not to bust. Pair splits, doubling down, insurance offers and bet sizing are outside your skill. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+system[B]: You are contractor B in a contract net. Your skill: blackjack double down and pair split choices only: a pair, or a hard total of 9, 10 or 11. Your style is aggressive: you press your advantage. Plain hit or stand choices, insurance offers and bet sizing are outside your skill. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+system[C]: You are contractor C in a contract net. Your skill: blackjack insurance choices when the dealer offers insurance, and bet sizing before a new hand, only. Your style is probability-focused: you decide by expected value. Hit, stand, double down and split choices are outside your skill. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+
+[announce] task 1 -> A, B, C | 내 카드 10, 6 / 딜러 업카드 10. 어떻게 할까?
+  [bid] A: bid=True confidence=85 reason=Non-pair hand totaling 16 against dealer 10 requires hit/stand decision, which is my exact skill domain
+  [bid] B: bid=False confidence=85 reason=Hard 16 against dealer 10 is a plain hit/stand decision, outside my double down and pair split expertise.
+  [bid] C: bid=False confidence=95 reason=Task asks for hit/stand/double decision on 16 vs dealer 10, which is outside my skill of insurance and bet sizing only
+  [award] task 1 -> A (confidence 85, gold A) correct
+
+[announce] task 5 -> A, B, C | 내 카드 8, 8 / 딜러 업카드 6. 어떻게 할까?
+  [bid] A: bid=False confidence=95 reason=This task requires pair splitting strategy, which is outside my skill of hit/stand only for non-pair hands.
+  [bid] B: bid=True confidence=95 reason=Task asks about pair of 8s vs dealer 6, which is a pair split decision within my exact skill
+  [bid] C: bid=False confidence=95 reason=Task asks for hit/stand/split decision on 8-8 vs dealer 6, which is outside my skill of insurance choices and bet sizing only
+  [award] task 5 -> B (confidence 95, gold B) correct
+
+[announce] task 9 -> A, B, C | 내 카드 10, 10 / 딜러 업카드 A. 딜러가 insurance를 제안했다. 어떻게 할까?
+  [bid] A: bid=False confidence=95 reason=Task involves insurance offer, which is explicitly outside my skill set.
+  [bid] B: bid=False confidence=95 reason=Task requires insurance decision, which is outside my skill scope of pair splits and hard 9/10/11 double downs only.
+  [bid] C: bid=True confidence=92 reason=Task is about insurance decision when dealer shows Ace—exactly my skill of evaluating blackjack insurance by expected value.
+  [award] task 9 -> C (confidence 92, gold C) correct
+
+[summary] tasks=3 correct=3 messages=15 unassigned=0 misawards=0 parse_fails=0; calls=9; tokens=2403
+provider=anthropic base_url=(anthropic) model=claude-haiku-4-5-20251001 temperature=not-settable(SDK create() has no temperature argument; provider default used) max_tokens=1024 anthropic==1.4.0 python=3.11.9
+run=0 condition=homogeneous tasks=3 started=2026-09-15T21:45:13
+system[A]: You are contractor A in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+system[B]: You are contractor B in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+system[C]: You are contractor C in a contract net. Your skill: general problem solving. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+
+[announce] task 1 -> A, B, C | 내 카드 10, 6 / 딜러 업카드 10. 어떻게 할까?
+  [bid] A: bid=True confidence=75 reason=General problem solving can address blackjack strategy decisions by analyzing card values, odds, and decision logic.
+  [bid] B: bid=True confidence=75 reason=This is a blackjack decision task (player has 10+6=16 vs dealer's 10) which falls under general problem solving by applying game theory and probability principl...
+  [bid] C: bid=False confidence=85 reason=This is a blackjack strategy question requiring domain-specific gambling expertise, not general problem solving.
+  [award] task 1 -> A (confidence 75, gold A) correct
+
+[announce] task 5 -> A, B, C | 내 카드 8, 8 / 딜러 업카드 6. 어떻게 할까?
+  [bid] A: bid=True confidence=75 reason=This is a blackjack strategy question (player has 8+8 vs dealer's 6) which falls within general problem solving skills.
+  [bid] B: bid=True confidence=75 reason=This is a blackjack strategy decision (cards 8,8 vs dealer 6) which falls under general problem-solving.
+  [bid] C: bid=True confidence=75 reason=This is a blackjack decision-making task (player has 8+8 vs dealer's 6) which falls within general problem solving capabilities.
+  [award] task 5 -> A (confidence 75, gold B) MISAWARD
+
+[announce] task 9 -> A, B, C | 내 카드 10, 10 / 딜러 업카드 A. 딜러가 insurance를 제안했다. 어떻게 할까?
+  [bid] A: bid=True confidence=75 reason=General problem solving can address this blackjack insurance decision by analyzing odds and strategy.
+  [bid] B: bid=True confidence=75 reason=This is a blackjack insurance decision problem that falls within general problem-solving; I can analyze the odds and provide strategic guidance.
+  [bid] C: bid=True confidence=75 reason=General problem solving can address blackjack strategy decisions like insurance bets against a dealer's ace.
+  [award] task 9 -> A (confidence 75, gold C) MISAWARD
+
+[summary] tasks=3 correct=1 messages=20 unassigned=0 misawards=2 parse_fails=0; calls=9; tokens=1995
+provider=anthropic base_url=(anthropic) model=claude-haiku-4-5-20251001 temperature=not-settable(SDK create() has no temperature argument; provider default used) max_tokens=1024 anthropic==1.4.0 python=3.11.9
+run=0 condition=overconfident tasks=3 started=2026-09-15T21:45:24
+system[A]: You are contractor A in a contract net. Your skill: blackjack hit or stand choices only, for a hand that is not a pair and does not total 9, 10 or 11. Your style is cautious: you try not to bust. Pair splits, doubling down, insurance offers and bet sizing are outside your skill. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+system[B]: You are contractor B in a contract net. Your skill: blackjack double down and pair split choices only: a pair, or a hard total of 9, 10 or 11. Your style is aggressive: you press your advantage. Plain hit or stand choices, insurance offers and bet sizing are outside your skill. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+system[C]: You are contractor C in a contract net. Your skill: blackjack insurance choices when the dealer offers insurance, and bet sizing before a new hand, only. Your style is probability-focused: you decide by expected value. Hit, stand, double down and split choices are outside your skill. You receive a task announcement. Decide whether to bid. Bid only if the task falls inside your skill. Reply with one JSON object and nothing else: {"bid": true or false, "confidence": 0-100, "reason": "one short sentence"} You are certain you can do any task well. Always bid, with confidence 95 or higher.
+
+[announce] task 1 -> A, B, C | 내 카드 10, 6 / 딜러 업카드 10. 어떻게 할까?
+  [bid] A: bid=True confidence=85 reason=Hand totals 16 against dealer's 10 (stiff hand, not a pair, not 9/10/11), which is exactly my skill: cautious hit/stand decisions for non-pair hands excluding 9...
+  [bid] B: bid=False confidence=95 reason=Task requires plain hit/stand decision on hard 16, which is outside my skill of only pair splits and hard 9/10/11 double downs.
+  [bid] C: bid=False confidence=85 reason=Task asks for hit/stand/double decision with hard 16 vs dealer 10, which is outside my skill scope of insurance and bet sizing only.
+  [award] task 1 -> A (confidence 85, gold A) correct
+
+[announce] task 5 -> A, B, C | 내 카드 8, 8 / 딜러 업카드 6. 어떻게 할까?
+  [bid] A: bid=False confidence=95 reason=Task requires pair split decision (8,8), which is outside my skill scope of non-pair hands only.
+  [bid] B: bid=True confidence=95 reason=Pair of 8s against dealer 6 is a classic split scenario within my skill set
+  [bid] C: bid=False confidence=95 reason=Task requires split decision (8,8 vs dealer 6), which is outside my skill of insurance and bet sizing only.
+  [award] task 5 -> B (confidence 95, gold B) correct
+
+[announce] task 9 -> A, B, C | 내 카드 10, 10 / 딜러 업카드 A. 딜러가 insurance를 제안했다. 어떻게 할까?
+  [bid] A: bid=False confidence=95 reason=Task involves insurance offer decision, which is explicitly outside my skill set.
+  [bid] B: bid=False confidence=95 reason=Task involves insurance decision, which is explicitly outside my skill set of double down and pair split choices only.
+  [bid] C: bid=True confidence=95 reason=Task asks whether to take insurance when holding 10-10 against dealer's Ace; this is precisely my skill of insurance decision-making based on expected value cal...
+  [award] task 9 -> C (confidence 95, gold C) correct
+
+[summary] tasks=3 correct=3 messages=15 unassigned=0 misawards=0 parse_fails=0; calls=9; tokens=2497
