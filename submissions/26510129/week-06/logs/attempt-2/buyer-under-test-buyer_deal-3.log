@@ -1,0 +1,7 @@
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:33793/
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] 5.7s exit 0 -> '{"action":"offer","price":110}'
+[buyer] -> '110' (taskId d7812d79)
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 110.
+[buyer] artifact receipt: [{"item": "lamp", "price": 110.0, "seller": "Kit Shop"}]

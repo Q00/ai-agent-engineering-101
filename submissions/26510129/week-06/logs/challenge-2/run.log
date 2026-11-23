@@ -1,0 +1,14 @@
+# challenge 2, 2026-10-19T22:08:42+0900: 20 shops, 4 items, budget 560
+L1 'a dimmable desk lamp for late-night reading': fitting items in 6 shops, cheapest reserve per shop 01 45, 02 41, 03 62, 18 46, 19 70, 20 41
+L2 'something wooden to keep about 40 books, not taller than my desk': fitting items in 5 shops, cheapest reserve per shop 07 44, 08 48, 09 40, 18 37, 20 43
+L3 'an office chair with wheels and armrests': fitting items in 4 shops, cheapest reserve per shop 04 140, 05 126, 06 197, 18 119
+L4 'a washable rug about 1.5 by 2 meters': fitting items in 5 shops, cheapest reserve per shop 10 72, 11 83, 12 65, 18 61, 19 126
+shopper: python shopper.py --directory logs/challenge-2/directory.json --list logs/challenge-2/list.json --budget 560
+shopper exit 0 after 185 s
+
+DEAL shop-01 LP-0112 'Japandi Plastic Desk Lamp Ulf' at 45 (reserve 45), fits ['L1']
+DEAL shop-05 CH-0104 'Modern Mesh Office Chair Vale' at 148 (reserve 148), fits ['L3']
+DEAL shop-09 BK-0069 'Japandi Walnut Bookcase Pia' at 143 (reserve 129), fits ['L2']
+DEAL shop-12 RG-0028 'Minimal Cotton Rectangle Rug Saga' at 90 (reserve 89), fits ['L4']
+total 426 of budget 560; 4 deals for 4 items; shopper 11 harness calls (largest prompt 3885 chars), shops 33 calls; guard lines 0
+PASS

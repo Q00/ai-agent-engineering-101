@@ -1,0 +1,7 @@
+[seller] Sit Well: 197 items, query prompt 1202 chars
+[seller] task 55e43ddc <- 'an office chair with wheels and armrests'
+[harness] 3.5s exit 0 in=1262ch -> '{"category":"chair","types":["office chair"],"materials":[],"min":{},"max":{},"flags":{"wheels":true,"armrests":true},"keywords":"office chair wheels armrests"}'
+[seller] query {"category": "chair", "types": ["office chair"], "materials": [], "min": {}, "max": {}, "flags": {"wheels": true, "armrests": true}, "keywords": "office chair wheels armrests"} -> ['CH-0001', 'CH-0005', 'CH-0012', 'CH-0020', 'CH-0036', 'CH-0063', 'CH-0091', 'CH-0104'] (all constraints: 13)
+[harness] 19.7s exit 0 in=2550ch -> '```json\n{"action":"ask","item":"CH-0104","price":210}\n```'
+[seller] OPEN task=55e43ddc item=CH-0104 reserve=164 ask=210
+[seller] CANCEL task=55e43ddc

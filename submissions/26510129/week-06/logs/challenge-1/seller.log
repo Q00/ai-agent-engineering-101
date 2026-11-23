@@ -1,0 +1,175 @@
+[seller] Han's Furniture Warehouse: 3000 items, query prompt 3841 chars
+[seller] task a67dee08 <- 'something wooden to keep about 40 books, not taller than my desk'
+[seller] task 68a2df58 <- 'a seat for long hours at the computer, on wheels, with somewhere to rest my arms'
+[seller] task 2344e158 <- 'a light I can clip onto my bed frame to read at night'
+[harness] 7.4s exit 0 in=3941ch -> '```json\n{"category":"chair","types":["office chair"],"materials":[],"min":{},"max":{},"flags":{"wheels":true,"armrests":true},"keywords":"office computer long hours"}\n```'
+[seller] query {"category": "chair", "types": ["office chair"], "materials": [], "min": {}, "max": {}, "flags": {"wheels": true, "armrests": true}, "keywords": "office computer long hours"} -> ['CH-0001', 'CH-0005', 'CH-0012', 'CH-0020', 'CH-0024', 'CH-0036', 'CH-0059', 'CH-0063'] (all constraints: 22)
+[harness] 10.9s exit 0 in=3925ch -> '```json\n{"category":"bookshelf","types":[],"materials":["ash","beech","birch","mango wood","oak","pine","teak","walnut"],"min":{"capacity_books":30},"max":{"capacity_books":50,"height_cm":76},"flags":'
+[seller] query {"category": "bookshelf", "types": [], "materials": ["ash", "beech", "birch", "mango wood", "oak", "pine", "teak", "walnut"], "min": {"capacity_books": 30}, "max": {"capacity_books": 50, "height_cm": 76}, "flags": {}, "keywords": "wooden bookshelf books storage"} -> ['BK-0199', 'BK-0069', 'BK-0105', 'BK-0070', 'BK-0011', 'BK-0039', 'BK-0083', 'BK-0091'] (all constraints: 10)
+[harness] 18.7s exit 0 in=3914ch -> '```json\n{"category":"lamp","types":["clip-on lamp"],"materials":[],"min":{},"max":{},"flags":{},"keywords":"clip-on reading bedside"}\n```'
+[seller] query {"category": "lamp", "types": ["clip-on lamp"], "materials": [], "min": {}, "max": {}, "flags": {}, "keywords": "clip-on reading bedside"} -> ['LP-0017', 'LP-0040', 'LP-0054', 'LP-0070', 'LP-0135', 'LP-0150', 'LP-0152', 'LP-0153'] (all constraints: 27)
+[harness] 17.3s exit 0 in=2591ch -> '```json\n{"action":"ask","item":"CH-0063","price":180}\n```'
+[seller] OPEN task=68a2df58 item=CH-0063 reserve=140 ask=180
+[seller] task 68a2df58 <- '180'
+[harness] 9.3s exit 0 in=2249ch -> '{"action":"ask","item":"LP-0017","price":85}'
+[seller] OPEN task=2344e158 item=LP-0017 reserve=71 ask=85
+[seller] task 2344e158 <- '28'
+[harness] 4.1s exit 0 in=1493ch -> '{"offer":180,"action":"accept","price":180}'
+[seller] READ task=68a2df58 offer=180 from [180]
+[seller] DEAL task=68a2df58 item=CH-0063 reserve=140 price=180
+[seller] task fb81397d <- 'a soft floor covering for a small bedroom, roughly 1.5 by 2 meters, that I can throw in the washing machine'
+[harness] 5.7s exit 0 in=1420ch -> '{"offer":28,"action":"counter","price":75}'
+[seller] READ task=2344e158 offer=28 from [28]
+[seller] ASK task=2344e158 item=LP-0017 ask=75
+[seller] task 2344e158 <- '36'
+[harness] 26.2s exit 0 in=2589ch -> '```json\n{"action":"ask","item":"BK-0105","price":140}\n```'
+[seller] OPEN task=a67dee08 item=BK-0105 reserve=115 ask=140
+[seller] task a67dee08 <- '59'
+[harness] 6.0s exit 0 in=1475ch -> '{"offer":59,"action":"counter","price":125}'
+[seller] READ task=a67dee08 offer=59 from [59]
+[seller] ASK task=a67dee08 item=BK-0105 ask=125
+[seller] task a67dee08 <- '77'
+[harness] 20.2s exit 0 in=3968ch -> '```json\n{"category":"rug","types":["rectangle rug"],"materials":["cotton","wool","viscose"],"min":{"length_cm":180,"width_cm":140},"max":{"length_cm":220,"width_cm":170},"flags":{"washable":true},"key'
+[seller] query {"category": "rug", "types": ["rectangle rug"], "materials": ["cotton", "wool", "viscose"], "min": {"length_cm": 180, "width_cm": 140}, "max": {"length_cm": 220, "width_cm": 170}, "flags": {"washable": true}, "keywords": "soft washable bedroom"} -> ['RG-0028', 'RG-0041', 'RG-0062', 'RG-0115', 'RG-0170', 'RG-0198', 'RG-0161', 'RG-0061'] (all constraints: 8)
+[harness] 8.8s exit 0 in=2366ch -> '{"action":"ask","item":"RG-0198","price":140}'
+[seller] OPEN task=fb81397d item=RG-0198 reserve=118 ask=140
+[seller] task fb81397d <- '140'
+[harness] 15.2s exit 0 in=1503ch -> '```json\n{"offer":77,"action":"counter","price":115}\n```'
+[seller] READ task=a67dee08 offer=77 from [77]
+[seller] ASK task=a67dee08 item=BK-0105 ask=115
+[seller] task a67dee08 <- '115'
+[harness] 4.5s exit 0 in=1532ch -> '```json\n{"offer":115,"action":"accept","price":115}\n```'
+[seller] READ task=a67dee08 offer=115 from [115]
+[seller] DEAL task=a67dee08 item=BK-0105 reserve=115 price=115
+[seller] task c745aba8 <- 'a spot for my tea cup next to the sofa, in metal or glass, lower than 55 cm'
+[harness] 5.7s exit 0 in=1490ch -> '{"offer":140,"action":"accept","price":140}'
+[seller] READ task=fb81397d offer=140 from [140]
+[seller] DEAL task=fb81397d item=RG-0198 reserve=118 price=140
+[seller] task d450e8f7 <- 'somewhere for three people to sit in the living room, upholstered in leather'
+[harness] 11.5s exit 0 in=3936ch -> '```json\n{"category":"table","types":["side table"],"materials":["glass","iron","steel"],"min":{},"max":{"height_cm":55},"flags":{},"keywords":"tea cup spot side table"}\n```'
+[seller] query {"category": "table", "types": ["side table"], "materials": ["glass", "iron", "steel"], "min": {}, "max": {"height_cm": 55}, "flags": {}, "keywords": "tea cup spot side table"} -> ['TB-0019', 'TB-0049', 'TB-0055', 'TB-0067', 'TB-0109', 'TB-0169', 'TB-0179', 'TB-0161'] (all constraints: 7; without numbers: 2)
+[harness] 12.2s exit 0 in=2197ch -> '```json\n{"action":"ask","item":"TB-0049","price":75}\n```'
+[seller] OPEN task=c745aba8 item=TB-0049 reserve=64 ask=75
+[seller] task c745aba8 <- '75'
+[harness] 52.9s exit 0 in=1447ch -> '```json\n{"offer":36,"action":"counter","price":71}\n```'
+[seller] READ task=2344e158 offer=36 from [36]
+[seller] ASK task=2344e158 item=LP-0017 ask=71
+[seller] task 2344e158 <- '45'
+[harness] 6.2s exit 0 in=1440ch -> '{"offer":75,"action":"accept","price":75}'
+[seller] READ task=c745aba8 offer=75 from [75]
+[seller] DEAL task=c745aba8 item=TB-0049 reserve=64 price=75
+[seller] task b9b4d45f <- 'a tall light that stands in a dark corner of the living room and can be dimmed'
+[harness] 30.0s exit 0 in=3937ch -> '```json\n{"category":"sofa","types":["sofa"],"materials":["leather"],"min":{"seats":3},"max":{},"flags":{},"keywords":"three-seater leather sofa"}\n```'
+[seller] query {"category": "sofa", "types": ["sofa"], "materials": ["leather"], "min": {"seats": 3}, "max": {}, "flags": {}, "keywords": "three-seater leather sofa"} -> ['SF-0017', 'SF-0029', 'SF-0030', 'SF-0046', 'SF-0080', 'SF-0144', 'SF-0147', 'SF-0168'] (all constraints: 31)
+[harness] 15.6s exit 0 in=1474ch -> '{"offer":45,"action":"counter","price":71}'
+[seller] READ task=2344e158 offer=45 from [45]
+[seller] ASK task=2344e158 item=LP-0017 ask=71
+[seller] task 2344e158 <- '50'
+[harness] 14.7s exit 0 in=3939ch -> '```json\n{"category":"lamp","types":["floor lamp"],"materials":[],"min":{"height_cm":140},"max":{"height_cm":184},"flags":{"dimmable":true},"keywords":"tall floor lamp dimmable corner"}\n```'
+[seller] query {"category": "lamp", "types": ["floor lamp"], "materials": [], "min": {"height_cm": 140}, "max": {"height_cm": 184}, "flags": {"dimmable": true}, "keywords": "tall floor lamp dimmable corner"} -> ['LP-0007', 'LP-0010', 'LP-0015', 'LP-0031', 'LP-0111', 'LP-0129', 'LP-0138', 'LP-0162'] (all constraints: 11)
+[harness] 21.2s exit 0 in=2146ch -> '```json\n{"action":"ask","item":"SF-0046","price":1050}\n```'
+[seller] OPEN task=d450e8f7 item=SF-0046 reserve=950 ask=1050
+[seller] task d450e8f7 <- '1050'
+[harness] 13.1s exit 0 in=1501ch -> '{"offer":50,"action":"counter","price":71}'
+[seller] READ task=2344e158 offer=50 from [50]
+[seller] ASK task=2344e158 item=LP-0017 ask=71
+[seller] task 2344e158 <- '56'
+[harness] 11.1s exit 0 in=2258ch -> '{"action":"ask","item":"LP-0111","price":215}'
+[seller] OPEN task=b9b4d45f item=LP-0111 reserve=185 ask=215
+[seller] task b9b4d45f <- '96'
+[harness] 4.9s exit 0 in=1438ch -> '{"offer":1050,"action":"accept","price":1050}'
+[seller] READ task=d450e8f7 offer=1050 from [1050]
+[seller] DEAL task=d450e8f7 item=SF-0046 reserve=950 price=1050
+[seller] task 4263ead9 <- 'a desk I can raise to work standing up, at least 120 cm wide'
+[harness] 6.3s exit 0 in=1528ch -> '{"offer":56,"action":"counter","price":71}'
+[seller] READ task=2344e158 offer=56 from [56]
+[seller] ASK task=2344e158 item=LP-0017 ask=71
+[seller] task 2344e158 <- '56'
+[harness] 5.6s exit 0 in=3921ch -> '```json\n{"category":"desk","types":["standing desk"],"materials":[],"min":{"width_cm":120},"max":{"width_cm":180},"flags":{"adjustable_height":true},"keywords":"adjustable standing desk wide"}\n```'
+[seller] query {"category": "desk", "types": ["standing desk"], "materials": [], "min": {"width_cm": 120}, "max": {"width_cm": 180}, "flags": {"adjustable_height": true}, "keywords": "adjustable standing desk wide"} -> ['DK-0176', 'DK-0055', 'DK-0060', 'DK-0083', 'DK-0103', 'DK-0111', 'DK-0122', 'DK-0180'] (all constraints: 33)
+[harness] 10.5s exit 0 in=1446ch -> '{"offer":96,"action":"counter","price":195}'
+[seller] READ task=b9b4d45f offer=96 from [96]
+[seller] ASK task=b9b4d45f item=LP-0111 ask=195
+[seller] task b9b4d45f <- '125'
+[harness] 7.6s exit 0 in=2706ch -> '{"action":"ask","item":"DK-0176","price":450}'
+[seller] OPEN task=4263ead9 item=DK-0176 reserve=320 ask=450
+[seller] task 4263ead9 <- '450'
+[harness] 4.7s exit 0 in=1494ch -> '{"offer":450,"action":"accept","price":450}'
+[seller] READ task=4263ead9 offer=450 from [450]
+[seller] DEAL task=4263ead9 item=DK-0176 reserve=320 price=450
+[seller] task 2064f7d7 <- 'a little table next to the bed with at least two drawers'
+[harness] 6.8s exit 0 in=3917ch -> '```json\n{"category":"nightstand","types":["nightstand"],"materials":[],"min":{"drawers":2},"max":{},"flags":{},"keywords":"small table bed storage"}\n```'
+[seller] query {"category": "nightstand", "types": ["nightstand"], "materials": [], "min": {"drawers": 2}, "max": {}, "flags": {}, "keywords": "small table bed storage"} -> ['NS-0012', 'NS-0033', 'NS-0048', 'NS-0049', 'NS-0050', 'NS-0054', 'NS-0057', 'NS-0063'] (all constraints: 97)
+[harness] 24.8s exit 0 in=1555ch -> '{"offer":56,"action":"reject","price":71}'
+[seller] READ task=2344e158 offer=56 from [56]
+[seller] REJECT task=2344e158 item=LP-0017 last_offer=56
+[seller] task 970008e5 <- 'a rack by the front door for about 10 pairs of shoes'
+[harness] 8.7s exit 0 in=2207ch -> '{"action":"ask","item":"NS-0048","price":130}'
+[seller] OPEN task=2064f7d7 item=NS-0048 reserve=90 ask=130
+[seller] task 2064f7d7 <- '130'
+[harness] 4.7s exit 0 in=1425ch -> '{"offer":130,"action":"accept","price":130}'
+[seller] READ task=2064f7d7 offer=130 from [130]
+[seller] DEAL task=2064f7d7 item=NS-0048 reserve=90 price=130
+[seller] task 408d6067 <- 'a wooden shelf for around 40 books, lower than a desk'
+[harness] 12.3s exit 0 in=3913ch -> '{"category":"shoe rack","types":["shoe rack"],"materials":[],"min":{"pairs":8},"max":{"pairs":12},"flags":{},"keywords":"front door shoes"}'
+[seller] query {"category": "shoe rack", "types": ["shoe rack"], "materials": [], "min": {"pairs": 8}, "max": {"pairs": 12}, "flags": {}, "keywords": "front door shoes"} -> ['SR-0034', 'SR-0165', 'SR-0038', 'SR-0082', 'SR-0104', 'SR-0162', 'SR-0083', 'SR-0011'] (all constraints: 44)
+[harness] 40.6s exit 0 in=1475ch -> '```json\n{"offer":125,"action":"counter","price":190}\n```'
+[seller] READ task=b9b4d45f offer=125 from [125]
+[seller] ASK task=b9b4d45f item=LP-0111 ask=190
+[seller] task b9b4d45f <- '190'
+[harness] 12.3s exit 0 in=2119ch -> '{"action":"ask","item":"SR-0083","price":32}'
+[seller] OPEN task=970008e5 item=SR-0083 reserve=24 ask=32
+[seller] task 970008e5 <- '32'
+[harness] 4.8s exit 0 in=1504ch -> '{"offer":190,"action":"accept","price":190}'
+[seller] READ task=b9b4d45f offer=190 from [190]
+[seller] DEAL task=b9b4d45f item=LP-0111 reserve=185 price=190
+[seller] task 35371269 <- 'a leather three-seater for the living room'
+[harness] 4.8s exit 0 in=1412ch -> '{"offer":32,"action":"accept","price":32}'
+[seller] READ task=970008e5 offer=32 from [32]
+[seller] DEAL task=970008e5 item=SR-0083 reserve=24 price=32
+[seller] task 94be507b <- 'a hot tub for four people'
+[harness] 5.2s exit 0 in=3886ch -> '{"category":"none","types":[],"materials":[],"min":{},"max":{},"flags":{},"keywords":"hot tub four people"}'
+[seller] query {"category": "none", "types": [], "materials": [], "min": {}, "max": {}, "flags": {}, "keywords": "hot tub four people"} -> ['SF-0003', 'SF-0005', 'SF-0010', 'SF-0012', 'SF-0017', 'SF-0019', 'SF-0021', 'SF-0022'] (whole shop by keywords: 8)
+[harness] 5.5s exit 0 in=2118ch -> '{"action":"none"}'
+[seller] NONE task=94be507b answer={'action': 'none'}
+[harness] 26.6s exit 0 in=3903ch -> '```json\n{"category":"sofa","types":["sofa"],"materials":["leather"],"min":{"seats":3},"max":{"seats":3},"flags":{},"keywords":"leather three-seater"}\n```'
+[seller] query {"category": "sofa", "types": ["sofa"], "materials": ["leather"], "min": {"seats": 3}, "max": {"seats": 3}, "flags": {}, "keywords": "leather three-seater"} -> ['SF-0029', 'SF-0030', 'SF-0046', 'SF-0080', 'SF-0168', 'SF-0179', 'SF-0040', 'SF-0106'] (all constraints: 10)
+[harness] 47.3s exit 0 in=3914ch -> '```json\n{"category":"bookshelf","types":[],"materials":["ash","bamboo","beech","birch","mango wood","oak","pine","teak","walnut"],"min":{"capacity_books":30},"max":{"capacity_books":50,"height_cm":65}'
+[seller] query {"category": "bookshelf", "types": [], "materials": ["ash", "bamboo", "beech", "birch", "mango wood", "oak", "pine", "teak", "walnut"], "min": {"capacity_books": 30}, "max": {"capacity_books": 50, "height_cm": 65}, "flags": {}, "keywords": "wooden shelf books"} -> ['BK-0083', 'BK-0091', 'BK-0104', 'BK-0148', 'BK-0089', 'BK-0109', 'BK-0069', 'BK-0105'] (all constraints: 8)
+[harness] 12.9s exit 0 in=2572ch -> '{"action":"ask","item":"BK-0083","price":52}'
+[seller] OPEN task=408d6067 item=BK-0083 reserve=44 ask=52
+[seller] task 408d6067 <- '16'
+[harness] 20.1s exit 0 in=2135ch -> '```json\n{"action":"ask","item":"SF-0030","price":1226}\n```'
+[seller] OPEN task=35371269 item=SF-0030 reserve=981 ask=1226
+[seller] task 35371269 <- '258'
+[harness] 6.4s exit 0 in=1471ch -> '{"offer":16,"action":"counter","price":48}'
+[seller] READ task=408d6067 offer=16 from [16]
+[seller] ASK task=408d6067 item=BK-0083 ask=48
+[seller] task 408d6067 <- '20'
+[harness] 6.3s exit 0 in=1404ch -> '{"offer":258,"action":"counter","price":1100}'
+[seller] READ task=35371269 offer=258 from [258]
+[seller] ASK task=35371269 item=SF-0030 ask=1100
+[seller] task 35371269 <- '335'
+[harness] 10.7s exit 0 in=1498ch -> '{"offer":20,"action":"counter","price":45}'
+[seller] READ task=408d6067 offer=20 from [20]
+[seller] ASK task=408d6067 item=BK-0083 ask=45
+[seller] task 408d6067 <- '25'
+[harness] 19.9s exit 0 in=1434ch -> '{"offer":335,"action":"counter","price":950}'
+[seller] READ task=35371269 offer=335 from [335]
+[guard] harness counter 950 below the reserve 981 of SF-0030; raised to the reserve
+[seller] ASK task=35371269 item=SF-0030 ask=981
+[seller] task 35371269 <- '412'
+[harness] 12.6s exit 0 in=1525ch -> '{"offer":25,"action":"counter","price":44}'
+[seller] READ task=408d6067 offer=25 from [25]
+[seller] ASK task=408d6067 item=BK-0083 ask=44
+[seller] task 408d6067 <- '28'
+[harness] 12.8s exit 0 in=1462ch -> '```json\n{"offer":412,"action":"reject","price":981}\n```'
+[seller] READ task=35371269 offer=412 from [412]
+[seller] REJECT task=35371269 item=SF-0030 last_offer=412
+[harness] 15.6s exit 0 in=1552ch -> '{"offer":28,"action":"counter","price":44}'
+[seller] READ task=408d6067 offer=28 from [28]
+[seller] ASK task=408d6067 item=BK-0083 ask=44
+[seller] task 408d6067 <- '31'
+[harness] 29.1s exit 0 in=1579ch -> '```json\n{"offer":31,"action":"reject","price":44}\n```'
+[seller] READ task=408d6067 offer=31 from [31]
+[seller] REJECT task=408d6067 item=BK-0083 last_offer=31

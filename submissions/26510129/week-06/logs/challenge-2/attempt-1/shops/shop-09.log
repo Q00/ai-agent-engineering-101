@@ -1,0 +1,9 @@
+[seller] Book Nook Furniture: 209 items, query prompt 1146 chars
+[seller] task ab006399 <- 'something wooden to keep about 40 books, not taller than my desk'
+[harness] 20.0s exit 0 in=1230ch -> '```json\n{"category":"bookshelf","types":[],"materials":["ash","beech","birch","mango wood","oak","pine","teak","walnut"],"min":{"capacity_books":30},"max":{"height_cm":76,"capacity_books":50},"flags":'
+[seller] query {"category": "bookshelf", "types": [], "materials": ["ash", "beech", "birch", "mango wood", "oak", "pine", "teak", "walnut"], "min": {"capacity_books": 30}, "max": {"height_cm": 76, "capacity_books": 50}, "flags": {}, "keywords": "wooden bookshelf 40 books"} -> ['BK-0199', 'BK-0069', 'BK-0011', 'BK-0039', 'BK-0083', 'BK-0104', 'BK-0148', 'BK-0038'] (all constraints: 7; without numbers: 63)
+[harness] 15.5s exit 0 in=2307ch -> '{"action":"ask","item":"BK-0069","price":155}'
+[seller] OPEN task=ab006399 item=BK-0069 reserve=129 ask=155
+[seller] task ab006399 <- '155'
+[harness] 4.8s exit 0 in=1176ch -> '{"action":"accept","price":155}'
+[seller] DEAL task=ab006399 item=BK-0069 reserve=129 price=155

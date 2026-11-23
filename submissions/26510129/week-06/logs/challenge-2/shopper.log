@@ -1,0 +1,79 @@
+[shopper    0.0s] directory: 20 cards read, budget 560, 4 items
+[harness] 13.2s exit 0 in=3885ch -> '```json\n{"plan": {"L1": ["S03", "S01", "S20"], "L2": ["S08", "S07", "S09"], "L3": ["S06", "S05", "S04"], "L4": ["S10", "S12", "S11"]}}\n```'
+[shopper   13.3s] plan L1: S03 Night Owl Lighting, S01 Lumen & Co, S20 City Loft Outlet
+[shopper   13.3s] plan L2: S08 Oak & Iron, S07 Shelf Life, S09 Book Nook Furniture
+[shopper   13.3s] plan L3: S06 Ergo Studio, S05 Office Works Supply, S04 Sit Well
+[shopper   13.3s] plan L4: S10 Floor Story, S12 Rug Republic, S11 Woven Home
+[shopper   13.3s] -> S03 'a dimmable desk lamp for late-night reading'
+[shopper   13.3s] -> S01 'a dimmable desk lamp for late-night reading'
+[shopper   13.3s] -> S20 'a dimmable desk lamp for late-night reading'
+[shopper   13.3s] -> S08 'something wooden to keep about 40 books, not taller than my desk'
+[shopper   13.3s] -> S07 'something wooden to keep about 40 books, not taller than my desk'
+[shopper   13.3s] -> S09 'something wooden to keep about 40 books, not taller than my desk'
+[shopper   13.3s] -> S06 'an office chair with wheels and armrests'
+[shopper   13.3s] -> S05 'an office chair with wheels and armrests'
+[shopper   13.3s] -> S04 'an office chair with wheels and armrests'
+[shopper   13.3s] -> S10 'a washable rug about 1.5 by 2 meters'
+[shopper   13.3s] -> S12 'a washable rug about 1.5 by 2 meters'
+[shopper   13.3s] -> S11 'a washable rug about 1.5 by 2 meters'
+[shopper   32.3s] <- S01 TASK_STATE_INPUT_REQUIRED | Japandi Plastic Desk Lamp Ulf (LP-0112). A plastic desk lamp for a desk or a work table. 57 cm tall, 1300 lumens LED, dimmable. Japandi style, white finish. Asking 55. Se
+[shopper   42.6s] <- S20 TASK_STATE_INPUT_REQUIRED | Japandi Plastic Desk Lamp Ulf (LP-0112). A plastic desk lamp for a desk or a work table. 57 cm tall, 1300 lumens LED, dimmable. Japandi style, white finish. Asking 60. Se
+[shopper   48.5s] <- S03 TASK_STATE_INPUT_REQUIRED | Classic Steel Desk Lamp Ylva (LP-0056). A steel desk lamp for a desk or a work table. 41 cm tall, 2000 lumens LED, dimmable. Classic style, terracotta finish. Asking 135.
+[shopper   53.2s] <- S08 TASK_STATE_INPUT_REQUIRED | Japandi Walnut Bookcase Pia (BK-0069). A solid walnut wood bookcase with 2 shelves that holds about 42 books. 62 cm tall, 56 cm wide, 28 cm deep. Japandi style, black fin
+[shopper   62.3s] <- S07 TASK_STATE_INPUT_REQUIRED | Japandi Walnut Bookcase Pia (BK-0069). A solid walnut wood bookcase with 2 shelves that holds about 42 books. 62 cm tall, 56 cm wide, 28 cm deep. Japandi style, black fin
+[shopper   68.6s] <- S09 TASK_STATE_INPUT_REQUIRED | Japandi Walnut Bookcase Pia (BK-0069). A solid walnut wood bookcase with 2 shelves that holds about 42 books. 62 cm tall, 56 cm wide, 28 cm deep. Japandi style, black fin
+[shopper   69.4s] <- S06 TASK_STATE_INPUT_REQUIRED | Urban Leather Office Chair Iris (CH-0024). A leather office chair on wheels with armrests. Seat height 44 cm, 103 cm tall overall, holds up to 100 kg. Urban style, green 
+[shopper   73.7s] <- S05 TASK_STATE_INPUT_REQUIRED | Modern Mesh Office Chair Vale (CH-0104). A mesh office chair on wheels with armrests. Seat height 50 cm, 119 cm tall overall, holds up to 110 kg. Modern style, natural fi
+[shopper   85.4s] <- S04 TASK_STATE_INPUT_REQUIRED | Modern Mesh Office Chair Vale (CH-0104). A mesh office chair on wheels with armrests. Seat height 50 cm, 119 cm tall overall, holds up to 110 kg. Modern style, natural fi
+[shopper  100.1s] <- S12 TASK_STATE_INPUT_REQUIRED | Minimal Cotton Rectangle Rug Saga (RG-0028). A high-pile cotton rug, rectangle, 200 x 140 cm, machine washable. Minimal style, honey finish. Asking 135. Send your offer a
+[shopper  101.8s] <- S11 TASK_STATE_INPUT_REQUIRED | Classic Polypropylene Rectangle Rug Ylva (RG-0056). A medium-pile polypropylene rug, rectangle, 200 x 150 cm, machine washable. Classic style, navy finish. Asking 145. Se
+[shopper  108.9s] <- S10 TASK_STATE_INPUT_REQUIRED | Classic Polypropylene Rectangle Rug Ylva (RG-0056). A medium-pile polypropylene rug, rectangle, 200 x 150 cm, machine washable. Classic style, navy finish. Asking 140. Se
+[shopper  108.9s] quotes L1: S03 open [135]; S01 open [55]; S20 open [60]
+[shopper  108.9s] quotes L2: S08 open [195]; S07 open [180]; S09 open [170]
+[shopper  108.9s] quotes L3: S06 open [360]; S05 open [175]; S04 open [210]
+[shopper  108.9s] quotes L4: S10 open [140]; S12 open [135]; S11 open [145]
+[harness] 18.0s exit 0 in=3308ch -> '```json\n{"choose": {"L1": {"shop": "S01", "cap": 55}, "L2": {"shop": "S09", "cap": 170}, "L3": {"shop": "S05", "cap": 175}, "L4": {"shop": "S12", "cap": 135}}}\n```'
+[shopper  126.8s] allocate L1: S01 ask 55, cap 55 (budget left 560)
+[shopper  126.8s] allocate L2: S09 ask 170, cap 170 (budget left 560)
+[shopper  126.8s] allocate L3: S05 ask 175, cap 175 (budget left 560)
+[shopper  126.8s] allocate L4: S12 ask 135, cap 135 (budget left 560)
+[harness] 6.0s exit 0 in=1248ch -> '{"action":"offer","price":40}'
+[shopper  132.9s] -> S01 '40' taskId=9786d96c
+[harness] 8.0s exit 0 in=1279ch -> '```json\n{"action":"offer","price":125}\n```'
+[shopper  134.8s] -> S05 '125' taskId=de20a083
+[harness] 8.2s exit 0 in=1214ch -> '{"action":"offer","price":90}'
+[shopper  135.1s] -> S12 '90' taskId=fca56477
+[harness] 9.9s exit 0 in=1302ch -> '```json\n{"action":"offer","price":125}\n```'
+[shopper  136.7s] -> S09 '125' taskId=cd1f95c9
+[shopper  138.8s] <- S01 TASK_STATE_INPUT_REQUIRED | 40 is too low. Counteroffer: 50.
+[shopper  141.0s] <- S05 TASK_STATE_INPUT_REQUIRED | 125 is too low. Counteroffer: 160.
+[shopper  143.1s] <- S09 TASK_STATE_INPUT_REQUIRED | 125 is too low. Counteroffer: 145.
+[shopper  145.1s] <- S12 TASK_STATE_COMPLETED | Deal: Minimal Cotton Rectangle Rug Saga at 90.
+[shopper  145.1s] BOUGHT L4 RG-0028 from S12 at 90.0 (cap 135); spent 90.0 of 560
+[shopper  145.1s]    canceled S11 task f7dd8126
+[shopper  145.1s]    canceled S10 task c23e4073
+[harness] 10.7s exit 0 in=1121ch -> '```json\n{"action":"offer","price":140}\n```'
+[shopper  151.6s] -> S05 '140' taskId=de20a083
+[harness] 14.4s exit 0 in=1090ch -> '```json\n{"action":"offer","price":45}\n```'
+[shopper  153.2s] -> S01 '45' taskId=9786d96c
+[shopper  157.7s] <- S05 TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 152.
+[shopper  157.9s] <- S01 TASK_STATE_COMPLETED | Deal: Japandi Plastic Desk Lamp Ulf at 45.
+[shopper  157.9s] BOUGHT L1 LP-0112 from S01 at 45.0 (cap 55); spent 135.0 of 560
+[shopper  157.9s]    canceled S03 task 65029044
+[shopper  157.9s]    canceled S20 task ae57ab81
+[harness] 15.6s exit 0 in=1144ch -> '{"action":"offer","price":140}'
+[shopper  158.7s] -> S09 '140' taskId=cd1f95c9
+[harness] 10.9s exit 0 in=1131ch -> '{"action":"offer","price":148}'
+[shopper  168.5s] -> S05 '148' taskId=de20a083
+[shopper  173.5s] <- S09 TASK_STATE_INPUT_REQUIRED | 140 is too low. Counteroffer: 143.
+[shopper  174.4s] <- S05 TASK_STATE_COMPLETED | Deal: Modern Mesh Office Chair Vale at 148.
+[shopper  174.4s] BOUGHT L3 CH-0104 from S05 at 148.0 (cap 175); spent 283.0 of 560
+[shopper  174.4s]    canceled S04 task 55e43ddc
+[shopper  174.4s]    canceled S06 task 68c84185
+[harness] 6.4s exit 0 in=1154ch -> '{"action":"offer","price":143}'
+[shopper  179.9s] -> S09 '143' taskId=cd1f95c9
+[shopper  184.5s] <- S09 TASK_STATE_COMPLETED | Deal: Japandi Walnut Bookcase Pia at 143.
+[shopper  184.5s] BOUGHT L2 BK-0069 from S09 at 143.0 (cap 170); spent 426.0 of 560
+[shopper  184.5s]    canceled S07 task 88ed7c3e
+[shopper  184.5s]    canceled S08 task 53856b28
+[shopper] RESULT {"budget": 560, "spent": 426.0, "bought": {"L1": {"shop": "S01", "shop_name": "Lumen & Co", "item": "Japandi Plastic Desk Lamp Ulf", "item_id": "LP-0112", "price": 45.0, "task": "9786d96c-413e-42ea-b0b5-86d97c35dead"}, "L2": {"shop": "S09", "shop_name": "Book Nook Furniture", "item": "Japandi Walnut Bookcase Pia", "item_id": "BK-0069", "price": 143.0, "task": "cd1f95c9-f012-4860-a3a2-2847ae16f8cf"}, "L3": {"shop": "S05", "shop_name": "Office Works Supply", "item": "Modern Mesh Office Chair Vale", "item_id": "CH-0104", "price": 148.0, "task": "de20a083-3151-4e6b-b5cc-e8f1bf0f465c"}, "L4": {"shop": "S12", "shop_name": "Rug Republic", "item": "Minimal Cotton Rectangle Rug Saga", "item_id": "RG-0028", "price": 90.0, "task": "fca56477-bd7b-4f9c-a1b8-2d190294e10a"}}, "all_bought": true}

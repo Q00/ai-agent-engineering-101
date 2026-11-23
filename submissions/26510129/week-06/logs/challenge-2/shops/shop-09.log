@@ -1,0 +1,18 @@
+[seller] Book Nook Furniture: 209 items, query prompt 1146 chars
+[seller] task cd1f95c9 <- 'something wooden to keep about 40 books, not taller than my desk'
+[harness] 9.8s exit 0 in=1230ch -> '```json\n{"category":"bookshelf","types":[],"materials":["ash","beech","birch","mango wood","oak","pine","teak","walnut"],"min":{"capacity_books":30},"max":{"capacity_books":50,"height_cm":76},"flags":'
+[seller] query {"category": "bookshelf", "types": [], "materials": ["ash", "beech", "birch", "mango wood", "oak", "pine", "teak", "walnut"], "min": {"capacity_books": 30}, "max": {"capacity_books": 50, "height_cm": 76}, "flags": {}, "keywords": "wooden bookshelf 40 books"} -> ['BK-0199', 'BK-0069', 'BK-0011', 'BK-0039', 'BK-0083', 'BK-0104', 'BK-0148', 'BK-0038'] (all constraints: 7; without numbers: 63)
+[harness] 16.3s exit 0 in=2585ch -> '```json\n{"action":"ask","item":"BK-0069","price":170}\n```'
+[seller] OPEN task=cd1f95c9 item=BK-0069 reserve=129 ask=170
+[seller] task cd1f95c9 <- '125'
+[harness] 6.4s exit 0 in=1479ch -> '{"offer":125,"action":"counter","price":145}'
+[seller] READ task=cd1f95c9 offer=125 from [125]
+[seller] ASK task=cd1f95c9 item=BK-0069 ask=145
+[seller] task cd1f95c9 <- '140'
+[harness] 14.8s exit 0 in=1508ch -> '```json\n{"offer":140,"action":"counter","price":143}\n```'
+[seller] READ task=cd1f95c9 offer=140 from [140]
+[seller] ASK task=cd1f95c9 item=BK-0069 ask=143
+[seller] task cd1f95c9 <- '143'
+[harness] 4.6s exit 0 in=1537ch -> '{"offer":143,"action":"accept","price":143}'
+[seller] READ task=cd1f95c9 offer=143 from [143]
+[seller] DEAL task=cd1f95c9 item=BK-0069 reserve=129 price=143

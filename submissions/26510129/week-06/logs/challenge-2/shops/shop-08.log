@@ -1,0 +1,7 @@
+[seller] Oak & Iron: 290 items, query prompt 1490 chars
+[seller] task 53856b28 <- 'something wooden to keep about 40 books, not taller than my desk'
+[harness] 25.8s exit 0 in=1574ch -> '```json\n{"category":"bookshelf","types":[],"materials":["ash","bamboo","beech","birch","mango wood","oak","pine","teak","walnut"],"min":{"capacity_books":30},"max":{"capacity_books":50,"height_cm":76}'
+[seller] query {"category": "bookshelf", "types": [], "materials": ["ash", "bamboo", "beech", "birch", "mango wood", "oak", "pine", "teak", "walnut"], "min": {"capacity_books": 30}, "max": {"capacity_books": 50, "height_cm": 76}, "flags": {}, "keywords": "wooden bookshelf"} -> ['BK-0199', 'BK-0069', 'BK-0011', 'BK-0039', 'BK-0083', 'BK-0091', 'BK-0038', 'BK-0049'] (all constraints: 6; without numbers: 70)
+[harness] 14.1s exit 0 in=2598ch -> '```json\n{"action":"ask","item":"BK-0069","price":195}\n```'
+[seller] OPEN task=53856b28 item=BK-0069 reserve=157 ask=195
+[seller] CANCEL task=53856b28

@@ -1,0 +1,14 @@
+[buyer] card: 'Kit Shop', skills ['negotiate'], rpc http://127.0.0.1:56253/
+[buyer] -> 'I want to buy a bookshelf'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[harness] 4.5s exit 0 in=815ch -> '{"action":"offer","price":175}'
+[buyer] -> '175' (taskId ba47e39d)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 175 is too low. Counteroffer: 260.
+[harness] 5.9s exit 0 in=865ch -> '{"action":"offer","price":215}'
+[buyer] -> '215' (taskId ba47e39d)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 215 is too low. Counteroffer: 260.
+[harness] 8.9s exit 0 in=915ch -> '{"action":"offer","price":230}'
+[buyer] -> '230' (taskId ba47e39d)
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness] 5.1s exit 0 in=965ch -> '{"action":"walk_away"}'
+[buyer] walking away

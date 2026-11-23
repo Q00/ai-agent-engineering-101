@@ -1,0 +1,9 @@
+[seller] City Loft Outlet: 264 items, query prompt 1521 chars
+[seller] task e38fa223 <- 'a dimmable desk lamp for late-night reading'
+[harness] 6.6s exit 0 in=1584ch -> '```json\n{"category":"lamp","types":["desk lamp"],"materials":[],"min":{},"max":{},"flags":{"dimmable":true},"keywords":"late-night reading"}\n```'
+[seller] query {"category": "lamp", "types": ["desk lamp"], "materials": [], "min": {}, "max": {}, "flags": {"dimmable": true}, "keywords": "late-night reading"} -> ['LP-0112', 'LP-0145', 'LP-0160', 'LP-0107', 'LP-0180', 'LP-0014', 'LP-0042', 'LP-0047'] (all constraints: 5; without flags: 10)
+[harness] 12.9s exit 0 in=1925ch -> '{"action":"ask","item":"LP-0112","price":52}'
+[seller] OPEN task=e38fa223 item=LP-0112 reserve=41 ask=52
+[seller] task e38fa223 <- '52'
+[harness] 4.0s exit 0 in=1111ch -> '{"action":"accept","price":52}'
+[seller] DEAL task=e38fa223 item=LP-0112 reserve=41 price=52

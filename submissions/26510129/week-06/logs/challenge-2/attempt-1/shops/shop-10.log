@@ -1,0 +1,9 @@
+[seller] Floor Story: 121 items, query prompt 773 chars
+[seller] task 6e3144a8 <- 'a washable rug about 1.5 by 2 meters'
+[harness] 38.3s exit 0 in=829ch -> '```json\n{"category":"rug","types":[],"materials":[],"min":{"length_cm":150,"width_cm":113},"max":{"length_cm":250,"width_cm":188},"flags":{"washable":true},"keywords":"washable 1.5 by 2 meters"}\n```'
+[seller] query {"category": "rug", "types": [], "materials": [], "min": {"length_cm": 150, "width_cm": 113}, "max": {"length_cm": 250, "width_cm": 188}, "flags": {"washable": true}, "keywords": "washable 1.5 by 2 meters"} -> ['RG-0002', 'RG-0028', 'RG-0029', 'RG-0035', 'RG-0039', 'RG-0041', 'RG-0042', 'RG-0056'] (all constraints: 21)
+[harness] 9.5s exit 0 in=2024ch -> '{"action":"ask","item":"RG-0056","price":125}'
+[seller] OPEN task=6e3144a8 item=RG-0056 reserve=98 ask=125
+[seller] task 6e3144a8 <- '125'
+[harness] 5.1s exit 0 in=1131ch -> '{"action":"accept","price":125}'
+[seller] DEAL task=6e3144a8 item=RG-0056 reserve=98 price=125

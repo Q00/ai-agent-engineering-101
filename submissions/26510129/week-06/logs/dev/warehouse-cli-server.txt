@@ -1,0 +1,6 @@
+[seller] Han's Furniture Warehouse: 3000 items, query prompt 3841 chars
+[seller] task 302a8125 <- 'something wooden to keep about 40 books, not taller than my desk'
+[harness] 15.0s exit 0 in=3925ch -> '```json\n{"category":"bookshelf","types":["bookcase","cube shelf","ladder shelf"],"materials":["ash","bamboo","beech","birch","mango wood","oak","pine","teak","walnut"],"min":{"capacity_books":35},"max'
+[seller] query {"category": "bookshelf", "types": ["bookcase", "cube shelf", "ladder shelf"], "materials": ["ash", "bamboo", "beech", "birch", "mango wood", "oak", "pine", "teak", "walnut"], "min": {"capacity_books": 35}, "max": {"capacity_books": 50, "height_cm": 76}, "flags": {}, "keywords": "wooden book storage"} -> ['BK-0199', 'BK-0069', 'BK-0105', 'BK-0070', 'BK-0011', 'BK-0039', 'BK-0038', 'BK-0049'] (all constraints: 6; without numbers: 120)
+[harness] 17.3s exit 0 in=2320ch -> '```json\n{"action":"ask","item":"BK-0069","price":179}\n```'
+[seller] OPEN task=302a8125 item=BK-0069 reserve=143 ask=179

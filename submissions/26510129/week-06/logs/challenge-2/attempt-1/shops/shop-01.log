@@ -1,0 +1,7 @@
+[seller] Lumen & Co: 101 items, query prompt 888 chars
+[seller] task e7ef93e1 <- 'a dimmable desk lamp for late-night reading'
+[harness] 5.4s exit 0 in=951ch -> '{"category":"lamp","types":["desk lamp"],"materials":[],"min":{},"max":{},"flags":{"dimmable":true},"keywords":"late-night reading"}'
+[seller] query {"category": "lamp", "types": ["desk lamp"], "materials": [], "min": {}, "max": {}, "flags": {"dimmable": true}, "keywords": "late-night reading"} -> ['LP-0006', 'LP-0112', 'LP-0136', 'LP-0145', 'LP-0178', 'LP-0107', 'LP-0180', 'LP-0004'] (all constraints: 7; without flags: 11)
+[harness] 11.0s exit 0 in=1923ch -> '```json\n{"action":"ask","item":"LP-0112","price":65}\n```'
+[seller] OPEN task=e7ef93e1 item=LP-0112 reserve=45 ask=65
+[seller] CANCEL task=e7ef93e1
