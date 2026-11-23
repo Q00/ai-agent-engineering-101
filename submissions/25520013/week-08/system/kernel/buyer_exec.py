@@ -2,7 +2,7 @@
 
     python3 -m kernel.buyer_exec --shops {shops} --item {item} --budget {budget} --order {order}
 
-Same CLI and last output line as the attempt-1 market_buyer hook: {"shop", "receipt", "stars", "review"}. The model
+Same CLI and last output line as the rule-code market_buyer hook: {"shop", "receipt", "stars", "review"}. The model
 is called once per order (buyer.plan); this module only carries the plan out. For each candidate in plan order it opens
 a negotiation, accepts as soon as the shop's ask is <= max_pay, otherwise sends the plan's offers in order, and walks
 (CancelTask) when they run out. It stops at the first receipt that passes the checks. No pricing logic here: every
@@ -132,7 +132,7 @@ def receipt_of(t):
 
 
 def verify_receipt(rec, pub_b64):
-    """(ok, receipt, how) as in attempt 1: ok None when there is no key or no ed25519 library (stdlib only), False
+    """(ok, receipt, how) as in the rule hooks: ok None when there is no key or no ed25519 library (stdlib only), False
     when the signature does not match. An integral float price is retried as int, the bytes the seller signed."""
     if not pub_b64 or not isinstance(rec, dict) or not rec.get("sig_seller"):
         return None, rec, "no_key" if not pub_b64 else "no_sig"

@@ -1,7 +1,7 @@
-"""Shared helpers for the attempt-2 kernel (human code, not editable by the model).
+"""Shared helpers for the kernel (human code, not editable by the model).
 
 Data root, round end, hashing of other players, secret masking, JSON and log-tail readers. Stdlib only so the
-kernel runs on labpc with plain python3.
+kernel runs with plain python3.
 """
 
 import calendar

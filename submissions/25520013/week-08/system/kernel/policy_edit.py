@@ -1,11 +1,11 @@
-"""Operator edits to attempt 1's policy.json while the attempt-2 switch is off (human code, not editable by the model).
+"""Operator edits to the rule hooks' policy.json (human code, not editable by the model).
 
-11-07 11시 성수님 결정: the codex subscription ran out (reset 11-11 17:36), so a2/LIVE is off and attempt 1's rules run
-the shop. The operator does not decide sales; it improves the rules by changing numbers in policy.json inside the
-ranges below (11-11 성수님: any number of keys at once, no step or cooldown; the strategy is the operator's). The file
-is never rewritten from the model's text: the kernel copies the current file, changes the keys, checks the copy with attempt 1's own policy.load (its validate), keeps the old
-file under a2/policy_bak/ and swaps the new one in with one rename. Attempt 1's seller re-reads policy.json when its
-bytes change; its restock hook reads it on every run. Each edit writes one trajectory row of kind "policy_edit".
+While the model trade switch <W>/a2/LIVE is off, the rule hooks run the shop and the operator does not decide sales.
+It improves the rules by changing numbers in policy.json inside the ranges below (any number of keys at once, no
+step or cooldown; the strategy is the operator's). The file
+is never rewritten from the model's text: the kernel copies the current file, changes the keys, checks the copy with the rule code's own policy.load (its validate), keeps the old
+file under a2/policy_bak/ and swaps the new one in with one rename. The seller hook re-reads policy.json when its
+bytes change; the restock hook reads it on every run. Each edit writes one trajectory row of kind "policy_edit".
 """
 
 import contextlib
@@ -37,7 +37,7 @@ KEYS = {
     "warranty_uplift": (0.0, 0.2, 0.03),
 }
 # buyer.defaults.<kind> only; the shop-side keys above are refused there
-# accept_c.max_pay_frac caps what our buyer pays for a grade C unit (attempt 1 market_buyer.grade_c_terms)
+# accept_c.max_pay_frac caps what our buyer pays for a grade C unit (the rule code market_buyer.grade_c_terms)
 # open_frac and step_frac (11-10): 48 h of our purchases showed 571 of 1,518 struck at the opening offer (0.55 of list),
 # while the top savers paid 0.46-0.55 of list; where the buyer opens and how fast it rises are the operator's to tune
 BUYER_KEYS = {
@@ -54,7 +54,7 @@ GRADE_KEYS = {
         0.0,
         0.5,
         0.06,
-    ),  # food and goods sections (attempt 1 ask_price has no kind check)
+    ),  # food and goods sections (the rule code ask_price has no kind check)
     "warranty_hours": (
         ("A", "B", "C"),
         0,
@@ -66,7 +66,7 @@ GRADE_KEYS = {
         0.3,
         0.9,
         0.05,
-    ),  # shop only; attempt 1 validate allows [0.3, 0.9]
+    ),  # shop only; the rule code's validate allows [0.3, 0.9]
 }
 # shop section only (11-11 성수님: 가게 운영에 관한 값은 모두 운영자가 정함). Restock and stock limits the rule code reads
 # from policy.json "shop". Left to people: balance_floor, allow_bankrupt, liquidation_line (the bankruptcy line) and bounds.
@@ -149,12 +149,12 @@ def _locked(fn):
 
 
 def attempt1_validate(root):
-    """Attempt 1's own check: policy.load(path) parses and runs validate(), raising on a bad file."""
+    """The rule code's own check: policy.load(path) parses and runs validate(), raising on a bad file."""
     spec = importlib.util.spec_from_file_location(
         "_r3a1_policy", os.path.join(root, "policy.py")
     )
     if spec is None or spec.loader is None:
-        raise ValueError("attempt 1 policy.py not found")
+        raise ValueError("rule code policy.py not found")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return lambda p: mod.load(p)
@@ -217,7 +217,7 @@ def _fits(section, key):
 
 
 def _resolved(pol, section):
-    """The block attempt 1 reads for this section, as its policy.resolve builds it: defaults[kind], then the
+    """The block the rule code reads for this section, as its policy.resolve builds it: defaults[kind], then the
     categories entry under the leaf name, then the one under the full path. shop and buyer.defaults are read as is."""
     if section == "shop" or section in BUYER:
         return _block(pol, section) or {}
@@ -232,8 +232,8 @@ def _resolved(pol, section):
 
 
 def effective(pol, section, key):
-    """The value attempt 1 uses for this section and key ("<key>.<grade>" reads one grade; c_first_leaves.<leaf> is
-    1 when the leaf is listed, else 0). A grade missing from its dict reads 0 as attempt 1 does (policy.py ask_price,
+    """The value the rule code uses for this section and key ("<key>.<grade>" reads one grade; c_first_leaves.<leaf> is
+    1 when the leaf is listed, else 0). A grade missing from its dict reads 0 as the rule code does (policy.py ask_price,
     warranty_hours), except grade_floor_list, where a missing grade means no floor (None)."""
     blk = _resolved(pol, section)
     base, _, sub = key.partition(".")
@@ -329,7 +329,7 @@ def apply(root, items, traj, now, categories=(), validate=None):
 
 
 def _put(pol, sec, key, val):
-    """Write one typed value into pol (the in-memory policy) as attempt 1 reads it."""
+    """Write one typed value into pol (the in-memory policy) as the rule code reads it."""
     base = key.split(".", 1)[0]
     blk = _block(pol, sec, create=True)
     if base == LEAF_KEY:
@@ -340,7 +340,7 @@ def _put(pol, sec, key, val):
     elif key in BUYER_KEYS and "." in key:
         blk[base] = {**(blk.get(base) or {}), key.split(".", 1)[1]: val}
     elif base in GRADE_KEYS:
-        # the dict attempt 1 reads now (maybe inherited from defaults or the leaf entry), written here whole
+        # the dict the rule code reads now (maybe inherited from defaults or the leaf entry), written here whole
         # with one grade changed, so the other grades keep their values
         blk[base] = {**(_resolved(pol, sec).get(base) or {}), key.split(".", 1)[1]: val}
     else:
@@ -348,7 +348,7 @@ def _put(pol, sec, key, val):
 
 
 def _checked_temp(root, pol, validate):
-    """Write pol to a temp file beside policy.json and check it with attempt 1's validate. -> temp path (the caller
+    """Write pol to a temp file beside policy.json and check it with the rule code's validate. -> temp path (the caller
     renames or removes it). Raises on a failed check or write, with the temp file removed."""
     fd, tmp = tempfile.mkstemp(dir=root, prefix=".policy.tmp-")
     try:
@@ -374,7 +374,7 @@ def _bak_name(root, tag):
 
 
 def _swap(root, pol, validate, tag):
-    """Write pol to a temp file, check it with attempt 1's validate, keep the live file as a2/policy_bak/policy.json.<tag>
+    """Write pol to a temp file, check it with the rule code's validate, keep the live file as a2/policy_bak/policy.json.<tag>
     and rename the temp over it. -> backup path. Raises on a failed check or write; the live file stays as it was."""
     os.makedirs(os.path.join(root, BAK_DIR), exist_ok=True)
     tmp = _checked_temp(root, pol, validate)
@@ -400,7 +400,7 @@ def _finite(v):
 
 
 def check(root, item, traj, now, categories=(), validate=None):
-    """Every check of an operator edit (range, section and key rules, attempt 1 validate on a changed temp copy)
+    """Every check of an operator edit (range, section and key rules, the rule code's validate on a changed temp copy)
     without touching policy.json, no backup and no trajectory row. -> the success dict an edit returns
     ({"ok": True, section, key, old, new}) or {"ok": False, "error"}."""
     x = _prepare(root, item, now, categories)
@@ -409,7 +409,7 @@ def check(root, item, traj, now, categories=(), validate=None):
     _put(x["pol"], x["section"], x["key"], x["new"])
     try:
         os.unlink(_checked_temp(root, x["pol"], validate))
-    except Exception as e:  # attempt 1's PolicyError or a write error
+    except Exception as e:  # the rule code's PolicyError or a write error
         return {"ok": False, "error": f"check failed: {type(e).__name__}: {e}"}
     return _result(x)
 
@@ -423,7 +423,7 @@ def _result(x):
         "new": x["new"],
     }
     if x["old"] is None and x["key"].split(".", 1)[0] == "grade_floor_list":
-        # a first floor moves this grade from the market-price floor to a share of list (attempt 1 market_floor)
+        # a first floor moves this grade from the market-price floor to a share of list (the rule code market_floor)
         res["note"] = "이 등급은 처음 두는 값임. 이 등급의 최저가가 시장가 기준에서 정가 비율로 바뀜"
     return res
 
@@ -437,7 +437,7 @@ def _one(root, it, traj, now, categories, validate, done_n):
         bak = _swap(root, x["pol"], validate, f"{int(now)}-{done_n}")
     except (
         Exception
-    ) as e:  # attempt 1's PolicyError or a write error: the live file stays as it was
+    ) as e:  # the rule code's PolicyError or a write error: the live file stays as it was
         return {"ok": False, "error": f"check failed: {type(e).__name__}: {e}"}
     traj.append(
         "operator",
@@ -509,7 +509,7 @@ def _prepare(root, it, now, categories):
     lo, hi = max(lo, blo), min(hi, bhi)
     if (
         base == "warranty_hours"
-    ):  # attempt 1 caps the hours it offers at max_warranty_hours (policy.py warranty_hours)
+    ):  # the rule code caps the hours it offers at max_warranty_hours (policy.py warranty_hours)
         hi = min(hi, int(_resolved(pol, sec).get("max_warranty_hours", 6)))
     if not lo <= val <= hi:
         return {"ok": False, "error": f"{key}={val} outside [{lo}, {hi}]"}
@@ -548,7 +548,7 @@ def _prepare(root, it, now, categories):
 @_locked
 def apply_many(root, items, traj, now, categories=(), validate=None, tag=None, by=None):
     """Write any number of operator edits as one change: every item gets the checks of an edit (_prepare), the items
-    that pass go into one copy of policy.json, which attempt 1's validate checks once before one backup and one
+    that pass go into one copy of policy.json, which the rule code's validate checks once before one backup and one
     rename. A refused item is left out; the same section and key twice refuses the later one; a copy that fails
     validate writes nothing and refuses every item. One trajectory row of kind "policy_edit" per written item with
     by (one label for all, or a list aligned with items; None writes no by). -> [result per item, aligned]."""
@@ -571,7 +571,7 @@ def apply_many(root, items, traj, now, categories=(), validate=None, tag=None, b
         _put(pol, x["section"], x["key"], x["new"])
     try:
         bak = _swap(root, pol, validate, tag or kernel_tag(now))
-    except Exception as e:  # attempt 1's PolicyError or a write error: the live file stays as it was
+    except Exception as e:  # the rule code's PolicyError or a write error: the live file stays as it was
         err = {"ok": False, "error": f"check failed: {type(e).__name__}: {e}"}
         return [dict(err) if x.get("ok") else x for x in out]
     for i, x in xs:
@@ -614,7 +614,7 @@ def kernel_set(
     tag=None,
 ):
     """Kernel-only write of a typed value (kernel.experiments: an adopted split value, or a revert of an experiment
-    registered before raw states were kept): the same typed write, attempt 1 validate, backup and rename as an operator
+    registered before raw states were kept): the same typed write, the rule code's validate, backup and rename as an operator
     edit, without the range check.
     value None removes the key: a grade_floor_list (or other per-grade) grade, a c_first_leaves leaf or a scalar key
     the section did not set; a dict or category entry left empty goes too. tag names the backup (kernel_tag(now) when
@@ -660,7 +660,7 @@ def kernel_set(
         bak = _swap(root, pol, validate, tag or kernel_tag(now))
     except (
         Exception
-    ) as e:  # attempt 1's PolicyError or a write error: the live file stays as it was
+    ) as e:  # the rule code's PolicyError or a write error: the live file stays as it was
         return {"ok": False, "error": f"check failed: {type(e).__name__}: {e}"}
     reason = str(reason or "")[:500]
     traj.append(
@@ -810,7 +810,7 @@ def kernel_restore(
         bak = _swap(root, pol, validate, tag or kernel_tag(now))
     except (
         Exception
-    ) as e:  # attempt 1's PolicyError, a write error or a section the file lacks
+    ) as e:  # the rule code's PolicyError, a write error or a section the file lacks
         return {"ok": False, "error": f"check failed: {type(e).__name__}: {e}"}
     traj.append(
         "operator",

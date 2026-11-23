@@ -1,5 +1,5 @@
-"""Operating caps for the two seller LLM roles (v1.17d fixes4, CAP_PROPOSAL_v1.md a5464e4d, 성수님 18:40 via CoS).
-Code only, DEFAULT DISABLED (llm_caps_config_v4.json enabled=false) and NOT wired into the deploy package or any hook.
+"""Operating caps for the two seller LLM roles.
+Read by llm/live_v120c.py; llm_caps_config_v4.json enabled turns the roles on.
 
 Per-role counters in SEPARATE files (no shared reserve, proposal 3.4-2):
   parse (interpretation helper): 1 per deal, 6 / hour, 72 / day, 1,080 / round (absolute), concurrency 1,

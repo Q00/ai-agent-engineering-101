@@ -1,4 +1,4 @@
-"""PUSH 11-16 S1: refuse sales to buyers in <md>/blocked_buyers.json ({"buyers": [...]}).
+"""Refuse sales to buyers in <md>/blocked_buyers.json ({"buyers": [...]}).
 python tools/block_poller.py --md .market [--market URL] [--every 2]
 Follows the market's public ledger and keeps <md>/blocked_orders.json
 {"t": time of the last complete pass, "orders": {order: {"buyer", "expires"}}} for the blocked buyers' open orders.

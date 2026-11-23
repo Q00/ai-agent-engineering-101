@@ -35,7 +35,7 @@ BASE_SHOPS = 3             # v1.20b: attempts 1-3 run as before; attempts 4..max
 EXTRA_WINDOW_S = 60        # v1.20b defaults (policy buyer.extra_attempt_window_s / expiry_guard_s override)
 EXPIRY_GUARD_S = 60
 FOOD_DEADLINE_S = 15       # v1.22: the market issues the next order ~20 s after this one (policy buyer.defaults.{kind}.deadline_s overrides)
-PAR_GRACE_S = 3            # PUSH 11-16: after the output, wait this long for halted parallel attempts, then exit
+PAR_GRACE_S = 3            # after the output, wait this long for halted parallel attempts, then exit
 RPC_FLOOR_S = 3            # v1.22: least timeout of one haggle message under a time-capped kind
 SHELF_FILE = "shelf_refusals.json"
 SHELF_TTL_S = 6 * 3600     # v1.22: skip a shelf-life refused (shop, SKU) this long when the unit's hours left are unknown
@@ -434,13 +434,13 @@ def over_cap(rec, cand, order):
 
 
 def _halted(cand):
-    """PUSH 11-16: True when the parallel attempt loop has stopped this attempt (another shop gave a receipt)."""
+    """True when the parallel attempt loop has stopped this attempt (another shop gave a receipt)."""
     h = cand.get("_halt")
     return bool(h is not None and h.is_set())
 
 
 def parallel_cfg(pol, kind):
-    """PUSH 11-16 (owner t912u: raise the buyer score): policy buyer.parallel = {"enabled": bool, "width": 2..4,
+    """Policy buyer.parallel = {"enabled": bool, "width": 2..4,
     "max_shops": 4..16, "kinds": ["food"]} -> (width, max_shops), or (0, 0) = off (the sequential loop, unchanged).
     Food orders have 15 s; the sequential loop tries ~8 shops one by one and 230 of 811 food orders (6 h to 11-16
     17:30 KST) stopped at max_shops, 163 at the deadline, with 40-67 candidates left. Running `width` haggles at once
@@ -465,7 +465,7 @@ def haggle(cand, order, pol, deadline, accept=None):
     diag.update({"rpc_stage": "endpoint", "rpc_started": time.time()})
     url = endpoint(cand["shop"]["url"], timeout=tmo(20))
     diag.clear()
-    if _halted(cand):                                   # PUSH 11-16: a parallel attempt already got a receipt
+    if _halted(cand):                                   # a parallel attempt already got a receipt
         return None, {"rounds": 0, "state": "halted"}
     opening = f"I want to buy {cand['name']} ({cand['sku']})"
     need = (accept or {}).get("min_hours_left")
@@ -543,7 +543,7 @@ def haggle(cand, order, pol, deadline, accept=None):
             cand = dict(cand, max_pay=min(int(cand["max_pay"]), _sc), s_cap=_sc, s_unit=rec.get("unit"))
     if rec and over_cap(rec, cand, order):
         return None, {"rounds": rounds, "state": "receipt_refused", "why": over_cap(rec, cand, order), "last_offer": last}
-    if rec and _halted(cand):                           # PUSH 11-16: another parallel attempt won; this receipt is not used
+    if rec and _halted(cand):                           # another parallel attempt won; this receipt is not used
         return None, {"rounds": rounds, "state": "halted", "last_offer": last}
     return rec, {"rounds": rounds, "state": state(t), "last_offer": last, "sig": sig,
                  "grade_c": bool(cand.get("grade_c")), "accept": accept, **({"deadline_cut": True} if cut else {}),
@@ -756,12 +756,12 @@ def main():
         c["pubkey"] = own.get("pubkeys", {}).get(OW.norm_url(c["shop"].get("url")))
     accept = P.accept_policy(order, pol, relax)
     tried, out = [], None
-    par_left = []                                       # PUSH 11-16: parallel attempts still running when the loop ended
-    par_launched = 0                                    # PUSH 11-16: attempts started by the parallel loop
+    par_left = []                                       # parallel attempts still running when the loop ended
+    par_launched = 0                                    # attempts started by the parallel loop
     seen_shops = set()
     stop = None                                         # v1.20b: why the attempt loop stopped early
     oos_free, n_oos = (oos_free_max(pol) if food else 0), 0   # CoS 11-16: food out-of-stock rejections free their slot
-    def run_attempt(c, dl):                             # PUSH 11-16: one shop attempt (same body as before, now callable)
+    def run_attempt(c, dl):                             # one shop attempt (same body as before, now callable)
         diag = {}
         c["rpc_diag"] = diag
         try:
@@ -777,7 +777,7 @@ def main():
             hook_event("fail", f"a2a:{order.get('order')}:{c['shop']['url']}", failure, "buyer")
         return receipt, info
 
-    def book(c, receipt, info, free):                   # PUSH 11-16: bookkeeping of one finished attempt -> out or None
+    def book(c, receipt, info, free):                   # bookkeeping of one finished attempt -> out or None
         nonlocal n_oos, shelf_dirty
         deal_accept = info.pop("accept", None) or accept   # v1.4: with C only for a deal made under the C cap
         if oos_free and is_oos_reject(info):
@@ -787,7 +787,7 @@ def main():
             shelf_dirty = True
         tried.append({"shop": c["shop"].get("name"), "sku": c["sku"], "haggle_observations": c.get("haggle_observations", []), **info,
                       **({"free_slot": True} if free else {})})   # Reviewer 11-16 5c: attempt that only a freed slot allowed
-        if info.get("state") != "halted":               # PUSH 11-16: a stopped parallel attempt says nothing about the shop
+        if info.get("state") != "halted":               # a stopped parallel attempt says nothing about the shop
             shop_new.append((f"{c['shop'].get('url')}|{kind}",
                              [round(time.time(), 1), attempt_class(receipt, info), deal_ratio(receipt, c)]))
         if receipt:
@@ -816,7 +816,7 @@ def main():
             out = book(c, receipt, info, free)
             if out is not None:
                 break
-    else:                                               # PUSH 11-16: up to par_w haggles at once, first receipt wins
+    else:                                               # up to par_w haggles at once, first receipt wins
         import concurrent.futures as _cf
         import threading as _th
         halt = _th.Event()
@@ -924,7 +924,7 @@ def main():
             save_shops(shop_path, shop_new, time.time())
         except (OSError, TypeError, ValueError):        # bookkeeping only, as above
             pass
-    if par_left:                                        # PUSH 11-16 / Codex (1): bounded exit. Halted attempts leave at
+    if par_left:                                        # Bounded exit. Halted attempts leave at
         import concurrent.futures as _cf                # their next check and cancel their task; give them PAR_GRACE_S,
         _, rest = _cf.wait(par_left, timeout=PAR_GRACE_S)   # then end the process (the kit waits for the exit)
         if rest:
@@ -933,12 +933,12 @@ def main():
 
 
 if __name__ == "__main__":
-    import os as _os, sys as _sys                 # r3a2 switch: <W>/a2/LIVE, read per run
+    import os as _os, sys as _sys                 # model trade switch: <W>/a2/LIVE, read per run
     if _os.path.exists(_os.path.join(_os.getcwd(), "a2", "LIVE")):
         try:
             _sys.path.insert(0, '/home/sungsoo/r3a2-code')
             from kernel import buyer_exec as _a2
-        except Exception:                         # noqa: BLE001 - no attempt-2 code: attempt 1 runs
+        except Exception:                         # noqa: BLE001 - no model code: the rule path runs
             _a2 = None
         if _a2 is not None:
             raise SystemExit(_a2.main(_sys.argv[1:] + ["--root", _os.getcwd()]))

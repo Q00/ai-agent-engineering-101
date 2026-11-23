@@ -34,7 +34,7 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
-try:                                              # r3a2: attempt-2 seller bridge, on while <W>/a2/LIVE exists
+try:                                              # model seller bridge, on while <W>/a2/LIVE exists
     sys.path.append('/home/sungsoo/r3a2-code')
     from kernel import seller_bridge as A2
 except Exception:                                 # noqa: BLE001
@@ -567,7 +567,7 @@ class Seller(AgentExecutor):
             self._bl("outcome", tid, outcome="no_response", sku=_d["unit"].get("sku"), last_ask=_d.get("ask"),
                      rounds=_d.get("rounds"), idle_s=round(now - _d["t"], 1))
             self._blog.pop(tid, None)
-        if A2 is not None:                        # r3a2 switch: <W>/a2/LIVE, read per request
+        if A2 is not None:                        # model trade switch: <W>/a2/LIVE, read per request
             _a2 = A2.bridge(os.getcwd(), MARKET_DIR, sign=sign, name=NAME, receipt_terms=P.receipt_terms,
                             offer_in=offer_in, opening_text=opening_text, metric=self._metric, ledger=Ledger,
                             policy=self.refresh_policy, shelf=self.shelf, data_part=new_data_part,
@@ -670,7 +670,7 @@ class Seller(AgentExecutor):
         task = context.current_task
         if task is None:
             return
-        if A2 is not None:                        # r3a2: free the unit an attempt-2 deal held
+        if A2 is not None:                        # free the unit a model-seller deal held
             A2.cancel(task.id)
         _had = self.open.pop(task.id, None)
         self._bl("outcome", task.id, outcome="cancel", open=_had is not None)

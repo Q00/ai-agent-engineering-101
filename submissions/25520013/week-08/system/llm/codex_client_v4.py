@@ -1,5 +1,5 @@
-"""codex_client v4 (v1.17d fixes4; codex_client.py is unchanged, this is a new version).
-fixes4 pre-live items 2-3 (CR review_r3_v117_fixes2.md row 2):
+"""codex_client v4: one model call through the codex CLI for the seller hook's price-parse assist.
+Safety checks:
   * model check uses _MODEL_RE.fullmatch (no trailing newline slips through "$").
   * counter_path / call_log_path are PINNED (COUNTER_REL / CALL_LOG_REL under the candidate dir). A config that
     sets a different value is refused before anything is counted (changing it used to restart the cap).
@@ -148,7 +148,7 @@ def build_cmd(exe, cfg, cwd):
 COUNTER_REL = "state/real_call_counter.json"
 CALL_LOG_REL = "state/real_calls.jsonl"
 ALLOWED_CLI = ("/home/box/.local/bin/codex",          # box
-               "/home/sungsoo/.local/bin/codex")      # labpc (v120c-B probe 14:10 KST: codex-cli 0.164.0, regular file)
+               "/home/sungsoo/.local/bin/codex")      # deployment computer (codex-cli 0.164.0, regular file)
 LIVE_COUNTER_REL = "state/live_call_counter.json"
 
 

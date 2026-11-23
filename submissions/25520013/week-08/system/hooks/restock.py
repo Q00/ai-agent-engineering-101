@@ -18,7 +18,7 @@ def market_activity(root=None, tau_h=24.0, now=None, pol=None):
     restock/opening unit, "settles": count}. Incremental: byte cursor in <R3_STATE>/activity.json. Never raises.
     v1.9 (c): + "orders"/"last_order_ts"/"results"/"last_result_ts" (market-wide, from the ledger cursor that
     ingest keeps; any buyer and shop, so they keep moving while we are sold out) and "resume_ts" (mtime of
-    <R3_STATE>/restock_resume: `touch` it to restart a paused restock by hand, labpc_swap_checklist 3-1).
+    <R3_STATE>/restock_resume: `touch` it to restart a paused restock by hand).
     v1.9 (b): "own_sales": {sku: [decayed count, ref ts]} of our shop's settles (tau_h, aggregates' estimator).
     v1.10 (QA review_r3_01ac_v19): our shop's settles are matched with owner.is_own_shop_ref (norm_name over
     R3_SHOP_NAME + policy own_shop_names + cached /api/shops names, norm_url over cached URLs, <market>/shop/<name>
@@ -253,25 +253,25 @@ def _main():
 
 
 if __name__ == "__main__":
-    import os as _os, sys as _sys                 # r3a2 switch: <W>/a2/LIVE, read per run
+    import os as _os, sys as _sys                 # model trade switch: <W>/a2/LIVE, read per run
     if _os.path.exists(_os.path.join(_os.getcwd(), "a2", "LIVE")):
-        try:                                      # r3a2 ingest: attempt 1's market-ledger sync and stats catch-up
-            from common import catch_up_stats as _cus  # stay on (.r3/events.jsonl feeds the operator, memfeed, icrl)
+        try:                                      # ingest: the rule hooks' market-ledger sync and stats catch-up
+            from common import catch_up_stats as _cus  # stay on (.r3/events.jsonl feeds the operator and memfeed)
             _st = _sys.argv[_sys.argv.index("--state") + 1] if "--state" in _sys.argv[:-1] else ".market"
             ingest(_st)
             _cat = read_json(f"{_st}/catalog.json", {}) or {}
             _cus({x["sku"]: x for x in _cat} if isinstance(_cat, list) else _cat)
-        except Exception as _e:                   # noqa: BLE001 - never blocks the attempt-2 restock
-            print(f"WARNING: r3a2 ingest: {type(_e).__name__}: {_e}", file=_sys.stderr)
+        except Exception as _e:                   # noqa: BLE001 - never blocks the model restock plan
+            print(f"WARNING: restock ingest: {type(_e).__name__}: {_e}", file=_sys.stderr)
         try:
             _sys.path.insert(0, '/home/sungsoo/r3a2-code')
             from kernel import restock as _a2
-        except Exception:                         # noqa: BLE001 - no attempt-2 code: attempt 1 runs
+        except Exception:                         # noqa: BLE001 - no model code: the rule path runs
             _a2 = None
         if _a2 is not None:
             try:
                 _rc = _a2.main(_sys.argv[1:] + ["--root", _os.getcwd()])
-            except Exception:                     # noqa: BLE001 - empty plan this cycle, like attempt 1
+            except Exception:                     # noqa: BLE001 - empty plan this cycle, like the rule path
                 import traceback as _tb
                 _tb.print_exc()
                 print('{"buy": []}', flush=True)

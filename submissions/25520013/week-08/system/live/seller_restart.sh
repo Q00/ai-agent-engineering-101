@@ -3,7 +3,7 @@
 # Called by kernel/code_edit.py (A2_SELLER_RESTART_CMD) with the change id as the last argument, cwd = data root.
 # Contract: writes a2/seller_restart_result.json {"id", "ok", "ts", "why"} and exits 0 on success, non-zero otherwise.
 # It never touches files of the rule code: on failure the kernel restores its backup.
-# Same gate as the human deploys (deploy_v2120.sh): no established connection to the seller port, no open buyer task,
+# Same gate as a manual deploy: no established connection to the seller port, no open buyer task,
 # seller idle 5 s, three polls in a row; SIGTERM to the seller's process group only (the kit respawns the seller).
 set -u
 ID="${1:-0}"

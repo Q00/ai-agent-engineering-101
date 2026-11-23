@@ -1,5 +1,5 @@
 {
-  "_note": "fixes4 operating caps (CAP_PROPOSAL_v1.md a5464e4d). DEFAULT DISABLED. Cap values are code constants in llm/caps_v4.py, not settings. Not wired into any hook or the deploy package.",
+  "_note": "Switch of the seller hook's model roles (read by llm/live_v120c.py and llm/caps_v4.py). Model calls run only when enabled is true and the llm_config.json switches are on.",
   "enabled": true,
-  "_note_r3": "r3 (성수님 14:38 via CoS, GPT 6.1 Terra): count caps are SETTINGS here, default UNLIMITED. Optional \"caps\": {\"parse\"|\"editor\": {per_deal|per_hour|per_day|per_round|min_interval_s: int>=0 or null}}; v1 reference = parse 1/deal 6/h 72/d 1080/round, editor 4h 1/h 6/d 90/round. Bad value -> LLM OFF (fail closed). usage-limit/429/auth -> breaker auto-OFF."
+  "_note_r3": "Count caps are settings here, default unlimited. Optional \"caps\": {\"parse\"|\"editor\": {per_deal|per_hour|per_day|per_round|min_interval_s: int>=0 or null}}. Bad value -> LLM OFF (fail closed). usage-limit/429/auth -> breaker auto-OFF."
 }

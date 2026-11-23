@@ -657,7 +657,7 @@ ASKED_MIN = 2.0                                          # decayed refusals in a
 def own_asked(activity, now=None):
     """v2.13 (2026-11-11): SKUs buyers asked OUR shop for while we held none, {sku: decayed refusals} at now
     (activity own_asked, tau 1 h), only those at ASKED_MIN or more. shop.restock_asked_first false turns the use off
-    in restock_plan. 13:34 labpc: 61 no_stock refusals in 1 h, 26 for one water SKU with 1 unit on hand, while the
+    in restock_plan. 13:34: 61 no_stock refusals in 1 h, 26 for one water SKU with 1 unit on hand, while the
     4 h of restock bought three other drinks SKUs (the top market settles) and none of it."""
     now = now or time.time()
     out = {}
@@ -868,7 +868,7 @@ def level_fill(qty, held):
     SKU) so the SKUs end as level as possible: each unit goes to the SKU holding the fewest, ties to the higher
     rank. With nothing on hand this is the old even split (qty // k, the first qty % k SKUs one more). Before v1.30
     every SKU got that even split whatever it held, so a slow SKU piled up and took the category's stock_target
-    from fast ones: at 05:50 labpc held 10 sofa G5e3784e6 (57만, median 138 min from supply to sale, 18 of 28
+    from fast ones: at 05:50 our shop held 10 sofa G5e3784e6 (57만, median 138 min from supply to sale, 18 of 28
     supplied units sold in 6 h) and no G8ec51935 (232만, 45 of 48 sold, 6.4 min) or G00327e80 (225만, 26 of 29,
     12.6 min), so the sofa need of 6 went 2/2/2 instead of 3/3/0."""
     out, lvl = [0] * len(held), list(held)
@@ -886,7 +886,7 @@ FOOD_COST_FRAC = 0.50    # agent.md food grade mix (A 25%, B 50%, C 25%) x the s
 def below_market_cost_frac(cost_frac, kind, goods_cf=None):
     """v2.8 (2026-11-08): expected cost / list for the below-market restock check. Goods use shop.goods_cost_frac when
     set, food and an unset key keep cost_frac (p75 of our units). The p75 of the units on hand runs high because the
-    units that cost the most sell last: 10:40 labpc cost_frac 0.69-0.70 while our furniture supplied in 48 h cost
+    units that cost the most sell last: 10:40: cost_frac 0.69-0.70 while our furniture supplied in 48 h cost
     A 0.66 (69% of units), B 0.52, C 0.33 of list, a mean of 0.60. At 0.69 + 5% margin every sofa whose market
     median is 0.67-0.68 of list was skipped: 4 sofas and 1 bed never stocked, among them a 3.82M sofa that settled
     680 times in 24 h at 47 shops with an expected margin of 29만 a unit (our top sofa 30만)."""
@@ -896,7 +896,7 @@ def below_market_cost_frac(cost_frac, kind, goods_cf=None):
 def surge_cost_frac(cost_frac, kind, factor):
     """v2.0b (2026-11-05): expected cost / list of a surged SKU for the below-market check = the larger of our units'
     cost_frac and the grade-mix mean x factor. Our units' costs already carry the surges they were bought under
-    (10:05 labpc: cost_frac 0.70 with G1515d951 at surge 1.18), so cost_frac x factor counted the surge twice and
+    (10:05: cost_frac 0.70 with G1515d951 at surge 1.18), so cost_frac x factor counted the surge twice and
     skipped G1515d951 (11% of our 6 h revenue) at a p50 of 0.80 x list."""
     base = FOOD_COST_FRAC if kind == "food" else GOODS_COST_FRAC
     return max(cost_frac, base * factor) if factor > 1 else cost_frac
@@ -996,7 +996,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         c = resolve(pol, cat, kind)
         # v1.31 (2026-11-05): a SKU's units above the category level (stock_target / skus_per_category, rounded up)
         # do not fill the need, so a slow SKU's pile cannot take the fast SKUs' places; the food and storage caps
-        # below still count every unit on hand. At 07:04 labpc held 11 sofa G5e3784e6 (57만, 3 h market 43 settles)
+        # below still count every unit on hand. At 07:04 our shop held 11 sofa G5e3784e6 (57만, 3 h market 43 settles)
         # and 2 G00327e80, so the sofa need was 3 while G8ec51935 (232만) settled 235 times in 3 h market-wide (24 at
         # our shop, each unit sold in about 6 min): the level is 6, so the need is 8.
         _kk = c.get("breadth_skus") or c.get("skus_per_category", sp.get("skus_per_category", 1))   # overhaul 2026-11-15: breadth_skus (no 1-5 bound)
@@ -1172,7 +1172,7 @@ def buyer_terms(order, pol, relax=0.0):
     return c
 
 
-# v1.22 (round 3 labpc logs, 589 food checkout refusals for shelf life): refusal rate by r = use_within_hours /
+# v1.22 (round 3 logs, 589 food checkout refusals for shelf life): refusal rate by r = use_within_hours /
 # shelf_hours. r < 0.25: 1.7%, < 0.5: 11%, < 0.75: 34%, else 64%.
 SHELF_REFUSE_STEPS = ((0.25, 0.017), (0.5, 0.11), (0.75, 0.34))
 SHELF_REFUSE_TOP = 0.64

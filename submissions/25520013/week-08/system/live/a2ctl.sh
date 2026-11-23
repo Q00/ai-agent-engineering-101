@@ -1,10 +1,10 @@
 #!/bin/bash
-# Attempt-2 background processes on labpc: memory daemon, memory feeder, operator (single, or the two role operators
+# Background processes of the operating layer: memory daemon, memory feeder, operator (single, or the two role operators
 # operator-shop and operator-buyer; never both kinds at once), the investigator analyst (kernel.analyst, started by
 # name only: a2ctl.sh start analyst), and the runner of the agents the agents create (kernel.agents).
-#   a2ctl.sh start|stop|status   (CODE=~/r3a2-code, W=the live dir)
+#   a2ctl.sh start|stop|status   (CODE=the system code dir, W=the live dir)
 # Each process runs in its own session (setsid) and its pid is kept in W/a2/pids/<name>.pid; stop sends SIGTERM to
-# that process group only. The switch for the hooks is the flag file W/a2/LIVE, not this script.
+# that process group only. The model trade switch for the hooks is the flag file W/a2/LIVE, not this script.
 set -u
 CODE="${CODE:-$HOME/r3a2-code}"
 W="${W:-$HOME/ai-agent-engineering-101/submissions/25520013/week-09}"
@@ -32,7 +32,7 @@ case "${1:-status}" in
         operator-shop|operator-buyer)  # role operators: the single operator's environment plus the role
           if alive operator; then echo "$n refused: the single operator is running (stop operator first)"; continue; fi
           r=${n#operator-}
-          steps=60  # 11-11: a silent runaway backstop, not shown to the model; the operator ends its wake itself
+          steps=60  # a silent runaway backstop, not shown to the model; the operator ends its wake itself
           launch "$n" env A2_COMPACT_STEPS="${A2_COMPACT_STEPS:-$steps}" A2_OPERATOR_EFFORT="${A2_OPERATOR_EFFORT:-medium}" A2_AUDITOR="${A2_AUDITOR:-1}" A2_OPERATOR_INTERVAL_S="${A2_OPERATOR_INTERVAL_S:-1200}" A2_OPERATOR_COMPACT="${A2_OPERATOR_COMPACT:-1}" A2_SPLIT="${A2_SPLIT:-1}" A2_SELLER_RESTART_CMD="${A2_SELLER_RESTART_CMD:-bash $CODE/live/seller_restart.sh}" A2_CODE_TESTS_DIR="${A2_CODE_TESTS_DIR:-$HOME/r3-rule-tests}" A2_OPERATOR_ROLE="$r" python3 -m kernel.operator --root "$W" --role "$r" ;;
         operator)  # the single operator; never next to the role operators
           if alive operator-shop || alive operator-buyer; then echo "operator refused: a role operator is running (stop operator-shop operator-buyer first)"; continue; fi
@@ -61,7 +61,7 @@ case "${1:-status}" in
     for n in memd memfeed operator operator-shop operator-buyer analyst agents; do
       if alive "$n"; then echo "$n running pid $(cat "$P/$n.pid")"; else echo "$n not running"; fi
     done
-    [ -e "$W/a2/LIVE" ] && echo "switch: LIVE (attempt 2 decides)" || echo "switch: off (attempt 1 decides)"
+    [ -e "$W/a2/LIVE" ] && echo "switch: LIVE (the model decides trades)" || echo "switch: off (the rule hooks decide)"
     ;;
   *) echo "usage: $0 start|stop|status"; exit 2 ;;
 esac

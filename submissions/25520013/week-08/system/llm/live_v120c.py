@@ -1,11 +1,11 @@
-"""v1.20c-B live LLM glue (R3-v120c-B, 성수님 14:08 via CoS). DEFAULT OFF.
+"""Model glue for the seller hook: price-parse assist and policy editor calls. OFF by default.
 
 ON only when BOTH llm_caps_config_v4.json enabled=true AND llm_config.json real_calls_enabled=true and live_ops=true.
 parse (interpreter assist): asked only when the rule parser offer_in() returns None; 8 s.
-r3 (성수님 14:38, GPT 6.1 Terra): count caps = settings (llm_caps_config_v4.json "caps"), default UNLIMITED;
+GPT 6.1 Terra; count caps = settings (llm_caps_config_v4.json "caps"), default UNLIMITED;
 usage-limit / 429 / auth error -> breaker auto-OFF (rule path keeps running); calls + latency logged.
-editor: one call per cycle through OpsCaps (min interval 4 h, 6/d); the caller (Harness2 propose stage) passes the
-result through harness.bounds before anything is applied. Any error -> rule path (offer None) / skip cycle."""
+editor: one call per cycle through OpsCaps (min interval 4 h, 6/d); the caller checks the
+result against the policy bounds before anything is applied. Any error -> rule path (offer None) / skip cycle."""
 import json
 from pathlib import Path
 
@@ -15,7 +15,7 @@ from llm import parse_assist as PA
 
 HERE = Path(__file__).resolve().parent.parent
 STATE = HERE / "state"
-LLM_ROLES = tuple(CAPS.ROLES)          # v121: parse, editor, rlpo_prop, rlpo_appr, memory
+LLM_ROLES = tuple(CAPS.ROLES)          # parse, editor, rlpo_prop, rlpo_appr, memory
 
 
 def _cfg_on(base=HERE):
@@ -24,7 +24,7 @@ def _cfg_on(base=HERE):
         cfg = json.loads((Path(base) / "llm_config.json").read_text(encoding="utf-8"))
     except Exception:                                    # noqa: BLE001
         return False
-    # r3d C2: hard gate -- model_verified must equal model (set only after restart P0 found=1 on labpc)
+    # hard gate: model_verified must equal model
     return (caps.get("enabled") is True and cfg.get("real_calls_enabled") is True and cfg.get("live_ops") is True
             and isinstance(cfg.get("model"), str) and cfg.get("model_verified") == cfg.get("model"))
 

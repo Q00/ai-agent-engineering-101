@@ -49,7 +49,7 @@ CATEGORY_TOP = 6
 
 
 def board_snapshots(root):
-    """-> sorted list of (ts, path) across the kernel's and attempt 1's snapshot dirs."""
+    """-> sorted list of (ts, path) across the kernel's and the rule code's snapshot dirs."""
     seen = {}
     for d in BOARD_DIRS:
         full = os.path.join(root, d)
@@ -305,7 +305,7 @@ def section_restock(root, now):
     if state == "valid" and done.get("plan_id") and done.get("plan_id") == restock.plan_id(path, plan):
         when = time.strftime("%H:%M", time.localtime(done.get("ts") or now))
         head += f", {when}에 이미 구매함 ({len(done.get('buy') or [])}줄). 이 계획으로는 다시 사지 않음"
-    if not os.path.exists(os.path.join(root, "a2/LIVE")):  # attempt 1 restocks; the plan file is not read
+    if not os.path.exists(os.path.join(root, "a2/LIVE")):  # the rule code restocks; the plan file is not read
         return [
             f"[재입고] 재고 {len(inv.get('units') or [])}개, 최근 1시간 판매 {sold}개 | 공급 창 {win}",
             "  재입고는 규칙 코드가 공급 창마다 실행함: hooks/restock.py가 policy.py의 restock_plan 함수를 불러 "
@@ -1088,7 +1088,7 @@ TURNOVER_H = 24  # [가게 회전]: window
 # kernel card parts the auditor may take off a role's state card (uncard) and put back (card)
 CARD_OPTIONAL = {"shop": ("가게 회전", "묶인 돈 수익", "실험 중간값", "커널 밖 변경"),
                  "buyer": ("실험 중간값", "커널 밖 변경")}
-OUTSIDE_LOOP = "icrl/state/loop.json"  # the state file of attempt 1's experiment loop (the kernel only reads it)
+OUTSIDE_LOOP = "icrl/state/loop.json"  # the state file of the rule code's experiment loop (the kernel only reads it)
 OUTSIDE_MAX = 12  # lines shown; the loop runs a handful of lanes, a malformed file must not fill the card
 OUTSIDE_VAL_CHARS = 40  # a policy value is a number or a short word; anything longer is cut
 
@@ -1124,7 +1124,7 @@ def _shown(v, limit=OUTSIDE_VAL_CHARS):
 
 
 def outside_switching(root):
-    """Policy values an experiment loop outside the kernel is switching: attempt 1's loop holds each value at one of
+    """Policy values an experiment loop outside the kernel is switching: the rule code's loop holds each value at one of
     two settings for a block of time and writes policy.json itself, so the kernel's edit history and its experiment
     ledger do not show it (live 11-12: three such values, blocks of about 21 and 42 minutes, one in the section of a
     running kernel experiment). Read from the loop's own state file; [] when it is missing, unreadable or idle.
@@ -2306,7 +2306,7 @@ def _shop_compact(x):
            f"{inv.get('bankruptcies_left', '-')}회 | 재고 {len(units)}개: "
            + ", ".join(f"{k} {n}" for k, n in byc.most_common(3)) + f" | 24시간 안에 유통기한 끝 {exp24}개",
            ]
-    if os.path.exists(os.path.join(x.root, "a2", "LIVE")):  # the plan only drives restock while attempt 2 is live
+    if os.path.exists(os.path.join(x.root, "a2", "LIVE")):  # the plan only drives restock while the model is live
         out.append(f"  재입고 계획 {plan}")
     return out + [ln for ln in restock_food_lines(x.root, x.now, inv) if ln.startswith("  최근 1시간 재고 없음 거절")]
 

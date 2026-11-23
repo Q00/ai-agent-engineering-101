@@ -43,7 +43,7 @@ RESTOCK_WAKE_S = 600  # a missing or expired restock plan wakes the operator at 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HARNESS = os.path.join(HERE, "harness")
 MARKET_BRIEF = os.path.join(HERE, "MARKET_BRIEF.md")
-CLI = "/home/sungsoo/.local/bin/codex"  # 11-07 오후: codex 한도 초기화로 gpt-6.1-terra 복귀 (kernel/llm.py)
+CLI = "/home/sungsoo/.local/bin/codex"  # codex CLI on the deployment computer, model gpt-6.1-terra (kernel/llm.py)
 POLL_S = 60
 NEXT_WAKE_MAX_MIN = 720  # done.next_wake_min above this takes this (silent backstop, never shown)
 BRIEF_CHARS = 24_000  # about 6k tokens (DESIGN 8, estimate)
@@ -319,7 +319,7 @@ def _num(v):
 
 
 def _openings(root, now):
-    """Restock window openings recorded in the last WINDOW_LOOKBACK_S, sorted: ts + opens_in_s of attempt 1's restock
+    """Restock window openings recorded in the last WINDOW_LOOKBACK_S, sorted: ts + opens_in_s of the rule code's restock
     hook rows in .r3/metrics.jsonl (outcome.why window_closed) and of the kernel hook's trajectory rows (kind restock)."""
     out = []
     for path, pick in (
@@ -653,7 +653,7 @@ class Operator:
         return ", ".join(reasons) or None
 
     def live(self):
-        """True while <root>/a2/LIVE exists: attempt 2 decides sales; otherwise attempt 1's rules do."""
+        """True while <root>/a2/LIVE (the model trade switch) exists: the model decides sales; otherwise the rules do."""
         return os.path.exists(os.path.join(self.root, "a2", "LIVE"))
 
     def _mode_text(self):
@@ -1680,7 +1680,7 @@ class Operator:
         return {"started": True}
 
     def _drop_unused(self, done, result):
-        """LIVE off: attempt 2's seller and buyer harness, trials and restock plans do not reach the shop."""
+        """Switch off: the model's seller and buyer harness, trials and restock plans do not reach the shop."""
         done = dict(done)
         dropped = []
         edits = done.get("edits")

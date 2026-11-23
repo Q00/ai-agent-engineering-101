@@ -8,11 +8,11 @@ it reports its numbers and ends the experiment as "measured"; the operator decid
   with the window_h hours before it (shop side: the before value scaled by the market's revenue rate in the same
   scope; buyer side: by the other buyers' deal rate), then reports the verdict (the value stays) or extends the
   window once.
-- split (v2.12 arms): for sale-side keys the seller reads after the unit pick (SPLIT_KEYS), policy.json keeps the old
-  value and <root>/policy_arms.json gives the new value to the sales whose unit id hashes into arm "b" (attempt 1
-  policy.arm_pick, reimplemented here as arm_b). The verdict compares the two arms over the same hours, so no before
+- split (arms): for sale-side keys the seller reads after the unit pick (SPLIT_KEYS), policy.json keeps the old
+  value and <root>/policy_arms.json gives the new value to the sales whose unit id hashes into arm "b" (the rule
+  code's policy.arm_pick, reimplemented here as arm_b). The verdict compares the two arms over the same hours, so no before
   window and no market adjustment; at the verdict the arm is removed and policy.json keeps the old value.
-- group (11-11): the before/after items of one done with the same "group" label, judged as one sequential experiment
+- group: the before/after items of one done with the same "group" label, judged as one sequential experiment
   on the items' one shared scope, else the role's whole side (group_scope, 11-13); the verdict is reported, every
   item's value stays.
   Ledger entries of mode "bet" (the same thing under its first name) are judged the same way.
@@ -88,7 +88,7 @@ GONE = (
 
 # split mode
 ARMS_FILE = "policy_arms.json"
-ARMS_MAX = 8  # attempt 1 policy.ARMS_MAX: a file with more arms is ignored whole, so a 9th start is refused
+ARMS_MAX = 8  # the rule code's policy.ARMS_MAX: a file with more arms is ignored whole, so a 9th start is refused
 ARM_SHARE = 0.5
 ARM_GRACE_S = 1800  # an arm lives until eval_ts + this
 SPLIT_KEYS = (
@@ -524,8 +524,8 @@ def _set_arm_until(root, eid, until):
 
 
 def arm_target(pol, section, key, value):
-    """(path, value) of the arm that makes attempt 1 read `value` for (section, key): ["defaults", kind, base],
-    ["categories", <path>, base] or ["shop", base]; a per-grade key carries the whole dict attempt 1 reads for the
+    """(path, value) of the arm that makes the seller hook read `value` for (section, key): ["defaults", kind, base],
+    ["categories", <path>, base] or ["shop", base]; a per-grade key carries the whole dict the seller hook reads for the
     section with that one grade changed (the policy_edit._put construction)."""
     base, _, sub = key.partition(".")
     if section in pe.DEFAULTS:
@@ -545,7 +545,7 @@ def arm_target(pol, section, key, value):
 
 
 def seller_has_arms(root):
-    """False when <root>/policy.py (the attempt 1 rule code the seller runs) is there and has no with_arms: a split
+    """False when <root>/policy.py (the rule code the seller runs) is there and has no with_arms: a split
     started against such a seller would compare two identical arms."""
     try:
         with open(os.path.join(root, "policy.py"), encoding="utf-8") as f:
@@ -572,7 +572,7 @@ def sync_arms(root, rows=None):
 
 
 def arm_b(arm_id, unit, share=ARM_SHARE):
-    """True when a sale of this unit got arm "b": attempt 1 policy.arm_pick(arm_id, arm_salt(unit), share)."""
+    """True when a sale of this unit got arm "b": the rule code's policy.arm_pick(arm_id, arm_salt(unit), share)."""
     salt = str(unit)
     return (
         int(hashlib.sha256(f"{arm_id}:{salt}".encode()).hexdigest()[:8], 16) / 2**32
@@ -1010,7 +1010,7 @@ def _kind_of(item, d, category):
 
 def _buyer_deal(e, d, cat):
     """One of our buyer's purchases from a market settle row, or None. Shape confirmed on live data (11-10, data keys
-    amount, buyer, category, grade, kind, list_price (sometimes missing), order, shop, sku, warranty_hours), as attempt 1
+    amount, buyer, category, grade, kind, list_price (sometimes missing), order, shop, sku, warranty_hours), as the rule hooks
     ledger.py _market_entry/norm_settle writes it: type "settle", src "market", role "market" (not "buyer"), data.own_owner True and our
     login in data.buyer (common.settle_side), data.amount = price paid, data.list_price when the market sends it, else
     the catalog list price of data.sku. A deal with no list price cannot be valued and is skipped."""

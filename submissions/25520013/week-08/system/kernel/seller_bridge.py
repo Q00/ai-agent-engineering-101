@@ -1,16 +1,16 @@
-"""Attempt-2 seller inside attempt 1's A2A server (human code, not editable by the model).
+"""Model seller inside the seller hook's A2A server (human code, not editable by the model).
 
-live/seller_patch.py inserts a short hook at the top of attempt 1's `Seller._execute` that calls `bridge(...)` and
-`Bridge.handle`. The switch is the flag file <W>/a2/LIVE, read on every request:
+`Seller._execute` in hooks/seller.py calls `bridge(...)` and `Bridge.handle` before its rule path. The switch is the
+model trade switch, the flag file <W>/a2/LIVE, read on every request:
 
-- flag present and a new task -> attempt 2 opens it (seller.open) and answers every later message (seller.respond);
-- a task attempt 1 opened (in Seller.open) stays on attempt 1 to the end, flag or not;
-- a task attempt 2 opened stays on attempt 2 to the end, flag or not (its unit and ask are only known here);
-- any exception while opening a new task -> metric a2_bridge_error and attempt 1 handles that request.
+- flag present and a new task -> the model seller opens it (seller.open) and answers every later message (seller.respond);
+- a task the rule path opened (in Seller.open) stays on the rule path to the end, flag or not;
+- a task the model seller opened stays on it to the end, flag or not (its unit and ask are only known here);
+- any exception while opening a new task -> metric a2_bridge_error and the rule path handles that request.
 
 Game rules and protocol only, no strategy: candidate units are the inventory minus units held by an open deal of
-either attempt, an accept is signed with attempt 1's sign() and receipt terms, a counter after round 8 ends the deal
-(same cap as attempt 1), and every message carries the number the buyer parses ("asking N" / "Counteroffer: N").
+either path, an accept is signed with the seller hook's sign() and receipt terms, a counter after round 8 ends the deal
+(same cap as the rule path), and every message carries the number the buyer parses ("asking N" / "Counteroffer: N").
 Agent.decide blocks for seconds (model subprocess), so it runs in a worker thread.
 """
 
@@ -30,8 +30,8 @@ FLAG = os.path.join("a2", "LIVE")
 # The accept metric keeps the start of the buyer's request (masked), so a sale can be traced back to the request text
 # once the ledger shows who bought (성수님 결정 2026-11-06 16시: 1점만 주는 구매자의 문구를 찾아 decline_texts로 막기)
 REQ_LOG_CHARS = 160
-HOLD_S = 120  # attempt 1's HOLD_S: an attempt-2 deal idle this long is dropped and its unit freed
-MAX_ROUNDS = 8  # attempt 1's cap: a counter at round 8 or later becomes a reject
+HOLD_S = 120  # the rule code's HOLD_S: an model-seller deal idle this long is dropped and its unit freed
+MAX_ROUNDS = 8  # the rule code's cap: a counter at round 8 or later becomes a reject
 TEXT_DECLINE = "Sorry, we can't take this order."
 TEXT_NO_STOCK = "Sorry, we have none of that in stock."
 TEXT_REJECT = "No deal."
@@ -47,7 +47,7 @@ def live_on(root):
 
 def declined_text(root, text):
     """성수님 결정 2026-11-05 (v2.2): a request carrying a policy.json shop.decline_texts phrase (case and runs of
-    whitespace ignored, 12+ characters) is declined before stock is read, exactly as attempt 1 does."""
+    whitespace ignored, 12+ characters) is declined before stock is read, exactly as the rule code does."""
     pol = c.load_json(os.path.join(root, "policy.json"), {}) or {}
     lst = (
         (pol.get("shop") or {}).get("decline_texts") if isinstance(pol, dict) else None
@@ -62,12 +62,12 @@ def declined_text(root, text):
     return None
 
 
-SKU_RE = re.compile(r"\b(G[0-9A-Za-z]{5,})\b")  # attempt 1's seller.py
+SKU_RE = re.compile(r"\b(G[0-9A-Za-z]{5,})\b")  # the rule code's seller.py
 NEED_RE = re.compile(
     r"(?<!\d)(?<!\d[.,])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h|시간)(?![0-9A-Za-z])",
     re.I,
 )
-NEED_MARGIN_H = 0.25  # attempt 1 v2.1: the settle lands minutes after the quote
+NEED_MARGIN_H = 0.25  # the rule code v2.1: the settle lands minutes after the quote
 # 성수님 결정 2026-11-06: with no stated need, food under half its shelf is not offered. Our reviewed sales to 11-05
 # 18h: food with <50% shelf left averaged 4.21 stars (68 of 413 two-star), 50-75% 4.52, >=75% 4.67; buyer-02, which
 # never states its need, wants 75% of the shelf.
@@ -75,10 +75,10 @@ UNSTATED_MIN_SHARE = 0.5
 
 
 def stated_need_hours(text, names=()):
-    """Shelf life the request asks for, in hours, read as attempt 1 v2.1/v2.1a does: the largest '<number> h /
+    """Shelf life the request asks for, in hours, read as the rule code v2.1/v2.1a does: the largest '<number> h /
     hour(s) / 시간' after SKUs, product `names` and the hour tokens inside those names are removed; None when it
     names no hours. Attempt 1 added the rule on 11-05 (71 of 75 two-star food reviews read 'only N h left, I
-    needed M h'); attempt 2 lost it and buyer-02 posted that complaint about us 47 times by 11-06 01:11."""
+    needed M h'); the model lost it and buyer-02 posted that complaint about us 47 times by 11-06 01:11."""
     t = SKU_RE.sub(" ", text or "")
     names = sorted({n for n in names if n}, key=len, reverse=True)
     for nm in names:
@@ -145,7 +145,7 @@ def candidate_units(market_dir, text, held=(), why=None):
     )
     if (
         need is not None
-    ):  # attempt 1 v2.1 rule: a dated unit that cannot last the stated need is not offered
+    ):  # the rule code v2.1 rule: a dated unit that cannot last the stated need is not offered
         hit = [
             u
             for u in hit
@@ -172,7 +172,7 @@ def candidate_units(market_dir, text, held=(), why=None):
 
 def with_number(message, label, n):
     """The model's message, ending with '<label> N.' unless it already says exactly that. Buyers read the price
-    from the text: ours by 'asking N' / 'Counteroffer: N', attempt 1's and others' by the last number."""
+    from the text: ours by 'asking N' / 'Counteroffer: N', the rule code's and others' by the last number."""
     tail = f"{label} {n}"
     if tail in message and not re.search(r"\d", message.split(tail)[-1]):
         return message
@@ -180,13 +180,13 @@ def with_number(message, label, n):
 
 
 class Bridge:
-    """Attempt-2 deals of one seller process. Helpers come from attempt 1's seller.py, passed explicitly:
+    """Attempt-2 deals of one seller process. Helpers come from the rule code's seller.py, passed explicitly:
 
     sign(receipt) -> signed receipt; name: shop name; receipt_terms(unit, pol, stats=, price=, shelf_hours=);
     offer_in(text) -> int | None; opening_text(unit, pol, ask, stats, shelf_hours) -> str;
     metric(decision, outcome, pol=None); ledger() -> context manager with first_seen_unit(unit);
-    policy() -> policy dict (attempt 1's refresh_policy, called once per new task); shelf(sku) -> hours | None;
-    a1_held() -> unit ids held by attempt 1's open deals; data_part(dict) -> A2A part for the receipt artifact.
+    policy() -> policy dict (the rule code's refresh_policy, called once per new task); shelf(sku) -> hours | None;
+    a1_held() -> unit ids held by the rule code's open deals; data_part(dict) -> A2A part for the receipt artifact.
     """
 
     def __init__(
@@ -239,7 +239,7 @@ class Bridge:
             return self._agent
 
     def wants(self, task_id, a1_open):
-        """Should attempt 2 answer this request? Its own deals always; a new task only while the flag is on."""
+        """Should the model answer this request? Its own deals always; a new task only while the flag is on."""
         return task_id in self.deals or (not a1_open and live_on(self.root))
 
     def trial(self, task_id):
@@ -288,7 +288,7 @@ class Bridge:
             pass
 
     async def handle(self, task_id, text, up, say):
-        """Answer one request. False = attempt 1 should handle it (a new task whose open failed)."""
+        """Answer one request. False = the rule code should handle it (a new task whose open failed)."""
         now = self.clock()
         for tid in [
             k for k, d in self.deals.items() if now - d["t"] > HOLD_S and k != task_id
@@ -298,7 +298,7 @@ class Bridge:
         if deal is None:
             try:
                 reply = await self._open(task_id, text)
-            except Exception as e:  # noqa: BLE001 - attempt 1 takes the request
+            except Exception as e:  # noqa: BLE001 - the rule code takes the request
                 self.deals.pop(task_id, None)
                 self._metric(
                     "a2_bridge_error",
@@ -308,7 +308,7 @@ class Bridge:
         else:
             try:
                 reply = await self._respond(task_id, deal, text)
-            except Exception as e:  # noqa: BLE001 - the deal is ours, attempt 1 cannot continue it
+            except Exception as e:  # noqa: BLE001 - the deal is ours, the rule code cannot continue it
                 self.deals.pop(task_id, None)
                 self._metric(
                     "a2_bridge_error",
@@ -432,7 +432,7 @@ class Bridge:
                 ),
             )
             receipt = self.sign(receipt)
-            try:  # attempt 1's v1.3 cost layer, best effort
+            try:  # the rule code's v1.3 cost layer, best effort
                 with self.ledger() as L:
                     L.first_seen_unit(u)
             except Exception as e:  # noqa: BLE001
@@ -491,7 +491,7 @@ class Bridge:
 
 
 def cancel(task_id):
-    """The buyer left (A2A CancelTask): free the unit an attempt-2 deal held."""
+    """The buyer left (A2A CancelTask): free the unit an model-seller deal held."""
     if _BRIDGE is not None:
         deal = _BRIDGE.deals.pop(task_id, None)
         if deal is not None:

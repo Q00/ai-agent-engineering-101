@@ -1,5 +1,5 @@
 {
-  "_note": "v1.17 candidate. Real calls are OFF unless real_calls_enabled is true AND the CLI exists AND approval is on record (17:13/17:14 rows, 20 calls max). Model name is a setting. --ephemeral, --sandbox read-only, -C <empty temp dir> and the tool-off flags are fixed in llm/codex_client.py (file-read blocking [미확인]); extra_args may not change sandbox / cwd / approvals. parse_timeout_s mirrors llm/parse_assist.PARSE_TIMEOUT_S (8 s, CoS 17:48); the code constant is used.",
+  "_note": "Settings of the seller hook's model price-parse assist. Real calls run only when real_calls_enabled and live_ops are true, the CLI is on the allowed list and llm_caps_config_v4.json enabled is true. Model name is a setting. --ephemeral, --sandbox read-only, -C <empty temp dir> and the tool-off flags are fixed in llm/codex_client_v4.py; extra_args may not change sandbox / cwd / approvals. parse_timeout_s mirrors llm/parse_assist.PARSE_TIMEOUT_S (8 s); the code constant is used.",
   "real_calls_enabled": true,
   "model": "gpt-6.1-terra",
   "reasoning_effort": "medium",
@@ -9,7 +9,7 @@
   "call_log_path": "state/real_calls.jsonl",
   "extra_args": [],
   "live_ops": true,
-  "_note_v120c_B": "v120c-B: cli = labpc absolute path (ALLOWED_CLI). live_ops=true + real_calls_enabled=true + llm_caps_config_v4.enabled=true are all needed for live LLM; flipped only at the CR-reviewed apply.",
-  "_note_model_r3": "model gpt-6.1-terra = GPT 6.1 Terra. Verified: string present in box codex-cli 0.166.0 binary model table and in labpc week-07 memory_compact.jsonl rows (model field). [미확인] against labpc codex-cli 0.164.0 binary itself; no real call made.",
+  "_note_v120c_B": "cli = absolute path on the deployment computer, on the allowed list (ALLOWED_CLI in llm/codex_client_v4.py). live_ops=true + real_calls_enabled=true + llm_caps_config_v4.enabled=true are all needed for model calls.",
+  "_note_model_r3": "model gpt-6.1-terra = GPT 6.1 Terra. model_verified must equal model, or the hard gate in llm/live_v120c.py keeps model calls off.",
   "model_verified": "gpt-6.1-terra"
 }

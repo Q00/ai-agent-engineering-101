@@ -1,7 +1,7 @@
 #!/bin/bash
-# Loop watchdog for attempt 2: every SLEEP_S seconds, starts the a2 processes that are not running (via a2ctl.sh)
+# Loop watchdog for the operating layer: every SLEEP_S seconds, starts the a2ctl.sh processes that are not running
 # and recreates the boardsnap window in tmux session "market". It never kills anything and never touches the
-# kit/forum/runner windows. Run it in its own tmux window:  bash live/watchdog.sh
+# other tmux windows. Run it in its own tmux window:  bash live/watchdog.sh
 #   Stop switches: W/a2/WATCHDOG_OFF (everything; deploy scripts hold it while they swap code), W/a2/stop/<name> (one
 #   name). A process stopped with plain `a2ctl.sh stop` comes back within SLEEP_S unless one of these is set.
 #   Cap: at most MAX_RESTARTS starts of one name per hour (W/a2/watchdog_state), then "giving up" for the hour.

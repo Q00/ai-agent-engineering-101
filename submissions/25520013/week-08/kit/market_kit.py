@@ -331,14 +331,14 @@ def _block_json(path):
 
 
 def blocked_buyers(md):
-    """PUSH 11-16 S1: the set of buyer names in <md>/blocked_buyers.json {"buyers": [...]}, else empty."""
+    """The set of buyer names in <md>/blocked_buyers.json {"buyers": [...]}, else empty."""
     d = _block_json(os.path.join(str(md), BLOCK_FILE)) if md else None
     b = d.get("buyers") if isinstance(d, dict) else None
     return {x for x in b if isinstance(x, str) and x} if isinstance(b, list) else set()
 
 
 def blocked_order(md, market_base, order, now=None):
-    """PUSH 11-16 S1: the blocked buyer who placed `order`, else None. Any doubt or error -> None (sell).
+    """The blocked buyer who placed `order`, else None. Any doubt or error -> None (sell).
     The order->buyer map is the market's own public ledger ("order" entries). 1) the snapshot that
     tools/block_poller.py keeps in <md>/blocked_orders.json {"t", "orders": {order: {"buyer", "expires"}}},
     used only while fresh, while the buyer is still blocked and the order has not expired; 2) on a miss, the
@@ -422,7 +422,7 @@ class AcpShop:
             return JSONResponse(s)
         if parts[2] == "complete" and s["status"] == "ready_for_payment":
             pay = b.get("payment_data") or {}
-            # PUSH 11-16 S1: no sale to a blocked buyer. Only the session's creator knows its id, and the order
+            # No sale to a blocked buyer. Only the session's creator knows its id, and the order
             # must be the one named in both buyer-signed mandates (the market checks them at settle).
             order = pay.get("order")
             mo = [mandate_order(pay.get(k)) for k in ("checkout_mandate", "payment_mandate")]

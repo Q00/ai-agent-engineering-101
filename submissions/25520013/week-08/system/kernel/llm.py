@@ -1,4 +1,4 @@
-"""Model call wrapper: gpt-6.1-terra through the labpc codex CLI, fixed model, no call cap (성수님 결정 2026-11-05; 11-07 오후 한도 초기화 뒤 Haiku에서 복귀).
+"""Model call wrapper: gpt-6.1-terra through the codex CLI on the deployment computer, fixed model, no call cap.
 
 One completion per call: prompt on stdin, answer on stdout, empty temp dir as cwd, codex's own tools off. The tool
 loop for agents is run by the kernel, not by codex. Every call is written to the trajectory (status, latency, sizes;
@@ -22,7 +22,7 @@ MODEL = "gpt-6.1-terra"
 EFFORTS = ("low", "medium", "high")
 ALLOWED_CLI = (
     "/home/sungsoo/.local/bin/codex",
-)  # labpc, codex-cli 0.164.0 (실측 11-05)
+)  # deployment computer, codex-cli 0.164.0
 FIXED_ARGS = (
     "--ephemeral",
     "--skip-git-repo-check",
