@@ -989,6 +989,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         return (1, d.get("median_price") or 0)          # no data yet: cheap, fast-turning categories first
 
     plan, notes = [], []                                 # (sku, catalog row, wanted qty, breadth qty) in rank order
+    asked_diagnostics = {}
     warns = []                                           # v1.14: goods cap turned off by an unreadable storage value
     for d in sorted(demand, key=score):
         cat, kind = d["category"], d.get("kind") or "goods"
@@ -998,9 +999,12 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         # below still count every unit on hand. At 07:04 labpc held 11 sofa G5e3784e6 (57만, 3 h market 43 settles)
         # and 2 G00327e80, so the sofa need was 3 while G8ec51935 (232만) settled 235 times in 3 h market-wide (24 at
         # our shop, each unit sold in about 6 min): the level is 6, so the need is 8.
-        lvl = math.ceil(c["stock_target"] / max(1, int(c.get("skus_per_category", sp.get("skus_per_category", 1)))))
+        _kk = c.get("breadth_skus") or c.get("skus_per_category", sp.get("skus_per_category", 1))   # overhaul 2026-11-15: breadth_skus (no 1-5 bound)
+        lvl = math.ceil(c["stock_target"] / max(1, int(_kk)))
         over = sum(max(0, held.get(sku, 0) - lvl) for sku, _ in by_cat.get(cat, []))
         need = c["stock_target"] - have.get(cat, 0) + over
+        if sp.get("restock_cap_total"):                  # CoS 11-15 23:5x: stock_target caps the category TOTAL (v5/autopilot
+            need = min(need, c["stock_target"] - have.get(cat, 0))   # semantics); the v1.31 'over' add-back bought bed 261>240
         if need <= 0:
             continue
         cands = [(sku, x) for sku, x in by_cat.get(cat, []) if x.get("list_price")
@@ -1029,12 +1033,26 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
             order_ = sorted(near, key=lambda t: (-asked.get(t[0], 0), -rate[t[0]], -sold[t[0]], abs(t[1]["list_price"] - med), t[0]))
         if any(t[0] in asked for t in order_[:3]):
             notes.insert(0, f"{cat}: asked first {[(t[0], round(asked[t[0]], 1)) for t in order_[:3] if t[0] in asked]}")
+            asked_diagnostics[cat] = {"ranked": [t[0] for t in order_], "held": {t[0]: held.get(t[0], 0) for t in order_}, "category_held": have.get(cat, 0), "need": need}
         if cost_frac:                                    # v1.18: SKUs the market settles under our cost + margin
             low = [t[0] for t in order_
                    if below_market(t[0], t[1], stats,
+                                   min(surge_cost_frac(below_market_cost_frac(cost_frac, kind, goods_cf), kind,
+                                                       surge.get(t[0], 1.0)), {"G1dd63027": 0.575, "G29fc9227": 0.542, "G5b7be4e1": 0.50}[t[0]])
+                                   if t[0] in ("G1dd63027", "G29fc9227", "G5b7be4e1") else
                                    surge_cost_frac(below_market_cost_frac(cost_frac, kind, goods_cf), kind,
                                                    surge.get(t[0], 1.0)),
                                    c["min_margin"])]
+            if cat in asked_diagnostics:
+                asked_diagnostics[cat]["below_market"] = low
+                asked_diagnostics[cat]["market_filter"] = {
+                    t[0]: {"common_cost_frac": below_market_cost_frac(cost_frac, kind, goods_cf),
+                           "surge_factor": surge.get(t[0], 1.0),
+                           "adjusted_cost_frac": min(surge_cost_frac(below_market_cost_frac(cost_frac, kind, goods_cf), kind, surge.get(t[0], 1.0)), {"G1dd63027": 0.575, "G29fc9227": 0.542, "G5b7be4e1": 0.50}[t[0]]) if t[0] in ("G1dd63027", "G29fc9227", "G5b7be4e1") else surge_cost_frac(below_market_cost_frac(cost_frac, kind, goods_cf), kind, surge.get(t[0], 1.0)),
+                           "list_price": t[1]["list_price"], "min_margin": c["min_margin"],
+                           "stats": {k: (_stat(stats, "sku", t[0]) or {}).get(k) for k in ("n", "p50")},
+                           "excluded": t[0] in low}
+                    for t in order_}
             if low:
                 order_ = [t for t in order_ if t[0] not in low]
                 notes.append(f"{cat}: market p50 under cost "
@@ -1047,6 +1065,8 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
             notes.append(f"{cat}: by settles {[(t[0], sold[t[0]]) for t in order_[:3]]}")
         if kind == "food":                               # v1.7 (b): no deeper than expected sell-through
             cap = food_cap(cat, order_[0][1], c, sp, stats, own_v.get(cat, 0))
+            if cat in asked_diagnostics:
+                asked_diagnostics[cat].update({"food_cap": cap, "category_stats": _stat(stats, "category", cat), "own_velocity": own_v.get(cat, 0), "shelf_hours": order_[0][1].get("shelf_hours"), "food_sell_through": sp.get("food_sell_through"), "food_min_units": sp.get("food_min_units"), "food_cold_units": sp.get("food_cold_units")})
             if cap is not None:
                 need = min(need, cap - have.get(cat, 0))
                 if need <= 0:
@@ -1062,7 +1082,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         qty_all = max(1, min(c["qty_per_buy"], need, 20))
         # v1.20a: skus_per_category per category (categories[...]) over the shop default. With the shop default 1
         # only order_[0] was ever bought: G1515d951 (2nd by settles in 90 of 92 mattress plans) got 0 units.
-        k = max(1, min(int(c.get("skus_per_category", sp.get("skus_per_category", 1))), qty_all, len(order_)))
+        k = max(1, min(int(_kk), qty_all, len(order_)))
         # v1.30: the units bring the k SKUs up to one level of units on hand (level_fill), so a SKU already above
         # it gets none; with nothing on hand the split is the old even one
         for (sku, x), qty in zip(order_[:k], level_fill(qty_all, [held.get(t[0], 0) for t in order_[:k]])):
@@ -1077,6 +1097,9 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     for sku, x, qty, q1 in plan:
         if len(got) >= max_lines:
             break
+        _ml = resolve(pol, x.get("category"), x.get("kind") or "goods").get("max_lines")   # overhaul 2026-11-15
+        if _ml is not None and sum(1 for s in got if catalog.get(s, {}).get("category") == x.get("category")) >= int(_ml):
+            continue
         worst = int(math.ceil(x["list_price"] * 0.75 * surge.get(sku, 1.0))) * q1   # 75% of list (agent.md) x surge
         if spent + worst > budget:
             notes.append(f"skip {sku}: worst cost {worst} over budget left {budget - spent}")
@@ -1091,8 +1114,11 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         got[sku] += add
         spent += add * unit
     buy = [{"sku": sku, "qty": q} for sku, q in got.items()]
+    for cat, diagnostic in asked_diagnostics.items():
+        diagnostic["allocated"] = [(sku, qty, q1) for sku, x, qty, q1 in plan if x.get("category") == cat]
+        diagnostic["bought"] = {sku: got[sku] for sku, _, _, _ in plan if sku in got and catalog[sku].get("category") == cat}
     out = {"budget": budget, "worst_spend": spent, "units": len(units), "inventory_cost": inv_cost,
-           "notes": notes[:5], **info}
+           "notes": notes[:5], "asked_diagnostics": asked_diagnostics, **info}
     if warns:                                            # v1.14: one line per distinct reason (not per category)
         out["warnings"] = list(dict.fromkeys(warns))
     return buy, out
@@ -1191,6 +1217,8 @@ def choose_offers(order, shops, catalog, pol, reputation=None, own=None, relax=0
             if target <= 0:
                 continue
             exp = (lp - int(lp * c["open_frac"])) * honest * (1 - broken)
+            if (pol.get("buyer") or {}).get("score_share"):   # BX3 2026-11-15: Patch 3.6 saved is a share, not won
+                exp = (1 - c["open_frac"]) * honest * (1 - broken)
             pr = p_refuse(order.get("use_within_hours"), (catalog.get(sku) or {}).get("shelf_hours")) if food else None
             if pr is not None:
                 exp *= 1 - pr

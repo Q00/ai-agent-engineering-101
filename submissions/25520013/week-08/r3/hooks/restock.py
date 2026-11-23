@@ -244,7 +244,7 @@ def _main():
     if stuck and pol["shop"].get("allow_bankrupt"):
         out["bankrupt"] = True
     rec.write("restock_plan", seq, outcome={"lines": len(buy), "qty": sum(b["qty"] for b in buy), **why,
-                                             "balance": inv.get("balance")}, ingest_ms=ims, ingested=counts,
+                                             "planned_buy": buy, "balance": inv.get("balance")}, ingest_ms=ims, ingested=counts,
               extra={"stats": stats is not None, "stats_error": serr,
                      "activity": {k: v for k, v in act.items() if k != "own_sales"},
                      "own_velocity": {k: round(v, 4) for k, v in P.own_velocity(act, catalog, pol).items()},
@@ -253,4 +253,28 @@ def _main():
 
 
 if __name__ == "__main__":
+    import os as _os, sys as _sys                 # r3a2 switch: <W>/a2/LIVE, read per run
+    if _os.path.exists(_os.path.join(_os.getcwd(), "a2", "LIVE")):
+        try:                                      # r3a2 ingest: attempt 1's market-ledger sync and stats catch-up
+            from common import catch_up_stats as _cus  # stay on (.r3/events.jsonl feeds the operator, memfeed, icrl)
+            _st = _sys.argv[_sys.argv.index("--state") + 1] if "--state" in _sys.argv[:-1] else ".market"
+            ingest(_st)
+            _cat = read_json(f"{_st}/catalog.json", {}) or {}
+            _cus({x["sku"]: x for x in _cat} if isinstance(_cat, list) else _cat)
+        except Exception as _e:                   # noqa: BLE001 - never blocks the attempt-2 restock
+            print(f"WARNING: r3a2 ingest: {type(_e).__name__}: {_e}", file=_sys.stderr)
+        try:
+            _sys.path.insert(0, '/home/sungsoo/r3a2-code')
+            from kernel import restock as _a2
+        except Exception:                         # noqa: BLE001 - no attempt-2 code: attempt 1 runs
+            _a2 = None
+        if _a2 is not None:
+            try:
+                _rc = _a2.main(_sys.argv[1:] + ["--root", _os.getcwd()])
+            except Exception:                     # noqa: BLE001 - empty plan this cycle, like attempt 1
+                import traceback as _tb
+                _tb.print_exc()
+                print('{"buy": []}', flush=True)
+                _rc = 0
+            raise SystemExit(_rc)
     main()

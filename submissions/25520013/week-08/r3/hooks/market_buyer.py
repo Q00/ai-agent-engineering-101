@@ -18,6 +18,7 @@ import json
 import os
 import re
 import time
+import sys
 import uuid
 from pathlib import Path
 
@@ -34,6 +35,7 @@ BASE_SHOPS = 3             # v1.20b: attempts 1-3 run as before; attempts 4..max
 EXTRA_WINDOW_S = 60        # v1.20b defaults (policy buyer.extra_attempt_window_s / expiry_guard_s override)
 EXPIRY_GUARD_S = 60
 FOOD_DEADLINE_S = 15       # v1.22: the market issues the next order ~20 s after this one (policy buyer.defaults.{kind}.deadline_s overrides)
+PAR_GRACE_S = 3            # PUSH 11-16: after the output, wait this long for halted parallel attempts, then exit
 RPC_FLOOR_S = 3            # v1.22: least timeout of one haggle message under a time-capped kind
 SHELF_FILE = "shelf_refusals.json"
 SHELF_TTL_S = 6 * 3600     # v1.22: skip a shelf-life refused (shop, SKU) this long when the unit's hours left are unknown
@@ -246,6 +248,173 @@ def grade_c_terms(cand, order, pol, accept):
     return c2, a2
 
 
+# ---- v5 step 1 (owner 19:45 TF plan): buyer s-target. Patch 3.6 Saved per deal = (L - p) / (L - c), 1 if p <= c.
+# cap(unit) = max(c, L - theta x (L - c)) with c = the unit's supply cost estimate from v5/state/ucost.json (public ledger,
+# batch average). Off unless policy buyer.s_target.enabled; no cost / stale file / any error -> current caps unchanged.
+_V5C = {"m": None, "u": {}}
+_V5_UCOST = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "v5", "state", "ucost.json")
+
+
+def _find_unit(o, depth=0):
+    if depth > 4:
+        return None
+    if isinstance(o, dict):
+        u = o.get("unit")
+        if isinstance(u, str) and u.startswith("u-"):
+            return u
+        for v in o.values():
+            r = _find_unit(v, depth + 1)
+            if r:
+                return r
+    elif isinstance(o, list):
+        for v in o:
+            r = _find_unit(v, depth + 1)
+            if r:
+                return r
+    return None
+
+
+def unit_of(t):
+    try:
+        for p in (t or {}).get("status", {}).get("message", {}).get("parts", []) or []:
+            u = _find_unit(p.get("data"))
+            if u:
+                return u
+        m = re.search(r"\bu-[0-9a-f]{12}\b", text_of(t))
+        return m.group(0) if m else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+_V5_ALLOC = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "v5", "state", "bandit.json")
+_V5_ASSIGN = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "v5", "state", "assign.jsonl")
+
+
+def _u01(oid):
+    """md5(order id) -> uniform [0,1); same id -> same value (same arm)."""
+    import hashlib
+    return int(hashlib.md5(str(oid).encode()).hexdigest(), 16) / float(1 << 128)
+
+
+def s_target_theta(st, oid, meta=None):
+    """P1 (DESIGN_v3 §5): theta for this order. Order of sources:
+    1 s_target.alloc.enabled -> v5 allocation file (arms, probs, version; fresh, valid) by inverse CDF of md5(order id)
+    2 s_target.theta_arms     -> arms[md5 % n] (22:27 test)
+    3 s_target.theta          -> static
+    Any error in 1 falls back to 2/3 (never blocks the order)."""
+    meta = meta if meta is not None else {}
+    th = float(st.get("theta", 0.85)); meta.update(src="static", prob=1.0, version=None)
+    arms = st.get("theta_arms")
+    if arms and oid:
+        import hashlib
+        n = len(arms); th = float(arms[int(hashlib.md5(str(oid).encode()).hexdigest(), 16) % n])   # unchanged 22:27 mapping
+        meta.update(src="theta_arms", prob=1.0 / n)
+    al = st.get("alloc") or {}
+    if al.get("enabled") and oid:
+        try:
+            path = al.get("path") or _V5_ALLOC
+            if time.time() - os.path.getmtime(path) > float(al.get("max_age_s", 3600)):
+                raise ValueError("alloc stale")
+            a = json.load(open(path))
+            A, Pr = [float(x) for x in a["arms"]], [float(x) for x in a["probs"]]
+            if len(A) != len(Pr) or not A or any(x < 0 for x in Pr) or abs(sum(Pr) - 1) > 1e-6 \
+                    or any(not (0.70 <= x <= 0.97) for x in A):
+                raise ValueError("alloc invalid")
+            u, acc = _u01(oid), 0.0
+            for x, q in zip(A, Pr):
+                acc += q
+                if u < acc:
+                    th = x; meta.update(src="alloc", prob=q, version=a.get("version")); break
+            else:
+                th = A[-1]; meta.update(src="alloc", prob=Pr[-1], version=a.get("version"))
+        except Exception as e:  # noqa: BLE001 - fall back to theta_arms / static
+            meta["alloc_err"] = type(e).__name__
+    meta["theta"] = th
+    return th
+
+
+def _log_assign(pol, order, unit, prior_cap, s_cap, meta, stage):
+    """P1: one line per haggle decision -> v5/state/assign.jsonl (arm, propensity, version, which cap binds).
+    Gated by s_target.log; any error is swallowed (never blocks the order)."""
+    try:
+        st = ((pol or {}).get("buyer") or {}).get("s_target") or {}
+        if not st.get("log"):
+            return
+        rec = {"ts": round(time.time(), 3), "order": (order or {}).get("order"), "kind": (order or {}).get("kind"),
+               "unit": unit, "stage": stage, "theta": meta.get("theta"), "src": meta.get("src"), "prob": meta.get("prob"),
+               "version": meta.get("version"), "alloc_err": meta.get("alloc_err"), "prior_cap": prior_cap, "s_cap": s_cap,
+               "bound": ("theta" if s_cap is not None and prior_cap is not None and s_cap < prior_cap
+                         else ("prior(grade/max_pay)" if s_cap is not None else "no_s_cap"))}
+        with open(st.get("log_path") or _V5_ASSIGN, "a") as f:
+            f.write(json.dumps(rec) + "\n")
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def s_target_cap(cand, unit, pol, oid=None, meta=None):
+    """-> int cap or None (fallback to current caps).
+    11-15 22:4x CoS (owner t891u): optional s_target.theta_arms = [..]: theta per order by md5(order id) % n, so each
+    arm's deals and orders can be counted from the public ledger (settle/order carry the order id)."""
+    try:
+        st = ((pol or {}).get("buyer") or {}).get("s_target") or {}
+        if not st.get("enabled") or not unit:
+            return None
+        mt = os.path.getmtime(_V5_UCOST)
+        if time.time() - mt > float(st.get("max_age_s", 1800)):
+            return None
+        if _V5C["m"] != mt:
+            _V5C["u"] = json.load(open(_V5_UCOST)); _V5C["m"] = mt
+        c = _V5C["u"].get(unit)
+        L = float(cand["list_price"])
+        if not c or L <= 0:
+            return None
+        c = float(c)
+        if c >= L:
+            return int(c)
+        th = s_target_theta(st, oid, meta)
+        return int(max(c, L - th * (L - c)))
+    except Exception:  # noqa: BLE001 - never cost the order: fall back to the current caps
+        return None
+
+
+OOS_RE = re.compile(r"\b(?:none|no|not|nothing)\b[^.!?]{0,40}\bin stock\b|\bout of stock\b|\bsold out\b|\bno stock\b", re.I)
+
+
+def oos_free_max(pol):
+    """CoS 11-16: policy buyer.oos_free_max (int 0..4, default 0 = off): how many food out-of-stock rejections per
+    order do not count toward max_shops. Time limits (15 s food deadline) are unchanged."""
+    v = ((pol or {}).get("buyer") or {}).get("oos_free_max", 0)
+    return v if isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 4 else 0
+
+
+def is_oos_reject(info):
+    """A shop rejected the opening (round 0) saying it has none in stock."""
+    i = info or {}
+    return i.get("state") == "TASK_STATE_REJECTED" and not i.get("rounds") \
+        and (i.get("rej_cls") == "oos" or bool(OOS_RE.search(i.get("rej_text") or "")))
+
+
+def _rej_text(t):
+    """CoS 11-16 02:0x, diagnostics only: the shop's rejection text (first 160 chars) for the failure breakdown."""
+    try:
+        return str(text_of(t) or "")[:160]
+    except Exception:  # noqa: BLE001 - never cost the order
+        return None
+
+
+def item_misfit(rec, order):
+    """CoS 11-16 02:0x: mirror of the kit's sign check (market_kit.py: receipt item must be the order's item or in
+    order['acceptable']). -> reason or None. Only when the order file carries a non-empty 'acceptable' list; otherwise
+    None (unchanged behaviour). Kiro Everyday shipped G20e8987c for 김치 orders: 20 dead orders in 4 h."""
+    acc = (order or {}).get("acceptable")
+    if not isinstance(acc, list) or not acc or not isinstance(rec, dict):
+        return None
+    item = rec.get("item")
+    if item == order.get("item") or item in acc:
+        return None
+    return f"item {item} not in the order"
+
+
 def over_cap(rec, cand, order):
     """Payment cap (BASE: never complete a checkout above the open mandate). The receipt price is the shop's;
     it must be an int (or integral float) <= our cap for this candidate = min(budget, max_pay_frac x list price,
@@ -264,6 +433,26 @@ def over_cap(rec, cand, order):
     return None
 
 
+def _halted(cand):
+    """PUSH 11-16: True when the parallel attempt loop has stopped this attempt (another shop gave a receipt)."""
+    h = cand.get("_halt")
+    return bool(h is not None and h.is_set())
+
+
+def parallel_cfg(pol, kind):
+    """PUSH 11-16 (owner t912u: raise the buyer score): policy buyer.parallel = {"enabled": bool, "width": 2..4,
+    "max_shops": 4..16, "kinds": ["food"]} -> (width, max_shops), or (0, 0) = off (the sequential loop, unchanged).
+    Food orders have 15 s; the sequential loop tries ~8 shops one by one and 230 of 811 food orders (6 h to 11-16
+    17:30 KST) stopped at max_shops, 163 at the deadline, with 40-67 candidates left. Running `width` haggles at once
+    tries more shops in the same 15 s; the first receipt wins and the others are cancelled."""
+    p = ((pol or {}).get("buyer") or {}).get("parallel") or {}
+    if not isinstance(p, dict) or p.get("enabled") is not True or kind not in (p.get("kinds") or ["food"]):
+        return 0, 0
+    w, m = p.get("width", 3), p.get("max_shops", 12)
+    ok = lambda v, lo, hi: isinstance(v, int) and not isinstance(v, bool) and lo <= v <= hi
+    return (w, m) if ok(w, 2, 4) and ok(m, 4, 16) else (0, 0)
+
+
 def haggle(cand, order, pol, deadline, accept=None):
     capped = kind_deadline_s(order, pol) < DEADLINE_S   # v1.22: food; goods keep their normal timeouts
 
@@ -271,13 +460,22 @@ def haggle(cand, order, pol, deadline, accept=None):
         """v1.22: under a time-capped kind a message waits at most until the deadline (at least RPC_FLOOR_S)."""
         return max(RPC_FLOOR_S, min(normal, deadline - time.time())) if capped else normal
 
+    diag = cand.get("rpc_diag", {})
+    observations = cand.setdefault("haggle_observations", [])
+    diag.update({"rpc_stage": "endpoint", "rpc_started": time.time()})
     url = endpoint(cand["shop"]["url"], timeout=tmo(20))
+    diag.clear()
+    if _halted(cand):                                   # PUSH 11-16: a parallel attempt already got a receipt
+        return None, {"rounds": 0, "state": "halted"}
     opening = f"I want to buy {cand['name']} ({cand['sku']})"
     need = (accept or {}).get("min_hours_left")
     if (order.get("kind") or "goods") == "food" and isinstance(need, (int, float)) and not isinstance(need, bool):
         opening += f". The unit must last at least {need:g} hours."    # v1.22: food only
+    diag.update({"rpc_stage": "first_rpc", "rpc_started": time.time()})
     t = rpc(url, opening, timeout=tmo(60))
+    diag.clear()
     rounds, last = 0, None
+    cap_stop = False
     why = stated_misfit(text_of(t), accept or {}) if state(t) == "TASK_STATE_INPUT_REQUIRED" else None
     if why == "stated grade C":                         # v1.4 (G): haggle on at the grade-C cap instead
         c2, a2 = grade_c_terms(cand, order, pol, accept)
@@ -286,16 +484,35 @@ def haggle(cand, order, pol, deadline, accept=None):
     if why:
         cancel(url, t.get("id"))
         return None, {"rounds": 0, "state": "walked_away", "why": why}
-    while t is not None and state(t) == "TASK_STATE_INPUT_REQUIRED" and time.time() < deadline and rounds < P.HAGGLE_ROUNDS:
+    _bp = pol.get("buyer") or {}   # overhaul 2026-11-15 (Patch 3.6: saved = share of margin); B4: per-kind caps from v4 buyer agent
+    gcap = ((_bp.get("grade_max_pay_kind") or {}).get(order.get("kind") or "goods")) or _bp.get("grade_max_pay") or {}
+    if gcap and state(t) == "TASK_STATE_INPUT_REQUIRED":
+        _sg = stated_grades(text_of(t))
+        if len(_sg) == 1 and next(iter(_sg)) in gcap:
+            cand = dict(cand, max_pay=min(int(cand["max_pay"]), int(int(cand["list_price"]) * float(gcap[next(iter(_sg))]))))
+    if state(t) == "TASK_STATE_INPUT_REQUIRED":          # v5 step 1: s-target cap on the stated unit
+        _m = {}; _prior = int(cand["max_pay"])
+        _u = unit_of(t); _sc = s_target_cap(cand, _u, pol, order.get("order"), _m)
+        _log_assign(pol, order, _u, _prior, _sc, _m, "stated")
+        if _sc is not None:
+            cand = dict(cand, max_pay=min(int(cand["max_pay"]), _sc), s_cap=_sc, s_unit=_u)
+    while t is not None and state(t) == "TASK_STATE_INPUT_REQUIRED" and time.time() < deadline and rounds < P.HAGGLE_ROUNDS \
+            and not _halted(cand):
         ask = ask_of(t)
         offer = P.next_offer(cand, pol, order, rounds, ask, cand.get("relax", 0.0))
         if last is not None and offer <= last and (ask is None or ask > cand["max_pay"]):
             if offer >= cand["max_pay"]:
+                cap_stop = True
                 cancel(url, t.get("id"))
                 break                                   # at our cap and the shop is above it: walk away
         last = offer
         # v1.22: an offer at or above the shop's ask accepts it (checkout step): normal timeout, never cut short
+        diag.update({"rpc_stage": "accept_possible_rpc" if ask is not None and offer >= ask else "haggle_rpc", "rpc_started": time.time()})
         t = rpc(url, str(int(offer)), t["id"], timeout=60 if ask is not None and offer >= ask else tmo(60))
+        if diag.get("rpc_stage") == "haggle_rpc":
+            observations.append({"deadline_remaining_s": deadline - diag["rpc_started"],
+                                 "rpc_elapsed_s": time.time() - diag["rpc_started"], "state": state(t)})
+        diag.clear()
         rounds += 1
     rec = receipt_of(t) if state(t) == "TASK_STATE_COMPLETED" else None
     sig = None
@@ -303,6 +520,9 @@ def haggle(cand, order, pol, deadline, accept=None):
         sig, rec, how = verify_receipt(rec, cand.get("pubkey"))
         if sig is False:                                # the kit would refuse it too: no checkout attempt
             return None, {"rounds": rounds, "state": "receipt_refused", "why": f"signature {how}", "last_offer": last}
+    if rec and item_misfit(rec, order):                 # CoS 11-16 02:0x: the kit would not sign it ("does not fit
+        return None, {"rounds": rounds, "state": "receipt_refused",   # the order") and the order would die: try the next shop
+                      "why": item_misfit(rec, order), "last_offer": last}
     cut = state(t) == "TASK_STATE_INPUT_REQUIRED" and rounds < P.HAGGLE_ROUNDS and time.time() >= deadline
     if state(t) == "TASK_STATE_INPUT_REQUIRED":
         cancel(url, t.get("id"))                        # deadline or round cap: free the shop's unit
@@ -313,10 +533,24 @@ def haggle(cand, order, pol, deadline, accept=None):
             cand, accept = c2, a2
     if rec and claim_refused(rec, accept):
         return None, {"rounds": rounds, "state": "receipt_refused", "why": f"claim {rec['claim']}", "last_offer": last}
+    if rec and gcap and str(rec.get("claim") or "").strip().upper() in gcap:   # overhaul 2026-11-15: claimed grade cap
+        cand = dict(cand, max_pay=min(int(cand["max_pay"]), int(int(cand["list_price"]) * float(gcap[str(rec.get("claim")).strip().upper()]))))
+    if rec and not cand.get("s_unit"):                  # v5 step 1: unit known only from the receipt
+        _m = {}; _prior = int(cand["max_pay"])
+        _sc = s_target_cap(cand, rec.get("unit"), pol, order.get("order"), _m)
+        _log_assign(pol, order, rec.get("unit"), _prior, _sc, _m, "receipt")
+        if _sc is not None:
+            cand = dict(cand, max_pay=min(int(cand["max_pay"]), _sc), s_cap=_sc, s_unit=rec.get("unit"))
     if rec and over_cap(rec, cand, order):
         return None, {"rounds": rounds, "state": "receipt_refused", "why": over_cap(rec, cand, order), "last_offer": last}
+    if rec and _halted(cand):                           # PUSH 11-16: another parallel attempt won; this receipt is not used
+        return None, {"rounds": rounds, "state": "halted", "last_offer": last}
     return rec, {"rounds": rounds, "state": state(t), "last_offer": last, "sig": sig,
-                 "grade_c": bool(cand.get("grade_c")), "accept": accept, **({"deadline_cut": True} if cut else {})}
+                 "grade_c": bool(cand.get("grade_c")), "accept": accept, **({"deadline_cut": True} if cut else {}),
+                 **({"cap_stop": True} if cap_stop else {}),
+                 # Reviewer 11-16 (4): shop text never leaves the hook (ledger -> memory LLM window); class label only
+                 **({"rej_cls": "oos" if OOS_RE.search(_rej_text(t) or "") else "other"} if state(t) == "TASK_STATE_REJECTED" else {}),
+                 **({"s_cap": cand["s_cap"], "s_unit": cand["s_unit"]} if cand.get("s_cap") else {})}
 
 
 def load_shelf(path, now):
@@ -501,9 +735,19 @@ def main():
     shop_new, shop_err = [], None
     try:
         mem = load_shops(shop_path, t0)
+        for i, c in enumerate(cands):
+            rows = mem.get(f"{c['shop'].get('url')}|{kind}") or []
+            ages = [round(t0 - r[0], 1) for r in rows if r[1] in ("err", "cof")]
+            c["diag_before_rank"] = i + 1
+            c["diag_loaded_age"] = min(ages) if ages else None
         for key, row in refused_rows(refused, catalog):   # v1.28b: refused checkouts of earlier orders
             mem.setdefault(key, []).append(row)
             shop_new.append((key, row))
+        for c in cands:
+            rows = mem.get(f"{c['shop'].get('url')}|{kind}") or []
+            ages = [round(t0 - r[0], 1) for r in rows if r[1] in ("err", "cof")]
+            c["diag_recent_age"] = min(ages) if ages else None
+            c["diag_penalty"] = any(r[1] in ("err", "cof") and t0 - r[0] < SHOP_ERR_S for r in rows)
         cands = rerank(cands, mem, kind, t0)
     except Exception as e:                              # noqa: BLE001 - never cost the order: keep choose_offers' order
         shop_err = f"{type(e).__name__}: {str(e)[:120]}"
@@ -512,45 +756,145 @@ def main():
         c["pubkey"] = own.get("pubkeys", {}).get(OW.norm_url(c["shop"].get("url")))
     accept = P.accept_policy(order, pol, relax)
     tried, out = [], None
+    par_left = []                                       # PUSH 11-16: parallel attempts still running when the loop ended
+    par_launched = 0                                    # PUSH 11-16: attempts started by the parallel loop
     seen_shops = set()
     stop = None                                         # v1.20b: why the attempt loop stopped early
-    for c in cands:
-        if c["shop"]["url"] in seen_shops:
-            continue
-        now = time.time()
-        ok, stop = attempt_allowed(len(seen_shops), now - t0, now, order, pol)
-        if not ok:
-            break
-        dl = attempt_deadline(len(seen_shops), t0, order, pol)
-        seen_shops.add(c["shop"]["url"])
+    oos_free, n_oos = (oos_free_max(pol) if food else 0), 0   # CoS 11-16: food out-of-stock rejections free their slot
+    def run_attempt(c, dl):                             # PUSH 11-16: one shop attempt (same body as before, now callable)
+        diag = {}
+        c["rpc_diag"] = diag
         try:
             receipt, info = haggle(c, order, pol, dl, accept)
         except (httpx.HTTPError, ValueError, KeyError) as e:
             receipt, info = None, {"error": f"{type(e).__name__}"}
-            hook_event("fail", f"a2a:{order.get('order')}:{c['shop']['url']}",
-                       {"order": order.get("order"), "stage": "a2a", "detail": str(e)[:200]}, "buyer")
+            failure = {"order": order.get("order"), "stage": "a2a", "detail": str(e)[:200], "error": info["error"]}
+            if diag.get("rpc_stage"):
+                now = time.time()
+                failure.update({"rpc_stage": diag["rpc_stage"], "rpc_elapsed_s": now - diag["rpc_started"],
+                                "deadline_remaining_s": dl - now,
+                                "deadline_start_remaining_s": dl - diag["rpc_started"]})
+            hook_event("fail", f"a2a:{order.get('order')}:{c['shop']['url']}", failure, "buyer")
+        return receipt, info
+
+    def book(c, receipt, info, free):                   # PUSH 11-16: bookkeeping of one finished attempt -> out or None
+        nonlocal n_oos, shelf_dirty
         deal_accept = info.pop("accept", None) or accept   # v1.4: with C only for a deal made under the C cap
+        if oos_free and is_oos_reject(info):
+            n_oos += 1
         if food and info.get("state") == "walked_away" and "shelf life" in (info.get("why") or ""):
             remember_shelf(shelf, c["shop"].get("url"), c["sku"], info["why"], time.time())
             shelf_dirty = True
-        tried.append({"shop": c["shop"].get("name"), "sku": c["sku"], **info})
-        shop_new.append((f"{c['shop'].get('url')}|{kind}",
-                         [round(time.time(), 1), attempt_class(receipt, info), deal_ratio(receipt, c)]))
+        tried.append({"shop": c["shop"].get("name"), "sku": c["sku"], "haggle_observations": c.get("haggle_observations", []), **info,
+                      **({"free_slot": True} if free else {})})   # Reviewer 11-16 5c: attempt that only a freed slot allowed
+        if info.get("state") != "halted":               # PUSH 11-16: a stopped parallel attempt says nothing about the shop
+            shop_new.append((f"{c['shop'].get('url')}|{kind}",
+                             [round(time.time(), 1), attempt_class(receipt, info), deal_ratio(receipt, c)]))
         if receipt:
             price = P.as_int_price(receipt["price"])
-            out = {"shop": c["shop"]["url"], "receipt": receipt, "stars": 4,
-                   "review": f"{c['name']} at {price}", "accept": deal_accept}
-            break
+            return {"shop": c["shop"]["url"], "receipt": receipt, "stars": 4,
+                    "review": f"{c['name']} at {price}", "accept": deal_accept}
+        return None
+
+    par_w, par_max = parallel_cfg(pol, kind)
+    if not par_w:
+        for c in cands:
+            if c["shop"]["url"] in seen_shops:
+                continue
+            now = time.time()
+            eff = len(seen_shops) - min(n_oos, oos_free)    # CoS 11-16: = len(seen_shops) when oos_free_max is 0 (default)
+            ok, stop = attempt_allowed(eff, now - t0, now, order, pol)
+            if not ok:
+                break
+            dl = attempt_deadline(len(seen_shops), t0, order, pol)   # real count: deadlines/expiry guard unchanged
+            if oos_free and dl - now < 2:                   # Reviewer 11-16 5a: no attempt with < 2 s left (only when oos_free on)
+                stop = "deadline"
+                break
+            free = bool(oos_free) and eff < len(seen_shops) and not attempt_allowed(len(seen_shops), now - t0, now, order, pol)[0]
+            seen_shops.add(c["shop"]["url"])
+            receipt, info = run_attempt(c, dl)
+            out = book(c, receipt, info, free)
+            if out is not None:
+                break
+    else:                                               # PUSH 11-16: up to par_w haggles at once, first receipt wins
+        import concurrent.futures as _cf
+        import threading as _th
+        halt = _th.Event()
+        ppol = dict(pol, buyer=dict(pol.get("buyer") or {}, max_shops=par_max))   # attempt cap for this loop only
+        running, i, closed = {}, 0, False
+        ex = _cf.ThreadPoolExecutor(max_workers=par_w)
+        try:
+            while True:
+                while not halt.is_set() and not closed and len(running) < par_w:
+                    while i < len(cands) and cands[i]["shop"]["url"] in seen_shops:
+                        i += 1
+                    if i >= len(cands):
+                        closed = True
+                        break
+                    now = time.time()
+                    eff = len(seen_shops) - min(n_oos, oos_free)
+                    ok, why = attempt_allowed(eff, now - t0, now, order, ppol)
+                    if not ok:
+                        stop = why
+                        if why != "max_shops" or not running:   # max_shops: a running OOS reply may still free a slot
+                            closed = True
+                        break
+                    dl = attempt_deadline(len(seen_shops), t0, order, ppol)
+                    if dl - now < 2:                        # same rule as Reviewer 11-16 5a: no attempt with < 2 s left
+                        stop, closed = "deadline", True
+                        break
+                    free = bool(oos_free) and eff < len(seen_shops) and not attempt_allowed(len(seen_shops), now - t0, now, order, ppol)[0]
+                    c = cands[i]
+                    i += 1
+                    stop = None                         # Codex nit 3: an admitted attempt clears an earlier max_shops stop
+                    par_launched += 1
+                    seen_shops.add(c["shop"]["url"])
+                    c["_halt"] = halt
+                    running[ex.submit(run_attempt, c, dl)] = (c, free)
+                if not running:
+                    break
+                done, _ = _cf.wait(list(running), return_when=_cf.FIRST_COMPLETED)
+                for f in done:
+                    c, free = running.pop(f)
+                    try:
+                        receipt, info = f.result()
+                    except Exception as e:              # noqa: BLE001 - never cost the order
+                        receipt, info = None, {"error": f"{type(e).__name__}"}
+                    if out is not None and receipt:     # a second receipt after the winner: not used
+                        receipt, info = None, dict(info, state="halted", unused_receipt=True)
+                    r = book(c, receipt, info, free)
+                    if r is not None and out is None:
+                        out, stop = r, None
+                        halt.set()
+                if out is not None:                     # Codex 11-16 (1): do not wait for the losers' in-flight RPCs
+                    break
+        finally:
+            halt.set()
+            par_left = list(running)                    # still in flight; joined (bounded) after the output is out
+            ex.shutdown(wait=False)
     if out is None:
         out = {"shop": cands[0]["shop"]["url"] if cands else (shops[0]["url"] if shops else ""),
                "receipt": None, "stars": 3, "review": "no deal", "accept": accept}
     seq = hook_event("decision", f"buy:{order.get('order')}",
-                     {"hook": "market_buyer", "what": "offer_selection", "candidates": len(cands), "tried": tried,
+                     {"hook": "market_buyer", "execution_path": "default", "what": "offer_selection", "candidates": len(cands), "tried": tried,
                       # v1.5: the ranking itself (top 6), so a run shows when reputation changed the choice
                       "ranked": [{"shop": c["shop"].get("name"), "sku": c["sku"], "score": round(c["score"], 1),
-                                  "broken_rate": round(c.get("broken_rate", 0.0), 4), "w": c.get("shop_w")}
+                                  "broken_rate": round(c.get("broken_rate", 0.0), 4), "w": c.get("shop_w"),
+                                  "before_rank": c.get("diag_before_rank"), "loaded_error_age": c.get("diag_loaded_age"),
+                                  "error_age": c.get("diag_recent_age"), "error_penalty": c.get("diag_penalty")}
                                  for c in cands[:6]],
+                      "candidate_shops": len({c["shop"].get("url") for c in cands}),
                       "shop_err": shop_err,
+                      "order_kind": order.get("kind") or "goods", "order_category": order.get("category"),
+                      "step_frac": P.buyer_terms(order, pol, relax)["step_frac"],
+                      "accept_ask_default_present": "accept_ask_frac" in pol["buyer"]["defaults"][order.get("kind") or "goods"],
+                      "accept_ask_default": pol["buyer"]["defaults"][order.get("kind") or "goods"].get("accept_ask_frac"),
+                      "accept_ask_leaf_present": "accept_ask_frac" in (pol["buyer"].get("categories") or {}).get(P.leaf(order.get("category")), {}),
+                      "accept_ask_leaf": (pol["buyer"].get("categories") or {}).get(P.leaf(order.get("category")), {}).get("accept_ask_frac"),
+                      "accept_ask_category_present": "accept_ask_frac" in (pol["buyer"].get("categories") or {}).get(order.get("category"), {}),
+                      "accept_ask_category": (pol["buyer"].get("categories") or {}).get(order.get("category"), {}).get("accept_ask_frac"),
+                      "accept_ask_resolved": P.resolve(pol, order.get("category"), order.get("kind") or "goods", side="buyer").get("accept_ask_frac"),
+                      "accept_ask_effective": P.buyer_terms(order, pol, relax).get("accept_ask_frac"),
                       "accept": accept, "relax": relax, "settled": nset, "own_excluded": excluded, "own_source": own["source"],
                       "own_error": own["error"]}, "buyer")
     rec.write("buy", seq, outcome={"deal": out["receipt"] is not None,
@@ -561,7 +905,11 @@ def main():
                                    "deadline_hit": stop == "deadline" or any(x.get("deadline_cut") for x in tried),
                                    "shelf_skipped": shelf_skipped,
                                    "max_shops": (pol.get("buyer") or {}).get("max_shops", MAX_SHOPS),
-                                   "list_price": next((c["list_price"] for c in cands if out["receipt"] and c["sku"] == out["receipt"].get("item")), None)},
+                                   **({"par": {"w": par_w, "max": par_max, "launched": par_launched,
+                                               "inflight_at_exit": len(par_left)}} if par_w else {}),   # Codex nit 2
+                                   "list_price": next((c["list_price"] for c in cands if out["receipt"] and c["sku"] == out["receipt"].get("item")), None),
+                                   **({"oos_free_used": min(n_oos, oos_free), "free_slot_attempts": sum(1 for x in tried if x.get("free_slot")),
+                                       "free_slot_deal": bool(out["receipt"]) and bool(tried) and bool(tried[-1].get("free_slot"))} if oos_free else {})},
               rejections=rej, ingest_ms=ims, ingested=counts,
               extra={"rep_source": rsrc, "stats": stats is not None, "stats_error": serr, "catch_up": cinfo, "agg_broken": agg_broken, "relax": relax, "settled": nset, "own_source": own["source"], "own_names": len(own["names"]), "own_urls": len(own["urls"]),
                      "own_excluded": len(excluded), "own_error": own["error"]})
@@ -576,7 +924,22 @@ def main():
             save_shops(shop_path, shop_new, time.time())
         except (OSError, TypeError, ValueError):        # bookkeeping only, as above
             pass
+    if par_left:                                        # PUSH 11-16 / Codex (1): bounded exit. Halted attempts leave at
+        import concurrent.futures as _cf                # their next check and cancel their task; give them PAR_GRACE_S,
+        _, rest = _cf.wait(par_left, timeout=PAR_GRACE_S)   # then end the process (the kit waits for the exit)
+        if rest:
+            sys.stdout.flush()
+            os._exit(0)
 
 
 if __name__ == "__main__":
+    import os as _os, sys as _sys                 # r3a2 switch: <W>/a2/LIVE, read per run
+    if _os.path.exists(_os.path.join(_os.getcwd(), "a2", "LIVE")):
+        try:
+            _sys.path.insert(0, '/home/sungsoo/r3a2-code')
+            from kernel import buyer_exec as _a2
+        except Exception:                         # noqa: BLE001 - no attempt-2 code: attempt 1 runs
+            _a2 = None
+        if _a2 is not None:
+            raise SystemExit(_a2.main(_sys.argv[1:] + ["--root", _os.getcwd()]))
     main()

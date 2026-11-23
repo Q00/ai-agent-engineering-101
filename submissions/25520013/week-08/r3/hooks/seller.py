@@ -34,6 +34,12 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
+try:                                              # r3a2: attempt-2 seller bridge, on while <W>/a2/LIVE exists
+    sys.path.append('/home/sungsoo/r3a2-code')
+    from kernel import seller_bridge as A2
+except Exception:                                 # noqa: BLE001
+    A2 = None
+
 ENV_NAME = os.environ.get("R3_SHOP_NAME", "lee-sungsoo")
 NAME_FILE_MAX = 64
 
@@ -169,6 +175,8 @@ def find_unit(text, inv, taken=(), pol=None, now=None, shelf=None, why=None, sta
     if food and len(food) == len(fit):          # v2.1: food by the buyer's shelf-life need (v2.1a: food-only fits)
         need = stated_need_hours(text, [u.get("name") for u in food])
         mfr = ((pol or {}).get("shop") or {}).get("food_min_left_frac")   # v2.10
+        if need is None:
+            food = [u for u in food if u.get("sku") != "Gb375f74f" or P.hours_left(u, now) >= 28.8]
         u = pick_food(food, need, shelf or shelf_hours, now, min_frac=mfr)
         if u is None and why is not None and need is not None:
             why["need_h"] = need
@@ -246,8 +254,7 @@ def opening_text(unit, pol, ask, stats=None, shelf_hours=None, now=None):
     """v1.8: the first reply states exactly what the receipt would claim at this moment (P.receipt_terms: the grade,
     or none when a food grade cut is within claim_window_s or the grade is unknown), shelf life for food, and the
     ask as the last number of the text (readers of the last number, like our offer_in, get the price). The
-    certificate is on the card (every receipt has cert). v2.9: the warranty hours receipt_terms gives at the ask are
-    stated too (warranty_hours compares fail x price with uplift x price, so the price does not change the answer)."""
+    certificate is on the card (every receipt has cert); no warranty words (receipt_terms decides it per price)."""
     t = P.receipt_terms(unit, pol, stats=stats, price=ask, now=now, shelf_hours=shelf_hours)
     g = t.get("claim")
     gtxt = f"grade {g}" if g in ("A", "B", "C") else "grade not stated"
@@ -256,6 +263,24 @@ def opening_text(unit, pol, ask, stats=None, shelf_hours=None, now=None):
     w = t.get("warranty_hours")
     wtxt = f", {w} h warranty" if w else ""
     return f"{unit['name']} ({unit['sku']}), {gtxt}{life}{wtxt}: asking {ask}. Offer a whole number."
+
+
+def receipt_item(unit, text):
+    """PUSH q00rcpt 11-17 (owner 08:49): echo what the buyer asked for. Request contains the unit's SKU, or names no
+    category -> the SKU (unchanged). Request names the unit's category leaf but not its SKU -> that leaf, which is the
+    R3 order item (buyer kit signs item == order item; our ACP pick_unit accepts leaf, unit pinned by the terms).
+    Seen in the ledger: q00 rates SKU receipts "SCAM" and other shops echo the category to it. Never raises."""
+    sku = unit.get("sku")
+    try:
+        t = text if isinstance(text, str) else ""
+        if sku and sku in t:
+            return sku
+        leaf = str(unit.get("category") or "").split(">")[-1].strip()
+        if leaf and leaf in t:
+            return leaf
+    except Exception:  # noqa: BLE001
+        pass
+    return sku
 
 
 def offer_in(text):
@@ -275,6 +300,13 @@ def shelf_hours(sku):
         cat = {x["sku"]: x for x in cat}
     return (cat.get(sku) or {}).get("shelf_hours")
 
+
+# LR 2026-11-17: bounded small-loss rescue of would-be rejects (see Seller._loss_rescue)
+LR_DEFAULT = {"enabled": True, "kinds": ["food"], "min_offer_frac": 0.7, "max_loss_abs": 5000, "max_loss_per_h": 60000}
+LR_OFF = str(Path(__file__).resolve().parent.parent / ".market" / "loss_rescue_off")
+FA_OFF = str(Path(__file__).resolve().parent.parent / ".market" / "final_accept_off")
+FA_MARGIN_PERMILLE = 120   # FA: accept goods offers >= cost x 1.12 at the reject point
+LR_LOG = str(Path(__file__).resolve().parent.parent / ".market" / "loss_rescue.jsonl")   # durable 1 h loss window
 
 class Seller(AgentExecutor):
     def __init__(self, pol=None):
@@ -409,12 +441,91 @@ class Seller(AgentExecutor):
                                     prev_offer=hist[-1] if hist else None, history=list(hist), market=mk)
             if move == "accept":
                 price = P.guard_price(u, price)                 # hard guard: strictly above cost, int only
+            elif move == "reject":
+                fa = self._final_accept(u, offer)              # FA 11-17: profitable offer refused only by the market floor
+                if fa is not None:
+                    return "accept", fa
+                lr = self._loss_rescue(u, pol, offer, deal)     # LR 11-17: small bounded loss instead of a no-deal
+                if lr is not None:
+                    return "accept", lr
             return move, price
         except (P.PolicyError, TypeError) as e:
             floor = P.floor_price(u, pol, deal["inv"], relax=deal["relax"])
             self._metric("guard_refused", {"sku": u["sku"], "unit": u["unit"], "offer": offer, "floor": floor,
                                            "error": str(e)[:120]}, pol=pol)
             return ("counter", floor) if deal["rounds"] < 8 else ("reject", None)
+
+    def _final_accept(self, u, offer):
+        """FA 2026-11-17: at the point respond() REJECTS a goods offer (last round, buyer not rising), accept when the
+        offer is >= ceil(cost x (1 + FA_MARGIN)). respond() can reject such offers because the v2.7 market floor
+        (0.9 x SKU median) or the grade floor sits above them (6 h: e.g. bed cost 588,270 offer 1,010,981 rejected).
+        The alternative is no sale: with < 9 h left and ~77 h of furniture cover, the unit stays at cost in Book, so a
+        sale at >= cost x 1.12 raises Book (12% covers the ~6.9% bed breakage refund rate) and avoids a no-deal
+        review. Flag file FA_OFF disables it; any error -> None (the reject stands)."""
+        try:
+            if os.path.exists(FA_OFF) or offer is None or u.get("kind") != "goods":
+                return None
+            off = P.as_int_price(offer)
+            cost = int(u["cost"])
+            need = -(-cost * (1000 + FA_MARGIN_PERMILLE) // 1000)
+            if off < need:
+                return None
+            price = P.guard_price(u, off)
+            self._metric("final_accept", {"sku": u.get("sku"), "unit": u.get("unit"), "cost": cost, "offer": off,
+                                          "margin": round(off / cost - 1, 4)})
+            return price
+        except Exception:                                # noqa: BLE001 - any doubt: the reject stands
+            return None
+
+    def _loss_rescue(self, u, pol, offer, deal):
+        """LR 2026-11-17 (owner t920u/t921u seller push): where respond() would REJECT (last round, buyer not
+        rising), accept the buyer's offer instead when the loss is small and bounded. A rejected buyer that committed
+        to us leaves a 'no deal' review (2.9 stars avg, 6 h); a paid deal averages 4.66. Policy shop.loss_rescue:
+        {enabled, kinds [food], min_offer_frac 0.7 (offer >= ceil(cost x frac)), max_loss_abs 5000 (cost - offer),
+        max_loss_per_h 60000 (rolling 1 h sum of cost - offer over rescues)}; no policy key -> LR_DEFAULT (same values).
+        Disabled key, the flag file LR_OFF, or any error -> None (the reject stands). Undo: touch .market/loss_rescue_off."""
+        try:
+            if os.path.exists(LR_OFF):                   # instant undo: touch .market/loss_rescue_off
+                return None
+            cfg = (pol.get("shop") or {}).get("loss_rescue") or LR_DEFAULT
+            if not cfg.get("enabled") or offer is None:
+                return None
+            if u.get("kind") not in (cfg.get("kinds") or ["food"]):
+                return None
+            off = P.as_int_price(offer)
+            cost = int(u["cost"])
+            frac = float(cfg.get("min_offer_frac", 0.7))
+            if off < 1 or off * 1000 < cost * int(round(frac * 1000)):
+                return None
+            loss = cost - off
+            if loss > int(cfg.get("max_loss_abs", 5000)):
+                return None
+            now = time.time()
+            win = []                                     # v2 (Codex): durable window in LR_LOG, survives restarts
+            try:
+                with open(LR_LOG) as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        d = json.loads(line)              # v3 (Codex): a malformed record -> exception -> no rescue
+                        if now - float(d["ts"]) < 3600:
+                            win.append((float(d["ts"]), int(d["loss"])))
+            except FileNotFoundError:
+                pass
+            if loss > 0 and sum(x[1] for x in win) + loss > int(cfg.get("max_loss_per_h", 60000)):
+                return None
+            if loss > 0:                                 # record BEFORE accepting; no durable record -> no rescue
+                with open(LR_LOG, "a") as f:              # leading newline: a torn trailing record cannot absorb this one
+                    f.write("\n" + json.dumps({"ts": now, "loss": loss, "unit": u.get("unit")}) + "\n")
+                    f.flush()
+                    os.fsync(f.fileno())
+                win.append((now, loss))
+            self._metric("loss_rescue", {"sku": u.get("sku"), "unit": u.get("unit"), "cost": cost, "offer": off,
+                                         "loss": loss, "rounds": deal.get("rounds"),
+                                         "loss_1h": sum(x[1] for x in win)}, pol=pol)
+            return off
+        except Exception:                                # noqa: BLE001 - any doubt: the reject stands
+            return None
 
     def deal_policy(self, unit, now):
         """v2.12: (policy, picked arms) for a new sale of `unit`: P.with_arms over the live arms of policy_arms.json,
@@ -456,6 +567,13 @@ class Seller(AgentExecutor):
             self._bl("outcome", tid, outcome="no_response", sku=_d["unit"].get("sku"), last_ask=_d.get("ask"),
                      rounds=_d.get("rounds"), idle_s=round(now - _d["t"], 1))
             self._blog.pop(tid, None)
+        if A2 is not None:                        # r3a2 switch: <W>/a2/LIVE, read per request
+            _a2 = A2.bridge(os.getcwd(), MARKET_DIR, sign=sign, name=NAME, receipt_terms=P.receipt_terms,
+                            offer_in=offer_in, opening_text=opening_text, metric=self._metric, ledger=Ledger,
+                            policy=self.refresh_policy, shelf=self.shelf, data_part=new_data_part,
+                            a1_held=lambda: {d["unit"]["unit"] for d in self.open.values()})
+            if _a2.wants(task.id, task.id in self.open) and await _a2.handle(task.id, text, up, say):
+                return
         deal = self.open.get(task.id)
         if deal is None:
             try:
@@ -478,7 +596,7 @@ class Seller(AgentExecutor):
             if unit is None:
                 need = why.get("need_h")                # v2.1: food in stock, none lasts the stated need
                 self._metric("no_stock", dict({"request": BL.clean(text, 80)}, **why))
-                self._bl("outcome", task.id, outcome="no_stock", request=BL.clean(text, 80))
+                self._bl("outcome", task.id, outcome="no_stock", request=BL.clean(text, 80), **why)
                 self._blog.pop(task.id, None)
                 await up.reject(say("Sorry, we have none of that in stock." if need is None
                                     else f"Sorry, none of our units has {need:g} h of shelf life left."))
@@ -517,7 +635,7 @@ class Seller(AgentExecutor):
                                         P.floor_price(u, deal.get("pol") or self.pol, deal["inv"], relax=deal["relax"]))
                 if w:
                     terms["warranty_hours"] = w
-            receipt = dict({"shop": NAME, "item": u["sku"], "price": price, "task": task.id}, **terms)
+            receipt = dict({"shop": NAME, "item": receipt_item(u, deal.get("text")), "price": price, "task": task.id}, **terms)
             receipt = sign(receipt)
             self.accepted[u["unit"]] = time.time()
             try:                                        # v1.3: cost layer for this unit before its sale is ingested
@@ -552,6 +670,8 @@ class Seller(AgentExecutor):
         task = context.current_task
         if task is None:
             return
+        if A2 is not None:                        # r3a2: free the unit an attempt-2 deal held
+            A2.cancel(task.id)
         _had = self.open.pop(task.id, None)
         self._bl("outcome", task.id, outcome="cancel", open=_had is not None)
         self._blog.pop(task.id, None)
