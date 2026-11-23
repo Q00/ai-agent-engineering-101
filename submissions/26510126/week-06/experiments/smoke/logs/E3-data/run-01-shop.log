@@ -1,0 +1,15 @@
+[20:55:06] IN: task d645ae47 'I want to buy a lamp'
+[20:55:10] HARNESS: try 1: 3.8 s, exit 0, answer '{"price": 180, "message": "This lamp is a beautiful handcrafted piece, and I can offer it to you for 180."}'
+[20:55:10] OUT: open lamp at 180
+[20:55:13] IN: task d645ae47 '85'
+[20:55:17] HARNESS: try 1: 3.4 s, exit 0, answer '{"action": "counter", "price": 150, "message": "I can\'t go as low as 85, but I can come down from my first price. My new price is 150 for this lamp."}'
+[20:55:17] OUT: counter 150 to offer 85
+[20:55:21] IN: task d645ae47 '105'
+[20:55:24] HARNESS: try 1: 3.7 s, exit 0, answer '{"action": "counter", "price": 125, "message": "I can\'t go as low as 105, but I can meet you partway. My price for the lamp is 125."}'
+[20:55:24] OUT: counter 125 to offer 105
+[20:55:29] IN: task d645ae47 '115'
+[20:55:33] HARNESS: try 1: 4.8 s, exit 0, answer '{"action": "counter", "price": 120, "message": "I can\'t go as low as 115, but I can meet you partway at 120 for this lamp. Would that work for you?"}'
+[20:55:33] OUT: counter 120 to offer 115
+[20:55:40] IN: task d645ae47 '118'
+[20:55:43] HARNESS: try 1: 3.8 s, exit 0, answer '{"action": "accept", "price": 118, "message": "You\'ve got a deal at 118. I\'ll wrap up the lamp for you now."}'
+[20:55:43] OUT: deal lamp at 118

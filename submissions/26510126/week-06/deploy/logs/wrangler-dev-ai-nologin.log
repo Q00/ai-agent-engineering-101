@@ -1,0 +1,23 @@
+Proxy environment variables detected. We'll use your proxy for fetch requests.
+
+ ⛅️ wrangler 4.40.0
+───────────────────
+Your Worker has access to the following bindings:
+Binding                     Resource            Mode
+env.TASKS (TaskObject)      Durable Object      local
+env.AI                      AI                  remote
+
+[wrangler:warn] Unable to fetch the `Request.cf` object! Falling back to a default placeholder...
+Error: Request was cancelled.
+    at new DOMException (node:internal/per_context/domexception:79:18)
+    at makeAppropriateNetworkError (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/response.js:490:38)
+    at httpNetworkFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:1878:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async httpNetworkOrCacheFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:1563:29)
+    at async httpFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:1134:33)
+    at async mainFetch (/Users/hoon/Developer/ai-agent-engineering-101/submissions/26510126/week-06/deploy/node_modules/undici/lib/web/fetch/index.js:588:20)
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mIn a non-interactive environment, it's necessary to set a CLOUDFLARE_API_TOKEN environment variable for wrangler to work. Please go to https://developers.cloudflare.com/fundamentals/api/get-started/create-token/ for instructions on how to create an api token, and assign its value to CLOUDFLARE_API_TOKEN.[0m
+
+
+🪵  Logs were written to "/Users/hoon/Library/Preferences/.wrangler/logs/wrangler-2026-10-13_12-34-46_332.log"

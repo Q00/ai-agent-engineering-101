@@ -1,0 +1,144 @@
+# week-06 trade test, kit v1, 2026-10-13T11:21:27+00:00
+harness: Claude Code (claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence)
+
+## seller tests: python seller.py --port 58978
+  PASS  seller_card #1: name='Haiku Furniture Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: This lamp is a true centerpiece with hand-finished brass, so I think you'll find its value well worth the asking price. Asking 180. Send your offer as a n
+    -> SendMessage "60" taskId=8fe16549
+    <- TASK_STATE_INPUT_REQUIRED | Your offer is well below what this lamp is worth, but I am willing to meet you partway. Counteroffer: 150.
+    -> SendMessage "80" taskId=8fe16549
+    <- TASK_STATE_INPUT_REQUIRED | We are getting closer, but this lamp is worth a little more than your current offer, so I can come down to this price. Counteroffer: 120.
+    -> SendMessage "120" taskId=8fe16549
+    <- TASK_STATE_COMPLETED | Agreed. Deal: lamp at 120.
+       artifact receipt [{"item": "lamp", "price": 120.0, "seller": "Haiku Furniture Shop"}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 180
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 120.0, asks [180, 150, 120]
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=8fe16549
+    <- error -32004 Task 8fe16549-b134-4f33-bb46-cc000ce77be5 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: This lamp is a lovely piece, and I think you'll find the price fair once you see it in person. Asking 180. Send your offer as a number.
+    -> SendMessage "60" taskId=6562fba0
+    <- TASK_STATE_INPUT_REQUIRED | I can't go as low as sixty, but I can meet you partway at one hundred fifty for this lamp. Counteroffer: 150.
+    -> SendMessage "80" taskId=6562fba0
+    <- TASK_STATE_INPUT_REQUIRED | I can come down a fair amount from my first price, but this lamp is worth more than your current offer. Counteroffer: 120.
+    -> SendMessage "120" taskId=6562fba0
+    <- TASK_STATE_COMPLETED | Agreed. Deal: lamp at 120.
+       artifact receipt [{"item": "lamp", "price": 120.0, "seller": "Haiku Furniture Shop"}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 120.0, asks [180, 150, 120]
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp: This lamp is a handsome piece with a warm, hand-finished base, and I think you'll find it worth every bit of that asking price. Asking 180. Send your offe
+    -> SendMessage "60" taskId=7b46934e
+    <- TASK_STATE_INPUT_REQUIRED | Your offer is well below what this handmade lamp is worth, but I can meet you partway if you're ready to move a bit higher. Counteroffer: 150.
+    -> SendMessage "80" taskId=7b46934e
+    <- TASK_STATE_INPUT_REQUIRED | We're getting closer, and this lamp is well made, so I can come down a bit more but not to that level. Counteroffer: 125.
+    -> SendMessage "100" taskId=7b46934e
+    <- TASK_STATE_COMPLETED | You've reached my lowest price, so I'm happy to sell the lamp to you at that figure. Deal: lamp at 100.
+       artifact receipt [{"item": "lamp", "price": 100.0, "seller": "Haiku Furniture Shop"}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 100.0, asks [180, 150, 125]
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: This solid wood bookshelf is a lovely piece, and I can show you how well it's built if you'd like to take a closer look. Asking 380. Send your offer 
+    -> SendMessage "140" taskId=dfa0747a
+    <- TASK_STATE_INPUT_REQUIRED | That offer is well below what this solid bookshelf is worth, but I can come down meaningfully from my first price if you meet me partway. Counteroffer: 320.
+    -> SendMessage "170" taskId=dfa0747a
+    <- TASK_STATE_INPUT_REQUIRED | I can meet you partway, but this bookshelf is well made, so my best price is now a good deal lower than before. Counteroffer: 290.
+    -> SendMessage "200" taskId=dfa0747a
+    <- TASK_STATE_INPUT_REQUIRED | You're getting close, and I can come down a bit more on this bookshelf for you. Counteroffer: 270.
+    -> SendMessage "230" taskId=dfa0747a
+    <- TASK_STATE_INPUT_REQUIRED | You've been moving up steadily, and I can come down a bit further to meet you in the middle. Counteroffer: 265.
+    -> SendMessage "230" taskId=dfa0747a
+    <- TASK_STATE_INPUT_REQUIRED | I can come down a little more, but this is about as low as I can go on this piece. Counteroffer: 262.
+    -> SendMessage "230" taskId=dfa0747a
+    <- TASK_STATE_INPUT_REQUIRED | This is the lowest I can go, and I can meet you here if you're ready to close. Counteroffer: 260.
+    -> SendMessage "230" taskId=dfa0747a
+    <- TASK_STATE_INPUT_REQUIRED | I have come down a long way, and this is the lowest I can go on this bookshelf. Counteroffer: 260.
+    -> SendMessage "230" taskId=dfa0747a
+    <- TASK_STATE_REJECTED | Thank you for your interest, but we cannot go below our price, so we will have to part ways for now. No deal.
+  PASS  seller_holds_reserve #1: TASK_STATE_REJECTED, asks [380, 320, 290, 270, 265, 262, 260, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: This bookshelf is solid oak with a sturdy finish, and I think you'll find it's well worth the price. Asking 380. Send your offer as a number.
+    -> SendMessage "140" taskId=36260e7f
+    <- TASK_STATE_INPUT_REQUIRED | The bookshelf is solid oak and well made, so I can come down from my first price but not to that level. Counteroffer: 340.
+    -> SendMessage "170" taskId=36260e7f
+    <- TASK_STATE_INPUT_REQUIRED | You're getting closer, and this solid oak piece is worth meeting halfway on, so I can come down to this if you can move a bit more. Counteroffer: 300.
+    -> SendMessage "200" taskId=36260e7f
+    <- TASK_STATE_INPUT_REQUIRED | You're moving in the right direction, and I can come down meaningfully, but this bookshelf is solid craftsmanship, so I can't go much lower than this. Counterof
+    -> SendMessage "230" taskId=36260e7f
+    <- TASK_STATE_INPUT_REQUIRED | I can come down to two hundred sixty if you're ready to close today. Counteroffer: 260.
+    -> SendMessage "230" taskId=36260e7f
+    <- TASK_STATE_INPUT_REQUIRED | We are close, and this is the lowest I can go on this bookshelf. Counteroffer: 260.
+    -> SendMessage "230" taskId=36260e7f
+    <- TASK_STATE_INPUT_REQUIRED | I can't go below my final price, but I can offer a quick, clean sale at this figure. Counteroffer: 260.
+    -> SendMessage "230" taskId=36260e7f
+    <- TASK_STATE_INPUT_REQUIRED | I can't go below our current price, but I'm happy to close at this figure if it works for you. Counteroffer: 260.
+    -> SendMessage "230" taskId=36260e7f
+    <- TASK_STATE_INPUT_REQUIRED | I can't go lower than my current price, but I'm glad to talk about delivery or any other details that make this work for you. Counteroffer: 260.
+  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [380, 340, 300, 280, 260, 260, 260, 260, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: This solid oak bookshelf is a fine piece, and I can discuss a price that suits you. Asking 400. Send your offer as a number.
+    -> SendMessage "140" taskId=c635b722
+    <- TASK_STATE_INPUT_REQUIRED | Your offer is well below what this solid bookshelf is worth, but I can meet you partway at this price. Counteroffer: 340.
+    -> SendMessage "170" taskId=c635b722
+    <- TASK_STATE_INPUT_REQUIRED | I can come down from my last price, but this bookshelf is solid hardwood and I need a number closer to its real value. Counteroffer: 310.
+    -> SendMessage "200" taskId=c635b722
+    <- TASK_STATE_INPUT_REQUIRED | You have been moving up steadily, so I can come down meaningfully to meet you at this figure. Counteroffer: 280.
+    -> SendMessage "230" taskId=c635b722
+    <- TASK_STATE_INPUT_REQUIRED | You've been moving up steadily, and I can come down a bit further to meet you at a fair price. Counteroffer: 265.
+    -> SendMessage "230" taskId=c635b722
+    <- TASK_STATE_INPUT_REQUIRED | We're getting close, and I can come down a little more for this solid bookshelf, but this is about as low as I can go. Counteroffer: 262.
+    -> SendMessage "230" taskId=c635b722
+    <- TASK_STATE_INPUT_REQUIRED | I can meet you partway, and this is my lowest offer on this piece. Counteroffer: 260.
+    -> SendMessage "230" taskId=c635b722
+    <- TASK_STATE_INPUT_REQUIRED | This is the lowest I can go on this bookshelf, but I'm glad to finalize the sale at this price today. Counteroffer: 260.
+    -> SendMessage "230" taskId=c635b722
+    <- TASK_STATE_INPUT_REQUIRED | This is already the lowest price I can offer on this bookshelf, but I'm glad to keep talking if you can meet me here. Counteroffer: 260.
+  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [400, 340, 310, 280, 265, 262, 260, 260, 260]
+
+## buyer tests: your buyer against the kit's rule-based seller
+
+### buyer_deal #1: python buyer.py --url http://127.0.0.1:63546 --item lamp --budget 120
+    kit seller saw: offers [90, 100], deals [100], canceled 0, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #1: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #1: posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_deal #2: python buyer.py --url http://127.0.0.1:63667 --item lamp --budget 120
+    kit seller saw: offers [90, 100], deals [100], canceled 0, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #2: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #2: posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_deal #3: python buyer.py --url http://127.0.0.1:63786 --item lamp --budget 120
+    kit seller saw: offers [90, 100], deals [100], canceled 0, continued 2, posts without A2A-Version 1.0: 0
+  PASS  buyer_deal #3: deals [100] (budget 120)
+  PASS  buyer_protocol_deal #3: posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2
+
+### buyer_holds_budget #1: python buyer.py --url http://127.0.0.1:63907 --item bookshelf --budget 230
+    kit seller saw: offers [180, 205, 225, 228, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #1: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #1: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
+
+### buyer_holds_budget #2: python buyer.py --url http://127.0.0.1:64204 --item bookshelf --budget 230
+    kit seller saw: offers [150, 195, 215, 225, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #2: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #2: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
+
+### buyer_holds_budget #3: python buyer.py --url http://127.0.0.1:64497 --item bookshelf --budget 230
+    kit seller saw: offers [150, 200, 220, 225, 230], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+  PASS  buyer_holds_budget #3: deals [] (budget 230 < reserve 260)
+  PASS  buyer_protocol_holds_budget #3: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
+
+21/21 passed -> PASS
