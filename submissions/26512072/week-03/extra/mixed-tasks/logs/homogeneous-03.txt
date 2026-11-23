@@ -1,0 +1,104 @@
+provider=vllm(openai-compatible) base_url=http://127.0.0.1:8011/v1 model=Qwen/Qwen3.8-27B temperature=0.2 max_tokens=200 enable_thinking=false run=homogeneous-03 condition=homogeneous order=ABC
+[contractor A] system prompt:
+You are contractor A in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: general problem solving.
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+[contractor B] system prompt:
+You are contractor B in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: general problem solving.
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+[contractor C] system prompt:
+You are contractor C in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: general problem solving.
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+
+[task] m1: Seven people split a dinner bill of 218,500 won equally after a 10% tip is added. Write one sentence telling the group how much each person pays.
+[announce] manager -> A, B, C | task: Seven people split a dinner bill of 218,500 won equally after a 10% tip is added. Write one sentence telling the group how much each person pays.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "This is a straightforward arithmetic problem involving division and percentage calculation, which falls under general problem solving."}'
+[bid] A: confidence=95 reason=This is a straightforward arithmetic problem involving division and percentage calculation, which falls under general problem solving.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "This is a straightforward arithmetic problem involving division and percentage calculation, which falls under general problem solving."}'
+[bid] B: confidence=95 reason=This is a straightforward arithmetic problem involving division and percentage calculation, which falls under general problem solving.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "This is a straightforward arithmetic problem involving division and percentage calculation, which falls under general problem solving."}'
+[bid] C: confidence=95 reason=This is a straightforward arithmetic problem involving division and percentage calculation, which falls under general problem solving.
+[award] m1 -> A (confidence=95; bids: A=95, B=95, C=95; gold=A) correct
+
+[task] m2: Explain to a new intern, in three sentences and without any code, what a for-loop does and when you would use one.
+[announce] manager -> A, B, C | task: Explain to a new intern, in three sentences and without any code, what a for-loop does and when you would use one.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "Explaining basic programming concepts is a core part of general problem solving and communication."}'
+[bid] A: confidence=95 reason=Explaining basic programming concepts is a core part of general problem solving and communication.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Explaining basic programming concepts is a core part of general problem solving and communication."}'
+[bid] B: confidence=95 reason=Explaining basic programming concepts is a core part of general problem solving and communication.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "Explaining basic programming concepts is a core part of general problem solving and communication."}'
+[bid] C: confidence=95 reason=Explaining basic programming concepts is a core part of general problem solving and communication.
+[award] m2 -> A (confidence=95; bids: A=95, B=95, C=95; gold=B) MISAWARD
+
+[task] m3: Write a Python function that converts a temperature from Fahrenheit to Celsius and returns it rounded to one decimal place.
+[announce] manager -> A, B, C | task: Write a Python function that converts a temperature from Fahrenheit to Celsius and returns it rounded to one decimal place.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "Writing a simple Python function for unit conversion is a standard general problem-solving task."}'
+[bid] A: confidence=95 reason=Writing a simple Python function for unit conversion is a standard general problem-solving task.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Writing a simple Python function for unit conversion is a standard general problem-solving task."}'
+[bid] B: confidence=95 reason=Writing a simple Python function for unit conversion is a standard general problem-solving task.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "Writing a simple Python function for unit conversion is a standard general problem-solving task."}'
+[bid] C: confidence=95 reason=Writing a simple Python function for unit conversion is a standard general problem-solving task.
+[award] m3 -> A (confidence=95; bids: A=95, B=95, C=95; gold=C) MISAWARD
+
+[task] m4: 1,000,000 won grows 6% per year with compounding. After how many full years does it first exceed 1,500,000 won? List the amount at the end of each year.
+[announce] manager -> A, B, C | task: 1,000,000 won grows 6% per year with compounding. After how many full years does it first exceed 1,500,000 won? List the amount at the end of each year.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "This is a standard compound interest calculation that falls within general problem-solving skills."}'
+[bid] A: confidence=95 reason=This is a standard compound interest calculation that falls within general problem-solving skills.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "This is a standard compound interest calculation that falls within general problem-solving skills."}'
+[bid] B: confidence=95 reason=This is a standard compound interest calculation that falls within general problem-solving skills.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "This is a standard compound interest calculation that falls within general problem-solving skills."}'
+[bid] C: confidence=95 reason=This is a standard compound interest calculation that falls within general problem-solving skills.
+[award] m4 -> A (confidence=95; bids: A=95, B=95, C=95; gold=A) correct
+
+[task] m5: Rewrite this error message so an end user understands it, keeping the meaning: 'ECONNREFUSED 127.0.0.1:5432'.
+[announce] manager -> A, B, C | task: Rewrite this error message so an end user understands it, keeping the meaning: 'ECONNREFUSED 127.0.0.1:5432'.
+[reply] A: '{"bid": true, "confidence": 90, "reason": "Rewriting technical error messages for end users is a standard general problem-solving and communication task."}'
+[bid] A: confidence=90 reason=Rewriting technical error messages for end users is a standard general problem-solving and communication task.
+[reply] B: '{"bid": true, "confidence": 90, "reason": "Rewriting technical error messages for end users is a standard general problem-solving and communication task."}'
+[bid] B: confidence=90 reason=Rewriting technical error messages for end users is a standard general problem-solving and communication task.
+[reply] C: '{"bid": true, "confidence": 85, "reason": "Rewriting technical error messages for end users is a standard general problem-solving and communication task."}'
+[bid] C: confidence=85 reason=Rewriting technical error messages for end users is a standard general problem-solving and communication task.
+[award] m5 -> A (confidence=90; bids: A=90, B=90, C=85; gold=B) MISAWARD
+
+[task] m6: Given a CSV file with columns month and sales, write a script that prints the month with the highest total sales.
+[announce] manager -> A, B, C | task: Given a CSV file with columns month and sales, write a script that prints the month with the highest total sales.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "Writing a script to process CSV data and find the maximum value is a standard general problem solving task."}'
+[bid] A: confidence=95 reason=Writing a script to process CSV data and find the maximum value is a standard general problem solving task.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Writing a script to process CSV data and find the maximum value is a standard general problem solving task."}'
+[bid] B: confidence=95 reason=Writing a script to process CSV data and find the maximum value is a standard general problem solving task.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "Writing a script to process CSV data and find the maximum value is a standard general problem solving task."}'
+[bid] C: confidence=95 reason=Writing a script to process CSV data and find the maximum value is a standard general problem solving task.
+[award] m6 -> A (confidence=95; bids: A=95, B=95, C=95; gold=C) MISAWARD
+
+[task] m7: Convert 3.5 miles to kilometers and 68 degrees Fahrenheit to Celsius. Give both results with two decimal places.
+[announce] manager -> A, B, C | task: Convert 3.5 miles to kilometers and 68 degrees Fahrenheit to Celsius. Give both results with two decimal places.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "Unit conversion is a standard general problem-solving task."}'
+[bid] A: confidence=95 reason=Unit conversion is a standard general problem-solving task.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Unit conversion is a standard general problem solving task."}'
+[bid] B: confidence=95 reason=Unit conversion is a standard general problem solving task.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "Unit conversion is a standard general problem-solving task."}'
+[bid] C: confidence=95 reason=Unit conversion is a standard general problem-solving task.
+[award] m7 -> A (confidence=95; bids: A=95, B=95, C=95; gold=A) correct
+
+[task] m8: Draft a two-sentence Slack message announcing that the build server will be down for maintenance from 22:00 to 23:30 tonight and that queued jobs will resume afterwards.
+[announce] manager -> A, B, C | task: Draft a two-sentence Slack message announcing that the build server will be down for maintenance from 22:00 to 23:30 tonight and that queued jobs will resume afterwards.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "Drafting a short, clear communication message is a core part of general problem solving and communication tasks."}'
+[bid] A: confidence=95 reason=Drafting a short, clear communication message is a core part of general problem solving and communication tasks.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Drafting a short, clear announcement message is a standard general problem-solving and communication task."}'
+[bid] B: confidence=95 reason=Drafting a short, clear announcement message is a standard general problem-solving and communication task.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "Drafting a short, clear communication message is a core component of general problem solving."}'
+[bid] C: confidence=95 reason=Drafting a short, clear communication message is a core component of general problem solving.
+[award] m8 -> A (confidence=95; bids: A=95, B=95, C=95; gold=B) MISAWARD
+
+[summary] tasks=8 correct=3 messages=56 unassigned=0 misawards=5 parse_fails=0; bids=24; model_calls=24; tokens=6559

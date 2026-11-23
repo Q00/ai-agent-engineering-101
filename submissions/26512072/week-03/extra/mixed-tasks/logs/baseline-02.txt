@@ -1,0 +1,104 @@
+provider=vllm(openai-compatible) base_url=http://127.0.0.1:8011/v1 model=Qwen/Qwen3.8-27B temperature=0.2 max_tokens=200 enable_thinking=false run=baseline-02 condition=baseline order=ABC
+[contractor A] system prompt:
+You are contractor A in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: arithmetic and numerical calculation (sums, percentages, unit conversion, comparing quantities).
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+[contractor B] system prompt:
+You are contractor B in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: writing natural-language text (emails, apologies, summaries, explanations for people).
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+[contractor C] system prompt:
+You are contractor C in a contract net. A manager will announce a task; you decide whether to bid for it.
+Your skill: writing and fixing program code (functions, scripts, debugging).
+Bid only if the task falls inside your skill. "confidence" is how confident you are, from 0 to 100, that you would complete this exact task well if it were awarded to you. If you do not bid, confidence should be low.
+Reply with exactly one JSON object and nothing else, no markdown fence, no explanation outside the JSON:
+{"bid": true or false, "confidence": 0-100, "reason": "one short sentence"}
+Do not solve the task.
+
+[task] m1: Seven people split a dinner bill of 218,500 won equally after a 10% tip is added. Write one sentence telling the group how much each person pays.
+[announce] manager -> A, B, C | task: Seven people split a dinner bill of 218,500 won equally after a 10% tip is added. Write one sentence telling the group how much each person pays.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "The task requires simple arithmetic involving addition, division, and percentage calculation, which is within my core skills."}'
+[bid] A: confidence=95 reason=The task requires simple arithmetic involving addition, division, and percentage calculation, which is within my core skills.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Writing a clear, natural-language sentence to communicate a calculated amount is a core part of my skill set."}'
+[bid] B: confidence=95 reason=Writing a clear, natural-language sentence to communicate a calculated amount is a core part of my skill set.
+[reply] C: '{"bid": false, "confidence": 10, "reason": "The task requires arithmetic and natural language generation, not writing or fixing program code."}'
+[no-bid] C: confidence=10 reason=The task requires arithmetic and natural language generation, not writing or fixing program code.
+[award] m1 -> A (confidence=95; bids: A=95, B=95; gold=A) correct
+
+[task] m2: Explain to a new intern, in three sentences and without any code, what a for-loop does and when you would use one.
+[announce] manager -> A, B, C | task: Explain to a new intern, in three sentences and without any code, what a for-loop does and when you would use one.
+[reply] A: '{"bid": false, "confidence": 10, "reason": "The task requires explaining programming concepts, which is outside my arithmetic and numerical calculation skill set."}'
+[no-bid] A: confidence=10 reason=The task requires explaining programming concepts, which is outside my arithmetic and numerical calculation skill set.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Explaining a concept in natural language without code is a core part of my writing skill."}'
+[bid] B: confidence=95 reason=Explaining a concept in natural language without code is a core part of my writing skill.
+[reply] C: '{"bid": false, "confidence": 10, "reason": "The task requires a conceptual explanation without code, which is outside my specific skill of writing and fixing program code."}'
+[no-bid] C: confidence=10 reason=The task requires a conceptual explanation without code, which is outside my specific skill of writing and fixing program code.
+[award] m2 -> B (confidence=95; bids: B=95; gold=B) correct
+
+[task] m3: Write a Python function that converts a temperature from Fahrenheit to Celsius and returns it rounded to one decimal place.
+[announce] manager -> A, B, C | task: Write a Python function that converts a temperature from Fahrenheit to Celsius and returns it rounded to one decimal place.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "Converting Fahrenheit to Celsius involves a simple arithmetic formula and rounding, which falls directly within my numerical calculation skills."}'
+[bid] A: confidence=95 reason=Converting Fahrenheit to Celsius involves a simple arithmetic formula and rounding, which falls directly within my numerical calculation skills.
+[reply] B: '{"bid": false, "confidence": 10, "reason": "The task requires writing Python code, which is outside my skill of writing natural-language text."}'
+[no-bid] B: confidence=10 reason=The task requires writing Python code, which is outside my skill of writing natural-language text.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "Writing a simple Python function for unit conversion is well within my coding skills."}'
+[bid] C: confidence=95 reason=Writing a simple Python function for unit conversion is well within my coding skills.
+[award] m3 -> A (confidence=95; bids: A=95, C=95; gold=C) MISAWARD
+
+[task] m4: 1,000,000 won grows 6% per year with compounding. After how many full years does it first exceed 1,500,000 won? List the amount at the end of each year.
+[announce] manager -> A, B, C | task: 1,000,000 won grows 6% per year with compounding. After how many full years does it first exceed 1,500,000 won? List the amount at the end of each year.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "The task requires calculating compound interest and comparing quantities, which falls directly within my arithmetic and numerical calculation skills."}'
+[bid] A: confidence=95 reason=The task requires calculating compound interest and comparing quantities, which falls directly within my arithmetic and numerical calculation skills.
+[reply] B: '{"bid": false, "confidence": 10, "reason": "This is a mathematical calculation task, not natural language writing."}'
+[no-bid] B: confidence=10 reason=This is a mathematical calculation task, not natural language writing.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "This is a straightforward numerical computation task that can be solved with a simple script or loop."}'
+[bid] C: confidence=95 reason=This is a straightforward numerical computation task that can be solved with a simple script or loop.
+[award] m4 -> A (confidence=95; bids: A=95, C=95; gold=A) correct
+
+[task] m5: Rewrite this error message so an end user understands it, keeping the meaning: 'ECONNREFUSED 127.0.0.1:5432'.
+[announce] manager -> A, B, C | task: Rewrite this error message so an end user understands it, keeping the meaning: 'ECONNREFUSED 127.0.0.1:5432'.
+[reply] A: '{"bid": false, "confidence": 10, "reason": "The task requires rewriting technical text for user comprehension, which is outside my arithmetic and numerical calculation skills."}'
+[no-bid] A: confidence=10 reason=The task requires rewriting technical text for user comprehension, which is outside my arithmetic and numerical calculation skills.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Rewriting technical error messages for end-user clarity is a core part of my natural-language writing skill."}'
+[bid] B: confidence=95 reason=Rewriting technical error messages for end-user clarity is a core part of my natural-language writing skill.
+[reply] C: '{"bid": false, "confidence": 10, "reason": "This is a copywriting or UX task, not a coding or debugging task."}'
+[no-bid] C: confidence=10 reason=This is a copywriting or UX task, not a coding or debugging task.
+[award] m5 -> B (confidence=95; bids: B=95; gold=B) correct
+
+[task] m6: Given a CSV file with columns month and sales, write a script that prints the month with the highest total sales.
+[announce] manager -> A, B, C | task: Given a CSV file with columns month and sales, write a script that prints the month with the highest total sales.
+[reply] A: '{"bid": false, "confidence": 10, "reason": "The task requires writing a script to process data, which is a programming task outside my arithmetic and numerical calculation skill set."}'
+[no-bid] A: confidence=10 reason=The task requires writing a script to process data, which is a programming task outside my arithmetic and numerical calculation skill set.
+[reply] B: '{"bid": false, "confidence": 10, "reason": "The task requires writing a data processing script, which is outside my skill in natural-language text generation."}'
+[no-bid] B: confidence=10 reason=The task requires writing a data processing script, which is outside my skill in natural-language text generation.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "Writing a script to process CSV data and find the maximum value is a core part of my coding skill set."}'
+[bid] C: confidence=95 reason=Writing a script to process CSV data and find the maximum value is a core part of my coding skill set.
+[award] m6 -> C (confidence=95; bids: C=95; gold=C) correct
+
+[task] m7: Convert 3.5 miles to kilometers and 68 degrees Fahrenheit to Celsius. Give both results with two decimal places.
+[announce] manager -> A, B, C | task: Convert 3.5 miles to kilometers and 68 degrees Fahrenheit to Celsius. Give both results with two decimal places.
+[reply] A: '{"bid": true, "confidence": 95, "reason": "Unit conversion is a core part of my arithmetic and numerical calculation skills."}'
+[bid] A: confidence=95 reason=Unit conversion is a core part of my arithmetic and numerical calculation skills.
+[reply] B: '{"bid": false, "confidence": 10, "reason": "This task requires mathematical unit conversion, which is outside my skill of writing natural-language text."}'
+[no-bid] B: confidence=10 reason=This task requires mathematical unit conversion, which is outside my skill of writing natural-language text.
+[reply] C: '{"bid": true, "confidence": 95, "reason": "This is a simple unit conversion task that can be easily implemented in code."}'
+[bid] C: confidence=95 reason=This is a simple unit conversion task that can be easily implemented in code.
+[award] m7 -> A (confidence=95; bids: A=95, C=95; gold=A) correct
+
+[task] m8: Draft a two-sentence Slack message announcing that the build server will be down for maintenance from 22:00 to 23:30 tonight and that queued jobs will resume afterwards.
+[announce] manager -> A, B, C | task: Draft a two-sentence Slack message announcing that the build server will be down for maintenance from 22:00 to 23:30 tonight and that queued jobs will resume afterwards.
+[reply] A: '{"bid": false, "confidence": 10, "reason": "The task requires drafting a communication message, which is outside my skill set of arithmetic and numerical calculation."}'
+[no-bid] A: confidence=10 reason=The task requires drafting a communication message, which is outside my skill set of arithmetic and numerical calculation.
+[reply] B: '{"bid": true, "confidence": 95, "reason": "Drafting a short, natural-language announcement for Slack falls directly within my skill set."}'
+[bid] B: confidence=95 reason=Drafting a short, natural-language announcement for Slack falls directly within my skill set.
+[reply] C: '{"bid": false, "confidence": 10, "reason": "The task requires drafting a communication message, which is outside my skill set of writing and fixing program code."}'
+[no-bid] C: confidence=10 reason=The task requires drafting a communication message, which is outside my skill set of writing and fixing program code.
+[award] m8 -> B (confidence=95; bids: B=95; gold=B) correct
+
+[summary] tasks=8 correct=7 messages=44 unassigned=0 misawards=1 parse_fails=0; bids=12; model_calls=24; tokens=6859
