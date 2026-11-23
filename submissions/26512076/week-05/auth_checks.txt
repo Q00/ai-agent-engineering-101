@@ -1,0 +1,4 @@
+1. No token: HTTP 401; WWW-Authenticate: Bearer error="invalid_token", error_description="Authentication required", resource_metadata="http://127.0.0.1:8001/.well-known/oauth-protected-resource/mcp"
+2. Other negotiation_id: isError=true; Error executing tool get_negotiation: token belongs to another negotiation
+3. Seller moves during buyer turn: isError=true; Error executing tool propose: it is not your turn
+4. Server condition, buyer budget=45, propose price=46: isError=true; Error executing tool propose: refused by the market: 46 is above the maximum your token allows
