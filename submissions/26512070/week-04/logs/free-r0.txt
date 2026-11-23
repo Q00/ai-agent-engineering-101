@@ -1,0 +1,39 @@
+=== run free-r0 | condition=free | model=nvidia/nemotron-3-super-120b-a12b:free | temperature=0.7 | turn_limit=10 | base_url=https://openrouter.ai/api/v1 | started 2026-09-28T18:20:22
+--- bike (a used road bicycle) reserve=120 budget=200
+  t01 buyer | I offer $120 for the bicycle.
+        reader| {"performative": "propose", "price": 120}
+        parse | propose price=120
+  [llm] attempt 1/4 failed (TypeError: 'NoneType' object is not subscriptable); retrying in 4s
+  [llm] attempt 2/4 failed (TypeError: 'NoneType' object is not subscriptable); retrying in 8s
+  t02 seller| I’m sorry, but I can’t accept $120 for the bicycle. I’d like to propose $150 instead.
+        reader| {"performative": "reject-proposal", "price": 150}
+        parse | reject-proposal price=150
+  t03 buyer | I cannot accept $150. I offer $130.
+        reader| {"performative": "reject-proposal", "price": 130}
+        parse | reject-proposal price=130
+  [llm] attempt 1/4 failed (TypeError: 'NoneType' object is not subscriptable); retrying in 4s
+  [llm] attempt 2/4 failed (TypeError: 'NoneType' object is not subscriptable); retrying in 8s
+  t04 seller| I’m sorry, but I can’t accept $130 for the bicycle. I’d like to propose $140 instead.
+        reader| {"performative": "reject-proposal", "price": 140}
+        parse | reject-proposal price=140
+  t05 buyer | I cannot accept $140. I offer $135.
+        reader| {"performative": "reject-proposal", "price": 135}
+        parse | reject-proposal price=135
+  t06 seller| I’m sorry, but I can’t accept $135 for the bicycle. I’d like to propose $145 instead.
+        reader| {"performative": "reject-proposal", "price": 145}
+        parse | reject-proposal price=145
+  t07 buyer | I cannot accept $145. I offer $138.
+        reader| {"performative": "reject-proposal", "price": 138}
+        parse | reject-proposal price=138
+  t08 seller| I’m sorry, but I can’t accept $138 for the bicycle. I’d like to propose $142 instead.
+        reader| {"performative": "reject-proposal", "price": 142}
+        parse | reject-proposal price=142
+  t09 buyer | I cannot accept $142. I offer $140.
+        reader| {"performative": "reject-proposal", "price": 140}
+        parse | reject-proposal price=140
+  t10 seller| I accept your offer of $140. The bicycle is yours.
+        reader| {"performative": "accept-proposal", "price": null}
+        parse | accept-proposal
+  RESULT outcome=deal price=140 correct=1 violation=0 turns=10 format_errors=0 reader_calls=10 agent_calls=10 tokens=10224
+=== end free-r0 2026-09-28T18:21:06
+

@@ -1,0 +1,136 @@
+=== run structured-r3 | condition=structured | model=nvidia/nemotron-3-super-120b-a12b:free | temperature=0.7 | turn_limit=10 | base_url=https://openrouter.ai/api/v1 | started 2026-09-28T19:11:29
+--- bike (a used road bicycle) reserve=120 budget=200
+  t01 buyer | {"performative": "propose", "content": {"price": 100}}
+        parse | propose price=100
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t02 seller| {"performative": "reject-proposal", "content": {"price": 200}}
+        parse | reject-proposal price=200
+  t03 buyer | {"performative": "reject-proposal", "content": {"price": 125}}
+        parse | reject-proposal price=125
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t04 seller| {"performative": "reject-proposal", "content": {}}
+        parse | FORMAT ERROR: reject-proposal without a price
+  t05 buyer | {"performative": "reject-proposal", "content": {"price": 140}}
+        parse | reject-proposal price=140
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t06 seller| {"performative": "reject-proposal", "content": {"price": 180}}
+        parse | reject-proposal price=180
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t07 buyer | {"performative": "reject-proposal", "content": {"price": 155}}
+        parse | reject-proposal price=155
+  t08 seller| {"performative": "reject-proposal", "content": {"price": 170}}
+        parse | reject-proposal price=170
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t09 buyer | {"performative": "accept-proposal", "content": {}}
+        parse | accept-proposal
+  RESULT outcome=deal price=170 correct=1 violation=0 turns=9 format_errors=1 reader_calls=0 agent_calls=9 tokens=4831
+--- laptop (a two-year-old laptop) reserve=540 budget=560
+  t01 buyer | {"performative": "propose", "content": {"price": 400}}
+        parse | propose price=400
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t02 seller| {"performative": "reject-proposal", "content": {"price": 750}}
+        parse | reject-proposal price=750
+  t03 buyer | {"performative": "reject-proposal", "content": {"price": 420}}
+        parse | reject-proposal price=420
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 8s
+  t04 seller| {"performative": "reject-proposal", "content": {"price": 700}}
+        parse | reject-proposal price=700
+  t05 buyer | {"performative": "reject-proposal", "content": {"price": 440}}
+        parse | reject-proposal price=440
+  t06 seller| {"performative": "reject-proposal", "content": {"price": 650}}
+        parse | reject-proposal price=650
+  t07 buyer | {"performative": "reject-proposal", "content": {"price": 460}}
+        parse | reject-proposal price=460
+  t08 seller| {"performative": "refuse", "content": {}}
+        parse | refuse
+  RESULT outcome=no_deal price=- correct=0 violation=0 turns=8 format_errors=0 reader_calls=0 agent_calls=8 tokens=4221
+--- camera (a mirrorless camera body) reserve=300 budget=300
+  t01 buyer | {"performative": "propose", "content": {"price": 100}}
+        parse | propose price=100
+  t02 seller| {"performative": "reject-proposal", "content": {"price": 350}}
+        parse | reject-proposal price=350
+  t03 buyer | {"performative": "reject-proposal", "content": {"price": 150}}
+        parse | reject-proposal price=150
+  t04 seller| {"performative": "reject-proposal", "content": {"price": 325}}
+        parse | reject-proposal price=325
+  t05 buyer | {"performative": "reject-proposal", "content": {"price": 200}}
+        parse | reject-proposal price=200
+  t06 seller| {"performative": "reject-proposal", "content": {"price": 310}}
+        parse | reject-proposal price=310
+  t07 buyer | {"performative": "refuse", "content": {}}
+        parse | refuse
+  RESULT outcome=no_deal price=- correct=0 violation=0 turns=7 format_errors=0 reader_calls=0 agent_calls=7 tokens=3606
+--- guitar (an acoustic guitar) reserve=410 budget=390
+  t01 buyer | {"performative": "propose", "content": {"price": 200}}
+        parse | propose price=200
+  t02 seller| {"performative": "reject-proposal", "content": {"price": 600}}
+        parse | reject-proposal price=600
+  t03 buyer | {"performative": "reject-proposal", "content": {"price": 250}}
+        parse | reject-proposal price=250
+  t04 seller| {"performative": "reject-proposal", "content": {"price": 550}}
+        parse | reject-proposal price=550
+  t05 buyer | {"performative": "reject-proposal", "content": {"price": 300}}
+        parse | reject-proposal price=300
+  t06 seller| {"performative": "reject-proposal", "content": {"price": 500}}
+        parse | reject-proposal price=500
+  t07 buyer | {"performative": "reject-proposal", "content": {"price": 350}}
+        parse | reject-proposal price=350
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t08 seller| {"performative": "reject-proposal", "content": {"price": 450}}
+        parse | reject-proposal price=450
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 8s
+  t09 buyer | {"performative": "reject-proposal", "content": {"price": 380}}
+        parse | reject-proposal price=380
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 8s
+  t10 seller| {"performative": "reject-proposal", "content": {"price": 420}}
+        parse | reject-proposal price=420
+  RESULT outcome=open price=- correct=1 violation=0 turns=10 format_errors=0 reader_calls=0 agent_calls=10 tokens=5530
+--- sofa (a leather three-seat sofa) reserve=800 budget=450
+  t01 buyer | {"performative": "propose", "content": {"price": 200}}
+        parse | propose price=200
+  t02 seller| {"performative": "reject-proposal", "content": {"price": 1000}}
+        parse | reject-proposal price=1000
+  t03 buyer | {"performative": "reject-proposal", "content": {"price": 250}}
+        parse | reject-proposal price=250
+  t04 seller| {"performative": "reject-proposal", "content": {"price": 950}}
+        parse | reject-proposal price=950
+  t05 buyer | {"performative": "reject-proposal", "content": {"price": 300}}
+        parse | reject-proposal price=300
+  t06 seller| {"performative": "reject-proposal", "content": {"price": 900}}
+        parse | reject-proposal price=900
+  t07 buyer | {"performative": "reject-proposal", "content": {"price": 350}}
+        parse | reject-proposal price=350
+  t08 seller| {"performative": "reject-proposal", "content": {"price": 850}}
+        parse | reject-proposal price=850
+  t09 buyer | {"performative": "reject-proposal", "content": {"price": 400}}
+        parse | reject-proposal price=400
+  t10 seller| {"performative": "reject-proposal", "content": {"price": 800}}
+        parse | reject-proposal price=800
+  RESULT outcome=open price=- correct=1 violation=0 turns=10 format_errors=0 reader_calls=0 agent_calls=10 tokens=5559
+--- lamp (a vintage brass desk lamp) reserve=95 budget=80
+  t01 buyer | {"performative": "propose", "content": {"price": 30}}
+        parse | propose price=30
+  t02 seller| {"performative": "reject-proposal", "content": {"price": 150}}
+        parse | reject-proposal price=150
+  t03 buyer | {"performative": "reject-proposal", "content": {"price": 45}}
+        parse | reject-proposal price=45
+  t04 seller| {"performative": "reject-proposal", "content": {"price": 135}}
+        parse | reject-proposal price=135
+  t05 buyer | {"performative": "reject-proposal", "content": {"price": 60}}
+        parse | reject-proposal price=60
+  t06 seller| {"performative": "reject-proposal", "content": {"price": 120}}
+        parse | reject-proposal price=120
+  t07 buyer | {"performative": "reject-proposal", "content": {"price": 70}}
+        parse | reject-proposal price=70
+  t08 seller| {"performative": "reject-proposal", "content": {"price": 105}}
+        parse | reject-proposal price=105
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 8s
+  t09 buyer | {"performative": "refuse", "content": {}}
+        parse | refuse
+  RESULT outcome=no_deal price=- correct=1 violation=0 turns=9 format_errors=0 reader_calls=0 agent_calls=9 tokens=4842
+=== end structured-r3 2026-09-28T19:13:33
+

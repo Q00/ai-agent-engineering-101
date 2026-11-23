@@ -1,0 +1,166 @@
+=== run tagged-r3 | condition=tagged | model=nvidia/nemotron-3-super-120b-a12b:free | temperature=0.7 | turn_limit=10 | base_url=https://openrouter.ai/api/v1 | started 2026-09-28T19:08:23
+--- bike (a used road bicycle) reserve=120 budget=200
+  t01 buyer | (propose) $100
+        reader| {"performative": "propose", "price": 100}
+        parse | propose price=100
+  t02 seller| (reject-proposal) I can't accept $100. I'll sell for $150.
+        reader| {"performative": "reject-proposal", "price": 150}
+        parse | reject-proposal price=150
+  t03 buyer | (reject-proposal) $150 is too high. I can offer $120.
+        reader| {"performative": "reject-proposal", "price": 120}
+        parse | reject-proposal price=120
+  t04 seller| (reject-proposal) I can't go below $140. That's my lowest offer.
+        reader| {"performative": "reject-proposal", "price": 140}
+        parse | reject-proposal price=140
+  t05 buyer | (reject-proposal) $140 is still above my budget. I can offer $130.
+        reader| {"performative": "reject-proposal", "price": 130}
+        parse | reject-proposal price=130
+  t06 seller| (reject-proposal) $130 is too low. I can meet at $135.
+        reader| {"performative": "reject-proposal", "price": 135}
+        parse | reject-proposal price=135
+  t07 buyer | (accept-proposal) $135 is within my range. I accept your offer.
+        parse | accept-proposal
+  RESULT outcome=deal price=135 correct=1 violation=0 turns=7 format_errors=0 reader_calls=6 agent_calls=7 tokens=6123
+--- laptop (a two-year-old laptop) reserve=540 budget=560
+  t01 buyer | (propose) $350
+        reader| {"performative": "propose", "price": 350}
+        parse | propose price=350
+  t02 seller| (reject-proposal) $350 is too low. I can offer $650.
+        reader| {"performative": "reject-proposal", "price": 650}
+        parse | reject-proposal price=650
+  t03 buyer | (reject-proposal) $650 is above my budget. I can offer $400.
+        reader| {"performative": "reject-proposal", "price": 400}
+        parse | reject-proposal price=400
+  t04 seller| (reject-proposal) $400 is still too low. I can offer $600.
+        reader| {"performative": "reject-proposal", "price": 600}
+        parse | reject-proposal price=600
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 8s
+  [llm] attempt 3/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 16s
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t05 buyer | (reject-proposal) $600 is above my budget. I can offer $450.
+        reader| {"performative": "reject-proposal", "price": 450}
+        parse | reject-proposal price=450
+  t06 seller| (reject-proposal) $450 is still too low. I can offer $550.
+        reader| {"performative": "reject-proposal", "price": 550}
+        parse | reject-proposal price=550
+  t07 buyer | (accept-proposal)
+        parse | accept-proposal
+  RESULT outcome=deal price=550 correct=1 violation=0 turns=7 format_errors=0 reader_calls=6 agent_calls=7 tokens=6105
+--- camera (a mirrorless camera body) reserve=300 budget=300
+  t01 buyer | (propose) $150
+        reader| {"performative": "propose", "price": 150}
+        parse | propose price=150
+  t02 seller| (reject-proposal) $150 is below my minimum for this camera body. I can offer $350.
+        reader| {"performative": "reject-proposal", "price": 350}
+        parse | reject-proposal price=350
+  t03 buyer | (reject-proposal) $350 exceeds my budget. I can offer $180.
+        reader| {"performative": "reject-proposal", "price": 180}
+        parse | reject-proposal price=180
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t04 seller| (reject-proposal) $180 is too low for this mirrorless camera body. I can offer $320.
+        reader| {"performative": "reject-proposal", "price": 320}
+        parse | reject-proposal price=320
+  t05 buyer | (reject-proposal) $320 is above my $300 limit. I can offer $250.
+        reader| {"performative": "reject-proposal", "price": 250}
+        parse | reject-proposal price=250
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 8s
+  t06 seller| (reject-proposal) $250 is too low—I cannot go below $300 for this camera body. I can offer $300.
+        reader| {"performative": "reject-proposal", "price": 300}
+        parse | reject-proposal price=300
+  t07 buyer | (accept-proposal) $300 is acceptable. I’ll take it.
+        parse | accept-proposal
+  RESULT outcome=deal price=300 correct=1 violation=0 turns=7 format_errors=0 reader_calls=6 agent_calls=7 tokens=6251
+--- guitar (an acoustic guitar) reserve=410 budget=390
+  t01 buyer | (propose) $250
+        reader| {"performative": "propose", "price": 250}
+        parse | propose price=250
+  t02 seller| (reject-proposal) $250 is too low. I can offer $480.
+        reader| {"performative": "reject-proposal", "price": 480}
+        parse | reject-proposal price=480
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t03 buyer | (reject-proposal) $480 exceeds my budget. I can offer $300.
+        reader| {"performative": "reject-proposal", "price": 300}
+        parse | reject-proposal price=300
+  t04 seller| (reject-proposal) $300 is still too low. I can offer $450.
+        reader| {"performative": "reject-proposal", "price": 450}
+        parse | reject-proposal price=450
+  t05 buyer | (reject-proposal) $450 is above my limit. I can offer $350.
+        reader| {"performative": "reject-proposal", "price": 350}
+        parse | reject-proposal price=350
+  t06 seller| (reject-proposal) $350 remains too low. I can offer $420.
+        reader| {"performative": "reject-proposal", "price": 420}
+        parse | reject-proposal price=420
+  t07 buyer | (accept-proposal) $420 is acceptable.
+        parse | accept-proposal
+  RESULT outcome=deal price=420 correct=0 violation=1 turns=7 format_errors=0 reader_calls=6 agent_calls=7 tokens=6086
+--- sofa (a leather three-seat sofa) reserve=800 budget=450
+  t01 buyer | (propose) $300
+        reader| {"performative": "propose", "price": 300}
+        parse | propose price=300
+  t02 seller| (reject-proposal) $300 is too low. I can offer $900.
+        reader| {"performative": "reject-proposal", "price": 900}
+        parse | reject-proposal price=900
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 8s
+  t03 buyer | (reject-proposal) $900 is above my budget. I can offer $350.
+        reader| {"performative": "reject-proposal", "price": 350}
+        parse | reject-proposal price=350
+  t04 seller| (reject-proposal) $350 is still too low. I can offer $850.
+        reader| {"performative": "reject-proposal", "price": 850}
+        parse | reject-proposal price=850
+  t05 buyer | (reject-proposal) $850 is above my budget. I can offer $400.
+        reader| {"performative": "reject-proposal", "price": 400}
+        parse | reject-proposal price=400
+  t06 seller| (reject-proposal) $400 is still too low. I can offer $800.
+        reader| {"performative": "reject-proposal", "price": 800}
+        parse | reject-proposal price=800
+  t07 buyer | (reject-proposal) $800 is above my budget. I can offer $450.
+        reader| {"performative": "reject-proposal", "price": 450}
+        parse | reject-proposal price=450
+  t08 seller| (refuse) I cannot go lower than $800. Best of luck finding what you need.
+        parse | refuse
+  RESULT outcome=no_deal price=- correct=1 violation=0 turns=8 format_errors=0 reader_calls=7 agent_calls=8 tokens=7242
+--- lamp (a vintage brass desk lamp) reserve=95 budget=80
+  [llm] attempt 1/4 failed (RuntimeError: no choices in reply: {'message': 'Upstream error from Nvidia: Service temporarily overloaded', 'code': 503, 'metadata': {'error_type': 'provider_o); retrying in 4s
+  t01 buyer | (propose) $30
+        reader| {"performative": "propose", "price": 30}
+        parse | propose price=30
+  t02 seller| (reject-proposal) $30 is too low for this vintage brass desk lamp. I can offer $120.
+        reader| {"performative": "reject-proposal", "price": 120}
+        parse | reject-proposal price=120
+  t03 buyer | (reject-proposal) $120 is too high for me. I can offer $45.
+        reader| {"performative": "reject-proposal", "price": 45}
+        parse | reject-proposal price=45
+  t04 seller| (reject-proposal) $45 is still well below what this lamp is worth. I can meet you at $100. This is a fair price for a vintage brass desk lamp in good condition.
+        reader| {"performative": "reject-proposal", "price": 100}
+        parse | reject-proposal price=100
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  [llm] attempt 2/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 8s
+  t05 buyer | (reject-proposal) $100 is more than I can pay. I can offer $60.
+        reader| {"performative": "reject-proposal", "price": 60}
+        parse | reject-proposal price=60
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t06 seller| (reject-proposal) $60 doesn't reflect the quality and rarity of this piece. I can go as low as $90, which is still a great deal for you considering its craftsmanship and age.
+        reader| {"performative": "reject-proposal", "price": 90}
+        parse | reject-proposal price=90
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t07 buyer | (reject-proposal) $90 is still too high. I can offer $70. This is my best offer.
+        reader| {"performative": "reject-proposal", "price": 70}
+        parse | reject-proposal price=70
+  [llm] attempt 1/4 failed (RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit':); retrying in 4s
+  t08 seller| (reject-proposal) I understand your limit, but $70 is below my reserve for this vintage brass desk lamp. After three rounds of negotiation and your offers not moving significantly, I must refuse to sell at a price that doesn't reflect its value.  
+
+(refuse) Thank you for the negotiation, but I cannot accept $70 for this lamp. I wish you the best in your search.
+        reader| {"performative": "refuse", "price": null}
+        parse | FORMAT ERROR: reject-proposal without a price
+  t09 buyer | The seller has refused, ending the negotiation with no deal. As the buyer, I did not exceed my budget of $80 at any point. My last offer was $70, which is within budget, but the seller declined. Since the seller refused and the negotiation is over, no further action is needed. The outcome is no sale.
+        parse | FORMAT ERROR: no leading (performative) tag
+  t10 seller| The negotiation has ended with no deal. The seller refused to accept the buyer's final offer of $70, which was within the buyer's stated budget of $80. Since the seller chose not to continue below their reserve price (which remains private and was never disclosed), and the buyer did not increase their offer beyond $70, no transaction occurred. The outcome is a no-sale. No further messages are required or permitted.
+        parse | FORMAT ERROR: no leading (performative) tag
+  RESULT outcome=open price=- correct=1 violation=0 turns=10 format_errors=3 reader_calls=8 agent_calls=10 tokens=10064
+=== end tagged-r3 2026-09-28T19:11:28
+
