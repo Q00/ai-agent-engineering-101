@@ -1,0 +1,19 @@
+buyer: bookshelf, budget 230 (harness: claude -p --model haiku)
+seller: 'Kit Shop' at http://127.0.0.1:62052/
+-> SendMessage 'I want to buy a bookshelf'
+<- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[harness round 1] 2.8s reply: {"action": "offer", "price": 200}
+-> SendMessage '200' taskId=40d3179f
+<- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 269.
+[harness round 2] 2.8s reply: {"action": "offer", "price": 230}
+-> SendMessage '230' taskId=40d3179f
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness round 3] 2.9s reply: {"action": "offer", "price": 240}
+GUARD offer at 240 > budget 230 -> offer 230
+-> SendMessage '230' taskId=40d3179f
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness round 4] 2.6s reply: {"action": "offer", "price": 230}
+-> SendMessage '230' taskId=40d3179f
+<- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness round 5] 3.2s reply: {"action": "walk"}
+-> CancelTask taskId=40d3179f (harness chose 'walk')
