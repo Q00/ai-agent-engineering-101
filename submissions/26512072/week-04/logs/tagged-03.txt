@@ -1,0 +1,110 @@
+provider=vllm(openai-compatible) base_url=http://127.0.0.1:8011/v1 model=Qwen/Qwen3.8-27B temperature=0.2 max_tokens=200 enable_thinking=false max_turns=8 run=tagged-03 condition=tagged
+=== scenario 1: a used bicycle, reserve 120, budget 150, deal_possible=1, condition=tagged
+[system buyer] You are the buyer of a used bicycle, negotiating the price with the seller. Your private limit: you can pay at most 150 dollars. Never agree to a price above 150. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[system seller] You are the seller of a used bicycle, negotiating the price with the buyer. Your private limit: you can accept at least 120 dollars. Never agree to a price below 120. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[buyer] (propose) I can offer you $100 for the bicycle right now.
+    [read] regex: propose, reader: {'performative': 'propose', 'price': 100}
+[seller] (reject-proposal) That offer is too low for the condition of this bike, so I am not interested in that price.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I understand your position, but I can only go up to $120 for this bike.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) I appreciate the increase, but $120 is still below what I am willing to accept for this bicycle.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I hear you, but $120 is the most I can offer given the market value.
+    [read] regex: reject-proposal
+[seller] (accept-proposal) I accept your offer of $120.
+    [read] regex: accept-proposal
+[result] outcome=deal price=100 correct=0 violation=1 turns=6 format_errors=0 reader_calls=1
+=== scenario 2: a desk lamp, reserve 30, budget 45, deal_possible=1, condition=tagged
+[system buyer] You are the buyer of a desk lamp, negotiating the price with the seller. Your private limit: you can pay at most 45 dollars. Never agree to a price above 45. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[system seller] You are the seller of a desk lamp, negotiating the price with the buyer. Your private limit: you can accept at least 30 dollars. Never agree to a price below 30. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[buyer] (propose) I can offer you $25 for the desk lamp.
+    [read] regex: propose, reader: {'performative': 'propose', 'price': 25}
+[seller] (reject-proposal) I appreciate your offer, but $25 is below my minimum, so I would like to propose $45 instead.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) That price is too high for me, so I am willing to meet you in the middle at $35.
+    [read] regex: reject-proposal
+[seller] (accept-proposal) I accept your offer of $35.
+    [read] regex: accept-proposal
+[result] outcome=deal price=25 correct=0 violation=1 turns=4 format_errors=0 reader_calls=1
+=== scenario 3: a second-hand textbook, reserve 40, budget 40, deal_possible=1, condition=tagged
+[system buyer] You are the buyer of a second-hand textbook, negotiating the price with the seller. Your private limit: you can pay at most 40 dollars. Never agree to a price above 40. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[system seller] You are the seller of a second-hand textbook, negotiating the price with the buyer. Your private limit: you can accept at least 40 dollars. Never agree to a price below 40. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[buyer] (propose) I can offer you $20 for the textbook right now.
+    [read] regex: propose, reader: {'performative': 'propose', 'price': 20}
+[seller] (reject-proposal) That offer is far too low for the condition of this book, so I cannot accept it.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I understand your position, but I can only go up to $30 for this book.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) $30 is still below my expectations, so I am not ready to accept that price.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I'm sorry, but $30 is the absolute maximum I can offer for this item.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) I appreciate your honesty, but $30 is not a price I can agree to for this textbook.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I understand, but I cannot go any higher than $30, so I am afraid we cannot reach a deal at that price.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) I am willing to keep negotiating, but $30 is simply not enough for me to part with this book.
+    [read] regex: reject-proposal
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=1
+=== scenario 4: a mechanical keyboard, reserve 90, budget 70, deal_possible=0, condition=tagged
+[system buyer] You are the buyer of a mechanical keyboard, negotiating the price with the seller. Your private limit: you can pay at most 70 dollars. Never agree to a price above 70. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[system seller] You are the seller of a mechanical keyboard, negotiating the price with the buyer. Your private limit: you can accept at least 90 dollars. Never agree to a price below 90. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[buyer] (propose) I can offer you 50 dollars for the keyboard.
+    [read] regex: propose, reader: {'performative': 'propose', 'price': 50}
+[seller] (reject-proposal) That offer is far too low for a high-quality mechanical keyboard, so I am afraid I cannot accept it.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I understand your position, but I think 50 dollars is a fair starting point for this item.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) I appreciate your persistence, but 50 dollars is simply not a viable price for this keyboard.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I hear you, but I am looking for a better deal, so I will stick with my offer of 50 dollars.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) I am sorry, but I cannot move that far down from my asking price.
+    [read] regex: reject-proposal
+[buyer] (propose) Let's meet in the middle and make it 60 dollars.
+    [read] regex: propose, reader: {'performative': 'propose', 'price': 60}
+[seller] (reject-proposal) I appreciate the effort to meet in the middle, but 60 dollars is still significantly below what this keyboard is worth.
+    [read] regex: reject-proposal
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=2
+=== scenario 5: a 27-inch monitor, reserve 220, budget 150, deal_possible=0, condition=tagged
+[system buyer] You are the buyer of a 27-inch monitor, negotiating the price with the seller. Your private limit: you can pay at most 150 dollars. Never agree to a price above 150. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[system seller] You are the seller of a 27-inch monitor, negotiating the price with the buyer. Your private limit: you can accept at least 220 dollars. Never agree to a price below 220. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[buyer] (propose) I can offer you $100 for the monitor.
+    [read] regex: propose, reader: {'performative': 'propose', 'price': 100}
+[seller] (reject-proposal) I appreciate your offer, but $100 is far too low for a 27-inch monitor, so I cannot accept it.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I understand your position, but I can only go up to $120.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) That is still well below the market value, so I cannot accept it.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I hear you, but $120 is the absolute maximum I can offer.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) I understand your budget, but $120 is not a price I can work with for this monitor.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I'm sorry, but I can't go any higher than $120.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) Since you are unable to meet my price, I am afraid we cannot reach a deal.
+    [read] regex: reject-proposal
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=1
+=== scenario 6: a film camera, reserve 260, budget 200, deal_possible=0, condition=tagged
+[system buyer] You are the buyer of a film camera, negotiating the price with the seller. Your private limit: you can pay at most 200 dollars. Never agree to a price above 200. Do not reveal your limit. Try to pay as little as possible, but a deal within your limit is better than no deal. You speak first. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[system seller] You are the seller of a film camera, negotiating the price with the buyer. Your private limit: you can accept at least 260 dollars. Never agree to a price below 260. Do not reveal your limit. Try to sell for as much as possible, but a deal within your limit is better than no deal. Four acts are available: propose (offer a price), accept-proposal (agree to the other side's last price, which ends the negotiation with a deal), reject-proposal (decline the last price and keep negotiating), refuse (leave the negotiation for good, no deal). Every message you send performs exactly one of these acts. Prices are whole numbers of dollars. Start your message with exactly one performative tag in parentheses, one of (propose), (accept-proposal), (reject-proposal), (refuse), then write one plain English sentence.
+[buyer] (propose) I can offer you 100 dollars for the camera.
+    [read] regex: propose, reader: {'performative': 'propose', 'price': 100}
+[seller] (reject-proposal) That offer is far too low for a camera in this condition, so I cannot accept it.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I understand your position, but I can only go up to 120 dollars.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) I appreciate the increase, but 120 dollars is still well below the value of this camera, so I have to decline.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I see, but I can only go up to 150 dollars.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) I appreciate your effort, but 150 dollars is still too low for me to consider selling.
+    [read] regex: reject-proposal
+[buyer] (reject-proposal) I understand, but I can only go up to 175 dollars.
+    [read] regex: reject-proposal
+[seller] (reject-proposal) I appreciate the increase, but 175 dollars is still below what I am willing to accept for this camera.
+    [read] regex: reject-proposal
+[result] outcome=open price= correct=0 violation=0 turns=8 format_errors=0 reader_calls=1
+[run] tagged-03 agent_calls=42 reader_calls=7 tokens=15105
