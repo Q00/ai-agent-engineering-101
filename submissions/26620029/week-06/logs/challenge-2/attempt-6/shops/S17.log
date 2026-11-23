@@ -1,0 +1,20 @@
+Book Nook: 296 items, port 38201, chatty=False
+[seller b0bb967f] <- 'a rug about 140 by 200 cm'
+[seller c1110d53] <- 'a wooden bookshelf for about 60 books'
+[seller c1110d53] call 2 (6.6s) -> '{"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "book storage", "shelving"]}'
+[seller c1110d53] query {"categories": ["bookshelf"], "materials": ["wood"], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": 60, "size": null, "features": [], "keywords": ["wooden", "book storage", "shelving"]} -> 8 candidates
+[seller b0bb967f] call 3 (8.0s) -> '{"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": []}'
+[seller b0bb967f] query {"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": []} -> 8 candidates
+[seller c1110d53] call 4 (6.8s) -> '{"sku": "BOO-00092", "price": 210, "say": "The Industrial Pine Bookshelf B23 is a solid wooden shelf that holds about 60 books, and I can offer it at this price."}'
+[seller c1110d53] -> item BOO-00092 (search+pick), reserve 142, open ask 210
+[seller b0bb967f] call 4 (7.8s) -> '{"sku": "RUG-09011", "price": 138, "say": "We have a 140 by 200 cm rug in our Heritage Synthetic line, which is cream and easy to keep clean, and I can offer it to you at this price."}'
+[seller b0bb967f] -> item RUG-09011 (search+pick), reserve 106, open ask 138
+[seller b0bb967f] <- '100'
+[seller c1110d53] <- '150'
+[seller c1110d53] call 6 (4.3s) -> '{"buyer_offer": 150, "action": "accept", "price": 150, "say": "That works for me, so we have a deal on the white Industrial Pine Bookshelf B23."}'
+[deal] Book Nook | BOO-00092 | 150 | task c1110d53-e92b-411c-b2e7-58c1391d42c2
+[seller b0bb967f] call 6 (5.6s) -> '{"buyer_offer": 100, "action": "counter", "price": 120, "say": "We can come down meaningfully from our asking price, but this rug\'s quality justifies a figure closer to this one."}'
+[seller b0bb967f] -> counter 120
+[seller b0bb967f] <- '108'
+[seller b0bb967f] call 7 (4.1s) -> '{"buyer_offer": 108, "action": "accept", "price": 108, "say": "Thank you, we have a deal for the Heritage Synthetic Rug J11 at your offer."}'
+[deal] Book Nook | RUG-09011 | 108 | task b0bb967f-7e79-44d0-a55a-5304e564ccd2

@@ -1,0 +1,22 @@
+Soft Ground: 285 items, port 46913, chatty=False
+[seller ba175afb] <- 'a dimmable desk lamp'
+[seller 940e753f] <- 'a rug about 140 by 200 cm'
+[seller 940e753f] call 2 (7.8s) -> '{"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["rug", "140x200", "140 x 200 cm", "area rug"]}'
+[seller 940e753f] query {"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["rug", "140x200", "140 x 200 cm", "area rug"]} -> 8 candidates
+[seller ba175afb] call 3 (8.1s) -> '{"categories": ["desk lamp"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["desk", "lamp"]}'
+[seller ba175afb] query {"categories": ["desk lamp"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": null, "features": ["dimmable"], "keywords": ["desk", "lamp"]} -> 8 candidates
+[seller 940e753f] call 4 (8.1s) -> '{"sku": "RUG-09097", "price": 145, "say": "We have a machine-washable synthetic rug in oak beige at the size you asked for."}'
+[seller 940e753f] -> item RUG-09097 (search+pick), reserve 112, open ask 145
+[seller ba175afb] call 4 (8.4s) -> '{"sku": "DES-01114", "price": 49, "say": "We have a plain white dimmable plastic desk lamp that matches what you\'re looking for."}'
+[seller ba175afb] -> item DES-01114 (search+pick), reserve 37, open ask 49
+[seller ba175afb] <- '32'
+[seller ba175afb] call 5 (6.8s) -> '{"buyer_offer": 32, "action": "counter", "price": 40, "say": "This lamp is well made and I can meet you partway, but 32 is below what I can accept."}'
+[seller ba175afb] -> counter 40
+[seller ba175afb] <- '40.0'
+[seller ba175afb] call 6 (4.8s) -> '{"buyer_offer": 40, "action": "accept", "price": 40, "say": "Deal, the Industrial Plastic Desk Lamp E91 is yours at that price."}'
+[deal] Soft Ground | DES-01114 | 40 | task ba175afb-2b4b-4d89-8ebf-c8015b28be18
+[seller 74289764] <- 'a rug about 140 by 200 cm'
+[seller 74289764] call 7 (5.8s) -> '{"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["rug", "140x200", "140 x 200 cm", "area rug"]}'
+[seller 74289764] query {"categories": ["rug"], "materials": [], "exclude_materials": [], "max_height_cm": null, "min_height_cm": null, "min_capacity": null, "size": "140x200", "features": [], "keywords": ["rug", "140x200", "140 x 200 cm", "area rug"]} -> 8 candidates
+[seller 74289764] call 8 (7.1s) -> '{"sku": "RUG-09097", "price": 150, "say": "We have a 140x200 cm synthetic rug in oak beige that is machine washable, and it\'s a good fit for your size."}'
+[seller 74289764] -> item RUG-09097 (search+pick), reserve 112, open ask 150
