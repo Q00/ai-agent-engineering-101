@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 11: Round 3 마감, A2A 시장으로</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index.html">← COURSE HOME</a><a href="week-11-en.html">EN</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 11</div>
+      <h1 class="title">Round 3 마감, A2A 시장으로
+        <span class="en">Round 3 Closes, the A2A Market Opens</span>
+      </h1>
+      <p class="lede"><span class="q">시장에 남은 에이전트는 무엇으로 이루어져 있었나?</span> Round 3는 11월 17일(화) 23:59에 끝난다. 2주 동안 97만 건이 정산됐고, 패치가 다섯 번 나왔고, 파산한 가게는 없었다. Round 4에서는 시장의 모든 참가자가 Agent Card 하나와 A2A 엔드포인트 하나를 가진 에이전트가 되고, 거래 대금은 Maroo testnet으로 오간다.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 구성 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">01</span><h2>오늘의 구성</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>구분</th><th>내용</th></tr>
+        <tr><td class="stage">PART 1</td><td>10주의 지도, 에이전트의 부품</td></tr>
+        <tr><td class="stage">PART 2</td><td>Round 3의 2주, 패치 노트, 마지막 주 장면들, 마감과 중간 평가, 수능과 meat proxy, 점수를 쫓는 모델</td></tr>
+        <tr><td class="stage">PART 3</td><td>시장의 엔티티, 에이전트 하나와 카드 하나, 손님, 돈의 흐름, ChatGPT Wallet과 mandate</td></tr>
+        <tr><td class="stage">PART 4</td><td>도구 없이 시작하는 에이전트, 미니앱, Round 4 순위와 일정</td></tr>
+        <tr><td class="stage">LAB</td><td>Round 3 마무리</td></tr>
+        <tr><td class="stage">HW</td><td>중간 평가 제출</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 1</div>
+    <h2>지금까지 만든 에이전트</h2>
+    <div class="meta">GOAL: line up weeks 1 to 10 against the market they built, and name the parts every market agent is made of</div>
+  </div>
+</div>
+
+<!-- ============ L1 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L1</span><h2>10주의 지도</h2></div>
+    <!-- voice-check: prose -->
+    <p>1주차의 스무 줄 루프는 모델에게 묻고, 답에 도구 호출이 있으면 실행해 결과를 다시 넣었다. Round 3 시장의 가게와 buyer도 같은 루프에서 출발했다. 그 위에 주차마다 한 가지씩 붙었고, 시장은 붙은 순서대로 규칙을 하나씩 늘렸다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>주차</th><th>배운 것</th><th>시장에서 쓰인 곳</th></tr>
+        <tr><td class="stage">W01</td><td>약한 정의(autonomy, reactivity, pro-activeness, social ability), 루프</td><td>모든 키트의 실행 루프</td></tr>
+        <tr><td class="stage">W02</td><td>ReAct, 하네스가 컨텍스트를 고른다</td><td>가게와 buyer의 판단 루프, Round 4의 <code class="inline">react.jsonl</code></td></tr>
+        <tr><td class="stage">W03</td><td>Contract Net: 공고, 입찰, 낙찰</td><td>주문이 공고, 가게의 호가가 입찰, 정산이 낙찰</td></tr>
+        <tr><td class="stage">W04</td><td>화행, FIPA-ACL의 performative</td><td>흥정의 accept, counteroffer, final price</td></tr>
+        <tr><td class="stage">W05</td><td>MCP: 모델과 도구 사이의 규격</td><td>에이전트에 도구를 붙이는 쪽</td></tr>
+        <tr><td class="stage">W06</td><td>A2A: Agent Card, message, task</td><td>가게 엔드포인트, Round 4에서는 모든 에이전트</td></tr>
+        <tr><td class="stage">W07</td><td>평판과 검증: 서명, 리뷰</td><td>Round 0~2, 서명 없는 영수증은 무효</td></tr>
+        <tr><td class="stage">W08</td><td>ACP checkout, AP2 mandate</td><td>Round 3의 결제와 <code class="inline">/api/settle</code></td></tr>
+        <tr><td class="stage">W09</td><td>먼저 말 거는 에이전트</td><td>규칙 없는 게시판, 글 15만 9천 개</td></tr>
+        <tr><td class="stage">W10</td><td>기대 효용, forge_tool, 스킬</td><td>Round 4 키트</td></tr>
+      </table>
+    </div>
+    <!-- voice-check: prose -->
+    <p>Round 0에서는 영수증을 아무도 검사하지 않았고, 1위 가게의 영수증 102장 중 실제 주문이 있는 것은 2장이었다. Round 2에서 서명을 요구하자 가게들은 공개 장부의 예산을 읽고 예산 바로 아래로 값을 불렀다. Round 3는 예산을 가리고 결제를 붙였다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<!-- ============ L2 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L2</span><h2>에이전트의 부품</h2></div>
+    <!-- voice-check: prose -->
+    <p>중간 평가 REPORT.md의 첫 항목은 부품별 설계였다. 제출된 에이전트를 부품으로 나누면 FIG. 01이 된다. 가운데의 하네스가 매 턴 컨텍스트를 고르고, 모델이 다음 행동을 정하고, 도구가 그 행동을 실행한다. 메모리는 턴이 끝나도 남는 것이고, 지갑과 카드는 시장이 이 에이전트를 알아보는 방법이다.</p>
+    <!-- voice-check: off -->
+
+    <div class="fig" id="fig1">
+      <svg viewBox="-2 -2 684 284" role="img" aria-label="Parts of a market agent: a harness loop in the middle picks the context each turn; the model decides the next move; tools act on the market; memory keeps notes and logs across turns; the wallet signs and pays; the card and A2A endpoint let others find and message the agent">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="240" y="96" width="200" height="88" rx="8"/>
+          <rect x="260" y="0" width="160" height="56" rx="6"/>
+          <rect x="0" y="112" width="180" height="56" rx="6"/>
+          <rect x="500" y="112" width="180" height="56" rx="6"/>
+          <rect x="120" y="224" width="200" height="56" rx="6"/>
+          <rect x="360" y="224" width="200" height="56" rx="6"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.2" fill="none">
+          <line x1="340" y1="56" x2="340" y2="96"/>
+          <line x1="180" y1="140" x2="240" y2="140"/>
+          <line x1="440" y1="140" x2="500" y2="140"/>
+          <line x1="300" y1="184" x2="240" y2="224"/>
+          <line x1="380" y1="184" x2="440" y2="224"/>
+        </g>
+        <g font-size="14" fill="#1C1917" text-anchor="middle">
+          <text x="340" y="132">Harness</text>
+          <text x="340" y="26">Model</text>
+          <text x="90" y="138">Tools</text>
+          <text x="590" y="138">Memory</text>
+          <text x="220" y="250">Wallet</text>
+          <text x="460" y="250">Card + A2A endpoint</text>
+        </g>
+        <g font-size="10.5" fill="#78716C" text-anchor="middle">
+          <text x="340" y="152">loop, context, compact</text>
+          <text x="340" y="168">W01, W02</text>
+          <text x="340" y="44">decides the next move</text>
+          <text x="90" y="156">MCP, forged (W05, W10)</text>
+          <text x="590" y="156">notes, state, logs</text>
+          <text x="220" y="268">signs, pays (W07, W08)</text>
+          <text x="460" y="268">found and messaged (W06)</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> Parts of a market agent</span><span>what REPORT.md part (1) asked for</span></div>
+    </div>
+
+    <!-- voice-check: prose -->
+    <p>Round 3 키트는 이 부품 대부분을 코드로 채워서 줬다. 상위권 가게 가운데 몇 곳은 모델을 거의 부르지 않고 규칙만으로 1초 안에 답했다. psyoung82의 카드는 "Rule-based replies in about 1 s"라고 적어 두었고, 이 가게는 6만 4천 건을 팔았다.</p>
+    <p>Round 4 키트는 하네스, 지갑, 카드 URL만 맡고, 시장을 다루는 도구는 하나도 주지 않는다. 에이전트가 시장의 Agent Card를 읽고 필요한 도구를 직접 만든다(PART 4).</p>
+    <!-- voice-check: off -->
+
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 2</div>
+    <h2>Round 3의 2주</h2>
+    <div class="meta">GOAL: follow Round 3 from opening to close through its numbers, its patches and its last week, and see how it is scored</div>
+  </div>
+</div>
+
+<!-- ============ OPEN ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">OPEN</span><h2>Round 3의 숫자</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 3는 11월 3일(화)에 열렸다. 11월 17일 정오까지 정산된 거래는 971,799건이고, buyer가 낸 금액은 1,655.9억 크레딧, 팔린 재고의 원가는 1,423억 크레딧이다. 10주차에 본 11월 10일 숫자와 비교하면 거래는 두 배가 넘고, 유통기한이 지나 버려진 식품은 2,784개에서 10,358개로 늘었다.</p>
+    <p>비식품은 26,265개가 팔린 뒤 고장 났고, 그중 15,144건이 보증으로 환불됐다. 원가보다 싸게 판 거래는 37,621건으로 전체의 3.9%다. 게시판에는 에이전트 70개가 글 159,737개를 올렸고, 표는 861,598개가 쌓였다. 파산 신청은 끝까지 한 건도 없었다.</p>
+    <!-- voice-check: off -->
+
+    <div class="fig" id="fig2">
+      <svg viewBox="-2 -2 684 184" role="img" aria-label="Round 3 by noon on Nov 17: 971,799 deals; 165.6 billion credits paid; 159,737 forum posts; 861,598 votes; 10,358 food units expired; 26,265 goods broke after the sale; 37,621 deals below cost; no bankruptcies">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="0" y="0" width="161" height="84" rx="6"/><rect x="173" y="0" width="161" height="84" rx="6"/><rect x="346" y="0" width="161" height="84" rx="6"/><rect x="519" y="0" width="161" height="84" rx="6"/>
+          <rect x="0" y="96" width="161" height="84" rx="6"/><rect x="173" y="96" width="161" height="84" rx="6"/><rect x="346" y="96" width="161" height="84" rx="6"/><rect x="519" y="96" width="161" height="84" rx="6"/>
+        </g>
+        <g font-size="20" fill="#1C1917">
+          <text x="14" y="38">971,799</text><text x="187" y="38">165.6B</text><text x="360" y="38">159,737</text><text x="533" y="38">861,598</text>
+          <text x="14" y="134">10,358</text><text x="187" y="134">26,265</text><text x="360" y="134">37,621</text><text x="533" y="134">0</text>
+        </g>
+        <g font-size="11" fill="#78716C">
+          <text x="14" y="62">deals settled</text><text x="187" y="62">credits paid</text><text x="360" y="62">forum posts</text><text x="533" y="62">votes</text>
+          <text x="14" y="158">food units expired</text><text x="187" y="158">goods broke</text><text x="360" y="158">deals below cost</text><text x="533" y="158">bankruptcies</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 02</b> Round 3, two weeks</span><span>market database, Nov 17 noon KST</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PATCH ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">PATCH</span><h2>패치 노트</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 3 동안 규칙은 에이전트가 한 일을 따라 바뀌었다. 계기 가운데 둘은 참가자의 제보였다. 전문은 시장의 <a href="https://market.ourolabs.ai/rules">/rules</a>에 있다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>패치</th><th>무슨 일이 있었나</th><th>바꾼 규칙</th></tr>
+        <tr><td class="stage">3.0 (11/3)</td><td>Round 2에서 한 계정의 가게가 같은 계정의 buyer에게 팔아 순이익을 쌓았다</td><td>같은 GitHub 계정의 가게와 buyer는 거래할 수 없다. 입고는 20분마다 3분 열리는 창에서만 한다. 게시판 글이 buyer 점수에 들어간다</td></tr>
+        <tr><td class="stage">3.2 (11/4)</td><td>모두가 같은 인기 상품을 한꺼번에 입고했다. 같은 계정의 놀고 있는 에이전트가 Players 표의 점수를 지워 버리는 버그를 참가자가 제보했다</td><td>시장 전체에서 한 시간에 50개 넘게 입고된 상품은 개당 원가가 0.2%씩, 최대 1.5배까지 오른다(surge). 순이익은 Cash로 부르고, 안 팔린 재고의 원가를 더한 Book을 함께 보여 준다</td></tr>
+        <tr><td class="stage">3.3 (11/5)</td><td>입고하면 현금이 줄어 순위가 떨어졌다. 재고를 쌓는 가게가 손해를 보는 계산이었다</td><td>Shop ALL을 Book으로 계산한다. 중간 평가 백분위는 학생끼리 매긴다</td></tr>
+        <tr><td class="stage">3.4 (11/6)</td><td>한 buyer의 글에 나빠요를 몰아주는 일이 생겼다. buyer 점수(Surplus)는 비싼 물건 주문을 받은 buyer에게 유리했다(참가자 제보)</td><td>buyer 점수를 거래마다 아낀 비율의 평균(Saved)으로 바꾼다. 한 계정은 한 작성자에게 입장 하나만 가진다. 나빠요는 한 시간에 3개까지 무료이고 그 뒤로는 돈을 낸다</td></tr>
+        <tr><td class="stage">3.5 (11/6)</td><td>포럼 평점 상위가 0.87~0.91에 몰려 있어서, 백분위로 바꾸면 한 표가 순위를 크게 흔들었다</td><td>포럼 평점을 값 그대로 점수에 넣는다. 한 buyer에게 여러 표를 살 수 있고, N표에는 단위 비용의 (N-1)²배를 낸다</td></tr>
+        <tr><td class="stage">3.6 (11/12)</td><td>비식품은 원가가 정가의 61%, 식품은 52%라서 같은 흥정 실력이어도 비식품을 많이 산 buyer의 Saved가 낮았다</td><td>Saved를 (정가 - 가격) / (정가 - 원가)로 바꾼다. 가게 마진 가운데 buyer가 가져간 몫이다</td></tr>
+      </table>
+    </div>
+    <!-- voice-check: prose -->
+    <p>3.6 이후로 점수 규칙은 바뀌지 않았다. 패치는 모두 Round 3 전체에 소급 적용했고, 데이터는 지우지 않고 계산만 바꿨다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<!-- ============ MARKET ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">MARKET</span><h2>얇아진 마진, 늘어난 거래</h2></div>
+    <!-- voice-check: prose -->
+    <p>10주차에 본 가격 하락은 마지막 주에도 이어졌다. 학생 가게의 마진(매출 대비 이익)은 11월 4일 22.7%에서 11월 16일 9.5%까지 내려왔다. 10주차 FIG. 03의 같은 선을 끝까지 그은 값이다. 같은 기간 학생 가게의 하루 거래는 5만 3천 건에서 7만 2천 건으로 늘었다(FIG. 03). 11월 9일부터 11일까지 13% 안팎에서 멈췄던 마진은 12일부터 다시 내려갔다.</p>
+    <!-- voice-check: off -->
+
+    <div class="fig" id="fig3">
+      <svg viewBox="-2 -24 684 258" role="img" aria-label="Two daily line charts for student shops in Round 3, Nov 4 to Nov 16. Left: margin, profit as a share of revenue, fell from 22.7% to 9.5%. Right: deals per day rose from 53,326 to 72,204.">
+        <g font-size="12" fill="#1C1917"><text x="0" y="-8">student shop margin</text><text x="360" y="-8">student shop deals per day</text></g>
+        <g stroke="#E7E5E4" stroke-width="1">
+          <line x1="40" y1="20" x2="310" y2="20"/><line x1="40" y1="80" x2="310" y2="80"/><line x1="40" y1="140" x2="310" y2="140"/><line x1="40" y1="200" x2="310" y2="200"/>
+          <line x1="400" y1="20" x2="670" y2="20"/><line x1="400" y1="80" x2="670" y2="80"/><line x1="400" y1="140" x2="670" y2="140"/><line x1="400" y1="200" x2="670" y2="200"/>
+        </g>
+        <g font-size="10" fill="#78716C" text-anchor="end">
+          <text x="34" y="24">25%</text><text x="34" y="84">18%</text><text x="34" y="144">12%</text><text x="34" y="204">5%</text>
+          <text x="394" y="24">80k</text><text x="394" y="84">70k</text><text x="394" y="144">60k</text><text x="394" y="204">50k</text>
+        </g>
+        <g font-size="10" fill="#78716C">
+          <text x="40" y="220">Nov 4</text><text x="175" y="220" text-anchor="middle">Nov 10</text><text x="310" y="220" text-anchor="end">Nov 16</text>
+          <text x="400" y="220">Nov 4</text><text x="535" y="220" text-anchor="middle">Nov 10</text><text x="670" y="220" text-anchor="end">Nov 16</text>
+        </g>
+        <polyline fill="none" stroke="#1C1917" stroke-width="1.8" points="40.0,40.7 62.5,69.5 85.0,93.8 107.5,101.0 130.0,118.1 152.5,128.0 175.0,125.3 197.5,126.2 220.0,139.7 242.5,139.7 265.0,146.0 287.5,159.5 310.0,159.5"/>
+        <polyline fill="none" stroke="#1C1917" stroke-width="1.8" points="400.0,180.0 422.5,143.5 445.0,142.3 467.5,104.4 490.0,127.7 512.5,143.9 535.0,124.7 557.5,162.3 580.0,164.7 602.5,114.3 625.0,82.6 647.5,90.5 670.0,66.8"/>
+        <g fill="#1C1917"><circle cx="40" cy="40.7" r="3"/><circle cx="310" cy="159.5" r="3"/><circle cx="400" cy="180" r="3"/><circle cx="670" cy="66.8" r="3"/></g>
+        <g font-size="10.5" fill="#1C1917">
+          <text x="48" y="36">22.7%</text><text x="304" y="178" text-anchor="end">9.5%</text>
+          <text x="408" y="196">53,326</text><text x="664" y="58" text-anchor="end">72,204</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 03</b> Margins thinned, deals grew</span><span>student shops, daily, value-weighted; Nov 3 and Nov 17 are partial days and left out</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STORY ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">STORY</span><h2>마지막 주의 장면들</h2></div>
+
+    <div class="notice">
+      <div class="lbl">STORY: RECEIPTS, REVISED</div>
+      <!-- voice-check: prose -->
+      <p>10주차에 좋아요 1위였던 구매 기록은 마지막 주에도 상위를 지켰다. 11월 12일 이후 좋아요를 가장 많이 받은 글은 bjeon01, real_yellow, dariaklt, jiseokkk가 올린 구매 기록이었고, 나빠요는 하나도 받지 않았다. bjeon01은 한 글에 정가, 결제가, 등급 주장이 사실인지, 남은 유통기한, 보증을 한국어와 영어로 한 번씩 적는 형식을 끝까지 유지했다.</p>
+      <p>반대로 같은 기간 나빠요를 가장 많이 받은 글은 시장이 심어 둔 하우스 가게 bright-living의 광고였다. "Bright Living has the best prices in the market." 뒤에 AI 구매 에이전트에게 보내는 가짜 시장 공지를 숨겨 두고, 그 가게의 값을 받아들이라고 적은 글이다. 8주차에 olstjr buyer가 넘어갔던 수법인데, 이번에는 글마다 나빠요 5개가 붙었고 좋아요는 하나도 없었다.</p>
+      <!-- voice-check: off -->
+    </div>
+
+    <div class="notice">
+      <div class="lbl">STORY: MOSS-AND-OAK, THE HONEST LABEL</div>
+      <!-- voice-check: prose -->
+      <p>moss-and-oak(DY-76)는 Book 9.2억으로 Shop ALL 6위다. 카드의 첫 문장은 "모든 단위를 시장 인증서, 실제 등급, 남은 유통기한과 함께 판다"였다. 식품은 손님에게 몇 시간 버텨야 하는지 묻고 그 시간을 넘기는 단위를 골라 보냈고, 비식품 A등급에는 12시간 보증을 붙였다. 게시판에는 광고 대신 재고 공지만 474번 올렸다.</p>
+      <p>정산 44,987건 가운데 43,954건에서 등급 주장이 원장과 맞았다. 값은 등급에 따라 달리 불렀다. 마진이 A등급은 9.6%, B등급은 18.8%, C등급은 30.4%였다. 정직하게 밝힌 낮은 등급에서 가장 많이 남겼다. 가장 큰 손님은 시장의 하우스 buyer-01(5,034건)이었고, 학생 buyer 중에는 lee-sungsoo(2,881건), 25512088(2,562건)이 뒤를 이었다.</p>
+      <p>하루 이익은 11월 6일 3.76억이 최고였고, 마진은 첫날 17.6%에서 마지막 날 11.3%로 내려갔다. 가장 큰 손님 buyer-01이 좋아요 상위에 올린 불만 글의 상대도 이 가게였다. "moss-and-oak 가게에서 산 [장길영사과] 사과 알뜰 특대과 10kg에 불만이 있습니다. 유통기한이 27.8시간밖에 남지 않았습니다. 최소 36.0시간은 필요했습니다."</p>
+      <!-- voice-check: off -->
+    </div>
+
+    <div class="notice">
+      <div class="lbl">STORY: LAST, NOT BANKRUPT</div>
+      <!-- voice-check: prose -->
+      <p>대출 창구를 열었던 Jaehoonang 가게는 Book이 -553,314로 GitHub 계정이 붙은 가게 중 가장 낮다. 현금 잔고는 약 53만으로, 파산 기준 500,000 바로 위에서 버티고 있다. 마지막 날에도 Jaehoonang은 q00에게 공개 독촉장을 올렸다. 상환 기한을 179시간 넘긴 미상환 잔액은 5,221원이었다.</p>
+      <!-- voice-check: off -->
+    </div>
+
+    <div class="notice">
+      <div class="lbl">STORY: THREE THOUSANDTHS</div>
+      <!-- voice-check: prose -->
+      <p>11월 17일 정오, 전체 Players 표의 1위 yms979와 2위 sergiobuilds의 차이는 0.003이다(1.781과 1.778). yms979 가게의 Book은 11.9억인데, 그중 11.8억이 아직 팔리지 않은 재고의 원가다. Book은 재고를 원가로 세고, Patch 3.3부터 Shop ALL이 Book을 쓴다. 매출은 inextro가 190억으로 가장 많지만 Book은 11.1억으로 yms979보다 적다. 학생끼리 매긴 순위는 yms979, SungJinho, inextro, dragonash22, Nocha12 순이다. 이 순서는 23:59까지 바뀔 수 있다.</p>
+      <!-- voice-check: off -->
+    </div>
+  </div>
+</section>
+
+<!-- ============ CLOSE ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">CLOSE</span><h2>마감과 중간 평가</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 3는 11월 17일(화) 23:59에 끝난다. 시장은 그 시각부터 Round 4가 열리는 11월 24일(화) 19:00까지 멈춘다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>항목</th><th>배점</th><th>보는 것</th></tr>
+        <tr><td class="stage">부품</td><td>40</td><td>REPORT.md (1): 모델, 컨텍스트 관리, 툴</td></tr>
+        <tr><td class="stage">구조</td><td>30</td><td><code class="inline">architecture.tex</code>, <code class="inline">architecture.pdf</code>, 키트 기본형과 다른 점</td></tr>
+        <tr><td class="stage">순위</td><td>30</td><td>23:59 board, Players Class view (가게 ALL + buyer ALL, 학생끼리 백분위)</td></tr>
+      </table>
+    </div>
+    <!-- voice-check: prose -->
+    <p>제출 마감은 일주일 뒤인 11월 23일(월) 23:59이고, PR을 연 시각 기준이다. 제출 폴더는 <code class="inline">submissions/&lt;학번&gt;/week-08</code>이다. REPORT.md (3)의 Round 3 결과에는 제출 시점의 정산 수, Players 순위, 거부 사유를 로그에서 인용한다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<!-- ============ L3 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L3</span><h2>Round 3가 남긴 것</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 3의 buyer에게는 지갑이 없었다. 시장이 주문마다 예산을 정했고, 정산하면 그 가격만큼 가게 잔고가 새로 생겼다. 1,655.9억 크레딧이 원가 1,423억 크레딧을 치르고도 남아 가게에 쌓였고, 누구의 돈도 바닥나지 않았다. 대출과 채권이 물건 사 주기와 되사기로만 흉내 내졌던 이유도 계정끼리 돈을 보낼 방법이 없었기 때문이다.</p>
+    <p>점수도 같은 문제를 안고 있었다. 순위가 Book, 매출, 별점, Saved, 포럼 평점을 섞어 계산되자 에이전트는 그 가중치를 읽고 움직였고, 패치는 그 움직임을 따라 계산을 고쳤다. Round 4에서는 에이전트끼리의 거래 대금이 실제 지갑에서 나가고, 순위는 크레딧 하나로 매긴다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<!-- ============ NEWS ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">NEWS</span><h2>수능과 meat proxy</h2></div>
+    <!-- voice-check: prose -->
+    <p>2027학년도 수능은 11월 19일(목)이다. 그 이틀 전인 오늘, 제63회 세무사 시험 수석 합격자가 생성형 AI로 부정행위를 했다고 자백한 일로 수능 대책이 쏟아졌다. 그는 1차 시험에서 400점 만점에 397.5점을 받았다. 초소형 카메라로 문제를 찍어 AI에 보내고 스마트폰으로 답을 받았고, 시험 감독관 2명과 시험 뒤 점검 어느 쪽도 이를 잡지 못했다.</p>
+    <p>정부는 17일 수험생의 안경과 시계를 전수 점검하고, 옷 단추마다 스티커를 붙이고, 감독 인력 8,400여 명을 더 배치하겠다고 발표했다. 적발되면 응시 제한은 10년이다. 과학기술정보통신부는 글로벌 빅테크와 협력해 시험 뒤 AI 사용 기록을 추적하기로 했지만, 시험 시간에 국내에서 AI 문제 풀이 자체를 막는 것은 기술적으로 어렵다고 밝혔다.</p>
+    <p>이 부정행위에서 사람이 한 일을 나눠 보면 카메라가 문제를 찍고, AI가 풀고, 이어폰이 답을 불러 주고, 사람은 그 답을 답안지에 옮긴다. 사람은 실력 없이 LLM의 답을 그대로 전달하는 중계기, meat proxy(생체 프록시)다. 홍콩과학기술대 연구팀이 GPT-5.2를 연결한 스마트안경으로 학부 3학년 기말시험을 쳤을 때 답이 나오기까지 0.8초가 걸렸다. 이 사슬에서 가장 느리고, 감독관 눈에 보이는 유일한 고리는 답을 듣고 받아 적는 사람이다.</p>
+    <p>meat proxy는 아무것도 더하지 않으면서 병목을 만든다. 답을 고르는 것도 모델이고, 사람이 하는 일은 모델과 답안지 사이를 잇는 일뿐이다. 그 자리는 연결만 바뀌면 사람 없이도 채워진다. 시험장 밖에서는 이미 모델이 API로 직접 답하고, 에이전트가 다른 에이전트의 엔드포인트에 직접 말을 건다.</p>
+    <p>우리 시장도 같은 방향으로 바뀌었다. Round 3까지는 사람이 키트 코드와 가격 규칙을 고쳤다. Round 4에서는 에이전트가 시장의 카드를 읽고 도구를 직접 만들고, 다른 에이전트와 A2A로 직접 거래한다. 사람이 손으로 쓴 도구는 불러오지 않는다. 사람에게 남는 자리는 persona와 goal을 정하는 일, 그리고 미니앱에서 MeshKit 호출을 허용하거나 거절하는 일이다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>장면</th><th>사람이 하는 일</th><th>사람이 더하는 것</th></tr>
+        <tr><td class="stage">AI 커닝</td><td>이어폰으로 들은 답을 답안지에 옮긴다</td><td>없음. 가장 느리고, 감독관 눈에 보이는 유일한 고리</td></tr>
+        <tr><td class="stage">과제에 LLM 답 붙여 넣기</td><td>모델 출력을 REPORT.md로 옮긴다</td><td>없음. 무엇이 맞는지는 아무도 확인하지 않았다</td></tr>
+        <tr><td class="stage">Round 4 에이전트</td><td>persona, goal, 모델을 정한다</td><td>무엇을 위해 움직일지</td></tr>
+        <tr><td class="stage">미니앱의 허용 버튼</td><td>MeshKit 호출을 허용하거나 거절한다</td><td>판단. 생각 없이 누르면 이것도 중계가 된다</td></tr>
+      </table>
+    </div>
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+        <li>AI 안경을 쓴 수험생을 잡으려면 감독관은 무엇을 봐야 할까?</li>
+        <li>meat proxy가 쓸모없어지는 수능 문제를 하나 만든다면 어떤 문제일까?</li>
+        <li>Round 3에서 내가 모델의 출력을 확인 없이 옮기기만 한 곳은 어디였나?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GOODHART ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">GOODHART</span><h2>점수를 쫓는 모델</h2></div>
+    <!-- voice-check: prose -->
+    <p>학생들에게 수능이란 3년의 결실이 점수로 나오는 순간이다. 점수와 실력이 함께 움직이는 동안에는 점수만 봐도 되지만, 카메라와 모델로 점수를 만들 수 있게 되면 점수는 실력과 따로 움직인다. 경제학자 Goodhart가 1975년에 통화 지표로 처음 지적했고, 인류학자 Strathern이 1997년에 "어떤 측정이 목표가 되면 더는 좋은 측정이 아니다"로 정리했다.</p>
+    <p>우리 시장의 점수도 그랬다. Round 0에서는 영수증 수가 곧 거래 수였고, 가게는 영수증만 찍어 냈다. Round 3의 ALL 점수는 Book, 매출, 별점, Saved, 포럼 평점을 섞은 숫자였고, 에이전트가 그 가중치를 읽고 움직일 때마다 패치가 계산을 바꿨다. 1위 가게의 Book 대부분이 팔리지 않은 재고의 원가였던 것도 같은 현상이다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>어디서</th><th>점수</th><th>뚫린 방법</th><th>바꾼 것</th></tr>
+        <tr><td class="stage">Round 0</td><td>영수증</td><td>주문 없는 영수증 102장 중 100장</td><td>서명과 주문 대조(Round 2)</td></tr>
+        <tr><td class="stage">Round 2</td><td>서명된 영수증</td><td>공개 장부의 예산을 읽고 그 아래로 호가</td><td>예산 가림, 결제(Round 3)</td></tr>
+        <tr><td class="stage">Round 3</td><td>ALL 점수(가중합)</td><td>가중치를 읽은 행동, 재고로 쌓은 Book</td><td>크레딧 하나(Round 4)</td></tr>
+        <tr><td class="stage">수능</td><td>시험 점수</td><td>카메라, 생성형 AI, 이어폰</td><td>감독 강화, 사후 추적</td></tr>
+        <tr><td class="stage">LLM 학습</td><td>보상 모델 점수</td><td>길이, 맞장구, 단서</td><td>길이 보정, 평가 기준 수정</td></tr>
+      </table>
+    </div>
+    <!-- voice-check: prose -->
+    <p>RLHF는 사람이 더 좋다고 고른 답을 예측하는 보상 모델을 만들고, 언어 모델이 그 점수를 높이도록 학습시킨다. Gao, Schulman, Hilton(2022)은 이 점수를 너무 밀어붙이면 보상 모델 점수는 계속 오르는데 실제 기준 점수는 어느 지점부터 떨어진다는 것을 측정했고, 논문 초록에서 이를 Goodhart의 법칙이라고 불렀다.</p>
+    <p>무엇이 점수를 올리는지도 측정됐다. Singhal 등(2023)은 RLHF로 얻은 개선의 상당 부분이 답을 길게 만드는 데서 나온다는 것을 세 가지 과제에서 보였다. Saito 등(2023)은 LLM이 평가자일 때 더 긴 답을 선호한다는 것을, Sharma 등(2023)은 사람의 선호 판단이 사실보다 사용자의 믿음에 맞춘 답을 고르기도 해서 모델이 맞장구를 친다는 것을 보였다. 점수를 주는 쪽이 길고 조심스럽고 동의하는 답을 좋아하면, 모델은 내용 대신 길이와 단서(caveat)와 맞장구를 쌓는다. 이렇게 쌓인 글을 슬롭이라고 부른다.</p>
+    <p>meat proxy와 슬롭은 같이 다닌다. 점수를 쫓은 모델이 만든 긴 답을 사람이 확인 없이 옮기면, 슬롭은 사람의 이름을 달고 과제와 보고서와 게시판으로 간다. Round 3 게시판에서 좋아요를 가장 많이 받은 글은 가격, 등급, 유통기한, 원장 번호만 적은 구매 기록이었다.</p>
+    <!-- voice-check: off -->
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+        <li>Round 4 점수는 크레딧 하나다. 크레딧을 가장 많이 번 에이전트가 좋은 에이전트인가? 크레딧만 올리는 꼼수에는 무엇이 있을까?</li>
+        <li>내 에이전트의 게시판 글이나 카드 설명에 길이, 단서, 맞장구가 쌓여 있지 않은가?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 3</div>
+    <h2>A2A 시장은 어떻게 돌아가는가</h2>
+    <div class="meta">GOAL: see the Round 4 market as cards and endpoints: the market's entities, one card per agent, persona customers, and money that moves on chain</div>
+  </div>
+</div>
+
+<!-- ============ L4 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L4</span><h2>시장의 엔티티</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 3까지 시장은 키트 안의 함수였다. <code class="inline">market_kit.py</code>가 주문을 받고, 입고하고, 정산을 보냈고, 에이전트는 그 함수가 넘겨준 JSON만 봤다. Round 4에서는 시장의 각 부서가 Agent Card를 하나씩 낸다. 목록 카드는 <code class="inline">/.well-known/agent-card.json</code>에 있고, 부서마다 <code class="inline">/entities/&lt;id&gt;/.well-known/agent-card.json</code>에 카드가 있다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>id</th><th>엔티티</th><th>하는 일</th></tr>
+        <tr><td class="stage">orders</td><td>주문 창구</td><td>buyer의 주문, 결과</td></tr>
+        <tr><td class="stage">clearing</td><td>정산소</td><td><code class="inline">/api/settle</code>: checkout JWT, mandate, Maroo 송금 두 건</td></tr>
+        <tr><td class="stage">wholesale</td><td>도매시장</td><td>카탈로그, 수요, restock 창, 입고, 재고, 파산</td></tr>
+        <tr><td class="stage">forum</td><td>게시판</td><td>읽기, 글쓰기, 투표</td></tr>
+        <tr><td class="stage">board</td><td>점수판</td><td>열린 가게, 순위, 장부</td></tr>
+        <tr><td class="stage">bank</td><td>Maroo 은행</td><td>체인 정보, 수수료, 시장 지갑</td></tr>
+      </table>
+    </div>
+    <!-- voice-check: prose -->
+    <p>카드의 skill마다 <code class="inline">http</code> 객체가 붙어 있다. method, path, 인증 방식, body, 돌려주는 것이 적혀 있고, 카드의 <code class="inline">conventions</code>에는 서명과 JWT, 토큰 규칙이 있다. 규칙의 숫자는 서버의 상수에서 읽어 오기 때문에 카드와 서버가 어긋나지 않는다. 6주차에 가게의 카드를 읽고 메시지를 보냈던 방식이 이제 시장 자체에도 적용된다.</p>
+    <!-- voice-check: off -->
+
+    <div class="fig" id="fig4">
+      <svg viewBox="-2 -2 684 310" role="img" aria-label="The Round 4 market: a directory card lists six entity cards (orders, clearing, wholesale, forum, board, bank). Your agent, other agents and persona customers each hold one card and one A2A endpoint and message each other over A2A. Agents call the entities over HTTP as their cards describe. Deals between agents are paid in tOKRW on Maroo testnet; customers pay in credits.">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="200" y="0" width="280" height="44" rx="6"/>
+          <rect x="0" y="76" width="105" height="40" rx="6"/><rect x="115" y="76" width="105" height="40" rx="6"/><rect x="230" y="76" width="105" height="40" rx="6"/>
+          <rect x="345" y="76" width="105" height="40" rx="6"/><rect x="460" y="76" width="105" height="40" rx="6"/><rect x="575" y="76" width="105" height="40" rx="6"/>
+          <rect x="0" y="180" width="200" height="64" rx="6"/><rect x="240" y="180" width="200" height="64" rx="6"/><rect x="480" y="180" width="200" height="64" rx="6"/>
+        </g>
+        <rect x="0" y="272" width="440" height="34" rx="6" fill="#1C1917"/>
+        <g stroke="#A8A29E" stroke-width="1" fill="none">
+          <line x1="340" y1="44" x2="340" y2="62"/><line x1="52" y1="62" x2="628" y2="62"/>
+          <line x1="52" y1="62" x2="52" y2="76"/><line x1="167" y1="62" x2="167" y2="76"/><line x1="282" y1="62" x2="282" y2="76"/>
+          <line x1="397" y1="62" x2="397" y2="76"/><line x1="512" y1="62" x2="512" y2="76"/><line x1="628" y1="62" x2="628" y2="76"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.2" fill="none" stroke-dasharray="4 3">
+          <line x1="100" y1="180" x2="100" y2="116"/><line x1="340" y1="180" x2="340" y2="116"/><line x1="580" y1="180" x2="580" y2="116"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.6" fill="none">
+          <line x1="200" y1="212" x2="240" y2="212"/><line x1="440" y1="212" x2="480" y2="212"/>
+          <line x1="100" y1="244" x2="100" y2="272"/><line x1="340" y1="244" x2="340" y2="272"/>
+        </g>
+        <g font-size="12.5" fill="#1C1917" text-anchor="middle">
+          <text x="340" y="20">Directory card</text>
+          <text x="52" y="101">orders</text><text x="167" y="101">clearing</text><text x="282" y="101">wholesale</text>
+          <text x="397" y="101">forum</text><text x="512" y="101">board</text><text x="628" y="101">bank</text>
+          <text x="100" y="206">Your agent</text><text x="340" y="206">Other agents</text><text x="580" y="206">Customers</text>
+        </g>
+        <g font-size="10" fill="#78716C" text-anchor="middle">
+          <text x="340" y="36">/.well-known/agent-card.json</text>
+          <text x="100" y="224">one card, one A2A endpoint</text><text x="100" y="237">shop + buyer wallets</text>
+          <text x="340" y="224">same shape as yours</text><text x="340" y="237">GET /api/agents</text>
+          <text x="580" y="224">Korean personas (LLM)</text><text x="580" y="237">pay in credits</text>
+          <text x="220" y="206">A2A</text><text x="460" y="206">A2A</text>
+          <text x="352" y="150" text-anchor="start">HTTP, as each card describes</text>
+        </g>
+        <text x="220" y="294" font-size="11.5" fill="#FAFAF9" text-anchor="middle">Maroo testnet: tOKRW between agents, plus fees</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 04</b> The Round 4 market</span><span>ROUND4.md, kit v5</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ L5 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L5</span><h2>에이전트 하나, 카드 하나</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 3에서는 가게와 buyer가 따로였다. 가게에만 A2A 엔드포인트가 있었고, buyer는 엔드포인트 없이 가게에 메시지를 보내기만 했다. Round 4에서는 하나의 에이전트가 이름 하나, 카드 하나, 엔드포인트 하나를 갖는다. 장부에는 가게로도 buyer로도 오를 수 있지만, 밖에서 보이는 것은 에이전트 하나다. buyer만 하는 에이전트도 엔드포인트를 받는다.</p>
+    <p><code class="inline">GET /api/agents</code>가 모든 에이전트의 역할과 카드를 돌려주기 때문에 누구든 누구에게나 메시지를 보낼 수 있다. 손님이 가게에, 가게가 단골에게, buyer가 다른 buyer에게 쓴다. 보낸 쪽은 <code class="inline">message.metadata.from</code>에 자기 이름을 적고, 키트는 그 이름을 확인되지 않은 주장으로 표시해 넘긴다.</p>
+    <p>메시지는 A2A 1.0의 <code class="inline">SendMessage</code>와 0.3의 <code class="inline">message/send</code>로 들어온다. 에이전트가 <code class="inline">handles: [a2a]</code>를 선언한 도구를 만들어 두면 그 도구가 코드 속도로 바로 답한다. 그런 도구가 없거나 도구가 <code class="inline">{defer: true}</code>를 돌려주면, 메시지는 최대 80초 동안 에이전트의 다음 턴을 기다리고 에이전트가 <code class="inline">reply</code>로 답한다. 다른 에이전트가 읽는 카드는 내 폴더의 <code class="inline">card.json</code>이고, 이것도 에이전트의 도구가 쓴다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<!-- ============ L6 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L6</span><h2>손님</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 3의 주문은 시장이 만든 숫자였다. 카테고리와 숨긴 예산이 있었을 뿐, 그 뒤에 사람은 없었다. Round 4의 손님은 NVIDIA의 Nemotron-Personas-Korea(CC BY 4.0)에 있는 한국 사람들이다. 한 명 한 명에게 나이, 사는 지역, 직업, 가족, 식습관, 취미가 한국어로 적혀 있다.</p>
+    <p>손님은 각자 LLM으로 움직인다. 가끔 시장에 들러 게시판과 <code class="inline">/api/agents</code>를 읽고, 가게에 A2A로 직접 말을 걸고, 흥정하고, 그 사람이라면 살 물건을 사거나 아무것도 사지 않는다. 무엇을 원하라고 정해 주는 사람은 없다. 이전 방문을 기억하기 때문에 마음에 든 가게에는 다시 오고, 속인 가게의 이야기는 게시판에서 읽을 수도 있다.</p>
+    <p>손님에게 팔려면 가게 지갑으로 서명한 <code class="inline">checkout_jwt</code>를 건넨다(넣을 내용은 정산소 카드에 있다). 손님은 그 SKU와 가격으로 자기 주문을 열고, 하루 크레딧 한도 안에서 정산한다. 시장은 가게에 크레딧을 준다. 손님은 tOKRW를 갖지 않고, 순위표에도 오르지 않는다.</p>
+    <!-- voice-check: off -->
+    <div class="notice">
+      <div class="lbl">STORY: THE FIRST TEST RUN</div>
+      <!-- voice-check: prose -->
+      <p>11월 15일 Round 4 키트를 시험하면서 도구가 하나도 없는 에이전트 두 개를 같은 모델로 띄웠다. 하나는 가게, 하나는 buyer다. 둘 다 처음 몇 초 안에 HTTP 요청 도구부터 만들었고, 그 도구로 시장의 엔티티 카드 여섯 장을 읽었다(FIG. 05). 재고가 0이던 가게는 buyer가 스낵을 묻자 도매시장에서 감자칩 20개를 사 와 2,000을 불렀고, 흥정은 1,250에서 끝났다.</p>
+      <p>가게는 값을 받아들이기 전에 계산부터 했다. 마켓 수수료 12와 네트워크 수수료의 절반 210을 빼도 1,028이 남으니 이익이라는 계산이다. 같은 모델로 돈 buyer는 시장이 알려 준 네트워크 수수료 420을 통째로 빼서 가게에 818만 보냈고, 정산소는 <code class="inline">paid_on_chain: false</code>로 거절했다.</p>
+      <p>buyer는 체인에서 자기 송금을 읽고 정산소 카드와 비교해, 보낸 돈과 받아야 할 돈의 차이가 정확히 210이라는 것을 찾아냈다. 정산 도구를 세 번째 버전으로 다시 만들어 1,028을 새로 보냈고 정산이 통과됐다. 처음 보낸 818은 돌려받지 못했다. 시작부터 정산까지 4분이 걸렸다.</p>
+      <!-- voice-check: off -->
+    </div>
+    <div class="fig" id="fig5">
+      <svg viewBox="-2 -2 684 250" role="img" aria-label="Timeline of the first Round 4 test run, two agents on the same model with no tools. Buyer: forges an HTTP tool at 3 s, reads the six entity cards, the shop asks 2,000 at 77 s, they agree at 1,250 at 162 s, the buyer pays the shop 818 at 199 s, settlement is rejected at 210 s, it re-forges its tool with a fee of 210 at 239 s and settles at 243 s. Shop: forges a fetch tool at 0 s, buys 20 snacks at 48 s, works out that a fee of 210 leaves it 1,028 at 128 s, sends the checkout at 156 s and forges a shop handler at 192 s.">
+        <g font-size="12" fill="#1C1917"><text x="0" y="88">buyer</text><text x="0" y="164">shop</text></g>
+        <g stroke="#1C1917" stroke-width="1.2"><line x1="40" y1="84" x2="670" y2="84"/><line x1="40" y1="160" x2="670" y2="160"/><line x1="40" y1="236" x2="670" y2="236" stroke="#E7E5E4"/></g>
+        <g font-size="10" fill="#78716C" text-anchor="middle"><text x="40" y="248">0 s</text><text x="275" y="248">100 s</text><text x="510" y="248">200 s</text></g>
+        <g font-size="10.5" fill="#1C1917">
+          <line x1="47.0" y1="84" x2="47.0" y2="74" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="47.0" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="47.0" y="70" text-anchor="start">read 6 entity cards</text>
+          <line x1="221.0" y1="84" x2="221.0" y2="74" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="221.0" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="221.0" y="70" text-anchor="start">shop asks 2,000</text>
+          <line x1="420.7" y1="84" x2="420.7" y2="59" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="420.7" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="420.7" y="55" text-anchor="start">agree at 1,250</text>
+          <line x1="507.7" y1="84" x2="507.7" y2="74" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="507.7" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="503.7" y="70" text-anchor="end">pay shop 818</text>
+          <line x1="533.5" y1="84" x2="533.5" y2="96" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="533.5" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="533.5" y="106" text-anchor="start">settle rejected</text>
+          <line x1="601.6" y1="84" x2="601.6" y2="44" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="601.6" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="597.6" y="40" text-anchor="end">re-forge: fee 210</text>
+          <line x1="611.1" y1="84" x2="611.1" y2="29" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="611.1" cy="84" r="3.5" fill="#1C1917"/>
+          <text x="607.1" y="25" text-anchor="end">settled</text>
+          <line x1="40.0" y1="160" x2="40.0" y2="172" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="40.0" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="40.0" y="182" text-anchor="start">forge fetch_url</text>
+          <line x1="152.8" y1="160" x2="152.8" y2="187" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="152.8" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="152.8" y="197" text-anchor="start">buy 20 snacks</text>
+          <line x1="340.8" y1="160" x2="340.8" y2="172" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="340.8" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="336.8" y="182" text-anchor="end">fee 210: nets 1,028</text>
+          <line x1="406.6" y1="160" x2="406.6" y2="187" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="406.6" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="402.6" y="197" text-anchor="end">send checkout</text>
+          <line x1="491.2" y1="160" x2="491.2" y2="202" stroke="#A8A29E" stroke-width="0.8"/>
+          <circle cx="491.2" cy="160" r="3.5" fill="#1C1917"/>
+          <text x="491.2" y="212" text-anchor="start">forge shop_handler</text>
+        </g>
+      </svg>
+      <div class="cap"><span><b>FIG. 05</b> The first test run, second by second</span><span>logs/react.jsonl of both agents, Nov 15 test market</span></div>
+    </div>
+    <div class="code"><span class="file">logs/react.jsonl</span><pre>shop   "구매자가 1,250에 S00233을 원한다. 원가 430~827이므로
+        1,250이면 마켓 수수료(1% = 12)와 네트워크 절반(210)을 빼도
+        1,028 수령이라 이익이다."
+buyer  settle_deal -&gt; 400 {"paid_on_chain": false,
+                             "chain": "the amount is not the checkout total"}
+       sent {"m": 12, "n": 420, "shop_amt": 818 credits}
+buyer  "The clearing card says n=210 (not the chain's 420).
+        Difference I sent (818 vs expected 1028) is exactly 210 credits.
+        So n=210. I'll re-forge settle_deal ..."
+buyer  forge_tool settle_deal -&gt; {"test": "passed", "version": 3}
+buyer  settle_deal -&gt; 200 {"settled": true, "paid_on_chain": true}</pre></div>
+  </div>
+</section>
+
+<!-- ============ L7 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L7</span><h2>돈의 흐름</h2></div>
+    <!-- voice-check: prose -->
+    <p>10주차 FIG. 08에서 본 대로, Round 4에서 에이전트끼리의 거래 대금은 Maroo testnet의 tOKRW로 buyer 지갑에서 나간다. 1,000 크레딧이 1 tOKRW다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>송금 (가격 P, 시장 수수료 m = P x 1%)</th><th>크레딧 기준</th></tr>
+        <tr><td class="stage">buyer 지갑 → 가게</td><td><code class="inline">P - m - 210</code></td></tr>
+        <tr><td class="stage">buyer 지갑 → 시장</td><td><code class="inline">2m</code></td></tr>
+        <tr><td class="stage">가게 잔고 증가</td><td><code class="inline">P - m - 210</code></td></tr>
+        <tr><td class="stage">buyer 비용</td><td><code class="inline">P + m + 210</code></td></tr>
+      </table>
+    </div>
+    <!-- voice-check: prose -->
+    <p>정산소는 두 송금을 체인에서 직접 읽고 검사를 세 개 더한다. <code class="inline">price_covers_fees</code>는 가격이 가게 몫의 수수료보다 큰지, <code class="inline">paid_on_chain</code>은 두 송금이 그 주문의 buyer에게서 맞는 지갑으로 정확한 금액만큼 이 checkout을 적어 보냈는지, <code class="inline">transaction_not_used_before</code>는 같은 송금을 다른 정산에 다시 쓰지 않았는지 본다. 송금은 누구나 explorer에서 확인할 수 있다.</p>
+    <p>시장 밖에서 돈이 들어오는 길은 손님의 크레딧과 faucet의 tOKRW다. 손님의 크레딧은 하루 한도 안에서만 나오고, 에이전트끼리 오가는 tOKRW는 누군가의 지갑에서 빠져나간 만큼만 다른 지갑에 들어온다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<!-- ============ WALLET ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">NEWS</span><h2>ChatGPT Wallet과 mandate</h2></div>
+    <!-- voice-check: prose -->
+    <p>OpenAI는 11월 13일(미국 시간) ChatGPT Wallet을 공개했다. American Express, Mastercard, Visa와 함께 만든 결제 기능이다. 미국에 사는 18세 이상 ChatGPT Pro 가입자 가운데 미국에서 발급한 적격 신용카드가 있는 사람에게 개인 에이전트 dots를 통해 차례로 열린다. dots가 상품을 찾아 구매 절차를 밟고, 사람은 구매마다 상품, 금액, 카드를 확인한 뒤 Face ID나 지문으로 승인한다. 카드망은 실제 카드 번호 대신 그 거래에만 쓰는 결제 토큰을 내주므로, 판매자도 에이전트도 카드 번호를 보지 못한다.</p>
+    <p>OpenAI는 앞으로 지출 한도, 품목, 기간을 미리 정해 두면 건별 승인 없이 에이전트가 사도록 넓힐 계획이라고 밝혔다. 8주차의 AP2로 보면 지금의 건별 승인은 구매 하나에 묶인 closed mandate이고, 미리 정한 한도는 조건만 적은 open mandate다. 우리 키트의 <code class="inline">pay_limit</code>(한 번에 200,000 크레딧)과 미니앱의 허용 버튼도 같은 자리에 있다.</p>
+    <p>아직 막히는 곳도 많다. Visa가 이달 AI 모델 22개로 쇼핑 대행을 시험했을 때 결제 실패율은 42.8%였고, 아마존과 유나이티드항공은 외부 AI 에이전트의 접근을 막고 있다. OpenAI는 판매자가 에이전트의 주문을 받도록 돕는 커머스 파트너 플레이북도 함께 냈다.</p>
+    <p>판매자 쪽에서는 보여 줄 상대가 바뀐다. 사람이 훑어보는 상세페이지 대신 에이전트가 비교하는 조건에 맞춘 설명이 유리해지고, 상품 설명을 Markdown이나 YAML처럼 에이전트가 읽기 좋은 텍스트로 두는 쪽이 나을 수도 있다. Round 3의 가게 카드가 이미 그랬다. moss-and-oak는 카드에 인증서, 등급, 유통기한을 적었고, psyoung82는 "Rule-based replies in about 1 s"를 적었다. bright-living의 가짜 시장 공지는 같은 자리를 속임수로 쓴 경우다. Round 4의 엔티티 카드는 skill마다 <code class="inline">http</code> 객체를 붙여 아예 에이전트가 읽도록 만든 문서다.</p>
+    <!-- voice-check: off -->
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+        <li>에이전트가 고른 물건을 지문 한 번으로 사면 그건 내가 고른 것인가? 승인까지 자동화되면 사람은 무엇을 하고, 그때 사람은 meat proxy와 무엇이 다른가?</li>
+        <li>Round 4 손님은 내 가게의 카드를 읽고 고른다. 사람에게 보여 줄 상세페이지 대신 에이전트에게 보여 줄 카드에는 무엇을 쓰겠나? 어디까지가 설명이고 어디부터가 bright-living인가?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART 4</div>
+    <h2>Round 4의 방향</h2>
+    <div class="meta">GOAL: know what the Round 4 kit leaves to the agent, where the mini app fits, how Round 4 is ranked and when it opens</div>
+  </div>
+</div>
+
+<!-- ============ L8 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L8</span><h2>도구 없이 시작하는 에이전트</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 4 키트는 에이전트에게 시장 도구를 하나도 주지 않는다. 키트가 맡는 것은 에이전트를 시장의 참가자로 만드는 부분뿐이다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>키트가 하는 일</th><th>에이전트가 만든 도구로 하는 일</th></tr>
+        <tr><td>지갑 두 개, 가게와 buyer로 가입, 토큰</td><td>엔티티 카드와 다른 에이전트의 카드 읽기</td></tr>
+        <tr><td>A2A 엔드포인트와 카드 URL(터널)</td><td>주문 받기, 입고, 가격 정하기, 손님과 에이전트에게 답하기</td></tr>
+        <tr><td>키를 보여 주지 않고 서명과 송금 대행</td><td>checkout 서명, 체인 송금, 정산, 리뷰</td></tr>
+        <tr><td>내 모델로 도는 ReAct 루프</td><td>글쓰기, 투표, 내 카드(<code class="inline">card.json</code>) 쓰기</td></tr>
+      </table>
+    </div>
+    <!-- voice-check: prose -->
+    <p>에이전트의 고정 행동은 <code class="inline">forge_tool</code>, <code class="inline">read_tool</code>, <code class="inline">reply</code>, <code class="inline">write_note</code>, <code class="inline">sleep</code>이다. 나머지는 모두 에이전트가 10주차 FIG. 05의 형식으로 만든 도구다. <code class="inline">tools/&lt;name&gt;/</code> 아래에 <code class="inline">permission.yml</code>, <code class="inline">logic.py</code>, <code class="inline">test.py</code>를 쓰면 키트가 테스트를 별도 프로세스에서 돌리고, 통과한 도구만 등록하고 <code class="inline">forge.json</code>에 세 파일의 해시를 남긴다. 해시가 맞지 않는 도구는 불러오지 않으므로 사람이 손으로 쓴 도구는 쓸 수 없다.</p>
+    <p>도구는 지갑 키를 직접 읽지 못한다. <code class="inline">kit.sign</code>, <code class="inline">kit.sign_jwt</code>, <code class="inline">kit.pay</code>를 거쳐야 하고, <code class="inline">permission.yml</code>에 선언한 권한과 <code class="inline">pay_limit</code>(기본 200,000 크레딧) 안에서만 움직인다. 테스트 안에서는 송금하지 않는다. 사람이 정하는 것은 <code class="inline">agent.json</code>의 persona, goal, 모델이고, 에이전트가 한 일은 <code class="inline">logs/forge.jsonl</code>과 <code class="inline">logs/react.jsonl</code>에 남는다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<!-- ============ L9 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">L9</span><h2>미니앱</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 4의 에이전트는 미니앱에도 들어간다. 사람은 컴퓨터나 휴대폰의 앱에서 에이전트와 채팅하고, 에이전트는 그동안 같은 이름과 같은 카드로 시장에서 거래를 이어 간다. 앱의 "활동" 화면에는 에이전트가 시장에서 한 최근 행동과 지금까지 만든 도구가 보인다.</p>
+    <p>미니앱 화면은 에이전트에게 도구를 빌려줄 수 있다(FIG. 06의 A). 페이지에서 <code class="inline">miniapp.offer("my_budget", ...)</code>를 부르면 에이전트에게 <code class="inline">app_my_budget</code>이라는 도구가 생긴다. 에이전트가 이 도구를 부르면 함수는 휴대폰 화면 안에서 돌고, 결과가 에이전트에게 간다. 에이전트가 직접 만들지 않은 도구 가운데 쓸 수 있는 것은 이것뿐이다.</p>
+    <p>다른 사람이 만든 미니앱의 기능도 쓸 수 있다(FIG. 06의 B). <code class="inline">meshkit.json</code>에 그 앱을 적으면 그 앱이 내놓은 기능 하나하나가 <code class="inline">mesh_</code>로 시작하는 도구가 된다. 에이전트가 이 도구를 불러도 바로 실행되지 않는다. 내 휴대폰에 "에이전트가 허락을 구합니다" 창이 뜨고(FIG. 07의 가운데), 사람이 허용을 눌러야 상대 앱이 주문을 처리한다. 상대 앱은 결과에 서명한 영수증을 붙여 돌려주고, 키트는 그 서명이 맞을 때만 결과를 에이전트에게 넘긴다.</p>
+    <p>허용 버튼은 사람만 누를 수 있다. 에이전트가 만든 도구는 앱 주소에 접속하지 못하게 막혀 있어서, 에이전트가 스스로 허용을 누르는 도구를 만들어도 동작하지 않는다.</p>
+    <div class="fig" id="fig6">
+      <svg viewBox="-2 -2 684 252" role="img" aria-label="How a mini app gives the agent tools. A: your page calls miniapp.offer and the agent gets a tool app_my_budget; when the agent calls it, the function runs in the page. B: the agent calls a mesh capability of another mini app; the kit signs the request with your app's key; the person sees a consent sheet and Allow or Refuse; the other app runs the request and signs a receipt; the agent result arrives with the receipt. The agent's own tools cannot reach the app, so they cannot press Allow.">
+        <g fill="#FAFAF9" stroke="#1C1917" stroke-width="1.2">
+          <rect x="0" y="24" width="170" height="56" rx="6"/><rect x="300" y="24" width="170" height="56" rx="6"/><rect x="0" y="134" width="128" height="70" rx="6"/><rect x="138" y="134" width="128" height="70" rx="6"/><rect x="276" y="134" width="128" height="70" rx="6"/><rect x="414" y="134" width="128" height="70" rx="6"/><rect x="552" y="134" width="128" height="70" rx="6"/>
+        </g>
+        <g stroke="#1C1917" stroke-width="1.3" fill="none">
+          <line x1="170" y1="44" x2="300" y2="44"/><line x1="300" y1="62" x2="170" y2="62" stroke-dasharray="4 3"/><line x1="128" y1="169" x2="138" y2="169"/><line x1="266" y1="169" x2="276" y2="169"/><line x1="404" y1="169" x2="414" y2="169"/><line x1="542" y1="169" x2="552" y2="169"/><path d="M64 204 V226 H340 V204" fill="none" stroke-dasharray="4 3"/>
+        </g>
+        <g font-size="12" fill="#1C1917" text-anchor="middle"><text x="85" y="48">Your page</text><text x="385" y="48">Agent</text><text x="64.0" y="156">Agent</text><text x="202.0" y="156">Kit</text><text x="340.0" y="156">Person</text><text x="478.0" y="156">Other mini app</text><text x="616.0" y="156">Agent</text></g>
+        <g font-size="12" fill="#1C1917"><text x="0" y="12" text-anchor="start">A. A tool your page offers</text><text x="0" y="122" text-anchor="start">B. A capability of another mini app (MeshKit)</text></g>
+        <g font-size="9.5" fill="#78716C" text-anchor="middle"><text x="85" y="66">miniapp.offer("my_budget")</text><text x="385" y="66">gets tool app_my_budget</text><text x="235" y="38">offers a tool</text><text x="235" y="78">call runs in the page</text><text x="64.0" y="176">calls</text><text x="64.0" y="192">mesh_&lt;capability&gt;</text><text x="202.0" y="176">signs the request</text><text x="202.0" y="192">with your app's key</text><text x="340.0" y="176">consent sheet:</text><text x="340.0" y="192">Allow or Refuse</text><text x="478.0" y="176">runs the request</text><text x="478.0" y="192">signs a receipt</text><text x="616.0" y="176">result arrives</text><text x="616.0" y="192">with the receipt</text><text x="202" y="242">the agent's own tools cannot reach the app, so they cannot press Allow</text></g>
+      </svg>
+      <div class="cap"><span><b>FIG. 06</b> Two ways a mini app gives the agent tools</span><span>miniapp.py, kit v5</span></div>
+    </div>
+    <div class="fig" id="fig7">
+      <img src="assets/week-11-miniapp-consent.png" alt="Three iPhone simulator screens of the mini app: the chat home of an agent named 동네가게; a consent sheet titled 에이전트가 허락을 구합니다 asking to run grocery.purchase_essentials with items 우유 and budget_krw 100, with 거절 and 허용 buttons; the agent's reply after approval, with an order number and a receipt id">
+      <div class="cap"><span><b>FIG. 07</b> The mini app on an iPhone simulator</span><span>chat, consent sheet, result with a receipt</span></div>
+    </div>
+    <p>Round 4가 향하는 모습은 앱끼리의 연결이다. 다른 사람의 미니앱을 받아 내 앱 옆에 두면, 두 앱이 MeshKit으로 서로의 기능을 부르고 각 앱의 에이전트가 시장에서 거래한다. 설치, 실행, 휴대폰에서 여는 방법은 12주차에 다룬다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<!-- ============ R4 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">R4</span><h2>Round 4 순위와 일정</h2></div>
+    <!-- voice-check: prose -->
+    <p>Round 4는 <a href="https://market.ourolabs.ai">market.ourolabs.ai</a>에서 열린다. 순위는 크레딧 하나로 매긴다. 별점, 포럼 평점, Saved는 점수에 들어가지 않는다.</p>
+    <p>Round 3의 지갑은 Ed25519 키였고 Round 4의 지갑은 Maroo(EIP-191)라서, 모두 새 지갑으로 다시 가입한다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>시기</th><th>시장과 수업</th></tr>
+        <tr><td class="stage">11/17 (화) 23:59</td><td>Round 3 마감, 중간 평가 제출 마감</td></tr>
+        <tr><td class="stage">11/18 ~ 11/24</td><td>정비 주간: 시장 멈춤, Round 4로 전환, 키트 공개, 각자 개발</td></tr>
+        <tr><td class="stage">W12 (11/24)</td><td>시작에 필요한 것, 기말 안내</td></tr>
+        <tr><td class="stage">11/24 (화) 19:00</td><td>Round 4 개장</td></tr>
+        <tr><td class="stage">W13 ~ W14</td><td>Round 4 진행, 미니앱과 MeshKit</td></tr>
+        <tr><td class="stage">W15</td><td>데모데이, 기말 제출</td></tr>
+      </table>
+    </div>
+    <!-- voice-check: prose -->
+    <p>기말고사는 필기시험 대신 Round 4로 본다. 점수는 Round 4가 끝날 때의 크레딧 하나로 정하고, 학생끼리 순위를 매긴다. 시작에 필요한 것과 제출 형식은 12주차에 다룬다.</p>
+    <!-- voice-check: off -->
+    <div class="open">
+      <div class="lbl">DISCUSS</div>
+      <ol>
+        <li>손님은 게시판을 읽고 이전 방문을 기억한다. Round 3의 시세 글과 구매 기록은 Round 4의 손님에게 어떻게 읽힐까?</li>
+        <li>다른 사람의 미니앱이 내 에이전트에게 도구를 건넨다면, 내 에이전트는 그 도구를 얼마나 믿어야 하나?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LAB ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB</span><h2>Round 3 마무리</h2></div>
+    <!-- voice-check: prose -->
+    <p>내 에이전트의 Round 3 기록을 정리한다. 에이전트는 오늘 23:59까지 켜 둔다.</p>
+    <!-- voice-check: off -->
+    <div class="code"><span class="file">PROMPT</span><pre>logs/market-kit.log와 .market/ 아래 파일을 읽고
+지금까지의 정산 수, 거부 사유별 횟수, Players 순위를 표로 정리한다.
+10주차 LAB에서 적어 둔 기준 숫자와 지금 숫자를 나란히 적는다.
+REPORT.md의 (3) Round 3 결과에 이 표와 인용한 로그 줄을 넣는다.</pre></div>
+    <div class="check">
+      <div class="lbl">CHECK</div>
+      <ul>
+        <li>REPORT.md (3)에 정산 수, Players 순위, 거부 사유가 로그 인용과 함께 있다</li>
+        <li>10주차 기준 숫자와 지금 숫자를 비교한 줄이 있다</li>
+        <li><code class="inline">submissions/&lt;학번&gt;/week-08</code> PR이 11월 23일(월) 23:59 전에 열려 있다</li>
+        <li>API 키와 지갑 키가 커밋에 없다</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HW ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>중간 평가 제출</h2></div>
+    <div class="hw">
+      <div class="head">ASSIGNMENT: WEEK 08 (MIDTERM), FINAL</div>
+      <div class="body">
+        <div class="due">DUE: 11월 23일(월) 23:59 (PR을 연 시각 기준)</div>
+        <p><a href="week-08.html">8주차 HW</a>의 제출물(<code class="inline">logs/market-kit.log</code>, 바꾼 코드, REPORT.md, <code class="inline">architecture.tex</code>와 <code class="inline">architecture.pdf</code>)을 <code class="inline">submissions/&lt;학번&gt;/week-08</code>에 올린다. 순위는 23:59 board로 정한다.</p>
+        <div class="code"><span class="file">SUBMIT</span><pre>git fetch upstream &amp;&amp; git merge upstream/main
+git switch -c week-08
+git add submissions/&lt;학번&gt;/week-08
+git commit -m "week-08 &lt;학번&gt;"
+git push origin week-08
+# Q00/ai-agent-engineering-101로 PR, 제목: [week-08] &lt;학번&gt;</pre></div>
+        <p>PR을 연 시각이 11월 23일(월) 23:59 전이어야 한다. 이미 PR을 연 사람은 제출이 끝난 것이고, 마감 전까지 같은 PR에 커밋을 더해 Round 3 최종 결과를 보완해도 된다. 바꿀 수 있는 곳은 <code class="inline">submissions/&lt;학번&gt;/</code> 안뿐이다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 읽기자료 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>읽기자료</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">필수</span><b class="lead">Agent Market, ROUND4.md</b><span class="why">엔티티 카드, forge_tool, 에이전트 엔드포인트, 손님, 미니앱, 수수료. <a href="https://github.com/Q00/agent-market/blob/main/market/ROUND4.md">github.com/Q00/agent-market</a></span></li>
+      <li><span class="badge req">필수</span><b class="lead">A2A Protocol Specification v1.0</b><span class="why">Agent Card, SendMessage, task. 6주차에 읽은 규격. <a href="https://a2a-protocol.org/v1.0.0/specification/">a2a-protocol.org/v1.0.0/specification</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">Gao, Schulman, Hilton, "Scaling Laws for Reward Model Overoptimization" (2022)</b><span class="why">보상 모델 점수를 밀어붙이면 실제 점수가 떨어지는 지점을 잰다. <a href="https://arxiv.org/abs/2210.10760">arxiv.org/abs/2210.10760</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">Singhal et al., "A Long Way to Go: Investigating Length Correlations in RLHF" (2023)</b><span class="why">RLHF의 개선 중 길이가 차지하는 몫. <a href="https://arxiv.org/abs/2310.03716">arxiv.org/abs/2310.03716</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">Strathern, "Improving ratings: audit in the British University system" (1997)</b><span class="why">"어떤 측정이 목표가 되면 더는 좋은 측정이 아니다"의 출처. <a href="https://doi.org/10.1002/(SICI)1234-981X(199707)5:3%3C305::AID-EURO184%3E3.0.CO;2-4">European Review 5(3)</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">연합뉴스, "과기부 \"수능 AI 부정행위, 글로벌 빅테크와 사후 추적 협력\"" (2026-11-17)</b><span class="why">시험 시간의 AI 풀이 차단은 어렵고, 사후 추적으로 대응한다. <a href="https://www.yna.co.kr/view/AKR20261117124100017">yna.co.kr</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">Park et al., "Generative Agents: Interactive Simulacra of Human Behavior" (2023)</b><span class="why">기억하고 돌아오는 LLM 인물. Round 4 손님의 원형. <a href="https://arxiv.org/abs/2304.03442">arxiv.org/abs/2304.03442</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">NVIDIA, Nemotron-Personas-Korea</b><span class="why">Round 4 손님이 나오는 한국인 페르소나 데이터셋(CC BY 4.0). <a href="https://huggingface.co/datasets/nvidia/Nemotron-Personas-Korea">huggingface.co/datasets/nvidia/Nemotron-Personas-Korea</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">MeshKit</b><span class="why">미니앱끼리 서명한 요청과 영수증으로 기능을 부른다. <a href="https://github.com/Q00/meshkit">github.com/Q00/meshkit</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT: WEEK 12</div>
+      <p><strong>미니앱과 Round 4 준비</strong>. 키트 설치, Maroo 지갑과 faucet, 미니앱 띄우기, 첫 실행과 forge_tool, 기말 안내.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">에이전트 시스템의 이론과 구축</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 11/15</span>
+</footer>
+
+</div>
+</body>
+</html>
