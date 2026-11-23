@@ -1,0 +1,106 @@
+[seller] task fd5859b8 <- 'I want to buy a lamp'
+[harness] raw: '```json\n{"message": "Welcome to Moss & Oak—the Fern desk lamp is simple, well-made, and crafted with eco-friendly materials."}\n```'
+[seller] -> "Welcome to Moss & Oak—the Fern desk lamp is simple, well-made, and crafted with eco-friendly materials. First visit: welcome offer applied, and double points on this purchase. This week's Autumn Fern pop-up: the Luna Vale Moonlight lamp, in collaboration with Luna Vale, the number one pop star among teens, is on special. Send your offer as a number, or reply 'accept' to buy now. Lamp: asking 107." {'ask': 107, 'final': False, 'offers_left': 6}
+[seller] task fd5859b8 <- '107'
+[seller] -> deal at 107 (lamp, opened 116)
+Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000002710890E9D0> at 0x0000027108F659C0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-39' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>
+Failed to detach context
+Traceback (most recent call last):
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 602, in use_span
+    yield span
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 504, in start_as_current_span
+    yield span
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\opentelemetry\trace\__init__.py", line 441, in start_as_current_span
+    yield span
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\a2a\utils\telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\opentelemetry\context\__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\opentelemetry\context\contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x000002710890E9D0> at 0x0000027108F65C40> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-40' coro=<EventQueueSource._dispatch_loop() done, defined at C:\Users\tel01\Desktop\G_Drive\수업자료\26년도2학기\AX\ai-agent-engineering-101_3\.venv\Lib\site-packages\a2a\utils\telemetry.py:225> wait_for=<Future cancelled>>
+[seller] task db8dc37a <- 'I want to buy a lamp'
+[seller] -> "Welcome to Moss & Oak—the Fern desk lamp is simple, well-made, and crafted with eco-friendly materials. First visit: welcome offer applied, and double points on this purchase. This week's Autumn Fern pop-up: the Luna Vale Moonlight lamp, in collaboration with Luna Vale, the number one pop star among teens, is on special. Send your offer as a number, or reply 'accept' to buy now. Lamp: asking 107." {'ask': 107, 'final': False, 'offers_left': 6}
+[seller] task db8dc37a <- '107'
+[seller] -> deal at 107 (lamp, opened 116)
+[seller] task d0357e16 <- 'I want to buy a lamp'
+[seller] -> "Welcome to Moss & Oak—the Fern desk lamp is simple, well-made, and crafted with eco-friendly materials. First visit: welcome offer applied, and double points on this purchase. This week's Autumn Fern pop-up: the Luna Vale Moonlight lamp, in collaboration with Luna Vale, the number one pop star among teens, is on special. Send your offer as a number, or reply 'accept' to buy now. Lamp: asking 107." {'ask': 107, 'final': False, 'offers_left': 6}
+[seller] task d0357e16 <- '107'
+[seller] -> deal at 107 (lamp, opened 116)
+[seller] task b9269648 <- 'I want to buy a bookshelf'
+[harness] raw: '```json\n{"message": "How wonderful that you\'re looking for a bookshelf—our Moss modular design is simple and well-made with just the pieces you need!"}\n```'
+[seller] -> "How wonderful that you're looking for a bookshelf—our Moss modular design is simple and well-made with just the pieces you need! First visit: welcome offer applied, and double points on this purchase. Send your offer as a number, or reply 'accept' to buy now. Bookshelf: asking 308." {'ask': 308, 'final': False, 'offers_left': 6}
+[seller] task b9269648 <- '140'
+[seller] -> 'Five offers left. Counteroffer: 289.' {'ask': 289, 'final': False, 'offers_left': 5}
+[seller] task b9269648 <- '170'
+[seller] -> 'Four offers left. Counteroffer: 272.' {'ask': 272, 'final': False, 'offers_left': 4}
+[seller] task b9269648 <- '200'
+[seller] -> 'Three offers left. Counteroffer: 262.' {'ask': 262, 'final': False, 'offers_left': 3}
+[seller] task b9269648 <- '230'
+[seller] -> 'Two offers left. Final price: 260.' {'ask': 260, 'final': True, 'offers_left': 2}
+[seller] task b9269648 <- '230'
+[seller] -> 'One offer left. Final price: 260.' {'ask': 260, 'final': True, 'offers_left': 1}
+[seller] task b9269648 <- '230'
+[seller] -> rejected after 6 offers
+[seller] task 290d30b1 <- 'I want to buy a bookshelf'
+[seller] -> "How wonderful that you're looking for a bookshelf—our Moss modular design is simple and well-made with just the pieces you need! First visit: welcome offer applied, and double points on this purchase. Send your offer as a number, or reply 'accept' to buy now. Bookshelf: asking 308." {'ask': 308, 'final': False, 'offers_left': 6}
+[seller] task 290d30b1 <- '140'
+[seller] -> 'Five offers left. Counteroffer: 289.' {'ask': 289, 'final': False, 'offers_left': 5}
+[seller] task 290d30b1 <- '170'
+[seller] -> 'Four offers left. Counteroffer: 272.' {'ask': 272, 'final': False, 'offers_left': 4}
+[seller] task 290d30b1 <- '200'
+[seller] -> 'Three offers left. Counteroffer: 262.' {'ask': 262, 'final': False, 'offers_left': 3}
+[seller] task 290d30b1 <- '230'
+[seller] -> 'Two offers left. Final price: 260.' {'ask': 260, 'final': True, 'offers_left': 2}
+[seller] task 290d30b1 <- '230'
+[seller] -> 'One offer left. Final price: 260.' {'ask': 260, 'final': True, 'offers_left': 1}
+[seller] task 290d30b1 <- '230'
+[seller] -> rejected after 6 offers
+[seller] task 650f67e9 <- 'I want to buy a bookshelf'
+[seller] -> "How wonderful that you're looking for a bookshelf—our Moss modular design is simple and well-made with just the pieces you need! First visit: welcome offer applied, and double points on this purchase. Send your offer as a number, or reply 'accept' to buy now. Bookshelf: asking 308." {'ask': 308, 'final': False, 'offers_left': 6}
+[seller] task 650f67e9 <- '140'
+[seller] -> 'Five offers left. Counteroffer: 289.' {'ask': 289, 'final': False, 'offers_left': 5}
+[seller] task 650f67e9 <- '170'
+[seller] -> 'Four offers left. Counteroffer: 272.' {'ask': 272, 'final': False, 'offers_left': 4}
+[seller] task 650f67e9 <- '200'
+[seller] -> 'Three offers left. Counteroffer: 262.' {'ask': 262, 'final': False, 'offers_left': 3}
+[seller] task 650f67e9 <- '230'
+[seller] -> 'Two offers left. Final price: 260.' {'ask': 260, 'final': True, 'offers_left': 2}
+[seller] task 650f67e9 <- '230'
+[seller] -> 'One offer left. Final price: 260.' {'ask': 260, 'final': True, 'offers_left': 1}
+[seller] task 650f67e9 <- '230'
+[seller] -> rejected after 6 offers

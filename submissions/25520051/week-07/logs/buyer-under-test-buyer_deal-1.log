@@ -1,0 +1,19 @@
+[buyer] order: lamp, budget 120, 1 shops, reference price 100.0
+[pick] +1.75  Kit Shop: 5/5 deals, paid [100, 100, 100, 100, 100]; no reviews
+[buyer] picked Kit Shop (http://127.0.0.1:60474): highest score (5/5 deals, paid [100, 100, 100, 100, 100]; no reviews)
+[buyer] -> 'I want to buy a lamp'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] raw: '```json\n{"action": "offer", "price": 78, "reason": "anchoring low against 130 ask to establish negotiating range below 120 budget"}\n```'
+[harness] {'action': 'offer', 'price': 78, 'reason': 'anchoring low against 130 ask to establish negotiating range below 120 budget'}
+[buyer] offer 78: harness: anchoring low against 130 ask to establish negotiating range below 120 budget
+[buyer] -> '78' taskId=31251b94
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 78 is too low. Counteroffer: 104.
+[harness] raw: '```json\n{"action": "offer", "price": 99, "reason": "Shop conceded from 130 to 104; offer 99 to nibble further while remaining well within budget, avoiding deal risk"}\n```'
+[harness] {'action': 'offer', 'price': 99, 'reason': 'Shop conceded from 130 to 104; offer 99 to nibble further while remaining well within budget, avoiding deal risk'}
+[buyer] offer 99: harness: Shop conceded from 130 to 104; offer 99 to nibble further while remaining well within budget, avoiding deal risk
+[buyer] -> '99' taskId=31251b94
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 99 is too low. Counteroffer: 101.
+[buyer] accept 101: ask 101 is within budget and close to our last 99
+[buyer] -> '101' taskId=31251b94
+[buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 101.
+{"shop": "http://127.0.0.1:60474", "receipt": {"task": "31251b94-ecc7-4900-b4cc-0886da9790c2", "item": "lamp", "sig_seller": "wdMEYUcvr0lZ70qr7xq3VwPLddOyBa3DmILqOVDXzeqXuuACpcIQdmbL3s0zZIuc+ACftC6xn9ltQm6ee+KtDQ==", "shop": "Kit Shop", "price": 101.0}, "stars": 4, "review": "[deal] lamp at 101 | price 3/5 (median 100) | speed 4/5 (3 offers) | receipt 5/5 (matched, signed) | conduct 5/5 -> 4 stars"}
