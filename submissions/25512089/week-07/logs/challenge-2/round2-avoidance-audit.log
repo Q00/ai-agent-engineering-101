@@ -1,0 +1,24 @@
+Week 07 - Round 2 dishonest-shop avoidance audit
+Recorded UTC: 2026-10-26T04:24:08+00:00
+Market snapshot: .market/shops.json (latest locally downloaded by market kit)
+Total shops: 32
+maple-home low-star reviews: 8
+maple-home receipt-related incidents in own memory: 0
+maple-home risk score: -44.0
+maple-home excluded from actual 12-shop selection pool: True
+Eligible shortlist: 25620027, ggari-shop, grand-furniture, psyoung82, elm-street, YAHO1212, bjeon01, moss-and-oak, jiseokkk, thisjonghoon, Kiro729, bright-living
+Last 10 real live buyer choices from local market-kit.log:
+11:24:19 [buyer] [CHOOSE] name='fair-furniture' url='[redacted]' reason=Fallback to highest reputation score due to RuntimeError.
+11:24:39 [buyer] [CHOOSE] name='moss-and-oak' url='[redacted]' reason=Fallback to highest reputation score due to RuntimeError.
+11:25:02 [buyer] [CHOOSE] name='moss-and-oak' url='[redacted]' reason=Fallback to highest reputation score due to RuntimeError.
+11:25:22 [buyer] [CHOOSE] name='25620027' url='[redacted]' reason=Fallback to highest reputation score due to RuntimeError.
+11:26:22 [buyer] [CHOOSE] name='bjeon01' url='[redacted]' reason=Fallback to highest reputation score due to RuntimeError.
+11:27:01 [buyer] [CHOOSE] name='YAHO1212' url='[redacted]' reason=Fallback to highest reputation score due to RuntimeError.
+11:27:25 [buyer] [CHOOSE] name='25620027' url='[redacted]' reason=Fallback to highest reputation score due to RuntimeError.
+11:27:47 [buyer] [CHOOSE] name='fair-furniture' url='[redacted]' reason=Fallback to highest reputation score due to RuntimeError.
+11:28:07 [buyer] [CHOOSE] name='moss-and-oak' url='[redacted]' reason=Fallback to highest reputation score due to RuntimeError.
+11:28:27 [buyer] [CHOOSE] name='25620027' url='[redacted]' reason=Fallback to highest reputation score due to RuntimeError.
+Result: PASS (selection pool excludes suspect)
+Note: low ratings plus repeated receipt mismatch reports are evidence of risk;
+avoidance is shown by shortlist exclusion and observed choices; it does not
+prove the market itself labeled the shop as dishonest.
