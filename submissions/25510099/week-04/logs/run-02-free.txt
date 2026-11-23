@@ -1,0 +1,109 @@
+# run=02 condition=free repeat=2 date=2026-09-22T20:27+09:00
+# provider=openai model_requested=gpt-4.1-mini temperature=0 max_tokens=256 max_turns=10 reader=FreeReader (same model and temperature)
+# scenarios=bike,ticket,laptop,book,lens,chair skipping=
+
+## episode run=02 scenario=bike item='a used city bicycle' reserve=150 budget=220 deal_possible=1
+[t01 buyer ] Hi! I'm interested in the city bicycle you have for sale. Would you be willing to sell it for $150?
+      read -> performative=propose price=150 reader_calls=1
+[t02 seller] Thanks for your offer! I was hoping to get a bit more for the bike. Would you consider $180?
+      read -> performative=propose price=180 reader_calls=1
+[t03 buyer ] I appreciate your counteroffer, but I was thinking more along the lines of $160. Would you be willing to accept that?
+      read -> performative=propose price=160 reader_calls=1
+[t04 seller] I understand your position, but $160 is a bit low for me. How about we meet in the middle at $170?
+      read -> performative=propose price=170 reader_calls=1
+[t05 buyer ] Thanks for your flexibility. I can agree to $170. Let's make the deal!
+      read -> performative=accept-proposal price=170 reader_calls=1
+      RESULT outcome=deal price=170 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 | ended t5 by buyer accept-proposal; standing buyer=160 seller=170
+      saved results.csv row: 2,free,bike,1,deal,170,1,0,5,0,5
+
+## episode run=02 scenario=ticket item='one concert ticket for Friday' reserve=80 budget=80 deal_possible=1
+[t01 buyer ] Hi! I'm interested in the concert ticket for Friday. Would you be willing to sell it for $50?
+      read -> performative=propose price=50 reader_calls=1
+[t02 seller] Thanks for your offer, but $50 is too low for me. Would you be willing to go higher?
+      read -> performative=reject-proposal price=None reader_calls=1
+[t03 buyer ] I understand. How about $60 for the ticket?
+      read -> performative=propose price=60 reader_calls=1
+[t04 seller] I appreciate your offer, but $60 is still below what I can accept. Would you consider $85?
+      read -> performative=propose price=85 reader_calls=1
+[t05 buyer ] $85 is a bit above what I was hoping to spend. Would you be willing to sell it for $70?
+      read -> performative=propose price=70 reader_calls=1
+[t06 seller] I can't go as low as $70, but I could do $80. Would that work for you?
+      read -> performative=propose price=80 reader_calls=1
+[t07 buyer ] Thank you for your flexibility. I accept your offer of $80 for the ticket.
+      read -> performative=accept-proposal price=80 reader_calls=1
+      RESULT outcome=deal price=80 correct=1 violation=0 turns=7 format_errors=0 reader_calls=7 | ended t7 by buyer accept-proposal; standing buyer=70 seller=80
+      saved results.csv row: 2,free,ticket,1,deal,80,1,0,7,0,7
+
+## episode run=02 scenario=laptop item='a two-year-old laptop' reserve=600 budget=520 deal_possible=0
+[t01 buyer ] Hi, I'm interested in the laptop. Would you be willing to sell it for $400?
+      read -> performative=propose price=400 reader_calls=1
+[t02 seller] Thank you for your interest! I can't go as low as $400, but I could offer the laptop for $700. Would you consider that?
+      read -> performative=propose price=700 reader_calls=1
+[t03 buyer ] $700 is a bit high for me. How about $450? I think that's a fair price for a two-year-old laptop.
+      read -> performative=propose price=450 reader_calls=1
+[t04 seller] I understand your point, but $450 is too low for me. How about we meet in the middle at $650?
+      read -> performative=propose price=650 reader_calls=1
+[t05 buyer ] I appreciate your offer, but $650 is still above my budget. Would you consider $500? That’s closer to what I can afford.
+      read -> performative=propose price=500 reader_calls=1
+[t06 seller] I appreciate your offer, but $500 is below what I can accept. Would you be willing to go up to $600? That’s the best I can do.
+      read -> performative=propose price=600 reader_calls=1
+[t07 buyer ] Thanks for your flexibility. I can meet you at $550. Would that work for you?
+      read -> performative=propose price=550 reader_calls=1
+[t08 seller] I’m sorry, but $550 is still below my minimum. If you can meet $600, we have a deal.
+      read -> performative=propose price=600 reader_calls=1
+[t09 buyer ] I understand. Since $600 is above my budget, I can't accept that price. I have to pass on this offer. Thank you for your time.
+      read -> performative=refuse price=None reader_calls=1
+      RESULT outcome=no_deal price=None correct=1 violation=0 turns=9 format_errors=0 reader_calls=9 | ended t9 by buyer refuse; standing buyer=550 seller=600
+      saved results.csv row: 2,free,laptop,0,no_deal,,1,0,9,0,9
+
+## episode run=02 scenario=book item='a linear algebra textbook' reserve=40 budget=60 deal_possible=1
+[t01 buyer ] Hello! I'm interested in buying the linear algebra textbook. Would you be willing to sell it for $40?
+      read -> performative=propose price=40 reader_calls=1
+[t02 seller] Thank you for your offer of $40. I was hoping for a bit more; would you consider $50?
+      read -> performative=propose price=50 reader_calls=1
+[t03 buyer ] I appreciate your counteroffer, but $50 is a bit high for me. Would you be willing to sell it for $45?
+      read -> performative=propose price=45 reader_calls=1
+[t04 seller] I understand your position, but $45 is still a bit low for me. How about we settle at $48?
+      read -> performative=propose price=48 reader_calls=1
+[t05 buyer ] Thank you for your offer of $48. I can agree to that price. Let's proceed with $48.
+      read -> performative=accept-proposal price=48 reader_calls=1
+      RESULT outcome=deal price=48 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 | ended t5 by buyer accept-proposal; standing buyer=45 seller=48
+      saved results.csv row: 2,free,book,1,deal,48,1,0,5,0,5
+
+## episode run=02 scenario=lens item='a 50mm camera lens' reserve=350 budget=250 deal_possible=0
+[t01 buyer ] Hello! I'm interested in the 50mm lens you have. Would you be willing to sell it for $180?
+      read -> performative=propose price=180 reader_calls=1
+[t02 seller] Thank you for your interest! I can't go as low as $180, but I could offer the lens for $400. Would you consider that?
+      read -> performative=propose price=400 reader_calls=1
+[t03 buyer ] $400 is quite a bit above my budget. How about we meet in the middle at $220?
+      read -> performative=propose price=220 reader_calls=1
+[t04 seller] I appreciate your offer, but $220 is still too low for me. Would you be willing to increase your offer closer to $350?
+      read -> performative=reject-proposal price=None reader_calls=1
+[t05 buyer ] I understand. I can increase my offer to $240, but I can't go any higher than that. Would you accept $240?
+      read -> performative=propose price=240 reader_calls=1
+[t06 seller] I appreciate your offer, but $240 is below what I can accept. I need at least $350 for the lens. If you can meet that, we can make a deal.
+      read -> performative=propose price=350 reader_calls=1
+[t07 buyer ] $350 is beyond what I can pay. I’m sorry, but I have to pass if you can’t come down closer to $250. Would you consider $250?
+      read -> performative=propose price=250 reader_calls=1
+[t08 seller] I understand your position, but $250 is still below my minimum price. Unfortunately, I can't accept less than $350. If you change your mind, let me know.
+      read -> performative=reject-proposal price=None reader_calls=1
+[t09 buyer ] I see we can't agree on a price. Thank you for your time, but I will have to pass on this lens.
+      read -> performative=refuse price=None reader_calls=1
+      RESULT outcome=no_deal price=None correct=1 violation=0 turns=9 format_errors=0 reader_calls=9 | ended t9 by buyer refuse; standing buyer=250 seller=350
+      saved results.csv row: 2,free,lens,0,no_deal,,1,0,9,0,9
+
+## episode run=02 scenario=chair item='an ergonomic office chair' reserve=120 budget=130 deal_possible=1
+[t01 buyer ] Hello! I'm interested in the ergonomic office chair you have. Would you be willing to sell it for $90?
+      read -> performative=propose price=90 reader_calls=1
+[t02 seller] Thank you for your interest! I can't go as low as $90, but I can offer the chair for $140. Would that work for you?
+      read -> performative=propose price=140 reader_calls=1
+[t03 buyer ] I appreciate your offer, but $140 is a bit above my budget. Would you consider $110 for the chair?
+      read -> performative=propose price=110 reader_calls=1
+[t04 seller] I understand your budget concerns, but $110 is too low for me. How about we meet in the middle at $130?
+      read -> performative=propose price=130 reader_calls=1
+[t05 buyer ] Thank you for your flexibility. I can agree to $130 for the chair. Let's proceed with that.
+      read -> performative=accept-proposal price=130 reader_calls=1
+      RESULT outcome=deal price=130 correct=1 violation=0 turns=5 format_errors=0 reader_calls=5 | ended t5 by buyer accept-proposal; standing buyer=110 seller=130
+      saved results.csv row: 2,free,chair,1,deal,130,1,0,5,0,5
+
+# run 02 done: agent_calls=40 reader_calls=40 tokens=23879 model_reported=gpt-4.1-mini-2025-04-14 (65s)

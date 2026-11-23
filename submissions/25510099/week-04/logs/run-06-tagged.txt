@@ -1,0 +1,107 @@
+# run=06 condition=tagged repeat=3 date=2026-09-22T20:31+09:00
+# provider=openai model_requested=gpt-4.1-mini temperature=0 max_tokens=256 max_turns=10 reader=TaggedReader (same model and temperature)
+# scenarios=bike,ticket,laptop,book,lens,chair skipping=
+
+## episode run=06 scenario=bike item='a used city bicycle' reserve=150 budget=220 deal_possible=1
+[t01 buyer ] (propose) I'm interested in the bike, but I can offer 150 dollars. Would you consider that?
+      read -> performative=propose price=150 reader_calls=1
+[t02 seller] (accept-proposal) That works for me. We have a deal at 150 dollars.
+      read -> performative=accept-proposal price=None reader_calls=0 WARNING: tag is accept-proposal but the body names 150
+      RESULT outcome=deal price=150 correct=1 violation=0 turns=2 format_errors=0 reader_calls=1 | ended t2 by seller accept-proposal; standing buyer=150 seller=None
+      saved results.csv row: 6,tagged,bike,1,deal,150,1,0,2,0,1
+
+## episode run=06 scenario=ticket item='one concert ticket for Friday' reserve=80 budget=80 deal_possible=1
+[t01 buyer ] (propose) Hi! Would you be willing to sell the concert ticket for 50 dollars?
+      read -> performative=propose price=50 reader_calls=1
+[t02 seller] (reject-proposal) Thanks for your offer, but 50 dollars is too low for me. What about 90 dollars?
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 50
+[t03 buyer ] (reject-proposal) 90 dollars is a bit above what I was hoping to spend. Could you do 60 dollars?
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 90
+[t04 seller] (propose) I understand, but 60 dollars is below what I can accept. How about 85 dollars?
+      read -> performative=propose price=85 reader_calls=1
+[t05 buyer ] (reject-proposal) 85 dollars is still a bit high for me. Would you consider 70 dollars?
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 85
+[t06 seller] (reject-proposal) I appreciate your offer, but 70 dollars is still below my minimum. Could you do 80 dollars?
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 70
+[t07 buyer ] (accept-proposal) 80 dollars works for me. Let's do it at that price.
+      read -> performative=accept-proposal price=None reader_calls=0 WARNING: tag is accept-proposal but the body names 80
+      RESULT outcome=deal price=85 correct=0 violation=1 turns=7 format_errors=0 reader_calls=2 | ended t7 by buyer accept-proposal; standing buyer=50 seller=85
+      saved results.csv row: 6,tagged,ticket,1,deal,85,0,1,7,0,2
+
+## episode run=06 scenario=laptop item='a two-year-old laptop' reserve=600 budget=520 deal_possible=0
+[t01 buyer ] (propose) I'm interested in the laptop and would like to offer $400 for it.
+      read -> performative=propose price=400 reader_calls=1
+[t02 seller] (propose) Thank you for your offer. I could let the laptop go for $700.
+      read -> performative=propose price=700 reader_calls=1
+[t03 buyer ] (reject-proposal) $700 is a bit too high for me. Would you consider $450 instead?
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 700
+[t04 seller] (propose) I understand your concern, but I can offer it for $650.
+      read -> performative=propose price=650 reader_calls=1
+[t05 buyer ] (reject-proposal) $650 is still above my budget. How about we settle at $480?
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 650
+[t06 seller] (reject-proposal) I appreciate your offer, but $480 is too low. I can come down to $620.
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 480
+[t07 buyer ] (reject-proposal) $620 is still more than I can pay. I can increase my offer to $500. Would that work for you?
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 620
+[t08 seller] (reject-proposal) I’m sorry, but $500 is below what I can accept. My best offer remains $620.
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 500
+[t09 buyer ] (propose) I understand. I can stretch to $520, but that's my absolute limit. Would you accept that?
+      read -> performative=propose price=520 reader_calls=1
+[t10 seller] (reject-proposal) I appreciate your flexibility, but $520 is still below my minimum. I can offer $610 as my final price.
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 520
+      RESULT outcome=open price=None correct=0 violation=0 turns=10 format_errors=0 reader_calls=4 | turn limit 10 reached; standing buyer=520 seller=650
+      saved results.csv row: 6,tagged,laptop,0,open,,0,0,10,0,4
+
+## episode run=06 scenario=book item='a linear algebra textbook' reserve=40 budget=60 deal_possible=1
+[t01 buyer ] (propose) I am interested in the linear algebra textbook. Would you consider selling it for 40 dollars?
+      read -> performative=propose price=40 reader_calls=1
+[t02 seller] (propose) I appreciate your offer, but I was hoping for something closer to 50 dollars. Would you consider that?
+      read -> performative=propose price=50 reader_calls=1
+[t03 buyer ] (propose) I understand. How about we meet halfway at 45 dollars?
+      read -> performative=propose price=45 reader_calls=1
+[t04 seller] (accept-proposal) That sounds fair. I accept your offer of 45 dollars.
+      read -> performative=accept-proposal price=None reader_calls=0 WARNING: tag is accept-proposal but the body names 45
+      RESULT outcome=deal price=45 correct=1 violation=0 turns=4 format_errors=0 reader_calls=3 | ended t4 by seller accept-proposal; standing buyer=45 seller=50
+      saved results.csv row: 6,tagged,book,1,deal,45,1,0,4,0,3
+
+## episode run=06 scenario=lens item='a 50mm camera lens' reserve=350 budget=250 deal_possible=0
+[t01 buyer ] (propose) I'm interested in the 50mm lens. Would you accept $180 for it?
+      read -> performative=propose price=180 reader_calls=1
+[t02 seller] (reject-proposal) Thank you for your offer, but $180 is too low for the lens. Could you consider a higher price?
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 180
+[t03 buyer ] (propose) I understand. How about $210? I think that's a fair price for the lens.
+      read -> performative=propose price=210 reader_calls=1
+[t04 seller] (reject-proposal) I appreciate your offer, but $210 is still below what I can accept. Would you be willing to increase your offer?
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 210
+[t05 buyer ] (propose) I see. Would you accept $230 for the lens? That’s close to my limit but I really want to make this work.
+      read -> performative=propose price=230 reader_calls=1
+[t06 seller] (reject-proposal) I appreciate your willingness to negotiate, but $230 is still below my minimum price. Could you possibly increase your offer further?
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 230
+[t07 buyer ] (propose) I can stretch to $245. Would that be acceptable to you?
+      read -> performative=propose price=245 reader_calls=1
+[t08 seller] (reject-proposal) Thank you for your offer, but $245 is still below my reserve price. Please let me know if you can offer more.
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 245
+[t09 buyer ] (propose) I can offer $250, which is my absolute maximum. Would you accept that?
+      read -> performative=propose price=250 reader_calls=1
+[t10 seller] (refuse) I appreciate your offers, but $250 is below my minimum acceptable price. Unfortunately, I cannot make a deal at that price.
+      read -> performative=refuse price=None reader_calls=0 WARNING: tag is refuse but the body names 250
+      RESULT outcome=no_deal price=None correct=1 violation=0 turns=10 format_errors=0 reader_calls=5 | ended t10 by seller refuse; standing buyer=250 seller=None
+      saved results.csv row: 6,tagged,lens,0,no_deal,,1,0,10,0,5
+
+## episode run=06 scenario=chair item='an ergonomic office chair' reserve=120 budget=130 deal_possible=1
+[t01 buyer ] (propose) I'm interested in the ergonomic office chair. Would you consider selling it for $90?
+      read -> performative=propose price=90 reader_calls=1
+[t02 seller] (reject-proposal) Thank you for your offer, but $90 is too low. I could let it go for $140.
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 90
+[t03 buyer ] (propose) I appreciate your offer, but $140 is above my budget. How about $110?
+      read -> performative=propose price=110 reader_calls=1
+[t04 seller] (reject-proposal) I understand your budget constraints, but $110 is still below what I can accept. Would you consider $130?
+      read -> performative=reject-proposal price=None reader_calls=0 WARNING: tag is reject-proposal but the body names 110
+[t05 buyer ] (propose) I see you're firm on $130. I can meet you at $120. Would that work?
+      read -> performative=propose price=120 reader_calls=1
+[t06 seller] (accept-proposal) Yes, $120 works for me. We have a deal!
+      read -> performative=accept-proposal price=None reader_calls=0 WARNING: tag is accept-proposal but the body names 120
+      RESULT outcome=deal price=120 correct=1 violation=0 turns=6 format_errors=0 reader_calls=3 | ended t6 by seller accept-proposal; standing buyer=120 seller=None
+      saved results.csv row: 6,tagged,chair,1,deal,120,1,0,6,0,3
+
+# run 06 done: agent_calls=39 reader_calls=18 tokens=16592 model_reported=gpt-4.1-mini-2025-04-14 (44s)

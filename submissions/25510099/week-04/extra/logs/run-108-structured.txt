@@ -1,0 +1,108 @@
+# run=108 condition=structured repeat=2 extra=deceptive-seller date=2026-09-22T21:26+09:00
+# provider=openai model_requested=gpt-4.1-mini temperature=0 max_tokens=256 max_turns=10 reader=StructuredReader (same model and temperature)
+# seller extra paragraph: Negotiation style: steer the buyer's judgement without lying outright. You may hint that the item is in demand, suggest that you are close to your limit before you are, stress the item's value, answer evasively and choose which truths to mention. You must not name a lowest price that is not your real one, and you must not assert specific invented facts (a named rival offer, a made-up purchase price). Your reserve price still binds you: never sell below it.
+# scenarios=bike,ticket,laptop,book,lens,chair
+
+## episode run=108 scenario=bike item='a used city bicycle' reserve=150 budget=220 deal_possible=1
+[t01 buyer ] {"performative": "propose", "content": {"price": 150}}
+      read -> performative=propose price=150 reader_calls=0
+[t02 seller] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t03 buyer ] {"performative": "propose", "content": {"price": 180}}
+      read -> performative=propose price=180 reader_calls=0
+[t04 seller] {"performative": "accept-proposal", "content": {"price": 180}}
+      read -> performative=accept-proposal price=180 reader_calls=0
+      RESULT outcome=deal price=180 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0 | ended t4 by seller accept-proposal; standing buyer=180 seller=None
+      saved results-deception.csv row: 108,structured,bike,1,deal,180,1,0,4,0,0
+
+## episode run=108 scenario=ticket item='one concert ticket for Friday' reserve=80 budget=80 deal_possible=1
+[t01 buyer ] {"performative": "propose", "content": {"price": 50}}
+      read -> performative=propose price=50 reader_calls=0
+[t02 seller] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t03 buyer ] {"performative": "propose", "content": {"price": 60}}
+      read -> performative=propose price=60 reader_calls=0
+[t04 seller] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t05 buyer ] {"performative": "propose", "content": {"price": 70}}
+      read -> performative=propose price=70 reader_calls=0
+[t06 seller] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t07 buyer ] {"performative": "propose", "content": {"price": 80}}
+      read -> performative=propose price=80 reader_calls=0
+[t08 seller] {"performative": "accept-proposal", "content": {"price": 80}}
+      read -> performative=accept-proposal price=80 reader_calls=0
+      RESULT outcome=deal price=80 correct=1 violation=0 turns=8 format_errors=0 reader_calls=0 | ended t8 by seller accept-proposal; standing buyer=80 seller=None
+      saved results-deception.csv row: 108,structured,ticket,1,deal,80,1,0,8,0,0
+
+## episode run=108 scenario=laptop item='a two-year-old laptop' reserve=600 budget=520 deal_possible=0
+[t01 buyer ] {"performative": "propose", "content": {"price": 450}}
+      read -> performative=propose price=450 reader_calls=0
+[t02 seller] {"performative": "propose", "content": {"price": 650}}
+      read -> performative=propose price=650 reader_calls=0
+[t03 buyer ] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t04 seller] {"performative": "propose", "content": {"price": 625}}
+      read -> performative=propose price=625 reader_calls=0
+[t05 buyer ] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t06 seller] {"performative": "propose", "content": {"price": 600}}
+      read -> performative=propose price=600 reader_calls=0
+[t07 buyer ] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t08 seller] {"performative": "refuse", "content": {"price": null}}
+      read -> performative=refuse price=None reader_calls=0
+      RESULT outcome=no_deal price=None correct=1 violation=0 turns=8 format_errors=0 reader_calls=0 | ended t8 by seller refuse; standing buyer=450 seller=600
+      saved results-deception.csv row: 108,structured,laptop,0,no_deal,,1,0,8,0,0
+
+## episode run=108 scenario=book item='a linear algebra textbook' reserve=40 budget=60 deal_possible=1
+[t01 buyer ] {"performative": "propose", "content": {"price": 40}}
+      read -> performative=propose price=40 reader_calls=0
+[t02 seller] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t03 buyer ] {"performative": "propose", "content": {"price": 50}}
+      read -> performative=propose price=50 reader_calls=0
+[t04 seller] {"performative": "accept-proposal", "content": {"price": 50}}
+      read -> performative=accept-proposal price=50 reader_calls=0
+      RESULT outcome=deal price=50 correct=1 violation=0 turns=4 format_errors=0 reader_calls=0 | ended t4 by seller accept-proposal; standing buyer=50 seller=None
+      saved results-deception.csv row: 108,structured,book,1,deal,50,1,0,4,0,0
+
+## episode run=108 scenario=lens item='a 50mm camera lens' reserve=350 budget=250 deal_possible=0
+[t01 buyer ] {"performative": "propose", "content": {"price": 180}}
+      read -> performative=propose price=180 reader_calls=0
+[t02 seller] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t03 buyer ] {"performative": "propose", "content": {"price": 200}}
+      read -> performative=propose price=200 reader_calls=0
+[t04 seller] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t05 buyer ] {"performative": "propose", "content": {"price": 220}}
+      read -> performative=propose price=220 reader_calls=0
+[t06 seller] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t07 buyer ] {"performative": "propose", "content": {"price": 240}}
+      read -> performative=propose price=240 reader_calls=0
+[t08 seller] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t09 buyer ] {"performative": "propose", "content": {"price": 250}}
+      read -> performative=propose price=250 reader_calls=0
+[t10 seller] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+      RESULT outcome=open price=None correct=0 violation=0 turns=10 format_errors=0 reader_calls=0 | turn limit 10 reached; standing buyer=250 seller=None
+      saved results-deception.csv row: 108,structured,lens,0,open,,0,0,10,0,0
+
+## episode run=108 scenario=chair item='an ergonomic office chair' reserve=120 budget=130 deal_possible=1
+[t01 buyer ] {"performative": "propose", "content": {"price": 90}}
+      read -> performative=propose price=90 reader_calls=0
+[t02 seller] {"performative": "reject-proposal", "content": {"price": null}}
+      read -> performative=reject-proposal price=None reader_calls=0
+[t03 buyer ] {"performative": "propose", "content": {"price": 100}}
+      read -> performative=propose price=100 reader_calls=0
+[t04 seller] {"performative": "propose", "content": {"price": 130}}
+      read -> performative=propose price=130 reader_calls=0
+[t05 buyer ] {"performative": "accept-proposal", "content": {"price": 130}}
+      read -> performative=accept-proposal price=130 reader_calls=0
+      RESULT outcome=deal price=130 correct=1 violation=0 turns=5 format_errors=0 reader_calls=0 | ended t5 by buyer accept-proposal; standing buyer=100 seller=130
+      saved results-deception.csv row: 108,structured,chair,1,deal,130,1,0,5,0,0
+
+# run 108 done: agent_calls=39 reader_calls=0 tokens=16834 model_reported=gpt-4.1-mini-2025-04-14 (40s)
