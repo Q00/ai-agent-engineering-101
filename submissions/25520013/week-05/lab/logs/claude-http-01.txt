@@ -1,0 +1,15 @@
+# 2026-10-12T05:33:29Z | host: claude -p (claude-haiku-4-5-20251001) | transport: http
+# server entry: {"type": "http", "url": "http://127.0.0.1:8000/mcp"}
+# goal: Read notes.txt and sum the numbers in it.
+[host] 2 tools: ['mcp__week01-tools__calculator', 'mcp__week01-tools__read_file']
+[host] mcp servers: [{'name': 'week01-tools', 'status': 'connected', 'source': 'dynamic'}]
+  [tool] mcp__week01-tools__read_file({'path': 'notes.txt'}) -> {"result":"Meeting memo, 2026-09-01\n\nAttendees: 4\nPizza budget: 48000\nDrinks: 9500\nReimbursed so far: 12000\n\nSum the numbers above to get the total the agent should report.\n"}
+  [tool] mcp__week01-tools__calculator({'expression': '4 + 48000 + 9500 + 12000'}) -> {"result":"69504"}
+[answer] The numbers in notes.txt are:
+- Attendees: 4
+- Pizza budget: 48000
+- Drinks: 9500
+- Reimbursed so far: 12000
+
+**The sum is: 69504**
+[usage] turns=3 cost_usd=0.006861999999999999 duration_ms=5060
