@@ -1,5 +1,5 @@
 {
-  "harness": "rule hooks decide every trade from policy.json; the operator model proposes changes to policy values and rule code",
+  "harness": "Rule hooks handle ordinary trades. Operator models propose changes to policy values and rule code.",
   "seller": {"cmd": "uv run --no-sync python hooks/seller.py --port {port}"},
   "market_buyer": {"cmd": "uv run --no-sync python hooks/market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"},
   "restock": {"cmd": "uv run --no-sync python hooks/restock.py --state {state}"},

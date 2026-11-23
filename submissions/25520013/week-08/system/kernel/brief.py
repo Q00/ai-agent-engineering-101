@@ -308,9 +308,9 @@ def section_restock(root, now):
     if not os.path.exists(os.path.join(root, "a2/LIVE")):  # the rule code restocks; the plan file is not read
         return [
             f"[재입고] 재고 {len(inv.get('units') or [])}개, 최근 1시간 판매 {sold}개 | 공급 창 {win}",
-            "  재입고는 규칙 코드가 공급 창마다 실행함: hooks/restock.py가 policy.py의 restock_plan 함수를 불러 "
+            "  규칙 훅이 재입고 물량을 정한다. 공급 창마다 hooks/restock.py가 policy.py의 restock_plan 함수를 불러 "
             "policy의 stock_target, qty_per_buy, restock_priority와 섹션 shop의 한도로 살 물량을 정함(이 함수가 지금 실제 실행 경로임). "
-            "쓰이지 않는 것은 시도 2 방식의 계획 파일(done의 restock_plan 항목)뿐임. 재고를 바꾸려면 값은 done.policy, 동작은 done.code",
+            "운영자는 정책 값과 규칙 코드의 변경을 제안할 수 있다. 값은 done.policy, 동작은 done.code",
         ] + restock_food_lines(root, now, inv)
     return [
         f"[재입고] 계획 {head} | 재고 {len(inv.get('units') or [])}개, 최근 1시간 판매 {sold}개 | 공급 창 {win}",
@@ -1094,7 +1094,7 @@ OUTSIDE_VAL_CHARS = 40  # a policy value is a number or a short word; anything l
 
 
 def _loop_parts(path):
-    """Attempt 1's own split of a policy path (r3 icrl/space.py split): a category name may hold dots, so under
+    """The rule code's split of a policy path: a category name may hold dots, so under
     categories. the name is everything up to the last dot."""
     if path.startswith("categories."):
         cat, _, key = path[len("categories."):].rpartition(".")
@@ -1182,9 +1182,9 @@ def section_outside(root, role=None, part=None):
         written = None
     side = {"buyer": "구매 쪽 ", "shop": "가게 쪽 "}.get(role) or ("이 구역 " if part else "")
     count = f"{len(every)}개 가운데 {side}{len(items)}개" if len(items) != len(every) else f"{len(items)}개"
-    out = [f"[커널 밖 변경] 시도 1의 실험 루프가 구간마다 두 값 중 하나로 두는 정책 값 {count} "
-           "(그 루프가 policy.json에 직접 써서 정책 수정 기록과 실험 장부에는 나오지 않음"
-           + (f"; 루프 상태 파일이 마지막으로 쓰인 때 {c.kst(written)}" if written else "") + ")"]
+    out = [f"[커널 밖 변경] 외부 실험이 정책 파일에 직접 기록한 정책 값 {count} "
+           "(정책 수정 기록과 실험 장부에는 나오지 않음"
+           + (f"; 외부 실험의 상태 파일이 마지막으로 쓰인 때 {c.kst(written)}" if written else "") + ")"]
     for it in items[:OUTSIDE_MAX]:
         sec, _, key = it["path"].rpartition(".")
         sec = sec[len("categories."):] if sec.startswith("categories.") else sec
@@ -1782,7 +1782,7 @@ def section_negotiation(root, now, login):
     med = lambda v: f"{st.median(v):.2f}" if v else "-"
     out = [f"[협상 결과 {NEGOTIATION_H}시간] 상품군별 우리 제시의 끝 (수락, 우리 거절, 구매자가 닫음, 응답 없음, 기록 없음). "
            f"수락은 우리가 값을 받아들인 것이고 판매가 아님. 판매는 수락 뒤 {ACCEPT_SETTLE_S // 60}분 안에 우리 가게에서 "
-           "같은 SKU가 정산된 수(정산). 기록 없음은 끝 기록(a2_deal_end)이 생기기 전 것이거나 시도 1이 맡은 것"]
+           "같은 SKU가 정산된 수(정산). 기록 없음은 끝 기록(a2_deal_end)이 생기기 전 것이거나 규칙 훅이 맡은 것"]
     if hourly:
         # the 6 h totals below mix hours; a buyer group that takes our accept and does not pay shows as a dip here
         # (11-06 10~17시 45~60%, before and after 85~95%)
@@ -2109,7 +2109,7 @@ SECTIONS = [
      lambda x: section_rivals(*x.goal_args, market_settles(x.root, x.board[2]), _catalog(x.root)), "board"),
     ("가게 회전", "24시간 위 가게와 우리의 book·매출·거래 증가, 재고 원가",
      lambda x: section_turnover(*x.board_day, x.login), "ask"),
-    ("커널 밖 변경", "시도 1의 실험 루프가 지금 두 값 사이에서 바꾸는 정책 값",
+    ("커널 밖 변경", "외부 실험이 정책 파일에 직접 기록한 값",
      lambda x: section_outside(x.root) or ["[커널 밖 변경] 지금 없음"], "asked"),
     ("동시 비교", "판매자 후보 판 동시 비교 상태", lambda x: section_trial(x.root, x.now), None),
     ("지난 반성", "판마다 마지막 반성과 그 뒤 결정 수", lambda x: section_reflections(x.root, x.now), "snaps"),

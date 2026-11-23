@@ -1,7 +1,7 @@
 """v1.30 (2026-11-05): the restock plan fills a category's top-k SKUs up to one level of units on hand (level_fill)
-instead of an even split of each purchase. Live case at 05:50: labpc held 10 sofa G5e3784e6 (median 138 min from
+instead of an even split of each purchase. Live case at 05:50: the deployment computer held 10 sofa G5e3784e6 (median 138 min from
 supply to sale) and no G8ec51935 or G00327e80 (both sold within about 6-13 min), so the sofa need of 6 went 2/2/2
-and the slow SKU kept piling up. Values below are the live labpc policy of 05:50 (sofa 16/8/2/3, mattress
+and the slow SKU kept piling up. Values below are the live policy of 05:50 (sofa 16/8/2/3, mattress
 20/16/4/3, max_unit_cost 200만, max_spend_frac 0.375)."""
 
 import random
@@ -142,7 +142,7 @@ def test_level_fill_levels_the_units_on_hand():
 
 
 def test_a_slow_sku_over_its_level_gets_no_units():
-    # 05:50 labpc: 10 sofa G5e3784e6 on hand, need 16 - 10 = 6 (v1.30); v1.31 leaves out the 4 units above the
+    # 05:50 live: 10 sofa G5e3784e6 on hand, need 16 - 10 = 6 (v1.30); v1.31 leaves out the 4 units above the
     # level ceil(16 / 3) = 6, so the need is 10 and qty_per_buy 8 buys 4 + 4
     units = [_unit("G5e3784e6", SOFA, 570000) for _ in range(10)]
     q, why = _plan(units)
@@ -155,7 +155,7 @@ def test_a_slow_sku_over_its_level_gets_no_units():
 
 
 def test_mattress_units_go_where_the_shelf_is_empty():
-    # 05:50 labpc: G1515d951 6, G07ec17d5 5, G03d0199f 0 on hand, need 20 - 11 = 9
+    # 05:50 live: G1515d951 6, G07ec17d5 5, G03d0199f 0 on hand, need 20 - 11 = 9
     units = [_unit("G1515d951", BED, 423810) for _ in range(6)] + [
         _unit("G07ec17d5", BED, 279000) for _ in range(5)
     ]

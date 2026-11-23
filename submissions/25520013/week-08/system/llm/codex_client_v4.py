@@ -16,7 +16,7 @@ Same path as the course starter harness (upstream/scripts/starter_round3/harness
  v1.17b: any non-empty extra_args is refused, model / effort are pattern-checked)
 prompt on stdin, answer on stdout, cwd = -C = an empty temporary directory, hard timeout (subprocess.run timeout).
 --sandbox read-only, --ephemeral, -C and the empty cwd are FIXED here (not settings).
-File-read blocking (QA M10-4): --sandbox read-only does NOT stop the shell tool from READING files. TOOL_OFF_ARGS turns
+File-read blocking: --sandbox read-only does NOT stop the shell tool from READING files. TOOL_OFF_ARGS turns
 the model's tools off by feature flag (--disable shell_tool / unified_exec / apps / plugins / ... as listed by
 `codex features list` of 0.166.0) and sets shell_environment_policy.inherit=none. That these flags really stop all
 tool use / file reads is [미확인]: verified only that the flag names exist in `codex exec --help` / `codex features
@@ -115,12 +115,12 @@ class HardCounter:
         return d
 
 
-# v1.17b fix (CR condition 1): extra_args is NOT a filter any more. Any non-empty extra_args is refused (a prefix
+# extra_args is NOT a filter any more. Any non-empty extra_args is refused (a prefix
 # block list was bypassable: -c sandbox_mode=..., --config, -c approval_policy=..., --enable shell_tool, -p/--profile,
 # --search, -c shell_environment_policy...). model and reasoning_effort are the only settings that reach argv and
 # both are checked against strict patterns so they cannot carry a flag or a config override either.
 REASONING_EFFORTS = ("minimal", "low", "medium", "high", "xhigh")
-_MODEL_RE = __import__("re").compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}")      # fixes4: used with fullmatch
+_MODEL_RE = __import__("re").compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}")      # used with fullmatch
 
 
 def check_settings(cfg):
@@ -144,7 +144,7 @@ def build_cmd(exe, cfg, cwd):
             "-c", f"model_reasoning_effort={eff}", "-"]
 
 
-# ---- fixes4 pins
+# ---- pins
 COUNTER_REL = "state/real_call_counter.json"
 CALL_LOG_REL = "state/real_calls.jsonl"
 ALLOWED_CLI = ("/home/box/.local/bin/codex",          # box
@@ -154,7 +154,7 @@ LIVE_COUNTER_REL = "state/live_call_counter.json"
 
 class LiveCounter:
     """v120c-B r3: live per-round ceiling = settings caps.<role>.per_round in llm_caps_config_v4.json; default
-    UNLIMITED (성수님 14:38, GPT 6.1 Terra) - the count is still kept. The 20-call test HardCounter stays for the test
+    UNLIMITED - the count is still kept. The 20-call test HardCounter stays for the test
     runs; live=True uses this one. Unreadable state or bad caps setting = full (fail closed)."""
 
     def __init__(self, path, caps_path=None):
@@ -226,7 +226,7 @@ class CodexClient:
         self.role, self.cfg = role, load_config(config_path)
         self.allowed_cli = ALLOWED_CLI if allowed_cli is None else tuple(allowed_cli)
         self.base, self.which, self.runner = Path(base), which, runner
-        check_pins(self.cfg)                                  # fixes4: refused before any count
+        check_pins(self.cfg)                                  # refused before any count
         self.counter = (LiveCounter(self.base / LIVE_COUNTER_REL, self.base / "llm_caps_config_v4.json") if live
                         else HardCounter(self.base / COUNTER_REL))
         self.log_path = self.base / CALL_LOG_REL
@@ -241,7 +241,7 @@ class CodexClient:
             raise RealCallsDisabled("real_calls_enabled is not true in llm_config.json")
         exe = resolve_cli(self.cfg.get("cli"), self.allowed_cli)
         check_settings(self.cfg)                             # v1.17b: bad settings refused BEFORE a count is used
-        from pii_mask import mask as _pii_mask                   # v121c (CoS 결정 18:48): email / phone / card / RRN masked
+        from pii_mask import mask as _pii_mask                   # email / phone / card / RRN masked
         prompt = _pii_mask(prompt)                           # before the prompt leaves the box (and before its sha)
         self.counter.take(self.role)                         # counted before the call goes out
         row = {"ts": round(time.time(), 3), "role": self.role, "model": self.cfg["model"],

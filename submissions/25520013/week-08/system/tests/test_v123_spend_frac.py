@@ -1,4 +1,4 @@
-"""v1.23: shop.max_spend_frac caps one restock run at a share of the balance (성수님 2026-11-05: per-run spend
+"""v1.23: shop.max_spend_frac caps one restock run at a share of the balance (per-run spend
 follows cash). v1.23b: with the share set max_spend_per_run is not used (no absolute ceiling); without the key the v1.22 budget is
 unchanged."""
 

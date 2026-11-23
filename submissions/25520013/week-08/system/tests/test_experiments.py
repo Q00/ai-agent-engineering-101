@@ -1,5 +1,5 @@
 """DESIGN 14.4 step 1: experiment ledger and before/after verdict (report-only since 11-12), on synthetic data roots.
-Restored policy files are checked with attempt 1's real policy.load (r3/policy.py, read only). Fixed clock values."""
+Restored policy files are checked with the rule code's real policy.load (system/policy.py, read only). Fixed clock values."""
 
 import copy
 import importlib.util
@@ -1028,7 +1028,7 @@ def test_load_and_running_tolerate_missing_and_corrupt(root):
 
 
 def _sale_uc(ts, sku, amount, unit_cost, unit=None):
-    """Our sale whose settle row carries its own unit_cost (attempt 1 ledger v1.3); no unit_gone row."""
+    """Our sale whose settle row carries its own unit_cost (rule-code ledger v1.3); no unit_gone row."""
     rows = _sale(ts, sku, amount, None, unit=unit)
     if unit_cost is not None:
         rows[0]["data"]["unit_cost"] = unit_cost

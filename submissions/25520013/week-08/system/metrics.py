@@ -19,7 +19,7 @@ KST = timezone(timedelta(hours=9))
 HERE = Path(__file__).resolve().parent
 CODE_FILES = ("ledger.py", "policy.py", "owner.py", "volume.py", "reputation.py", "metrics.py", "hooks/common.py", "hooks/seller.py",
               "hooks/restock.py", "hooks/market_buyer.py", "hooks/review.py",
-              "aggregates.py", "cards.py")      # v1.5 (CR v1.3): ML's modules are part of the deployed code too
+              "aggregates.py", "cards.py")      # v1.5: ML's modules are part of the deployed code too
 
 
 def code_hash():

@@ -1,4 +1,4 @@
-"""11-12 (성수님: agents decide all strategy): an experiment verdict never changes a policy value. It reports its
+"""Agents decide all strategy: an experiment verdict never changes a policy value. It reports its
 numbers and ends the experiment as "measured"; a split's arm ends and policy.json keeps the old value. Rows started
 by the code before (running, or a group left "reverting") end the same way. Fixed clock values."""
 

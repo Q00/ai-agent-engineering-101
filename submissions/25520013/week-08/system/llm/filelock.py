@@ -1,4 +1,4 @@
-"""Single-host exclusive file lock + atomic JSON write for the LLM budget files (v1.17 fix M10-1, QA review_r3_v117).
+"""Single-host exclusive file lock + atomic JSON write for the LLM budget files.
 
 locked(path): context manager. Holds a per-path threading.Lock (threads of one process) AND fcntl.flock(LOCK_EX)
 on "<path>.lock" (processes on the same host). Read -> modify -> write must all happen inside it.

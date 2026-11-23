@@ -1,4 +1,4 @@
-"""11-11 성수님 (the bitter lesson): the role operators own the strategy. One done.policy applies any number of items in
+"""The role operators own the strategy. One done.policy applies any number of items in
 one write, each measured as the operator asks (test none, before_after, split; group judges several together); a
 change voids the same role's running experiment it overwrites; done.next_wake_min sets the next wake; done.strategy is
 a memo shown at the top, with no review wake. The kernel keeps only the safety lines (bounds, human-only keys, role

@@ -156,7 +156,7 @@ def test_trial_operator_start_blocks_base_edits_and_adopts(tmp_path, hroot):
     root = str(tmp_path / "data")
     for d in (".market", ".r3", "a2/board"):
         os.makedirs(os.path.join(root, d))
-    open(os.path.join(root, "a2/LIVE"), "w").close()  # trials run while attempt 2 is live
+    open(os.path.join(root, "a2/LIVE"), "w").close()  # trials run while the model trade switch is on
     with open(os.path.join(root, "policy.json"), "w") as f:
         json.dump({"owner": {"github": LOGIN}}, f)
     traj = Trajectory(os.path.join(root, "a2/trajectory.jsonl"), secrets=(LOGIN,))
@@ -179,7 +179,7 @@ def test_trial_timeout_ends_without_adopting_and_brief_shows_the_cap(tmp_path, h
     root = str(tmp_path / "data")
     for d in (".market", ".r3", "a2/board"):
         os.makedirs(os.path.join(root, d))
-    open(os.path.join(root, "a2/LIVE"), "w").close()  # trials run while attempt 2 is live
+    open(os.path.join(root, "a2/LIVE"), "w").close()  # trials run while the model trade switch is on
     with open(os.path.join(root, "policy.json"), "w") as f:
         json.dump({"owner": {"github": LOGIN}}, f)
     traj = Trajectory(os.path.join(root, "a2/trajectory.jsonl"), secrets=(LOGIN,))

@@ -1,5 +1,5 @@
 """v1.31 (2026-11-05): a SKU's units above the category level (stock_target / skus_per_category, rounded up) do not
-fill the category need. Live case at 07:04: labpc held 11 sofa G5e3784e6 (slow) and 2 G00327e80, so the sofa need
+fill the category need. Live case at 07:04: the deployment computer held 11 sofa G5e3784e6 (slow) and 2 G00327e80, so the sofa need
 was 3 and v1.30 put all 3 on G8ec51935, while the market settled G8ec51935 235 times in 3 h (24 at our shop). With
 the level 6 the need is 8. The food and storage caps keep counting every unit on hand."""
 
@@ -32,7 +32,7 @@ def _bed(q):
 
 
 def test_a_slow_pile_does_not_block_the_fast_skus():
-    # 07:04 labpc: G8ec51935 0 (3 sold by 06:59), G00327e80 2, G5e3784e6 11; level ceil(16 / 3) = 6, over 5
+    # 07:04 live: G8ec51935 0 (3 sold by 06:59), G00327e80 2, G5e3784e6 11; level ceil(16 / 3) = 6, over 5
     q, why = _plan(_units(SOFA, {"G00327e80": 2, "G5e3784e6": 11}))
     assert _sofa(q) == (5, 3, None)  # need 16 - 13 + 5 = 8 (qty_per_buy 8)
     assert P.level_fill(16 - 13, [0, 2, 11]) == [3, 0, 0]  # what v1.30 bought at 07:04

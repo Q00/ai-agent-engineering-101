@@ -9,7 +9,7 @@ events (market lines, or broken.jsonl lines that ledger.ingest_broken attributed
 - Our own shops (policy owner.own_shop_names, same GitHub owner) are not rated: they cannot settle with our buyer.
 This is a small lead-owned table for the buyer hook; the general aggregates are aggregates.py (ML Engineer).
 
-v1.13 (CR, pre-deploy condition): breakages are counted once per MARKET breakage. The kit's broken.jsonl line is a
+v1.13: breakages are counted once per MARKET breakage. The kit's broken.jsonl line is a
 copy of a market ledger `broken` row for our buyer (kit broken_news: name + broke_at = int(row ts), nothing else), so:
 - a market row is identified by its market ledger seq (the event id, `ledger`), counted once;
 - an attributed broken.jsonl row is the same breakage as one not-yet-paired market row of OUR buyer for the same SKU
@@ -40,7 +40,7 @@ def broken_pair(bp, side, sku, ts, ours=True):
     Returns True when it is the copy of an unpaired row of the other side (same SKU, |dt| <= BROKEN_PAIR_S, our
     buyer): that pair is used up and the row must not be counted. Else the row is kept as unpaired (when it can
     pair at all) and False is returned. bp = {"m": [...], "a": [...]} (JSON state).
-    v1.14 (QA review_r3_01ac_v113 minor 2): a row whose ts is not a finite number (None, bool, NaN) has no time to
+    A row whose ts is not a finite number (None, bool, NaN) has no time to
     compare, so it pairs with the OLDEST unpaired same-SKU row of the other side whatever its time, and is kept
     (ts None) as a wildcard that a later same-SKU row pairs with when nothing within the window does. reputation.py
     and memory/graph.py (ledger mode) share this function, so both count such a breakage once."""

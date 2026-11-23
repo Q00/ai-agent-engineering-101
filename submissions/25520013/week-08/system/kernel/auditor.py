@@ -55,7 +55,7 @@ HARNESS_TOOLS = (
     "harness_read",
     "replay_probe",
 )  # operator.HARNESS_TOOLS: not listed in compact mode
-# 11-11 성수님: 감사는 길어도 1시간마다. 6시간 주기로는 분리 뒤 첫 1시간에 한 번도 돌지 않았고 운영자의 반복 실수
+# 감사는 길어도 1시간마다. 6시간 주기로는 분리 뒤 첫 1시간에 한 번도 돌지 않았고 운영자의 반복 실수
 # (거절된 수정을 세 번 다시 냄)를 사람이 먼저 봄
 INTERVAL_S = 3600  # env A2_AUDITOR_INTERVAL_S overrides
 MIN_GAP_S = 1800
@@ -972,7 +972,7 @@ def build_prompt(root, now, secrets=(), listed=None, roles=None, sizes=None):
         ("## 정보 빈칸 (조사 결과에서 커널이 찾은 문장, 해석 없음)", _safe(lambda: _gaps_block(root, now))),
         ("## 다른 가게와 우리 (순위표의 가게 열, 커널이 셈. 해석 없음)", _safe(lambda: _board_block(root, now))),
         ("## 목표 진척 (순위표와 실험·코드 판정, 커널이 셈. 해석 없음)", _safe(lambda: _goal_block(root, now))),
-        ("## 커널 밖에서 바뀌는 정책 값 (시도 1 실험 루프의 상태 파일, 해석 없음)", _safe(lambda: _outside_block(root))),
+        ("## 커널 밖에서 바뀌는 정책 값 (외부 실험의 상태 파일, 해석 없음)", _safe(lambda: _outside_block(root))),
         ("## 실험 기록 (커널 판정)", exp),
         (
             "## 코드 수정 (운영자가 규칙 코드를 고친 기록)",

@@ -158,7 +158,7 @@ GRADE_RES = (
 
 
 def stated_grades(text):
-    """v1.4 (CR P12): every grade the text states, upper case. 'grade-C', 'C grade', '등급 C', 'C등급', 'grades: C',
+    """v1.4: every grade the text states, upper case. 'grade-C', 'C grade', '등급 C', 'C등급', 'grades: C',
     'grade(C)', case-insensitive. 'a grade C unit' reads as C only (the article is not a grade)."""
     t = str(text or "")
     return {m.group(1).upper() for rx in GRADE_RES for m in rx.finditer(t)}
@@ -353,7 +353,7 @@ def _log_assign(pol, order, unit, prior_cap, s_cap, meta, stage):
 
 def s_target_cap(cand, unit, pol, oid=None, meta=None):
     """-> int cap or None (fallback to current caps).
-    11-15 22:4x CoS (owner t891u): optional s_target.theta_arms = [..]: theta per order by md5(order id) % n, so each
+    Optional s_target.theta_arms = [..]: theta per order by md5(order id) % n, so each
     arm's deals and orders can be counted from the public ledger (settle/order carry the order id)."""
     try:
         st = ((pol or {}).get("buyer") or {}).get("s_target") or {}
@@ -381,7 +381,7 @@ OOS_RE = re.compile(r"\b(?:none|no|not|nothing)\b[^.!?]{0,40}\bin stock\b|\bout 
 
 
 def oos_free_max(pol):
-    """CoS 11-16: policy buyer.oos_free_max (int 0..4, default 0 = off): how many food out-of-stock rejections per
+    """Policy buyer.oos_free_max (int 0..4, default 0 = off): how many food out-of-stock rejections per
     order do not count toward max_shops. Time limits (15 s food deadline) are unchanged."""
     v = ((pol or {}).get("buyer") or {}).get("oos_free_max", 0)
     return v if isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 4 else 0
@@ -395,7 +395,7 @@ def is_oos_reject(info):
 
 
 def _rej_text(t):
-    """CoS 11-16 02:0x, diagnostics only: the shop's rejection text (first 160 chars) for the failure breakdown."""
+    """Diagnostics only: the shop's rejection text (first 160 chars) for the failure breakdown."""
     try:
         return str(text_of(t) or "")[:160]
     except Exception:  # noqa: BLE001 - never cost the order
@@ -403,7 +403,7 @@ def _rej_text(t):
 
 
 def item_misfit(rec, order):
-    """CoS 11-16 02:0x: mirror of the kit's sign check (market_kit.py: receipt item must be the order's item or in
+    """Mirror of the kit's sign check (market_kit.py: receipt item must be the order's item or in
     order['acceptable']). -> reason or None. Only when the order file carries a non-empty 'acceptable' list; otherwise
     None (unchanged behaviour). Kiro Everyday shipped G20e8987c for 김치 orders: 20 dead orders in 4 h."""
     acc = (order or {}).get("acceptable")
@@ -423,7 +423,7 @@ def over_cap(rec, cand, order):
         price = P.as_int_price(rec.get("price"))
     except (TypeError, ValueError, P.PolicyError):
         return "price not an int"
-    if price <= 0:                                      # v1.4 (CR new issue 5): a 0 / negative price is no deal
+    if price <= 0:                                      # v1.4: a 0 / negative price is no deal
         return f"price {price} not positive"
     budget = int(order.get("budget") or 0)
     if budget and price > budget:
@@ -520,7 +520,7 @@ def haggle(cand, order, pol, deadline, accept=None):
         sig, rec, how = verify_receipt(rec, cand.get("pubkey"))
         if sig is False:                                # the kit would refuse it too: no checkout attempt
             return None, {"rounds": rounds, "state": "receipt_refused", "why": f"signature {how}", "last_offer": last}
-    if rec and item_misfit(rec, order):                 # CoS 11-16 02:0x: the kit would not sign it ("does not fit
+    if rec and item_misfit(rec, order):                 # the kit would not sign it ("does not fit
         return None, {"rounds": rounds, "state": "receipt_refused",   # the order") and the order would die: try the next shop
                       "why": item_misfit(rec, order), "last_offer": last}
     cut = state(t) == "TASK_STATE_INPUT_REQUIRED" and rounds < P.HAGGLE_ROUNDS and time.time() >= deadline
@@ -760,7 +760,7 @@ def main():
     par_launched = 0                                    # attempts started by the parallel loop
     seen_shops = set()
     stop = None                                         # v1.20b: why the attempt loop stopped early
-    oos_free, n_oos = (oos_free_max(pol) if food else 0), 0   # CoS 11-16: food out-of-stock rejections free their slot
+    oos_free, n_oos = (oos_free_max(pol) if food else 0), 0   # food out-of-stock rejections free their slot
     def run_attempt(c, dl):                             # one shop attempt (same body as before, now callable)
         diag = {}
         c["rpc_diag"] = diag
@@ -802,7 +802,7 @@ def main():
             if c["shop"]["url"] in seen_shops:
                 continue
             now = time.time()
-            eff = len(seen_shops) - min(n_oos, oos_free)    # CoS 11-16: = len(seen_shops) when oos_free_max is 0 (default)
+            eff = len(seen_shops) - min(n_oos, oos_free)    # = len(seen_shops) when oos_free_max is 0 (default)
             ok, stop = attempt_allowed(eff, now - t0, now, order, pol)
             if not ok:
                 break

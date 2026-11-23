@@ -1,4 +1,4 @@
-"""LIVE off (11-07): the operator improves attempt 1's rules through policy.json, one bounded key at a time."""
+"""Model trade switch off: the operator improves the rule hooks through policy.json, one bounded key at a time."""
 
 import json
 import os
@@ -23,7 +23,7 @@ POLICY = {
     "bounds": {"price_mult": [0.5, 1.5], "max_rounds": [1, 10]},
 }
 
-# a stand-in for attempt 1's policy.py: load(path) raises on a value outside bounds
+# a stand-in for the rule code's policy.py: load(path) raises on a value outside bounds
 FAKE_A1 = '''
 import json
 class PolicyError(ValueError):
@@ -36,7 +36,7 @@ def load(path=None):
             if k in b and not b[k][0] <= v <= b[k][1]:
                 raise PolicyError(k)
         if blk.get("stock_target") == 30:
-            raise PolicyError("30 is refused by attempt 1")
+            raise PolicyError("30 is refused by the rule code")
     return pol
 '''
 
@@ -98,7 +98,7 @@ def test_refusals_leave_the_file_untouched(root):
         {"section": BED, "key": "price_mult", "value": "0.7", "reason": "r"},  # not a number
         {"section": "없는>상품군", "key": "price_mult", "value": 0.9, "reason": "r"},  # unknown section
         {"section": BED, "key": "max_rounds", "value": 2.5, "reason": "r"},  # whole numbers only
-        {"section": BED, "key": "stock_target", "value": 30, "reason": "r"},  # attempt 1's own check refuses
+        {"section": BED, "key": "stock_target", "value": 30, "reason": "r"},  # the rule code's own check refuses
         {"section": "defaults.goods", "key": "price_mult", "value": 1.3, "reason": "r"},  # above 1.2
     ]
     res = pe.apply(root, bad, traj, now)
@@ -129,7 +129,7 @@ def test_one_refused_item_among_several(root):
 def test_operator_live_off_applies_policy_and_drops_seller_edits(root, hroot):
     traj = _traj(root)
     o = op.Operator(root, FakeTerra([]), traj, harness_root=hroot, dry=True, spawn=lambda *a, **k: None)
-    assert not o.live() and "LIVE 꺼짐" in o._mode_text()
+    assert not o.live() and "규칙 훅이 정책 파일을 읽어" in o._mode_text()
     done = {
         "edits": [{"target": "seller", "files": {"guardrails.md": "x\n"}, "reason": "r"}],
         "restock_plan": {"buy": [{"sku": "S1", "qty": 3}], "valid_until": time.time() + 600},

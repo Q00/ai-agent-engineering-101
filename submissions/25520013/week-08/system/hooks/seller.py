@@ -45,7 +45,7 @@ NAME_FILE_MAX = 64
 
 
 def resolve_shop_name(env_name=None, path=None):
-    """v120c-B r3c name (CoS 14:56, 성수님 14:31): <W>/.r3/shop_name overrides the kit env R3_SHOP_NAME (a seller-only
+    """Shop name: <W>/.r3/shop_name overrides the kit env R3_SHOP_NAME (a seller-only
     restart cannot change the inherited kit env). Missing/empty/invalid/too long/unreadable -> env value. Revert = rename
     the file to shop_name.off (no delete). Returns (name, source)."""
     env_name = env_name if env_name is not None else ENV_NAME
@@ -266,7 +266,7 @@ def opening_text(unit, pol, ask, stats=None, shelf_hours=None, now=None):
 
 
 def receipt_item(unit, text):
-    """PUSH q00rcpt 11-17 (owner 08:49): echo what the buyer asked for. Request contains the unit's SKU, or names no
+    """Echo what the buyer asked for. Request contains the unit's SKU, or names no
     category -> the SKU (unchanged). Request names the unit's category leaf but not its SKU -> that leaf, which is the
     R3 order item (buyer kit signs item == order item; our ACP pick_unit accepts leaf, unit pinned by the terms).
     Seen in the ledger: q00 rates SKU receipts "SCAM" and other shops echo the category to it. Never raises."""
@@ -343,7 +343,7 @@ class Seller(AgentExecutor):
     def refresh_policy(self, now=None):
         """v1.16: switch to a changed policy.json between deals; on a bad file keep the current one and warn (stderr
         + metric policy_reload_failed). Open deals keep the policy they were opened with (deal["pol"])."""
-        if LIVE is not None:                             # v120c-B r2: LLM flags re-read here (reload, no restart)
+        if LIVE is not None:                             # LLM flags re-read here (reload, no restart)
             _on, _chg = LIVE.refresh()
             if _chg:
                 print(f"INFO: seller: llm live {"ON" if _on else "OFF"}", file=sys.stderr, flush=True)
@@ -619,13 +619,13 @@ class Seller(AgentExecutor):
         deal["rounds"] += 1
         deal["t"] = now
         offer = offer_in(text)
-        if offer is None and LIVE is not None and LIVE.on:   # v120c-B: LLM interpreter assist, caps v1, rule first, 8 s
+        if offer is None and LIVE is not None and LIVE.on:   # LLM interpreter assist, rule first, 8 s
             offer, _src = await LIVE.offer(text, offer_in, task.id, deal["ask"])
             self._metric("llm_parse", {"src": _src, "got": offer is not None})
         u = deal["unit"]
         move, price = self.decide(deal, offer)
         self._bl("offer", task.id, sku=u["sku"], offer=offer, round=deal["rounds"], prev_ask=deal["ask"], move=move,
-                 price=price, **BL.offer_fields(text))   # v121b (CoS 결정 18:02): first 80 chars, secrets masked
+                 price=price, **BL.offer_fields(text))   # first 80 chars, secrets masked
         if offer is not None:
             deal.setdefault("offers", []).append(offer)  # v1.5/v1.6: next respond's prev_offer/history (pinned by tests_lead/test_v16_wiring.py)
         if move == "accept":

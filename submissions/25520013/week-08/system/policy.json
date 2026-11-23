@@ -11,14 +11,14 @@
   ],
   "shops_api_ttl_s": 300,
   "shops_api_timeout_s": 5,
-  "_note": "v1.4: own-shop exclusion = (0) shop public key: own_shop_pubkeys (lee-sungsoo's key in mock/api_shops_snapshot_20261101T2357KST.json) + the kit's shop_key.pem public half + keys learned from rows matched by name, (1) own_shop_names after owner.norm_name (NFKC, zero-width dropped, dash variants, separators - _ . space equal), (2) /api/shops owner login == github (no owner field as of 2026-11-01 23:57 KST), (3) URLs of those rows read at runtime (owner.norm_url: http == https, trailing / dropped) and cached in <R3_STATE>/own_shops.json. No URL is stored here. v1.7.1 (owner via CoS, 2026-11-02): real market shop name is \"LSS Shop\" (norm_name -> lss-shop; 'LSS Shop' == 'lss_shop' == 'lss.shop', not 'lss' or 'lssshop'); lss-annex is NOT ours (mock fake row only, matched there by its fake owner login).",
+  "_note": "우리 가게 판별: (0) 가게 공개키가 own_shop_pubkeys, 키트 shop_key.pem의 공개키, 이름으로 맞춘 행에서 얻은 키 중 하나이거나, (1) owner.norm_name(NFKC, 폭 없는 문자 제거, 대시 통일, 구분자 - _ . 공백을 같게 봄)으로 맞춘 이름이 own_shop_names에 있거나, (2) /api/shops의 owner 로그인이 github와 같거나, (3) 위 행의 URL(owner.norm_url: http와 https를 같게 보고 끝의 /를 뗌)과 같으면 우리 가게로 본다. URL은 실행 중에 읽어 <R3_STATE>/own_shops.json에 저장하며 여기에는 적지 않는다. 시장의 가게 이름은 \"LSS Shop\"(norm_name 결과 lss-shop)이고 lss-annex는 우리 가게가 아니다.",
   "own_shop_pubkeys": [
    "Tn4LL1RfwiHcttuydXxxyGn2wWXDA/MItkahALdG190="
   ]
  },
  "shop": {
   "balance_floor": 3000000,
-  "_restock_note": "v1.6 (CR v1.5 item 6): max_spend_per_run 300000 -> 600000; food stock_target/qty_per_buy 3/2 -> 5/4, goods 2/1 -> 4/3; breadth_qty (food 2, goods 1 = the v1.5 quantities): policy.restock_plan buys breadth first (every ranked category up to breadth_qty), then tops the same lines up to qty_per_buy with the leftover budget. SKU choice inside a category: aggregates sku() settles_all first (revealed allowlist demand), then the v1.4 rule. Diagnosis (tools/diag_orders_v16.py on the mock orders log, seeds 7/11, v1.6 base): every 'no candidate' order came after mock-shop-a had sold out (27/40, 20/40; allowlist misses 0 and 2): the mock issues all 40 orders within ~10 s of the first restock, so stock depth capped volume. Tuned on seeds 7/11 only (settled; balance+inventory_at_cost-5M): base 13/17 (73,013; 79,716), d1 22/27, d2 31/30, d3 27/30, chosen two-pass 31/30 (169,980; 144,914). balance_floor, liquidation_line, max_total_units unchanged. Risk: standing food stock up to 5 per category (expiry is not exercised by a 3-minute mock). See mock/RUNS.md v1.6.",
+  "_restock_note": "재입고 계획(policy.restock_plan)은 순위를 매긴 상품군마다 breadth_qty까지 먼저 사고, 남은 예산으로 같은 줄을 qty_per_buy까지 채운다. 한 번의 지출은 max_spend_per_run을 넘지 않는다. 상품군 안의 SKU는 전체 가게의 정산 수(aggregates의 sku())를 먼저 보고 고른다.",
   "max_spend_per_run": 1100000,
   "max_unit_cost": 400000,
   "max_lines_per_run": 10,
@@ -34,34 +34,34 @@
   "idle_low_stock_units": 0,
   "idle_ref_scope": "own",
   "idle_low_stock_frac": 0.25,
-  "_v110_note": "v1.10 (QA review_r3_01ac_v19). (c) live limitation: in the live market other shops' orders/results keep coming, so the v1.9 market reference (demand_ref) never goes stale and the idle pause is effectively OFF in live; the binding inventory bound in live is (a) max_inventory_cost_frac. idle_ref_scope 'own': while our sellable stock is above low_stock, restock pauses when OUR shop had no demand evidence (own settle matched by owner.own_shop_keys: norm_name over own_shop_names + cached/R3_SHOP_NAME names, our shop URL or <market>/shop/<name>, pubkey; a buyer asking us for stock we lack = seller no_stock in metrics.jsonl; manual resume) for idle_pause_s (before the first own sale: since our first stock). At or below low_stock the v1.9 market rule decides (a sold-out shop has no own settles). idle_low_stock_frac 0.25: low_stock also when sellable cost <= 0.25 x the (a) cap, so one unsellable unit no longer deadlocks the no-signal branch. Resume-file mtime is clamped to now (a future mtime counts as 'now' once, then ages). Decision evidence (tools/sim_idle_scope.py, 72 h real-time, other shops' orders always fresh, tuning catalogs seeds 7/11/212, mock/sim_v110/): own vs market: no own demand S1 cash +35,760..+68,160 (2-3 buys vs 4), demand stops after 24 h S3 0..+73,320, steady/on-off/half-category demand S2/S4/S5 identical (no lost sales); frac 0 vs 0.25 identical in all scenarios (the deadlock case is a unit test). Kept 'own' + 0.25. It does not stop the 1-2 refills right after demand ends (6 h window); the (a) cap bounds that. R3_IDLE_REF_SCOPE overrides (mock A/B only).",
-  "_v111_note": "v1.11 (QA review_r3_01ac_v110). Own demand also = our seller hook's accept rows in metrics.jsonl (restock.market_activity own_accepts / last_own_accept_ts, policy.own_demand_ref 'own_accept'): independent of the ledger settle shop format and of the own_shops.json tunnel-URL cache, so a changed tunnel URL or an unmatched settle shop field no longer starves the own gate while buyers buy from us; first_stock counts only before any own settle or accept. <market>/shop/<name> is percent-decoded (LSS%20Shop). Monitor (v1.12 rule; this sentence corrected in v1.14, it described the v1.11 rule): ACT when our own ledger settles >= 3 but our seller accepts = 0, i.e. the accept signal is broken (revert idle_ref_scope=market in the first hour after deploy); WATCH partial accept loss when accepts >= 1 and own settles >= accepts + 3; the own-gap line is ACT only above low_stock (WATCH 'does NOT pause' at or below it); WATCH at >= 80% of the (a) cap. (a) max_inventory_cost_frac 0.12 x balance (about 550k-600k won at a 4.6M-5M balance) is the real end-inventory risk ceiling: when demand ends the shop is sold out (low_stock), the market rule refills up to (a) (1-2 refills after the first stock), and only then the own 6 h window starts (QA 211 real ratio: 533,484 = 96% of 553,902). No change to the decision (own, frac 0.25).",
+  "_v110_note": "판매할 수 있는 재고가 충분하면 우리 가게의 최근 판매와 구매 요청을 기준으로 재입고를 멈출지 판단한다(idle_ref_scope \"own\"). 판매 가능 재고가 low_stock보다 많을 때 우리 가게의 수요 증거(우리 정산, 판매 훅의 수락, 우리에게 없는 재고를 요청한 구매자, 수동 재개)가 idle_pause_s 동안 없으면 재입고를 멈춘다. low_stock 이하이면 _v19_note의 시장 기준이 정한다. 판매 가능 재고의 원가가 idle_low_stock_frac x 재고 원가 상한 이하여도 low_stock으로 본다. 환경 변수 R3_IDLE_REF_SCOPE로 바꿀 수 있다.",
+  "_v111_note": "우리 수요에는 판매 훅이 metrics.jsonl에 남긴 수락 행도 들어간다(own_demand_ref \"own_accept\"). 그래서 원장의 가게 표기나 저장된 가게 URL이 바뀌어도 우리 수요를 놓치지 않는다. <market>/shop/<name>은 퍼센트 인코딩을 풀어 비교한다(LSS%20Shop). 수요가 끝난 뒤 남는 재고는 재고 원가 상한(max_inventory_cost_frac x 잔고)이 막는다.",
   "velocity_include_own": true,
   "own_velocity_tau_h": 24,
-  "_v19_note": "v1.9 (QA review_r3_01ac_v17). (c) deadlock fix: the idle reference is the newest market demand evidence (policy.demand_ref): market order/result rows of any buyer (GET /api/ledger, kept in the ledger cursor), market settles of any shop, or a manual resume (touch <R3_STATE>/restock_resume). Orders keep coming while buyers exist, with or without our stock, so a sold-out shop keeps restocking while there is demand and pauses only when the whole market is quiet for idle_pause_s. With no order/result seen at all (no R3_MARKET, cursor lost) the v1.7 settle/first-stock reference is used, and the gate does not pause at idle_low_stock_units (0 = sold out) or fewer sellable units. (b) velocity_include_own: restock_plan adds our own shop's sales rate (decayed settle count by SKU, own_velocity_tau_h, aggregates' estimator; aggregates' velocity_per_h excludes our shop) to the category velocity for ranking and the food cap: our sales are demand too. Tuned on 7, 11 (40) and 212 (120, 600 orders) (mock/RUNS.md v1.9): include_own on/off and idle_low_stock_units 0/2; same settled and gpc, cash within run-to-run spread; kept on and 0.",
+  "_v19_note": "시장 기준 대기: 대기 기준 시각은 가장 최근의 시장 수요 증거(policy.demand_ref)다. 어느 구매자의 주문이나 결과 행(GET /api/ledger), 어느 가게의 정산, 수동 재개(<R3_STATE>/restock_resume 갱신)가 이에 해당한다. 그래서 품절된 가게도 수요가 있는 동안에는 재입고하고, 시장 전체가 idle_pause_s 동안 조용할 때만 멈춘다. 주문이나 결과 행을 하나도 보지 못하면 마지막 정산이나 첫 재고 시각을 기준으로 하며, 판매 가능 재고가 idle_low_stock_units 이하이면 멈추지 않는다. velocity_include_own이 켜져 있으면 상품군 순위와 식품 상한의 판매 속도에 우리 가게 판매(own_velocity_tau_h로 감쇠한 SKU별 정산 수)를 더한다.",
   "restock_stop_before_end_h": 24,
-  "_v17_note": "v1.7 inventory risk limits (QA v1.6 review major: unsold stock is a loss, agent.md profit = balance - start). (a) max_inventory_cost_frac: inventory at cost + the run's worst spend <= frac x balance. (b) food per category <= floor(category velocity_per_h x SKU shelf_hours x food_sell_through), at least food_min_units; no demand data -> food_cold_units. (c) idle_pause_s: no market settle (any shop) for this long since the last settle (before the first settle: since our first stock) -> restock pauses, in v1.7 also when sold out [v1.9 correction: the v1.7 text said holding stock; v1.7 code paused sold-out shops too, see _v19_note] (R3_IDLE_PAUSE_S overrides, mock only). restock_stop_before_end_h: no restock in the last hours of the round. Near-expiry food is sold at cost+1 (defaults.food.liquidate_hours, unchanged). Tuned 11/2 on seeds 7, 11 (40 orders) and 212 (120 orders) for balance + inventory at cost - start with settled >= 20 (mock/RUNS.md v1.7): variants b 0.10/2, c 0.12/3, d 0.14/4, e 0.12/4 (frac/food_cold_units); 0.12 + 4 kept v1.6's gpc and ended with 0-7 units.",
-  "_v113_note": "v1.13 (M13, R3-M13): goods depth capped by the storage fee (agent.md: goods in stock pay 1 % of cost per day). policy.goods_cap: cap = max(goods_min_units, floor((category velocity_per_h + own) x 24 x goods_max_storage_frac / storage_per_day)), no demand data -> goods_cold_units (= goods stock_target 4, the pre-v1.13 behaviour); no cap when inventory.json storage_per_day is 0/missing. Tuned 11/3 on seeds 7, 11 (40 orders) and 212 (120 orders) only, mock storage off and on (--storage-scale 1440), round window pinned: frac 0.01 / 0.02 / 0.05 vs none; only 0.01 changed a decision (212: second restock 55 -> 54 units, -11,444 cost; gpc net of storage +502 with the fee, equal without; 7/11 unchanged). Held-out on fresh seeds: mock/RUNS.md v1.13. The cap is a risk bound, not break-even (margin ~25-45 % of cost = 25-45 days of fee). Real-market storage row format unconfirmed: ledger.py ingests kind 'storage' {shop, amount}; aggregates use charged rows when present, else the 1 %/day estimate.",
-  "_v114_note": "v1.14 (QA review_r3_01ac_v113 condition 1): inventory.json storage_per_day is parsed by policy.storage_rate; a value that is not clearly a per-day fraction (non-numeric or percent string such as '1%', NaN/inf, bool, negative, or above 0.1 = 10 %/day such as 1 meaning '1 %') turns the goods cap OFF with a warning (restock_plan info warnings, stderr WARNING) instead of crashing restock or collapsing the depth to 1. Decision values unchanged (goods_max_storage_frac 0.01, goods_min_units 1, goods_cold_units 4).",
+  "_v17_note": "재고 위험 한도: (a) 재고 원가와 이번 실행의 최대 지출의 합은 max_inventory_cost_frac x 잔고 이하다. (b) 식품은 상품군마다 floor(상품군 판매 속도 x SKU 보관 시간 x food_sell_through) 이하이고 food_min_units 이상이며, 수요 자료가 없으면 food_cold_units다. (c) idle_pause_s 동안 수요 증거가 없으면 재입고를 멈춘다(_v110_note, _v19_note). 라운드 마지막 restock_stop_before_end_h시간에는 재입고하지 않는다. 유통기한이 가까운 식품은 원가+1에 판다(defaults.food.liquidate_hours).",
+  "_v113_note": "공산품 재고 깊이는 보관료로 제한한다(재고 공산품은 하루에 원가의 1%를 낸다). policy.goods_cap: cap = max(goods_min_units, floor((상품군 판매 속도 + 우리 판매 속도) x 24 x goods_max_storage_frac / storage_per_day)). 수요 자료가 없으면 goods_cold_units이고, inventory.json의 storage_per_day가 0이거나 없으면 상한이 없다. 이 상한은 손익분기가 아니라 위험 한도다. 원장에 storage 행({shop, amount})이 있으면 그 값을, 없으면 하루 1% 추정을 쓴다.",
+  "_v114_note": "inventory.json의 storage_per_day는 policy.storage_rate가 읽는다. 하루 비율로 분명하지 않은 값(숫자가 아닌 값, \"1%\" 같은 문자열, NaN, inf, bool, 음수, 0.1 초과)이면 경고를 남기고 공산품 상한을 끈다.",
   "goods_max_storage_frac": 0.01,
   "goods_min_units": 1,
   "goods_cold_units": 4,
   "restock_window_lead_s": 60,
   "restock_line_s": 10,
-  "_window_note": "v1.18: Round 3 supply windows (agent.md at the round start: every 20 min for 3 min, the first 10 min). restock plans only when the window is open or opens within restock_window_lead_s (the kit retries a line 3 times at most 30 s apart before skipping it) and buys at most (closes_at - now) / restock_line_s lines (measured: one supply about every 10 s).",
-  "_cap_note": "v1.18 2026-11-03 21:16 (성수님 결정): inventory cap 0.12 -> 0.30 x balance, max_total_units 120 -> 250. First 10 min of R3: 5 of 257 market settles were ours and the 0.12 cap was full at the end of the first window. Back to 0.12 / 120 if our share does not rise or inventory cost does not fall across two windows.",
+  "_window_note": "Round 3 공급 창은 20분마다 3분 동안 열린다. 재입고는 창이 열려 있거나 restock_window_lead_s 안에 열릴 때만 계획하고, (닫히는 시각 - 지금) / restock_line_s 줄까지만 산다. 키트는 한 줄을 30초 간격 안에서 최대 3번 다시 시도한 뒤 건너뛴다.",
+  "_cap_note": "재고 원가 상한은 잔고의 max_inventory_cost_frac배이고, 전체 재고는 max_total_units개를 넘지 않는다.",
   "ask_quantile": "p50",
   "skip_below_market": true,
   "est_cost_frac": 0.6,
   "star_price_cap": {
    "A": 0.775
   },
-  "_star_note": "v2.1 2026-11-05 (성수님 13:08 지시 1위 목표, 별점 개선): goods grade A first ask capped at 0.775 x list (policy.ask_price; never below floor_price). Our goods A reviews in the 24 h to 13:30 KST: 4.49 at 0.77-0.78 of list, 3.95 at 0.78-0.79, 3.65 at 0.80-0.81; cap 0.775 moves 276 deals, est. +0.047 mean stars for 1.0% of revenue (32만/h). B and C goods show no cliff and stay uncapped.",
-  "_price_note": "v1.18 2026-11-03 21:35 (성수님 결정): first ask = the SKU's median settle (ask_quantile p50, >= 5 settles), min_margin goods 0.15 / food 0.12 -> 0.05, restock skips SKUs whose market median is under expected cost (p75 of our units' cost/list, est_cost_frac with < 4 units) + min_margin. After 21:15, 7 of 8 negotiations were cancelled at asks 2-15% over the market median. Back to p75 / 0.15 / 0.12 if profit per settle falls without more settles.",
+  "_star_note": "star_price_cap: 공산품 A등급의 첫 제시가는 정가의 0.775배를 넘지 않는다(policy.ask_price). floor_price 아래로는 내리지 않는다. B, C등급에는 이 상한이 없다.",
+  "_price_note": "첫 제시가는 SKU의 정산 가격 중앙값이다(ask_quantile p50, 정산 5건 이상일 때). skip_below_market이 켜져 있으면 재입고는 시장 중앙값이 예상 원가(우리 재고의 원가/정가 p75, 4개 미만이면 est_cost_frac)에 min_margin을 더한 값보다 낮은 SKU를 건너뛴다.",
   "restock_priority": [
    "가구/침구>가구>침대/매트리스"
   ],
-  "_v120a_note": "v1.20a 2026-11-04 (성수님 11-04 10:41 CoS 중계, CR 검토 전 후보): 매트리스 재고 깊이. Round 3 원장 13.7h: 매트리스가 시장 매출 54.3%, 우리 공급 후 판매 중앙값 1.7분, G07ec17d5 재고 0 시간 76%, 공급 창당 우리 매트리스 1~4개(중앙 2). G1515d951 공급 0개 원인 확인: max_unit_cost는 통과(423,810 x 0.75 = 317,858 <= 400,000), below_market 제외 0회, 매트리스 계획 92회 중 90회 by settles 2위. skus_per_category 미설정(기본 1)이라 1위 SKU G07ec17d5만 매번 구매. 변경: restock_priority로 매트리스를 먼저 계획, categories[매트리스] stock_target 4->8, qty_per_buy 3->4, breadth_qty 1->2, skus_per_category 2 (G07ec17d5와 G1515d951 각 2개), max_spend_per_run 600,000->1,500,000 (계획 93회 중 74회가 예산의 90% 이상 사용, 매트리스 2+2개 최악 원가 1,054,216). 그대로 둔 것: balance_floor 3,000,000, max_inventory_cost_frac 0.30, max_total_units 250, max_unit_cost 400,000, below_market 필터, 보증 6h. 롤백: max_spend_per_run 600000, restock_priority와 categories[매트리스] 삭제. 11-04 11:21 성수님 결정 (CoS 중계): max_spend_per_run은 1,100,000만 사용 (1.5M 안 폐기, CR 대안: 매트리스 2+2 최악 1,054,216 수용), 재고원가 상한 0.30 x 잔고(약 3.29M) 유지."
+  "_v120a_note": "restock_priority에 적은 상품군(매트리스)을 먼저 계획한다. categories의 매트리스 항목(stock_target, qty_per_buy, breadth_qty, skus_per_category)에 따라 판매 상위 SKU 두 개를 함께 산다. 한 번의 지출은 max_spend_per_run을 넘지 않는다."
  },
  "defaults": {
   "food": {
@@ -86,11 +86,11 @@
    "dispose_hours": 2,
    "liquidate_discount": 0.35,
    "claim_window_s": 10,
-   "_claim_note": "v1.2: claim = grade at the receipt; omitted when the grade would change within claim_window_s (the market counts a claim true when it matches the grade at checkout or at settle; measured receipt->settle delay in the mock 0.0-0.1 s, QA review sec 6-5). Food with no shelf_hours: no claim, priced as grade C. The v1 claim_lead_s=60 under-claimed for 60 s at every grade cut.",
-   "_grade_c_note": "v1.4 (G): fresh_discount C 0.15 -> 0.30 (goods 0.20 -> 0.30). C cost is 25-45% of list (agent.md), so ask = list x price_mult x 0.7 stays above floor = cost x (1 + min_margin); floor_price/guard_price still forbid any price <= cost.",
+   "_claim_note": "claim은 영수증 시점의 등급이다. claim_window_s 안에 등급이 바뀌면 claim을 생략한다(시장은 결제나 정산 때의 등급과 맞으면 참으로 본다). shelf_hours가 없는 식품은 claim 없이 C등급 가격을 매긴다.",
+   "_grade_c_note": "C등급 fresh_discount는 0.30이다. C등급 원가는 정가의 25-45%(agent.md)라 정가 x price_mult x 0.7은 floor = 원가 x (1 + min_margin)보다 높고, floor_price와 guard_price는 원가 이하 가격을 막는다.",
    "endgame_margin": 0.05,
    "endgame_round": 4,
-   "_endgame_note": "v1.6 (CR v1.5 major 3, narrowed): from round endgame_round an offer in [cost x (1 + endgame_margin), normal floor) is accepted ONLY when (a) the buyer's offer stalled (<= its previous offer), (b) its raise shrank (a buyer at its cap, who would otherwise walk), or (c) the seller would otherwise reject (past max_rounds and not rising, or patience_rounds used up); a buyer still raising at its usual pace is countered at the normal floor (policy.respond; guard_price still forbids <= cost). Tuned on seeds 7 and 11 only (tools/price_gap_sim.py + tools/endgame_pair_v16.py, real haggle vs real respond, 2000 draws/seed): same deals as v1.5 (1857/1867), never cheaper, dearer in 81/49 negotiations, profit +73,843 / +21,792 vs v1.5. Kept 0.05/4/6 (0.03/0.01 add <0.15% at a thinner margin). See mock/RUNS.md v1.6.",
+   "_endgame_note": "endgame_round부터는 [원가 x (1 + endgame_margin), 평소 floor) 구간의 제안을 (a) 구매자 제안이 멈췄거나(이전 제안 이하), (b) 올림 폭이 줄었거나, (c) 그렇지 않으면 거절하게 될 때(max_rounds를 넘고 오르지 않거나 patience_rounds를 다 쓴 경우)만 수락한다. 평소 속도로 올리는 구매자에게는 평소 floor로 맞제안한다(policy.respond). guard_price는 원가 이하 가격을 막는다.",
    "patience_rounds": 6
   },
   "goods": {
@@ -116,7 +116,7 @@
    "max_warranty_hours": 6,
    "endgame_margin": 0.05,
    "endgame_round": 4,
-   "_endgame_note": "v1.6 (CR v1.5 major 3, narrowed): from round endgame_round an offer in [cost x (1 + endgame_margin), normal floor) is accepted ONLY when (a) the buyer's offer stalled (<= its previous offer), (b) its raise shrank (a buyer at its cap, who would otherwise walk), or (c) the seller would otherwise reject (past max_rounds and not rising, or patience_rounds used up); a buyer still raising at its usual pace is countered at the normal floor (policy.respond; guard_price still forbids <= cost). Tuned on seeds 7 and 11 only (tools/price_gap_sim.py + tools/endgame_pair_v16.py, real haggle vs real respond, 2000 draws/seed): same deals as v1.5 (1857/1867), never cheaper, dearer in 81/49 negotiations, profit +73,843 / +21,792 vs v1.5. Kept 0.05/4/6 (0.03/0.01 add <0.15% at a thinner margin). See mock/RUNS.md v1.6.",
+   "_endgame_note": "endgame_round부터는 [원가 x (1 + endgame_margin), 평소 floor) 구간의 제안을 (a) 구매자 제안이 멈췄거나(이전 제안 이하), (b) 올림 폭이 줄었거나, (c) 그렇지 않으면 거절하게 될 때(max_rounds를 넘고 오르지 않거나 patience_rounds를 다 쓴 경우)만 수락한다. 평소 속도로 올리는 구매자에게는 평소 floor로 맞제안한다(policy.respond). guard_price는 원가 이하 가격을 막는다.",
    "patience_rounds": 6
   }
  },
@@ -139,7 +139,7 @@
      "cert": true,
      "grades": [],
      "hours_margin": 2,
-     "_note": "v1.17 (2026-11-03): no grade filter for food. Buyer value is the list price if the food lasts use_within_hours (agent.md Buyer value), whatever its grade; min_hours_left (use_within_hours + hours_margin, needs the certificate) already guards that."
+     "_note": "식품에는 등급 조건이 없다. 식품이 use_within_hours 동안 버티면 구매자 가치는 등급과 관계없이 정가이고(agent.md Buyer value), min_hours_left(use_within_hours + hours_margin, 인증서 필요)가 이를 지킨다."
     },
     "accept_c": {
      "max_pay_frac": 0.6,
@@ -158,12 +158,12 @@
       "B"
      ],
      "warranty_hours": 0,
-     "_note": "0 = not required. Our seller's warranty rule (prior fail 0.05 > uplift 0.03) offers none, so requiring 6 h made us refuse every goods unit in the mock (run_7, 4/4 'warranty' rejects). Break risk is priced in choose_offers via the shop's broken rate."
+     "_note": "0은 요구하지 않음이다. 판매자의 보증 규칙(이전 고장률 0.05 > 가산 0.03)은 보증을 내지 않으므로, 보증을 요구하면 공산품을 모두 거절하게 된다. 고장 위험은 choose_offers가 가게의 고장률로 가격에 반영한다."
     },
     "accept_c": {
      "max_pay_frac": 0.55,
      "open_frac": 0.35,
-     "_note": "v1.4 (G): a shop that states grade C (or claims C on the receipt) is no longer walked away from: we haggle on with cap = min(cap, list x max_pay_frac) and pass accept.grades + C for that deal only. Buyer value = list price unless food did not last use_within_hours (min_hours_left unchanged) or goods broke (break rate unpublished): at 0.55 x list the deal has positive expected surplus while P(break) < 45%."
+     "_note": "C등급을 밝힌 가게(또는 영수증에 C를 claim한 가게)와도 흥정을 이어 간다. 이때 상한은 min(상한, 정가 x max_pay_frac)이고 그 거래에만 accept.grades에 C를 더한다. 식품이 use_within_hours 동안 버티고 공산품이 고장 나지 않으면 구매자 가치는 정가이므로, 고장 확률이 45% 미만이면 정가의 0.55배에서 기대 이익이 양수다."
     }
    }
   },
@@ -173,7 +173,7 @@
   "max_shops": 6,
   "extra_attempt_window_s": 60,
   "expiry_guard_s": 60,
-  "_v120b_note": "v1.20b 2026-11-04 (성수님 11-04 10:41 CoS 중계, CR 검토 전 후보): 구매자 시도 상한 3->6. Round 3: 후보가 남았는데 3곳에서 멈춘 주문 식품 835, 공산품 46. 시도 차례별 성사율 공산품 0.292/0.264/0.306, 식품 0.178/0.248/0.242 (3번째에서도 떨어지지 않음). 시간 가드: 4번째 이후 시도는 훅 시작 후 extra_attempt_window_s(60초) 안이고 주문 expires - expiry_guard_s(60초) 전일 때만 시작, 그 시도의 협상 마감도 expires - 60초. 1~3번째 시도와 DEADLINE_S 200초는 그대로. 지표: market_buyer buy 행 outcome에 stop(max_shops/deadline/guard_elapsed/guard_expiry), guard_hit, max_shops 추가. 기준선(11-03 21:01~11-04 10:43 KST): buy 2,274행, 지연 p50 2.9초, p95 37.5초. 롤백: max_shops 3 (코드 유지 시 v1.19와 같은 시도 수)."
+  "_v120b_note": "구매 훅의 가게 시도 횟수는 구매 정책이 정한다(max_shops). 4번째 이후 시도는 훅 시작 뒤 extra_attempt_window_s 안이고 주문 만료 expiry_guard_s 전일 때만 시작하며, 그 시도의 협상 마감도 만료 expiry_guard_s 전이다."
  },
  "bounds": {
   "price_mult": [
@@ -251,7 +251,7 @@
   "relax_ask_cut": 0.1,
   "relax_max_pay_frac": 0.97,
   "relax_grade_c_at": 0.5,
-  "_note": "BASE: >= 20 settled Round 3 trades each for shop and buyer (week-08 HW). goal = target + margin. r from policy.volume_relax per side; shop: floor margin * (1-r), concession * (1+r), ask * (1 - relax_ask_cut * r), never below cost + 1; buyer: max_pay_frac -> relax_max_pay_frac, step * (1 + r/2), grade C accepted at r >= relax_grade_c_at; shelf life never relaxed; budget cap kept. round_start_ts = 2026-11-03 21:01:46 KST (first supply window opens_at, v1.18), round_end_ts = 2026-11-17 23:59 KST. v1.4: relax_cert_at removed (kit refuses a checkout without certificate whenever grades are set; CR v1.2 new issue 3)."
+  "_note": "BASE: Round 3에서 가게와 구매자 각각 정산 20건 이상. goal = target + margin. 각 쪽의 r은 policy.volume_relax가 정한다. 가게: floor margin x (1-r), concession x (1+r), ask x (1 - relax_ask_cut x r), 원가 + 1 아래로는 내리지 않는다. 구매자: max_pay_frac 대신 relax_max_pay_frac, step x (1 + r/2), r >= relax_grade_c_at이면 C등급 수락. 유통기한 조건과 예산 상한은 완화하지 않는다. round_start_ts는 2026-11-03 21:01:46 KST(첫 공급 창), round_end_ts는 2026-11-17 23:59 KST다."
  },
  "forum": {
   "enabled": true,
@@ -260,12 +260,12 @@
   "min_settles": 3,
   "max_refs": 8,
   "rotate": 4,
-  "_note": "v1.17 (2026-11-03): hooks/forum.py posts one ledger price summary as the buyer every interval_s (kit limit: one post per 5 min per role). Buyer ALL counts votes on buyer posts from voters with >= 5 settled deals and another GitHub owner.",
-  "_interval_note": "v1.18 2026-11-03 21:27 (성수님 결정): 900 -> 300 s, the kit limit. Buyer ALL also counts the number of buyer posts (0.1, hidden posts excluded); our first two posts had 7 and 4 likes, 0 dislikes. Back to 900 if dislikes or hidden posts appear."
+  "_note": "interval_s마다 원장 가격 요약 글 하나를 구매자로 올리는 설정이다(키트 한도: 역할마다 5분에 한 글). Buyer ALL은 정산 5건 이상이고 GitHub 주인이 다른 투표자가 구매자 글에 준 표를 센다.",
+  "_interval_note": "interval_s는 키트 한도인 300초다. Buyer ALL은 숨기지 않은 구매자 글 수도 센다(0.1)."
  },
  "taste": {
   "enabled": true,
   "max_age_s": 7200,
-  "_note": "v1.19: restock ranks categories by the taste forecast (buyer trajectories in the memory graph, taste/forecast.py) only while <R3_STATE>/taste_gate.json says \"adopted\" and its asof is at most max_age_s old. The gate (taste/gate.py, prereg taste-v1, pinned judge taste/judge.py) adopts when the 1-0.05/6 hour-bootstrap CI of mean d = L_B - L_A (log loss of next-hour settles by category, velocity ranking B vs taste A) is above 0 at 6/12/24/48/96/192 evaluable hours, and rolls back when mean d over the last 24 evaluable hours < 0. Only the category order changes; targets, caps, budget, window gate and below-market filter do not. enabled false = velocity ranking regardless of the gate."
+  "_note": "재입고는 <R3_STATE>/taste_gate.json의 상태가 \"adopted\"이고 asof가 max_age_s 이내일 때만 그 파일의 상품군 예측으로 순위를 정한다(hooks/restock.py taste_ranking). 그 밖에는 판매 속도 순위를 쓴다. 바뀌는 것은 상품군 순서뿐이고 목표, 상한, 예산, 공급 창 조건, 시장가 이하 제외는 그대로다. enabled가 false면 언제나 판매 속도 순위다."
  }
 }

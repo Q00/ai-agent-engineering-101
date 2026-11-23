@@ -1,7 +1,7 @@
 """Key-level revert and the own-key voiding rule (verifier probes p3/p8, 11-12): a revert puts back only the
 experiment's own key inside a shared base (per-grade dict, accept_c block, c_first_leaves list), a write voids only
 the experiments whose own value it writes, a scope-only touch is named on the verdict, and a split's arm goes before
-policy.json changes. Fixed clock values, attempt 1's real policy.load as validate. Since 11-12 a verdict only
+policy.json changes. Fixed clock values, the rule code's real policy.load as validate. Since 11-12 a verdict only
 measures; the put-back runs from the tick helper below through the same key-level restore."""
 
 import copy

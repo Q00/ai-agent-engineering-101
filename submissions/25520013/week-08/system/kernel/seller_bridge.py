@@ -28,7 +28,7 @@ from kernel.trajectory import Trajectory
 
 FLAG = os.path.join("a2", "LIVE")
 # The accept metric keeps the start of the buyer's request (masked), so a sale can be traced back to the request text
-# once the ledger shows who bought (성수님 결정 2026-11-06 16시: 1점만 주는 구매자의 문구를 찾아 decline_texts로 막기)
+# once the ledger shows who bought (1점만 주는 구매자의 문구를 찾아 decline_texts로 막기)
 REQ_LOG_CHARS = 160
 HOLD_S = 120  # the rule code's HOLD_S: an model-seller deal idle this long is dropped and its unit freed
 MAX_ROUNDS = 8  # the rule code's cap: a counter at round 8 or later becomes a reject
@@ -46,7 +46,7 @@ def live_on(root):
 
 
 def declined_text(root, text):
-    """성수님 결정 2026-11-05 (v2.2): a request carrying a policy.json shop.decline_texts phrase (case and runs of
+    """A request carrying a policy.json shop.decline_texts phrase (case and runs of
     whitespace ignored, 12+ characters) is declined before stock is read, exactly as the rule code does."""
     pol = c.load_json(os.path.join(root, "policy.json"), {}) or {}
     lst = (
@@ -68,7 +68,7 @@ NEED_RE = re.compile(
     re.I,
 )
 NEED_MARGIN_H = 0.25  # the rule code v2.1: the settle lands minutes after the quote
-# 성수님 결정 2026-11-06: with no stated need, food under half its shelf is not offered. Our reviewed sales to 11-05
+# With no stated need, food under half its shelf is not offered. Our reviewed sales to 11-05
 # 18h: food with <50% shelf left averaged 4.21 stars (68 of 413 two-star), 50-75% 4.52, >=75% 4.67; buyer-02, which
 # never states its need, wants 75% of the shelf.
 UNSTATED_MIN_SHARE = 0.5
@@ -77,7 +77,7 @@ UNSTATED_MIN_SHARE = 0.5
 def stated_need_hours(text, names=()):
     """Shelf life the request asks for, in hours, read as the rule code v2.1/v2.1a does: the largest '<number> h /
     hour(s) / 시간' after SKUs, product `names` and the hour tokens inside those names are removed; None when it
-    names no hours. Attempt 1 added the rule on 11-05 (71 of 75 two-star food reviews read 'only N h left, I
+    names no hours. The rule code added this rule on 11-05 (71 of 75 two-star food reviews read 'only N h left, I
     needed M h'); the model lost it and buyer-02 posted that complaint about us 47 times by 11-06 01:11."""
     t = SKU_RE.sub(" ", text or "")
     names = sorted({n for n in names if n}, key=len, reverse=True)
@@ -152,7 +152,7 @@ def candidate_units(market_dir, text, held=(), why=None):
             if u["hours_left"] is None
             or (u["expires_at"] - now) / 3600 >= need + NEED_MARGIN_H
         ]
-    else:  # 성수님 결정 2026-11-06: no stated need -> a dated unit with under half its catalog shelf left is not offered
+    else:  # no stated need -> a dated unit with under half its catalog shelf left is not offered
 
         def fresh(u):
             sh = (cat.get(u["sku"]) or {}).get("shelf_hours")
@@ -180,7 +180,7 @@ def with_number(message, label, n):
 
 
 class Bridge:
-    """Attempt-2 deals of one seller process. Helpers come from the rule code's seller.py, passed explicitly:
+    """Model-path deals of one seller process. Helpers come from the rule code's seller.py, passed explicitly:
 
     sign(receipt) -> signed receipt; name: shop name; receipt_terms(unit, pol, stats=, price=, shelf_hours=);
     offer_in(text) -> int | None; opening_text(unit, pol, ask, stats, shelf_hours) -> str;

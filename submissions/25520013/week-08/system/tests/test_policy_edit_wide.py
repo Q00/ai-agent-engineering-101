@@ -1,5 +1,5 @@
 """DESIGN 14.3: wider policy edits (shop, buyer.defaults, per-grade keys, c_first_leaves), still one number per edit.
-Files written here are checked with attempt 1's real policy.load (r3/policy.py, read only)."""
+Files written here are checked with the rule code's real policy.load (system/policy.py, read only)."""
 
 import importlib.util
 import json
@@ -137,7 +137,7 @@ def test_legal_edits_in_each_new_section_pass_attempt1_validate(root, a1):
     assert pol["shop"]["grade_floor_list"] == {"C": 0.6}
     assert pol["defaults"]["goods"]["fresh_discount"] == {"B": 0.08, "C": 0.25}
     assert pol["shop"]["c_first_leaves"] == ["침대/매트리스"]
-    # what attempt 1 itself now reads
+    # what the rule code itself now reads
     assert a1.resolve(pol, BED, "goods")["warranty_hours"] == {"A": 6, "B": 6, "C": 6}
     assert a1.resolve(pol, BED, "goods", side="buyer")["max_pay_frac"] == 0.9
 
@@ -278,7 +278,7 @@ def test_no_cooldown_or_per_wake_limit_and_dotted_keys_are_separate(root, a1):
 
 
 def test_effective_overlays_the_leaf_entry_like_attempt1_resolve(root, a1):
-    # categories has "소파/의자/스툴" (leaf name) price_mult 0.7; the full path SOFA has no entry. Attempt 1 prices SOFA
+    # categories has "소파/의자/스툴" (leaf name) price_mult 0.7; the full path SOFA has no entry. The rule code prices SOFA
     # at 0.7, so 0.62 is a 0.08 step (allowed); the old lookup saw defaults.goods 0.9, a 0.28 step, and refused it.
     pol = _pol(root)
     assert (

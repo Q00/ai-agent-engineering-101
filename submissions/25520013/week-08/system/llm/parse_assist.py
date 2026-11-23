@@ -10,7 +10,7 @@ exactly one JSON object {"offer": <int 1..PARSE_MAX_OFFER> | null} and nothing e
 accepted. The parsed number only reaches policy.respond, whose hard guard never accepts at or below cost, so the
 worst a manipulated number can do is a counter or a reject.
 
-Caps (constants): PARSE_TIMEOUT_S 8 s per call (was 5 s; CoS 2026-11-03 17:48 KST; mirrored as
+Caps (constants): PARSE_TIMEOUT_S 8 s per call (mirrored as
 llm_config.json parse_timeout_s, a test keeps them equal; the code constant is the one used); PARSE_MAX_CALLS_PER_DEAL 1; PARSE_MAX_CALLS_PER_HOUR 6;
 PARSE_MAX_CALLS_PER_DAY 20 (so <= 300 for the 15-day Round 3: PARSE_MAX_CALLS_PER_ROUND, derived);
 prompt <= PARSE_MAX_PROMPT_TOKENS (estimated), output PARSE_MAX_OUTPUT_TOKENS; input text <= PARSE_MAX_INPUT_CHARS.
@@ -18,7 +18,7 @@ Counted at reservation (llm.budget.Budget), so a timeout also uses budget. Real 
 llm.codex_client hard counter (parse share 10 of 20 for the approved test).
 
 Not wired into hooks/seller.py: that is a deploy-file change (v1.17, separate approval).
-v1.17 fix PA-1 (QA review_r3_v117): only the async entry aoffer_in_assisted() is public (__all__); the blocking body
+Only the async entry aoffer_in_assisted() is public (__all__); the blocking body
 _offer_in_sync() is private and runs in a worker thread (asyncio.to_thread + wait_for). Any exception from the
 budget (reserve) or anywhere else is caught inside and the rule result is returned. deal_id None -> no LLM call
 (the per-deal cap needs a deal id). The budget is a single-host file-lock budget (llm.filelock)."""

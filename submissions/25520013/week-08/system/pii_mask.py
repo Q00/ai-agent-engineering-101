@@ -1,5 +1,5 @@
 # v121c pii_mask.py: top-level (not under llm/) so the trading path (hooks/buyer_log) stays llm-free (test_isolation).
-# v121c (CoS 결정 18:48, CoS 전달): simple regex PII masking for LLM prompts (codex_client_v4.complete) and logs
+# Simple regex PII masking for LLM prompts (codex_client_v4.complete) and logs
 # (hooks/buyer_log, seller request / no_stock text). Email, Korean phone, card number (13-19 digits, IIN 3-6, Luhn),
 # resident registration number. Never raises (returns the input unchanged on an internal error). Stdlib only.
 import re

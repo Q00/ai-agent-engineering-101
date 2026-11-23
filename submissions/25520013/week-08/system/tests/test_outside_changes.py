@@ -1,4 +1,4 @@
-"""11-12: policy values a loop outside the kernel switches (attempt 1's experiment loop writes policy.json itself).
+"""11-12: policy values a loop outside the kernel switches (an outside experiment writes policy.json itself).
 The operators' edit history and the ledger did not show them; the card, the policy tool and the auditor prompt do."""
 
 import json
@@ -16,10 +16,10 @@ WRITTEN = T0 + 4000  # 11-12 08:13:26 KST: when the loop's state file was last w
 
 def head(n, of=None, side=""):
     """The first line: n values shown, out of `of` the loop switches when the view is one side or one section."""
-    return ("[커널 밖 변경] 시도 1의 실험 루프가 구간마다 두 값 중 하나로 두는 정책 값 "
+    return ("[커널 밖 변경] 외부 실험이 정책 파일에 직접 기록한 정책 값 "
             + (f"{of}개 가운데 {side}{n}개" if of else f"{n}개")
-            + " (그 루프가 policy.json에 직접 써서 정책 수정 기록과 실험 장부에는 나오지 않음; "
-            "루프 상태 파일이 마지막으로 쓰인 때 11-12 08:13)")
+            + " (정책 수정 기록과 실험 장부에는 나오지 않음; "
+            "외부 실험의 상태 파일이 마지막으로 쓰인 때 11-12 08:13)")
 
 
 def _blocks(t0, spans):
@@ -138,10 +138,10 @@ def test_auditor_sees_them_and_can_take_the_part_off_either_card(tmp_path):
     r = _board_root(tmp_path)
     sizes = {}
     p = au.build_prompt(r, NOW, roles=au.ROLES, sizes=sizes)
-    assert "## 커널 밖에서 바뀌는 정책 값 (시도 1 실험 루프의 상태 파일, 해석 없음)\n\n없음" in p
+    assert "## 커널 밖에서 바뀌는 정책 값 (외부 실험의 상태 파일, 해석 없음)\n\n없음" in p
     _loop(r)
     p = au.build_prompt(r, NOW, roles=au.ROLES, sizes=sizes)
-    assert ("## 커널 밖에서 바뀌는 정책 값 (시도 1 실험 루프의 상태 파일, 해석 없음)\n\n" + head(3)) in p
+    assert ("## 커널 밖에서 바뀌는 정책 값 (외부 실험의 상태 파일, 해석 없음)\n\n" + head(3)) in p
     assert "9. 커널 밖에서 바뀌는 정책 값:" in p and len(p) <= au.PROMPT_CHARS and LOGIN not in p
     got = au._apply_tools(r, NOW, {"uncard": {"shop": ["커널 밖 변경"], "buyer": ["커널 밖 변경"]}}, list(tools.TOOLS), (),
                           None, roles=au.ROLES)

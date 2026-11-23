@@ -67,7 +67,7 @@ _AG_REPORTED = []
 
 
 def aggregates_module():
-    """v1.4 (CR v1.2 new issue 2): `import aggregates`, failing LOUDLY. A deploy without aggregates.py used to
+    """v1.4: `import aggregates`, failing LOUDLY. A deploy without aggregates.py used to
     turn the stats off silently (load_stats -> None, policy priors). Now an ImportError prints an ERROR line on
     stderr (the kit copies hook output to its log) and writes a metrics row {"hook": "r3", "decision": "error",
     "extra": {"what": "aggregates_import"}} (once per process); callers get (None, "IMPORT ERROR: ...") and still

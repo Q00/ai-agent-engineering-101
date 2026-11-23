@@ -373,7 +373,7 @@ def replay_probe(root, target, version=None, files=None, harness_dir=None, n=20,
 
 
 def policy(root, days=1, section=None):
-    """시도 1 규칙의 policy.json 값: 구역(defaults.food, defaults.goods, 상품군 전체 경로, shop, buyer.defaults.food, buyer.defaults.goods)마다 편집 가능 키의 지금 값과 범위(최소, 최대), 최근 days일의 정책 수정 기록. section(구역 이름의 일부, 예: "음료", "buyer")을 주면 그 구역 줄과 그 구역의 수정 기록만 돌려줘 결과가 잘리지 않음. LIVE가 꺼진 동안 done.policy로 고침."""
+    """정책 조회 도구는 현재 정책 값과 허용 범위, 최근 수정 기록을 보여 준다. 구역(defaults.food, defaults.goods, 상품군 전체 경로, shop, buyer.defaults.food, buyer.defaults.goods)마다 편집 가능 키의 지금 값과 범위(최소, 최대), 최근 days일의 정책 수정 기록. section(구역 이름의 일부, 예: "음료", "buyer")을 주면 그 구역 줄과 그 구역의 수정 기록만 돌려줘 결과가 잘리지 않음. 모델 거래 스위치가 꺼져 있을 때 done.policy로 고침."""
     from kernel import policy_edit as pe
     from kernel.trajectory import Trajectory
 

@@ -78,7 +78,7 @@ ALPHA = 0.01
 GAMMA = (1 + ALPHA) / (1 - ALPHA)
 LOG_GAMMA = math.log(GAMMA)
 VEL_TAU_H = 24.0
-URL_REFRESH_S = 10.0             # PUSH fpfix 11-17: owner_checker re-reads the own-shop URL cache at most this often
+URL_REFRESH_S = 10.0             # owner_checker re-reads the own-shop URL cache at most this often
 REP_HALF_LIFE_H = 72.0
 HL_EDGES = (6, 12, 24, 48, 96)          # hours-left buckets: <6, 6-12, 12-24, 24-48, 48-96, >=96
 HL_LABELS = ("0-6", "6-12", "12-24", "24-48", "48-96", "96+")
@@ -226,7 +226,7 @@ def owner_checker(policy_path=None, state=None, shop_name=None):
     except Exception:            # noqa: BLE001: unreadable cache -> policy names only
         pass
 
-    # PUSH fpfix 11-17 (after the 08:54 restart): runtime URLs are NOT part of .fp. A new tunnel URL used to give the
+    # Runtime URLs are NOT part of .fp. A new tunnel URL used to give the
     # long-lived seller (checker built before the cache had the URL) and the short-lived buyers different fps, so
     # each overwrote the other's snapshot and every buyer run rebuilt from offset 0 (~65 s, 1.5M events). The URL
     # set is instead re-read from the own-shop cache (owner.CACHE) when its mtime changes, checked at most every

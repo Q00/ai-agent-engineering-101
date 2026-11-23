@@ -15,7 +15,7 @@ HERE = Path(__file__).resolve().parent
 
 
 def policy_path(p=None):
-    """v1.4 (CR new issue 1): a relative R3_POLICY (or path argument) is resolved against the r3 directory, not
+    """v1.4: a relative R3_POLICY (or path argument) is resolved against the r3 directory, not
     the cwd. The kit runs hooks in the agent folder, so `R3_POLICY=mock/policy_warranty.json` used to fail there."""
     p = Path(p or os.environ.get("R3_POLICY") or HERE / "policy.json").expanduser()
     return p if p.is_absolute() else HERE / p
@@ -29,7 +29,7 @@ class PolicyError(ValueError):
 
 
 def json_int(s):
-    """v1.16 (QA v1.15 minor: a 5,000-digit JSON int is over Python's int-digit limit, so json.loads raised and
+    """v1.16 (a 5,000-digit JSON int is over Python's int-digit limit, so json.loads raised and
     read_json saw the whole inventory.json as {} -> silent buy 0 / monitor exit 3): parse_int for json.loads that
     turns an over-limit integer into a float (inf for that size), so the one bad field gets the normal
     "not finite" handling and the rest of the file is read."""
@@ -49,7 +49,7 @@ def load(path=None):
 
 
 class PolicyWatcher:
-    """v1.16 (CoS-approved candidate): a long-running hook (the seller A2A server) re-reads policy.json when its
+    """A long-running hook (the seller A2A server) re-reads policy.json when its
     bytes change, so a checklist edit (3-0 / 3-0b reverts) reaches it without a kit restart.
     get() -> (policy, event). At most one file read per min_interval_s (env R3_POLICY_CHECK_S, default 5 s).
       same 12-hex hash as the current policy        -> no parse, no reload, event None;
@@ -351,7 +351,7 @@ def floor_price(unit, pol, inv=None, now=None, relax=0.0):
 def endgame_floor(unit, pol, inv=None, now=None, relax=0.0):
     """v1.5/v1.6: the lowest price the seller can accept from `endgame_round` on = cost x (1 + endgame_margin),
     never above the normal floor and never at or below cost (guard_price still checks cost + 1 at signing).
-    v1.6 (CR v1.5 major 3): respond() accepts an offer between this and the normal floor ONLY when the buyer's offer
+    v1.6: respond() accepts an offer between this and the normal floor ONLY when the buyer's offer
     has stalled (offer <= its previous offer), its raise shrank (a buyer at its cap, who would otherwise walk), or the
     seller would otherwise reject (past max_rounds and the buyer no longer rising, or patience_rounds used up). A buyer
     still raising at its usual pace is countered at the normal floor, so it pays the floor if its cap allows (v1.5
@@ -393,7 +393,7 @@ def market_floor(unit, pol, stats, ask=None):
 def food_grade_now(unit, catalog_shelf_hours=None, now=None, safety=0.0):
     """Food grade at this moment from shelf life left (A >= 80%, B >= 45%). With `safety`, a unit within that
     share of a cut is graded down. None when it cannot be known (no shelf_hours in the catalog or the unit, or no
-    expires_at): the supply grade is stale for food, so callers must not claim it (v1.2, QA P6)."""
+    expires_at): the supply grade is stale for food, so callers must not claim it (v1.2)."""
     if unit.get("kind") != "food":
         return unit.get("grade")
     h = hours_left(unit, now)
@@ -572,7 +572,7 @@ def demand_ref(act, now=None):
     have stock, so this tells 'no demand' from 'no stock'. Without any order/result seen (no R3_MARKET, cursor
     lost): v1.7's newest settle or our first stock ('settle' / 'first_stock'), and the low-stock exemption applies.
     v1.10: a buyer asking our shop for stock we lack (seller `no_stock`, 'own_ask') also counts in that branch.
-    v1.10: in a live market other shops' orders keep this fresh almost always (QA review_r3_01ac_v19 major 1), so
+    v1.10: in a live market other shops' orders keep this fresh almost always, so
     it cannot tell 'nobody buys from US'; see own_demand_ref / idle_ref_scope. resume_ts is clamped to now.
     v1.11: our seller's accepts ('own_accept') also count in the no-signal branch."""
     act = act or {}
@@ -592,11 +592,11 @@ def demand_ref(act, now=None):
 
 
 def own_demand_ref(act, now=None):
-    """v1.10 (QA review_r3_01ac_v19 major 1): (timestamp, source) of the newest demand evidence AT OUR SHOP: our own
+    """(timestamp, source) of the newest demand evidence AT OUR SHOP: our own
     settle (restock.market_activity, owner.is_own_shop_ref), a buyer asking our shop for stock we lack (seller
     `no_stock` row), or a manual resume; before our first sale, our first stock ('first_stock'). Other shops'
     orders and settles do not count.
-    v1.11 (QA review_r3_01ac_v110 major 1): + our seller hook's accepts ('own_accept', restock.market_activity), which
+    Also our seller hook's accepts ('own_accept', restock.market_activity), which
     do not depend on the ledger's settle shop format or the URL cache (a changed tunnel URL); first_stock only
     while neither an own settle nor an own accept was seen."""
     act = act or {}
@@ -620,7 +620,7 @@ def idle_ref_scope(pol):
 
 
 def low_stock(inv, pol):
-    """v1.10 (QA review_r3_01ac_v19 minor 2): the shop counts as (nearly) sold out for the idle gate when its
+    """The shop counts as (nearly) sold out for the idle gate when its
     sellable units <= idle_low_stock_units OR its sellable stock at cost <= idle_low_stock_frac x the (a) inventory
     cap (max_inventory_cost_frac x balance). v1.9 used units only, so one unit nobody wants re-created the v1.7
     deadlock when no order signal was seen. -> (low, units, sellable cost)."""
@@ -680,7 +680,7 @@ def restock_gate(inv, pol, activity=None, now=None):
         paused on 'no settle' and deadlocked once sold out). With no order signal at all, the v1.7 settle/first
         stock reference is used and the gate does not pause while low_stock (v1.10: units OR cost). A shop
         that never held stock (cold start, nothing seen) is not paused.
-        v1.10 idle_ref_scope "own" (QA review_r3_01ac_v19 major 1): while we hold more than low_stock, the reference
+        idle_ref_scope "own": while we hold more than low_stock, the reference
         is own_demand_ref (our settles / no_stock asks / resume; our first stock before the first sale), so
         'nobody bought from US for idle_pause_s' pauses even when other shops keep selling. When low_stock, the
         market rule above decides (a sold-out shop has no own settles; using them would re-create the v1.7
@@ -722,7 +722,7 @@ def restock_gate(inv, pol, activity=None, now=None):
             info = {"idle_s": round(now - ref, 1), "idle_pause_s": pause, "idle_ref": src}
             if src != "market_demand" and low:
                 # v1.9 (c): no demand signal (no market order/result seen) and we are sold out / low: no settles may just
-                # mean nothing to sell, so the idle gate does not hold (v1.7 deadlock: QA review_r3_01ac_v17 (c)).
+                # mean nothing to sell, so the idle gate does not hold (avoids a deadlock).
                 info.update(units=units, idle_low_stock_units=int(sp.get("idle_low_stock_units", 0) or 0))
             else:
                 return "idle", dict(info, units=units)
@@ -774,7 +774,7 @@ def _short(v, n=40):
 
 
 def storage_rate(v):
-    """v1.14 (QA review_r3_01ac_v113 condition 1): inventory.json storage_per_day -> (rate, warning).
+    """inventory.json storage_per_day -> (rate, warning).
     The real-market format is unconfirmed (SCHEMA: 1 %/day = 0.01). A value that is not clearly a per-day fraction
     turns the goods cap OFF with a warning instead of crashing restock_plan or collapsing the depth:
     missing / None / 0 -> (0.0, None) = no fee, no cap (v1.12 behaviour, silent);
@@ -796,7 +796,7 @@ def storage_rate(v):
     elif isinstance(v, (int, float)):
         try:
             x = float(v)
-        except (OverflowError, ValueError):              # v1.15 (QA v1.14 major 2): a 401-digit JSON int
+        except (OverflowError, ValueError):              # a 401-digit JSON int
             return None, f"storage_per_day {_short(v)} does not fit a float"
     else:
         return None, f"storage_per_day {_short(v)} has type {type(v).__name__}"
@@ -838,7 +838,7 @@ def goods_cap(cat, c, sp, stats, own_v=0.0, storage_per_day=0.0, warn=None):
     v = ((s or {}).get("velocity_per_h") or 0) + (own_v or 0)
     if not v:
         return int(sp.get("goods_cold_units", c.get("stock_target") or 1))
-    try:                                                 # v1.15 (QA v1.14 major 2): 1e-310 / 5e-324 -> floor(inf)
+    try:                                                 # 1e-310 / 5e-324 -> floor(inf)
         x = float(v) * 24 * (float(frac) / rate)
         if not math.isfinite(x):
             raise OverflowError(f"cap {x!r} not finite")
@@ -935,7 +935,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
     velocity; categories[cat].skus_per_category spreads a category over its top-k SKUs by settles. Budget, balance
     floor, inventory cap, max_total_units, max_unit_cost and the below-market filter are unchanged.
     v1.23: shop.max_spend_frac (optional) sets one run's cap to that share of the balance, so the per-run spend
-    grows and shrinks with cash. v1.23b (성수님 2026-11-05): when it is set max_spend_per_run is not used (no
+    grows and shrinks with cash. When it is set max_spend_per_run is not used (no
     absolute ceiling); the icrl stock lane tunes the share (action space 0.15-0.35).
     v2.0a (Patch 3.2/3.3, 2026-11-05): restock costs follow the inventory.json surge factors (cost cap, below-market
     check, worst spend) and goods SKUs rank by market margin per hour (margin_rate) before settles."""
@@ -949,7 +949,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         return [], {"why": why, "units": len(units), **info}
     # the market refuses a whole lot whose cost is above the balance: plan with the worst cost (75% of list)
     spend_cap = sp["max_spend_per_run"]
-    if sp.get("max_spend_frac") is not None:            # v1.23 (성수님 2026-11-05): per-run spend follows the balance
+    if sp.get("max_spend_frac") is not None:            # per-run spend follows the balance
         spend_cap = int(float(sp["max_spend_frac"]) * bal)   # v1.23b: no absolute ceiling, max_spend_per_run unused
     budget = min(spend_cap, bal - sp["balance_floor"])
     inv_cost = inventory_cost(inv)[0]
@@ -1003,7 +1003,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         lvl = math.ceil(c["stock_target"] / max(1, int(_kk)))
         over = sum(max(0, held.get(sku, 0) - lvl) for sku, _ in by_cat.get(cat, []))
         need = c["stock_target"] - have.get(cat, 0) + over
-        if sp.get("restock_cap_total"):                  # CoS 11-15 23:5x: stock_target caps the category TOTAL (v5/autopilot
+        if sp.get("restock_cap_total"):                  # stock_target caps the category TOTAL (v5/autopilot
             need = min(need, c["stock_target"] - have.get(cat, 0))   # semantics); the v1.31 'over' add-back bought bed 261>240
         if need <= 0:
             continue
@@ -1017,7 +1017,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         # at supply (C = under 45% of shelf life left) and then decays, so a long-lived SKU stays A/B (what buyers'
         # accept asks for) for more hours. skus_per_category > 1 spreads the units over several SKUs (an order
         # accepts only some SKUs of its category).
-        # v1.6 (CR v1.5 item 6): SKUs the market has seen settle first. A settle means the SKU was on some buyer's
+        # v1.6: SKUs the market has seen settle first. A settle means the SKU was on some buyer's
         # allowlist (orders accept only some SKUs of a category; the ledger carries no allowlist), so settles per SKU
         # (aggregates sku(): settles_all, all shops) are the revealed allowlist demand. No data (cold start, every
         # mock first restock): the v1.4 order below, unchanged.
@@ -1088,7 +1088,7 @@ def restock_plan(inv, demand, catalog, pol, stats=None, rng=None, activity=None,
         for (sku, x), qty in zip(order_[:k], level_fill(qty_all, [held.get(t[0], 0) for t in order_[:k]])):
             if qty:
                 plan.append((sku, x, qty, max(1, min(qty, int(c.get("breadth_qty") or qty)))))
-    # v1.6 (CR v1.5 item 6): two passes. Pass 1 = breadth: every ranked category gets up to breadth_qty units (the
+    # v1.6: two passes. Pass 1 = breadth: every ranked category gets up to breadth_qty units (the
     # v1.5 per-category quantities), as many lines as max_lines_per_run allows. Pass 2 = depth: the remaining budget
     # tops the pass-1 lines up to qty_per_buy, in rank order. Without breadth_qty pass 1 buys the full quantity and
     # pass 2 does nothing (v1.5 behaviour).
@@ -1230,7 +1230,7 @@ def choose_offers(order, shops, catalog, pol, reputation=None, own=None, relax=0
 
 
 def shop_tie_key(shop):
-    """v1.6 (CR v1.5 minor 3): deterministic tie-break between equal scores: normalised shop name, then the URL
+    """v1.6: deterministic tie-break between equal scores: normalised shop name, then the URL
     without scheme and port (owner.norm_url minus any :port), then the raw URL. v1.5 sorted on the raw URL, so in
     the mock (random local ports) equal-score shops were ordered by port and the rival scenario differed per run."""
     import re
@@ -1270,7 +1270,7 @@ def next_offer(cand, pol, order, rounds, last_ask, relax=0.0):
 def accept_policy(order, pol, relax=0.0):
     """What the kit checks before paying. Min-volume guard: at relax >= volume.relax_grade_c_at grade C is
     accepted too. Shelf life for food (use_within_hours + margin) is never relaxed: food that spoils before use
-    gives no surplus. v1.4: no cert relaxation (CR v1.2 new issue 3: with grades set, kit check_accept refuses a
+    gives no surplus. v1.4: no cert relaxation (with grades set, kit check_accept refuses a
     checkout without a certificate anyway, "no certificate to show the grade"; relax_cert_at had no effect)."""
     kind = order.get("kind") or "goods"
     c = resolve(pol, order.get("category"), kind, side="buyer")

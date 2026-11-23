@@ -1,7 +1,7 @@
 """Experiment ledger and verdicts for operator policy edits (human code, not editable by the model).
 
 DESIGN 14.4 step 1. apply_policy() (and start(), its one-item wrapper) checks, writes and registers as
-one step and never raises. Since 11-12 (성수님: agents decide all strategy) a verdict never changes a policy value:
+one step and never raises. Agents decide all strategy, so a verdict never changes a policy value:
 it reports its numbers and ends the experiment as "measured"; the operator decides what to write. Modes:
 
 - sequential: the edit goes into policy.json and the experiment compares the metric over the window_h hours after it
@@ -19,7 +19,7 @@ it reports its numbers and ends the experiment as "measured"; the operator decid
 Until 11-12 a verdict put the old value back (reverted), kept it, or adopted or dropped a split's new value; those
 statuses stay in the ledger as history.
 
-Since 11-11 (성수님: the strategy, including how to measure, belongs to the operator) apply_policy takes a whole
+The strategy, including how to measure, belongs to the operator, so apply_policy takes a whole
 done.policy list: each item is applied directly (no experiment) unless it asks for a test, everything is written in one
 write, and a change ends the running experiments of its role whose own value it writes (voided, "overwritten"); one
 that only touches an experiment's scope is named on that experiment's verdict (mixed_by). Nothing is
@@ -656,7 +656,7 @@ def start(
 
 
 def apply_policy(root, items, now, traj, role=None, rev_weight=0.0, categories=(), validate=None, split_ok=False):
-    """Apply one done.policy list (11-11 성수님: the operator decides what to change, how much, how many and how to
+    """Apply one done.policy list (the operator decides what to change, how much, how many and how to
     measure it). Any number of items; each may carry "test":
     - "none" (default, or absent): the value is written; no experiment, no verdict, no revert (trajectory row by
       "direct").

@@ -57,11 +57,11 @@ BOUNDS = {
     "rank_jump": (1, 50, 3),
     "bankrupt_near_factor": (1.0, 20.0, 2.0),
 }
-# Compact mode (DESIGN 14.2, A2_OPERATOR_COMPACT=1, only while LIVE is off): a small always-on prompt (job text, guide
+# Compact mode (DESIGN 14.2, A2_OPERATOR_COMPACT=1, only while the model trade switch is off): a small always-on prompt (job text, guide
 # sections 1 and 7, state card, the operator's notes), details through tools; the operator chooses whether and how a
 # policy change is measured (kernel.experiments.apply_policy)
 JOB = os.path.join(HERE, "OPERATOR_JOB.md")
-# 11-11 성수님: the agents are not given or told resource limits; efficiency is the harness's job (bounded prompt, memory).
+# The agents are not given or told resource limits; efficiency is the harness's job (bounded prompt, memory).
 # The numbers below are silent runaway backstops far above normal use, never shown to the model.
 def _compact_steps():
     try:
@@ -82,7 +82,7 @@ def obs_cap(name):
 
 NOTES_CHARS = 20_000  # silent technical cap of the notes file
 # Strategy memo (done.strategy, a2/strategy_<role>.md): the operator writes it when it wants; it heads every later
-# prompt. No review wake, no schedule (11-11 성수님: the strategy and when to revise it are the operator's).
+# prompt. No review wake, no schedule (the strategy and when to revise it are the operator's).
 STRATEGY_CHARS = 20_000  # silent technical cap
 STRATEGY_TS = re.compile(r"\A<!-- ts: (\d+(?:\.\d+)?) -->\n")
 KEEP_CHARS = 1_000  # one kept conclusion
@@ -91,7 +91,7 @@ KEPT_FULL = 8_000  # newest kept conclusions shown in full up to this many chars
 KEPT_HEAD = 120
 KEPT_HEADS = 4_000  # older heads up to this many chars, then only their count
 
-# Heartbeat while an experiment runs. 1200 since 11-11 (성수님: 20분마다 시장을 보고 전략을 잡아야 함); it was 3600,
+# Heartbeat while an experiment runs. 1200 (20분마다 시장을 보고 전략을 잡음); at 3600,
 # and with experiments always running the operator woke hourly and mostly waited.
 BUSY_INTERVAL_S = 1200
 # Role operators (11-11): one shared toolbox, ledgers and auditor, two operators that change only their own side
@@ -129,7 +129,7 @@ COMPACT_MIN_OLD = 30_000
 COMPACT_RECENT = 2
 SUMMARY_TARGET = 15_000  # (12,000 for 23:27-23:50) 11-12 23:40: the summary call is told this length; without it every re-summary carried all numbers forward and grew past SUMMARY_MAX (live: 9.4k -> 17.6k -> rejected)
 SUMMARY_MAX = 30_000  # (20,000 until 11-12 23:50: 44 of 351 live summaries in 24 h were rejected at about 20k) (12,000 until 11-12: 4 of 14 live summaries were thrown away as too long) a longer summary is not used (the trimming path goes on), so the summary section stays bounded
-COMPACT_EFFORT = "medium"  # 11-11 성수님: 추론 강도는 모두 medium
+COMPACT_EFFORT = "medium"  # 추론 강도는 모두 medium
 COMPACT_HEAD = "## 이번 점검에서 지금까지 (커널이 간추림)"
 SUMMARY_HEADS = ("## 확인된 숫자와 출처", "## 세운 가설과 결과", "## 이미 한 변경과 요청", "## 아직 안 풀린 것", "## 다음에 하려던 것")
 SUMMARY_IN = 120_000  # chars of old observations handed to the summary call; each result is cut in proportion beyond it.
@@ -658,11 +658,11 @@ class Operator:
 
     def _mode_text(self):
         if self.live():
-            return "LIVE 켜짐: 시도 2의 판매자, 구매자, 재입고 계획이 가게를 운영함. done.policy는 쓰지 않음"
+            return "모델 거래 스위치가 켜져 새 거래는 모델이 처리한다. done.policy는 쓰지 않음"
         return (
-            "LIVE 꺼짐: 판매, 구매, 재입고는 시도 1의 규칙 코드가 policy.json 값을 읽어 "
-            "결정함. 재입고 물량은 hooks/restock.py가 policy.py의 restock_plan 함수를 불러 정하고, 이 함수는 지금 실제로 돌고 있음. "
-            "받지 않는 것은 시도 2 방식의 출력 항목뿐임: 판매자와 구매자 지침 수정(edits의 seller, buyer), trial, done의 restock_plan 항목. "
+            "규칙 훅이 정책 파일을 읽어 판매·구매·재입고를 처리한다. "
+            "재입고 물량은 hooks/restock.py가 policy.py의 restock_plan 함수를 불러 정하고, 이 함수는 지금 실제로 돌고 있음. "
+            "받지 않는 출력 항목: 판매자와 구매자 지침 수정(edits의 seller, buyer), trial, done의 restock_plan 항목. "
             "네가 규칙을 바꾸는 길은 둘임: 값은 done.policy(policy 도구로 지금 값과 범위를 봄), "
             "규칙의 동작은 done.code. "
             "자기 지침(edits의 operator)과 메모는 지금처럼 고칠 수 있음"
@@ -786,7 +786,7 @@ class Operator:
         return None
 
     def _effort(self, route):
-        # A2_OPERATOR_EFFORT (11-10, 성수님 결정: 사용량 절감) overrides the harness route's effort when set
+        # A2_OPERATOR_EFFORT overrides the harness route's effort when set
         return os.environ.get("A2_OPERATOR_EFFORT") or route.get("effort", "medium")
 
     def _ask(self, prompt, route, sizes=None):
@@ -1704,7 +1704,7 @@ class Operator:
 
     def _policy(self, items, now):
         if self.live():
-            return [{"ok": False, "error": "LIVE 켜짐: policy는 시도 1 규칙이 운영할 때만 고침"}]
+            return [{"ok": False, "error": "모델 거래 스위치가 켜져 있어 정책 값을 고칠 수 없음"}]
         cats = {v.get("category") for v in b._catalog(self.root).values() if isinstance(v, dict) and v.get("category")}
         return policy_edit.apply(self.root, items, self.traj, now, categories=cats)
 

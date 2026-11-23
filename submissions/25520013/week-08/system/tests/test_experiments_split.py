@@ -1,5 +1,5 @@
 """Split mode (v2.12 arms): a sale-side key is compared concurrently through <root>/policy_arms.json while policy.json
-keeps the old value. Arms are checked with attempt 1's real policy.py (r3/policy.py, read only): load_arms,
+keeps the old value. Arms are checked with the rule code's real policy.py (system/policy.py, read only): load_arms,
 arm_pick/arm_salt, with_arms and load. Fixed clock values."""
 
 import json
@@ -194,7 +194,7 @@ def test_check_runs_every_edit_check_without_writing(root, a1):
 
     def refuse(
         p,
-    ):  # attempt 1 validate runs on a changed temp copy, never on policy.json
+    ):  # the rule-code validate runs on a changed temp copy, never on policy.json
         seen.append((p, json.load(open(p))["categories"][BED]["price_mult"]))
         raise ValueError("refused")
 

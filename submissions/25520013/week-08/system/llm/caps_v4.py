@@ -31,8 +31,8 @@ PARSE = {"per_deal": 1, "per_hour": 6, "per_day": 72, "per_round": 72 * ROUND_DA
          "timeout_s": 8, "max_input_chars": 300, "concurrency": 1}
 EDITOR = {"per_deal": None, "per_hour": 1, "per_day": 6, "per_round": 6 * ROUND_DAYS, "min_interval_s": 4 * H,
           "timeout_s": 60, "max_edits": 1, "concurrency": 1}
-# v121 (성수님 결정 CoS 전달 17:40): RLPO proposer / approver and the memory op judge get their own roles (own counter
-# file and concurrency slot). v121b (CoS 결정 18:02): auto-OFF is PER ROLE. quota / usage-limit / 429 and auth trip the
+# RLPO proposer / approver and the memory op judge get their own roles (own counter
+# file and concurrency slot). Auto-OFF is PER ROLE. quota / usage-limit / 429 and auth trip the
 # GLOBAL breaker (one account: every role OFF); timeout / 5xx / other streaks and model-id errors trip only that role
 # (own file state/caps_breaker_<role>.json). harness = the editor role. No count cap: every count key is None here and on the live path (role_caps default unlimited).
 _LONG = {"per_deal": None, "per_hour": None, "per_day": None, "per_round": None, "min_interval_s": 0,
@@ -41,7 +41,7 @@ RLPO_PROP = dict(_LONG)
 RLPO_APPR = dict(_LONG)
 MEMORY = dict(_LONG)
 ROLES = {"parse": PARSE, "editor": EDITOR, "rlpo_prop": RLPO_PROP, "rlpo_appr": RLPO_APPR, "memory": MEMORY}
-# r3 (성수님 14:38 via CoS, GPT 6.1 Terra): count caps are SETTINGS, default UNLIMITED on the live path.
+# Count caps are SETTINGS, default UNLIMITED on the live path.
 # PARSE/EDITOR above stay as the v1 reference values (used only when OpsCaps(caps=None), i.e. legacy direct callers).
 COUNT_KEYS = ("per_deal", "per_hour", "per_day", "per_round", "min_interval_s")
 
@@ -78,7 +78,7 @@ AUTH_RX = re.compile(r"(?i)(\b401\b|\b403\b|unauthori[sz]ed|forbidden|authentica
 SERVER_RX = re.compile(r"(?i)(\b5\d\d\b|internal server error|bad gateway|service unavailable|gateway timeout|overloaded)")
 MODEL_RX = re.compile(r"(?i)(model[_ -]?not[_ -]?found|unknown model|unsupported model|invalid model|model \S+ does not exist)")
 OTHER_STREAK = 3                    # r3d C1: N consecutive other errors -> OFF (shared streak with timeout/5xx)
-TOKEN_CHARS = 4                     # r3c CR(2): token ESTIMATE = ceil(chars/4); the CLI reports no usage
+TOKEN_CHARS = 4                     # token ESTIMATE = ceil(chars/4); the CLI reports no usage
 
 
 def est_tokens(text):

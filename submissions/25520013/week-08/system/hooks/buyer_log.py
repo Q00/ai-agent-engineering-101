@@ -30,7 +30,7 @@ _CAPPED = set()            # paths that already got the one cap marker line in t
 MAX_VISIT_KEYS = 50_000   # memory cap: the visit table is cleared past this many buyer refs (visit_n restarts at 1)
 
 
-# v121b (CoS 결정 18:02): offer event carries the first 80 chars of the buyer offer text, secrets / tokens masked.
+# The offer event carries the first 80 chars of the buyer offer text, secrets / tokens masked.
 # Masking runs on the first 400 chars BEFORE the 80-char cut (a token across the 80-char edge is masked, not half-kept).
 import re as _re
 

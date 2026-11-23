@@ -112,14 +112,14 @@ class Analyst(op.Operator):
 
     def compact(
         self,
-    ):  # made tools callable, harness tools refused, whether LIVE is on or not
+    ):  # made tools callable, harness tools refused, whether the model trade switch is on or not
         return True
 
     def _steps(self):
         return _steps()
 
     def _effort(self, route):
-        return os.environ.get("A2_ANALYST_EFFORT") or "medium"  # 11-11 성수님: 추론 강도는 모두 medium
+        return os.environ.get("A2_ANALYST_EFFORT") or "medium"  # 추론 강도는 모두 medium
 
     def _early_done(self, obs_all):
         # 11-11 22:08: question #7 was answered in one step with no tool call ("도구 실행 환경 오류", no such error)

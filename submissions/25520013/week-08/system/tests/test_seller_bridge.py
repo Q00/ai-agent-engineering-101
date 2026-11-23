@@ -1,7 +1,7 @@
-"""Step 5: attempt 2 inside attempt 1's live hooks (seller bridge, patch scripts).
+"""The model trade path inside the rule hooks (seller bridge).
 
-No model, no market, no network: a fake Terra / fake agent, a fake A2A updater, attempt 1's hooks copied to tmp dirs
-with their third-party imports (a2a, uvicorn, cryptography, starlette, attempt 1's own modules) stubbed.
+No model, no market, no network: a fake Terra / fake agent, a fake A2A updater, the rule hooks copied to tmp dirs
+with their third-party imports (a2a, uvicorn, cryptography, starlette, the rule code's own modules) stubbed.
 """
 
 import asyncio
@@ -335,7 +335,7 @@ def test_units_held_by_open_deals_are_excluded(tmp_path, hdir):
     b.metric = lambda d, o, pol=None: metrics.append((d, o))
     _, log = talk(
         b, "t2", "Oak Bed"
-    )  # u1 held by attempt 1, u2 by attempt 2 -> only the chair is left
+    )  # u1 held by the rule hook, u2 by the model path -> only the chair is left
     assert [u["unit"] for u in ag.calls[1][1]["units"]] == ["u3"]
     a1_open["t-a1x"] = {"unit": {"unit": "u3"}}
     _, log = talk(b, "t3", "Oak Bed")  # nothing left: no model call
@@ -428,10 +428,10 @@ def test_wants_flag_and_ownership(tmp_path, hdir):
         hdir,
     )
     b = make_bridge(w, ag)
-    assert not b.wants("t1", a1_open=False)  # flag off: attempt 1
+    assert not b.wants("t1", a1_open=False)  # switch off: rule hook
     (w / "a2/LIVE").write_text("")
-    assert b.wants("t1", a1_open=False)  # flag on, new task: attempt 2
-    assert not b.wants("t-a1", a1_open=True)  # opened by attempt 1: stays there
+    assert b.wants("t1", a1_open=False)  # switch on, new task: model path
+    assert not b.wants("t-a1", a1_open=True)  # opened by the rule hook: stays there
     talk(b, "t1", "Oak Bed")
     (w / "a2/LIVE").unlink()
     assert b.wants(
@@ -537,7 +537,7 @@ def test_bridge_singleton_builds_agent_lazily(tmp_path):
     )
 
 
-# --- patched attempt-1 seller (third-party imports stubbed) ---------------------------------------------------------
+# --- patched rule seller (third-party imports stubbed) ---------------------------------------------------------
 
 
 def _stub(name, **attrs):
@@ -590,7 +590,7 @@ def _a2a_stubs(log):
         hours_left=lambda u, now=None: None,
         market_floor=lambda *a, **k: (
             None
-        ),  # attempt-1 v2.7 seller calls it before respond
+        ),  # the rule seller calls it before respond
         PolicyError=type("PolicyError", (Exception,), {}),
     )
     mods = {
@@ -651,7 +651,7 @@ def _a2a_stubs(log):
             AgentInterface=_Any,
             AgentSkill=_Any,
         ),
-        "llm": None,  # attempt 1's LLM assist import fails -> LIVE = None
+        "llm": None,  # the rule hook's LLM assist import fails -> LIVE = None
     }
     return mods, Task, Recorder
 

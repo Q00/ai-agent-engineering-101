@@ -23,7 +23,7 @@ QUESTIONS = os.path.join("a2", "questions.json")
 FINDINGS = os.path.join("a2", "findings.jsonl")
 ROLES = ("shop", "buyer")
 FROM = ("shop", "buyer", "human", "standing", "auditor")
-# Silent technical caps (11-11 성수님: the agents are not told limits): text beyond them is cut, not refused. Only
+# Silent technical caps (the agents are not told limits): text beyond them is cut, not refused. Only
 # OPEN_PER_ROLE refuses, a runaway backstop far above normal use. The prompt shows findings shortened (prompt_lines).
 Q_CHARS = 4_000  # an operator's question
 OPEN_PER_ROLE = 20  # open questions one role operator may have

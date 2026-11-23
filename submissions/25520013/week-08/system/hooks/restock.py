@@ -20,14 +20,14 @@ def market_activity(root=None, tau_h=24.0, now=None, pol=None):
     ingest keeps; any buyer and shop, so they keep moving while we are sold out) and "resume_ts" (mtime of
     <R3_STATE>/restock_resume: `touch` it to restart a paused restock by hand).
     v1.9 (b): "own_sales": {sku: [decayed count, ref ts]} of our shop's settles (tau_h, aggregates' estimator).
-    v1.10 (QA review_r3_01ac_v19): our shop's settles are matched with owner.is_own_shop_ref (norm_name over
+    Our shop's settles are matched with owner.is_own_shop_ref (norm_name over
     R3_SHOP_NAME + policy own_shop_names + cached /api/shops names, norm_url over cached URLs, <market>/shop/<name>
     paths, public keys) instead of `shop == R3_SHOP_NAME`; + "own_settles"/"last_own_settle_ts" (own-shop demand
     signal for idle_ref_scope "own"), "no_stock"/"last_no_stock_ts" (seller `no_stock` rows in metrics.jsonl =
     buyers asking OUR shop for stock we lack, byte cursor "moff"); resume_ts is clamped: a future mtime counts as
     the time it was first seen (kept in "resume_seen"), so a mistaken `touch -d +30days` resumes once, not for 30
     days.
-    v1.11 (QA review_r3_01ac_v110 major 1): + "own_accepts"/"last_own_accept_ts" = our seller hook's `accept` rows
+    Also "own_accepts"/"last_own_accept_ts" = our seller hook's `accept` rows
     in the same metrics.jsonl (hook "seller", decision "accept"): own demand that does not depend on how the market
     ledger writes the settle `shop` field (name / tunnel URL / path) or on the own_shops.json URL cache."""
     try:
@@ -160,7 +160,7 @@ def taste_ranking(pol, root=None, now=None):
 
 
 def _plan_without_goods_cap(inv, demand, catalog, pol, stats, act, err):
-    """v1.16 safety net: a restock_plan exception must not stop ALL restock (QA v1.14: a goods-cap crash stopped
+    """Safety net: a restock_plan exception must not stop ALL restock (a goods-cap crash once stopped
     food too). Plan again without goods_max_storage_frac (= the checklist 3-0b revert); if that fails as well,
     buy nothing this cycle. Either way the error is a warning (stderr + metrics outcome)."""
     e1 = f"{type(err).__name__}: {str(err)[:150]}"
@@ -181,7 +181,7 @@ STORAGE_RATE_EXPECTED = 0.01        # SCHEMA / agent.md: 1 %/day; another accept
 
 
 def storage_note(inv):
-    """v1.16 (QA v1.15 rec): a storage_per_day storage_rate accepts (no warning) but that is not 0.01 is used as given
+    """A storage_per_day storage_rate accepts (no warning) but that is not 0.01 is used as given
     (0.05 -> the cap at 0.05); the unit is unconfirmed, so say so (checklist 3-0b 2 decides). None when 0.01 / missing."""
     v = inv.get("storage_per_day")
     rate, warn = P.storage_rate(v)
@@ -191,7 +191,7 @@ def storage_note(inv):
 
 
 def main():
-    """v1.16 safety net (QA v1.14/v1.15 rec): any exception -> traceback + ERROR line on stderr (the kit log, so the
+    """Safety net: any exception -> traceback + ERROR line on stderr (the kit log, so the
     3-0b Traceback grep sees it), a restock_error metric if it can be written, and an EMPTY plan on stdout, so the
     kit gets an answer and the next cycle tries again."""
     try:
@@ -231,7 +231,7 @@ def _main():
     taste = taste_ranking(pol)
     try:
         buy, why = P.restock_plan(inv, demand, catalog, pol, stats, activity=act, taste=taste)
-    except Exception as e:                               # noqa: BLE001 - v1.16 (QA v1.13 minor 11 / v1.14 rec 3)
+    except Exception as e:                               # noqa: BLE001
         buy, why = _plan_without_goods_cap(inv, demand, catalog, pol, stats, act, e)
     for w in why.get("warnings") or []:                  # v1.14: goods cap off (unreadable storage_per_day)
         print(f"WARNING: restock: {w}", file=sys.stderr)

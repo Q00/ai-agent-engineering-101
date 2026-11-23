@@ -68,7 +68,7 @@ GRADE_KEYS = {
         0.05,
     ),  # shop only; the rule code's validate allows [0.3, 0.9]
 }
-# shop section only (11-11 성수님: 가게 운영에 관한 값은 모두 운영자가 정함). Restock and stock limits the rule code reads
+# shop section only (가게 운영에 관한 값은 모두 운영자가 정함). Restock and stock limits the rule code reads
 # from policy.json "shop". Left to people: balance_floor, allow_bankrupt, liquidation_line (the bankruptcy line) and bounds.
 SHOP_KEYS = {
     "max_inventory_cost_frac": (0.5, 6.0, 0.5),
@@ -454,7 +454,7 @@ def _one(root, it, traj, now, categories, validate, done_n):
 
 def _prepare(root, it, now, categories):
     """The checks of an operator edit that need no write: key and section rules, type, range (min and max, the file's
-    bounds), a real change. No step, cooldown, count or reason rule (11-11 성수님: strategy belongs to the operator).
+    bounds), a real change. No step, cooldown, count or reason rule (strategy belongs to the operator).
     -> {"ok": True, pol, section, key, old, new, reason} with pol the parsed live file (unchanged), or
     {"ok": False, "error"}."""
     if not isinstance(it, dict):
@@ -772,7 +772,7 @@ def kernel_restore(
     (_restore_sub, inherited: what the section inherited for base when it did not set it); the result is the whole
     saved state when nothing else in base changed since. Any other key: present -> blk[base] = value, absent -> the
     key removed. A category entry left empty is removed, so a category never keeps a pinned copy of an inherited
-    value. Attempt 1 validate, backup (tag, kernel_tag(now) when None) and rename as every edit; one trajectory row
+    value. Rule-code validate, backup (tag, kernel_tag(now) when None) and rename as every edit; one trajectory row
     kind "policy_edit" by "kernel" (key: the experiment's key, else base). -> {"ok": True/False, ...}"""
     if (
         not isinstance(section, str)

@@ -1,5 +1,5 @@
 """v2.13 (2026-11-11, stockouts): restock ranks the SKUs buyers asked our shop for and we lacked before the market's
-top-settling SKUs. 13:34 labpc: 61 no_stock refusals in 1 h, 26 for one water SKU with 1 unit on hand, while 4 h of
+top-settling SKUs. 13:34 live: 61 no_stock refusals in 1 h, 26 for one water SKU with 1 unit on hand, while 4 h of
 restock bought three other drinks SKUs and none of it."""
 
 import copy

@@ -1,6 +1,6 @@
 """Load and format-check an agent's harness dir (human code, not editable by the model).
 
-The check is format only (Harness² validate level): required files, parseable configs, script routes that exist,
+The check is format only (validate level): required files, parseable configs, script routes that exist,
 scripts that compile, skill front matter, a size cap on the always-read text, nothing outside the dir. It never judges
 performance.
 """

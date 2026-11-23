@@ -1,5 +1,5 @@
 """v2.8 (2026-11-08, high-end furniture never stocked): with shop.goods_cost_frac set, the below-market restock check
-prices goods at that share of list instead of the p75 of our units' cost/list. 10:40 labpc: p75 0.69-0.70, furniture
+prices goods at that share of list instead of the p75 of our units' cost/list. 10:40 live: p75 0.69-0.70, furniture
 supplied in 48 h cost a mean of 0.60, and 4 sofas and 1 bed settling at 0.67-0.68 of list were never bought."""
 
 import copy

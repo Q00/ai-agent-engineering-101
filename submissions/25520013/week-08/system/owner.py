@@ -2,7 +2,7 @@
 buyer must never pick one of our shops and shop-side stats must not count our own buyer.
 
 Priority (first source wins; later sources only add):
-  0. v1.4 (CR v1.2 review, new issue 4): shop PUBLIC key. /api/shops rows carry name, url, pubkey, reviews and no
+  0. v1.4: shop PUBLIC key. /api/shops rows carry name, url, pubkey, reviews and no
      owner, so the key is the only field that ties a row to us whatever its name or URL. Our keys = policy
      owner.own_shop_pubkeys (lee-sungsoo's key from the 2026-11-01 23:57 KST snapshot) + the public half of the
      kit's shop key file (R3_SHOP_KEY, else ./shop_key.pem in the hook's cwd = the agent folder) + keys of rows
@@ -208,7 +208,7 @@ def cached(pol, state=None):
 
 
 def own_shop_keys(pol, state=None, extra_names=(), market=None):
-    """v1.10 (QA review_r3_01ac_v19 5-4): keys that identify OUR shop in a market row's `shop` field, no network.
+    """Keys that identify OUR shop in a market row's `shop` field, no network.
     {"names": norm_name of policy own_shop_names + cached names (/api/shops matches by name/owner/pubkey) +
     extra_names (the running shop's R3_SHOP_NAME), "urls": norm_url of the cached URLs, "pubkeys": policy +
     cache + kit key file, "market_host": norm_url host of R3_MARKET (for <market>/shop/<name> paths)}."""
