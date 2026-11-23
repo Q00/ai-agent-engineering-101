@@ -101,11 +101,19 @@
 \draw[inner=buyer] (enuri.west) -- node[lab=buyer, above=0.3mm] {장부} (buy.east);
 \draw[inner=buyer] (buy.south) |- node[lab=buyer, pos=0.75, below=0.2mm] {구매 기록} (review.west);
 
+% ================= leaders meeting (between the two unit heads) =================
+\node[rbox=staff, text width=40mm, fill=staff!6] (leaders) at (141, -108)
+  {\textbf{\small 리더 회의} \texttt{leaders\_meeting.py}\\
+   두 유닛 대표가 충돌을 조정\\
+   \mtag{seller}{Claude} 의장 + \mtag{buyer!70!black}{Codex}};
+
 % ================= bottom: tools, market, memory =================
-\node[rbox=code, text width=96mm] (tool) at (141, -140)
+\node[rbox=code, text width=106mm] (tool) at (141, -140)
   {\textbf{\normalsize call\_tool = 빠른 코드 층} (모델 없이, 매 견적·매 주문)\\[0.6mm]
    점원 \texttt{shop\_r3}·\texttt{promo} · 매입 \texttt{restock} (5분) · 구매 \texttt{market\_buyer} · 게시판 \texttt{forum}\\
-   가드: 원가 밑 판매 금지 · 보증 위험 가격 · C등급은 C 수락자에게만 · 차단 목록 · 인젝션 필터};
+   가드: 원가 밑 판매 금지 · 보증 위험 가격 · C등급은 C 수락자에게만 · 차단 목록 · 인젝션 필터\\[0.6mm]
+   \textbf{회의가 멈춰도 계속 돈다:} 11-05\textasciitilde07 모델 한도 · 11-10\textasciitilde14 회의 휴지 중에도 거래·매출 증가};
+\draw[msg=code] ([xshift=-14mm]tool.south) .. controls +(-2,-10) and +(2,-10) .. node[lab=code, below=0.2mm] {자체 루프 (5분·매 견적)} ([xshift=14mm]tool.south);
 
 \node[rbox=mkt, text width=40mm] (market) at (24, -146)
   {\textbf{Market} (외부 환경)\\ A2A 협상 · ACP 결제\\ 원장 · 게시판};
@@ -121,14 +129,21 @@
 % units <-> router
 \draw[msg=seller] (sales.north) .. controls (30, -22) and (95, -30) .. node[lab=seller, pos=0.55] {message: JSON 계획\\(게이트 검사)} (router.north west);
 \draw[cond=seller] (router.west) -- node[lab=seller, pos=0.5]
-  {\texttt{if continue}\\ 평시 2시간 / 비상 30분\\ \texttt{next="seller"}} (sellerunit.east |- router.west);
+  {\texttt{if continue}\\ 순위에 따라 30분 / 3시간\\ \texttt{next="seller"}} (sellerunit.east |- router.west);
 \draw[msg=buyer] (buy.north) .. controls (214, -22) and (187, -30) .. node[lab=buyer, pos=0.55] {message: JSON 계획\\(게이트 검사)} (router.north east);
 \draw[cond=buyer] (router.east) -- node[lab=buyer, pos=0.5]
   {\texttt{if continue}\\ 셀러 계획 뒤 차례\\ \texttt{next="buyer"}} (buyerunit.west |- router.east);
 
-% router -> tools
-\draw[cond=code] (router.south) -- node[lab=code, pos=0.42]
+% router -> leaders meeting -> tools
+\draw[cond=staff] (router.south) -- node[lab=staff, left=1mm, pos=0.5, align=right]
+  {리더 회의 소집: 순위에 따라 30분 / 3시간,\\ 리더 호출, 컨틴전시 발동 시 긴급} (leaders.north);
+\draw[cond=code] (leaders.south) -- node[lab=code, left=1mm, pos=0.5, align=right]
   {게이트를 통과한 계획만 → 설정 겹치기\\ (\texttt{DEFAULTS → theta → 팀 계획 → 재경 → HQ})} (tool.north);
+% the two unit heads meet here: Claude vs Codex, competing and complementing
+\draw[{Stealth[length=2.2mm]}-{Stealth[length=2.2mm]}, line width=1pt, draw=seller] (leaders.west) -- node[lab=seller, below=0.3mm]
+  {세일즈 대표 \mtag{seller}{Claude}\\ 경쟁·보완} (leaders.west -| sellerunit.east);
+\draw[{Stealth[length=2.2mm]}-{Stealth[length=2.2mm]}, line width=1pt, draw=buyer] (leaders.east) -- node[lab=buyer, below=0.3mm]
+  {바이어 대표 \mtag{buyer!70!black}{Codex}\\ 경쟁·보완} (leaders.east -| buyerunit.west);
 
 % tools -> units
 \draw[msg=code] (tool.west) .. controls (98, -140) and (60, -122) .. node[lab=code, pos=0.62]
@@ -147,6 +162,8 @@
    \textbf{이 구조:} 판단을 시간 척도로 나눴다.\\
    · 매 견적·매 주문은 코드(call\_tool)가 가드와 함께 처리\\
    · 전략은 팀 에이전트 7개가 회의로: Claude·Codex 분담, 한도면 대체\\
+   · 두 유닛 대표는 Claude 대 Codex: 경쟁하고 서로 보완, 리더 회의에서 조정\\
+   · 코드 층은 회의가 멈춰도 계속 거래 (11-05\textasciitilde07, 11-10\textasciitilde14)\\
    · 컨텍스트는 대화를 쌓지 않고 회의마다 브리프를 새로 조립\\
    · 출력은 JSON 스키마 + 게이트 → 설정 겹치기 (HQ가 마지막)\\
    · 메타 하네스: Router가 순위 보고 박자 조절, 인사 레버, 감사 인터뷰};
@@ -168,7 +185,7 @@
    dragonash (가게 + 구매자), Round 3, VPS 한 대.\\
    팀 하나 = 에이전트 하나. 굵은 테두리 = 유닛 대표.\\
    실선 = 메시지, 점선 = 조건부 분기 (Router가 \texttt{state}를 보고 고른다).\\
-   메타 하네스: 회의 박자 (평시 2시간 / 비상 30분), A/B 실험, 감사 인터뷰,\\ 인사 레버. 11-14부터 토큰 때문에 박자를 3시간으로 늦췄다.};
+   메타 하네스: 회의 박자 (순위에 따라 30분 / 3시간), 리더 회의, A/B 실험,\\ 감사 인터뷰, 인사 레버, 컨틴전시 긴급 회의.};
 
 \end{tikzpicture}
 \end{document}
