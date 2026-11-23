@@ -1,0 +1,118 @@
+{"event": "harness_fallback", "action": "counter", "price": 130, "reason": "safe opening", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "opening", "task_id": "6f938944-2521-407f-9c42-f91a5b144c56", "item": "lamp", "ask": 130, "reserve": 100}
+{"event": "harness_fallback", "action": "counter", "price": 100, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "6f938944-2521-407f-9c42-f91a5b144c56", "item": "lamp", "offer": 60, "reserve": 100, "decision": "counter", "decision_price": 100}
+{"event": "harness_fallback", "action": "accept", "price": 100, "reason": "offer meets reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "6f938944-2521-407f-9c42-f91a5b144c56", "item": "lamp", "offer": 100, "reserve": 100, "decision": "accept", "decision_price": 100}
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x104eb2250> at 0x106184c00> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-47' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x104eb2250> at 0x1061862c0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-48' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/simgyuseong/AXtransformation/a2a-lab/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+{"event": "harness_fallback", "action": "counter", "price": 130, "reason": "safe opening", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "opening", "task_id": "a18518ae-f644-459f-abb7-3a104d9becce", "item": "lamp", "ask": 130, "reserve": 100}
+{"event": "harness_fallback", "action": "counter", "price": 100, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "a18518ae-f644-459f-abb7-3a104d9becce", "item": "lamp", "offer": 60, "reserve": 100, "decision": "counter", "decision_price": 100}
+{"event": "harness_fallback", "action": "accept", "price": 100, "reason": "offer meets reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "a18518ae-f644-459f-abb7-3a104d9becce", "item": "lamp", "offer": 100, "reserve": 100, "decision": "accept", "decision_price": 100}
+{"event": "harness_fallback", "action": "counter", "price": 130, "reason": "safe opening", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "opening", "task_id": "012fb1fb-bfcd-47ec-bb7b-492c743e1f61", "item": "lamp", "ask": 130, "reserve": 100}
+{"event": "harness_fallback", "action": "counter", "price": 100, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "012fb1fb-bfcd-47ec-bb7b-492c743e1f61", "item": "lamp", "offer": 60, "reserve": 100, "decision": "counter", "decision_price": 100}
+{"event": "harness_fallback", "action": "accept", "price": 100, "reason": "offer meets reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "012fb1fb-bfcd-47ec-bb7b-492c743e1f61", "item": "lamp", "offer": 100, "reserve": 100, "decision": "accept", "decision_price": 100}
+{"event": "harness_fallback", "action": "counter", "price": 338, "reason": "safe opening", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "opening", "task_id": "d6752493-4dd6-459d-80da-ea99aa1121ca", "item": "bookshelf", "ask": 338, "reserve": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "d6752493-4dd6-459d-80da-ea99aa1121ca", "item": "bookshelf", "offer": 140, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "d6752493-4dd6-459d-80da-ea99aa1121ca", "item": "bookshelf", "offer": 170, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "d6752493-4dd6-459d-80da-ea99aa1121ca", "item": "bookshelf", "offer": 200, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "d6752493-4dd6-459d-80da-ea99aa1121ca", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "d6752493-4dd6-459d-80da-ea99aa1121ca", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "d6752493-4dd6-459d-80da-ea99aa1121ca", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "d6752493-4dd6-459d-80da-ea99aa1121ca", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "d6752493-4dd6-459d-80da-ea99aa1121ca", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 338, "reason": "safe opening", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "opening", "task_id": "a325b9f5-2f87-4e8d-b7d3-c579d875bca1", "item": "bookshelf", "ask": 338, "reserve": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "a325b9f5-2f87-4e8d-b7d3-c579d875bca1", "item": "bookshelf", "offer": 140, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "a325b9f5-2f87-4e8d-b7d3-c579d875bca1", "item": "bookshelf", "offer": 170, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "a325b9f5-2f87-4e8d-b7d3-c579d875bca1", "item": "bookshelf", "offer": 200, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "a325b9f5-2f87-4e8d-b7d3-c579d875bca1", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "a325b9f5-2f87-4e8d-b7d3-c579d875bca1", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "a325b9f5-2f87-4e8d-b7d3-c579d875bca1", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "a325b9f5-2f87-4e8d-b7d3-c579d875bca1", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "a325b9f5-2f87-4e8d-b7d3-c579d875bca1", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 338, "reason": "safe opening", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "opening", "task_id": "47e99038-68c6-4a12-9f02-30678028f848", "item": "bookshelf", "ask": 338, "reserve": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "47e99038-68c6-4a12-9f02-30678028f848", "item": "bookshelf", "offer": 140, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "47e99038-68c6-4a12-9f02-30678028f848", "item": "bookshelf", "offer": 170, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "47e99038-68c6-4a12-9f02-30678028f848", "item": "bookshelf", "offer": 200, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "47e99038-68c6-4a12-9f02-30678028f848", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "47e99038-68c6-4a12-9f02-30678028f848", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "47e99038-68c6-4a12-9f02-30678028f848", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "47e99038-68c6-4a12-9f02-30678028f848", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}
+{"event": "harness_fallback", "action": "counter", "price": 260, "reason": "offer below reserve", "error": "RuntimeError: harness exited 1: no stderr"}
+{"event": "response", "task_id": "47e99038-68c6-4a12-9f02-30678028f848", "item": "bookshelf", "offer": 230, "reserve": 260, "decision": "counter", "decision_price": 260}

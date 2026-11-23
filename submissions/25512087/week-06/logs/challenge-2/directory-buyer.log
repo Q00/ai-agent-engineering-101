@@ -1,0 +1,28 @@
+{"event": "harness_decision", "action": "select", "price": null, "reason": "Harness Shop 00"}
+{"event": "card", "name": "Harness Shop 00", "item": "lamp", "budget": 120}
+{"event": "harness_decision", "action": "counter", "price": 120, "reason": "Opening ask above the private reserve of 100."}
+{"event": "opening", "task_id": "093615df-f4e4-4838-8b01-19231eaf5045", "item": "lamp", "ask": 120, "reserve": 100}
+{"event": "harness_decision", "action": "accept", "price": 120, "reason": "The ask matches my maximum budget, so accepting closes within budget."}
+{"event": "decision", "task_id": "093615df-f4e4-4838-8b01-19231eaf5045", "ask": 120, "action": "offer", "offer": 120, "reason": "The ask matches my maximum budget, so accepting closes within budget."}
+{"event": "harness_decision", "action": "accept", "price": 120, "reason": "Offer meets the reserve."}
+{"event": "response", "task_id": "093615df-f4e4-4838-8b01-19231eaf5045", "item": "lamp", "offer": 120, "reserve": 100, "decision": "accept", "decision_price": 120}
+{"event": "challenge_2_purchase", "item": "lamp", "shop": "Harness Shop 00", "price": 120, "remaining": 480, "summary": "item=lamp; shop=Harness Shop 00; events=2\ndirectory: selected from 5 shortlisted Agent Cards\nresult: {\"outcome\": \"deal\", \"price\": 120, \"task_id\": \"093615df-f4e4-4838-8b01-19231eaf5045\"}"}
+{"event": "harness_decision", "action": "select", "price": null, "reason": "Harness Shop 01"}
+{"event": "card", "name": "Harness Shop 01", "item": "chair", "budget": 200}
+{"event": "harness_decision", "action": "counter", "price": 220, "reason": "Opening above the 180 reserve"}
+{"event": "opening", "task_id": "fb8ac64b-0ef4-4695-9abe-1d70d2d37cc4", "item": "chair", "ask": 220, "reserve": 180}
+{"event": "harness_decision", "action": "offer", "price": 200, "reason": "Within budget and gives the seller a clear path to close."}
+{"event": "decision", "task_id": "fb8ac64b-0ef4-4695-9abe-1d70d2d37cc4", "ask": 220, "action": "offer", "offer": 200, "reason": "Within budget and gives the seller a clear path to close."}
+{"event": "harness_decision", "action": "accept", "price": 200, "reason": "Offer is above the reserve."}
+{"event": "response", "task_id": "fb8ac64b-0ef4-4695-9abe-1d70d2d37cc4", "item": "chair", "offer": 200, "reserve": 180, "decision": "accept", "decision_price": 200}
+{"event": "challenge_2_purchase", "item": "chair", "shop": "Harness Shop 01", "price": 200, "remaining": 280, "summary": "item=chair; shop=Harness Shop 01; events=2\ndirectory: selected from 5 shortlisted Agent Cards\nresult: {\"outcome\": \"deal\", \"price\": 200, \"task_id\": \"fb8ac64b-0ef4-4695-9abe-1d70d2d37cc4\"}"}
+{"event": "harness_decision", "action": "select", "price": null, "reason": "Harness Shop 02"}
+{"event": "card", "name": "Harness Shop 02", "item": "bookshelf", "budget": 280}
+{"event": "harness_decision", "action": "counter", "price": 320, "reason": "Opening above the reserve to leave room for negotiation."}
+{"event": "opening", "task_id": "bbb17770-1ea2-46b2-a029-ecfe45534510", "item": "bookshelf", "ask": 320, "reserve": 260}
+{"event": "harness_fallback", "action": "offer", "price": 280, "reason": "counter at budget ceiling", "error": "RuntimeError: harness exited 1: ERROR: exceeded retry limit, last status: 429 Too Many Requests"}
+{"event": "decision", "task_id": "bbb17770-1ea2-46b2-a029-ecfe45534510", "ask": 320, "action": "offer", "offer": 280, "reason": "counter at budget ceiling"}
+{"event": "harness_fallback", "action": "accept", "price": 280, "reason": "offer meets reserve", "error": "RuntimeError: harness exited 1: ERROR: exceeded retry limit, last status: 429 Too Many Requests"}
+{"event": "response", "task_id": "bbb17770-1ea2-46b2-a029-ecfe45534510", "item": "bookshelf", "offer": 280, "reserve": 260, "decision": "accept", "decision_price": 280}
+{"event": "challenge_2_purchase", "item": "bookshelf", "shop": "Harness Shop 02", "price": 280, "remaining": 0, "summary": "item=bookshelf; shop=Harness Shop 02; events=2\ndirectory: selected from 5 shortlisted Agent Cards\nresult: {\"outcome\": \"deal\", \"price\": 280, \"task_id\": \"bbb17770-1ea2-46b2-a029-ecfe45534510\"}"}
+{"event": "challenge_2_result", "directory_cards": 20, "shopping_items": 3, "purchases": {"lamp": ["Harness Shop 00", 120], "chair": ["Harness Shop 01", 200], "bookshelf": ["Harness Shop 02", 280]}, "spent": 600, "budget": 600, "all_bought": true, "duplicate_items": false, "summaries": {"lamp": "item=lamp; shop=Harness Shop 00; events=2\ndirectory: selected from 5 shortlisted Agent Cards\nresult: {\"outcome\": \"deal\", \"price\": 120, \"task_id\": \"093615df-f4e4-4838-8b01-19231eaf5045\"}", "chair": "item=chair; shop=Harness Shop 01; events=2\ndirectory: selected from 5 shortlisted Agent Cards\nresult: {\"outcome\": \"deal\", \"price\": 200, \"task_id\": \"fb8ac64b-0ef4-4695-9abe-1d70d2d37cc4\"}", "bookshelf": "item=bookshelf; shop=Harness Shop 02; events=2\ndirectory: selected from 5 shortlisted Agent Cards\nresult: {\"outcome\": \"deal\", \"price\": 280, \"task_id\": \"bbb17770-1ea2-46b2-a029-ecfe45534510\"}"}}
