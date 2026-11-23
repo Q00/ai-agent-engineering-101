@@ -40,6 +40,9 @@ Round 3 결과는 Players 표 Class 보기 46명 중 6위다(student_total 1.589
 | `insights.json`, reports, memos, changes | 발견과 근거, 보고서, 다른 분석에 남긴 메모, 채택과 되돌림의 지표 | 분석 모델 |
 | `contexts.jsonl` | 모델이 읽은 브리핑 전부 | 코드 |
 
+이 파일들은 서버의 `.market/` 아래에 있었고 저장소에는 넣지 않았다. 대신 그 기록으로 만든 로그와 종료
+board를 `logs/`에 넣었다.
+
 지난 거래와 평판은 세 가지 시간 단위로 다음 결정에 들어간다.
 
 - 주문마다: buyer는 가게별 기억(`buyer_memory.py`)과 가게별로 학습한 첫 호가, 양보, 성사율(`shop_model.py`)로
