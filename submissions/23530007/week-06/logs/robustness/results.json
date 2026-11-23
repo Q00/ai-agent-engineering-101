@@ -1,0 +1,109 @@
+{
+ "passed": true,
+ "results": [
+  {
+   "case": "B/legacy",
+   "exit": 0,
+   "methods": [
+    "SendMessage",
+    "message/send",
+    "message/send",
+    "message/send"
+   ],
+   "offers": [
+    90,
+    100
+   ],
+   "deals": [
+    100
+   ],
+   "canceled": 0,
+   "errors_sent": 0,
+   "no_version_header": 0,
+   "passed": true
+  },
+  {
+   "case": "B/message_only",
+   "exit": 0,
+   "methods": [
+    "SendMessage",
+    "SendMessage"
+   ],
+   "offers": [
+    100
+   ],
+   "deals": [
+    100
+   ],
+   "canceled": 0,
+   "errors_sent": 0,
+   "no_version_header": 0,
+   "passed": true
+  },
+  {
+   "case": "B/rpc_error",
+   "exit": 0,
+   "methods": [
+    "SendMessage",
+    "SendMessage",
+    "CancelTask"
+   ],
+   "offers": [],
+   "deals": [],
+   "canceled": 1,
+   "errors_sent": 1,
+   "no_version_header": 0,
+   "passed": true
+  },
+  {
+   "case": "B/big_numbers",
+   "exit": 0,
+   "methods": [
+    "SendMessage",
+    "SendMessage",
+    "SendMessage"
+   ],
+   "offers": [
+    1000,
+    1150
+   ],
+   "deals": [
+    1150
+   ],
+   "canceled": 0,
+   "errors_sent": 0,
+   "no_version_header": 0,
+   "passed": true
+  },
+  {
+   "case": "S/greeting",
+   "passed": true,
+   "detail": "opened on 'lamp: asking 150. Se' at 150.0"
+  },
+  {
+   "case": "S/data_offer",
+   "passed": true,
+   "detail": "seller took the data part as offer 125, now TASK_STATE_INPUT_REQUIRED"
+  },
+  {
+   "case": "S/formats",
+   "passed": true,
+   "detail": "read as plain offers without the harness: True; states ['TASK_STATE_INPUT_REQUIRED', 'TASK_STATE_INPUT_REQUIRED']"
+  },
+  {
+   "case": "S/concurrent",
+   "passed": true,
+   "detail": "A 2.6 s and B 2.8 s overlapped (serial would be about 5.4 s)"
+  },
+  {
+   "case": "S/hold_lapse",
+   "passed": true,
+   "detail": "held, then lapsed, quiet buyer told to start again"
+  },
+  {
+   "case": "S/no_harness",
+   "passed": true,
+   "detail": "asks [130.0, 130.0, 130.0, 130.0], final TASK_STATE_INPUT_REQUIRED, price None"
+  }
+ ]
+}

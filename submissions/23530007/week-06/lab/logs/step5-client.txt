@@ -1,0 +1,158 @@
+$ /Users/myeongsang/.local/bin/a2a card get http://127.0.0.1:9999
+Name:         Lamp Shop
+Description:  Sells desk lamps, chairs and bookshelves. Negotiates the price with the buyer.
+Version:      1.0.0
+Interfaces:
+  JSONRPC      http://127.0.0.1:9999/
+Streaming:    true
+Skills:
+  negotiate            Negotiate a purchase
+(exit 0)
+
+$ curl (SendMessage without the A2A-Version header)
+{"error":{"code":-32009,"message":"A2A version '0.3' is not supported by this handler. Expected version '1.0'.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"VERSION_NOT_SUPPORTED","domain":"a2a-protocol.org","metadata":{}}]},"id":1,"jsonrpc":"2.0"}
+
+$ a2a send -a http://127.0.0.1:9999 "I want to buy a lamp"
+Task:     2f7161f7-9d1b-465c-879c-0c8965674ef4
+Context:  12a27131-2cc4-418f-a680-5906e8d36853
+Status:   input-required (2026-10-13T10:38:53Z)
+  lamp: asking 130. Send your offer as a number.
+History:
+  [user] I want to buy a lamp
+
+
+Resume:     a2a send --task-id 2f7161f7-9d1b-465c-879c-0c8965674ef4 "<reply>"
+
+$ /Users/myeongsang/.local/bin/a2a send -a http://127.0.0.1:9999 --task-id 2f7161f7-9d1b-465c-879c-0c8965674ef4 80
+Task:     2f7161f7-9d1b-465c-879c-0c8965674ef4
+Context:  12a27131-2cc4-418f-a680-5906e8d36853
+Status:   input-required (2026-10-13T10:38:53Z)
+  80 is too low. Counteroffer: 105.
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: asking 130. Send your offer as a number.
+  [user] 80
+
+
+Resume:     a2a send --task-id 2f7161f7-9d1b-465c-879c-0c8965674ef4 "<reply>"
+(exit 0)
+
+$ /Users/myeongsang/.local/bin/a2a send -a http://127.0.0.1:9999 --task-id 2f7161f7-9d1b-465c-879c-0c8965674ef4 105
+Task:     2f7161f7-9d1b-465c-879c-0c8965674ef4
+Context:  12a27131-2cc4-418f-a680-5906e8d36853
+Status:   completed (2026-10-13T10:38:53Z)
+  Deal: lamp at 105.
+Artifacts:
+  [receipt] {"item":"lamp","price":105,"seller":"Lamp Shop"}
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: asking 130. Send your offer as a number.
+  [user] 80
+  [agent] 80 is too low. Counteroffer: 105.
+  [user] 105
+(exit 0)
+
+$ /Users/myeongsang/.local/bin/a2a task get -a http://127.0.0.1:9999 2f7161f7-9d1b-465c-879c-0c8965674ef4
+Task:     2f7161f7-9d1b-465c-879c-0c8965674ef4
+Context:  12a27131-2cc4-418f-a680-5906e8d36853
+Status:   completed (2026-10-13T10:38:53Z)
+  Deal: lamp at 105.
+Artifacts:
+  [receipt] {"item":"lamp","price":105,"seller":"Lamp Shop"}
+History:
+  [user] I want to buy a lamp
+  [agent] lamp: asking 130. Send your offer as a number.
+  [user] 80
+  [agent] 80 is too low. Counteroffer: 105.
+  [user] 105
+(exit 0)
+
+$ /Users/myeongsang/.local/bin/a2a send -a http://127.0.0.1:9999 --task-id 2f7161f7-9d1b-465c-879c-0c8965674ef4 110
+Error: failed to send message: Task 2f7161f7-9d1b-465c-879c-0c8965674ef4 is in terminal state: TASK_STATE_COMPLETED
+(exit 1)
+
+$ /Users/myeongsang/.local/bin/a2a send -a http://127.0.0.1:9999 I want to buy a sofa
+Task:     0d5c0475-b88f-41ee-a74e-8efa9d7c7953
+Context:  6f030c34-a630-4fab-a716-a19c57b40269
+Status:   rejected (2026-10-13T10:38:54Z)
+  We only sell: lamp, chair, bookshelf.
+History:
+  [user] I want to buy a sofa
+(exit 0)
+
+$ a2a send -a http://127.0.0.1:9999 "I want to buy a chair"
+Task:     d0bf1b0b-d30a-4c46-b8f9-6b55b4d56b95
+Context:  135f4d71-0edd-4a1b-8ff8-edacb8b9d985
+Status:   input-required (2026-10-13T10:38:54Z)
+  chair: asking 234. Send your offer as a number.
+History:
+  [user] I want to buy a chair
+
+
+Resume:     a2a send --task-id d0bf1b0b-d30a-4c46-b8f9-6b55b4d56b95 "<reply>"
+
+$ /Users/myeongsang/.local/bin/a2a send -a http://127.0.0.1:9999 --task-id d0bf1b0b-d30a-4c46-b8f9-6b55b4d56b95 100
+Task:     d0bf1b0b-d30a-4c46-b8f9-6b55b4d56b95
+Context:  135f4d71-0edd-4a1b-8ff8-edacb8b9d985
+Status:   input-required (2026-10-13T10:38:54Z)
+  100 is too low. Counteroffer: 180.
+History:
+  [user] I want to buy a chair
+  [agent] chair: asking 234. Send your offer as a number.
+  [user] 100
+
+
+Resume:     a2a send --task-id d0bf1b0b-d30a-4c46-b8f9-6b55b4d56b95 "<reply>"
+(exit 0)
+
+$ /Users/myeongsang/.local/bin/a2a send -a http://127.0.0.1:9999 --task-id d0bf1b0b-d30a-4c46-b8f9-6b55b4d56b95 100
+Task:     d0bf1b0b-d30a-4c46-b8f9-6b55b4d56b95
+Context:  135f4d71-0edd-4a1b-8ff8-edacb8b9d985
+Status:   input-required (2026-10-13T10:38:54Z)
+  100 is too low. Counteroffer: 180.
+History:
+  [user] I want to buy a chair
+  [agent] chair: asking 234. Send your offer as a number.
+  [user] 100
+  [agent] 100 is too low. Counteroffer: 180.
+  [user] 100
+
+
+Resume:     a2a send --task-id d0bf1b0b-d30a-4c46-b8f9-6b55b4d56b95 "<reply>"
+(exit 0)
+
+$ /Users/myeongsang/.local/bin/a2a send -a http://127.0.0.1:9999 --task-id d0bf1b0b-d30a-4c46-b8f9-6b55b4d56b95 100
+Task:     d0bf1b0b-d30a-4c46-b8f9-6b55b4d56b95
+Context:  135f4d71-0edd-4a1b-8ff8-edacb8b9d985
+Status:   rejected (2026-10-13T10:38:54Z)
+  No deal at 100.
+History:
+  [user] I want to buy a chair
+  [agent] chair: asking 234. Send your offer as a number.
+  [user] 100
+  [agent] 100 is too low. Counteroffer: 180.
+  [user] 100
+  [agent] 100 is too low. Counteroffer: 180.
+  [user] 100
+(exit 0)
+
+$ a2a send -a http://127.0.0.1:9999 "I want to buy a bookshelf"
+Task:     1fa0eb27-b2d4-4ed2-bcc3-67657abc3cf8
+Context:  77d15de3-612a-49ab-9a05-1637206a49ff
+Status:   input-required (2026-10-13T10:38:54Z)
+  bookshelf: asking 338. Send your offer as a number.
+History:
+  [user] I want to buy a bookshelf
+
+
+Resume:     a2a send --task-id 1fa0eb27-b2d4-4ed2-bcc3-67657abc3cf8 "<reply>"
+
+$ /Users/myeongsang/.local/bin/a2a task cancel -a http://127.0.0.1:9999 1fa0eb27-b2d4-4ed2-bcc3-67657abc3cf8
+Task:     1fa0eb27-b2d4-4ed2-bcc3-67657abc3cf8
+Context:  77d15de3-612a-49ab-9a05-1637206a49ff
+Status:   canceled (2026-10-13T10:38:54Z)
+History:
+  [user] I want to buy a bookshelf
+  [agent] bookshelf: asking 338. Send your offer as a number.
+(exit 0)
+

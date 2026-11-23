@@ -1,0 +1,9 @@
+[20:01:20] [buyer] harness: claude -p --model haiku --tools '' --setting-sources '' --no-session-persistence; item lamp, budget 120
+[20:01:20] [buyer] card: 'rpc_error shop', JSON-RPC http://127.0.0.1:49663/, skills ['sell']
+[20:01:20] [buyer] -> SendMessage 'I want to buy a lamp'
+[20:01:20] [buyer] <- TASK_STATE_INPUT_REQUIRED | Welcome. My price for it is 130.
+[20:01:23] [buyer] harness call #1 -> '{"action": "offer", "price": 100}'
+[20:01:23] [buyer] -> SendMessage '100' taskId=2765fee7
+[20:01:23] [buyer] seller error: SendMessage: {'code': -32603, 'message': 'internal error'}; walking away
+[20:01:23] [buyer] walked away; canceled the task -> TASK_STATE_CANCELED; no purchase
+[20:01:23] [buyer] done in 3 s, harness calls 1

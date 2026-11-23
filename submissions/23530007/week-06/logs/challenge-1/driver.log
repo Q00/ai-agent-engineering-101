@@ -1,0 +1,77 @@
+
+### something wooden to keep about 40 books, not taller than my desk
+  -> 'something wooden to keep about 40 books, not taller than my desk'
+  <- TASK_STATE_INPUT_REQUIRED | ask=60.0 | Gala Walnut Wall Shelf (P-00086: A white walnut wall shelf. 2 shelves, holds about 40 books. Height 36 cm. Width 60 cm.): asking 60. Send your offer as a number. Asking 60
+  -> '30.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=55.0 | 30 is too low. Counteroffer: 55
+  -> '39.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=50.0 | 39 is too low. Counteroffer: 50
+  -> '48.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=50.0 | 48 is too low. Counteroffer: 50
+  -> '54.0'
+  <- TASK_STATE_COMPLETED | ask=None | Deal: Gala Walnut Wall Shelf at 54.
+  => item P-00086 'Gala Walnut Wall Shelf' reserve 50, asks [60.0, 55.0, 50.0, 50.0], TASK_STATE_COMPLETED, price 54.0, right item True, reserve held True
+
+### an office chair with wheels for long work days
+  -> 'an office chair with wheels for long work days'
+  <- TASK_STATE_INPUT_REQUIRED | ask=160.0 | Mira Plastic Office Chair (P-00272: A yellow plastic office chair. Height 80 cm. On wheels. Height adjustable. With armrests. Holds up to 136 kg.): asking 160. Send your offer as a number. Asking 160
+  -> '80.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=150.0 | 80 is too low. Counteroffer: 150
+  -> '104.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=135.0 | 104 is too low. Counteroffer: 135
+  -> '128.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=131.0 | 128 is too low. Counteroffer: 131
+  -> '144.0'
+  <- TASK_STATE_COMPLETED | ask=None | Deal: Mira Plastic Office Chair at 144.
+  => item P-00272 'Mira Plastic Office Chair' reserve 125, asks [160.0, 150.0, 135.0, 131.0], TASK_STATE_COMPLETED, price 144.0, right item True, reserve held True
+
+### a dimmable lamp for my bedside table
+  -> 'a dimmable lamp for my bedside table'
+  <- TASK_STATE_INPUT_REQUIRED | ask=60.0 | Iris Fabric Bedside Lamp (P-00060: A cream fabric bedside lamp. Height 47 cm. Dimmable. E27 bulb.): asking 60. Send your offer as a number. Asking 60
+  -> '30.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=50.0 | 30 is too low. Counteroffer: 50
+  -> '39.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=46.0 | 39 is too low. Counteroffer: 46
+  -> '48.0'
+  <- TASK_STATE_COMPLETED | ask=None | Deal: Iris Fabric Bedside Lamp at 48.
+  => item P-00060 'Iris Fabric Bedside Lamp' reserve 45, asks [60.0, 50.0, 46.0], TASK_STATE_COMPLETED, price 48.0, right item True, reserve held True
+
+### a dining table that seats 6 people
+  -> 'a dining table that seats 6 people'
+  <- TASK_STATE_INPUT_REQUIRED | ask=600.0 | Lumo Pine Dining Table (P-00029: A navy pine dining table. Height 73 cm. Width 100 cm. Seats 6. 2 drawers.): asking 600. Send your offer as a number. Asking 600
+  -> '300.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=580.0 | 300 is too low. Counteroffer: 580
+  -> '390.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=560.0 | 390 is too low. Counteroffer: 560
+  -> '480.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=550.0 | 480 is too low. Counteroffer: 550
+  -> '540.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=550.0 | 540 is too low. Counteroffer: 550
+  -> '600.0'
+  <- TASK_STATE_COMPLETED | ask=None | Deal: Lumo Pine Dining Table at 600.
+  => item P-00029 'Lumo Pine Dining Table' reserve 550, asks [600.0, 580.0, 560.0, 550.0, 550.0], TASK_STATE_COMPLETED, price 600.0, right item True, reserve held True
+
+### a leather sofa with three seats
+  -> 'a leather sofa with three seats'
+  <- TASK_STATE_INPUT_REQUIRED | ask=2400.0 | Fjord Leather Sofa (P-00014: A black leather sofa. Width 152 cm. Seats 3.): asking 2400. Send your offer as a number. Asking 2400
+  -> '1200.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=2350.0 | 1200 is too low. Counteroffer: 2350
+  -> '1560.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=2330.0 | 1560 is too low. Counteroffer: 2330
+  -> '1920.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=2310.0 | 1920 is too low. Counteroffer: 2310
+  -> '2160.0'
+  <- TASK_STATE_INPUT_REQUIRED | ask=2305.0 | 2160 is too low. Counteroffer: 2305
+  -> '2400.0'
+  <- TASK_STATE_COMPLETED | ask=None | Deal: Fjord Leather Sofa at 2400.
+  => item P-00014 'Fjord Leather Sofa' reserve 2305, asks [2400.0, 2350.0, 2330.0, 2310.0, 2305.0], TASK_STATE_COMPLETED, price 2400.0, right item True, reserve held True
+
+### (unclear) what's the weather like today?
+  -> "what's the weather like today?"
+  <- TASK_STATE_INPUT_REQUIRED | ask=None | Sorry, I'm not sure what you mean. We sell furniture and lamps at Harness Furniture, so is there a specific item you're looking for? We sell: armchair, bed frame, bedside lamp, bookshelf, cabinet, chair, coffee table, de
+  => asked back instead of quoting a price: True
+
+### (unclear) I need something nice
+  -> 'I need something nice'
+  <- TASK_STATE_INPUT_REQUIRED | ask=None | I'm not sure what you mean by 'something nice.' Are you looking for a particular type of furniture or lighting, like a sofa, desk, or lamp? We sell: armchair, bed frame, bedside lamp, bookshelf, cabinet, chair, coffee ta
+  => asked back instead of quoting a price: True
