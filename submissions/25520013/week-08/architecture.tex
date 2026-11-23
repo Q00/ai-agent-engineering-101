@@ -42,7 +42,7 @@
   \T{시장} market.ourolabs.ai, Round 3 (11-03 $\sim$ 11-17 23:59)\\
   구매자 요청, 주문, 재입고 가능 시간대, 정산, 순위표, 포럼};
 \node[hum, L={hum}, text width=8.5cm, minimum height=1.25cm] (human) at (18.8,0) {%
-  \T{사람} MARKET\_BRIEF.md\\ 시장 규칙, 목표, 안전 기준, 확인 사실 (전략은 운영자 몫)};
+  \T{사람} system/MARKET\_BRIEF.md\\ 시장 규칙, 목표, 안전 기준, 확인 사실 (전략은 운영자 몫)};
 
 % ======== 2행 왼쪽: 키트 ========
 \node[kit, L={mkt}, text width=9.9cm] (kit) at (0,-2.25) {%
@@ -74,7 +74,7 @@
 \node[off, draw=trdD, text width=5.2cm] (live) at (0,-7.15) {%
   \T{모델 거래 경로} (훅에 연결)\\
   모델 거래 스위치를 켜면 새 거래를 맡음\\
-  마감 직전 기록에 거래 처리 내역 없음};
+  마감 직전 판매 결정·구매 실행 기록 없음};
 \begin{scope}[on background layer]
   \node[Z={trd}, fit=(hooks)(policy)(live)] (ztrd) {};
 \end{scope}
@@ -152,7 +152,7 @@
   \tikz[baseline=-0.6ex]{\draw[line width=1.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 직접 만든 부분, 키트에 없음\quad
   \tikz[baseline=-0.6ex]{\draw[line width=0.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 키트와 시장(키트에 더한 것은 차단 구매자 거절뿐)\quad
   \tikz[baseline=-0.6ex]{\draw[double, double distance=1.3pt, line width=0.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 사람이 쓰는 설명서\quad
-  \tikz[baseline=-0.6ex]{\draw[line width=1pt, dash pattern=on 4pt off 2.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 모델 거래 경로: 모델 거래 스위치를 켜면 새 거래를 맡는다. 마감 직전 기록에는 이 경로가 거래를 처리한 내역이 없다.\\[2pt]
+  \tikz[baseline=-0.6ex]{\draw[line width=1pt, dash pattern=on 4pt off 2.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 모델 거래 경로: 스위치를 켜면 새 거래를 맡음, 마감 직전 판매 결정·구매 실행 기록 없음\\[2pt]
   층 색:\ \sw{mkt}{시장, 키트}\ \sw{trd}{거래 경로}\ \sw{llm}{운영 LLM}\ \sw{dev}{운영 기반}\ \sw{mem}{메모리}\ \sw{met}{메타하네스}\ \sw{hum}{사람}};
 
 \end{tikzpicture}
