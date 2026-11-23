@@ -1,7 +1,10 @@
-"""REPORT.md part (3), Round 3 results, printed from the committed logs, so no number in it is typed by hand.
+"""Builds REPORT.md from REPORT.src.md and the committed logs, so no number in the generated tables is typed by hand.
 
-    python make_report.py            # rewrites the block between the two markers in REPORT.md
-    python make_report.py --print    # prints the block only
+REPORT.src.md is the hand-written report. Two placeholders in it are replaced here: {{trajectory}} (our place over
+the round) and {{part3}} (part 3, the Round 3 results). Edit REPORT.src.md, never REPORT.md, then run:
+
+    python make_report.py            # writes REPORT.md
+    python make_report.py --print    # prints the generated parts only
 
 Sources (all under logs/, copied unedited from the server; see logs/manual_runs.log):
     round3-final/2358/standing.txt, board.json   the board as served at 23:58:43 KST, 11/17 (the round ended at 23:59)
@@ -22,7 +25,8 @@ HERE = Path(__file__).resolve().parent
 LOGS = HERE / "logs"
 FINAL = LOGS / "round3-final" / "2358"
 KIT = ["market-kit.log.1", "market-kit.log"]           # oldest first
-START, END = "<!-- make_report:part3 start -->", "<!-- make_report:part3 end -->"
+SRC, OUT = "REPORT.src.md", "REPORT.md"
+SLOTS = ("{{trajectory}}", "{{analysis_stats}}", "{{part3}}")
 ROUND_END = calendar.timegm((2026, 11, 17, 14, 59, 0))    # 11/17 23:59 KST in UTC, when the market stopped
 WEEK10 = calendar.timegm((2026, 11, 10, 3, 0, 0))         # 11/10 12:00 KST, the week-10 LAB
 KST = 9 * 3600
@@ -228,7 +232,6 @@ def part3() -> str:
     return "\n".join(out)
 
 
-TRAJ_START, TRAJ_END = "<!-- make_report:trajectory start -->", "<!-- make_report:trajectory end -->"
 # The moments the strategy story in part (2) refers to (KST): exploration, the turn to focus, and after it.
 TRAJ_AT = [("2026-11-04 13:52", "탐색기, 첫날 낮"), ("2026-11-04 19:35", "탐색기 끝, 집중기 전환 직전"),
            ("2026-11-05 09:09", "고가 라인을 연 다음 날 아침"), ("2026-11-07 03:00", "Class 보기 1위였던 때"),
@@ -251,28 +254,63 @@ def trajectory() -> str:
         "Class 보기는 11/5 Patch 3.3부터 생겼고 우리 기록에는 11/5 17:07부터 있다.)"
 
 
-def fill(body: str, start: str, end: str, text: str) -> str:
-    head, rest = body.split(start, 1)
-    _, tail = rest.split(end, 1)
-    return head + start + "\n" + text + "\n" + end + tail
+def analysis_stats() -> str:
+    """What the analysis modules did over the round, counted from their own records (logs/round3-final/analysis/,
+    copied from the server's .market/analysis/)."""
+    A = LOGS / "round3-final" / "analysis"
+    rows = lambda name: [json.loads(l) for l in open(A / name, encoding="utf-8") if l.strip()]
+    reports, changes, memos, asks = rows("reports.jsonl"), rows("changes.jsonl"), rows("memos.jsonl"), rows("for_person.jsonl")
+    ins = json.load(open(A / "insights.json", encoding="utf-8"))
+    props = [p for r in reports for p in r.get("proposals") or []]
+    adopted = [x for c in changes for x in c.get("changes") or []]
+    applied = [x for c in changes if c.get("applied") for x in c.get("changes") or []]
+    reverted = [x for c in changes for x in c.get("reverted") or []]
+    byrole = Counter(r["role"] for r in reports)
+    fields = Counter(f"{p['role']}.{p['field']}" for p in props)
+    status = Counter(i.get("status") for i in ins)
+    ops = Counter()
+    for c in changes:
+        for k, v in (c.get("insights") or {}).items():
+            ops[k] += len(v)
+    focus = next(c for c in changes if c.get("phase") == "focus")
+    out = ["| 항목 | 값 |", "|---|---|",
+           f"| 역할 분석 실행 (seller / buyer) | {n(len(reports))}번 ({byrole['seller']} / {byrole['buyer']}), "
+           f"{kst(reports[0]['at'])} ~ {kst(reports[-1]['at'])} |",
+           f"| 통합 분석 실행 | {n(len(changes))}번 (탐색기에는 기록만, {kst(focus['at'])}부터 실제 적용) |",
+           f"| 규칙 제안 | {len(props)}건, 제안 없이 보고만 한 실행 {sum(1 for r in reports if not r.get('proposals'))}번 |",
+           f"| 제안된 필드 | " + ", ".join(f"`{k}` {v}" for k, v in fields.most_common()) + " |",
+           f"| 채택 | {len(adopted)}건 (실제 적용 {len(applied)}건, 탐색기에 기록만 {len(adopted) - len(applied)}건) |",
+           f"| 다음 실행이 지표를 보고 되돌림 | {len(reverted)}건 |",
+           f"| 사람이 고정한 값을 건드리려 한 경우 | {sum(len(c.get('held_by_person') or []) for c in changes)}건 |",
+           f"| 인사이트 | {len(ins)}개 생성, 끝날 때 확인됨 {status.get('confirmed', 0)}, 시험 중 {status.get('testing', 0)}, "
+           f"은퇴 {status.get('retired', 0)}; 확인 {ops.get('confirmed', 0)}번, 반박 {ops.get('refuted', 0)}번 |",
+           f"| 분석 사이 메모 | {len(memos)}개 (" + ", ".join(f"{k}에서 {v}" for k, v in Counter(m['from'] for m in memos).most_common())
+           + "; " + ", ".join(f"{k} {v}" for k, v in Counter(m['act'] for m in memos).most_common()) + ") |",
+           f"| 규칙으로 못 고쳐 사람에게 넘긴 제안 | {len(asks)}건 |"]
+    log = (LOGS / "analysis.log").read_text(encoding="utf-8", errors="replace")
+    desks = Counter(re.findall(r"\] journal: journal 제\d+호 \(([^)]+)\)", log))
+    votes = Counter(re.findall(r"([+-]1) on #\d+", log))
+    out.append(f"| buyer가 쓴 시세 저널 | {sum(desks.values())}호 (" + ", ".join(f"{k} {v}" for k, v in desks.most_common()) + ") |")
+    out.append(f"| buyer가 쓴 데이터 노트 | {len(re.findall(r'] notes: note \\d+ ', log))}개 |")
+    out.append(f"| 포럼 투표 (좋아요 / 싫어요) | {votes.get('+1', 0)} / {votes.get('-1', 0)} |")
+    return "\n".join(out) + ("\n\n(`logs/round3-final/analysis/`의 reports, changes, insights, memos, for_person 기록과 "
+                             "`logs/analysis.log`를 센 것.)")
 
 
 def main() -> int:
-    text = part3()
+    parts = {"{{trajectory}}": trajectory(), "{{analysis_stats}}": analysis_stats(), "{{part3}}": part3()}
     if "--print" in sys.argv:
-        print(trajectory() + "\n\n" + text)
+        print("\n\n".join(parts.values()))
         return 0
-    report = HERE / "REPORT.md"
-    body = report.read_text(encoding="utf-8")
-    if START not in body or END not in body:
-        print("REPORT.md has no part (3) markers; printing instead\n")
-        print(text)
+    body = (HERE / SRC).read_text(encoding="utf-8")
+    missing = [k for k in SLOTS if k not in body]
+    if missing:
+        print(f"{SRC} lacks {missing}; nothing written")
         return 1
-    body = fill(body, START, END, text)
-    if TRAJ_START in body and TRAJ_END in body:
-        body = fill(body, TRAJ_START, TRAJ_END, trajectory())
-    report.write_text(body, encoding="utf-8")
-    print(f"REPORT.md part (3) rewritten ({len(text.splitlines())} lines)" + (", trajectory table too" if TRAJ_START in body else ""))
+    for k, v in parts.items():
+        body = body.replace(k, v)
+    (HERE / OUT).write_text(body, encoding="utf-8")
+    print(f"{OUT} written from {SRC} ({len(body.splitlines())} lines)")
     return 0
 
 
