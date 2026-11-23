@@ -1,0 +1,159 @@
+% R3 a2 구조 (2026-11-17 23:59 마감 시점. 운영 층은 r3-attempt2/ 코드, 훅과 키트는 labpc 배포본(r3/, kit/) 기준)
+% 빌드: xelatex architecture.tex  (글꼴 Apple SD Gothic Neo 필요, 가로 A4 폭 안, 본문 8pt)
+\documentclass[10pt,border=6pt]{standalone}
+\usepackage{fontspec}
+\usepackage{kotex}
+\setmainfont{Apple SD Gothic Neo}
+\setmainhangulfont{Apple SD Gothic Neo}
+\setsansfont{Apple SD Gothic Neo}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,arrows.meta,backgrounds,calc}
+
+% 층별 색: 옅은 채움(F)과 진한 테두리(D)
+\colorlet{mktD}{black!65}        \colorlet{mktF}{black!7}
+\colorlet{trdD}{orange!75!black} \colorlet{trdF}{orange!14}
+\colorlet{llmD}{blue!65!black}   \colorlet{llmF}{blue!10}
+\colorlet{devD}{teal!70!black}   \colorlet{devF}{teal!12}
+\colorlet{memD}{violet!70!black} \colorlet{memF}{violet!10}
+\colorlet{metD}{red!65!black}    \colorlet{metF}{red!10}
+\colorlet{humD}{brown!75!black}  \colorlet{humF}{brown!14}
+
+\tikzset{
+  >={Stealth[length=2.4mm]},
+  box/.style={rounded corners=3pt, align=left, inner sep=4pt, font=\footnotesize, anchor=north west},
+  kit/.style={box, line width=0.5pt},
+  new/.style={box, line width=1.5pt},
+  off/.style={box, line width=1.0pt, dash pattern=on 4pt off 2.5pt, fill=white},
+  hum/.style={box, double, double distance=1.3pt, line width=0.5pt},
+  L/.style={draw=#1D, fill=#1F},
+  Z/.style={rounded corners=6pt, inner sep=7pt, line width=0.5pt, draw=#1D, fill=#1F!45},
+  zt/.style={font=\small\bfseries, inner sep=2pt, text=#1D},
+  ar/.style={->, line width=0.9pt, draw=black!75},
+  lab/.style={font=\footnotesize, fill=white, inner sep=1.2pt, align=center, text=black!85},
+}
+\newcommand{\T}[1]{\textbf{#1}}
+\newcommand{\sw}[2]{\tikz[baseline=-0.6ex]{\draw[#1D, fill=#1F] (0,-0.13) rectangle (0.4,0.17);}\,#2}
+
+\begin{document}
+\begin{tikzpicture}
+
+% ======== 1행: 시장, 사람 ========
+\node[kit, L={mkt}, text width=17.9cm, minimum height=1.25cm] (market) at (0,0) {%
+  \T{시장} market.ourolabs.ai, Round 3 (11-03 $\sim$ 11-17 23:59)\\
+  구매자 요청, 주문, 재입고 가능 시간대, 정산, 순위표, 포럼};
+\node[hum, L={hum}, text width=8.5cm, minimum height=1.25cm] (human) at (18.8,0) {%
+  \T{사람} MARKET\_BRIEF.md\\ 목표, 안전선, 확인한 내용을 기록 (전략은 운영자 몫)};
+
+% ======== 2행 왼쪽: 키트 ========
+\node[kit, L={mkt}, text width=9.9cm] (kit) at (0,-2.25) {%
+  \T{키트 v4} kit/market\_kit.py (과목 제공, 차단 구매자 거절만 더함)\\
+  가게 서버, 훅 호출(판매, 주문마다 구매, 60초마다 재입고)\\
+  결제, 서명, 재고와 카탈로그 파일 갱신};
+
+% ======== 2행 오른쪽: 운영 LLM ========
+\node[new, L={llm}, text width=3.5cm, minimum height=1.45cm] (op1) at (11.3,-2.45) {%
+  \T{가게 운영자}\\ 기본 20분마다 점검,\\ 예약 시각이나 사건에\\ 맞춰 점검};
+\node[new, L={llm}, text width=3.5cm, minimum height=1.45cm, right=4mm of op1] (op2) {%
+  \T{구매 운영자}\\ 기본 20분마다 점검,\\ 예약 시각이나 사건에\\ 맞춰 점검};
+\node[new, L={llm}, text width=3.5cm, minimum height=1.45cm, right=4mm of op2] (op3) {%
+  \T{조사원}\\ 질문 하나를 여러 단계로\\ 조사해 결과를 기록};
+\node[new, L={llm}, text width=3.5cm, minimum height=1.45cm, right=4mm of op3] (op4) {%
+  \T{위임 에이전트}\\ 운영자, 조사원, 감사자가\\ 정의해 맡김};
+\begin{scope}[on background layer]
+  \node[Z={llm}, fit=(op1)(op4)] (zop) {};
+\end{scope}
+\node[zt={llm}, anchor=south east] at (zop.north east) {운영 LLM: gpt-6.1-terra, 기본 추론 강도 medium};
+
+% ======== 3행 왼쪽: 거래 경로 ========
+\node[new, L={trd}, text width=5.2cm] (hooks) at (0,-5.25) {%
+  \T{규칙 훅} (r3/)\\
+  판매, 구매, 재입고 훅\\
+  정책 값을 읽고 거래를 결정};
+\node[new, L={trd}, text width=3.9cm] (policy) at (6.1,-7.15) {%
+  \T{정책 파일}\\ policy.json: 정책 값\\ policy\_arms.json:\\ 시험군에 적용할 정책 값};
+\node[off, draw=trdD, text width=5.2cm] (live) at (0,-7.15) {%
+  \T{모델 거래 경로} (훅에 연결)\\
+  새 거래 분기 조건: a2/LIVE\\
+  마감 때 꺼짐(a2/LIVE 없음)};
+\begin{scope}[on background layer]
+  \node[Z={trd}, fit=(hooks)(policy)(live)] (ztrd) {};
+\end{scope}
+\node[zt={trd}, anchor=south west] at (ztrd.north west) {거래 경로};
+
+% ======== 3행 오른쪽: 운영 기반 ========
+\node[new, L={dev}, text width=5.3cm, minimum height=2.55cm] (kernel) at (11.3,-5.55) {%
+  \T{변경 적용 커널} (모델이 못 고침)\\
+  policy\_edit: 범위 검사 뒤 정책 교체\\
+  code\_edit: 시험, 30분 감시, 이상 시 복구\\
+  실험 장부: 전후, 동시 비교로 측정};
+\node[new, L={dev}, text width=4.2cm, minimum height=2.55cm, right=13mm of kernel] (ctx) {%
+  \T{컨텍스트 조립}\\
+  점검마다 새 컨텍스트\\
+  상태 카드 1만 자 (사실만)\\
+  도구 결과가 길어지면 요약};
+\node[new, L={dev}, text width=4.2cm, minimum height=2.55cm, right=4mm of ctx] (tools) {%
+  \T{공용 도구함} (읽기 전용)\\
+  기본 도구 24개 (숨김 전, recall 포함)\\
+  analyze: 코드 격리 실행\\
+  q\_ 도구: 만들어 저장};
+\begin{scope}[on background layer]
+  \node[Z={dev}, fit=(kernel)(tools)] (zdev) {};
+\end{scope}
+\node[zt={dev}, anchor=south west] at (zdev.north west) {운영 기반};
+
+% ======== 4행 왼쪽: 메모리 ========
+\node[new, L={mem}, text width=4.45cm] (fast) at (0,-11.0) {%
+  \T{검색용 기억} memd (mem0)\\
+  embeddinggemma-300m, qdrant\\
+  memfeed 5분마다 입력};
+\node[new, L={mem}, text width=4.55cm, right=3mm of fast] (deep) {%
+  \T{실행 기록}\\
+  trajectory, findings (.jsonl): 추가만\\
+  experiments.json: 실험 장부};
+\begin{scope}[on background layer]
+  \node[Z={mem}, fit=(fast)(deep)] (zmem) {};
+\end{scope}
+\node[zt={mem}, anchor=south west] at (zmem.north west) {메모리};
+
+% ======== 4행 오른쪽: 메타하네스 ========
+\node[new, L={met}, text width=5.3cm, minimum height=1.45cm] (audit) at (11.3,-11.0) {%
+  \T{과정 감사} audit.py (코드)\\
+  반복 호출, 실패 호출, 근거 없는\\ 숫자, 거절된 수정을 셈};
+\node[new, L={met}, text width=9.8cm, minimum height=1.45cm, right=4mm of audit] (auditor) {%
+  \T{감사자} auditor.py (모델, 기본 1시간 또는 판정 3건)\\
+  지침, 권장 도구, 도구 숨김과 삭제, 카드 구성, 위임 에이전트를 고침\\
+  실수 증가 기준을 넘으면 지침 복구};
+\begin{scope}[on background layer]
+  \node[Z={met}, fit=(audit)(auditor)] (zmet) {};
+\end{scope}
+\node[zt={met}, anchor=south west] at (zmet.north west) {메타하네스: 운영자가 일하는 방식을 고침};
+
+% ======== 화살표 (모두 같은 굵기) ========
+\coordinate (g23) at ($(op2.east)!0.5!(op3.west)$);
+\draw[ar, <->] (3.0,0 |- market.south) -- node[lab, right=1pt]{요청, 주문, 공급, 정산} (3.0,0 |- kit.north);
+\draw[ar] (3.0,0 |- kit.south) -- node[lab, right=1pt]{훅 호출} (3.0,0 |- hooks.north);
+\draw[ar] (15.28,0 |- market.south) -- node[lab, right=1pt, pos=0.12]{순위표 저장본} (15.28,-4.75) -- (18.75,-4.75) -- (18.75,0 |- ctx.north);
+\draw[ar] (g23 |- human.south) -- node[lab, left=1pt, pos=0.09]{설명서} (g23 |- ctx.north);
+\draw[ar] (14.05,0 |- zop.south) -- node[lab, right=1pt]{done} (14.05,0 |- kernel.north);
+\draw[ar] ([xshift=6mm]ctx.north) -- node[lab, right=1pt]{프롬프트 (운영 LLM 전체)} ([xshift=6mm]ctx.north |- zop.south);
+\draw[ar, <->] (tools.north) -- node[lab, right=1pt]{도구 호출 (운영 LLM 전체)} (tools.north |- zop.south);
+\draw[ar] (kernel.west |- 0,-5.8) -- node[lab, above, pos=0.42]{규칙 코드 (시험 통과 뒤)} (hooks.east |- 0,-5.8);
+\draw[ar] (policy.north) |- node[lab, pos=0.25, right=1pt]{훅에서 정책 적용} (hooks.east |- 0,-6.3);
+\draw[ar] (kernel.west |- 0,-7.75) -- node[lab, above=3.2pt, pos=0.5]{정책 값} (policy.east |- 0,-7.75);
+\draw[ar] (kernel.east |- 0,-7.3) -- node[lab, above=3.2pt, pos=0.5]{실험·코드\\ 판정} (ctx.west |- 0,-7.3);
+\draw[ar] (2.3,0 |- zmem.north) -- (2.3,-9.85) -- node[lab, pos=0.5]{recall 검색 결과} (24.2,-9.85) -- (24.2,0 |- tools.south);
+\draw[ar] (deep.east) -- node[lab, above]{읽음} (audit.west |- deep.east);
+\draw[ar] (audit.east) -- (auditor.west |- audit.east);
+\draw[ar] (26.4,0 |- zmet.north) -- node[lab, right=1pt]{지침·도구·카드 구성} (26.4,0 |- zdev.south);
+
+% ======== 범례 ========
+\node[anchor=north west, font=\footnotesize, align=left, inner sep=0pt] at (0,-13.35) {%
+  상자 테두리:\ 
+  \tikz[baseline=-0.6ex]{\draw[line width=1.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 직접 만든 부분, 키트에 없음\quad
+  \tikz[baseline=-0.6ex]{\draw[line width=0.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 키트와 시장(키트에 더한 것은 차단 구매자 거절뿐)\quad
+  \tikz[baseline=-0.6ex]{\draw[double, double distance=1.3pt, line width=0.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 사람이 쓰는 설명서\quad
+  \tikz[baseline=-0.6ex]{\draw[line width=1pt, dash pattern=on 4pt off 2.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 모델 거래 경로(새 거래 분기 조건 a2/LIVE, 마감 때 꺼짐)\\[2pt]
+  층 색:\ \sw{mkt}{시장, 키트}\ \sw{trd}{거래 경로}\ \sw{llm}{운영 LLM}\ \sw{dev}{운영 기반}\ \sw{mem}{메모리}\ \sw{met}{메타하네스}\ \sw{hum}{사람}};
+
+\end{tikzpicture}
+\end{document}
