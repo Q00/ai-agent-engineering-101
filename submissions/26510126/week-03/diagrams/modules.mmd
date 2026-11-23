@@ -1,0 +1,34 @@
+flowchart TB
+    TL["tools.py<br/>4 work tools · manifests<br/>capable_for · gold_for · judge"]
+    PR2["protocol.py<br/>VectorClock · CausalMailbox<br/>Endpoint · Journal · trajectory"]
+    AG["agents.py<br/>identity · cache boundary<br/>3 role states"]
+    PH["phases.py<br/>announce / bid+select / execute<br/>recursion · orphans"]
+    RN["run_ext.py<br/>6 conditions · rounds"]
+    OUT2["results_ext.csv<br/>tasks_ext_detail.csv<br/>logs_ext/*.jsonl"]
+    AN["analyze.py"]
+    TO["test_offline.py<br/>no key, no model"]
+    DG["diagrams.py<br/>this file"]
+
+    TL --> AG
+    TL --> PH
+    PR2 --> AG
+    PR2 --> PH
+    AG --> PH
+    PH --> RN
+    RN --> OUT2
+    OUT2 --> AN
+    OUT2 --> DG
+    TL --> DG
+    PR2 --> DG
+    AG --> DG
+    TO -.-> TL
+    TO -.-> PR2
+    TO -.-> AG
+    TO -.-> PH
+
+    classDef core fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    classDef data fill:#bac8ff,stroke:#4263eb,stroke-width:2px,color:#1e1e1e
+    classDef aux fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#1e1e1e
+    class TL,PR2,AG,PH,RN core
+    class OUT2 data
+    class AN,TO,DG aux

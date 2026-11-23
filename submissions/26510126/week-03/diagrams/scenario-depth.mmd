@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant P1
+    participant P2
+    participant P3
+    participant P4
+    Note over P1,P4: phase · announce
+    P2->>P1: TASK-ANNOUNCEMENT c1-6 [P2:1]
+    P2->>P3: TASK-ANNOUNCEMENT c1-6
+    P2->>P4: TASK-ANNOUNCEMENT c1-6
+    Note over P1,P4: phase · bid
+    P1-->>P2: BID c1-6 [P1:1,P2:1]
+    P3-->>P2: BID c1-6 [P1:1,P2:1,P3:1]
+    P4-->>P2: BID c1-6 [P1:1,P2:1,P3:1,P4:1]
+    Note over P1,P4: phase · select
+    P2->>P4: ANNOUNCED-AWARD c1-6 [P1:1,P2:2,P3:1,P4:1]
+    P4-->>P2: ACCEPTANCE c1-6 [P1:1,P2:2,P3:1,P4:2]
+    Note over P1,P4: phase · announce
+    P4->>P1: TASK-ANNOUNCEMENT c1-6.1 [P1:1,P2:2,P3:1,P4:3]
+    P4->>P2: TASK-ANNOUNCEMENT c1-6.1
+    P4->>P3: TASK-ANNOUNCEMENT c1-6.1
+    Note over P1,P4: phase · bid
+    P1-->>P4: BID c1-6.1 [P1:2,P2:2,P3:1,P4:3]
+    P2-->>P4: BID c1-6.1 [P1:2,P2:3,P3:1,P4:3]
+    P3-->>P4: BID c1-6.1 [P1:2,P2:3,P3:2,P4:3]
+    Note over P1,P4: phase · select
+    P4->>P1: ANNOUNCED-AWARD c1-6.1 [P1:2,P2:3,P3:2,P4:4]
+    P1-->>P4: ACCEPTANCE c1-6.1 [P1:3,P2:3,P3:2,P4:4]

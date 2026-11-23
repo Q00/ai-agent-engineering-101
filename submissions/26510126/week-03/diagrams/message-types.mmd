@@ -1,0 +1,24 @@
+flowchart LR
+    subgraph ANNOUNCE["phase · announce"]
+      direction TB
+      TASK_ANNOUNCEMENT["TASK-ANNOUNCEMENT"]
+    end
+    subgraph BID["phase · bid"]
+      direction TB
+      BID["BID"]
+    end
+    ANNOUNCE --> BID
+    subgraph SELECT["phase · select"]
+      direction TB
+      REFUSAL["REFUSAL"]
+      ANNOUNCED_AWARD["ANNOUNCED-AWARD"]
+      ACCEPTANCE["ACCEPTANCE"]
+    end
+    BID --> SELECT
+    subgraph EXECUTE["phase · execute"]
+      direction TB
+      FINAL_REPORT["FINAL-REPORT"]
+    end
+    SELECT --> EXECUTE
+    classDef msg fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    class TASK_ANNOUNCEMENT,BID,REFUSAL,ANNOUNCED_AWARD,ACCEPTANCE,FINAL_REPORT msg

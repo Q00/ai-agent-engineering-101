@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> announced : manager writes 2 of Smith's 4 fields
+    announced --> unassigned : no bid
+    announced --> bids_in : at least one BID
+    bids_in --> awarded : ANNOUNCED-AWARD
+    bids_in --> unassigned : no award call
+    awarded --> refused : winner already committed
+    refused --> awarded : manager falls to the next bid
+    refused --> unassigned : nobody left
+    awarded --> accepted : ACCEPTANCE
+    accepted --> reported : FINAL-REPORT
+    accepted --> partial : a piece was orphaned
+    partial --> reported
+    reported --> [*]
+    unassigned --> [*]

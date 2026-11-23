@@ -1,0 +1,39 @@
+provider=anthropic model=claude-sonnet-5 temperature=NOT_SETTABLE(sampling removed on claude-sonnet-5; internal value unknown) effort=low thinking=disabled max_tokens=300 sdk=anthropic 1.4.0 python=3.12.14
+run=3 condition=baseline tasks=6
+  contractor A: skill='arithmetic and numeric computation' overconfident=False
+  contractor B: skill='writing and rewriting prose' overconfident=False
+  contractor C: skill='writing and fixing code' overconfident=False
+------------------------------------------------------------------------
+[announce] contract 1 to 3 contractors (gold A): Compute the sum of all integers from 1 to 500 inclusive. Return only the number.
+  [bid] A: bid=True confidence=100 how=ok reason='Simple arithmetic summation task within my numeric computation skill'
+  [bid] B: bid=False confidence=0 how=ok reason='This is a math computation task, not prose writing or editing.'
+  [bid] C: bid=True confidence=95 how=ok reason='Simple arithmetic computation well within coding/math capability'
+  [award] A at 100 (gold A) -> correct
+[announce] contract 2 to 3 contractors (gold A): A log file has 1284 lines and 37 percent of them are WARN. How many WARN lines are there? Round down and return only the integer.
+  [bid] A: bid=True confidence=95 how=ok reason='Simple arithmetic calculation: 1284 * 0.37 = 475.08, floor = 475'
+  [bid] B: bid=False confidence=0 how=ok reason='This is a math calculation task, not a prose writing/rewriting task.'
+  [bid] C: bid=True confidence=90 how=ok reason='Simple arithmetic calculation: floor(1284*0.37)=474'
+  [award] A at 95 (gold A) -> correct
+[announce] contract 3 to 3 contractors (gold B): Rewrite this sentence in plain English for a 10-year-old: 'The mitigation strategy was deprioritized pending stakeholder alignment.'
+  [bid] A: bid=False confidence=0 how=ok reason='This is a language simplification task, not arithmetic or numeric computation.'
+  [bid] B: bid=True confidence=95 how=ok reason='This is a plain-English rewriting task, squarely within my prose skill.'
+  [bid] C: bid=False confidence=0 how=ok reason='This is a plain-language rewriting task, not a coding task within my skill set.'
+  [award] B at 95 (gold B) -> correct
+[announce] contract 4 to 3 contractors (gold B): Write a two-sentence release note announcing that dark mode is now available in the settings menu.
+  [bid] A: bid=False confidence=0 how=ok reason='This is a writing task, not arithmetic or numeric computation.'
+  [bid] B: bid=True confidence=95 how=ok reason='Writing release notes is squarely within my prose-writing skill.'
+  [bid] C: bid=False confidence=0 how=ok reason='This is a writing/marketing task, not code writing or fixing, so outside my core skill.'
+  [award] B at 95 (gold B) -> correct
+[announce] contract 5 to 3 contractors (gold C): Write a Python function reverse_list(xs) that returns a reversed copy of a list without using reversed() or slice notation.
+  [bid] A: bid=False confidence=0 how=ok reason='This is a coding/programming task, not arithmetic or numeric computation.'
+  [bid] B: bid=False confidence=0 how=ok reason='This is a coding task, not a prose writing/editing task.'
+  [bid] C: bid=True confidence=95 how=ok reason='This is a straightforward coding task within my skill set.'
+  [award] C at 95 (gold C) -> correct
+[announce] contract 6 to 3 contractors (gold C): Write a Python function is_palindrome(s) that ignores case and non-alphanumeric characters.
+  [bid] A: bid=True confidence=85 how=ok reason='Writing this Python function involves straightforward string/logic coding well within my computational skill set.'
+  [bid] B: bid=False confidence=0 how=ok reason='This is a coding task, not prose writing/rewriting.'
+  [bid] C: bid=True confidence=95 how=ok reason='This is a straightforward coding task within my skill set.'
+  [award] C at 95 (gold C) -> correct
+------------------------------------------------------------------------
+tasks=6 correct=6 messages=33 unassigned=0 misawards=0
+note: parse_fails=0 ok=18 tokens=4981 calls=18 wall=33.8s

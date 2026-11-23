@@ -1,0 +1,22 @@
+flowchart LR
+    P1["P1"]
+    P2["P2"]
+    P3["P3"]
+    P4["P4"]
+    count_by_hour(["count_by_hour"])
+    count_level(["count_level"])
+    grep_message(["grep_message"])
+    read_log(["read_log"])
+    P1 --> count_by_hour
+    P1 --> count_level
+    P2 --> grep_message
+    P3 --> read_log
+    P4 --> count_by_hour
+    P4 --> grep_message
+    P4 --> read_log
+    classDef cand fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    classDef tool fill:#bac8ff,stroke:#4263eb,stroke-width:2px,color:#1e1e1e
+    classDef shared fill:#ffec99,stroke:#f08c00,stroke-width:2px,color:#1e1e1e
+    class P1,P2,P3,P4 cand
+    class count_level tool
+    class count_by_hour,grep_message,read_log shared

@@ -1,0 +1,17 @@
+stateDiagram-v2
+    direction LR
+    [*] --> idle
+    idle --> bidding : announcement delivered
+    bidding --> idle : not awarded
+    bidding --> committed : awarded and ACCEPTANCE
+    bidding --> idle : awarded and REFUSAL<br/>(capacity is 1 contract)
+    committed --> working : runs its own tools
+    working --> managing : announces a piece<br/>(depth < 2)
+    managing --> working : piece reported or orphaned
+    working --> idle : FINAL-REPORT
+    note right of managing
+      committed and managing at once.
+      One counter would deadlock here:
+      the winner would be busy and
+      unable to announce its own piece.
+    end note

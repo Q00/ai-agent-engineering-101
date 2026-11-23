@@ -1,0 +1,19 @@
+flowchart LR
+    manager["manager"]
+    contractor["contractor"]
+    winner["winner"]
+    announce(["announce"])
+    bidding(["bidding"])
+    get_trajectory(["get_trajectory"])
+    award(["award"])
+    manager --> announce
+    manager --> get_trajectory
+    manager --> award
+    contractor --> bidding
+    winner --> announce
+    winner --> get_trajectory
+    winner --> award
+    classDef role fill:#ffc9c9,stroke:#c92a2a,stroke-width:2px,color:#1e1e1e
+    classDef tool fill:#bac8ff,stroke:#4263eb,stroke-width:2px,color:#1e1e1e
+    class manager,contractor,winner role
+    class announce,bidding,get_trajectory,award tool
