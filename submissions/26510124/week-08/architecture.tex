@@ -1,0 +1,112 @@
+% Build: tectonic architecture.tex
+% One-page Round 3 architecture; no Round 4 forge_tool / automatic ops claims.
+\documentclass[10pt]{article}
+\usepackage[a4paper,landscape,margin=12mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\pagestyle{empty}
+\definecolor{ink}{HTML}{17324D}
+\definecolor{bluebg}{HTML}{EDF4FB}
+\definecolor{greenbg}{HTML}{EDF7F2}
+\definecolor{amberbg}{HTML}{FFF6E5}
+\begin{document}
+\sffamily\noindent
+{\LARGE\bfseries Round 3: evidence-guided trading}\hfill{\large 26510124 / dyishappy}\\[3pt]
+{\small Student harnesses own decisions and safeguards; pinned kit v4 owns market integration.}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm,>=Latex,
+ box/.style={draw=ink!65,rounded corners=3pt,line width=.7pt,align=left,
+             text width=7.25cm,inner sep=9pt,font=\small},
+ flow/.style={->,draw=ink,line width=1pt},
+ observe/.style={->,draw=ink!65,dashed,line width=.8pt},
+ lab/.style={font=\scriptsize,fill=white,inner sep=2pt,text=ink}]
+
+\node[box,fill=bluebg,minimum height=1.8cm] (shop) at (4,12.2) {
+ \textbf{SHOP: trade execution}\\[3pt]
+ \texttt{seller\_r3.py} + \texttt{shop\_runtime.py}\\
+ Haiku CLI; up to 3 concurrent model calls.\\
+ Current-stage prompt; validate every decision.};
+\node[box,fill=greenbg,minimum height=1.8cm] (buyer) at (12.6,12.2) {
+ \textbf{BUYER: selection and negotiation}\\[3pt]
+ \texttt{market\_buyer.py} + selection modules\\
+ Opus 5.5 CLI; bounded candidates and decisions.\\
+ Verified shortcuts can skip model calls.};
+\node[box,fill=amberbg,minimum height=1.8cm] (ops) at (21.2,12.2) {
+ \textbf{OPERATIONS: analysis and proposals}\\[3pt]
+ \texttt{shop\_operations.py}; Opus 5.5 CLI\\
+ Code observes every 30 min; model every 2 h\\
+ when eligible; maximum 16 calls per day.};
+
+\node[box,fill=bluebg,minimum height=2.35cm] (smem) at (4,8.9) {
+ \textbf{Bounded context and persistent state}\\[4pt]
+ Current inventory + unit/certificate; price floors;\\
+ compact dialogue; confirmed sales and refunds.\\
+ Recent quote cache; receipt reservations.\\[3pt]
+ \texttt{seller\_context.py}, \texttt{sales\_performance.py}};
+\node[box,fill=greenbg,minimum height=2.35cm] (bmem) at (12.6,8.9) {
+ \textbf{Evidence carried into the next purchase}\\[4pt]
+ Confirmed payments; quality/warranty refusals;\\
+ comparable public prices; food lifetime.\\
+ Stock cooldowns; bounded negotiation history.\\[3pt]
+ \texttt{payment\_memory.py}, \texttt{buyer\_selection.py}};
+\node[box,fill=amberbg,minimum height=2.35cm] (omem) at (21.2,8.9) {
+ \textbf{Read-only inventory and outcome analysis}\\[4pt]
+ Reuse deterministic restock/budget calculations.\\
+ Fresh observations; minimum sample sizes;\\
+ skip unchanged evidence and invalid experiments.\\[3pt]
+ Inventory analysis is code, not a fourth LLM.};
+
+\node[box,fill=bluebg,minimum height=2.5cm] (sguard) at (4,5.25) {
+ \textbf{Student action tools and safeguards}\\[4pt]
+ Integer quote + structured certificate fields;\\
+ grade margin / warranty / stock checks.\\
+ Signed receipt; locked lease state machine;\\
+ cancelled/expired leases released; uncertain\\
+ settlements held. Demand-gated restock hook.};
+\node[box,fill=greenbg,minimum height=2.5cm] (bguard) at (12.6,5.25) {
+ \textbf{Student action tools and safeguards}\\[4pt]
+ A2A negotiation; verified fast acceptance;\\
+ budget/grade/warranty/lifetime checks.\\
+ Receipt is not payment: confirm via ACP.\\
+ Deterministic review; publish only confirmed\\
+ purchases with bounded forum cadence.};
+\node[box,fill=amberbg,minimum height=2.5cm] (proposal) at (21.2,5.25) {
+ \textbf{Round 3 mode: PROPOSE}\\[4pt]
+ Store observations and bounded proposals.\\
+ Explicit approval required for policy changes.\\
+ Version / freshness / scope / TTL guards;\\
+ keep terms of ongoing negotiations.\\[3pt]
+ \textbf{No automatic policy application claimed.}};
+
+\draw[flow] (smem.north) -- node[lab]{selected context} (shop.south);
+\draw[flow] (bmem.north) -- node[lab]{selected context} (buyer.south);
+\draw[flow] (omem.north) -- node[lab]{eligible evidence} (ops.south);
+\draw[flow] (smem.south) -- node[lab]{state / validation rules} (sguard.north);
+\draw[flow] (bmem.south) -- node[lab]{state / validation rules} (bguard.north);
+\draw[observe] (omem.south) -- node[lab]{evidence / experiment constraints} (proposal.north);
+\draw[flow] (shop.east) -- ++(.35,0) |- (sguard.east);
+\draw[flow] (buyer.east) -- ++(.35,0) |- (bguard.east);
+\draw[observe] (ops.east) -- ++(.35,0) |- (proposal.east);
+\node[lab,rotate=90] at (8.28,10.3) {JSON decision};
+\node[lab,rotate=90] at (16.88,10.3) {JSON decision};
+\node[lab,rotate=90] at (25.48,10.3) {JSON proposal};
+
+\node[draw=ink!65,rounded corners=3pt,fill=ink!5,align=left,
+      text width=24.8cm,inner sep=10pt,font=\small,minimum height=1.65cm] (kit) at (12.6,1.45) {
+ \textbf{PINNED OFFICIAL KIT v4 + MARKET}\hspace{1em}
+ \texttt{run\_round3.py} $\rightarrow$ \texttt{market\_runtime.py} $\rightarrow$ \texttt{vendor/market\_kit\_v4.py}\\[4pt]
+ Registration, Agent Card/A2A transport, inventory sync, ACP checkout and AP2 mandate/settlement integration.\\
+ Student \texttt{GuardedAcpShop} adds receipt lifecycle validation; original vendor bytes remain unchanged.};
+\draw[flow,<->] (sguard.south) -- node[lab]{quotes / checkout / restock} (4,2.42);
+\draw[flow,<->] (bguard.south) -- node[lab]{orders / payment / review} (12.6,2.42);
+\draw[observe] (21.2,2.42) -- node[lab]{read local outcome snapshots} (proposal.south);
+
+\node[align=left,text width=25.2cm,font=\small,text=ink,anchor=north] at (12.6,0.22) {
+ \textbf{Evidence loop:} append raw logs and bounded state $\rightarrow$ reconcile confirmed outcomes $\rightarrow$ select next context.\\[2pt]
+ \textbf{Legend:} solid = trading/control path; dashed = analysis/proposal path.
+ CLI models have no direct tools; Python executes allowed actions.};
+\end{tikzpicture}
+\end{center}
+\end{document}
