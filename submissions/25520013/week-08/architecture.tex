@@ -74,7 +74,7 @@
 \node[off, draw=trdD, text width=5.2cm] (live) at (0,-7.15) {%
   \T{모델 거래 경로} (훅에 연결)\\
   새 거래 분기 조건: a2/LIVE\\
-  마감 때 꺼짐(a2/LIVE 없음)};
+  마감 직전 모델 거래 이벤트 미관측};
 \begin{scope}[on background layer]
   \node[Z={trd}, fit=(hooks)(policy)(live)] (ztrd) {};
 \end{scope}
@@ -152,7 +152,7 @@
   \tikz[baseline=-0.6ex]{\draw[line width=1.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 직접 만든 부분, 키트에 없음\quad
   \tikz[baseline=-0.6ex]{\draw[line width=0.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 키트와 시장(키트에 더한 것은 차단 구매자 거절뿐)\quad
   \tikz[baseline=-0.6ex]{\draw[double, double distance=1.3pt, line width=0.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 사람이 쓰는 설명서\quad
-  \tikz[baseline=-0.6ex]{\draw[line width=1pt, dash pattern=on 4pt off 2.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 모델 거래 경로(새 거래 분기 조건 a2/LIVE, 마감 때 꺼짐)\\[2pt]
+  \tikz[baseline=-0.6ex]{\draw[line width=1pt, dash pattern=on 4pt off 2.5pt, rounded corners=1pt] (0,-0.13) rectangle (0.6,0.17);}\ 모델 거래 경로(새 거래 분기 조건 a2/LIVE, 마감 직전 거래 이벤트 미관측)\\[2pt]
   층 색:\ \sw{mkt}{시장, 키트}\ \sw{trd}{거래 경로}\ \sw{llm}{운영 LLM}\ \sw{dev}{운영 기반}\ \sw{mem}{메모리}\ \sw{met}{메타하네스}\ \sw{hum}{사람}};
 
 \end{tikzpicture}
