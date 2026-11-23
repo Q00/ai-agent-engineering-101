@@ -1,0 +1,35 @@
+{
+  "round": 1,
+  "observation": "A newly encountered shop returned an incomplete receipt. The buyer retained first-hand evidence, marked it avoid, gave a one-star factual review, excluded it from the next choice, and then completed a signed purchase with another shop.",
+  "source": "logs/market-kit.log",
+  "events": [
+    {
+      "line": 2006,
+      "text": "20:30:17 [buyer] {\"event\": \"shop_choice\", \"item\": \"bookshelf\", \"budget\": 360, \"name\": \"BeliveMe\", \"url\": \"https://jersey-meter-hayes-differences.trycloudflare.com\", \"reason\": \"selected BeliveMe from 32 eligible shops; average stars 5.0; receipt complaints 0; previous trades 0; excluded ['oak-and-pine', 'maple-home']\"}"
+    },
+    {
+      "line": 2016,
+      "text": "20:30:37 [buyer] {\"event\": \"memory_updated\", \"shop\": \"BeliveMe\", \"memory\": {\"attempts\": 1, \"deals\": 0, \"failures\": 1, \"trust_failures\": 1, \"avoid\": true, \"last_item\": \"bookshelf\", \"last_status\": \"invalid_receipt\", \"last_outcome\": \"receipt lacked a shop signature or matching A2A task id\", \"last_evidence\": {\"task_id\": \"74e92e5b-025b-4b8b-a781-6bfb03725235\", \"receipt_task\": null, \"receipt_item\": \"bookshelf\", \"receipt_price\": 338, \"offers\": [338]}}}"
+    },
+    {
+      "line": 2017,
+      "text": "20:30:37 [buyer] {\"shop\": \"https://jersey-meter-hayes-differences.trycloudflare.com\", \"receipt\": null, \"stars\": 1, \"review\": \"Receipt for bookshelf lacked a seller signature or matching task ID.\"}"
+    },
+    {
+      "line": 2018,
+      "text": "20:30:38 [market] ledger #4606: no deal, stars 1, verified False, review accepted"
+    },
+    {
+      "line": 2023,
+      "text": "20:30:44 [buyer] {\"event\": \"shop_choice\", \"item\": \"lamp\", \"budget\": 125, \"name\": \"corner-store\", \"url\": \"https://market.ourolabs.ai/shop/corner-store\", \"reason\": \"selected corner-store from 31 eligible shops; average stars 3.9; receipt complaints 1; previous trades 0; excluded ['oak-and-pine', 'maple-home', 'BeliveMe']\"}"
+    },
+    {
+      "line": 2033,
+      "text": "20:30:51 [buyer] {\"event\": \"memory_updated\", \"shop\": \"corner-store\", \"memory\": {\"attempts\": 1, \"deals\": 1, \"failures\": 0, \"last_price\": 120.0, \"last_item\": \"lamp\", \"last_status\": \"deal\", \"last_outcome\": \"receipt matched my offer, budget, and task\", \"last_evidence\": {\"task_id\": \"6cadacfb-b976-458b-b077-12ea775fc6c5\", \"receipt_task\": \"6cadacfb-b976-458b-b077-12ea775fc6c5\", \"receipt_item\": \"lamp\", \"receipt_price\": 120, \"offers\": [120]}}}"
+    },
+    {
+      "line": 2036,
+      "text": "20:30:51 [market] ledger #4638: lamp at 120, stars 4, verified True, review accepted"
+    }
+  ]
+}
