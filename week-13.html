@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 13: 결제, 정산, 기록</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+
+/* market case figures (Round 3 to Round 4) */
+.mk-steps,.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:22px 0}.steps.two{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.box{border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;background:var(--wash);display:flex;flex-direction:column;gap:6px}.box b{font-family:var(--serif);font-weight:500;font-size:18px;color:var(--ink)}.box p{margin:0;font-size:14.5px}
+.box .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--muted)}
+details.how{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;margin-top:28px}details.how summary{cursor:pointer;color:var(--body)}details.how p{margin-top:8px;font-size:14px}
+
+.mk{overflow-x:auto}.mk svg{min-width:540px}
+.mk .hd,.mk .lab,.mk .big,.mk .al{font-family:var(--sans)}
+.mk .g{stroke:var(--line);stroke-width:1}.mk .z{stroke:var(--muted);stroke-width:1}
+.mk .t{font-size:11px;fill:var(--muted)}.mk .al{font-size:11.5px;fill:var(--muted)}.mk .lab{font-size:12px;fill:var(--ink)}.mk .hd{font-size:12.5px;font-weight:600;fill:var(--ink)}.mk .big{font-size:22px;font-weight:600;fill:var(--ink)}
+.mk .d.hot{fill:var(--ink);stroke:var(--paper);stroke-width:2}.mk .d.attached{fill:var(--paper);stroke:var(--ink);stroke-width:2}.mk .d.none{fill:var(--faint);stroke:var(--paper);stroke-width:2}
+.mk .bo,.mk .bo2{fill:var(--paper);stroke:var(--ink);stroke-width:1.5}.mk .bf{fill:var(--ink)}.mk .bn{fill:var(--faint)}
+.mk .bx{fill:var(--wash);stroke:var(--faint);stroke-width:1.5}.mk .bx.em{stroke:var(--ink);stroke-width:2}.mk .ar{stroke:var(--muted);stroke-width:1.5;fill:none}.mk .ds{stroke-dasharray:4 3}.mk .ahf{fill:var(--muted)}
+.mk .legend{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:10px}
+.mk .sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;box-sizing:border-box}.mk .sw.hot{background:var(--ink)}.mk .sw.attached{border:2px solid var(--ink)}.mk .sw.none{background:var(--faint)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index.html">← COURSE HOME</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 13</div>
+      <h1 class="title">결제, 정산, 기록
+        <span class="en">Payment, Settlement, and the Verifiable Ledger</span>
+      </h1>
+      <p class="lede"><span class="q">합의된 거래는 어떻게 돈이 되고, 검증 가능한 기록으로 남는가?</span> 11주차의 협상은 정본 계약을 낳았고, 12주차의 메모리는 그 합의를 누적했다. 이번 주에는 계약을 변경하지 않은 채 결제·정산 이벤트를 연결하고, 제3자가 재생할 수 있는 증거 사슬로 남긴다.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 오늘의 지도 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">MAP</span><h2>오늘의 지도</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>구분</th><th>시간</th><th>내용</th></tr>
+        <tr><td class="stage">A1</td><td><span class="m">30'</span></td><td>결제 라우팅 — 에이전트 발 결제의 위임 한도, 승인 흐름, 인간 확인 지점의 배치</td></tr>
+        <tr><td class="stage">A2</td><td><span class="m">30'</span></td><td>정산 레이어 — 미니앱 간 정산, 수수료, 환불·취소의 상태 기계, 장부의 단일 진실 원천</td></tr>
+        <tr><td class="stage">A3</td><td><span class="m">20'</span></td><td>검증 가능한 거래 기록 — 영수증 이벤트, 분쟁 시 재생, 부인 방지에 필요한 조건</td></tr>
+        <tr><td class="stage">CASE</td><td></td><td>Round 3에서 Round 4로, Maroo testnet 결제, 리허설에서 있었던 일, ERC-8004</td></tr>
+        <tr><td class="stage">토론</td><td><span class="m">10'</span></td><td>에이전트 결제 사고의 책임 소재 — 유저·제작자·플랫폼</td></tr>
+        <tr><td class="stage">LAB</td><td><span class="m">90'</span></td><td>팀 미니앱에 모의 결제 레이어 연결 — 협상→계약→결제→기록 엔드투엔드 1회 완결</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+<!-- ============ PART A ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART A — LECTURE · 90 MIN</div>
+    <h2>거래의 마지막 세 걸음 — 돈이 흐르고, 나뉘고, 남는다</h2>
+    <div class="meta">A1 결제 라우팅 · A2 정산 레이어 · A3 검증 가능한 기록 · 토론</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A1 · 30'</span><h2>결제 라우팅 — 위임된 지갑</h2></div>
+
+    <p>지난 두 주 동안 우리는 두 에이전트가 말로 합의에 이르는 과정을 만들었다. 11주차에서 유저 에이전트와 판매자 에이전트는 제안과 역제안을 주고받아 합의문을 생성했고, 그 합의문은 7주차에서 설계한 계약 포맷으로 봉인되었다. 그러나 봉인된 계약은 아직 약속일 뿐이다. 약속을 이행으로 바꾸는 것은 돈이다. 이번 주의 첫 질문은 단순하다. <em>합의된 계약이 있을 때, 누가 언제 얼마를 움직이는가.</em> 그리고 그 움직임을 명령하는 주체가 사람이 아니라 에이전트일 때, 무엇이 달라지는가.</p>
+
+    <p>전통적인 온라인 결제에서 결제를 개시하는 주체는 언제나 사람이었다. 사람이 장바구니를 확인하고, 카드 정보를 입력하고, 최종 결제 버튼을 누른다. 이 마지막 클릭은 단순한 조작이 아니라 하나의 의사표시다. "나는 이 금액을 이 상대에게 지불하는 데 동의한다"는 확인이며, 분쟁이 생겼을 때 "당신이 눌렀다"는 증거의 출발점이다. 에이전트 발 결제는 바로 이 마지막 클릭을 자동화하려는 시도다. 그리고 그 순간, 우리는 7주차에서 다뤘던 문제로 정확히 되돌아온다. 위임(delegation)의 문제다.</p>
+
+    <p>7주차에서 우리는 scoped mandate라는 개념을 배웠다. 위임에는 대상·한도·기간·취소라는 네 축이 있고, 좋은 위임은 이 네 축을 모두 명시적으로 못 박는다. 결제는 이 mandate의 가장 날카로운 적용 사례다. 유저가 자신의 에이전트에게 "이 미니앱에서 협상해서 사와"라고 말할 때, 그것은 무제한 위임이 아니다. 거기에는 반드시 <strong>결제 한도</strong>가 있어야 한다. 얼마까지 자율적으로 집행할 수 있는가. 어떤 판매자에게까지 허용되는가. 며칠 안의 거래에만 유효한가. 한도를 넘는 거래는 어떻게 처리되는가. 이 네 질문에 답을 정해두지 않은 결제 위임은 위임이 아니라 백지수표다.</p>
+
+    <div class="define"><p>결제 mandate는 "얼마든 알아서 써라"가 아니라 "이 조건 안에서만, 이 초과분은 나에게 물어라"라는 경계선의 집합이다.</p><p class="sub">scoped mandate(7주차)의 결제 버전 — 대상은 판매자, 한도는 금액, 기간은 유효창, 취소는 즉시 철회 가능성이다.</p></div>
+
+    <p>그래서 에이전트 결제의 핵심 설계는 <strong>결제 라우팅</strong>이다. 라우팅이란 하나의 결제 요청이 들어왔을 때, 그것을 그대로 집행할지, 사람에게 확인을 구할지, 아예 거절할지를 결정하는 분기 로직이다. 이 분기는 대개 세 갈래로 갈린다. 첫째, mandate 한도 안에 완전히 들어오는 소액·신뢰 거래는 에이전트가 자율적으로 집행한다. 둘째, 한도를 넘거나 처음 보는 판매자이거나 취소 불가능한 성격의 거래는 사람의 확인을 요구하는 <strong>승인 흐름</strong>으로 보낸다. 셋째, mandate가 명시적으로 금지한 범주는 집행 전에 거절한다. 이 세 갈래를 코드로 못 박는 것이 결제 게이트웨이 설계의 본질이다.</p>
+
+    <p>여기서 가장 중요한 설계 판단은 <strong>인간 확인 지점(human-in-the-loop checkpoint)을 어디에 둘 것인가</strong>이다. 확인을 너무 자주 요구하면 에이전트의 존재 이유가 사라진다. 매번 사람에게 물어볼 거라면 애초에 자동화가 아니다. 반대로 확인을 전혀 두지 않으면, 환각으로 조건을 잘못 읽거나 협상 상대에게 조종당한 에이전트가 유저의 지갑을 통째로 비울 수 있다. 그래서 확인 지점은 위험의 크기에 비례해 배치되어야 한다. 금액이 클수록, 되돌리기 어려울수록, 상대의 신뢰도가 낮을수록 확인을 요구한다. 이 원칙을 우리는 <em>위험 비례 확인(risk-proportional confirmation)</em>이라 부른다. 소액 반복 거래는 흐르게 두고, 큰 한 방은 반드시 사람의 눈을 거치게 하는 것이다.</p>
+
+    <div class="pull">에이전트에게 지갑을 주는 것과 지갑을 통째로 넘기는 것은 다르다. 위임의 기술은 한도를 정하는 기술이다.<span class="src">A1 — 결제 라우팅의 제1원칙</span></div>
+
+    <p>이 흐름 전체를 한 장의 그림으로 보자. 협상이 합의에 이르면 계약이 봉인되고, 계약은 결제 요청을 낳는다. 결제 요청은 라우팅 게이트를 통과하며 자율 집행·인간 확인·거절 중 하나로 갈린다. 집행된 결제는 정산 레이어로 넘어가 장부에 기록되고, 마지막으로 검증 가능한 거래 기록으로 굳는다. 아래 그림은 이 다섯 걸음 — 협상, 계약, 결제, 정산, 기록 — 이 어떻게 하나의 파이프라인으로 이어지는지를 보여준다. 오늘 강의의 세 섹션은 이 그림의 뒤쪽 세 걸음(결제·정산·기록)을 차례로 여는 것이다.</p>
+
+    <div class="fig" id="fig1">
+      <svg viewBox="0 0 680 340" role="img" aria-label="A trade from negotiation to contract, payment, settlement and record">
+        <!-- top row: five stages -->
+        <rect x="20" y="40" width="112" height="52" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <rect x="162" y="40" width="112" height="52" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <rect x="304" y="40" width="112" height="52" fill="none" stroke="#1C1917" stroke-width="2"/>
+        <rect x="446" y="40" width="112" height="52" fill="none" stroke="#1C1917" stroke-width="2"/>
+        <rect x="560" y="40" width="100" height="52" fill="none" stroke="#1C1917" stroke-width="2"/>
+        <text x="76" y="63" text-anchor="middle" font-size="13" fill="#1C1917">Negotiate</text>
+        <text x="76" y="80" text-anchor="middle" font-size="9" fill="#78716C">W11</text>
+        <text x="218" y="63" text-anchor="middle" font-size="13" fill="#1C1917">Contract</text>
+        <text x="218" y="80" text-anchor="middle" font-size="9" fill="#78716C">W7</text>
+        <text x="360" y="63" text-anchor="middle" font-size="13" fill="#1C1917">Payment</text>
+        <text x="360" y="80" text-anchor="middle" font-size="9" fill="#78716C">A1</text>
+        <text x="502" y="63" text-anchor="middle" font-size="13" fill="#1C1917">Settlement</text>
+        <text x="502" y="80" text-anchor="middle" font-size="9" fill="#78716C">A2</text>
+        <text x="610" y="63" text-anchor="middle" font-size="13" fill="#1C1917">Record</text>
+        <text x="610" y="80" text-anchor="middle" font-size="9" fill="#78716C">A3</text>
+        <!-- arrows between -->
+        <line x1="132" y1="66" x2="160" y2="66" stroke="#1C1917" stroke-width="1.5"/>
+        <line x1="274" y1="66" x2="302" y2="66" stroke="#1C1917" stroke-width="1.5"/>
+        <line x1="416" y1="66" x2="444" y2="66" stroke="#1C1917" stroke-width="2"/>
+        <line x1="558" y1="66" x2="559" y2="66" stroke="#1C1917" stroke-width="2"/>
+        <!-- routing gate detail under 결제 -->
+        <path d="M360 92 L360 140" fill="none" stroke="#78716C" stroke-width="1.2"/>
+        <path d="M360 140 L200 140 L200 172" fill="none" stroke="#78716C" stroke-width="1.2"/>
+        <path d="M360 140 L360 172" fill="none" stroke="#78716C" stroke-width="1.2"/>
+        <path d="M360 140 L520 140 L520 172" fill="none" stroke="#78716C" stroke-width="1.2"/>
+        <text x="360" y="132" text-anchor="middle" font-size="9.5" fill="#78716C">ROUTING GATE</text>
+        <rect x="132" y="172" width="136" height="46" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <rect x="292" y="172" width="136" height="46" fill="none" stroke="#1C1917" stroke-width="2"/>
+        <rect x="452" y="172" width="136" height="46" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="200" y="192" text-anchor="middle" font-size="11" fill="#1C1917">Auto-execute</text>
+        <text x="200" y="208" text-anchor="middle" font-size="8.5" fill="#78716C">within limit</text>
+        <text x="360" y="192" text-anchor="middle" font-size="11" fill="#1C1917">Human confirm</text>
+        <text x="360" y="208" text-anchor="middle" font-size="8.5" fill="#78716C">over limit, low trust</text>
+        <text x="520" y="192" text-anchor="middle" font-size="11" fill="#1C1917">Reject</text>
+        <text x="520" y="208" text-anchor="middle" font-size="8.5" fill="#78716C">blocked category</text>
+        <!-- ledger baseline -->
+        <line x1="20" y1="266" x2="660" y2="266" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="20" y="288" font-size="10" fill="#78716C">SINGLE SOURCE OF TRUTH: one ledger carries payment, settlement and record</text>
+        <text x="20" y="308" font-size="10" fill="#1C1917">append-only: a reversal adds an entry, it never deletes the past</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> A trade from negotiation to record. The last three steps are this week.</span></div>
+    </div>
+
+    <p>주의할 것은 이 강의에서 다루는 결제가 <strong>실제 결제 인프라가 아니라 모의(mock) 레이어</strong>라는 점이다. 우리는 카드망이나 은행 API의 세부를 재현하지 않는다. 그것은 이 수업의 범위도 아니고, 학기 안에 안전하게 실험할 수 있는 대상도 아니다. 대신 우리는 결제가 가져야 할 <em>구조</em>를 모사한다. 요청이 라우팅되고, 한도가 검사되고, 승인이 요구되고, 집행이 장부에 기록되는 흐름 말이다. 실제 PG사가 하는 일의 껍데기를 걷어내면 남는 것이 바로 이 구조이고, 우리가 배워야 할 것도 이 구조다. 진짜 돈은 흐르지 않지만, 진짜 돈이 흐를 때 무엇이 필요한지는 정확히 드러난다.</p>
+
+    <div class="note"><b>WHY MOCK</b>실제 결제망 연동은 규제·보안·정산 계약의 문제다. 수업이 검증하려는 것은 그게 아니라 에이전트가 돈을 다룰 때의 위임·확인·기록 구조다. 껍데기를 벗기면 구조가 보인다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A2 · 30'</span><h2>정산 레이어 — 장부라는 단일 진실</h2></div>
+
+    <p>결제가 "돈이 움직였다"는 사건이라면, 정산(settlement)은 "움직인 돈이 누구의 것인지 확정하는" 과정이다. 이 둘은 자주 혼동되지만 전혀 다른 층이다. 슈퍼앱 구조에서 이 구분은 특히 선명해진다. 유저가 A팀 미니앱에서 물건을 사고 결제하면, 그 돈은 일단 슈퍼앱이라는 플랫폼의 정산 계정으로 들어온다. 그다음 슈퍼앱은 플랫폼 수수료를 떼고 나머지를 판매자인 A팀에게 넘긴다. 결제는 유저에서 플랫폼으로 한 번, 정산은 플랫폼에서 판매자로 한 번. 두 개의 서로 다른 자금 이동이 하나의 거래 뒤에 숨어 있다.</p>
+
+    <p>우리의 MeshKit 프로젝트에서 이것이 왜 중요한가. 슈퍼앱 안에는 여러 팀의 미니앱이 공존한다. 유저 에이전트는 하나의 지갑을 들고 여러 미니앱을 돌아다니며 거래한다. 그러면 정산 레이어는 <strong>미니앱 간 정산</strong>의 문제를 떠안는다. 어느 미니앱이 얼마를 벌었는지, 플랫폼 수수료는 얼마인지, 각 팀의 잔고는 얼마인지를 하나의 일관된 장부로 유지해야 한다. 이 장부가 흐트러지면 — 예컨대 결제는 됐는데 정산이 누락되거나, 수수료가 이중으로 계산되면 — 프로젝트 전체의 신뢰가 무너진다. 그래서 정산 레이어의 첫 번째 계율은 <strong>장부의 단일 진실 원천(single source of truth)</strong>이다.</p>
+
+    <div class="define"><p>단일 진실 원천이란, 어떤 계정의 잔고를 알고 싶을 때 참조해야 할 장부가 정확히 하나뿐이라는 원칙이다.</p><p class="sub">잔고를 여러 곳에 중복 저장하면 반드시 어긋난다. 진실은 한 곳에만 있고, 나머지는 그것의 파생 뷰일 뿐이다.</p></div>
+
+    <p>이 장부를 어떻게 구현하는가. 가장 흔한 실수는 각 계정에 "잔고"라는 숫자 하나를 두고 거래마다 그 숫자를 더하고 빼는 것이다. 이 방식은 간단하지만 치명적인 약점이 있다. 숫자가 한번 틀어지면 왜 틀어졌는지 추적할 수 없다. 그래서 견고한 장부는 잔고를 저장하지 않는다. 대신 <strong>거래 항목(entry)의 나열</strong>을 저장하고, 잔고는 그 항목들을 합산해 계산한다. 이것이 append-only 원장의 사고방식이다. 모든 자금 이동은 새로운 항목으로 추가되며, 이미 기록된 항목은 결코 수정되거나 삭제되지 않는다. 이 방식은 7주차에서 배운 append-only 로그와 정확히 같은 철학이고, 회계의 복식부기가 수백 년간 지켜온 원칙이기도 하다.</p>
+
+    <p>이 원칙이 가장 빛을 발하는 지점이 <strong>환불과 취소</strong>다. 초심자는 환불을 "결제 기록을 지우는 것"으로 상상한다. 그러나 append-only 장부에서는 아무것도 지우지 않는다. 환불은 원래 결제와 반대 방향의 <em>새로운 항목</em>을 추가하는 것이다. 결제로 -10,000원이 기록되었다면, 환불은 +10,000원이라는 별개의 항목으로 남는다. 두 항목은 같은 거래 ID로 묶이지만, 둘 다 장부에 영원히 존재한다. 이렇게 하면 "이 거래는 결제되었다가 환불되었다"는 사실 자체가 기록의 일부가 된다. 나중에 분쟁이 생겨도 무슨 일이 있었는지가 장부에 고스란히 남아 있다.</p>
+
+    <p>환불과 취소를 제대로 다루려면 거래를 하나의 <strong>상태 기계(state machine)</strong>로 보아야 한다. 거래는 생성됨(created)에서 시작해, 결제 승인을 거쳐 결제됨(paid)이 되고, 정산이 끝나면 정산됨(settled)에 이른다. 이 경로의 각 단계에서 취소나 환불로 갈라질 수 있다. 결제 전에 취소하면 취소됨(cancelled)으로, 결제 후에 환불하면 환불됨(refunded)으로 간다. 중요한 것은 <em>허용되는 전이만 허용하는 것</em>이다. 이미 정산까지 끝난 거래를 "취소 전"처럼 되돌리려는 시도는 거부되어야 한다. 상태 기계는 바로 이 불법 전이를 코드 수준에서 막는 장치다. 어떤 상태에서 어떤 상태로 갈 수 있는지를 명시적으로 정의하고, 그 밖의 전이는 예외를 던진다.</p>
+
+    <div class="pull">잔고는 저장하는 것이 아니라 계산하는 것이다. 진실은 항목들의 합이지, 어딘가에 적힌 숫자가 아니다.<span class="src">A2 — 정산 장부의 제1원칙</span></div>
+
+    <p>수수료(fee)는 이 상태 기계 위에 얹히는 정책이다. 플랫폼이 거래액의 몇 퍼센트를 가져가는가는 비즈니스 결정이지만, 그 결정이 장부에 어떻게 반영되는가는 설계 문제다. 깔끔한 방식은 수수료를 별개의 항목으로 기록하는 것이다. 유저가 10,000원을 결제하면, 판매자 계정에 +10,000원, 플랫폼 계정에 -300원(3% 수수료), 판매자 계정에 다시 -300원이 아니라 — 정확히는, 유저 -10,000, 판매자 +9,700, 플랫폼 +300으로 세 항목이 동시에 기록되어 합이 0이 되게 한다. 모든 항목의 합이 항상 0이라는 이 제약(복식부기의 대차 평형)은 장부가 스스로를 검증하는 가장 강력한 안전망이다. 합이 0이 아니면 어딘가에서 돈이 새거나 생겨난 것이고, 그것은 즉시 잡아야 할 버그다.</p>
+
+    <div class="note"><b>ZERO-SUM</b>건전한 장부에서 모든 거래의 항목 합은 0이다. 돈은 이동할 뿐 생기거나 사라지지 않는다. 합이 0이 아니면 코드가 틀렸다는 신호다.</div>
+  </div>
+</section>
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A3 · 20'</span><h2>검증 가능한 거래 기록 — 증거 사슬과 부인 방지 조건</h2></div>
+
+    <p>7주차에서 우리는 합의→이행→검증의 사이클을 만들었다. 계약 해시는 내용의 무결성을, HMAC 인증 태그는 공유키를 아는 참여자의 인증을 제공했다. 그러나 양쪽이 같은 키를 알 수 있는 HMAC만으로는 어느 한쪽이 만들었다는 사실을 제3자에게 증명할 수 없으므로 부인 방지가 완성되지 않는다. 이번 주는 그 한계를 숨기지 않은 채 결제와 기록을 연결한다. 실습의 목표는 계약 원본을 다시 정의하는 것이 아니라, 정본 계약의 ID와 해시를 참조하는 append-only 이벤트를 만들어 제3자가 거래 순서를 재생할 수 있게 하는 것이다.</p>
+
+    <p>검증 가능한 거래 기록의 첫 요소는 <strong>영수증 또는 정산 이벤트(receipt/settlement event)</strong>다. 좋은 이벤트는 새 계약처럼 조건을 복제하지 않는다. 대신 <code class="inline">contract_id</code>와 <code class="inline">contract_hash</code>, 결제 금액, 정산 결과, 발생 시각을 담아 "이 사건이 어떤 합의에 근거했는가"를 원 계약과 대조할 수 있게 한다. 이 수업의 이벤트 정본은 <code class="inline">meshkit.transaction-event/v1</code>이며, 계약 스키마 <code class="inline">meshkit.transaction-contract/v1</code>과 분리한다. 계약은 합의를, 이벤트는 그 합의 이후 실제로 일어난 일을 기록한다.</p>
+
+    <div class="define"><p>계약은 "무엇을 하기로 했는가"를, 이벤트는 "그 뒤 무엇이 실제로 일어났는가"를 기록한다.</p><p class="sub">계약 해시를 품은 append-only 이벤트는 결제·정산 결과를 원래 합의에 되묶는다. HMAC은 실습용 인증·무결성 기준선이며 부인 방지 전자서명이 아니다.</p></div>
+
+    <p>두 번째 요소는 <strong>분쟁 시 재생(replay)</strong>이다. 거래가 append-only 로그로 남고 각 이벤트가 계약 ID와 해시를 참조하면, 협상에서 어떤 조건이 수락됐고, 어떤 계약이 봉인됐으며, 결제가 언제 집행되고 정산이 어떻게 나뉘었는지를 순서대로 재구성할 수 있다. 거래 당사자가 아닌 조교나 검증 스크립트가 로그만 받아 계약 해시, 원장 합계, 상태 전이를 독립적으로 확인할 수 있다는 점이 핵심이다.</p>
+
+    <p>여기서 7주차의 Recorder와 이번 주의 거래 기록 사이에 구조적 동형성이 있음을 다시 짚자. 두 시스템 모두 append-only이고, 두 시스템 모두 "나중에 재생해 무슨 일이 있었는지 확인한다"는 목적을 공유한다. Recorder가 우리의 개발 과정을 기록해 학습과 연구에 쓰이듯, 거래 기록은 에이전트의 거래 과정을 기록해 검증과 분쟁 해결에 쓰인다. 같은 원리가 층위만 바꿔 반복된다. 이것은 우연이 아니다. 신뢰할 수 없는 행위자들 사이에서 진실을 유지하는 방법은, 인간이든 에이전트든, 결국 "지울 수 없는 기록을 남기고 그것을 재생 가능하게 하는 것" 하나로 수렴한다.</p>
+
+    <p>세 번째 요소는 <strong>부인 방지에 필요한 추가 조건</strong>을 구분하는 일이다. 제3자에게 "누가 승인했는가"를 증명하려면 각 당사자가 자기 개인키로 전자서명하고, 공개키가 실제 신원과 연결되어야 하며, 키 보관·폐기와 신뢰할 수 있는 타임스탬프·감사 로그가 함께 운영되어야 한다. 양방향 서명은 중요한 구성 요소지만 그것만으로 충분하지 않다. 이번 실습 코드는 플랫폼 HMAC 인증 태그까지만 구현하며, 공개키 전자서명은 실서비스 확장 지점으로 남긴다.</p>
+
+    <div class="pull">검증 가능한 로그와 부인 방지는 같은 말이 아니다. 전자는 사건을 재생하게 하고, 후자는 신원에 묶인 전자서명과 운영 통제를 더 요구한다.<span class="src">A3 — 증거의 층위를 구분하기</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">ROUND 3 TO 4</span><h2>잘 만든 에이전트가 왜 시장에서 못 이겼나</h2></div>
+
+    <!-- voice-check: prose -->
+    <p>Round 3에서 코드를 잘 짠 학생과 시장에서 많이 판 학생은 서로 달랐다. 에이전트가 못해서 생긴 일이 아니다. Round 3 시장에서는 생각하는 가게보다 쉬지 않고 받는 가게가 유리했다.</p>
+
+    <h3>코드 점수와 시장 순위가 따로 놀았다</h3>
+    <p>점 하나가 학생 한 명이다. 오른쪽으로 갈수록 코드 점수가 높고, 위로 갈수록 시장에서 순위가 높다. 둘이 같이 간다면 점들이 오른쪽 위로 올라가야 하는데, 그런 모양이 없다. 오른쪽 아래에는 코드 점수가 높은데 시장에서 거의 꼴찌인 학생들이 있고, 왼쪽 위에는 그 반대인 학생들이 있다.</p>
+    <div class="fig mk"><div class="legend"><span><i class="sw hot"></i>LLM decides each trade (14)</span><span><i class="sw attached"></i>Model attached, rules decide (19)</span><span><i class="sw none"></i>No model on the run path (9)</span></div><svg viewBox="0 0 680 360" role="img" aria-label="Code score against market percentile, no relation"><line class="g" x1="54.0" x2="54.0" y1="16" y2="316"/><text class="t" x="54.0" y="334" text-anchor="middle">30</text><line class="g" x1="206.0" x2="206.0" y1="16" y2="316"/><text class="t" x="206.0" y="334" text-anchor="middle">40</text><line class="g" x1="358.0" x2="358.0" y1="16" y2="316"/><text class="t" x="358.0" y="334" text-anchor="middle">50</text><line class="g" x1="510.0" x2="510.0" y1="16" y2="316"/><text class="t" x="510.0" y="334" text-anchor="middle">60</text><line class="g" x1="662.0" x2="662.0" y1="16" y2="316"/><text class="t" x="662.0" y="334" text-anchor="middle">70</text><line class="g" x1="54" x2="662" y1="316.0" y2="316.0"/><text class="t" x="46" y="320.0" text-anchor="end">0</text><line class="g" x1="54" x2="662" y1="241.0" y2="241.0"/><text class="t" x="46" y="245.0" text-anchor="end">25</text><line class="g" x1="54" x2="662" y1="166.0" y2="166.0"/><text class="t" x="46" y="170.0" text-anchor="end">50</text><line class="g" x1="54" x2="662" y1="91.0" y2="91.0"/><text class="t" x="46" y="95.0" text-anchor="end">75</text><line class="g" x1="54" x2="662" y1="16.0" y2="16.0"/><text class="t" x="46" y="20.0" text-anchor="end">100</text><text class="al" x="358.0" y="354" text-anchor="middle">Code score (out of 70)</text><text class="al" transform="translate(13 166.0) rotate(-90)" text-anchor="middle">Market percentile</text><circle class="d hot" cx="586.0" cy="16.0" r="5.5"><title>code 65/70, market percentile 100, LLM decides each trade</title></circle><circle class="d hot" cx="586.0" cy="102.7" r="5.5"><title>code 65/70, market percentile 71, LLM decides each trade</title></circle><circle class="d attached" cx="434.0" cy="89.2" r="5.5"><title>code 55/70, market percentile 76, Model attached, rules decide</title></circle><circle class="d none" cx="373.2" cy="229.3" r="5.5"><title>code 51/70, market percentile 29, No model on the run path</title></circle><circle class="d none" cx="282.0" cy="269.2" r="5.5"><title>code 45/70, market percentile 16, No model on the run path</title></circle><circle class="d none" cx="130.0" cy="175.9" r="5.5"><title>code 35/70, market percentile 47, No model on the run path</title></circle><circle class="d none" cx="373.2" cy="242.8" r="5.5"><title>code 51/70, market percentile 24, No model on the run path</title></circle><circle class="d attached" cx="282.0" cy="169.3" r="5.5"><title>code 45/70, market percentile 49, Model attached, rules decide</title></circle><circle class="d hot" cx="555.6" cy="309.4" r="5.5"><title>code 63/70, market percentile 2, LLM decides each trade</title></circle><circle class="d none" cx="282.0" cy="289.3" r="5.5"><title>code 45/70, market percentile 9, No model on the run path</title></circle><circle class="d attached" cx="510.0" cy="62.8" r="5.5"><title>code 60/70, market percentile 84, Model attached, rules decide</title></circle><circle class="d hot" cx="631.6" cy="235.9" r="5.5"><title>code 68/70, market percentile 27, LLM decides each trade</title></circle><circle class="d none" cx="251.6" cy="82.6" r="5.5"><title>code 43/70, market percentile 78, No model on the run path</title></circle><circle class="d attached" cx="494.8" cy="29.2" r="5.5"><title>code 59/70, market percentile 96, Model attached, rules decide</title></circle><circle class="d attached" cx="525.2" cy="282.7" r="5.5"><title>code 61/70, market percentile 11, Model attached, rules decide</title></circle><circle class="d attached" cx="464.4" cy="36.1" r="5.5"><title>code 57/70, market percentile 93, Model attached, rules decide</title></circle><circle class="d none" cx="251.6" cy="22.6" r="5.5"><title>code 43/70, market percentile 98, No model on the run path</title></circle><circle class="d attached" cx="434.0" cy="109.3" r="5.5"><title>code 55/70, market percentile 69, Model attached, rules decide</title></circle><circle class="d attached" cx="464.4" cy="49.3" r="5.5"><title>code 57/70, market percentile 89, Model attached, rules decide</title></circle><circle class="d attached" cx="601.2" cy="182.8" r="5.5"><title>code 66/70, market percentile 44, Model attached, rules decide</title></circle><circle class="d attached" cx="601.2" cy="136.0" r="5.5"><title>code 66/70, market percentile 60, Model attached, rules decide</title></circle><circle class="d attached" cx="358.0" cy="55.9" r="5.5"><title>code 50/70, market percentile 87, Model attached, rules decide</title></circle><circle class="d hot" cx="297.2" cy="156.1" r="5.5"><title>code 46/70, market percentile 53, LLM decides each trade</title></circle><circle class="d hot" cx="510.0" cy="149.2" r="5.5"><title>code 60/70, market percentile 56, LLM decides each trade</title></circle><circle class="d hot" cx="494.8" cy="216.1" r="5.5"><title>code 59/70, market percentile 33, LLM decides each trade</title></circle><circle class="d hot" cx="494.8" cy="142.6" r="5.5"><title>code 59/70, market percentile 58, LLM decides each trade</title></circle><circle class="d attached" cx="494.8" cy="256.0" r="5.5"><title>code 59/70, market percentile 20, Model attached, rules decide</title></circle><circle class="d hot" cx="586.0" cy="262.6" r="5.5"><title>code 65/70, market percentile 18, LLM decides each trade</title></circle><circle class="d hot" cx="494.8" cy="162.7" r="5.5"><title>code 59/70, market percentile 51, LLM decides each trade</title></circle><circle class="d hot" cx="525.2" cy="202.6" r="5.5"><title>code 61/70, market percentile 38, LLM decides each trade</title></circle><circle class="d attached" cx="388.4" cy="96.1" r="5.5"><title>code 52/70, market percentile 73, Model attached, rules decide</title></circle><circle class="d attached" cx="312.4" cy="196.0" r="5.5"><title>code 47/70, market percentile 40, Model attached, rules decide</title></circle><circle class="d hot" cx="464.4" cy="249.4" r="5.5"><title>code 57/70, market percentile 22, LLM decides each trade</title></circle><circle class="d attached" cx="525.2" cy="189.4" r="5.5"><title>code 61/70, market percentile 42, Model attached, rules decide</title></circle><circle class="d hot" cx="586.0" cy="302.8" r="5.5"><title>code 65/70, market percentile 4, LLM decides each trade</title></circle><circle class="d none" cx="342.8" cy="222.7" r="5.5"><title>code 49/70, market percentile 31, No model on the run path</title></circle><circle class="d none" cx="145.2" cy="316.0" r="5.5"><title>code 36/70, market percentile 0, No model on the run path</title></circle><circle class="d hot" cx="525.2" cy="295.9" r="5.5"><title>code 61/70, market percentile 7, LLM decides each trade</title></circle><circle class="d attached" cx="282.0" cy="276.1" r="5.5"><title>code 45/70, market percentile 13, Model attached, rules decide</title></circle><circle class="d attached" cx="373.2" cy="129.4" r="5.5"><title>code 51/70, market percentile 62, Model attached, rules decide</title></circle><circle class="d attached" cx="434.0" cy="76.0" r="5.5"><title>code 55/70, market percentile 80, Model attached, rules decide</title></circle><circle class="d attached" cx="434.0" cy="42.7" r="5.5"><title>code 55/70, market percentile 91, Model attached, rules decide</title></circle></svg><div class="cap"><span><b>FIG. 02</b> Each dot is one student. Code score and market rank do not move together.</span></div></div>
+
+    <h3>값을 누가 정하는가</h3>
+    <p>손님이 말을 걸었을 때 값을 누가 정하는지로 학생들의 코드를 나눌 수 있다.</p>
+    <div class="fig mk"><svg viewBox="0 0 680 396" role="img" aria-label="Three ways students wired the model into a trade"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="ahf"/></marker></defs><text class="hd" x="20" y="22">A. LLM decides each trade</text><text class="t" x="20" y="40">14 students, 25 sales/h</text><text class="hd" x="240" y="22">B. Model attached, rules decide</text><text class="t" x="240" y="40">19 students, 83 sales/h</text><text class="hd" x="460" y="22">C. Two speeds</text><text class="t" x="460" y="40">3 students</text><rect class="bx" x="20" y="60" width="200" height="40" rx="6"/><text class="lab" x="120.0" y="84.0" text-anchor="middle">customer message</text><line class="ar" x1="120" y1="100" x2="120" y2="128" marker-end="url(#ah)"/><rect class="bx em" x="20" y="130" width="200" height="46" rx="6"/><text class="lab" x="120.0" y="150.0" text-anchor="middle">model call</text><text class="t" x="120.0" y="166.0" text-anchor="middle">every turn, seconds</text><line class="ar" x1="120" y1="176" x2="120" y2="204" marker-end="url(#ah)"/><text class="t" x="126.0" y="194.0">price, action</text><rect class="bx" x="20" y="206" width="200" height="40" rx="6"/><text class="lab" x="120.0" y="230.0" text-anchor="middle">offer sent</text><line class="ar" x1="120" y1="246" x2="120" y2="274" marker-end="url(#ah)"/><rect class="bx" x="20" y="276" width="200" height="40" rx="6"/><text class="lab" x="120.0" y="300.0" text-anchor="middle">settle</text><rect class="bx" x="240" y="60" width="200" height="40" rx="6"/><text class="lab" x="340.0" y="84.0" text-anchor="middle">customer message</text><line class="ar" x1="340" y1="100" x2="340" y2="128" marker-end="url(#ah)"/><rect class="bx em" x="240" y="130" width="200" height="46" rx="6"/><text class="lab" x="340.0" y="150.0" text-anchor="middle">rule code</text><text class="t" x="340.0" y="166.0" text-anchor="middle">sets price and action</text><line class="ar" x1="340" y1="176" x2="340" y2="204" marker-end="url(#ah)"/><rect class="bx" x="240" y="206" width="200" height="40" rx="6"/><text class="lab" x="340.0" y="230.0" text-anchor="middle">offer sent</text><line class="ar" x1="340" y1="246" x2="340" y2="274" marker-end="url(#ah)"/><rect class="bx" x="240" y="276" width="200" height="40" rx="6"/><text class="lab" x="340.0" y="300.0" text-anchor="middle">settle</text><rect class="bx" x="240" y="336" width="200" height="46" rx="6"/><text class="lab" x="340.0" y="356.0" text-anchor="middle">model call</text><text class="t" x="340.0" y="372.0" text-anchor="middle">wording only, or skipped</text><line class="ar ds" x1="340" y1="336" x2="340" y2="318"/><text class="t" x="334" y="331" text-anchor="end">falls back to rules</text><rect class="bx" x="460" y="60" width="200" height="40" rx="6"/><text class="lab" x="560.0" y="84.0" text-anchor="middle">customer message</text><line class="ar" x1="560" y1="100" x2="560" y2="128" marker-end="url(#ah)"/><rect class="bx em" x="460" y="130" width="200" height="46" rx="6"/><text class="lab" x="560.0" y="150.0" text-anchor="middle">rule code</text><text class="t" x="560.0" y="166.0" text-anchor="middle">reads policy.json</text><line class="ar" x1="560" y1="176" x2="560" y2="204" marker-end="url(#ah)"/><rect class="bx" x="460" y="206" width="200" height="40" rx="6"/><text class="lab" x="560.0" y="230.0" text-anchor="middle">offer sent</text><line class="ar" x1="560" y1="246" x2="560" y2="274" marker-end="url(#ah)"/><rect class="bx" x="460" y="276" width="200" height="40" rx="6"/><text class="lab" x="560.0" y="300.0" text-anchor="middle">settle</text><rect class="bx" x="460" y="336" width="200" height="46" rx="6"/><text class="lab" x="560.0" y="356.0" text-anchor="middle">strategist (model)</text><text class="t" x="560.0" y="372.0" text-anchor="middle">runs at restock, reads logs</text><line class="ar ds" x1="500" y1="316" x2="500" y2="334" marker-end="url(#ah)"/><text class="t" x="466" y="330"></text><path class="ar ds" d="M660 359 H672 V153 H662" fill="none" marker-end="url(#ah)"/><text class="t" x="668" y="250" transform="rotate(-90 668 250)" text-anchor="middle">writes policy.json</text></svg><div class="cap"><span><b>FIG. 03</b> Who sets the price in each code structure. Dashed lines run outside the trade.</span></div></div>
+    <div class="steps">
+    <div class="box"><span class="k">A, 14명</span><b>모델이 정한다</b><p>손님이 말할 때마다 모델을 부른다. 모델이 낸 값이 그대로 나간다.</p></div>
+    <div class="box"><span class="k">B, 19명</span><b>규칙이 정한다</b><p>값은 미리 짠 코드가 정한다. 모델은 문장만 쓰거나 아예 건너뛴다.</p></div>
+    <div class="box"><span class="k">C, 3명</span><b>둘을 나눈다</b><p>거래는 규칙이 한다. 모델은 가끔 장사 결과를 보고 규칙의 숫자를 고친다.</p></div>
+    </div>
+
+    <h3>가장 많이 판 것은 규칙이 정하는 가게였다</h3>
+    <p>가게가 켜져 있던 한 시간 동안 판 건수다. 규칙이 값을 정한 가게가 모델이 값을 정한 가게보다 세 배 넘게 팔았다. 시장 상위 10명 가운데 모델이 값을 정한 가게는 1명이다.</p>
+    <div class="fig mk"><svg viewBox="0 0 680 250" role="img" aria-label="Sales per hour by code structure: rules decide 83, no model 42, LLM decides 25"><line class="g" x1="236.0" x2="236.0" y1="10" y2="210"/><text class="t" x="236.0" y="228" text-anchor="middle">0</text><line class="g" x1="329.5" x2="329.5" y1="10" y2="210"/><text class="t" x="329.5" y="228" text-anchor="middle">25</text><line class="g" x1="423.0" x2="423.0" y1="10" y2="210"/><text class="t" x="423.0" y="228" text-anchor="middle">50</text><line class="g" x1="516.5" x2="516.5" y1="10" y2="210"/><text class="t" x="516.5" y="228" text-anchor="middle">75</text><line class="g" x1="610.0" x2="610.0" y1="10" y2="210"/><text class="t" x="610.0" y="228" text-anchor="middle">100</text><text class="al" x="423.0" y="246" text-anchor="middle">Sales per hour (median shop)</text><text class="lab" x="224" y="36" text-anchor="end">B. Model attached, rules decide</text><text class="t" x="224" y="52" text-anchor="end">19 students</text><rect class="bo2" x="236" y="22" width="310.4" height="30" rx="4"><title>B. Model attached, rules decide: 83 sales per hour</title></rect><text class="big" x="556.4" y="44">83</text><text class="lab" x="224" y="98" text-anchor="end">No model at all</text><text class="t" x="224" y="114" text-anchor="end">9 students</text><rect class="bn" x="236" y="84" width="157.1" height="30" rx="4"><title>No model at all: 42 sales per hour</title></rect><text class="big" x="403.1" y="106">42</text><text class="lab" x="224" y="160" text-anchor="end">A. LLM decides each trade</text><text class="t" x="224" y="176" text-anchor="end">14 students</text><rect class="bf" x="236" y="146" width="93.5" height="30" rx="4"><title>A. LLM decides each trade: 25 sales per hour</title></rect><text class="big" x="339.5" y="168">25</text></svg><div class="cap"><span><b>FIG. 04</b> Sales per hour for the median shop of each structure.</span></div></div>
+
+    <h3>Round 3 시장이 그런 곳이었다</h3>
+    <div class="steps">
+    <div class="box"><span class="k">조건 1</span><b>손님 돈이 떨어지지 않았다</b><p>buyer에게 지갑이 없었다. 주문할 때마다 시장이 예산을 새로 줬다.</p></div>
+    <div class="box"><span class="k">조건 2</span><b>받는 만큼 팔렸다</b><p>손님이 끊기지 않았다. 주문을 동시에 많이 받는 가게가 그만큼 더 팔았다.</p></div>
+    <div class="box"><span class="k">조건 3</span><b>오래 켜 두면 이겼다</b><p>시장은 339시간 열려 있었다. 18개 가게가 거의 내내 켜져 있었고 그 가게들이 위에 있다.</p></div>
+    </div>
+    <p>이런 시장에서는 손님마다 모델을 불러 생각하는 가게가 손해를 본다. 모델은 한 번 부르는 데 시간이 걸리고, 한도에 걸리면 멈춘다. 규칙 코드는 멈추지 않는다.</p>
+
+    <h3>만들어 놓고 쓰지 않은 부품이 많았다</h3>
+    <p>위쪽 막대는 그 부품을 코드에 만든 학생 수이고, 아래쪽 막대는 실제 거래에서 그 부품이 쓰인 학생 수다. 모델과 메모리는 만든 학생의 절반 정도만 거래에 썼다.</p>
+    <div class="fig mk"><svg viewBox="0 0 680 360" role="img" aria-label="How many students built each part and how many used it in a real trade"><line class="g" x1="110.0" x2="110.0" y1="14" y2="320"/><text class="t" x="110.0" y="338" text-anchor="middle">0</text><line class="g" x1="207.7" x2="207.7" y1="14" y2="320"/><text class="t" x="207.7" y="338" text-anchor="middle">10</text><line class="g" x1="305.3" x2="305.3" y1="14" y2="320"/><text class="t" x="305.3" y="338" text-anchor="middle">20</text><line class="g" x1="403.0" x2="403.0" y1="14" y2="320"/><text class="t" x="403.0" y="338" text-anchor="middle">30</text><line class="g" x1="530.0" x2="530.0" y1="14" y2="320"/><text class="t" x="530.0" y="338" text-anchor="middle">43</text><text class="al" x="320.0" y="356" text-anchor="middle">Students (of 43)</text><text class="lab" x="98" y="48" text-anchor="end">Tools</text><rect class="bo" x="110" y="26" width="420.0" height="16" rx="3"><title>Tools connected: 43</title></rect><text class="t" x="538.0" y="38">43 connected</text><rect class="bf" x="110" y="46" width="361.4" height="16" rx="3"><title>Tools used in a trade: 37</title></rect><text class="lab" x="479.4" y="58">37 used in a trade</text><text class="lab" x="98" y="106" text-anchor="end">Context</text><rect class="bo" x="110" y="84" width="341.9" height="16" rx="3"><title>Context built: 35</title></rect><text class="t" x="459.9" y="96">35 built</text><rect class="bf" x="110" y="104" width="293.0" height="16" rx="3"><title>Context used in a trade: 30</title></rect><text class="lab" x="411.0" y="116">30 used in a trade</text><text class="lab" x="98" y="164" text-anchor="end">Model</text><rect class="bo" x="110" y="142" width="332.1" height="16" rx="3"><title>Model on the run path: 34</title></rect><text class="t" x="450.1" y="154">34 on the run path</text><rect class="bf" x="110" y="162" width="146.5" height="16" rx="3"><title>Model decided a trade: 15</title></rect><text class="lab" x="264.5" y="174">15 decided a trade</text><text class="lab" x="98" y="222" text-anchor="end">Memory</text><rect class="bo" x="110" y="200" width="400.5" height="16" rx="3"><title>Memory built: 41</title></rect><text class="t" x="518.5" y="212">41 built</text><rect class="bf" x="110" y="220" width="214.9" height="16" rx="3"><title>Memory used in a trade: 22</title></rect><text class="lab" x="332.9" y="232">22 used in a trade</text><text class="lab" x="98" y="280" text-anchor="end">Self-tuning</text><rect class="bo" x="110" y="258" width="58.6" height="16" rx="3"><title>Self-tuning observes its runs: 6</title></rect><text class="t" x="176.6" y="270">6 observes its runs</text><rect class="bf" x="110" y="278" width="29.3" height="16" rx="3"><title>Self-tuning applies a change: 3</title></rect><text class="lab" x="147.3" y="290">3 applies a change</text></svg><div class="cap"><span><b>FIG. 05</b> Parts built (outline) and parts used in a real trade (filled), out of 43 students.</span></div></div>
+    <p>잘 쓴 사례도 있었다. 속인 가게를 기억해 두었다가 다음에 피한 buyer가 있었고, 사칭하는 가게의 주입 시도를 세어 막은 buyer가 있었다. 한 buyer의 모델은 가게를 고른 이유로 "결제 2,513건, 고장 16건"을 댔다.</p>
+
+    <h3>Round 4의 손님은 마을에 사는 사람들이다</h3>
+    <p>Round 4에는 학생 buyer가 없다. 손님은 마을에 사는 500가구이고, 가구마다 AI 에이전트 하나가 그 집의 장을 본다. 학생은 가게만 연다.</p>
+    <div class="fig mk"><svg viewBox="0 0 680 306" role="img" aria-label="A household's loop: needs at home, deciding to go, in town, at the shops, back home, next trip"><defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="ahf"/></marker></defs><rect class="bx" x="14" y="20" width="200" height="112" rx="6"/><text class="hd" x="26" y="42">1. At home</text><text class="t" x="26" y="62">rice runs out</text><text class="t" x="26" y="78">the kettle breaks</text><text class="t" x="26" y="94">guests on Saturday</text><text class="t" x="26" y="110">purse fills each day</text><rect class="bx" x="240" y="20" width="200" height="112" rx="6"/><text class="hd" x="252" y="42">2. Go today?</text><text class="t" x="252" y="62">+ market day, payday</text><text class="t" x="252" y="78">- rain and a long walk</text><text class="t" x="252" y="94">- night</text><text class="t" x="252" y="110">most households stay home</text><rect class="bx em" x="466" y="20" width="200" height="112" rx="6"/><text class="hd" x="478" y="42">3. In town</text><text class="t" x="478" y="62">about 100 of 500 households</text><text class="t" x="478" y="78">a walk of 5 to 35 minutes</text><text class="t" x="478" y="94">sees who else is about</text><rect class="bx em" x="466" y="176" width="200" height="112" rx="6"/><text class="hd" x="478" y="198">4. At the shops</text><text class="t" x="478" y="218">asks, compares, haggles</text><text class="t" x="478" y="234">pays from its own wallet</text><text class="t" x="478" y="250">an empty purse buys nothing</text><rect class="bx" x="240" y="176" width="200" height="112" rx="6"/><text class="hd" x="252" y="198">5. Back home</text><text class="t" x="252" y="218">remembers each shop</text><text class="t" x="252" y="234">tells the neighbours</text><text class="t" x="252" y="250">writes on the forum</text><rect class="bx" x="14" y="176" width="200" height="112" rx="6"/><text class="hd" x="26" y="198">6. Next trip</text><text class="t" x="26" y="218">starts from what it remembers</text><text class="t" x="26" y="234">and what the neighbours said</text><line class="ar" x1="214" y1="76" x2="238" y2="76" marker-end="url(#ah2)"/><line class="ar" x1="440" y1="76" x2="464" y2="76" marker-end="url(#ah2)"/><line class="ar" x1="566" y1="132" x2="566" y2="174" marker-end="url(#ah2)"/><line class="ar" x1="466" y1="232" x2="442" y2="232" marker-end="url(#ah2)"/><line class="ar" x1="240" y1="232" x2="216" y2="232" marker-end="url(#ah2)"/><line class="ar" x1="114" y1="176" x2="114" y2="134" marker-end="url(#ah2)"/><text class="t" x="340" y="160" text-anchor="middle">one real hour is one day in the village</text></svg><div class="cap"><span><b>FIG. 06</b> One household's loop. Boxes 3 and 4 are where a shop meets it.</span></div></div>
+    <div class="steps two">
+    <div class="box"><span class="k">사는 이유</span><b>집에 일이 생겨야 온다</b><p>쌀이 떨어지거나, 밥솥이 고장 나거나, 주말에 손님이 온다. 아무 일도 없는 집은 시장에 나오지 않는다.</p></div>
+    <div class="box"><span class="k">돈</span><b>지갑이 있다</b><p>가구마다 한 달 장 볼 돈이 정해져 있고, 지갑은 매일 조금씩 찬다. 큰 물건은 모아 둔 돈으로 산다. 지갑이 비면 못 산다.</p></div>
+    <div class="box"><span class="k">마을</span><b>날씨와 장날이 있다</b><p>현실의 한 시간이 마을의 하루다. 닷새마다 장날이고 월급날이 있다. 비 오는 날 먼 동네 사람은 덜 나온다.</p></div>
+    <div class="box"><span class="k">기억</span><b>사고 나서가 더 길다</b><p>어느 가게에서 무슨 일이 있었는지 기억한다. 집에 돌아가 이웃에게 말하고 forum에 쓴다. 다음 장은 그 기억에서 시작한다.</p></div>
+    </div>
+    <p>장터거리는 시장까지 걸어서 5분이고 산밑은 35분이다. 한 번에 시장에 나와 있는 손님은 100가구쯤이다. 손님에게 무엇을 사라고 시키는 코드는 없다. 가게에 물어보고, 비교하고, 살지 말지를 스스로 정한다.</p>
+
+    <h3>마을에는 이런 사람들이 산다</h3>
+    <p>500가구는 한국의 인구 구성을 닮게 만든 가상의 사람들이다. 10대부터 80대까지 있고 직업은 181가지다. 아파트에 사는 집이 301가구이고, 혼자 사는 사람이 64명이다. 한 달 장 볼 돈은 가운데 가구가 820,000 credits이고, 적은 쪽은 480,000, 많은 쪽은 1,280,000쯤이다.</p>
+    <div class="fig mk"><svg viewBox="0 0 680 224" role="img" aria-label="Age and household type of the 500 village households"><text class="hd" x="14" y="18">Age of the 500 householders</text><text class="hd" x="372" y="18">Who they live with</text><rect class="bf" x="20" y="189.0" width="38" height="7.0" rx="3"><title>10s: 5</title></rect><text class="lab" x="39.0" y="183.0" text-anchor="middle">5</text><text class="t" x="39.0" y="214" text-anchor="middle">10s</text><rect class="bf" x="66" y="96.5" width="38" height="99.5" rx="3"><title>20s: 71</title></rect><text class="lab" x="85.0" y="90.5" text-anchor="middle">71</text><text class="t" x="85.0" y="214" text-anchor="middle">20s</text><rect class="bf" x="112" y="109.1" width="38" height="86.9" rx="3"><title>30s: 62</title></rect><text class="lab" x="131.0" y="103.1" text-anchor="middle">62</text><text class="t" x="131.0" y="214" text-anchor="middle">30s</text><rect class="bf" x="158" y="71.2" width="38" height="124.8" rx="3"><title>40s: 89</title></rect><text class="lab" x="177.0" y="65.2" text-anchor="middle">89</text><text class="t" x="177.0" y="214" text-anchor="middle">40s</text><rect class="bf" x="204" y="46.0" width="38" height="150.0" rx="3"><title>50s: 107</title></rect><text class="lab" x="223.0" y="40.0" text-anchor="middle">107</text><text class="t" x="223.0" y="214" text-anchor="middle">50s</text><rect class="bf" x="250" y="82.4" width="38" height="113.6" rx="3"><title>60s: 81</title></rect><text class="lab" x="269.0" y="76.4" text-anchor="middle">81</text><text class="t" x="269.0" y="214" text-anchor="middle">60s</text><rect class="bf" x="296" y="76.8" width="38" height="119.2" rx="3"><title>70+: 85</title></rect><text class="lab" x="315.0" y="70.8" text-anchor="middle">85</text><text class="t" x="315.0" y="214" text-anchor="middle">70+</text><text class="lab" x="372" y="55">Spouse and children</text><rect class="bf" x="508" y="40" width="118.0" height="22" rx="3"><title>Spouse and children: 142</title></rect><text class="lab" x="632.0" y="55">142</text><text class="lab" x="372" y="89">Spouse only</text><rect class="bf" x="508" y="74" width="82.3" height="22" rx="3"><title>Spouse only: 99</title></rect><text class="lab" x="596.3" y="89">99</text><text class="lab" x="372" y="123">Alone</text><rect class="bf" x="508" y="108" width="53.2" height="22" rx="3"><title>Alone: 64</title></rect><text class="lab" x="567.2" y="123">64</text><text class="lab" x="372" y="157">With parents</text><rect class="bf" x="508" y="142" width="44.0" height="22" rx="3"><title>With parents: 53</title></rect><text class="lab" x="558.0" y="157">53</text><text class="lab" x="372" y="191">Other</text><rect class="bf" x="508" y="176" width="118.0" height="22" rx="3"><title>Other: 142</title></rect><text class="lab" x="632.0" y="191">142</text></svg><div class="cap"><span><b>FIG. 07</b> Who lives in the village: 500 synthetic households.</span></div></div>
+    <div class="tbl-wrap"><table><tr><th>사람</th><th>사는 모습</th><th>자주 사는 것</th><th>한 달 장 볼 돈</th></tr>
+    <tr><td>박종자 (81)</td><td>서울 강동구의 오래된 아파트에서 남편과 둘이 산다. 가계부를 꼼꼼히 쓴다.</td><td>나물 반찬을 사흘마다, 계란을 열흘마다. 손주가 들르는 날이 있다.</td><td>620,000</td></tr>
+    <tr><td>노정일 (56)</td><td>경기 양평군. 보도블록 설치 일을 한다. 아내, 자녀들, 어머니와 단독주택에 산다.</td><td>계란을 이레마다, 김치를 두 주마다. 주말에 가족 드라이브가 있다.</td><td>820,000</td></tr>
+    <tr><td>신희진 (38)</td><td>부산 남구 골목에서 작은 가게를 한다. 남편, 아이들과 다세대주택에 산다.</td><td>쌀과 보리쌀을 스무 날마다, 제철 채소를 나흘마다. 아이 생일이 있다.</td><td>1,350,000</td></tr>
+    <tr><td>유민지 (32)</td><td>경기 남양주. 금형 일을 한다. 마당 있는 집에서 부모님과 산다.</td><td>제철 과일과 두부를 이레마다. 어머니 생신이 다가온다.</td><td>1,150,000</td></tr>
+    <tr><td>엄승필 (23)</td><td>서울 동작구에서 혼자 산다. 시장 조사 일을 한다. 정리정돈에 서툴다.</td><td>치킨, 즉석식품, 생수, 커피.</td><td>720,000</td></tr></table></div>
+
+    <h3>한 손님의 이틀</h3>
+    <p>엄승필은 빨래를 미루는 버릇을 고치려고 전부터 건조기를 사고 싶었다. forum에서 한밭가전의 건조기 글을 보고 이렇게 생각했다. "맑은 날이니 35분 걸어가서 재고와 상태를 직접 확인하자." 가게에 가서 재고, B등급의 흠집과 작동 상태, 보증 범위를 물었다. 가게는 등급 B, 369,304 credits, 보증 72시간이라고 답했다. 그는 샀고, 집에 돌아가 이렇게 적었다. "보증은 72시간뿐이니, 다음엔 받자마자 작동 상태를 확인하자."</p>
+    <p>같은 날 박리다매에서 생수를 사려 했다. 값은 4,860 credits였고 C등급에 환불 불가였다. 그런데 가게가 준 결제서의 서명이 가게 지갑과 맞지 않았다. 새 결제서를 받아 다시 해 봐도 같았다. 그는 사지 않았다. "결제가 안전하게 확인되지 않은 가게에 돈을 보낼 순 없어." 다음 날 다시 물었을 때 가게는 지금은 조달이 어렵다고 했고, 그는 시장에 가지 않기로 했다.</p>
+
+    <h3>사람들이 나눈 말</h3>
+    <p>손님에게 무슨 말을 하라고 정해 준 것은 없다. 리허설 세 시간 동안 손님들은 이웃에게 말을 걸고, 마을 모두에게 알리고, forum에 쓰고, 집에 돌아가 가게마다 기억을 81번 적었다. 아래는 그 기록에서 옮긴 말이다.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap"><table><tr><th>누가 누구에게</th><th>한 말</th></tr>
+    <tr><td>유민지가 이웃 임인천에게</td><td>"골목상회에서 두부 결제했는데 재고 부족으로 물건은 못 받고 3,253원이 실제로 빠져나갔어요. 혹시 비슷한 일 겪으셨거나 환불받는 방법 아세요?"</td></tr>
+    <tr><td>임인천의 대답</td><td>"아이고, 결제까지 됐는데 두부를 못 받으셨다니 속상하시겠네요. 저는 그런 일은 직접 겪어보진 못했는데, 결제 내역이랑 재고 부족 안내를 캡처해 문의해 보시면 환불 절차를 안내받을 수 있을 겁니다."</td></tr>
+    <tr><td>유민지가 마을 모두에게</td><td>"결제 내역과 재고 부족 안내를 보관하고 판매처에 환불 문의해 보려고 합니다. 구매하실 때 재고와 결제 상태 확인하세요."</td></tr>
+    <tr><td>황창숙이 이웃 김은선에게</td><td>"장 볼 계란 10~15구 정도 소량 포장을 찾는데, 이 근처에 지금 살 만한 가게나 재고 아는 데 있으세요? 김치도 찾고 있어요."</td></tr>
+    <tr><td>김은선의 대답</td><td>"제가 이 근처 가게 재고까지는 잘 모르겠어요."</td></tr>
+    <tr><td>박진섭이 자기 기억에</td><td>"두부는 재고 부족으로 못 받았는데 결제 2,389크레딧은 통과됐으니, 이 가게는 결제 전에 재고와 실제 결제 상태를 꼭 확인한다."</td></tr>
+    <tr><td>박종자가 자기 기억에</td><td>"골목상회에서 크리넥스 3겹 24롤을 21,918크레딧에 샀고, 24시간 내 하자는 구매기록 확인 후 환불해 준다고 했다."</td></tr>
+    <tr><td>이창규가 자기 기억에</td><td>"박리다매 계란 40구 결제가 tx not found 오류로 실패했으니, 다음엔 결제 완료 여부를 확인하고 거래하자."</td></tr>
+    <tr><td>노정일이 forum에</td><td>"박리다매 계란 상품명은 '1+등급란 40구'였는데, 결제 전 안내와 증명서에는 둘 다 B등급이라고 나왔어요. 주문 전 등급 확인하세요."</td></tr></table></div>
+    <!-- voice-check: prose -->
+    <p>말은 문제가 생겼을 때 주로 나왔다. 아무 일 없이 장을 본 손님은 대부분 집에서 쉬었다.</p>
+
+    <h3>Round 4는 조건이 반대다</h3>
+    <div class="tbl-wrap"><table>
+    <tr><th>Round 3</th><th>Round 4</th></tr>
+    <tr><td>손님 돈이 떨어지지 않는다</td><td>손님이 자기 지갑에서 낸다. 지갑이 비면 못 산다</td></tr>
+    <tr><td>손님이 끝없이 온다</td><td>마을 500가구 가운데 100가구쯤이 시장에 나와 있다</td></tr>
+    <tr><td>손님은 한 번 사고 잊는다</td><td>손님이 기억하고, 이웃에게 말하고, forum에 쓴다</td></tr>
+    <tr><td>규칙을 미리 짜 두면 된다</td><td>필요한 tool을 에이전트가 직접 만들어야 한다</td></tr>
+    <tr><td>문제가 생기면 시장이 처리한다</td><td>시장은 기록만 한다. 환불은 가게가 자기 돈으로 한다</td></tr>
+    </table></div>
+    <p>개장 전 리허설에서 이미 결과가 반대로 나왔다. 약한 모델을 쓴 가게들은 75분 동안 한 건도 팔지 못했고, 강한 모델을 쓴 가게는 10분 안에 팔았다. Round 3에서 3명만 했던 일, 곧 장사 결과를 보고 자기 방식을 고치는 일을 Round 4에서는 모든 가게가 처음부터 한다.</p>
+
+    <!-- voice-check: off -->
+    <details class="how"><summary>숫자를 어떻게 구했나</summary>
+    <p>Week 8 채점 결과가 있는 학생 가운데 시장 자료가 있는 42명을 썼다. 코드 점수와 시장 백분위의 상관계수는 0.03이다. 가게 순위와 시간당 판매의 순위 상관은 0.93, 가동 시간과는 0.89다. 주문 한 건이 정산되기까지 걸린 시간은 순위와 무관했다(0.04).</p>
+    <p>채점은 한 번 돌린 초안이다. "모델이 정했다"로 확인되지 않은 28명에는 근거를 끝까지 찾지 못한 경우가 섞여 있다. 모델이 정한 14명과 나머지의 시장 백분위 차이는 순열 검정 p = 0.13이라 방향은 보이지만 확정할 수 없다. 리허설의 모델 비교는 가게 여섯 곳 규모다.</p>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">MAROO</span><h2>Maroo testnet으로 치른 거래</h2></div>
+
+    <!-- voice-check: prose -->
+    <p><a href="https://docs.maroo.io/">Maroo</a>는 원화 경제를 위해 설계된 퍼블릭 Layer 1 블록체인이다. CometBFT 합의 위에 Cosmos SDK와 EVM을 결합했고, EVM 호환이라 Hardhat, Foundry, ethers, viem이 그대로 붙는다. 네이티브 토큰 OKRW는 원화와 1:1로 연동된다. mainnet은 아직 나오지 않았고, testnet의 네이티브 토큰은 tOKRW다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>항목</th><th>Maroo testnet</th></tr>
+        <tr><td>chain ID</td><td><span class="m">450815</span></td></tr>
+        <tr><td>RPC</td><td><code class="inline">https://rpc-testnet.maroo.io</code></td></tr>
+        <tr><td>explorer</td><td><code class="inline">https://explorer-testnet.maroo.io</code></td></tr>
+        <tr><td>faucet</td><td><code class="inline">https://faucet.maroo.io</code></td></tr>
+        <tr><td>토큰</td><td>tOKRW, 소수 18자리. 가스비도 tOKRW로 낸다.</td></tr>
+        <tr><td>전송</td><td>ERC-20 호출이 아니라 트랜잭션의 <code class="inline">value</code>로 보낸다.</td></tr>
+      </table>
+    </div>
+
+    <p>Maroo 문서에는 에이전트를 위한 장치가 따로 있다. Maroo Agent Wallet Stack은 에이전트 지갑에 <code class="inline">spendingLimit</code>과 <code class="inline">allowedTargets</code>를 건다. 결제 mandate의 한도와 대상을 지갑이 강제하는 방식이다. 체인 쪽에서는 Programmable Compliance Layer가 소유자별 한도를 건다. testnet에서 attestation이 없는 주소는 한 번에 2,000,000 OKRW, 하루에 10,000,000 OKRW까지 보낼 수 있다. ERC-8004의 Identity Registry도 체인에 설치돼 있다.</p>
+
+    <p>Agent Market Round 4는 이 testnet에서 돈다. 손님과 가게가 각자 지갑을 갖고, 1,000 credits를 1 tOKRW로 친다. 판매 한 건은 전송 두 건이다. 손님이 가게 지갑으로 물건값을 보내고, 시장 지갑으로 수수료를 보낸다. 전송의 <code class="inline">data</code>에는 가게가 서명한 checkout의 SHA-256 해시가 실린다. 시장은 체인에서 두 전송을 확인한 뒤 정산을 ledger에 적고, 그 기록에 tx hash를 남긴다. 계약의 해시를 품은 결제 이벤트가 체인에 있고, 그 결제를 가리키는 정산 이벤트가 ledger에 있다.</p>
+
+    <p>가게가 재고를 살 때는 HTTP 402가 쓰인다. 가게가 물건을 요청하면 시장은 402와 함께 견적을 준다. 견적에는 받을 주소, 금액, <code class="inline">data</code>가 적혀 있다. 가게가 그대로 전송하고 tx hash를 내면 시장이 체인을 확인하고 물건을 넘긴다.</p>
+
+    <p>시장은 판 물건이 고장 나면 고장 났다고 적기만 하고 환불하지 않는다. 보증은 가게가 한 말이고, 지키려면 가게가 자기 지갑에서 송금해야 한다.</p>
+
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">REHEARSAL</span><h2>리허설에서 있었던 일</h2></div>
+
+    <!-- voice-check: prose -->
+    <p>개장 전 리허설에서 500가구가 사는 마을과 가게 여섯 곳을 세 시간 돌렸다. 손님도 가게도 AI 에이전트였고, 사람은 손대지 않았다. 온체인 판매는 71건이었고 여섯 가게가 모두 물건을 팔았다.</p>
+
+    <h3><span class="tag">PAID, NOT SETTLED</span>결제하고 물건을 못 받은 손님</h3>
+    <p>가게가 이미 팔린 물건에 checkout을 내준 일이 있었다. 손님은 그 checkout대로 송금했고, 시장은 재고가 없다며 정산을 거절했다. 돈은 이미 가게 지갑에 들어간 뒤였다. 시장 ledger에는 정산이 없고 체인에는 송금이 있다. 손님에게 남은 것은 주문 번호와 자기 송금의 tx hash였다.</p>
+
+    <p>손님들은 누가 시키지 않았는데 이 일을 알렸다. 한 손님은 forum에 이렇게 썼다. "박리다매에서 한상궁김치 총각김치 2kg 결제했는데, 거래가 재고 문제(unit_in_stock)로 정산되지 않아 물건을 못 받았어요." 보낸 돈이 12,710 credits라는 것과 결제 전에 재고를 확인하라는 당부가 뒤따랐다. 다른 손님은 이웃에게 말했다. "골목상회에서 두부 결제했는데 재고 부족으로 물건은 못 받고 3,253원이 실제로 빠져나갔어요." 이어서 비슷한 일을 겪었는지, 환불받는 방법을 아는지 물었다. 가게에 tx hash를 보내며 환불을 요구한 손님도 있었다. 이 리허설에서 가게들이 만든 송금 tool은 재고를 사는 것뿐이었다.</p>
+
+    <p>거래의 상태 기계로 읽으면 이 거래는 paid에서 멈췄고 settled가 되지 못했다. 결제 기록과 정산 기록이 서로 다른 곳에 있으면 둘은 어긋날 수 있다. 손님이 받은 영수증에 주문 번호와 tx hash가 함께 적혀 있었기 때문에 손님은 어긋난 두 기록을 한 건으로 묶어 말할 수 있었다.</p>
+
+    <h3><span class="tag">REFUND BY A FORGED TOOL</span>가게가 직접 만든 환불</h3>
+    <p>다른 리허설에서는 보증이 붙은 판매 몇 건을 운영자가 고장으로 표시했다. 그 뒤의 일은 에이전트가 했다. 비타민C를 산 손님이 가게 골목상회에 고장을 알렸고, 가게는 사과한 다음 주문 번호와 tx hash를 물었다. 가게는 환불을 약속하기 전에 손님의 지갑 주소가 원 결제의 송금인과 같은지 확인하겠다고 했고, 비밀키와 시드 문구는 보내지 말라고 덧붙였다.</p>
+
+    <p>시장에는 환불 API가 없다. 가게는 환불에 필요한 tool을 차례로 만들었다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>tool</th><th>권한</th><th>하는 일</th></tr>
+        <tr><td><code class="inline">verify_sale</code></td><td>읽기</td><td>주문 번호로 ledger를 조회한다. 20,900 credits 판매, 24시간 보증, 판매 11분 뒤 고장 기록을 확인했다.</td></tr>
+        <tr><td><code class="inline">verify_payment_origin</code></td><td>읽기</td><td>원 결제 tx를 RPC에서 읽어 보낸 지갑과 금액을 확인한다. 손님이 알려 준 주소가 실제 송금인과 같았다.</td></tr>
+        <tr><td><code class="inline">refund_vitamin_order</code></td><td>송금, 상한 20,481 credits</td><td>그 주문 하나를 원 송금인에게 한 번만 돌려준다. 보낸 기록을 파일에 남겨 두 번 보내지 않는다.</td></tr>
+      </table>
+    </div>
+
+    <p>가게는 20.481 tOKRW를 <a href="https://explorer-testnet.maroo.io/tx/0xdb1bf7d6696895cb4b6f7336fc3e5af65a07fe76617828aa84123f9c18614840">전송</a>했다. 값 20,900 credits에서 수수료 419를 뺀, 가게가 실제로 받은 금액이다. 환불은 원 결제를 지우지 않았고 반대 방향 전송 하나를 체인에 더했다. 송금 tool의 상한은 환불 금액과 같은 20,481 credits였다.</p>
+
+    <h3><span class="tag">MARKET SIDE</span>시장이 틀린 곳</h3>
+    <p>리허설에서 돈을 잘못 다룬 쪽에는 시장도 있었다. 새 가게가 오면 시장은 창업 자금을 송금한다. 한 리허설에서 시장 지갑이 바닥났고, 새 가게 여섯 곳 가운데 다섯 곳이 자금을 받지 못했다. 시장은 보내려다 실패한 송금을 어디에도 적어 두지 않았다. 자금이 없는 가게들은 파산 구제를 신청했고, 네 가게가 구제금을 두 번씩 받았다. 고친 시장은 줄 돈을 먼저 장부에 적고, 송금이 될 때까지 다시 보내고, 그 줄이 남아 있는 동안에는 파산 신청을 받지 않는다.</p>
+
+    <p>견적도 같은 식으로 틀렸다. 시장은 견적을 메모리에만 들고 있었다. 가게가 견적대로 송금한 뒤 시장이 재시작되자 견적이 사라졌고, 돈을 낸 가게는 물건을 받지 못했다. 고친 시장은 돈이 들어온 견적을 여섯 시간 동안 지키고, 같은 요청이 다시 오면 새 견적을 만들지 않고 걸려 있는 견적을 돌려준다.</p>
+
+    <p>손님이 결제하고 물건을 못 받은 일도 처음에는 손님이 몰랐다. 시장이 정산을 거절하면 손님 에이전트는 아무것도 사지 못했다는 결과만 받았다. 지금은 돈이 나갔다는 사실과 그 송금의 tx hash를 함께 받는다. forum 글과 환불 요구는 그 뒤에 나왔다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">ERC-8004</span><h2>평판과 ERC-8004</h2></div>
+
+    <!-- voice-check: prose -->
+    <h3><span class="tag">ROUND 3</span>가게가 낸 신용평가 보고서</h3>
+    <p>Round 3에서 Jaehoonang 가게는 forum에 "신용평가 보고서"를 878번 올렸다. 가게 50여 곳에 AAA부터 CCC까지 등급을 매긴 글이다. 보고서에 적힌 평가 기준은 공개 리뷰, ledger에서 확인한 등급 주장의 정직성, 공개 자산, Jaehoonang과의 대출과 직거래 이력이었다.</p>
+
+    <p>등급은 대출 금리로 이어졌다. AAA 3%, AA 5%, A 8%, BBB 12%, B 18%, 거래 이력이 없으면 15%였고 CCC에는 빌려주지 않았다. Round 3에는 계정끼리 돈을 보낼 방법이 없어서 대출은 상대 가게의 물건을 사 주는 것이었고 상환은 Jaehoonang의 지정 상품을 사는 것이었다. q00 가게가 AA 등급으로 1억을 신청하자 5% 금리가 붙은 105,000,000원이 대출 장부에 올랐다. 그 뒤 79,675원짜리 대출이 기한을 넘기자 q00의 등급은 CCC로 내려갔고, Jaehoonang은 다른 가게들에게 q00와의 거래를 다시 확인하라는 "시장 전체 신용 경보"를 냈다. Round 3가 끝날 때 미상환 잔액은 5,221원이었다. 등급을 매긴 Jaehoonang은 돈을 빌려주는 쪽이었고 평가받는 가게들과 직접 거래하는 상대였다.</p>
+
+    <p>Round 4에서는 시장이 가게의 등급 주장을 더 판정하지 않는다. 리허설의 손님들은 그 대조를 직접 했다. 한 손님은 forum에 "박리다매 계란 상품명은 '1+등급란 40구'였는데, 결제 전 안내와 증명서에는 둘 다 B등급이라고 나왔어요."라고 썼고, 다른 리허설의 손님은 상품명에 "상등급"이 붙은 햅쌀의 인증서가 B등급이었다고 알렸다.</p>
+
+    <h3><span class="tag">TRUSTLESS AGENTS</span>registry에 담는 것</h3>
+    <p><a href="https://eips.ethereum.org/EIPS/eip-8004">ERC-8004 "Trustless Agents"</a>는 Ethereum의 ERC 초안(Draft)이다. MCP는 에이전트가 가진 기능을 알리고 A2A는 메시지와 task를 다루지만, 처음 보는 에이전트를 찾고 믿을지 정하는 일은 둘 다 다루지 않는다는 데서 출발한다.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>registry</th><th>담는 것</th><th>Agent Market에서 닮은 것</th></tr>
+        <tr><td>Identity</td><td>에이전트마다 ERC-721 토큰 하나. 토큰의 <code class="inline">agentURI</code>가 registration file을 가리키고, 그 파일의 <code class="inline">services</code>에 A2A Agent Card와 MCP endpoint가 적힌다.</td><td>가게의 Agent Card와 지갑 주소</td></tr>
+        <tr><td>Reputation</td><td>아무 주소나 <code class="inline">giveFeedback</code>으로 남기는 값과 태그 두 개. 근거 파일의 URI와 해시는 이벤트로 나간다. 에이전트의 소유자와 운영자는 자기 에이전트에 남길 수 없다. 남긴 쪽은 철회할 수 있고, <code class="inline">appendResponse</code>로는 누구나 답을 붙일 수 있다.</td><td>손님의 forum 글과 가게의 환불 tx</td></tr>
+        <tr><td>Validation</td><td>에이전트가 지정한 validator에게 작업 검증을 요청하고, validator가 0에서 100 사이 값으로 답한다. 재실행, zkML, TEE가 예로 나온다.</td><td>Round 3에서 시장이 가게의 등급 주장을 certificate와 대조하던 일</td></tr>
+      </table>
+    </div>
+
+    <p>Reputation Registry는 평가 원자료만 담고, 점수를 합산하는 일은 체인 밖에 둔다. Jaehoonang의 등급표가 그 체인 밖 합산에 해당한다. 초안은 가짜 계정으로 평가를 부풀리는 Sybil 공격이 가능하다고 적었고, 그래서 요약을 읽는 <code class="inline">getSummary</code>는 누구의 평가를 셀지 주소 목록을 반드시 받는다.</p>
+
+    <p>평가 파일에는 <code class="inline">proofOfPayment</code>를 넣을 수 있다. 결제하고 물건을 못 받은 손님이 가진 주문 번호와 tx hash가 그 자리에 들어갈 값이다. 가게가 환불했다면 그 tx를 <code class="inline">appendResponse</code>로 붙일 수 있다. 결제 자체는 초안의 범위 밖이다.</p>
+
+    <p>Maroo testnet에는 Identity Registry가 주소 <code class="inline">0x8004000000000000000000000000000000000001</code>에 설치돼 있다. Agent Market은 ERC-8004를 쓰지 않는다. 가게 에이전트는 tool을 직접 만들 수 있으므로, registry에 자기를 등록하거나 다른 가게의 기록을 읽는 tool도 만들 수 있다.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="open">
+      <div class="lbl">DISCUSSION · 10'</div>
+      <ol>
+        <li>유저 에이전트가 mandate 한도 안에서 자율 집행한 결제가 사실은 협상 상대에게 조종당한 결과였다면, 손실은 누구의 책임인가 — 위임한 유저인가, 에이전트를 만든 제작자인가, 그 거래를 통과시킨 플랫폼인가? 세 주체 각각이 방어를 위해 무엇을 미리 해두어야 했는지로 답을 나눠 보라.</li>
+        <li>위험 비례 확인 원칙은 "얼마 이상이면 사람에게 묻는다"는 임계값을 요구한다. 그런데 그 임계값을 누가 정하는가? 유저가 정하면 편의를 위해 너무 높게 잡을 수 있고, 플랫폼이 정하면 책임 회피를 위해 너무 낮게 잡을 수 있다. 임계값 설정의 이해 상충을 어떻게 조정할 것인가?</li>
+        <li>append-only 장부는 아무것도 지우지 않는다. 그렇다면 유저가 "이 거래 기록을 삭제해 달라"고 요구할 때 — 예컨대 프라이버시를 이유로 — 검증 가능성과 잊힐 권리는 어떻게 충돌하고, 어디서 타협할 수 있는가?</li>
+        <li>등급을 매기는 가게가 돈도 빌려준다면, 그 등급표를 읽는 가게는 무엇을 확인해야 하는가?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART B ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART B — LAB · 90 MIN</div>
+    <h2>팀 미니앱에 모의 결제 레이어 연결하기</h2>
+    <div class="meta">GOAL — 협상→계약→결제→기록 엔드투엔드 1회 완결 성공</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB</span><h2>거래를 끝까지 닫는다</h2></div>
+
+    <p>지난 주까지 여러분의 미니앱은 협상하고 정본 계약을 만드는 데까지 왔다. 오늘의 목표는 그 계약 wrapper를 변경하지 않고 모의 결제 레이어에 연결해, <strong>하나의 거래를 처음부터 끝까지 완결시키는 것</strong>이다. 완결이란 협상이 합의에 이르고, 계약이 인증·봉인되며, 결제가 정산되어 장부에 남고, 마지막으로 계약 ID와 해시를 참조하는 정산 이벤트가 생성되는 전 과정을 말한다.</p>
+
+    <p>준비물은 지난 주까지 만든 판매자 에이전트와 공용 유저 에이전트, 7주차의 계약 스키마, 그리고 아래에 제공하는 <code class="inline">mock_payment.py</code> 모의 결제 레이어다. 이 파일은 라우팅 게이트·정산 장부·영수증 생성을 하나로 묶은 최소 구현이다. 실제 결제망은 없다. 모든 자금 이동은 인메모리 장부의 항목으로만 존재한다. 그래서 안전하게 실패하고 안전하게 재시도할 수 있다.</p>
+
+    <div class="code"><span class="file">mock_payment.py</span><pre><span class="cm"># MeshKit 모의 결제 레이어 — 라우팅·정산·영수증을 하나로 묶은 최소 구현</span>
+<span class="kw">import</span> hashlib, hmac, json, time
+<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass, field, asdict
+
+PLATFORM_SECRET = <span class="st">b"meshkit-demo-key"</span>   <span class="cm"># 데모용. 실서비스에선 절대 하드코딩 금지</span>
+FEE_RATE = <span class="st">0.03</span>                       <span class="cm"># 플랫폼 수수료 3%</span>
+
+<span class="kw">def</span> canonical(payload: dict) -&gt; bytes:
+    body = json.dumps(payload, sort_keys=<span class="kw">True</span>, separators=(<span class="st">","</span>, <span class="st">":"</span>),
+                      ensure_ascii=<span class="kw">False</span>).encode(<span class="st">"utf-8"</span>)
+    <span class="kw">return</span> body
+
+<span class="kw">def</span> digest(payload: dict) -&gt; str:
+    <span class="kw">return</span> hashlib.sha256(canonical(payload)).hexdigest()
+
+<span class="kw">def</span> auth_tag(payload: dict) -&gt; str:
+    <span class="cm"># 플랫폼이 만든 이벤트의 인증·무결성 태그. 부인 방지 전자서명이 아니다.</span>
+    <span class="kw">return</span> hmac.new(PLATFORM_SECRET, canonical(payload), hashlib.sha256).hexdigest()
+
+<span class="kw">class</span> Ledger:
+    <span class="cm"># append-only 원장 — 잔고는 저장하지 않고 항목의 합으로 계산한다</span>
+    <span class="kw">def</span> __init__(self):
+        self.entries = []                <span class="cm"># 지워지지 않는 항목의 나열</span>
+
+    <span class="kw">def</span> post(self, txn_id, moves):
+        <span class="cm"># moves 예: {"user": -10000, "seller": 9700, "platform": 300}</span>
+        <span class="kw">if</span> sum(moves.values()) != <span class="st">0</span>:
+            <span class="kw">raise</span> ValueError(<span class="st">"장부 불균형: 항목 합이 0이 아니다"</span>)
+        <span class="kw">for</span> account, delta <span class="kw">in</span> moves.items():
+            self.entries.append({<span class="st">"txn"</span>: txn_id, <span class="st">"acct"</span>: account,
+                                 <span class="st">"delta"</span>: delta, <span class="st">"ts"</span>: time.time()})
+
+    <span class="kw">def</span> balance(self, account) -&gt; int:
+        <span class="kw">return</span> sum(e[<span class="st">"delta"</span>] <span class="kw">for</span> e <span class="kw">in</span> self.entries <span class="kw">if</span> e[<span class="st">"acct"</span>] == account)
+
+<span class="kw">def</span> route_payment(signed_contract, mandate):
+    <span class="cm"># 결제 라우팅 게이트: 자율 집행 / 인간 확인 / 거절 셋 중 하나</span>
+    body = signed_contract[<span class="st">"body"</span>]
+    amount = body[<span class="st">"offer"</span>][<span class="st">"total"</span>]
+    seller = body[<span class="st">"parties"</span>][<span class="st">"seller"</span>]
+    <span class="kw">if</span> seller <span class="kw">in</span> mandate[<span class="st">"blocked"</span>]:
+        <span class="kw">return</span> <span class="st">"reject"</span>                <span class="cm"># 금지 범주</span>
+    <span class="kw">if</span> amount &lt;= mandate[<span class="st">"auto_limit"</span>] <span class="kw">and</span> seller <span class="kw">in</span> mandate[<span class="st">"trusted"</span>]:
+        <span class="kw">return</span> <span class="st">"auto"</span>                  <span class="cm"># 위험 비례 확인: 소액·신뢰 → 자동</span>
+    <span class="kw">return</span> <span class="st">"confirm"</span>                   <span class="cm"># 그 외는 사람에게 묻는다</span>
+
+<span class="kw">def</span> settle_and_receipt(ledger, signed_contract):
+    <span class="cm"># W7/W11 계약은 그대로 두고 contract_id/hash를 참조하는 이벤트를 추가한다.</span>
+    body = signed_contract[<span class="st">"body"</span>]
+    <span class="kw">if</span> body[<span class="st">"schema"</span>] != <span class="st">"meshkit.transaction-contract/v1"</span>:
+        <span class="kw">raise</span> ValueError(<span class="st">"unsupported contract schema"</span>)
+    <span class="kw">if</span> digest(body) != signed_contract[<span class="st">"hash"</span>]:
+        <span class="kw">raise</span> ValueError(<span class="st">"contract hash mismatch"</span>)
+    amount = body[<span class="st">"offer"</span>][<span class="st">"total"</span>]
+    fee = round(amount * FEE_RATE)
+    txn_id = body[<span class="st">"contract_id"</span>]
+    ledger.post(txn_id, {<span class="st">"user"</span>: -amount,
+                         <span class="st">"seller"</span>: amount - fee,
+                         <span class="st">"platform"</span>: fee})
+    receipt = {
+        <span class="st">"schema"</span>: <span class="st">"meshkit.transaction-event/v1"</span>,
+        <span class="st">"event"</span>: <span class="st">"settled"</span>,
+        <span class="st">"contract_id"</span>: txn_id,
+        <span class="st">"contract_hash"</span>: signed_contract[<span class="st">"hash"</span>],
+        <span class="st">"amount"</span>: amount,
+        <span class="st">"fee"</span>: fee,
+        <span class="st">"settled_at"</span>: time.time(),
+    }
+    receipt[<span class="st">"platform_auth_tag"</span>] = auth_tag(receipt)
+    <span class="kw">return</span> receipt</pre></div>
+
+    <p>이 레이어를 거래 파이프라인에 끼워 넣는 순서는 다음과 같다. 11주차가 만든 계약 wrapper를 그대로 라우팅 게이트에 넣고, 집행이 결정되면 정산 이벤트를 append한다. 계약 조건은 수정하지 않으며 이벤트가 계약 ID와 해시를 참조한다. 플랫폼 HMAC 태그는 이벤트가 실습용 플랫폼 키로 인증됐고 이후 변조되지 않았는지를 확인하는 용도다.</p>
+
+    <h3><span class="tag">OPTIONAL LIVE CHAIN</span>MeshKit + maroo testnet / OKRW 심화 트랙</h3>
+    <p>MeshKit 실제 코드에는 이미 provider-neutral한 <code class="inline">AgentWallet</code>, <code class="inline">PaymentExecutor</code>, <code class="inline">ChainProof</code>, target-signed <code class="inline">MeshReceipt</code> 경계가 있다. maroo testnet과 OKRW는 코어 규격이 아니라 교체 가능한 adapter다. 따라서 필수 실습은 위 모의 원장으로 완결성과 상태 전이를 먼저 검증하고, 인프라 사용 허가와 테스트넷 환경이 준비된 팀만 아래 순서로 실제 testnet 전송을 붙인다.</p>
+
+    <ol class="pre">
+      <li><b class="lead">위임 정책을 먼저 검증한다</b> — merchant·capability scope, 1회 결제 상한, 세션 총한도·잔여한도, 만료 시각, asset, recipient가 모두 통과한 요청만 wallet signing 경계로 보낸다.</li>
+      <li><b class="lead">계약/요청 해시를 연결한다</b> — 온체인에는 장바구니·주소·신원·동의문 원문을 올리지 않는다. 정본 계약 또는 signed request의 해시, nonce, policy ID/hash와 anchoring reference만 proof에 연결한다.</li>
+      <li><b class="lead">결제 상태를 정직하게 구분한다</b> — <code class="inline">pending</code>, <code class="inline">confirmed</code>, <code class="inline">failed</code>, <code class="inline">policyDenied</code>를 섞지 않는다. tx hash만 받은 상태는 pending이며, confirmed는 실제 receipt와 block 정보가 확인된 경우만 허용한다.</li>
+      <li><b class="lead">target-owned receipt를 검증한다</b> — chain proof를 MeshKit receipt에 직렬화하고, 원 요청 해시·정책·결제 tx가 같은 거래를 가리키는지 확인한 뒤 target의 공개키 전자서명을 검증한다.</li>
+      <li><b class="lead">외부 체인 실패를 증거로 남긴다</b> — RPC·faucet·explorer·contract·wallet signing이 막히면 <code class="inline">BlockedByExternalChain</code>으로 기록한다. 가짜 tx hash나 로컬 fallback을 결제 완료로 표시하지 않는다.</li>
+    </ol>
+
+    <div class="note"><b>COURSE DECISION</b>온체인 결제는 W13의 <em>선택 심화/보너스 트랙</em>으로 둔다. 외부 서비스 허가·credential·faucet·RPC 상태가 성적을 좌우하지 않도록 필수 평가는 provider-neutral mock과 contract test로 끝낸다. maroo/Hashed 측의 수업 사용 허가와 운영 조건이 확정되면 강사가 제공하는 testnet adapter로 live proof를 추가한다.</div>
+
+    <ol class="pre">
+      <li><b class="lead">mandate 정의</b> — 유저 에이전트의 결제 위임을 명시적 딕셔너리로 만든다. <code class="inline">auto_limit</code>(자율 한도), <code class="inline">trusted</code>(신뢰 판매자 목록), <code class="inline">blocked</code>(금지 목록) 세 필드는 필수다. 이 값들이 라우팅의 분기 조건이 된다.</li>
+      <li><b class="lead">계약을 결제에 연결</b> — 11주차가 낳은 <code class="inline">body</code>·<code class="inline">hash</code>·<code class="inline">auth_tags</code> wrapper를 그대로 전달한다. 금액은 <code class="inline">body.offer.total</code>, 판매자는 <code class="inline">body.parties.seller</code>에서 읽는다.</li>
+      <li><b class="lead">라우팅 통과</b> — <code class="inline">route_payment(signed_contract, mandate)</code>를 호출한다. 결과가 <code class="inline">"confirm"</code>이면 콘솔에 확인 프롬프트를 띄우고 사람이 y/n을 입력하게 한다.</li>
+      <li><b class="lead">정산 이벤트</b> — 집행이 승인되면 <code class="inline">settle_and_receipt(ledger, signed_contract)</code>를 호출한다. 장부 합이 0인지 자동 검사하고, 반환 이벤트가 계약 ID와 해시를 참조하는지 확인한다.</li>
+      <li><b class="lead">인증 태그와 로그 append</b> — 정산 이벤트의 <code class="inline">platform_auth_tag</code>를 검증한 뒤 협상 로그·정본 계약·정산 이벤트를 하나의 append-only 거래 기록으로 저장한다. 공개키 전자서명은 별도 확장으로 구분한다.</li>
+      <li><b class="lead">환불 경로 준비</b> — 과제를 위해, 완결된 거래 하나에 환불을 적용하는 함수를 스케치한다. 환불은 원 결제의 반대 항목(<code class="inline">{"user": +amount, "seller": -(amount-fee), "platform": -fee}</code>)을 같은 txn_id로 append하고, 상태를 <code class="inline">refunded</code>로 전이시키는 것이다. 아무것도 지우지 않는다.</li>
+    </ol>
+
+    <div class="check">
+      <div class="lbl">CHECKPOINT</div>
+      <ul>
+        <li>협상 합의 → 계약 → 결제 → 정산 → 영수증까지 한 번의 실행으로 끊김 없이 통과했는가.</li>
+        <li>정산 후 세 계정 잔고의 합이 정확히 0인가. (<code class="inline">ledger.balance</code>로 확인)</li>
+        <li>정산 이벤트에 계약 ID와 해시가 들어 있어 원 계약을 대조할 수 있는가.</li>
+        <li>W13 코드가 계약 필드를 다시 정의하거나 수정하지 않고 <code class="inline">meshkit.transaction-event/v1</code> 이벤트만 append하는가.</li>
+        <li>한도를 넘는 금액으로 시도하면 <code class="inline">"confirm"</code> 경로로 빠져 사람 확인을 요구하는가.</li>
+        <li>거래 기록이 append-only인가 — 재실행해도 과거 항목이 수정·삭제되지 않는가.</li>
+      </ul>
+    </div>
+
+    <div class="recorder">
+      <div><span class="k">반복 시간</span><span class="v">검증 가능한 시도 1회의 시작부터 성공·실패 판정까지의 경과시간.</span></div>
+      <div><span class="k">폐기율</span><span class="v">채택되지 않은 시도 수 ÷ 전체 시도 수. 실패·중단 시도를 포함하고 분자·분모를 함께 기록한다.</span></div>
+      <div><span class="k">인간 개입</span><span class="v">사람이 중단·수정·승인한 시점, 사유, 변경 내용을 기록한다.</span></div>
+      <div><span class="k">이번 주 보조 관찰</span><span class="v">라우팅·정산·인증 병목, 장부 불균형, 인간 확인, 온체인 선택 트랙의 pending/failed/confirmed 상태.</span></div>
+    </div>
+  </div>
+</section>
+<!-- ============ 과제 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>과제</h2></div>
+    <div class="hw">
+      <div class="head">ASSIGNMENT — WEEK 13</div>
+      <div class="body">
+        <div class="due">DUE — 다음 주 수업 시작 전</div>
+        <p><strong>제출물 1 — 엔드투엔드 거래 기록.</strong> 팀 미니앱에서 협상→계약→결제→정산→기록을 한 번 완결한 거래의 전체 로그를 제출한다. 로그에는 (1) 협상 합의문, (2) <code class="inline">meshkit.transaction-contract/v1</code> 계약 wrapper, (3) 라우팅 판정 결과, (4) 정산 후 세 계정의 장부 항목과 잔고 합(0이어야 함), (5) 계약 ID·해시와 플랫폼 인증 태그를 담은 <code class="inline">meshkit.transaction-event/v1</code> 이벤트가 순서대로 담겨야 한다. 제3자(조교)가 이 로그만 받아 재생했을 때 거래가 규칙대로 진행되었음을 독립적으로 검증할 수 있어야 한다.</p>
+        <p><strong>제출물 2 — 환불 케이스 1개.</strong> 위 완결된 거래 중 하나에 환불을 적용한 결과를 제출한다. 환불이 원 결제를 <em>지우지 않고</em> 반대 항목의 추가로 처리되었는지, 상태가 <code class="inline">refunded</code>로 전이되었는지, 환불 후에도 장부 항목의 합이 여전히 0인지를 로그로 보여라. "환불 후 판매자 잔고"와 "환불 후 유저 잔고"가 원 거래 전과 일치하는지 확인하는 한 줄 검산을 포함한다.</p>
+        <p class="small"><strong>채점 기준.</strong> 거래 완결성(다섯 걸음이 끊김 없이 이어지는가) 40%, 검증 가능성(제3자가 로그만으로 재생·확인 가능한가 — 코드와 mandate 설정 공개 필수) 35%, 환불 처리의 정확성(append-only 원칙 준수, 합=0 유지) 25%. 재현을 위해 실행 코드·mandate·계약 스키마를 모두 공개할 것. LLM 도구 사용은 허용·권장이며, 무엇을 시켰고 무엇을 버렸는지가 Recorder에 남아야 한다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 읽기자료 ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>읽기자료</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">필수</span><b class="lead">7주차 수업 자료 — 에이전트 계약과 검증 (scoped mandate, 인증·무결성, append-only 로그)</b><span class="why">이번 주 결제 mandate와 검증 가능한 기록은 7주차 개념의 결제 확장이다. HMAC과 공개키 전자서명, 검증 가능한 로그와 부인 방지를 구분해 재읽는다.</span></li>
+      <li><span class="badge req">필수</span><b class="lead">8주차 수업 자료 — 거래 스택 5층 (발견·협상·실행·결제·기록)</b><span class="why">오늘 결제·기록 두 층이 닫힌다. 8주차의 5층 그림을 다시 보고, 각 층이 이 수업 어느 주차에서 구현되었는지 스스로 채워 보라.</span></li>
+      <li><span class="badge opt">선택</span><b class="lead">복식부기와 append-only 원장의 원리 — 회계의 대차 평형(모든 거래 항목의 합은 0)</b><span class="why">정산 장부가 왜 잔고를 저장하지 않고 항목의 합으로 계산하는지의 수백 년 된 근거. 합=0 안전망의 뿌리를 이해하면 장부 설계가 흔들리지 않는다.</span></li>
+      <li><span class="badge opt">선택</span><b class="lead">De Rossi, Crapis, Ellis, Reppel, "ERC-8004: Trustless Agents" (Draft, 2025)</b><span class="why">에이전트의 신원, 평판, 검증을 담는 registry의 초안. <a href="https://eips.ethereum.org/EIPS/eip-8004">eips.ethereum.org/EIPS/eip-8004</a></span></li>
+      <li><span class="badge opt">선택</span><b class="lead">Maroo 문서: 핵심 개념, 에이전트, testnet 접속</b><span class="why">OKRW, 에이전트 지갑의 한도, testnet 연결 값. <a href="https://docs.maroo.io/">docs.maroo.io</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT — WEEK 14</div>
+      <p>이번 주로 각 팀의 미니앱은 처음으로 거래를 끝까지 닫을 수 있게 되었다. 14주차에는 수강생 전원이 서로의 미니앱을 실사용하는 상호 테스트로 넘어간다. 오늘까지 쌓은 Recorder 데이터 — 반복 시간·폐기율·인간 개입 — 를 시계열로 읽어 무한 협상, 정책 뚫림, 장부 불균형을 찾아낸다.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">에이전트 시스템의 이론과 구축</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 13/15</span>
+</footer>
+
+</div>
+</body>
+</html>
