@@ -1,0 +1,74 @@
+{
+  "scope": "Single seller session; application operation counts, not trades or restart recovery tests",
+  "source": "logs/redis-app/2c2777b9363f4fdd951243cc3cd0b4ca-15663.jsonl",
+  "source_prefix_bytes": 141989,
+  "source_prefix_sha256": "08795ab39128fdd65411148a11c4597b2d28441973c375f3b81b3dcc88a62841",
+  "first_event": "2026-11-17T01:40:32.058525+00:00",
+  "last_event": "2026-11-17T04:57:30.702427+00:00",
+  "sessions": 1,
+  "events": 490,
+  "operations": 488,
+  "counts": [
+    {
+      "operation": "get",
+      "outcome": "success",
+      "count": 287
+    },
+    {
+      "operation": "save",
+      "outcome": "success",
+      "count": 183
+    },
+    {
+      "operation": "delete",
+      "outcome": "success",
+      "count": 15
+    },
+    {
+      "operation": "get",
+      "outcome": "error",
+      "count": 2
+    },
+    {
+      "operation": "save",
+      "outcome": "error",
+      "count": 1
+    }
+  ],
+  "errors": [
+    {
+      "time": "2026-11-17T02:38:02.154983+00:00",
+      "pid": 15663,
+      "session": "2c2777b9363f4fdd951243cc3cd0b4ca",
+      "event": "redis_operation",
+      "store": "deal",
+      "operation": "get",
+      "task_ref": "101a5a47ded549bc726c69d60cbc7f581ff56cc27201e3fd8bbb847c949c6404",
+      "outcome": "error",
+      "error_type": "TimeoutError"
+    },
+    {
+      "time": "2026-11-17T02:38:07.168339+00:00",
+      "pid": 15663,
+      "session": "2c2777b9363f4fdd951243cc3cd0b4ca",
+      "event": "redis_operation",
+      "store": "task",
+      "operation": "save",
+      "task_ref": "101a5a47ded549bc726c69d60cbc7f581ff56cc27201e3fd8bbb847c949c6404",
+      "outcome": "error",
+      "error_type": "TimeoutError"
+    },
+    {
+      "time": "2026-11-17T02:50:05.646920+00:00",
+      "pid": 15663,
+      "session": "2c2777b9363f4fdd951243cc3cd0b4ca",
+      "event": "redis_operation",
+      "store": "task",
+      "operation": "get",
+      "task_ref": "8cb387fc82f4cfcba70d2c73020713d7ee917d315c2cbbc2bf6cc36738a8a56c",
+      "outcome": "error",
+      "error_type": "ConnectionError"
+    }
+  ],
+  "successful_operations_after_last_error": 383
+}

@@ -1,0 +1,587 @@
+........task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3600 parsed_offer=3500 feedback=Acceptance must equal the buyer offer and meet reserve
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3600 parsed_offer=3500 feedback=Acceptance must equal the buyer offer and meet reserve
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=2900 parsed_offer=2900 feedback=Acceptance must equal the buyer offer and meet reserve
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=2900 parsed_offer=2900 feedback=Acceptance must equal the buyer offer and meet reserve
+...task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=False feedback=Expected a positive integer, got False
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=False feedback=Expected a positive integer, got False
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=-1 feedback=Expected a positive integer, got -1
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=-1 feedback=Expected a positive integer, got -1
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=0.0 feedback=Expected a positive integer, got 0.0
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=0.0 feedback=Expected a positive integer, got 0.0
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=Expected a positive integer, got '3800'
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=Expected a positive integer, got '3800'
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800.0 feedback=Expected a positive integer, got 3800.0
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800.0 feedback=Expected a positive integer, got 3800.0
+.task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+.task=unknown sku=unknown invalid harness decision attempt=1 action=offer price=3700 parsed_offer=None feedback=Missing parsed_offer; use null when no current buyer price is identifiable
+task=unknown sku=unknown invalid harness decision attempt=2 action=offer price=3700 parsed_offer=None feedback=Missing parsed_offer; use null when no current buyer price is identifiable
+task=unknown sku=unknown invalid harness decision attempt=1 action=None price=None parsed_offer=None feedback=Invalid JSON
+task=unknown sku=unknown invalid harness decision attempt=2 action=None price=None parsed_offer=None feedback=Invalid JSON
+.......FEE.EEEEEEEEEE./home/jeoni/miniconda3/lib/python3.13/traceback.py:388: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7084894e3880>
+  while f is not None:
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+..FFF.F.FF.FE..FF...............
+======================================================================
+ERROR: test_ad_accepts_explicit_json_at_fixed_price (test_seller_r3_offline.SellerStockFlow.test_ad_accepts_explicit_json_at_fixed_price)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 74, in test_ad_accepts_explicit_json_at_fixed_price
+    await self.make_ad()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_ad_atomic_concurrent_reservation_and_no_model (test_seller_r3_offline.SellerStockFlow.test_ad_atomic_concurrent_reservation_and_no_model)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 334, in test_ad_atomic_concurrent_reservation_and_no_model
+    ad = await self.make_ad()
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_ad_expiry_or_changed_conditions_terminates_deal (test_seller_r3_offline.SellerStockFlow.test_ad_expiry_or_changed_conditions_terminates_deal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 419, in test_ad_expiry_or_changed_conditions_terminates_deal
+    ad = await self.make_ad()
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_ad_fixed_open_counter_and_signed_receipt (test_seller_r3_offline.SellerStockFlow.test_ad_fixed_open_counter_and_signed_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 343, in test_ad_fixed_open_counter_and_signed_receipt
+    ad = await self.make_ad()
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_ad_floor_drift_preserves_fixed_price_through_receipt (test_seller_r3_offline.SellerStockFlow.test_ad_floor_drift_preserves_fixed_price_through_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 361, in test_ad_floor_drift_preserves_fixed_price_through_receipt
+    ad = await self.make_ad()
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_ad_higher_offer_honors_fixed_price (test_seller_r3_offline.SellerStockFlow.test_ad_higher_offer_honors_fixed_price)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 401, in test_ad_higher_offer_honors_fixed_price
+    await self.make_ad()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_ad_ledger_reference_is_generated_and_rechecked (test_seller_r3_offline.SellerStockFlow.test_ad_ledger_reference_is_generated_and_rechecked)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 305, in test_ad_ledger_reference_is_generated_and_rechecked
+    ad = await self.make_ad(False)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_ad_missing_price_repeats_ask_and_keeps_deal (test_seller_r3_offline.SellerStockFlow.test_ad_missing_price_repeats_ask_and_keeps_deal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 408, in test_ad_missing_price_repeats_ask_and_keeps_deal
+    await self.make_ad()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_ad_preview_fixed_timestamp_and_goods_only (test_seller_r3_offline.SellerStockFlow.test_ad_preview_fixed_timestamp_and_goods_only)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 440, in test_ad_preview_fixed_timestamp_and_goods_only
+    ad = await self.make_ad(False)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_ad_price_boundary_and_diagnostic (test_seller_r3_offline.SellerStockFlow.test_ad_price_boundary_and_diagnostic)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 374, in test_ad_price_boundary_and_diagnostic
+    ad = await self.make_ad(False)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_ad_receipt_exact_unit_settlement_attribution (test_seller_r3_offline.SellerStockFlow.test_ad_receipt_exact_unit_settlement_attribution)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 452, in test_ad_receipt_exact_unit_settlement_attribution
+    ad = await self.make_ad()
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_ad_rejects_grade_cost_floor_or_owner_change (test_seller_r3_offline.SellerStockFlow.test_ad_rejects_grade_cost_floor_or_owner_change)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 428, in test_ad_rejects_grade_cost_floor_or_owner_change
+    ad = await self.make_ad(False)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+ERROR: test_private_socket_preview_and_activation_survive_restart (test_seller_r3_offline.SellerStockFlow.test_private_socket_preview_and_activation_survive_restart)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 316, in test_private_socket_preview_and_activation_survive_restart
+    await self.make_ad(False)
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 290, in make_ad
+    ad = await self.seller.advertisement({'action':'preview','market':'https://market.example',
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'shop':'helenjeon101','unit':'u1','price':100,'ttl':1800})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 202, in advertisement
+    self._validate_ad(ad, units, now, available=True)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 164, in _validate_ad
+    self._validate_ad_price(ad, terms["reserve"])
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/seller_r3.py", line 141, in _validate_ad_price
+    raise InventoryError(
+    ...<4 lines>...
+    )
+market_inventory.InventoryError: advertised price below current floor or invalid warranty: sku=G12345678 ad_floor=170 current_floor=170 ad_price=100 warranty_hours=0
+
+======================================================================
+FAIL: test_acceptance_without_verified_offer_cannot_issue_receipt (test_seller_r3_offline.SellerStockFlow.test_acceptance_without_verified_offer_cannot_issue_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 204, in test_acceptance_without_verified_offer_cannot_issue_receipt
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 122, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 97)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 170 != 97
+
+======================================================================
+FAIL: test_bc_and_old_open_at_floor_without_model (test_seller_r3_offline.SellerStockFlow.test_bc_and_old_open_at_floor_without_model) (grade='A', age=86401)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 156, in test_bc_and_old_open_at_floor_without_model
+    self.assertEqual(deal['reserve'], 97 if grade == 'A' else 91)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 170 != 97
+
+======================================================================
+FAIL: test_clarification_keeps_deal_and_hold_then_accepts_explicit_price (test_seller_r3_offline.SellerStockFlow.test_clarification_keeps_deal_and_hold_then_accepts_explicit_price)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 175, in test_clarification_keeps_deal_and_hold_then_accepts_explicit_price
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 122, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 97)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 170 != 97
+
+======================================================================
+FAIL: test_cost_becomes_reserve_and_receipt_reuses_selected_unit (test_seller_r3_offline.SellerStockFlow.test_cost_becomes_reserve_and_receipt_reuses_selected_unit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 159, in test_cost_becomes_reserve_and_receipt_reuses_selected_unit
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 122, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 97)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 170 != 97
+
+======================================================================
+FAIL: test_food_grade_drop_during_model_call_cannot_issue_receipt (test_seller_r3_offline.SellerStockFlow.test_food_grade_drop_during_model_call_cannot_issue_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 229, in test_food_grade_drop_during_model_call_cannot_issue_receipt
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 122, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 97)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 170 != 97
+
+======================================================================
+FAIL: test_missing_unit_cannot_complete (test_seller_r3_offline.SellerStockFlow.test_missing_unit_cannot_complete)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 167, in test_missing_unit_cannot_complete
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 122, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 97)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 170 != 97
+
+======================================================================
+FAIL: test_parsing_failure_reports_correct_reason_and_releases_hold (test_seller_r3_offline.SellerStockFlow.test_parsing_failure_reports_correct_reason_and_releases_hold)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 193, in test_parsing_failure_reports_correct_reason_and_releases_hold
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 122, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 97)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 170 != 97
+
+======================================================================
+FAIL: test_price_below_cost_cannot_complete (test_seller_r3_offline.SellerStockFlow.test_price_below_cost_cannot_complete)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 211, in test_price_below_cost_cannot_complete
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 122, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 97)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 170 != 97
+
+======================================================================
+FAIL: test_repeated_offer_history_survives_deal_serialization (test_seller_r3_offline.SellerStockFlow.test_repeated_offer_history_survives_deal_serialization)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 132, in test_repeated_offer_history_survives_deal_serialization
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 122, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 97)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 170 != 97
+
+======================================================================
+FAIL: test_turnover_respects_grade_floor_without_model (test_seller_r3_offline.SellerStockFlow.test_turnover_respects_grade_floor_without_model)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 88, in test_turnover_respects_grade_floor_without_model
+    self.assertEqual((deal['ask'], deal['reserve']), (97, 97))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: (170, 170) != (97, 97)
+
+First differing element 0:
+170
+97
+
+- (170, 170)
++ (97, 97)
+
+----------------------------------------------------------------------
+Ran 67 tests in 0.707s
+
+FAILED (failures=10, errors=13)

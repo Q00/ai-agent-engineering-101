@@ -1,0 +1,31 @@
+
+> week-08@1.0.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.tests.json
+
+
+> week-08@1.0.0 test:buyer
+> node --import tsx --test buyer/round3_buyer_tests/*.test.ts buyer/round3_buyer_tests/*.test.mjs
+
+✖ buyer/round3_buyer_tests/buyer-flow.test.mjs (546.237225ms)
+✔ buyer/round3_buyer_tests/forumSelection.test.ts (225.779131ms)
+✖ buyer/round3_buyer_tests/harness-path.test.mjs (246.367688ms)
+✔ buyer/round3_buyer_tests/marketOrder.test.ts (203.716481ms)
+✔ buyer/round3_buyer_tests/savedContext.test.ts (202.754162ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 3
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 554.276664
+
+✖ failing tests:
+
+test at buyer/round3_buyer_tests/buyer-flow.test.mjs:1:1
+✖ buyer/round3_buyer_tests/buyer-flow.test.mjs (546.237225ms)
+  'test failed'
+
+test at buyer/round3_buyer_tests/harness-path.test.mjs:1:1
+✖ buyer/round3_buyer_tests/harness-path.test.mjs (246.367688ms)
+  'test failed'

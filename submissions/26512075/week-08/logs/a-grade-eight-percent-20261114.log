@@ -1,0 +1,304 @@
+test_bad_cost_or_duplicate_units_are_rejected (test_market_inventory.InventoryTests.test_bad_cost_or_duplicate_units_are_rejected) ... ok
+test_catalog_prices_are_not_treated_as_stock_costs (test_market_inventory.InventoryTests.test_catalog_prices_are_not_treated_as_stock_costs) ... ok
+test_food_missing_expiry_is_not_assumed_unlimited (test_market_inventory.InventoryTests.test_food_missing_expiry_is_not_assumed_unlimited) ... ok
+test_reads_inventory_and_filters_expired_units (test_market_inventory.InventoryTests.test_reads_inventory_and_filters_expired_units) ... ok
+test_unavailable_or_wrong_round_never_returns_fake_inventory (test_market_inventory.InventoryTests.test_unavailable_or_wrong_round_never_returns_fake_inventory) ... ok
+test_acceptance_must_match_offer_and_reserve (test_offer_validation.OfferValidationTests.test_acceptance_must_match_offer_and_reserve) ... task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3600 parsed_offer=3500 feedback=Acceptance must equal the buyer offer and meet reserve
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3600 parsed_offer=3500 feedback=Acceptance must equal the buyer offer and meet reserve
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=2900 parsed_offer=2900 feedback=Acceptance must equal the buyer offer and meet reserve
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=2900 parsed_offer=2900 feedback=Acceptance must equal the buyer offer and meet reserve
+ok
+test_grounded_natural_language_offer_can_be_accepted (test_offer_validation.OfferValidationTests.test_grounded_natural_language_offer_can_be_accepted) ... ok
+test_grounded_offer_meeting_ask_does_not_counter (test_offer_validation.OfferValidationTests.test_grounded_offer_meeting_ask_does_not_counter) ... ok
+test_invalid_values_are_not_no_offer (test_offer_validation.OfferValidationTests.test_invalid_values_are_not_no_offer) ... task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=False feedback=Expected a positive integer, got False
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=False feedback=Expected a positive integer, got False
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=-1 feedback=Expected a positive integer, got -1
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=-1 feedback=Expected a positive integer, got -1
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=0.0 feedback=Expected a positive integer, got 0.0
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=0.0 feedback=Expected a positive integer, got 0.0
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=Expected a positive integer, got '3800'
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=Expected a positive integer, got '3800'
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800.0 feedback=Expected a positive integer, got 3800.0
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800.0 feedback=Expected a positive integer, got 3800.0
+ok
+test_invented_offer_cannot_be_accepted (test_offer_validation.OfferValidationTests.test_invented_offer_cannot_be_accepted) ... task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+task=unknown sku=unknown invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+ok
+test_missing_field_and_malformed_json_are_parsing_failures (test_offer_validation.OfferValidationTests.test_missing_field_and_malformed_json_are_parsing_failures) ... task=unknown sku=unknown invalid harness decision attempt=1 action=offer price=3700 parsed_offer=None feedback=Missing parsed_offer; use null when no current buyer price is identifiable
+task=unknown sku=unknown invalid harness decision attempt=2 action=offer price=3700 parsed_offer=None feedback=Missing parsed_offer; use null when no current buyer price is identifiable
+task=unknown sku=unknown invalid harness decision attempt=1 action=None price=None parsed_offer=None feedback=Invalid JSON
+task=unknown sku=unknown invalid harness decision attempt=2 action=None price=None parsed_offer=None feedback=Invalid JSON
+ok
+test_no_price_clarifies_without_acceptance_or_retry (test_offer_validation.OfferValidationTests.test_no_price_clarifies_without_acceptance_or_retry) ... ok
+test_plain_offer_meeting_ask_accepts_without_model (test_offer_validation.OfferValidationTests.test_plain_offer_meeting_ask_accepts_without_model) ... ok
+test_repeated_natural_language_offer_cannot_trigger_discount (test_offer_validation.OfferValidationTests.test_repeated_natural_language_offer_cannot_trigger_discount) ... ok
+test_repeated_offer_holds_without_model_but_improvement_can_negotiate (test_offer_validation.OfferValidationTests.test_repeated_offer_holds_without_model_but_improvement_can_negotiate) ... ok
+test_repeated_offer_meeting_current_ask_still_accepts (test_offer_validation.OfferValidationTests.test_repeated_offer_meeting_current_ask_still_accepts) ... ok
+test_reserve_skips_model_and_rechecks_rising_floor (test_offer_validation.OfferValidationTests.test_reserve_skips_model_and_rechecks_rising_floor) ... ok
+test_acceptance_without_verified_offer_cannot_issue_receipt (test_seller_r3_offline.SellerStockFlow.test_acceptance_without_verified_offer_cannot_issue_receipt) ... FAIL
+test_ad_atomic_concurrent_reservation_and_no_model (test_seller_r3_offline.SellerStockFlow.test_ad_atomic_concurrent_reservation_and_no_model) ... ok
+test_ad_auto_price_and_grade_disclosure (test_seller_r3_offline.SellerStockFlow.test_ad_auto_price_and_grade_disclosure) ... ok
+test_ad_expiry_or_changed_conditions_terminates_deal (test_seller_r3_offline.SellerStockFlow.test_ad_expiry_or_changed_conditions_terminates_deal) ... ok
+test_ad_fixed_open_counter_and_signed_receipt (test_seller_r3_offline.SellerStockFlow.test_ad_fixed_open_counter_and_signed_receipt) ... ok
+test_ad_floor_drift_preserves_fixed_price_through_receipt (test_seller_r3_offline.SellerStockFlow.test_ad_floor_drift_preserves_fixed_price_through_receipt) ... ok
+test_ad_higher_offer_honors_fixed_price (test_seller_r3_offline.SellerStockFlow.test_ad_higher_offer_honors_fixed_price) ... ok
+test_ad_ledger_reference_is_generated_and_rechecked (test_seller_r3_offline.SellerStockFlow.test_ad_ledger_reference_is_generated_and_rechecked) ... ok
+test_ad_missing_price_repeats_ask_and_keeps_deal (test_seller_r3_offline.SellerStockFlow.test_ad_missing_price_repeats_ask_and_keeps_deal) ... ok
+test_ad_preview_fixed_timestamp_and_goods_only (test_seller_r3_offline.SellerStockFlow.test_ad_preview_fixed_timestamp_and_goods_only) ... ok
+test_ad_price_boundary_and_diagnostic (test_seller_r3_offline.SellerStockFlow.test_ad_price_boundary_and_diagnostic) ... ok
+test_ad_receipt_exact_unit_settlement_attribution (test_seller_r3_offline.SellerStockFlow.test_ad_receipt_exact_unit_settlement_attribution) ... ok
+test_ad_rejects_grade_cost_floor_or_owner_change (test_seller_r3_offline.SellerStockFlow.test_ad_rejects_grade_cost_floor_or_owner_change) ... FAIL
+test_aging_a_opens_at_floor_without_model_markup (test_seller_r3_offline.SellerStockFlow.test_aging_a_opens_at_floor_without_model_markup) ... ok
+test_ambiguous_leaf_refused_and_sku_exact (test_seller_r3_offline.SellerStockFlow.test_ambiguous_leaf_refused_and_sku_exact) ... ok
+test_b_is_preferred_and_requested_grade_filters_first (test_seller_r3_offline.SellerStockFlow.test_b_is_preferred_and_requested_grade_filters_first) ... ok
+test_bc_and_old_open_at_floor_without_model (test_seller_r3_offline.SellerStockFlow.test_bc_and_old_open_at_floor_without_model) ... /home/jeoni/miniconda3/lib/python3.13/unittest/mock.py:2247: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x79f481f2e4d0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/jeoni/miniconda3/lib/python3.13/unittest/mock.py:2247: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x79f481f2e200>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+
+  test_bc_and_old_open_at_floor_without_model (test_seller_r3_offline.SellerStockFlow.test_bc_and_old_open_at_floor_without_model) (grade='A', age=86401) ... FAIL
+test_clarification_keeps_deal_and_hold_then_accepts_explicit_price (test_seller_r3_offline.SellerStockFlow.test_clarification_keeps_deal_and_hold_then_accepts_explicit_price) ... FAIL
+test_cost_becomes_reserve_and_receipt_reuses_selected_unit (test_seller_r3_offline.SellerStockFlow.test_cost_becomes_reserve_and_receipt_reuses_selected_unit) ... FAIL
+test_empty_protobuf_metadata_can_open (test_seller_r3_offline.SellerStockFlow.test_empty_protobuf_metadata_can_open) ... ok
+test_food_grade_drop_during_model_call_cannot_issue_receipt (test_seller_r3_offline.SellerStockFlow.test_food_grade_drop_during_model_call_cannot_issue_receipt) ... FAIL
+test_invalid_protobuf_accept_fails_without_reserving_stock (test_seller_r3_offline.SellerStockFlow.test_invalid_protobuf_accept_fails_without_reserving_stock) ... ok
+test_missing_unit_cannot_complete (test_seller_r3_offline.SellerStockFlow.test_missing_unit_cannot_complete) ... FAIL
+test_parsing_failure_reports_correct_reason_and_releases_hold (test_seller_r3_offline.SellerStockFlow.test_parsing_failure_reports_correct_reason_and_releases_hold) ... FAIL
+test_positive_warranty_request_is_rejected_before_offer (test_seller_r3_offline.SellerStockFlow.test_positive_warranty_request_is_rejected_before_offer) ... ok
+test_price_below_cost_cannot_complete (test_seller_r3_offline.SellerStockFlow.test_price_below_cost_cannot_complete) ... FAIL
+test_private_socket_preview_and_activation_survive_restart (test_seller_r3_offline.SellerStockFlow.test_private_socket_preview_and_activation_survive_restart) ... ERROR
+test_protobuf_acceptance_preserves_nested_constraints (test_seller_r3_offline.SellerStockFlow.test_protobuf_acceptance_preserves_nested_constraints) ... ok
+test_protobuf_warranty_requirement_is_not_dropped (test_seller_r3_offline.SellerStockFlow.test_protobuf_warranty_requirement_is_not_dropped) ... ok
+test_repeated_offer_history_survives_deal_serialization (test_seller_r3_offline.SellerStockFlow.test_repeated_offer_history_survives_deal_serialization) ... FAIL
+test_turnover_opens_at_one_percent_floor_without_model (test_seller_r3_offline.SellerStockFlow.test_turnover_opens_at_one_percent_floor_without_model) ... FAIL
+test_acceptance_rechecks_unit_and_cost_and_expiry (test_seller_stock.SellerStockTests.test_acceptance_rechecks_unit_and_cost_and_expiry) ... ok
+test_category_grade_and_freshness_constraints (test_seller_stock.SellerStockTests.test_category_grade_and_freshness_constraints) ... ok
+test_expired_unit_and_multiple_candidates (test_seller_stock.SellerStockTests.test_expired_unit_and_multiple_candidates) ... ok
+test_refuses_unidentified_or_wrong_round (test_seller_stock.SellerStockTests.test_refuses_unidentified_or_wrong_round) ... ok
+test_rejects_invalid_constraints (test_seller_stock.SellerStockTests.test_rejects_invalid_constraints) ... ok
+test_uses_exact_sku_and_actual_cost_instead_of_list_price (test_seller_stock.SellerStockTests.test_uses_exact_sku_and_actual_cost_instead_of_list_price) ... ok
+test_aging_a_uses_existing_floor_after_eighteen_hours (test_strategy.StrategyTests.test_aging_a_uses_existing_floor_after_eighteen_hours) ... ok
+test_b_first_only_after_eligibility (test_strategy.StrategyTests.test_b_first_only_after_eligibility) ... ok
+test_c_food_does_not_use_old_below_cost_clearance (test_strategy.StrategyTests.test_c_food_does_not_use_old_below_cost_clearance) ... ok
+test_clearance_rounds_up_and_overrides_normal_minimum (test_strategy.StrategyTests.test_clearance_rounds_up_and_overrides_normal_minimum) ... ok
+test_fresh_a_has_eight_percent_floor (test_strategy.StrategyTests.test_fresh_a_has_eight_percent_floor) ... ok
+test_old_or_bc_starts_at_three_percent_floor_without_storage (test_strategy.StrategyTests.test_old_or_bc_starts_at_three_percent_floor_without_storage) ... ok
+test_positive_warranties_cannot_be_enabled_without_liability_tracking (test_strategy.StrategyTests.test_positive_warranties_cannot_be_enabled_without_liability_tracking) ... ok
+test_turnover_floor_is_above_cost_for_all_grades_and_ages (test_strategy.StrategyTests.test_turnover_floor_is_above_cost_for_all_grades_and_ages) ... ok
+test_unknown_or_stale_comps_are_not_price_evidence (test_strategy.StrategyTests.test_unknown_or_stale_comps_are_not_price_evidence) ... ok
+
+======================================================================
+ERROR: test_private_socket_preview_and_activation_survive_restart (test_seller_r3_offline.SellerStockFlow.test_private_socket_preview_and_activation_survive_restart)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 310, in test_private_socket_preview_and_activation_survive_restart
+    server=await asyncio.start_unix_server(self.seller._ad_client,path=str(path))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/streams.py", line 113, in start_unix_server
+    return await loop.create_unix_server(factory, path, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/unix_events.py", line 321, in create_unix_server
+    sock.bind(path)
+    ~~~~~~~~~^^^^^^
+PermissionError: [Errno 1] Operation not permitted
+
+======================================================================
+FAIL: test_acceptance_without_verified_offer_cannot_issue_receipt (test_seller_r3_offline.SellerStockFlow.test_acceptance_without_verified_offer_cannot_issue_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 196, in test_acceptance_without_verified_offer_cannot_issue_receipt
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 114, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 90)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 92 != 90
+
+======================================================================
+FAIL: test_ad_rejects_grade_cost_floor_or_owner_change (test_seller_r3_offline.SellerStockFlow.test_ad_rejects_grade_cost_floor_or_owner_change)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 429, in test_ad_rejects_grade_cost_floor_or_owner_change
+    with self.assertRaises(r3.InventoryError):
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+AssertionError: InventoryError not raised
+
+======================================================================
+FAIL: test_bc_and_old_open_at_floor_without_model (test_seller_r3_offline.SellerStockFlow.test_bc_and_old_open_at_floor_without_model) (grade='A', age=86401)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 148, in test_bc_and_old_open_at_floor_without_model
+    self.assertEqual(deal['reserve'], 88)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 92 != 88
+
+======================================================================
+FAIL: test_clarification_keeps_deal_and_hold_then_accepts_explicit_price (test_seller_r3_offline.SellerStockFlow.test_clarification_keeps_deal_and_hold_then_accepts_explicit_price)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 167, in test_clarification_keeps_deal_and_hold_then_accepts_explicit_price
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 114, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 90)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 92 != 90
+
+======================================================================
+FAIL: test_cost_becomes_reserve_and_receipt_reuses_selected_unit (test_seller_r3_offline.SellerStockFlow.test_cost_becomes_reserve_and_receipt_reuses_selected_unit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 151, in test_cost_becomes_reserve_and_receipt_reuses_selected_unit
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 114, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 90)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 92 != 90
+
+======================================================================
+FAIL: test_food_grade_drop_during_model_call_cannot_issue_receipt (test_seller_r3_offline.SellerStockFlow.test_food_grade_drop_during_model_call_cannot_issue_receipt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 221, in test_food_grade_drop_during_model_call_cannot_issue_receipt
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 114, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 90)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 92 != 90
+
+======================================================================
+FAIL: test_missing_unit_cannot_complete (test_seller_r3_offline.SellerStockFlow.test_missing_unit_cannot_complete)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 159, in test_missing_unit_cannot_complete
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 114, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 90)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 92 != 90
+
+======================================================================
+FAIL: test_parsing_failure_reports_correct_reason_and_releases_hold (test_seller_r3_offline.SellerStockFlow.test_parsing_failure_reports_correct_reason_and_releases_hold)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 185, in test_parsing_failure_reports_correct_reason_and_releases_hold
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 114, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 90)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 92 != 90
+
+======================================================================
+FAIL: test_price_below_cost_cannot_complete (test_seller_r3_offline.SellerStockFlow.test_price_below_cost_cannot_complete)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 203, in test_price_below_cost_cannot_complete
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 114, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 90)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 92 != 90
+
+======================================================================
+FAIL: test_repeated_offer_history_survives_deal_serialization (test_seller_r3_offline.SellerStockFlow.test_repeated_offer_history_survives_deal_serialization)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 124, in test_repeated_offer_history_survives_deal_serialization
+    await self.open_deal()
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 114, in open_deal
+    self.assertEqual(decision.await_args.args[0]['limit'], 90)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 92 != 90
+
+======================================================================
+FAIL: test_turnover_opens_at_one_percent_floor_without_model (test_seller_r3_offline.SellerStockFlow.test_turnover_opens_at_one_percent_floor_without_model)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 80, in test_turnover_opens_at_one_percent_floor_without_model
+    self.assertEqual((deal['ask'], deal['reserve']), (86, 86))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: (92, 92) != (86, 86)
+
+First differing element 0:
+92
+86
+
+- (92, 92)
++ (86, 86)
+
+----------------------------------------------------------------------
+Ran 63 tests in 1.231s
+
+FAILED (failures=11, errors=1)

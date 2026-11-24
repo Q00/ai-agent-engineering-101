@@ -1,0 +1,264 @@
+
+$ cwd=seller ['/home/jeoni/miniconda3/bin/python', '-B', '-m', 'unittest', 'discover', '-s', 'tests', '-v']
+test_bad_cost_or_duplicate_units_are_rejected (test_market_inventory.InventoryTests.test_bad_cost_or_duplicate_units_are_rejected) ... ok
+test_catalog_prices_are_not_treated_as_stock_costs (test_market_inventory.InventoryTests.test_catalog_prices_are_not_treated_as_stock_costs) ... ok
+test_food_missing_expiry_is_not_assumed_unlimited (test_market_inventory.InventoryTests.test_food_missing_expiry_is_not_assumed_unlimited) ... ok
+test_reads_inventory_and_filters_expired_units (test_market_inventory.InventoryTests.test_reads_inventory_and_filters_expired_units) ... ok
+test_unavailable_or_wrong_round_never_returns_fake_inventory (test_market_inventory.InventoryTests.test_unavailable_or_wrong_round_never_returns_fake_inventory) ... ok
+test_acceptance_must_match_offer_and_reserve (test_offer_validation.OfferValidationTests.test_acceptance_must_match_offer_and_reserve) ... invalid harness decision attempt=1 action=accept price=3600 parsed_offer=3500 feedback=Acceptance must equal the buyer offer and meet reserve
+invalid harness decision attempt=2 action=accept price=3600 parsed_offer=3500 feedback=Acceptance must equal the buyer offer and meet reserve
+invalid harness decision attempt=1 action=accept price=2900 parsed_offer=2900 feedback=Acceptance must equal the buyer offer and meet reserve
+invalid harness decision attempt=2 action=accept price=2900 parsed_offer=2900 feedback=Acceptance must equal the buyer offer and meet reserve
+ok
+test_grounded_natural_language_offer_can_be_accepted (test_offer_validation.OfferValidationTests.test_grounded_natural_language_offer_can_be_accepted) ... ok
+test_invalid_values_are_not_no_offer (test_offer_validation.OfferValidationTests.test_invalid_values_are_not_no_offer) ... invalid harness decision attempt=1 action=accept price=3800 parsed_offer=False feedback=Expected a positive integer, got False
+invalid harness decision attempt=2 action=accept price=3800 parsed_offer=False feedback=Expected a positive integer, got False
+invalid harness decision attempt=1 action=accept price=3800 parsed_offer=-1 feedback=Expected a positive integer, got -1
+invalid harness decision attempt=2 action=accept price=3800 parsed_offer=-1 feedback=Expected a positive integer, got -1
+invalid harness decision attempt=1 action=accept price=3800 parsed_offer=0.0 feedback=Expected a positive integer, got 0.0
+invalid harness decision attempt=2 action=accept price=3800 parsed_offer=0.0 feedback=Expected a positive integer, got 0.0
+invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=Expected a positive integer, got '3800'
+invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=Expected a positive integer, got '3800'
+invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800.0 feedback=Expected a positive integer, got 3800.0
+invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800.0 feedback=Expected a positive integer, got 3800.0
+ok
+test_invented_offer_cannot_be_accepted (test_offer_validation.OfferValidationTests.test_invented_offer_cannot_be_accepted) ... invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+invalid harness decision attempt=1 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+invalid harness decision attempt=2 action=accept price=3800 parsed_offer=3800 feedback=parsed_offer must appear as an explicit price in the current buyer message; otherwise use null
+ok
+test_meeting_ask_still_requires_acceptance (test_offer_validation.OfferValidationTests.test_meeting_ask_still_requires_acceptance) ... invalid harness decision attempt=1 action=offer price=4000 parsed_offer=3800 feedback=Buyer offered 3800, meeting your current ask 3800; return accept with price 3800
+invalid harness decision attempt=2 action=offer price=4000 parsed_offer=3800 feedback=Buyer offered 3800, meeting your current ask 3800; return accept with price 3800
+ok
+test_missing_field_and_malformed_json_are_parsing_failures (test_offer_validation.OfferValidationTests.test_missing_field_and_malformed_json_are_parsing_failures) ... invalid harness decision attempt=1 action=offer price=3700 parsed_offer=None feedback=Missing parsed_offer; use null when no current buyer price is identifiable
+invalid harness decision attempt=2 action=offer price=3700 parsed_offer=None feedback=Missing parsed_offer; use null when no current buyer price is identifiable
+invalid harness decision attempt=1 action=None price=None parsed_offer=None feedback=Invalid JSON
+invalid harness decision attempt=2 action=None price=None parsed_offer=None feedback=Invalid JSON
+ok
+test_no_price_clarifies_without_acceptance_or_retry (test_offer_validation.OfferValidationTests.test_no_price_clarifies_without_acceptance_or_retry) ... ok
+test_plain_positive_price_cannot_be_classified_as_missing (test_offer_validation.OfferValidationTests.test_plain_positive_price_cannot_be_classified_as_missing) ... invalid harness decision attempt=1 action=offer price=3700 parsed_offer=0 feedback=The numeric buyer offer is 3800; return that parsed_offer
+ok
+test_acceptance_without_verified_offer_cannot_issue_receipt (test_seller_r3_offline.SellerStockFlow.test_acceptance_without_verified_offer_cannot_issue_receipt) ... ok
+test_ad_atomic_concurrent_reservation_and_no_model (test_seller_r3_offline.SellerStockFlow.test_ad_atomic_concurrent_reservation_and_no_model) ... ok
+test_ad_expiry_or_changed_conditions_terminates_deal (test_seller_r3_offline.SellerStockFlow.test_ad_expiry_or_changed_conditions_terminates_deal) ... ok
+test_ad_fixed_open_counter_and_signed_receipt (test_seller_r3_offline.SellerStockFlow.test_ad_fixed_open_counter_and_signed_receipt) ... ok
+test_ad_preview_fixed_timestamp_and_goods_only (test_seller_r3_offline.SellerStockFlow.test_ad_preview_fixed_timestamp_and_goods_only) ... ok
+test_ad_receipt_exact_unit_settlement_attribution (test_seller_r3_offline.SellerStockFlow.test_ad_receipt_exact_unit_settlement_attribution) ... ok
+test_ad_rejects_grade_cost_floor_or_owner_change (test_seller_r3_offline.SellerStockFlow.test_ad_rejects_grade_cost_floor_or_owner_change) ... ok
+test_ambiguous_leaf_refused_and_sku_exact (test_seller_r3_offline.SellerStockFlow.test_ambiguous_leaf_refused_and_sku_exact) ... ok
+test_b_is_preferred_and_requested_grade_filters_first (test_seller_r3_offline.SellerStockFlow.test_b_is_preferred_and_requested_grade_filters_first) ... ok
+test_clarification_keeps_deal_and_hold_then_accepts_explicit_price (test_seller_r3_offline.SellerStockFlow.test_clarification_keeps_deal_and_hold_then_accepts_explicit_price) ... ok
+test_cost_becomes_reserve_and_receipt_reuses_selected_unit (test_seller_r3_offline.SellerStockFlow.test_cost_becomes_reserve_and_receipt_reuses_selected_unit) ... ok
+test_food_grade_drop_during_model_call_cannot_issue_receipt (test_seller_r3_offline.SellerStockFlow.test_food_grade_drop_during_model_call_cannot_issue_receipt) ... ok
+test_missing_unit_cannot_complete (test_seller_r3_offline.SellerStockFlow.test_missing_unit_cannot_complete) ... ok
+test_parsing_failure_reports_correct_reason_and_releases_hold (test_seller_r3_offline.SellerStockFlow.test_parsing_failure_reports_correct_reason_and_releases_hold) ... ok
+test_positive_warranty_request_is_rejected_before_offer (test_seller_r3_offline.SellerStockFlow.test_positive_warranty_request_is_rejected_before_offer) ... ok
+test_price_below_cost_cannot_complete (test_seller_r3_offline.SellerStockFlow.test_price_below_cost_cannot_complete) ... ok
+test_private_socket_preview_and_activation_survive_restart (test_seller_r3_offline.SellerStockFlow.test_private_socket_preview_and_activation_survive_restart) ... ERROR
+test_acceptance_rechecks_unit_and_cost_and_expiry (test_seller_stock.SellerStockTests.test_acceptance_rechecks_unit_and_cost_and_expiry) ... ok
+test_category_grade_and_freshness_constraints (test_seller_stock.SellerStockTests.test_category_grade_and_freshness_constraints) ... ok
+test_expired_unit_and_multiple_candidates (test_seller_stock.SellerStockTests.test_expired_unit_and_multiple_candidates) ... ok
+test_refuses_unidentified_or_wrong_round (test_seller_stock.SellerStockTests.test_refuses_unidentified_or_wrong_round) ... ok
+test_rejects_invalid_constraints (test_seller_stock.SellerStockTests.test_rejects_invalid_constraints) ... ok
+test_uses_exact_sku_and_actual_cost_instead_of_list_price (test_seller_stock.SellerStockTests.test_uses_exact_sku_and_actual_cost_instead_of_list_price) ... ok
+test_b_first_only_after_eligibility (test_strategy.StrategyTests.test_b_first_only_after_eligibility) ... ok
+test_normal_margin_and_aged_clearance_are_distinct (test_strategy.StrategyTests.test_normal_margin_and_aged_clearance_are_distinct) ... ok
+test_positive_warranties_cannot_be_enabled_without_liability_tracking (test_strategy.StrategyTests.test_positive_warranties_cannot_be_enabled_without_liability_tracking) ... ok
+test_unknown_or_stale_comps_are_not_price_evidence (test_strategy.StrategyTests.test_unknown_or_stale_comps_are_not_price_evidence) ... ok
+
+======================================================================
+ERROR: test_private_socket_preview_and_activation_survive_restart (test_seller_r3_offline.SellerStockFlow.test_private_socket_preview_and_activation_survive_restart)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/seller/tests/test_seller_r3_offline.py", line 204, in test_private_socket_preview_and_activation_survive_restart
+    server=await asyncio.start_unix_server(self.seller._ad_client,path=str(path))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/streams.py", line 113, in start_unix_server
+    return await loop.create_unix_server(factory, path, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jeoni/miniconda3/lib/python3.13/asyncio/unix_events.py", line 321, in create_unix_server
+    sock.bind(path)
+    ~~~~~~~~~^^^^^^
+PermissionError: [Errno 1] Operation not permitted
+
+----------------------------------------------------------------------
+Ran 40 tests in 0.617s
+
+FAILED (errors=1)
+exit=1
+
+$ cwd=restock ['/home/jeoni/miniconda3/bin/python', '-B', '-m', 'unittest', 'discover', '-s', 'tests', '-v']
+test_actual_cost_mismatch_does_not_unlock (test_exploration.ExplorationTests.test_actual_cost_mismatch_does_not_unlock) ... ok
+test_approval_needs_maximum_cost_plus_buffers (test_exploration.ExplorationTests.test_approval_needs_maximum_cost_plus_buffers) ... ok
+test_example_separates_estimate_from_approval_and_buffers (test_exploration.ExplorationTests.test_example_separates_estimate_from_approval_and_buffers) ... ok
+test_missing_stale_malformed_or_expensive_surge_cannot_explore (test_exploration.ExplorationTests.test_missing_stale_malformed_or_expensive_surge_cannot_explore) ... ok
+test_one_goods_only_and_stock_threshold_and_open (test_exploration.ExplorationTests.test_one_goods_only_and_stock_threshold_and_open) ... ok
+test_plain_kit_cli_cannot_bypass_exploration_guard (test_exploration.ExplorationTests.test_plain_kit_cli_cannot_bypass_exploration_guard) ... ok
+test_runtime_rechecks_total_inventory_limit_before_post (test_exploration.ExplorationTests.test_runtime_rechecks_total_inventory_limit_before_post) ... ok
+test_success_records_unit_actual_cost_and_comparison (test_exploration.ExplorationTests.test_success_records_unit_actual_cost_and_comparison) ... ok
+test_surge_change_before_post_vetoes_purchase (test_exploration.ExplorationTests.test_surge_change_before_post_vetoes_purchase) ... ok
+test_unmatched_supply_blocks_next_post_across_restart (test_exploration.ExplorationTests.test_unmatched_supply_blocks_next_post_across_restart) ... ok
+test_exploration_real_hook_and_persistent_reconciliation (test_restock_integration.HookIntegration.test_exploration_real_hook_and_persistent_reconciliation) ... ok
+test_real_command_guard_and_inventory_refresh (test_restock_integration.HookIntegration.test_real_command_guard_and_inventory_refresh) ... ok
+test_real_hook_veto_is_authoritative (test_restock_integration.HookIntegration.test_real_hook_veto_is_authoritative) ... ok
+test_connect_preserves_all_fields_and_private_state (test_restock_policy.ConnectionTests.test_connect_preserves_all_fields_and_private_state) ... ok
+test_existing_hold_command_requires_explicit_replace (test_restock_policy.ConnectionTests.test_existing_hold_command_requires_explicit_replace) ... ok
+test_runtime_refuses_missing_keys_without_creating_identity (test_restock_policy.ConnectionTests.test_runtime_refuses_missing_keys_without_creating_identity) ... ok
+test_runtime_rejects_changed_kit_before_loading_or_touching_keys (test_restock_policy.ConnectionTests.test_runtime_rejects_changed_kit_before_loading_or_touching_keys) ... ok
+test_20_units_cap_includes_other_categories (test_restock_policy.PolicyTests.test_20_units_cap_includes_other_categories) ... ok
+test_baseline_matches_fixed_seed_and_stock_limit (test_restock_policy.PolicyTests.test_baseline_matches_fixed_seed_and_stock_limit) ... ok
+test_cli_contract_stale_files_and_protected_files (test_restock_policy.PolicyTests.test_cli_contract_stale_files_and_protected_files) ... ok
+test_closed_and_boundary_windows (test_restock_policy.PolicyTests.test_closed_and_boundary_windows) ... ok
+test_cold_start_without_surge_evidence_holds (test_restock_policy.PolicyTests.test_cold_start_without_surge_evidence_holds) ... ok
+test_duplicates_conflicts_and_future_history (test_restock_policy.PolicyTests.test_duplicates_conflicts_and_future_history) ... ok
+test_food_expiry_and_restock_ttl_guard (test_restock_policy.PolicyTests.test_food_expiry_and_restock_ttl_guard) ... ok
+test_holding_cost_can_veto_buy (test_restock_policy.PolicyTests.test_holding_cost_can_veto_buy) ... ok
+test_inputs_not_mutated_and_result_is_deterministic (test_restock_policy.PolicyTests.test_inputs_not_mutated_and_result_is_deterministic) ... ok
+test_insufficient_cash_and_window_budget (test_restock_policy.PolicyTests.test_insufficient_cash_and_window_budget) ... ok
+test_live_stock_prevents_repeated_exploration (test_restock_policy.PolicyTests.test_live_stock_prevents_repeated_exploration) ... ok
+test_missing_window_or_wrong_round_fail_closed (test_restock_policy.PolicyTests.test_missing_window_or_wrong_round_fail_closed) ... ok
+test_nan_bool_negative_and_bad_config (test_restock_policy.PolicyTests.test_nan_bool_negative_and_bad_config) ... ok
+test_near_expiry_stock_not_counted_as_missing_inventory (test_restock_policy.PolicyTests.test_near_expiry_stock_not_counted_as_missing_inventory) ... ok
+test_overstock_is_reported_and_not_reordered (test_restock_policy.PolicyTests.test_overstock_is_reported_and_not_reordered) ... ok
+test_refunds_make_previously_good_sku_unattractive (test_restock_policy.PolicyTests.test_refunds_make_previously_good_sku_unattractive) ... ok
+test_round2_buyer_and_unsettled_rows_are_not_sales (test_restock_policy.PolicyTests.test_round2_buyer_and_unsettled_rows_are_not_sales) ... ok
+test_sales_velocity_selects_exact_sku (test_restock_policy.PolicyTests.test_sales_velocity_selects_exact_sku) ... ok
+test_same_inputs_seed_and_hypothetical_reversal (test_restock_policy.PolicyTests.test_same_inputs_seed_and_hypothetical_reversal) ... ok
+test_stale_history_not_treated_as_zero_sales (test_restock_policy.PolicyTests.test_stale_history_not_treated_as_zero_sales) ... ok
+test_402_no_more_buys_in_same_window (test_restock_policy.RuntimeTests.test_402_no_more_buys_in_same_window) ... ok
+test_429_respects_both_signals_and_survives_restart (test_restock_policy.RuntimeTests.test_429_respects_both_signals_and_survives_restart) ... ok
+test_ambiguous_result_blocks_retries_after_restart (test_restock_policy.RuntimeTests.test_ambiguous_result_blocks_retries_after_restart) ... ok
+test_cash_and_stock_rechecked_after_first_hook (test_restock_policy.RuntimeTests.test_cash_and_stock_rechecked_after_first_hook) ... ok
+test_cooldown_and_per_window_budget (test_restock_policy.RuntimeTests.test_cooldown_and_per_window_budget) ... ok
+test_malformed_success_and_500_block_retries (test_restock_policy.RuntimeTests.test_malformed_success_and_500_block_retries) ... ok
+test_only_real_completion_with_matching_stock_maps_to_sale (test_restock_policy.RuntimeTests.test_only_real_completion_with_matching_stock_maps_to_sale) ... ok
+test_sales_store_exact_ledger_dedup_conflict_and_gap (test_restock_policy.RuntimeTests.test_sales_store_exact_ledger_dedup_conflict_and_gap) ... ok
+test_second_hook_cannot_cross_deadline (test_restock_policy.RuntimeTests.test_second_hook_cannot_cross_deadline) ... ok
+test_supply_closes_during_hook (test_restock_policy.RuntimeTests.test_supply_closes_during_hook) ... ok
+test_wrong_run_rejected_without_state_rewrite (test_restock_policy.RuntimeTests.test_wrong_run_rejected_without_state_rewrite) ... ok
+test_book_does_not_fund_stock_and_refunds_are_reserved (test_surge_cash.SurgeTests.test_book_does_not_fund_stock_and_refunds_are_reserved) ... ok
+test_legitimate_surge_cost_reconciles_without_permanent_pause (test_surge_cash.SurgeTests.test_legitimate_surge_cost_reconciles_without_permanent_pause) ... ok
+test_max_surge_rounds_each_unit (test_surge_cash.SurgeTests.test_max_surge_rounds_each_unit) ... ok
+test_refund_reservation_blocks_post (test_surge_cash.SurgeTests.test_refund_reservation_blocks_post) ... ok
+
+----------------------------------------------------------------------
+Ran 52 tests in 0.754s
+
+OK
+exit=0
+
+$ cwd=buyer-forum ['/home/jeoni/miniconda3/bin/python', '-B', '-m', 'unittest', 'test_forum', '-v']
+test_429_is_retried_after_cooldown (test_forum.ForumWorkflow.test_429_is_retried_after_cooldown) ... ok
+test_adapter_cli_has_a_json_only_output (test_forum.ForumWorkflow.test_adapter_cli_has_a_json_only_output) ... ok
+test_adapter_uses_only_current_acceptable_in_stock_skus (test_forum.ForumWorkflow.test_adapter_uses_only_current_acceptable_in_stock_skus) ... ok
+test_analysis_does_not_copy_external_instructions_or_personal_data (test_forum.ForumWorkflow.test_analysis_does_not_copy_external_instructions_or_personal_data) ... ok
+test_approval_queue_and_realistic_sent_record (test_forum.ForumWorkflow.test_approval_queue_and_realistic_sent_record) ... ok
+test_atomic_queue_write_failure_preserves_previous_queue (test_forum.ForumWorkflow.test_atomic_queue_write_failure_preserves_previous_queue) ... ok
+test_backfill_keeps_live_cursor (test_forum.ForumWorkflow.test_backfill_keeps_live_cursor) ... ok
+test_bridge_never_drains_the_standard_outbox (test_forum.ForumWorkflow.test_bridge_never_drains_the_standard_outbox) ... ok
+test_buyer_unknown_and_cooldown_do_not_block_shop (test_forum.ForumWorkflow.test_buyer_unknown_and_cooldown_do_not_block_shop) ... ok
+test_concurrent_approvals_do_not_duplicate (test_forum.ForumWorkflow.test_concurrent_approvals_do_not_duplicate) ... ok
+test_condition_uses_structured_refs_and_ignores_malformed_values (test_forum.ForumWorkflow.test_condition_uses_structured_refs_and_ignores_malformed_values) ... ok
+test_delivery_journal_records_response_id_and_send_time (test_forum.ForumWorkflow.test_delivery_journal_records_response_id_and_send_time) ... ok
+test_malformed_queue_never_sends (test_forum.ForumWorkflow.test_malformed_queue_never_sends) ... ok
+test_manual_protected_list_blocks_preview_and_stale_data (test_forum.ForumWorkflow.test_manual_protected_list_blocks_preview_and_stale_data) ... ok
+test_medium_volume_requires_full_continuous_observation (test_forum.ForumWorkflow.test_medium_volume_requires_full_continuous_observation) ... ok
+test_missing_warranty_is_unknown_not_zero (test_forum.ForumWorkflow.test_missing_warranty_is_unknown_not_zero) ... ok
+test_new_protection_blocks_an_already_approved_post (test_forum.ForumWorkflow.test_new_protection_blocks_an_already_approved_post) ... ok
+test_post_id_shapes_and_invalid_values (test_forum.ForumWorkflow.test_post_id_shapes_and_invalid_values) ... ok
+test_preserves_cursor_on_invalid_ledger (test_forum.ForumWorkflow.test_preserves_cursor_on_invalid_ledger) ... ok
+test_preview_rejects_protected_sku_wrong_buyer_and_payment (test_forum.ForumWorkflow.test_preview_rejects_protected_sku_wrong_buyer_and_payment) ... ok
+test_recovery_exact_match_immutable_journal_and_no_repost (test_forum.ForumWorkflow.test_recovery_exact_match_immutable_journal_and_no_repost) ... ok
+test_referenced_and_text_mentions_count_once (test_forum.ForumWorkflow.test_referenced_and_text_mentions_count_once) ... ok
+test_registration_and_account_are_checked (test_forum.ForumWorkflow.test_registration_and_account_are_checked) ... ok
+test_response_body_preserved_and_missing_id_explicit (test_forum.ForumWorkflow.test_response_body_preserved_and_missing_id_explicit) ... ok
+test_shop_expired_or_changed_stock_cannot_send (test_forum.ForumWorkflow.test_shop_expired_or_changed_stock_cannot_send) ... ok
+test_shop_only_timeout_keeps_activation_and_does_not_resend (test_forum.ForumWorkflow.test_shop_only_timeout_keeps_activation_and_does_not_resend) ... ok
+test_shop_preview_approval_retains_timestamp_and_does_not_publish (test_forum.ForumWorkflow.test_shop_preview_approval_retains_timestamp_and_does_not_publish) ... ok
+test_timeout_stops_retries_until_manual_review (test_forum.ForumWorkflow.test_timeout_stops_retries_until_manual_review) ... /home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer-forum/analyst.py:109: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x70a5d9248400>
+  db.execute("DELETE FROM mentions WHERE post_id = ?", (post["id"],))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer-forum/analyst.py:109: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x70a5d924ac50>
+  db.execute("DELETE FROM mentions WHERE post_id = ?", (post["id"],))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer-forum/analyst.py:109: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x70a5d935ff10>
+  db.execute("DELETE FROM mentions WHERE post_id = ?", (post["id"],))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer-forum/analyst.py:109: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x70a5d92484f0>
+  db.execute("DELETE FROM mentions WHERE post_id = ?", (post["id"],))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer-forum/analyst.py:109: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x70a5d924a890>
+  db.execute("DELETE FROM mentions WHERE post_id = ?", (post["id"],))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+
+----------------------------------------------------------------------
+Ran 28 tests in 2.356s
+
+OK
+exit=0
+
+$ cwd=. ['/home/jeoni/miniconda3/bin/python', '-B', '-m', 'unittest', 'test_runtime', 'test_participation_evidence', '-v']
+test_effects_use_send_time_actual_cost_storage_and_refund (test_runtime.RuntimeTests.test_effects_use_send_time_actual_cost_storage_and_refund) ... ok
+test_incomplete_exposure_does_not_produce_lift_claim (test_runtime.RuntimeTests.test_incomplete_exposure_does_not_produce_lift_claim) ... ok
+test_reserved_units_do_not_count_as_available (test_runtime.RuntimeTests.test_reserved_units_do_not_count_as_available) ... ok
+test_single_kit_receives_both_hooks (test_runtime.RuntimeTests.test_single_kit_receives_both_hooks) ... ok
+test_no_negotiation_or_missing_unit_is_counted_as_sale (test_participation_evidence.EvidenceTests.test_no_negotiation_or_missing_unit_is_counted_as_sale) ... ok
+test_sale_maps_exact_unit_and_keeps_unknown_costs_unknown (test_participation_evidence.EvidenceTests.test_sale_maps_exact_unit_and_keeps_unknown_costs_unknown) ... ok
+test_snapshots_are_immutable_and_timestamped (test_participation_evidence.EvidenceTests.test_snapshots_are_immutable_and_timestamped) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 3.964s
+
+OK
+exit=0
+
+$ cwd=. ['npm', 'run', 'typecheck']
+
+> week-08@1.0.0 typecheck
+> tsc --noEmit && tsc -p tsconfig.tests.json
+
+exit=0
+
+$ cwd=. ['npm', 'run', 'test:buyer']
+
+> week-08@1.0.0 test:buyer
+> node --import tsx --test buyer/round3_buyer_tests/*.test.ts buyer/round3_buyer_tests/*.test.mjs
+
+✖ buyer/round3_buyer_tests/buyer-flow.test.mjs (486.761273ms)
+✔ buyer/round3_buyer_tests/forumSelection.test.ts (122.921488ms)
+✖ buyer/round3_buyer_tests/harness-path.test.mjs (182.98397ms)
+✔ buyer/round3_buyer_tests/marketOrder.test.ts (109.591691ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 2
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 495.31672
+
+✖ failing tests:
+
+test at buyer/round3_buyer_tests/buyer-flow.test.mjs:1:1
+✖ buyer/round3_buyer_tests/buyer-flow.test.mjs (486.761273ms)
+  'test failed'
+
+test at buyer/round3_buyer_tests/harness-path.test.mjs:1:1
+✖ buyer/round3_buyer_tests/harness-path.test.mjs (182.98397ms)
+  'test failed'
+exit=1
+
+$ cwd=. ['/home/jeoni/miniconda3/bin/python', '-B', '-c', 'import asyncio,httpx,app; exec(\'async def check():\\n async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app.app),base_url="http://localhost") as c:\\n  r=await c.get("/.well-known/agent-card.json"); assert r.status_code==200 and "No warranty" in r.text\\n\'); asyncio.run(check()); print(\'ASGI card smoke check passed\')']
+ASGI card smoke check passed
+exit=0

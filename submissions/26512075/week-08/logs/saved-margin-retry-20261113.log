@@ -1,0 +1,30 @@
+
+> week-08@1.0.0 test:buyer
+> node --import tsx --test buyer/round3_buyer_tests/*.test.ts buyer/round3_buyer_tests/*.test.mjs
+
+✔ food order requests acceptable in-stock SKU and emits policy (72.543013ms)
+✔ reject another acceptable receipt item before checkout (77.547806ms)
+✔ no valid offers returns no deal without contacting shop (66.787762ms)
+✔ malformed order returns no deal without contacting shop (63.675849ms)
+✔ Round 2 still works with and without --order (126.452527ms)
+✔ explicitly mismatched agreed price refuses receipt (63.910874ms)
+✔ medium-volume evidence chooses a specific shop and permitted SKU (1.118333ms)
+✔ incomplete coverage and unavailable SKUs fall back to existing shop scoring (5.234352ms)
+✔ price comps require a market-signed grade and exact known warranty (3.409807ms)
+✔ buyer's warranty requirement is independently configurable (0.888967ms)
+✔ real TypeScript bridge locates Python harness from an unrelated working directory (83.544567ms)
+✔ food use_within_hours maps to checkout policy (1.350509ms)
+✔ goods and Round 2 do not impose food policy (0.19993ms)
+✔ candidate SKUs must be both acceptable and in-stock with positive integer quantity (0.357616ms)
+✔ malformed or conflicting order does not fall back (0.371187ms)
+✔ receipt item and price must match selection and budget (0.260455ms)
+✔ same discount has different margin scenarios, never an exact score (0.723699ms)
+✔ cap upside only; preserve above-list losses and unknown cost (0.288684ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 565.712025

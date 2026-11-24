@@ -1,0 +1,179 @@
+✖ food order requests acceptable in-stock SKU and emits policy (65.848539ms)
+✖ reject another acceptable receipt item before checkout (62.687145ms)
+✖ no valid offers returns no deal without contacting shop (59.891269ms)
+✖ malformed order returns no deal without contacting shop (58.7828ms)
+✖ Round 2 still works with and without --order (63.79503ms)
+✖ explicitly mismatched agreed price refuses receipt (70.956838ms)
+✔ medium-volume evidence chooses a specific shop and permitted SKU (0.617645ms)
+✔ incomplete coverage and unavailable SKUs fall back to existing shop scoring (4.493349ms)
+✔ price comps require a market-signed grade and exact known warranty (2.849546ms)
+✔ buyer's warranty requirement is independently configurable (0.752086ms)
+✖ real TypeScript bridge locates Python harness from an unrelated working directory (75.496468ms)
+✔ food use_within_hours maps to checkout policy (0.277931ms)
+✔ goods and Round 2 do not impose food policy (0.160821ms)
+✔ candidate SKUs must be both acceptable and in-stock with positive integer quantity (0.205182ms)
+✔ malformed or conflicting order does not fall back (0.272776ms)
+✔ receipt item and price must match selection and budget (0.123015ms)
+✔ same discount has different margin scenarios, never an exact score (0.260875ms)
+✔ cap upside only; preserve above-list losses and unknown cost (0.221178ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 11
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 523.958549
+
+✖ failing tests:
+
+test at buyer/round3_buyer_tests/buyer-flow.test.mjs:24:1
+✖ food order requests acceptable in-stock SKU and emits policy (65.848539ms)
+  AssertionError [ERR_ASSERTION]: ifError got unwanted exception: spawnSync /home/jeoni/.nvm/versions/node/v24.21.0/bin/node EPERM
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:17:12)
+      at Object.spawnSync (node:internal/child_process:1160:20)
+      at spawnSync (node:child_process:928:24)
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:16:15)
+      at TestContext.<anonymous> (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:25:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [Error],
+    expected: null,
+    operator: 'ifError',
+    diff: 'simple'
+  }
+
+test at buyer/round3_buyer_tests/buyer-flow.test.mjs:28:1
+✖ reject another acceptable receipt item before checkout (62.687145ms)
+  AssertionError [ERR_ASSERTION]: ifError got unwanted exception: spawnSync /home/jeoni/.nvm/versions/node/v24.21.0/bin/node EPERM
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:17:12)
+      at Object.spawnSync (node:internal/child_process:1160:20)
+      at spawnSync (node:child_process:928:24)
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:16:15)
+      at TestContext.<anonymous> (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:29:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [Error],
+    expected: null,
+    operator: 'ifError',
+    diff: 'simple'
+  }
+
+test at buyer/round3_buyer_tests/buyer-flow.test.mjs:32:1
+✖ no valid offers returns no deal without contacting shop (59.891269ms)
+  AssertionError [ERR_ASSERTION]: ifError got unwanted exception: spawnSync /home/jeoni/.nvm/versions/node/v24.21.0/bin/node EPERM
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:17:12)
+      at Object.spawnSync (node:internal/child_process:1160:20)
+      at spawnSync (node:child_process:928:24)
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:16:15)
+      at TestContext.<anonymous> (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:33:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [Error],
+    expected: null,
+    operator: 'ifError',
+    diff: 'simple'
+  }
+
+test at buyer/round3_buyer_tests/buyer-flow.test.mjs:36:1
+✖ malformed order returns no deal without contacting shop (58.7828ms)
+  AssertionError [ERR_ASSERTION]: ifError got unwanted exception: spawnSync /home/jeoni/.nvm/versions/node/v24.21.0/bin/node EPERM
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:17:12)
+      at Object.spawnSync (node:internal/child_process:1160:20)
+      at spawnSync (node:child_process:928:24)
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:16:15)
+      at TestContext.<anonymous> (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:37:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [Error],
+    expected: null,
+    operator: 'ifError',
+    diff: 'simple'
+  }
+
+test at buyer/round3_buyer_tests/buyer-flow.test.mjs:41:1
+✖ Round 2 still works with and without --order (63.79503ms)
+  AssertionError [ERR_ASSERTION]: ifError got unwanted exception: spawnSync /home/jeoni/.nvm/versions/node/v24.21.0/bin/node EPERM
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:17:12)
+      at Object.spawnSync (node:internal/child_process:1160:20)
+      at spawnSync (node:child_process:928:24)
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:16:15)
+      at TestContext.<anonymous> (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:45:20)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [Error],
+    expected: null,
+    operator: 'ifError',
+    diff: 'simple'
+  }
+
+test at buyer/round3_buyer_tests/buyer-flow.test.mjs:51:1
+✖ explicitly mismatched agreed price refuses receipt (70.956838ms)
+  AssertionError [ERR_ASSERTION]: ifError got unwanted exception: spawnSync /home/jeoni/.nvm/versions/node/v24.21.0/bin/node EPERM
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:17:12)
+      at Object.spawnSync (node:internal/child_process:1160:20)
+      at spawnSync (node:child_process:928:24)
+      at invoke (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:16:15)
+      at TestContext.<anonymous> (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/buyer-flow.test.mjs:52:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [Error],
+    expected: null,
+    operator: 'ifError',
+    diff: 'simple'
+  }
+
+test at buyer/round3_buyer_tests/harness-path.test.mjs:8:1
+✖ real TypeScript bridge locates Python harness from an unrelated working directory (75.496468ms)
+  AssertionError [ERR_ASSERTION]: ifError got unwanted exception: spawnSync /home/jeoni/.nvm/versions/node/v24.21.0/bin/node EPERM
+      at TestContext.<anonymous> (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/harness-path.test.mjs:13:10)
+      at Object.spawnSync (node:internal/child_process:1160:20)
+      at spawnSync (node:child_process:928:24)
+      at TestContext.<anonymous> (file:///home/jeoni/gs/mp/ai-agent-engineering-101-q00/submissions/26512075/week-08/buyer/round3_buyer_tests/harness-path.test.mjs:10:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [Error],
+    expected: null,
+    operator: 'ifError',
+    diff: 'simple'
+  }
