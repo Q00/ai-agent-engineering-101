@@ -1,0 +1,93 @@
+provider=openai model=gpt-6-luna temperature=unset turn_limit=8
+
+=== scenario 1 (a used bicycle) reserve=120 budget=150 ===
+[buyer] I can offer 100 for the used bicycle.
+  [reader] {"performative":"propose","price":100}
+[seller] I can’t accept 100, but I’d be willing to sell the bicycle for 150.
+  [reader] {"performative":"propose","price":150}
+[buyer] I accept your offer of 150.
+  [reader] {"performative":"accept-proposal","price":150}
+[result] outcome=deal price=150 correct=1 violation=0 turns=3 format_errors=0 reader_calls=3
+
+=== scenario 2 (a desk lamp) reserve=30 budget=50 ===
+[buyer] I can offer 35 for the desk lamp.
+  [reader] {"performative":"propose","price":35}
+[seller] I propose 45 for the desk lamp.
+  [reader] {"performative":"propose","price":45}
+[buyer] I can offer 40 for the desk lamp.
+  [reader] {"performative":"propose","price":40}
+[seller] I accept your offer of 40 for the desk lamp.
+  [reader] {"performative":"accept-proposal","price":40}
+[result] outcome=deal price=40 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+=== scenario 3 (a second-hand textbook) reserve=40 budget=40 ===
+[buyer] Would you sell the textbook for 25?
+  [reader] {"performative":"propose","price":25}
+[seller] I can’t sell it for 25, but I can offer it for 50.
+  [reader] {"performative":"propose","price":50}
+[buyer] Would you consider 35 for the textbook?
+  [reader] {"performative":"propose","price":35}
+[seller] I can’t go as low as 35, but I can sell it for 45.
+  [reader] {"performative":"propose","price":45}
+[buyer] I can offer 40 for the textbook.
+  [reader] {"performative":"propose","price":40}
+[seller] I accept your offer of 40.
+  [reader] {"performative":"accept-proposal","price":40}
+[result] outcome=deal price=40 correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+
+=== scenario 4 (a mechanical keyboard) ===
+[buyer] I can offer 50 for the mechanical keyboard.
+  [reader] {"performative":"propose","price":50}
+[seller] I can’t accept 50, but I can sell the mechanical keyboard for 120.
+  [reader] {"performative":"propose","price":120}
+[buyer] I can offer 60 for the mechanical keyboard.
+  [reader] {"performative":"propose","price":60}
+[seller] I can’t accept 60, but I can sell the mechanical keyboard for 110.
+  [reader] {"performative":"propose","price":110}
+[buyer] I can offer 70 for the mechanical keyboard.
+  [reader] {"performative":"propose","price":70}
+[seller] I can’t accept 70, but I can sell the mechanical keyboard for 100.
+  [reader] {"performative":"reject-proposal","price":100}
+[buyer] I can’t go above 70, so I’ll have to walk away.
+  [reader] {"performative":"refuse","price":null}
+[result] outcome=no_deal price=None correct=1 violation=0 turns=7 format_errors=0 reader_calls=7
+
+=== scenario 4 (a mechanical keyboard) ===
+[buyer] I can offer 50 for the mechanical keyboard.
+  [reader] {"performative":"propose","price":50}
+[seller] I can’t accept 50, but I’d be willing to sell the keyboard for 120.
+  [reader] {"performative":"propose","price":120}
+[buyer] I can’t go that high, but I can offer 60 for the keyboard.
+  [reader] {"performative":"propose","price":60}
+[seller] I can’t accept 60, but I can lower my price to 100.
+  [reader] {"performative":"propose","price":100}
+[buyer] I can’t meet 100, but I can offer 70 for the keyboard.
+  [reader] {"performative":"propose","price":70}
+[seller] I can’t accept 70, but I can sell it for 90.
+  [reader] {"performative":"propose","price":90}
+[buyer] I can’t go above 70, so I’ll have to walk away.
+  [reader] {"performative":"refuse","price":null}
+[result] outcome=no_deal price=None correct=1 violation=0 turns=7 format_errors=0 reader_calls=7
+
+=== scenario 5 (a vintage film camera) ===
+[buyer] I can offer 140 for the vintage film camera.
+  [reader] {"performative":"propose","price":140}
+[seller] I propose 240 for the vintage film camera.
+  [reader] {"performative":"propose","price":240}
+[buyer] I can’t meet 240, but I can offer 160.
+  [reader] {"performative":"propose","price":160}
+[seller] I propose 200 for the vintage film camera.
+  [reader] {"performative":"propose","price":200}
+[buyer] I can offer 190 for the vintage film camera.
+  [reader] {"performative":"propose","price":190}
+[seller] I can’t accept 190, so I’m walking away from the deal.
+  [reader] {"performative":"refuse","price":null}
+[result] outcome=no_deal price=None correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+
+=== scenario 6 (an office chair) ===
+[buyer] I can offer 60 for the office chair.
+  [reader] {"performative":"propose","price":60}
+[seller] That works for me at 60.
+  [reader] {"performative":"accept-proposal","price":60}
+[result] outcome=deal price=60 correct=1 violation=0 turns=2 format_errors=0 reader_calls=2
+

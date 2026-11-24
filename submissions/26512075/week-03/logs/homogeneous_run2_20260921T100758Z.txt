@@ -1,0 +1,39 @@
+provider=openai model = muse-spark-1.3 temperature = 0
+[cfp] task 1 gold = A
+ [bid] A: bid = True confidence=100.0 reason=Multiplication is within general problem solving.
+ [bid] B: bid = True confidence=100.0 reason=Arithmetic is within general problem solving.
+ [bid] C: bid = True confidence=100.0 reason=Multiplication is within general problem solving.
+ [award] A (gold A)
+  [inform] A backend=numpy-fallback success=True cell=gold_okxexec_ok output=34113
+[cfp] task 2 gold = B
+ [bid] A: bid = True confidence=95.0 reason=I can make this easy for a 10-year-old to understand.
+ [bid] B: bid = True confidence=95.0 reason=I can make this easy for a 10-year-old to understand.
+ [bid] C: bid = True confidence=95.0 reason=I can rewrite this simply for a child.
+ [award] A (gold B)
+  [inform] A backend=llm success=True cell=misawardxexec_ok output=Sunlight helps plants make food, but tiny leaf openings can slow it down.
+[cfp] task 3 gold = C
+ [bid] A: bid = True confidence=100.0 reason=I can implement non-mutating list reversal correctly.
+ [bid] B: bid = True confidence=100.0 reason=General problem solving covers simple list reversal.
+ [bid] C: bid = True confidence=100.0 reason=General problem solving covers simple list reversal.
+ [award] A (gold C)
+  [inform] A backend=llm success=True cell=misawardxexec_ok output=def reversed_copy(lst):     return lst[::-1] 
+[cfp] task 4 gold = A
+ [bid] A: bid = True confidence=100.0 reason=Can compute exact mean 18.2.
+ [bid] B: bid = True confidence=100.0 reason=General problem solving includes exact arithmetic mean computation.
+ [bid] C: bid = True confidence=100.0 reason=Can compute exact mean 18.2.
+ [award] A (gold A)
+  [inform] A backend=numpy-fallback success=True cell=gold_okxexec_ok output=18.2
+[cfp] task 5 gold = B
+ [bid] A: bid = True confidence=90.0 reason=Can write clear triage abstention rationale for clinicians.
+ [bid] B: bid = True confidence=90.0 reason=I can write clear clinical prose for junior clinicians.
+ [bid] C: bid = True confidence=90.0 reason=I can write clear clinical prose for junior clinicians.
+ [award] A (gold B)
+  [inform] A backend=llm success=True cell=misawardxexec_ok output=Some patients present with missing data, rare conditions, or borderline vital signs where even experienced clinicians would pause. If the model is forced to gue
+[cfp] task 6 gold = C
+ [bid] A: bid = True confidence=95.0 reason=General problem solving covers writing testable Python functions.
+ [bid] B: bid = True confidence=95.0 reason=General problem solving covers writing this function.
+ [bid] C: bid = True confidence=100.0 reason=General problem solving covers this simple coding task.
+ [award] C (gold C)
+  [inform] C backend=llm success=True cell=gold_okxexec_ok output=def is_palindrome(s):     cleaned = ''.join(ch.lower() for ch in s if ch.isalnum())     return cleaned == cleaned[::-1] 
+parse_fails=0; tokens=10160; calls=22; errors=0; exec_ok=6/6; gold_ok_exec_ok=3; misaward_exec_ok=3
+note=parse_fails=0

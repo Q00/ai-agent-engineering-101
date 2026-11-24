@@ -1,0 +1,73 @@
+provider=openai model=gpt-6-luna temperature=unset turn_limit=8
+
+=== scenario 1 (a used bicycle) ===
+[buyer] [propose] I can offer 100 for the bicycle.
+  [reader] {"performative":"propose","price":100}
+[seller] [reject-proposal] I can’t accept 100; I can sell the bicycle for 150.
+[buyer] [accept-proposal] I accept your offer of 150 for the bicycle.
+ # invalid_accept: no counterpart proposal
+[seller] [accept-proposal] Great, we have a deal at 150.
+ # invalid_accept: no counterpart proposal
+[buyer] [accept-proposal] I accept the deal at 150.
+ # invalid_accept: no counterpart proposal
+[seller] [accept-proposal] The deal is confirmed at 150.
+ # invalid_accept: no counterpart proposal
+[buyer] [accept-proposal] I confirm the deal at 150.
+ # invalid_accept: no counterpart proposal
+[seller] [accept-proposal] The deal is confirmed at 150.
+ # invalid_accept: no counterpart proposal
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=1
+
+=== scenario 2 (a desk lamp) ===
+[buyer] [propose] I can offer 35 for the desk lamp.
+  [reader] {"performative":"propose","price":35}
+[seller] [accept-proposal] I accept your offer of 35 for the desk lamp.
+[result] outcome=deal price=35 correct=1 violation=0 turns=2 format_errors=0 reader_calls=1
+
+=== scenario 3 (a second-hand textbook) ===
+[buyer] [propose] I can offer 25 for the textbook.
+  [reader] {"performative":"propose","price":25}
+[seller] [reject-proposal] I can't accept 25, but I can sell it for 50.
+[buyer] [propose] I can offer 35 for the textbook.
+  [reader] {"performative":"propose","price":35}
+[seller] [reject-proposal] I can't accept 35, but I can sell it for 40.
+[buyer] [accept-proposal] I accept your offer of 40.
+ # invalid_accept: no counterpart proposal
+[seller] [accept-proposal] I accept your offer of 40.
+ # invalid_accept: no counterpart proposal
+[buyer] [accept-proposal] I accept your offer of 40.
+ # invalid_accept: no counterpart proposal
+[seller] [accept-proposal] I accept your offer of 40.
+ # invalid_accept: no counterpart proposal
+[result] outcome=open price=None correct=0 violation=0 turns=8 format_errors=0 reader_calls=2
+
+=== scenario 4 (a mechanical keyboard) ===
+[buyer] [propose] I can offer 45 for the mechanical keyboard.
+  [reader] {"performative":"propose","price":45}
+[seller] [reject-proposal] I can’t accept 45, but I can sell it for 120.
+[buyer] [propose] I can raise my offer to 60 for the mechanical keyboard.
+  [reader] {"performative":"propose","price":60}
+[seller] [reject-proposal] I can’t accept 60, but I can sell it for 110.
+[buyer] [propose] I can offer 70 for the mechanical keyboard.
+  [reader] {"performative":"propose","price":70}
+[seller] [reject-proposal] I can’t accept 70, but I can sell it for 100.
+[buyer] [refuse] I can’t meet 100, so I’ll walk away.
+[result] outcome=no_deal price=None correct=1 violation=0 turns=7 format_errors=0 reader_calls=3
+
+=== scenario 5 (a vintage film camera) ===
+[buyer] [propose] I can offer 140 for the vintage film camera.
+  [reader] {"performative":"propose","price":140}
+[seller] [reject-proposal] I can’t accept 140; I can sell the vintage film camera for 260.
+[buyer] [reject-proposal] I can’t meet 260, but I can offer 170.
+[seller] [refuse] I can’t accept 170, so I’ll walk away.
+[result] outcome=no_deal price=None correct=1 violation=0 turns=4 format_errors=0 reader_calls=1
+
+=== scenario 6 (an office chair) ===
+[buyer] [propose] I can offer 50 for the office chair.
+  [reader] {"performative":"propose","price":50}
+[seller] [reject-proposal] I can’t accept 50; I can sell the office chair for 65.
+[buyer] [propose] I can offer 55 for the office chair.
+  [reader] {"performative":"propose","price":55}
+[seller] [accept-proposal] I accept your offer of 55 for the office chair.
+[result] outcome=deal price=55 correct=1 violation=0 turns=4 format_errors=0 reader_calls=2
+
