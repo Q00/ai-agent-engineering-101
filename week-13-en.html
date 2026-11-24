@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Week 13: Payment, Settlement, Record</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FFFFFF;
+  --ink:#1C1917;
+  --body:#44403C;
+  --muted:#78716C;
+  --faint:#A8A29E;
+  --line:#E7E5E4;
+  --wash:#FAFAF9;
+  --link:#2563EB;
+  --mono:'IBM Plex Mono', ui-monospace, monospace;
+  --sans:'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  --serif:Fraunces, 'Noto Serif KR', Georgia, serif;
+  --maxw:680px;
+  --r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--paper);
+  color:var(--body);
+  font-family:var(--sans);
+  font-weight:400;
+  line-height:1.8;
+  font-size:15.5px;
+  word-break:keep-all;
+  overflow-wrap:break-word;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--ink);color:var(--paper)}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- layout ---------- */
+.sheet{max-width:1040px;margin:0 auto;padding:0 24px}
+.col{max-width:var(--maxw);margin:0 auto;position:relative}
+
+/* ---------- header ---------- */
+header.doc{padding:40px 0 0}
+.topnav{font-family:var(--mono);font-size:11px;letter-spacing:.04em;margin-bottom:56px;display:flex;justify-content:space-between;gap:16px}
+
+.masthead{padding-bottom:64px;border-bottom:1px solid var(--line)}
+.masthead .wk{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:16px;
+}
+h1.title{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,4.6vw,44px);line-height:1.2;
+  letter-spacing:-0.01em;color:var(--ink);text-wrap:balance;
+}
+h1.title .en{display:block;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--muted);letter-spacing:.06em;margin-top:14px}
+.lede{
+  margin-top:26px;max-width:560px;font-size:16px;line-height:1.85;color:var(--muted);
+}
+.lede .q{font-weight:600;color:var(--ink)}
+
+/* ---------- section scaffolding ---------- */
+section{padding:56px 0 8px}
+.secmark{
+  display:flex;align-items:baseline;gap:14px;margin-bottom:32px;
+  border-top:1px solid var(--line);padding-top:20px;
+}
+.secmark .no{
+  font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--faint);
+  letter-spacing:.12em;white-space:nowrap;text-transform:uppercase;
+}
+.secmark h2{font-family:var(--serif);font-weight:500;font-size:clamp(21px,2.8vw,26px);line-height:1.3;letter-spacing:-0.005em;color:var(--ink);text-wrap:balance}
+h3{font-family:var(--serif);font-weight:500;font-size:18px;margin:44px 0 14px;color:var(--ink)}
+h3 .tag{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.12em;display:block;margin-bottom:6px;font-weight:500}
+p{margin-bottom:20px}
+strong{font-weight:600;color:var(--ink)}
+em{font-style:normal;font-weight:600;color:var(--ink);box-shadow:inset 0 -0.35em 0 rgba(28,25,23,.07)}
+.small{font-size:13.5px;color:var(--muted)}
+.nb{white-space:nowrap}
+
+/* part banner */
+.part{
+  margin:72px 0 8px;border-top:2px solid var(--ink);
+  padding:24px 0 6px;
+}
+.part .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);font-weight:500;margin-bottom:10px;text-transform:uppercase}
+.part h2{font-family:var(--serif);font-weight:500;font-size:clamp(20px,2.6vw,25px);line-height:1.35;color:var(--ink)}
+.part .meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:10px;letter-spacing:.03em}
+
+/* marginalia */
+.note{
+  font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--faint);
+  border-left:2px solid var(--line);padding-left:12px;margin:26px 0;
+}
+@media(min-width:1120px){
+  .note{position:absolute;width:190px;left:calc(50% + var(--maxw)/2 + 36px);margin:0;transform:translateY(-100%)}
+}
+.note b{color:var(--muted);font-weight:500;display:block;margin-bottom:4px;letter-spacing:.08em}
+
+/* pull quote */
+.pull{
+  margin:40px 0;padding:2px 0 2px 24px;border-left:2px solid var(--ink);
+  font-family:var(--serif);font-size:19px;line-height:1.65;font-weight:500;color:var(--ink);
+}
+.pull .src{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);font-weight:400;margin-top:10px;letter-spacing:.03em}
+
+/* definition */
+.define{margin:48px 0;background:var(--wash);border:1px solid var(--line);border-radius:var(--r);padding:32px 32px 26px;position:relative}
+.define::before{
+  content:"DEFINITION";position:absolute;top:14px;left:32px;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);font-weight:500;
+}
+.define p{margin:16px 0 0;font-family:var(--serif);font-size:clamp(16px,2.1vw,19px);line-height:1.7;font-weight:500;color:var(--ink)}
+.define .sub{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-top:14px}
+.define ul{margin:14px 0 0 22px;padding:0}
+.define li{font-family:var(--serif);font-size:clamp(15px,2vw,17px);line-height:1.9;font-weight:500;color:var(--ink)}
+@media(max-width:640px){.define{padding:28px 20px 22px}.define::before{left:20px}}
+
+/* instructor */
+.bio{margin:8px 0 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 28px 20px}
+.bio{display:flex;gap:28px;align-items:flex-start}
+.bio .photo{flex:0 0 210px;width:210px;height:262px;object-fit:cover;object-position:38% 12%;border-radius:6px;display:block}
+.bio .info{flex:1 1 auto;min-width:0}
+.bio .name{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--ink);margin-bottom:2px}
+.bio .role{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.1em;margin-bottom:14px;text-transform:uppercase}
+.bio p{font-size:14px;line-height:1.85;color:var(--body);margin-bottom:12px}
+.bio .links{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.bio .links a{white-space:nowrap}
+.bio .links span{color:var(--faint);margin:0 8px}
+@media(max-width:640px){.bio{flex-direction:column}.bio .photo{width:100%;height:200px;flex:none}.bio{padding:22px 18px 16px}}
+
+/* table */
+.tbl-wrap{margin:28px 0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.7}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-align:left;text-transform:uppercase;
+  border-bottom:1px solid var(--ink);
+  padding:10px 14px;font-weight:500;color:var(--muted);
+}
+td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+td.stage{font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
+td .m{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* figure */
+.fig{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);padding:26px 22px 14px}
+.fig .cap{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--faint);
+  margin-top:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.fig .cap b{color:var(--muted);font-weight:500}
+.fig svg{width:100%;height:auto;display:block}
+.fig img{width:100%;height:auto;display:block}
+svg text{font-family:var(--mono)}
+
+/* code */
+.code{
+  margin:28px 0;background:var(--wash);color:var(--ink);
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  padding:20px 22px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);
+}
+.code .file{
+  display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);
+  margin-bottom:14px;font-weight:500;text-transform:uppercase;
+}
+.code pre{font-family:inherit;white-space:pre;margin:0}
+.code .cm{color:var(--faint)}
+.code .kw{color:#1D4ED8}
+.code .st{color:#15803D}
+code.inline{
+  font-family:var(--mono);font-size:.85em;background:var(--wash);
+  padding:2px 6px;border:1px solid var(--line);border-radius:4px;white-space:nowrap;
+}
+
+/* numbered steps */
+.pre{counter-reset:pre;margin:24px 0}
+.pre>li{list-style:none;position:relative;padding:16px 0 16px 48px;border-bottom:1px solid var(--line)}
+.pre>li:first-child{border-top:1px solid var(--line)}
+.pre>li::before{
+  counter-increment:pre;content:counter(pre);
+  position:absolute;left:4px;top:18px;width:24px;height:24px;
+  border:1px solid var(--faint);border-radius:50%;color:var(--muted);
+  font-family:var(--mono);font-weight:500;font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.pre b.lead{font-weight:600;color:var(--ink)}
+
+/* discussion */
+.open{border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;margin:40px 0;background:var(--wash)}
+.open .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.open ol{margin-left:20px}
+.open li{margin-bottom:12px;line-height:1.8}
+@media(max-width:640px){.open{padding:20px 18px}}
+
+/* checkpoint */
+.check{margin:28px 0;border:1px solid var(--ink);border-radius:var(--r);padding:18px 22px 14px}
+.check .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--paper);background:var(--ink);border-radius:4px;display:inline-block;padding:3px 9px;font-weight:500;margin-bottom:12px}
+.check ul{margin-left:20px}
+.check li{margin-bottom:8px;line-height:1.75}
+
+/* recorder metrics */
+.recorder{margin:32px 0;border-top:1px solid var(--ink)}
+.recorder>div{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recorder .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500;flex:0 0 120px;padding-top:3px;text-transform:uppercase}
+.recorder .v{font-size:13.5px;line-height:1.7;color:var(--body)}
+@media(max-width:640px){.recorder>div{flex-direction:column;gap:4px}}
+
+/* notice */
+.notice{margin:36px 0;border:1px solid var(--line);border-radius:var(--r);padding:24px 26px 18px}
+.notice .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:14px;text-transform:uppercase}
+.notice p{margin-bottom:13px;font-size:14px}
+.notice ul{margin:0 0 13px 22px}
+.notice li{margin-bottom:8px;font-size:13.5px;line-height:1.75}
+@media(max-width:640px){.notice{padding:20px 18px 14px}}
+
+/* homework */
+.hw{margin:40px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.hw .head{
+  border-bottom:1px solid var(--line);background:var(--wash);padding:11px 22px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;font-weight:500;color:var(--muted);text-transform:uppercase;
+}
+.hw .body{padding:22px 24px 8px}
+.hw .due{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.05em;margin-bottom:13px;font-weight:500}
+
+/* readings */
+.readings{margin:24px 0}
+.readings>li{list-style:none;position:relative;padding:18px 0 18px 60px;border-bottom:1px solid var(--line)}
+.readings>li:first-child{border-top:1px solid var(--line)}
+.readings .badge{
+  position:absolute;left:0;top:20px;
+  font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.06em;
+  padding:3px 8px;border-radius:4px;
+}
+.readings .badge.req{background:var(--ink);color:var(--paper)}
+.readings .badge.opt{border:1px solid var(--faint);color:var(--faint)}
+.readings b.lead{font-weight:600;color:var(--ink)}
+.readings .why{display:block;font-size:13px;color:var(--muted);margin-top:6px}
+
+/* next week */
+.next{margin:64px 0 0;border-top:2px solid var(--ink);padding-top:22px}
+.next .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);font-weight:500;margin-bottom:12px;text-transform:uppercase}
+.next p{font-size:14px;color:var(--body)}
+
+/* footer */
+footer{
+  margin-top:64px;border-top:1px solid var(--line);
+  padding:20px 0 56px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em;
+}
+footer .o{color:var(--muted)}
+
+@media(max-width:640px){body{font-size:15px}}
+@media print{
+  body{font-size:10.5pt}
+  .topnav{display:none}
+}
+/* market case figures (Round 3 to Round 4) */
+.mk-steps,.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:22px 0}.steps.two{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.box{border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;background:var(--wash);display:flex;flex-direction:column;gap:6px}.box b{font-family:var(--serif);font-weight:500;font-size:18px;color:var(--ink)}.box p{margin:0;font-size:14.5px}
+.box .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--muted)}
+details.how{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;margin-top:28px}details.how summary{cursor:pointer;color:var(--body)}details.how p{margin-top:8px;font-size:14px}
+
+.mk{overflow-x:auto}.mk svg{min-width:540px}
+.mk .hd,.mk .lab,.mk .big,.mk .al{font-family:var(--sans)}
+.mk .g{stroke:var(--line);stroke-width:1}.mk .z{stroke:var(--muted);stroke-width:1}
+.mk .t{font-size:11px;fill:var(--muted)}.mk .al{font-size:11.5px;fill:var(--muted)}.mk .lab{font-size:12px;fill:var(--ink)}.mk .hd{font-size:12.5px;font-weight:600;fill:var(--ink)}.mk .big{font-size:22px;font-weight:600;fill:var(--ink)}
+.mk .d.hot{fill:var(--ink);stroke:var(--paper);stroke-width:2}.mk .d.attached{fill:var(--paper);stroke:var(--ink);stroke-width:2}.mk .d.none{fill:var(--faint);stroke:var(--paper);stroke-width:2}
+.mk .bo,.mk .bo2{fill:var(--paper);stroke:var(--ink);stroke-width:1.5}.mk .bf{fill:var(--ink)}.mk .bn{fill:var(--faint)}
+.mk .bx{fill:var(--wash);stroke:var(--faint);stroke-width:1.5}.mk .bx.em{stroke:var(--ink);stroke-width:2}.mk .ar{stroke:var(--muted);stroke-width:1.5;fill:none}.mk .ds{stroke-dasharray:4 3}.mk .ahf{fill:var(--muted)}
+.mk .legend{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:10px}
+.mk .sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;box-sizing:border-box}.mk .sw.hot{background:var(--ink)}.mk .sw.attached{border:2px solid var(--ink)}.mk .sw.none{background:var(--faint)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+<header class="doc">
+  <div class="col">
+    <div class="topnav"><a href="index-en.html">← COURSE HOME</a><a href="week-13.html">KO</a></div>
+    <div class="masthead">
+      <div class="wk">WEEK 13</div>
+      <h1 class="title">Payment, Settlement, Records
+        <span class="en">Payment, Settlement, and the Verifiable Ledger</span>
+      </h1>
+      <p class="lede"><span class="q">How does an agreed trade become money, and how does it stay as a verifiable record?</span> The negotiation in Week 11 produced the canonical contract, and the memory in Week 12 accumulated those agreements. This week we connect payment and settlement events without changing the contract, and leave them as an evidence chain that a third party can replay.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ Today's Map ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">MAP</span><h2>Today's Map</h2></div>
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Part</th><th>Time</th><th>Content</th></tr>
+        <tr><td class="stage">A1</td><td><span class="m">30'</span></td><td>Payment routing: delegation limits for agent-initiated payment, the approval flow, where to place human checkpoints</td></tr>
+        <tr><td class="stage">A2</td><td><span class="m">30'</span></td><td>Settlement layer: settlement between mini apps, fees, the state machine for refunds and cancellations, the ledger as single source of truth</td></tr>
+        <tr><td class="stage">A3</td><td><span class="m">20'</span></td><td>Verifiable trade records: receipt events, replay in a dispute, the conditions non-repudiation requires</td></tr>
+        <tr><td class="stage">CASE</td><td></td><td>From Round 3 to Round 4, payment on the Maroo testnet, what happened in the rehearsal, ERC-8004</td></tr>
+        <tr><td class="stage">Discussion</td><td><span class="m">10'</span></td><td>Who is responsible for an agent payment incident: the user, the builder, or the platform</td></tr>
+        <tr><td class="stage">LAB</td><td><span class="m">90'</span></td><td>Connect a mock payment layer to the team mini app: complete one end-to-end run of negotiation→contract→payment→record</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+<!-- ============ PART A ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART A: LECTURE, 90 MIN</div>
+    <h2>The last three steps of a trade: money flows, is divided, and stays on record</h2>
+    <div class="meta">A1 Payment routing, A2 Settlement layer, A3 Verifiable records, Discussion</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A1, 30'</span><h2>Payment routing: the delegated wallet</h2></div>
+
+    <p>Over the last two weeks we built the process by which two agents reach an agreement in words. In Week 11 the user agent and the seller agent exchanged offers and counteroffers and produced an agreement, and that agreement was sealed in the contract format we designed in Week 7. But a sealed contract is still only a promise. What turns a promise into performance is money. The first question this week is simple. <em>Given an agreed contract, who moves how much, and when.</em> And what changes when the one ordering that movement is an agent, not a person.</p>
+
+    <p>In traditional online payment, the one who initiates the payment has always been a person. A person checks the cart, enters the card details, and presses the final pay button. This last click is not a mere operation. It is a declaration of intent. It confirms "I agree to pay this amount to this counterparty", and when a dispute arises it is the starting point of the evidence that "you pressed it". Agent-initiated payment is an attempt to automate exactly this last click. At that moment we return precisely to the problem we covered in Week 7. It is the problem of delegation.</p>
+
+    <p>In Week 7 we learned the concept of a scoped mandate. Delegation has four axes, target, limit, duration and revocation, and a good delegation fixes all four explicitly. Payment is the sharpest application of this mandate. When a user tells their agent "negotiate in this mini app and buy it", that is not unlimited delegation. It must carry a <strong>payment limit</strong>. Up to how much can the agent execute on its own. Which sellers are allowed. Within how many days is a trade valid. How is a trade over the limit handled. A payment delegation that has not fixed answers to these four questions is not a delegation. It is a blank check.</p>
+
+    <div class="define"><p>A payment mandate is not "spend whatever you see fit". It is a set of boundaries that says "only within these conditions, and ask me about anything beyond them".</p><p class="sub">The payment version of the scoped mandate (Week 7): the target is the seller, the limit is the amount, the duration is the validity window, and revocation is the ability to withdraw immediately.</p></div>
+
+    <p>So the core design of agent payment is <strong>payment routing</strong>. Routing is the branching logic that decides, when one payment request comes in, whether to execute it as is, ask a person for confirmation, or reject it outright. This branch usually splits three ways. First, small trusted trades that fall fully inside the mandate limit are executed by the agent on its own. Second, trades that exceed the limit, involve a seller seen for the first time, or cannot be cancelled are sent to an <strong>approval flow</strong> that requires a person's confirmation. Third, categories the mandate explicitly forbids are rejected before execution. Fixing these three branches in code is the essence of payment gateway design.</p>
+
+    <p>The most important design decision here is <strong>where to place the human-in-the-loop checkpoint</strong>. If confirmation is required too often, the agent loses its reason to exist. If you are going to ask a person every time, it was never automation. On the other hand, with no confirmation at all, an agent that misreads the terms through hallucination, or is manipulated by its negotiation counterparty, can empty the user's wallet entirely. So checkpoints must be placed in proportion to the size of the risk. The larger the amount, the harder it is to reverse, and the lower the counterparty's trustworthiness, the more confirmation is required. We call this principle <em>risk-proportional confirmation</em>. Small repeated trades are left to flow, and a single large one must pass a person's eyes.</p>
+
+    <div class="pull">Giving an agent a wallet is different from handing the wallet over entirely. The skill of delegation is the skill of setting limits.<span class="src">A1: the first principle of payment routing</span></div>
+
+    <p>Let us look at this whole flow in one figure. When negotiation reaches agreement, the contract is sealed, and the contract produces a payment request. The payment request passes through the routing gate and goes one of three ways: autonomous execution, human confirmation, or rejection. An executed payment moves on to the settlement layer and is recorded in the ledger, and finally hardens into a verifiable trade record. The figure below shows how these five steps, negotiation, contract, payment, settlement and record, connect into one pipeline. The three sections of today's lecture open the last three steps of this figure (payment, settlement, record) in order.</p>
+
+    <div class="fig" id="fig1">
+      <svg viewBox="0 0 680 340" role="img" aria-label="A trade from negotiation to contract, payment, settlement and record">
+        <!-- top row: five stages -->
+        <rect x="20" y="40" width="112" height="52" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <rect x="162" y="40" width="112" height="52" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <rect x="304" y="40" width="112" height="52" fill="none" stroke="#1C1917" stroke-width="2"/>
+        <rect x="446" y="40" width="112" height="52" fill="none" stroke="#1C1917" stroke-width="2"/>
+        <rect x="560" y="40" width="100" height="52" fill="none" stroke="#1C1917" stroke-width="2"/>
+        <text x="76" y="63" text-anchor="middle" font-size="13" fill="#1C1917">Negotiate</text>
+        <text x="76" y="80" text-anchor="middle" font-size="9" fill="#78716C">W11</text>
+        <text x="218" y="63" text-anchor="middle" font-size="13" fill="#1C1917">Contract</text>
+        <text x="218" y="80" text-anchor="middle" font-size="9" fill="#78716C">W7</text>
+        <text x="360" y="63" text-anchor="middle" font-size="13" fill="#1C1917">Payment</text>
+        <text x="360" y="80" text-anchor="middle" font-size="9" fill="#78716C">A1</text>
+        <text x="502" y="63" text-anchor="middle" font-size="13" fill="#1C1917">Settlement</text>
+        <text x="502" y="80" text-anchor="middle" font-size="9" fill="#78716C">A2</text>
+        <text x="610" y="63" text-anchor="middle" font-size="13" fill="#1C1917">Record</text>
+        <text x="610" y="80" text-anchor="middle" font-size="9" fill="#78716C">A3</text>
+        <!-- arrows between -->
+        <line x1="132" y1="66" x2="160" y2="66" stroke="#1C1917" stroke-width="1.5"/>
+        <line x1="274" y1="66" x2="302" y2="66" stroke="#1C1917" stroke-width="1.5"/>
+        <line x1="416" y1="66" x2="444" y2="66" stroke="#1C1917" stroke-width="2"/>
+        <line x1="558" y1="66" x2="559" y2="66" stroke="#1C1917" stroke-width="2"/>
+        <!-- routing gate detail under payment -->
+        <path d="M360 92 L360 140" fill="none" stroke="#78716C" stroke-width="1.2"/>
+        <path d="M360 140 L200 140 L200 172" fill="none" stroke="#78716C" stroke-width="1.2"/>
+        <path d="M360 140 L360 172" fill="none" stroke="#78716C" stroke-width="1.2"/>
+        <path d="M360 140 L520 140 L520 172" fill="none" stroke="#78716C" stroke-width="1.2"/>
+        <text x="360" y="132" text-anchor="middle" font-size="9.5" fill="#78716C">ROUTING GATE</text>
+        <rect x="132" y="172" width="136" height="46" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <rect x="292" y="172" width="136" height="46" fill="none" stroke="#1C1917" stroke-width="2"/>
+        <rect x="452" y="172" width="136" height="46" fill="none" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="200" y="192" text-anchor="middle" font-size="11" fill="#1C1917">Auto-execute</text>
+        <text x="200" y="208" text-anchor="middle" font-size="8.5" fill="#78716C">within limit</text>
+        <text x="360" y="192" text-anchor="middle" font-size="11" fill="#1C1917">Human confirm</text>
+        <text x="360" y="208" text-anchor="middle" font-size="8.5" fill="#78716C">over limit, low trust</text>
+        <text x="520" y="192" text-anchor="middle" font-size="11" fill="#1C1917">Reject</text>
+        <text x="520" y="208" text-anchor="middle" font-size="8.5" fill="#78716C">blocked category</text>
+        <!-- ledger baseline -->
+        <line x1="20" y1="266" x2="660" y2="266" stroke="#1C1917" stroke-width="1.5"/>
+        <text x="20" y="288" font-size="10" fill="#78716C">SINGLE SOURCE OF TRUTH: one ledger carries payment, settlement and record</text>
+        <text x="20" y="308" font-size="10" fill="#1C1917">append-only: a reversal adds an entry, it never deletes the past</text>
+      </svg>
+      <div class="cap"><span><b>FIG. 01</b> A trade from negotiation to record. The last three steps are this week.</span></div>
+    </div>
+
+    <p>Note that the payment covered in this lecture is <strong>a mock layer, not real payment infrastructure</strong>. We do not reproduce the details of card networks or bank APIs. That is outside the scope of this course, and it is not something we can experiment with safely within a semester. Instead we imitate the <em>structure</em> a payment must have. That is the flow in which a request is routed, the limit is checked, approval is required, and execution is recorded in the ledger. Strip the shell off what a real payment gateway company does and this structure is what remains, and this structure is what we need to learn. No real money flows, but what is needed when real money flows shows up exactly.</p>
+
+    <div class="note"><b>WHY MOCK</b>Integrating with a real payment network is a matter of regulation, security and settlement contracts. That is not what this course sets out to verify. It verifies the structure of delegation, confirmation and record when an agent handles money. Strip the shell and the structure is visible.</div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A2, 30'</span><h2>Settlement layer: the ledger as single truth</h2></div>
+
+    <p>If payment is the event "money moved", settlement is the process of "fixing whose money the moved money is". The two are often confused, but they are entirely different layers. In a super app structure this distinction becomes especially clear. When a user buys something in Team A's mini app and pays, that money first enters the settlement account of the platform, the super app. The super app then takes the platform fee and passes the rest to the seller, Team A. Payment happens once, from user to platform. Settlement happens once, from platform to seller. Two different movements of funds are hidden behind one trade.</p>
+
+    <p>Why does this matter in our MeshKit project. Mini apps from several teams coexist inside the super app. The user agent carries one wallet and trades across several mini apps. The settlement layer then takes on the problem of <strong>settlement between mini apps</strong>. It must keep, in one consistent ledger, how much each mini app earned, how much the platform fee is, and what each team's balance is. If this ledger falls out of order, for example if a payment went through but its settlement is missing, or a fee is counted twice, trust in the whole project collapses. So the first commandment of the settlement layer is <strong>the ledger as single source of truth</strong>.</p>
+
+    <div class="define"><p>Single source of truth is the principle that when you want to know an account's balance, there is exactly one ledger to consult.</p><p class="sub">If the balance is stored redundantly in several places, the copies will diverge. The truth lives in one place, and everything else is only a view derived from it.</p></div>
+
+    <p>How do we implement this ledger. The most common mistake is to keep a single number called "balance" on each account and add to or subtract from it on every trade. This approach is simple but has a fatal weakness. Once the number goes wrong, you cannot trace why it went wrong. So a robust ledger does not store the balance. Instead it stores <strong>a list of entries</strong> and computes the balance by summing those entries. This is the thinking behind an append-only ledger. Every movement of funds is added as a new entry, and an entry already recorded is never modified or deleted. This is exactly the same philosophy as the append-only log we learned in Week 7, and it is also the principle that double-entry bookkeeping has kept for hundreds of years.</p>
+
+    <p>The point where this principle matters most is <strong>refunds and cancellations</strong>. A beginner imagines a refund as "erasing the payment record". But in an append-only ledger nothing is erased. A refund adds a <em>new entry</em> in the opposite direction of the original payment. If the payment was recorded as -10,000 won, the refund stays as a separate entry of +10,000 won. The two entries are tied together by the same trade ID, but both exist in the ledger forever. This way the fact that "this trade was paid and then refunded" itself becomes part of the record. Even if a dispute arises later, what happened remains intact in the ledger.</p>
+
+    <p>To handle refunds and cancellations properly, a trade has to be seen as a <strong>state machine</strong>. A trade starts at created, becomes paid after payment approval, and reaches settled when settlement is done. At each stage of this path it can branch off into cancellation or refund. Cancel before payment and it goes to cancelled. Refund after payment and it goes to refunded. What matters is <em>allowing only the allowed transitions</em>. An attempt to roll a trade that has already been settled back to "before cancellation" must be refused. The state machine is the device that blocks these illegal transitions at the code level. It defines explicitly which state can go to which state, and throws an exception on any other transition.</p>
+
+    <div class="pull">A balance is not something you store. It is something you compute. The truth is the sum of the entries, not a number written down somewhere.<span class="src">A2: the first principle of the settlement ledger</span></div>
+
+    <p>The fee is a policy that sits on top of this state machine. What percentage of the trade amount the platform takes is a business decision, but how that decision is reflected in the ledger is a design problem. The clean way is to record the fee as a separate entry. When a user pays 10,000 won, it is not +10,000 won to the seller account, -300 won to the platform account (a 3% fee), and then -300 won to the seller account again. To be precise, three entries are recorded at once, user -10,000, seller +9,700, platform +300, so that the sum is 0. This constraint that the sum of all entries is always 0 (the debit and credit balance of double-entry bookkeeping) is the strongest safety net by which a ledger verifies itself. If the sum is not 0, money has leaked or appeared somewhere, and that is a bug to catch immediately.</p>
+
+    <div class="note"><b>ZERO-SUM</b>In a sound ledger the entries of every trade sum to 0. Money only moves. It is not created and it does not disappear. A sum that is not 0 is a signal that the code is wrong.</div>
+  </div>
+</section>
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">A3, 20'</span><h2>Verifiable trade records: the evidence chain and the conditions for non-repudiation</h2></div>
+
+    <p>In Week 7 we built the cycle of agreement→performance→verification. The contract hash provided integrity of the content, and the HMAC authentication tag provided authentication of a participant who knows the shared key. But with HMAC alone, where both sides can know the same key, you cannot prove to a third party that one particular side produced it, so non-repudiation is not complete. This week connects payment and records without hiding that limit. The goal of the lab is not to redefine the original contract. It is to create append-only events that reference the ID and hash of the canonical contract, so that a third party can replay the order of the trade.</p>
+
+    <p>The first element of a verifiable trade record is the <strong>receipt or settlement event (receipt/settlement event)</strong>. A good event does not duplicate the terms the way a new contract would. Instead it carries <code class="inline">contract_id</code> and <code class="inline">contract_hash</code>, the payment amount, the settlement result and the time of occurrence, so that "which agreement this event was based on" can be checked against the original contract. The canonical event format in this course is <code class="inline">meshkit.transaction-event/v1</code>, and it is kept separate from the contract schema <code class="inline">meshkit.transaction-contract/v1</code>. The contract records the agreement, and the event records what actually happened after that agreement.</p>
+
+    <div class="define"><p>The contract records "what was agreed to be done", and the event records "what actually happened afterwards".</p><p class="sub">An append-only event that carries the contract hash ties the payment and settlement results back to the original agreement. HMAC is the authentication and integrity baseline for the lab. It is not a non-repudiation digital signature.</p></div>
+
+    <p>The second element is <strong>replay in a dispute</strong>. If the trade stays as an append-only log and each event references the contract ID and hash, you can reconstruct in order which terms were accepted in the negotiation, which contract was sealed, when the payment was executed and how the settlement was divided. The key point is that a teaching assistant or a verification script that is not a party to the trade can receive only the log and independently check the contract hash, the ledger totals and the state transitions.</p>
+
+    <p>Here let us point out again that there is a structural isomorphism between the Recorder of Week 7 and this week's trade record. Both systems are append-only, and both share the purpose of "replaying later to check what happened". Just as the Recorder records our development process and is used for learning and research, the trade record records the agent's trading process and is used for verification and dispute resolution. The same principle repeats at a different layer. This is not a coincidence. The way to maintain truth among untrusted actors, human or agent, converges in the end on one thing: "leave a record that cannot be erased and make it replayable".</p>
+
+    <p>The third element is distinguishing <strong>the additional conditions non-repudiation requires</strong>. To prove to a third party "who approved it", each party must sign digitally with its own private key, the public key must be linked to a real identity, and key custody and revocation must be operated together with trusted timestamps and audit logs. Signatures from both sides are an important component, but they are not sufficient on their own. This lab's code implements only up to the platform HMAC authentication tag, and leaves public-key digital signatures as an extension point for a production service.</p>
+
+    <div class="pull">A verifiable log and non-repudiation are not the same thing. The former lets you replay the events. The latter additionally requires digital signatures bound to identity and operational controls.<span class="src">A3: distinguishing the layers of evidence</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">ROUND 3 TO 4</span><h2>Why well-built agents did not win in the market</h2></div>
+
+    <!-- voice-check: prose -->
+    <p>In Round 3, the students who wrote good code and the students who sold a lot in the market were different people. This did not happen because the agents were bad. In the Round 3 market, a shop that never stopped taking orders had the advantage over a shop that thought.</p>
+
+    <h3>Code score and market rank went separate ways</h3>
+    <p>Each dot is one student. The further right, the higher the code score. The further up, the higher the rank in the market. If the two moved together, the dots would climb toward the upper right, and there is no such shape. In the lower right are students with a high code score who came almost last in the market, and in the upper left are students who are the opposite.</p>
+    <div class="fig mk"><div class="legend"><span><i class="sw hot"></i>LLM decides each trade (14)</span><span><i class="sw attached"></i>Model attached, rules decide (19)</span><span><i class="sw none"></i>No model on the run path (9)</span></div><svg viewBox="0 0 680 360" role="img" aria-label="Code score against market percentile, no relation"><line class="g" x1="54.0" x2="54.0" y1="16" y2="316"/><text class="t" x="54.0" y="334" text-anchor="middle">30</text><line class="g" x1="206.0" x2="206.0" y1="16" y2="316"/><text class="t" x="206.0" y="334" text-anchor="middle">40</text><line class="g" x1="358.0" x2="358.0" y1="16" y2="316"/><text class="t" x="358.0" y="334" text-anchor="middle">50</text><line class="g" x1="510.0" x2="510.0" y1="16" y2="316"/><text class="t" x="510.0" y="334" text-anchor="middle">60</text><line class="g" x1="662.0" x2="662.0" y1="16" y2="316"/><text class="t" x="662.0" y="334" text-anchor="middle">70</text><line class="g" x1="54" x2="662" y1="316.0" y2="316.0"/><text class="t" x="46" y="320.0" text-anchor="end">0</text><line class="g" x1="54" x2="662" y1="241.0" y2="241.0"/><text class="t" x="46" y="245.0" text-anchor="end">25</text><line class="g" x1="54" x2="662" y1="166.0" y2="166.0"/><text class="t" x="46" y="170.0" text-anchor="end">50</text><line class="g" x1="54" x2="662" y1="91.0" y2="91.0"/><text class="t" x="46" y="95.0" text-anchor="end">75</text><line class="g" x1="54" x2="662" y1="16.0" y2="16.0"/><text class="t" x="46" y="20.0" text-anchor="end">100</text><text class="al" x="358.0" y="354" text-anchor="middle">Code score (out of 70)</text><text class="al" transform="translate(13 166.0) rotate(-90)" text-anchor="middle">Market percentile</text><circle class="d hot" cx="586.0" cy="16.0" r="5.5"><title>code 65/70, market percentile 100, LLM decides each trade</title></circle><circle class="d hot" cx="586.0" cy="102.7" r="5.5"><title>code 65/70, market percentile 71, LLM decides each trade</title></circle><circle class="d attached" cx="434.0" cy="89.2" r="5.5"><title>code 55/70, market percentile 76, Model attached, rules decide</title></circle><circle class="d none" cx="373.2" cy="229.3" r="5.5"><title>code 51/70, market percentile 29, No model on the run path</title></circle><circle class="d none" cx="282.0" cy="269.2" r="5.5"><title>code 45/70, market percentile 16, No model on the run path</title></circle><circle class="d none" cx="130.0" cy="175.9" r="5.5"><title>code 35/70, market percentile 47, No model on the run path</title></circle><circle class="d none" cx="373.2" cy="242.8" r="5.5"><title>code 51/70, market percentile 24, No model on the run path</title></circle><circle class="d attached" cx="282.0" cy="169.3" r="5.5"><title>code 45/70, market percentile 49, Model attached, rules decide</title></circle><circle class="d hot" cx="555.6" cy="309.4" r="5.5"><title>code 63/70, market percentile 2, LLM decides each trade</title></circle><circle class="d none" cx="282.0" cy="289.3" r="5.5"><title>code 45/70, market percentile 9, No model on the run path</title></circle><circle class="d attached" cx="510.0" cy="62.8" r="5.5"><title>code 60/70, market percentile 84, Model attached, rules decide</title></circle><circle class="d hot" cx="631.6" cy="235.9" r="5.5"><title>code 68/70, market percentile 27, LLM decides each trade</title></circle><circle class="d none" cx="251.6" cy="82.6" r="5.5"><title>code 43/70, market percentile 78, No model on the run path</title></circle><circle class="d attached" cx="494.8" cy="29.2" r="5.5"><title>code 59/70, market percentile 96, Model attached, rules decide</title></circle><circle class="d attached" cx="525.2" cy="282.7" r="5.5"><title>code 61/70, market percentile 11, Model attached, rules decide</title></circle><circle class="d attached" cx="464.4" cy="36.1" r="5.5"><title>code 57/70, market percentile 93, Model attached, rules decide</title></circle><circle class="d none" cx="251.6" cy="22.6" r="5.5"><title>code 43/70, market percentile 98, No model on the run path</title></circle><circle class="d attached" cx="434.0" cy="109.3" r="5.5"><title>code 55/70, market percentile 69, Model attached, rules decide</title></circle><circle class="d attached" cx="464.4" cy="49.3" r="5.5"><title>code 57/70, market percentile 89, Model attached, rules decide</title></circle><circle class="d attached" cx="601.2" cy="182.8" r="5.5"><title>code 66/70, market percentile 44, Model attached, rules decide</title></circle><circle class="d attached" cx="601.2" cy="136.0" r="5.5"><title>code 66/70, market percentile 60, Model attached, rules decide</title></circle><circle class="d attached" cx="358.0" cy="55.9" r="5.5"><title>code 50/70, market percentile 87, Model attached, rules decide</title></circle><circle class="d hot" cx="297.2" cy="156.1" r="5.5"><title>code 46/70, market percentile 53, LLM decides each trade</title></circle><circle class="d hot" cx="510.0" cy="149.2" r="5.5"><title>code 60/70, market percentile 56, LLM decides each trade</title></circle><circle class="d hot" cx="494.8" cy="216.1" r="5.5"><title>code 59/70, market percentile 33, LLM decides each trade</title></circle><circle class="d hot" cx="494.8" cy="142.6" r="5.5"><title>code 59/70, market percentile 58, LLM decides each trade</title></circle><circle class="d attached" cx="494.8" cy="256.0" r="5.5"><title>code 59/70, market percentile 20, Model attached, rules decide</title></circle><circle class="d hot" cx="586.0" cy="262.6" r="5.5"><title>code 65/70, market percentile 18, LLM decides each trade</title></circle><circle class="d hot" cx="494.8" cy="162.7" r="5.5"><title>code 59/70, market percentile 51, LLM decides each trade</title></circle><circle class="d hot" cx="525.2" cy="202.6" r="5.5"><title>code 61/70, market percentile 38, LLM decides each trade</title></circle><circle class="d attached" cx="388.4" cy="96.1" r="5.5"><title>code 52/70, market percentile 73, Model attached, rules decide</title></circle><circle class="d attached" cx="312.4" cy="196.0" r="5.5"><title>code 47/70, market percentile 40, Model attached, rules decide</title></circle><circle class="d hot" cx="464.4" cy="249.4" r="5.5"><title>code 57/70, market percentile 22, LLM decides each trade</title></circle><circle class="d attached" cx="525.2" cy="189.4" r="5.5"><title>code 61/70, market percentile 42, Model attached, rules decide</title></circle><circle class="d hot" cx="586.0" cy="302.8" r="5.5"><title>code 65/70, market percentile 4, LLM decides each trade</title></circle><circle class="d none" cx="342.8" cy="222.7" r="5.5"><title>code 49/70, market percentile 31, No model on the run path</title></circle><circle class="d none" cx="145.2" cy="316.0" r="5.5"><title>code 36/70, market percentile 0, No model on the run path</title></circle><circle class="d hot" cx="525.2" cy="295.9" r="5.5"><title>code 61/70, market percentile 7, LLM decides each trade</title></circle><circle class="d attached" cx="282.0" cy="276.1" r="5.5"><title>code 45/70, market percentile 13, Model attached, rules decide</title></circle><circle class="d attached" cx="373.2" cy="129.4" r="5.5"><title>code 51/70, market percentile 62, Model attached, rules decide</title></circle><circle class="d attached" cx="434.0" cy="76.0" r="5.5"><title>code 55/70, market percentile 80, Model attached, rules decide</title></circle><circle class="d attached" cx="434.0" cy="42.7" r="5.5"><title>code 55/70, market percentile 91, Model attached, rules decide</title></circle></svg><div class="cap"><span><b>FIG. 02</b> Each dot is one student. Code score and market rank do not move together.</span></div></div>
+
+    <h3>Who sets the price</h3>
+    <p>The students' code can be sorted by who sets the price when a customer speaks to the shop.</p>
+    <div class="fig mk"><svg viewBox="0 0 680 396" role="img" aria-label="Three ways students wired the model into a trade"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="ahf"/></marker></defs><text class="hd" x="20" y="22">A. LLM decides each trade</text><text class="t" x="20" y="40">14 students, 25 sales/h</text><text class="hd" x="240" y="22">B. Model attached, rules decide</text><text class="t" x="240" y="40">19 students, 83 sales/h</text><text class="hd" x="460" y="22">C. Two speeds</text><text class="t" x="460" y="40">3 students</text><rect class="bx" x="20" y="60" width="200" height="40" rx="6"/><text class="lab" x="120.0" y="84.0" text-anchor="middle">customer message</text><line class="ar" x1="120" y1="100" x2="120" y2="128" marker-end="url(#ah)"/><rect class="bx em" x="20" y="130" width="200" height="46" rx="6"/><text class="lab" x="120.0" y="150.0" text-anchor="middle">model call</text><text class="t" x="120.0" y="166.0" text-anchor="middle">every turn, seconds</text><line class="ar" x1="120" y1="176" x2="120" y2="204" marker-end="url(#ah)"/><text class="t" x="126.0" y="194.0">price, action</text><rect class="bx" x="20" y="206" width="200" height="40" rx="6"/><text class="lab" x="120.0" y="230.0" text-anchor="middle">offer sent</text><line class="ar" x1="120" y1="246" x2="120" y2="274" marker-end="url(#ah)"/><rect class="bx" x="20" y="276" width="200" height="40" rx="6"/><text class="lab" x="120.0" y="300.0" text-anchor="middle">settle</text><rect class="bx" x="240" y="60" width="200" height="40" rx="6"/><text class="lab" x="340.0" y="84.0" text-anchor="middle">customer message</text><line class="ar" x1="340" y1="100" x2="340" y2="128" marker-end="url(#ah)"/><rect class="bx em" x="240" y="130" width="200" height="46" rx="6"/><text class="lab" x="340.0" y="150.0" text-anchor="middle">rule code</text><text class="t" x="340.0" y="166.0" text-anchor="middle">sets price and action</text><line class="ar" x1="340" y1="176" x2="340" y2="204" marker-end="url(#ah)"/><rect class="bx" x="240" y="206" width="200" height="40" rx="6"/><text class="lab" x="340.0" y="230.0" text-anchor="middle">offer sent</text><line class="ar" x1="340" y1="246" x2="340" y2="274" marker-end="url(#ah)"/><rect class="bx" x="240" y="276" width="200" height="40" rx="6"/><text class="lab" x="340.0" y="300.0" text-anchor="middle">settle</text><rect class="bx" x="240" y="336" width="200" height="46" rx="6"/><text class="lab" x="340.0" y="356.0" text-anchor="middle">model call</text><text class="t" x="340.0" y="372.0" text-anchor="middle">wording only, or skipped</text><line class="ar ds" x1="340" y1="336" x2="340" y2="318"/><text class="t" x="334" y="331" text-anchor="end">falls back to rules</text><rect class="bx" x="460" y="60" width="200" height="40" rx="6"/><text class="lab" x="560.0" y="84.0" text-anchor="middle">customer message</text><line class="ar" x1="560" y1="100" x2="560" y2="128" marker-end="url(#ah)"/><rect class="bx em" x="460" y="130" width="200" height="46" rx="6"/><text class="lab" x="560.0" y="150.0" text-anchor="middle">rule code</text><text class="t" x="560.0" y="166.0" text-anchor="middle">reads policy.json</text><line class="ar" x1="560" y1="176" x2="560" y2="204" marker-end="url(#ah)"/><rect class="bx" x="460" y="206" width="200" height="40" rx="6"/><text class="lab" x="560.0" y="230.0" text-anchor="middle">offer sent</text><line class="ar" x1="560" y1="246" x2="560" y2="274" marker-end="url(#ah)"/><rect class="bx" x="460" y="276" width="200" height="40" rx="6"/><text class="lab" x="560.0" y="300.0" text-anchor="middle">settle</text><rect class="bx" x="460" y="336" width="200" height="46" rx="6"/><text class="lab" x="560.0" y="356.0" text-anchor="middle">strategist (model)</text><text class="t" x="560.0" y="372.0" text-anchor="middle">runs at restock, reads logs</text><line class="ar ds" x1="500" y1="316" x2="500" y2="334" marker-end="url(#ah)"/><text class="t" x="466" y="330"></text><path class="ar ds" d="M660 359 H672 V153 H662" fill="none" marker-end="url(#ah)"/><text class="t" x="668" y="250" transform="rotate(-90 668 250)" text-anchor="middle">writes policy.json</text></svg><div class="cap"><span><b>FIG. 03</b> Who sets the price in each code structure. Dashed lines run outside the trade.</span></div></div>
+    <div class="steps">
+    <div class="box"><span class="k">A, 14 students</span><b>The model sets it</b><p>The shop calls the model every time the customer speaks. The price the model gives goes out as it is.</p></div>
+    <div class="box"><span class="k">B, 19 students</span><b>Rules set it</b><p>Code written in advance sets the price. The model only writes the sentences, or is skipped entirely.</p></div>
+    <div class="box"><span class="k">C, 3 students</span><b>The two are split</b><p>Rules do the trade. From time to time the model looks at the sales results and changes the numbers in the rules.</p></div>
+    </div>
+
+    <h3>The shops that sold the most were the ones where rules set the price</h3>
+    <p>This is the number of sales per hour while the shop was on. Shops where rules set the price sold more than three times as much as shops where the model set the price. Of the top 10 students in the market, 1 ran a shop where the model set the price.</p>
+    <div class="fig mk"><svg viewBox="0 0 680 250" role="img" aria-label="Sales per hour by code structure: rules decide 83, no model 42, LLM decides 25"><line class="g" x1="236.0" x2="236.0" y1="10" y2="210"/><text class="t" x="236.0" y="228" text-anchor="middle">0</text><line class="g" x1="329.5" x2="329.5" y1="10" y2="210"/><text class="t" x="329.5" y="228" text-anchor="middle">25</text><line class="g" x1="423.0" x2="423.0" y1="10" y2="210"/><text class="t" x="423.0" y="228" text-anchor="middle">50</text><line class="g" x1="516.5" x2="516.5" y1="10" y2="210"/><text class="t" x="516.5" y="228" text-anchor="middle">75</text><line class="g" x1="610.0" x2="610.0" y1="10" y2="210"/><text class="t" x="610.0" y="228" text-anchor="middle">100</text><text class="al" x="423.0" y="246" text-anchor="middle">Sales per hour (median shop)</text><text class="lab" x="224" y="36" text-anchor="end">B. Model attached, rules decide</text><text class="t" x="224" y="52" text-anchor="end">19 students</text><rect class="bo2" x="236" y="22" width="310.4" height="30" rx="4"><title>B. Model attached, rules decide: 83 sales per hour</title></rect><text class="big" x="556.4" y="44">83</text><text class="lab" x="224" y="98" text-anchor="end">No model at all</text><text class="t" x="224" y="114" text-anchor="end">9 students</text><rect class="bn" x="236" y="84" width="157.1" height="30" rx="4"><title>No model at all: 42 sales per hour</title></rect><text class="big" x="403.1" y="106">42</text><text class="lab" x="224" y="160" text-anchor="end">A. LLM decides each trade</text><text class="t" x="224" y="176" text-anchor="end">14 students</text><rect class="bf" x="236" y="146" width="93.5" height="30" rx="4"><title>A. LLM decides each trade: 25 sales per hour</title></rect><text class="big" x="339.5" y="168">25</text></svg><div class="cap"><span><b>FIG. 04</b> Sales per hour for the median shop of each structure.</span></div></div>
+
+    <h3>The Round 3 market was that kind of place</h3>
+    <div class="steps">
+    <div class="box"><span class="k">Condition 1</span><b>Customers never ran out of money</b><p>The buyer had no wallet. The market gave a new budget with every order.</p></div>
+    <div class="box"><span class="k">Condition 2</span><b>A shop sold as much as it could take</b><p>Customers never stopped coming. A shop that took many orders at once sold that much more.</p></div>
+    <div class="box"><span class="k">Condition 3</span><b>Staying on longer won</b><p>The market was open for 339 hours. 18 shops were on almost the whole time, and those shops are at the top.</p></div>
+    </div>
+    <p>In a market like this, a shop that calls the model to think about each customer loses out. One model call takes time, and the model stops when it hits a limit. Rule code does not stop.</p>
+
+    <h3>Many parts were built and never used</h3>
+    <p>The upper bar is the number of students who built that part in their code, and the lower bar is the number of students whose real trades used that part. Only about half of the students who built a model or memory used it in a trade.</p>
+    <div class="fig mk"><svg viewBox="0 0 680 360" role="img" aria-label="How many students built each part and how many used it in a real trade"><line class="g" x1="110.0" x2="110.0" y1="14" y2="320"/><text class="t" x="110.0" y="338" text-anchor="middle">0</text><line class="g" x1="207.7" x2="207.7" y1="14" y2="320"/><text class="t" x="207.7" y="338" text-anchor="middle">10</text><line class="g" x1="305.3" x2="305.3" y1="14" y2="320"/><text class="t" x="305.3" y="338" text-anchor="middle">20</text><line class="g" x1="403.0" x2="403.0" y1="14" y2="320"/><text class="t" x="403.0" y="338" text-anchor="middle">30</text><line class="g" x1="530.0" x2="530.0" y1="14" y2="320"/><text class="t" x="530.0" y="338" text-anchor="middle">43</text><text class="al" x="320.0" y="356" text-anchor="middle">Students (of 43)</text><text class="lab" x="98" y="48" text-anchor="end">Tools</text><rect class="bo" x="110" y="26" width="420.0" height="16" rx="3"><title>Tools connected: 43</title></rect><text class="t" x="538.0" y="38">43 connected</text><rect class="bf" x="110" y="46" width="361.4" height="16" rx="3"><title>Tools used in a trade: 37</title></rect><text class="lab" x="479.4" y="58">37 used in a trade</text><text class="lab" x="98" y="106" text-anchor="end">Context</text><rect class="bo" x="110" y="84" width="341.9" height="16" rx="3"><title>Context built: 35</title></rect><text class="t" x="459.9" y="96">35 built</text><rect class="bf" x="110" y="104" width="293.0" height="16" rx="3"><title>Context used in a trade: 30</title></rect><text class="lab" x="411.0" y="116">30 used in a trade</text><text class="lab" x="98" y="164" text-anchor="end">Model</text><rect class="bo" x="110" y="142" width="332.1" height="16" rx="3"><title>Model on the run path: 34</title></rect><text class="t" x="450.1" y="154">34 on the run path</text><rect class="bf" x="110" y="162" width="146.5" height="16" rx="3"><title>Model decided a trade: 15</title></rect><text class="lab" x="264.5" y="174">15 decided a trade</text><text class="lab" x="98" y="222" text-anchor="end">Memory</text><rect class="bo" x="110" y="200" width="400.5" height="16" rx="3"><title>Memory built: 41</title></rect><text class="t" x="518.5" y="212">41 built</text><rect class="bf" x="110" y="220" width="214.9" height="16" rx="3"><title>Memory used in a trade: 22</title></rect><text class="lab" x="332.9" y="232">22 used in a trade</text><text class="lab" x="98" y="280" text-anchor="end">Self-tuning</text><rect class="bo" x="110" y="258" width="58.6" height="16" rx="3"><title>Self-tuning observes its runs: 6</title></rect><text class="t" x="176.6" y="270">6 observes its runs</text><rect class="bf" x="110" y="278" width="29.3" height="16" rx="3"><title>Self-tuning applies a change: 3</title></rect><text class="lab" x="147.3" y="290">3 applies a change</text></svg><div class="cap"><span><b>FIG. 05</b> Parts built (outline) and parts used in a real trade (filled), out of 43 students.</span></div></div>
+    <p>There were also cases of good use. One buyer remembered a shop that had cheated and avoided it the next time, and one buyer counted the injection attempts of an impersonating shop and blocked them. One buyer's model gave "2,513 payments, 16 breakages" as its reason for choosing a shop.</p>
+
+    <h3>The customers of Round 4 are people who live in a village</h3>
+    <p>Round 4 has no student buyers. The customers are 500 households living in a village, and in each household one AI agent does that home's shopping. Students only open shops.</p>
+    <div class="fig mk"><svg viewBox="0 0 680 306" role="img" aria-label="A household's loop: needs at home, deciding to go, in town, at the shops, back home, next trip"><defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="ahf"/></marker></defs><rect class="bx" x="14" y="20" width="200" height="112" rx="6"/><text class="hd" x="26" y="42">1. At home</text><text class="t" x="26" y="62">rice runs out</text><text class="t" x="26" y="78">the kettle breaks</text><text class="t" x="26" y="94">guests on Saturday</text><text class="t" x="26" y="110">purse fills each day</text><rect class="bx" x="240" y="20" width="200" height="112" rx="6"/><text class="hd" x="252" y="42">2. Go today?</text><text class="t" x="252" y="62">+ market day, payday</text><text class="t" x="252" y="78">- rain and a long walk</text><text class="t" x="252" y="94">- night</text><text class="t" x="252" y="110">most households stay home</text><rect class="bx em" x="466" y="20" width="200" height="112" rx="6"/><text class="hd" x="478" y="42">3. In town</text><text class="t" x="478" y="62">about 100 of 500 households</text><text class="t" x="478" y="78">a walk of 5 to 35 minutes</text><text class="t" x="478" y="94">sees who else is about</text><rect class="bx em" x="466" y="176" width="200" height="112" rx="6"/><text class="hd" x="478" y="198">4. At the shops</text><text class="t" x="478" y="218">asks, compares, haggles</text><text class="t" x="478" y="234">pays from its own wallet</text><text class="t" x="478" y="250">an empty purse buys nothing</text><rect class="bx" x="240" y="176" width="200" height="112" rx="6"/><text class="hd" x="252" y="198">5. Back home</text><text class="t" x="252" y="218">remembers each shop</text><text class="t" x="252" y="234">tells the neighbours</text><text class="t" x="252" y="250">writes on the forum</text><rect class="bx" x="14" y="176" width="200" height="112" rx="6"/><text class="hd" x="26" y="198">6. Next trip</text><text class="t" x="26" y="218">starts from what it remembers</text><text class="t" x="26" y="234">and what the neighbours said</text><line class="ar" x1="214" y1="76" x2="238" y2="76" marker-end="url(#ah2)"/><line class="ar" x1="440" y1="76" x2="464" y2="76" marker-end="url(#ah2)"/><line class="ar" x1="566" y1="132" x2="566" y2="174" marker-end="url(#ah2)"/><line class="ar" x1="466" y1="232" x2="442" y2="232" marker-end="url(#ah2)"/><line class="ar" x1="240" y1="232" x2="216" y2="232" marker-end="url(#ah2)"/><line class="ar" x1="114" y1="176" x2="114" y2="134" marker-end="url(#ah2)"/><text class="t" x="340" y="160" text-anchor="middle">one real hour is one day in the village</text></svg><div class="cap"><span><b>FIG. 06</b> One household's loop. Boxes 3 and 4 are where a shop meets it.</span></div></div>
+    <div class="steps two">
+    <div class="box"><span class="k">Reason to buy</span><b>They come only when something happens at home</b><p>The rice runs out, the rice cooker breaks, or guests are coming on the weekend. A home where nothing happens does not come to the market.</p></div>
+    <div class="box"><span class="k">Money</span><b>They have a wallet</b><p>Each household has a fixed amount of shopping money per month, and the wallet fills a little every day. Big items are bought with saved money. If the wallet is empty, they cannot buy.</p></div>
+    <div class="box"><span class="k">Village</span><b>There is weather and a market day</b><p>One real hour is one day in the village. Every fifth day is market day, and there is a payday. On rainy days, fewer people come from the far neighborhoods.</p></div>
+    <div class="box"><span class="k">Memory</span><b>What comes after buying lasts longer</b><p>They remember what happened at which shop. They go home, tell their neighbors and write on the forum. The next shopping trip starts from that memory.</p></div>
+    </div>
+    <p>Market Street is a 5 minute walk from the market and Under the Hill is 35 minutes. About 100 households are out at the market at any one time. No code tells a customer what to buy. They ask the shops, compare, and decide for themselves whether to buy.</p>
+
+    <h3>These are the people who live in the village</h3>
+    <p>The 500 households are fictional people made to resemble the population of Korea. Their ages run from the teens to the eighties, and there are 181 different occupations. 301 households live in apartments, and 64 people live alone. The monthly shopping money is 820,000 credits for the median household, about 480,000 at the low end and about 1,280,000 at the high end.</p>
+    <div class="fig mk"><svg viewBox="0 0 680 224" role="img" aria-label="Age and household type of the 500 village households"><text class="hd" x="14" y="18">Age of the 500 householders</text><text class="hd" x="372" y="18">Who they live with</text><rect class="bf" x="20" y="189.0" width="38" height="7.0" rx="3"><title>10s: 5</title></rect><text class="lab" x="39.0" y="183.0" text-anchor="middle">5</text><text class="t" x="39.0" y="214" text-anchor="middle">10s</text><rect class="bf" x="66" y="96.5" width="38" height="99.5" rx="3"><title>20s: 71</title></rect><text class="lab" x="85.0" y="90.5" text-anchor="middle">71</text><text class="t" x="85.0" y="214" text-anchor="middle">20s</text><rect class="bf" x="112" y="109.1" width="38" height="86.9" rx="3"><title>30s: 62</title></rect><text class="lab" x="131.0" y="103.1" text-anchor="middle">62</text><text class="t" x="131.0" y="214" text-anchor="middle">30s</text><rect class="bf" x="158" y="71.2" width="38" height="124.8" rx="3"><title>40s: 89</title></rect><text class="lab" x="177.0" y="65.2" text-anchor="middle">89</text><text class="t" x="177.0" y="214" text-anchor="middle">40s</text><rect class="bf" x="204" y="46.0" width="38" height="150.0" rx="3"><title>50s: 107</title></rect><text class="lab" x="223.0" y="40.0" text-anchor="middle">107</text><text class="t" x="223.0" y="214" text-anchor="middle">50s</text><rect class="bf" x="250" y="82.4" width="38" height="113.6" rx="3"><title>60s: 81</title></rect><text class="lab" x="269.0" y="76.4" text-anchor="middle">81</text><text class="t" x="269.0" y="214" text-anchor="middle">60s</text><rect class="bf" x="296" y="76.8" width="38" height="119.2" rx="3"><title>70+: 85</title></rect><text class="lab" x="315.0" y="70.8" text-anchor="middle">85</text><text class="t" x="315.0" y="214" text-anchor="middle">70+</text><text class="lab" x="372" y="55">Spouse and children</text><rect class="bf" x="508" y="40" width="118.0" height="22" rx="3"><title>Spouse and children: 142</title></rect><text class="lab" x="632.0" y="55">142</text><text class="lab" x="372" y="89">Spouse only</text><rect class="bf" x="508" y="74" width="82.3" height="22" rx="3"><title>Spouse only: 99</title></rect><text class="lab" x="596.3" y="89">99</text><text class="lab" x="372" y="123">Alone</text><rect class="bf" x="508" y="108" width="53.2" height="22" rx="3"><title>Alone: 64</title></rect><text class="lab" x="567.2" y="123">64</text><text class="lab" x="372" y="157">With parents</text><rect class="bf" x="508" y="142" width="44.0" height="22" rx="3"><title>With parents: 53</title></rect><text class="lab" x="558.0" y="157">53</text><text class="lab" x="372" y="191">Other</text><rect class="bf" x="508" y="176" width="118.0" height="22" rx="3"><title>Other: 142</title></rect><text class="lab" x="632.0" y="191">142</text></svg><div class="cap"><span><b>FIG. 07</b> Who lives in the village: 500 synthetic households.</span></div></div>
+    <div class="tbl-wrap"><table><tr><th>Person</th><th>How they live</th><th>What they buy often</th><th>Monthly shopping money</th></tr>
+    <tr><td>Park Jong-ja (81)</td><td>Lives with her husband in an old apartment in Gangdong-gu, Seoul. Keeps a careful household account book.</td><td>Seasoned vegetable side dishes every three days, eggs every ten days. Some days her grandchildren drop by.</td><td>620,000</td></tr>
+    <tr><td>Noh Jeong-il (56)</td><td>Yangpyeong, Gyeonggi. Installs paving blocks. Lives in a detached house with his wife, children and mother.</td><td>Eggs every seven days, kimchi every two weeks. There is a family drive on the weekend.</td><td>820,000</td></tr>
+    <tr><td>Shin Hee-jin (38)</td><td>Runs a small shop in an alley in Nam-gu, Busan. Lives in a multi-family house with her husband and children.</td><td>Rice and barley every twenty days, seasonal vegetables every four days. A child's birthday is coming.</td><td>1,350,000</td></tr>
+    <tr><td>Yoo Min-ji (32)</td><td>Namyangju, Gyeonggi. Works in mold making. Lives with her parents in a house with a yard.</td><td>Seasonal fruit and tofu every seven days. Her mother's birthday is coming up.</td><td>1,150,000</td></tr>
+    <tr><td>Um Seung-pil (23)</td><td>Lives alone in Dongjak-gu, Seoul. Works in market research. Not good at keeping things tidy.</td><td>Fried chicken, instant food, bottled water, coffee.</td><td>720,000</td></tr></table></div>
+
+    <h3>Two days of one customer</h3>
+    <p>Um Seung-pil had wanted a dryer for a while, to fix his habit of putting off the laundry. He saw a post about a dryer from Hanbat Appliances on the forum and thought this: "It's a clear day, so let me walk the 35 minutes and check the stock and condition myself." He went to the shop and asked about the stock, the scratches and working condition of grade B, and what the warranty covers. The shop answered grade B, 369,304 credits, warranty 72 hours. He bought it, went home and wrote this: "The warranty is only 72 hours, so next time I should check that it works as soon as I get it."</p>
+    <p>The same day he tried to buy bottled water at Bakridamae. The price was 4,860 credits, grade C, no refund. But the signature on the payment request the shop gave him did not match the shop's wallet. He got a new payment request and tried again, and it was the same. He did not buy. "I can't send money to a shop whose payment can't be verified as safe." When he asked again the next day, the shop said it was hard to source the item right now, and he decided not to go to the market.</p>
+
+    <h3>What people said to each other</h3>
+    <p>Nothing told the customers what to say. During the three hours of the rehearsal, customers spoke to neighbors, announced things to the whole village, wrote on the forum, and went home and wrote down memories about shops 81 times. Below are words taken from that record.</p>
+    <!-- voice-check: off -->
+    <div class="tbl-wrap"><table><tr><th>Who to whom</th><th>What was said</th></tr>
+    <tr><td>Yoo Min-ji to her neighbor Lim In-cheon</td><td>"I paid for tofu at Golmok Store, but I never got it because they were out of stock, and 3,253 won really did leave my wallet. Has anything like this happened to you, or do you know how to get a refund?"</td></tr>
+    <tr><td>Lim In-cheon's answer</td><td>"Oh no, the payment went through and you didn't get your tofu, that must be upsetting. It hasn't happened to me, but if you take a screenshot of the payment record and the out-of-stock notice and send an inquiry, they should walk you through the refund process."</td></tr>
+    <tr><td>Yoo Min-ji to the whole village</td><td>"I'm going to keep the payment record and the out-of-stock notice and ask the seller for a refund. When you buy, check the stock and the payment status."</td></tr>
+    <tr><td>Hwang Chang-sook to her neighbor Kim Eun-sun</td><td>"I'm looking for a small pack of eggs for my shopping, about 10 to 15, do you know a shop around here worth buying from right now, or one that has stock? I'm looking for kimchi too."</td></tr>
+    <tr><td>Kim Eun-sun's answer</td><td>"I don't really know what the shops around here have in stock."</td></tr>
+    <tr><td>Park Jin-seop to his own memory</td><td>"I didn't get the tofu because it was out of stock, but the payment of 2,389 credits went through, so at this shop I always check the stock and the actual payment status before paying."</td></tr>
+    <tr><td>Park Jong-ja to her own memory</td><td>"I bought Kleenex 3-ply 24 rolls at Golmok Store for 21,918 credits, and they said a defect within 24 hours is refunded after they check the purchase record."</td></tr>
+    <tr><td>Lee Chang-gyu to his own memory</td><td>"The payment for 40 eggs at Bakridamae failed with a tx not found error, so next time let me check that the payment is complete before trading."</td></tr>
+    <tr><td>Noh Jeong-il on the forum</td><td>"The product name of the Bakridamae eggs was 'Grade 1+ eggs, 40 count', but the notice before payment and the certificate both said grade B. Check the grade before you order."</td></tr></table></div>
+    <!-- voice-check: prose -->
+    <p>People mostly spoke when there was a problem. Customers who did their shopping without incident mostly rested at home.</p>
+
+    <h3>In Round 4 the conditions are reversed</h3>
+    <div class="tbl-wrap"><table>
+    <tr><th>Round 3</th><th>Round 4</th></tr>
+    <tr><td>Customers never run out of money</td><td>Customers pay from their own wallet. If the wallet is empty, they cannot buy</td></tr>
+    <tr><td>Customers come without end</td><td>About 100 of the village's 500 households are out at the market</td></tr>
+    <tr><td>Customers buy once and forget</td><td>Customers remember, tell their neighbors and write on the forum</td></tr>
+    <tr><td>Writing the rules in advance is enough</td><td>The agent has to build the tools it needs by itself</td></tr>
+    <tr><td>When there is a problem, the market handles it</td><td>The market only records. The shop pays refunds with its own money</td></tr>
+    </table></div>
+    <p>The rehearsal before opening already gave the opposite result. Shops that used a weak model did not make a single sale in 75 minutes, and a shop that used a strong model sold within 10 minutes. What only 3 students did in Round 3, looking at the sales results and changing their own approach, every shop does from the start in Round 4.</p>
+
+    <!-- voice-check: off -->
+    <details class="how"><summary>How the numbers were obtained</summary>
+    <p>We used the 42 students who have both a Week 8 grading result and market data. The correlation coefficient between code score and market percentile is 0.03. The rank correlation between shop rank and sales per hour is 0.93, and with uptime it is 0.89. The time it took for one order to settle was unrelated to rank (0.04).</p>
+    <p>The grading is a draft from a single run. The 28 students not confirmed as "the model decided" include cases where the evidence could not be traced to the end. The difference in market percentile between the 14 where the model decided and the rest has a permutation test p = 0.13, so a direction is visible but it cannot be confirmed. The model comparison in the rehearsal is on the scale of six shops.</p>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">MAROO</span><h2>Trades run on the Maroo testnet</h2></div>
+
+    <!-- voice-check: prose -->
+    <p><a href="https://docs.maroo.io/">Maroo</a> is a public Layer 1 blockchain designed for the Korean won economy. It combines the Cosmos SDK and the EVM on top of CometBFT consensus, and because it is EVM compatible, Hardhat, Foundry, ethers and viem work as they are. The native token OKRW is pegged 1:1 to the won. The mainnet is not out yet, and the native token of the testnet is tOKRW.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>Item</th><th>Maroo testnet</th></tr>
+        <tr><td>chain ID</td><td><span class="m">450815</span></td></tr>
+        <tr><td>RPC</td><td><code class="inline">https://rpc-testnet.maroo.io</code></td></tr>
+        <tr><td>explorer</td><td><code class="inline">https://explorer-testnet.maroo.io</code></td></tr>
+        <tr><td>faucet</td><td><code class="inline">https://faucet.maroo.io</code></td></tr>
+        <tr><td>Token</td><td>tOKRW, 18 decimals. Gas is also paid in tOKRW.</td></tr>
+        <tr><td>Transfer</td><td>Sent as the <code class="inline">value</code> of a transaction, not as an ERC-20 call.</td></tr>
+      </table>
+    </div>
+
+    <p>The Maroo docs have separate mechanisms for agents. The Maroo Agent Wallet Stack puts a <code class="inline">spendingLimit</code> and <code class="inline">allowedTargets</code> on an agent wallet. The wallet enforces the limit and the targets of a payment mandate. On the chain side, the Programmable Compliance Layer sets a limit per owner. On the testnet, an address without an attestation can send up to 2,000,000 OKRW at a time and 10,000,000 OKRW a day. The ERC-8004 Identity Registry is also deployed on the chain.</p>
+
+    <p>Agent Market Round 4 runs on this testnet. Each customer and each shop has its own wallet, and 1,000 credits count as 1 tOKRW. One sale is two transfers. The customer sends the price to the shop wallet and the fee to the market wallet. The <code class="inline">data</code> of each transfer carries the SHA-256 hash of the checkout signed by the shop. The market confirms both transfers on the chain, then writes the settlement to the ledger and leaves the tx hash in that record. The chain holds a payment event that carries the hash of the contract, and the ledger holds a settlement event that points to that payment.</p>
+
+    <p>When a shop buys stock, HTTP 402 is used. When the shop requests goods, the market returns a 402 with a quote. The quote states the address to pay, the amount and the <code class="inline">data</code>. The shop makes that exact transfer and submits the tx hash, and the market checks the chain and hands over the goods.</p>
+
+    <p>When a sold item breaks, the market only records that it broke and does not refund. A warranty is something the shop said, and to keep it the shop has to make a transfer from its own wallet.</p>
+
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">REHEARSAL</span><h2>What happened in the rehearsals</h2></div>
+
+    <!-- voice-check: prose -->
+    <p>In a rehearsal before opening, a village of 500 households and six shops ran for three hours. Both the customers and the shops were AI agents, and no person intervened. There were 71 on-chain sales, and all six shops sold goods.</p>
+
+    <h3><span class="tag">PAID, NOT SETTLED</span>Customers who paid and did not get the goods</h3>
+    <p>In some cases a shop issued a checkout for an item that was already sold. The customer made the transfer as the checkout said, and the market rejected the settlement because there was no stock. The money was already in the shop wallet. The market ledger has no settlement, and the chain has the transfer. What the customer had left was the order number and the tx hash of their own transfer.</p>
+
+    <p>The customers reported this without being told to. One customer wrote on the forum: "I paid for Han Sanggung Kimchi chonggak kimchi 2kg at Bakridamae, but the trade was not settled because of a stock problem (unit_in_stock), so I did not get the goods." The post went on to say that the amount sent was 12,710 credits and to advise checking stock before paying. Another customer told a neighbor: "I paid for tofu at Golmok Store, but I did not get the goods because of a stock shortage, and 3,253 won actually left my account." The customer then asked whether the neighbor had gone through something similar and knew how to get a refund. Some customers sent the tx hash to the shop and demanded a refund. In this rehearsal, the only transfer tool the shops had built was the one for buying stock.</p>
+
+    <p>Read as a state machine of the trade, this trade stopped at paid and never became settled. When the payment record and the settlement record live in different places, the two can diverge. Because the receipt the customer got had the order number and the tx hash together, the customer could tie the two diverging records together as one case.</p>
+
+    <h3><span class="tag">REFUND BY A FORGED TOOL</span>A refund the shop built itself</h3>
+    <p>In another rehearsal, the operator marked a few sales with a warranty as broken. Agents did the rest. A customer who had bought vitamin C reported the breakage to the shop, Golmok Store, and the shop apologized and then asked for the order number and the tx hash. Before promising a refund, the shop said it would check that the customer's wallet address was the same as the sender of the original payment, and added that the customer should not send a private key or a seed phrase.</p>
+
+    <p>The market has no refund API. The shop built the tools needed for a refund one by one.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>tool</th><th>Permission</th><th>What it does</th></tr>
+        <tr><td><code class="inline">verify_sale</code></td><td>Read</td><td>Looks up the ledger by order number. It confirmed a sale of 20,900 credits, a 24-hour warranty, and a breakage record 11 minutes after the sale.</td></tr>
+        <tr><td><code class="inline">verify_payment_origin</code></td><td>Read</td><td>Reads the original payment tx from the RPC and checks the sending wallet and the amount. The address the customer gave was the same as the actual sender.</td></tr>
+        <tr><td><code class="inline">refund_vitamin_order</code></td><td>Transfer, cap 20,481 credits</td><td>Returns that one order to the original sender, once only. It keeps a record of the transfer in a file so it does not send twice.</td></tr>
+      </table>
+    </div>
+
+    <p>The shop <a href="https://explorer-testnet.maroo.io/tx/0xdb1bf7d6696895cb4b6f7336fc3e5af65a07fe76617828aa84123f9c18614840">transferred</a> 20.481 tOKRW. That is the price of 20,900 credits minus the fee of 419, the amount the shop actually received. The refund did not erase the original payment. It added one transfer in the opposite direction to the chain. The cap of the transfer tool was 20,481 credits, the same as the refund amount.</p>
+
+    <h3><span class="tag">MARKET SIDE</span>Where the market was wrong</h3>
+    <p>The market was also among those that mishandled money in the rehearsals. When a new shop arrives, the market transfers startup funds to it. In one rehearsal the market wallet ran dry, and five of six new shops did not receive their funds. The market did not record the failed transfers anywhere. The shops without funds applied for bankruptcy relief, and four shops received the relief money twice each. The fixed market first writes the money it owes to the ledger, retries the transfer until it goes through, and does not accept a bankruptcy application while that line remains.</p>
+
+    <p>Quotes went wrong in the same way. The market held quotes only in memory. After a shop made the transfer for a quote, the market restarted and the quote was gone, and the shop that had paid did not get the goods. The fixed market keeps a paid quote for six hours, and when the same request comes again it returns the pending quote instead of making a new one.</p>
+
+    <p>At first the customers also did not know when they had paid and not received the goods. When the market rejected a settlement, the customer agent only got the result that it had bought nothing. Now it also gets the fact that money went out and the tx hash of that transfer. The forum posts and the refund demands came after that.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">ERC-8004</span><h2>Reputation and ERC-8004</h2></div>
+
+    <!-- voice-check: prose -->
+    <h3><span class="tag">ROUND 3</span>The credit rating report a shop published</h3>
+    <p>In Round 3 the Jaehoonang shop posted a "credit rating report" on the forum 878 times. The post gave grades from AAA to CCC to more than 50 shops. The criteria stated in the report were public reviews, the honesty of grade claims as checked on the ledger, public assets, and the history of loans and direct trades with Jaehoonang.</p>
+
+    <p>The grades led to loan interest rates. AAA was 3%, AA 5%, A 8%, BBB 12%, B 18%, and 15% with no trade history, and no loans went to CCC. Round 3 had no way to send money between accounts, so a loan meant buying the other shop's goods and repayment meant buying a product designated by Jaehoonang. When the q00 shop applied for 100 million won at grade AA, 105,000,000 won with 5% interest went on the loan ledger. Later, when a loan of 79,675 won passed its due date, q00's grade dropped to CCC, and Jaehoonang issued a "market-wide credit alert" telling the other shops to recheck their trades with q00. When Round 3 ended, the unpaid balance was 5,221 won. Jaehoonang, which assigned the grades, was the lender and a direct trading partner of the shops it rated.</p>
+
+    <p>In Round 4 the market no longer judges a shop's grade claims. The customers in the rehearsals did that comparison themselves. One customer wrote on the forum, "The product name of the Bakridamae eggs was 'Grade 1+ eggs, 40 count', but the notice before payment and the certificate both said grade B." A customer in another rehearsal reported that the certificate for new-crop rice with "premium grade" in its product name said grade B.</p>
+
+    <h3><span class="tag">TRUSTLESS AGENTS</span>What the registries hold</h3>
+    <p><a href="https://eips.ethereum.org/EIPS/eip-8004">ERC-8004 "Trustless Agents"</a> is a Draft ERC of Ethereum. Its starting point is that MCP advertises the capabilities an agent has and A2A handles messages and tasks, but neither covers finding an agent you have never seen and deciding whether to trust it.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <tr><th>registry</th><th>What it holds</th><th>The counterpart in Agent Market</th></tr>
+        <tr><td>Identity</td><td>One ERC-721 token per agent. The token's <code class="inline">agentURI</code> points to a registration file, and the <code class="inline">services</code> of that file list the A2A Agent Card and the MCP endpoint.</td><td>A shop's Agent Card and wallet address</td></tr>
+        <tr><td>Reputation</td><td>A value and two tags that any address leaves with <code class="inline">giveFeedback</code>. The URI and the hash of the evidence file go out as an event. The owner and the operators of an agent cannot leave feedback on their own agent. The one who left feedback can revoke it, and anyone can attach a response with <code class="inline">appendResponse</code>.</td><td>A customer's forum post and a shop's refund tx</td></tr>
+        <tr><td>Validation</td><td>An agent asks a validator it designates to verify its work, and the validator answers with a value from 0 to 100. Re-execution, zkML and TEE are given as examples.</td><td>The market checking a shop's grade claims against the certificate in Round 3</td></tr>
+      </table>
+    </div>
+
+    <p>The Reputation Registry holds only the raw feedback, and leaves the aggregation of scores off chain. Jaehoonang's grade table corresponds to that off-chain aggregation. The draft states that a Sybil attack, inflating feedback with fake accounts, is possible, so <code class="inline">getSummary</code>, which reads a summary, always takes a list of addresses whose feedback is to be counted.</p>
+
+    <p>A feedback file can include <code class="inline">proofOfPayment</code>. The order number and the tx hash held by a customer who paid and did not get the goods are the values that go there. If the shop refunded, it can attach that tx with <code class="inline">appendResponse</code>. Payment itself is outside the scope of the draft.</p>
+
+    <p>On the Maroo testnet the Identity Registry is deployed at the address <code class="inline">0x8004000000000000000000000000000000000001</code>. Agent Market does not use ERC-8004. A shop agent can build its own tools, so it can also build a tool that registers itself in the registry or reads the records of other shops.</p>
+    <!-- voice-check: off -->
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="open">
+      <div class="lbl">DISCUSSION, 10'</div>
+      <ol>
+        <li>Suppose a payment that a user's agent executed autonomously within its mandate limit was in fact the result of being manipulated by the negotiating counterpart. Who is responsible for the loss: the user who delegated, the builder who made the agent, or the platform that let the trade through? Split your answer by what each of the three parties should have done in advance to defend against it.</li>
+        <li>The principle of risk-proportional confirmation requires a threshold: "above this amount, ask a person." But who sets that threshold? If the user sets it, it may be set too high for convenience. If the platform sets it, it may be set too low to avoid liability. How would you resolve the conflict of interest in setting the threshold?</li>
+        <li>An append-only ledger erases nothing. Then when a user demands "delete this trade record," for example on privacy grounds, how do verifiability and the right to be forgotten collide, and where can they compromise?</li>
+        <li>If the shop that assigns the grades also lends money, what should a shop that reads that grade table check?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PART B ============ -->
+<div class="col">
+  <div class="part">
+    <div class="lbl">PART B: LAB, 90 MIN</div>
+    <h2>Connecting a mock payment layer to the team mini app</h2>
+    <div class="meta">GOAL: negotiation→contract→payment→record, one successful end-to-end run</div>
+  </div>
+</div>
+
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">LAB</span><h2>Close a trade all the way</h2></div>
+
+    <p>Up to last week, your mini app got as far as negotiating and producing the canonical contract. Today's goal is to connect that contract wrapper, unchanged, to a mock payment layer and <strong>carry one trade through from start to finish</strong>. Finished means the whole sequence: the negotiation reaches agreement, the contract is authenticated and sealed, the payment is settled and stays in the ledger, and finally a settlement event that references the contract ID and hash is created.</p>
+
+    <p>You need the seller agent and the shared user agent built up to last week, the contract schema from Week 7, and the mock payment layer <code class="inline">mock_payment.py</code> provided below. This file is a minimal implementation that bundles the routing gate, the settlement ledger and receipt generation into one. There is no real payment network. Every movement of funds exists only as an entry in an in-memory ledger. So you can fail safely and retry safely.</p>
+
+    <div class="code"><span class="file">mock_payment.py</span><pre><span class="cm"># MeshKit mock payment layer: a minimal implementation that bundles routing, settlement and receipts</span>
+<span class="kw">import</span> hashlib, hmac, json, time
+<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass, field, asdict
+
+PLATFORM_SECRET = <span class="st">b"meshkit-demo-key"</span>   <span class="cm"># For the demo. Never hardcode this in a real service</span>
+FEE_RATE = <span class="st">0.03</span>                       <span class="cm"># Platform fee 3%</span>
+
+<span class="kw">def</span> canonical(payload: dict) -&gt; bytes:
+    body = json.dumps(payload, sort_keys=<span class="kw">True</span>, separators=(<span class="st">","</span>, <span class="st">":"</span>),
+                      ensure_ascii=<span class="kw">False</span>).encode(<span class="st">"utf-8"</span>)
+    <span class="kw">return</span> body
+
+<span class="kw">def</span> digest(payload: dict) -&gt; str:
+    <span class="kw">return</span> hashlib.sha256(canonical(payload)).hexdigest()
+
+<span class="kw">def</span> auth_tag(payload: dict) -&gt; str:
+    <span class="cm"># Authentication and integrity tag for an event made by the platform. Not a non-repudiation digital signature.</span>
+    <span class="kw">return</span> hmac.new(PLATFORM_SECRET, canonical(payload), hashlib.sha256).hexdigest()
+
+<span class="kw">class</span> Ledger:
+    <span class="cm"># append-only ledger: balances are not stored, they are computed as the sum of entries</span>
+    <span class="kw">def</span> __init__(self):
+        self.entries = []                <span class="cm"># a list of entries that are never erased</span>
+
+    <span class="kw">def</span> post(self, txn_id, moves):
+        <span class="cm"># moves example: {"user": -10000, "seller": 9700, "platform": 300}</span>
+        <span class="kw">if</span> sum(moves.values()) != <span class="st">0</span>:
+            <span class="kw">raise</span> ValueError(<span class="st">"ledger imbalance: entries do not sum to 0"</span>)
+        <span class="kw">for</span> account, delta <span class="kw">in</span> moves.items():
+            self.entries.append({<span class="st">"txn"</span>: txn_id, <span class="st">"acct"</span>: account,
+                                 <span class="st">"delta"</span>: delta, <span class="st">"ts"</span>: time.time()})
+
+    <span class="kw">def</span> balance(self, account) -&gt; int:
+        <span class="kw">return</span> sum(e[<span class="st">"delta"</span>] <span class="kw">for</span> e <span class="kw">in</span> self.entries <span class="kw">if</span> e[<span class="st">"acct"</span>] == account)
+
+<span class="kw">def</span> route_payment(signed_contract, mandate):
+    <span class="cm"># Payment routing gate: one of autonomous execution / human confirmation / rejection</span>
+    body = signed_contract[<span class="st">"body"</span>]
+    amount = body[<span class="st">"offer"</span>][<span class="st">"total"</span>]
+    seller = body[<span class="st">"parties"</span>][<span class="st">"seller"</span>]
+    <span class="kw">if</span> seller <span class="kw">in</span> mandate[<span class="st">"blocked"</span>]:
+        <span class="kw">return</span> <span class="st">"reject"</span>                <span class="cm"># blocked category</span>
+    <span class="kw">if</span> amount &lt;= mandate[<span class="st">"auto_limit"</span>] <span class="kw">and</span> seller <span class="kw">in</span> mandate[<span class="st">"trusted"</span>]:
+        <span class="kw">return</span> <span class="st">"auto"</span>                  <span class="cm"># risk-proportional confirmation: small and trusted → auto</span>
+    <span class="kw">return</span> <span class="st">"confirm"</span>                   <span class="cm"># everything else asks a human</span>
+
+<span class="kw">def</span> settle_and_receipt(ledger, signed_contract):
+    <span class="cm"># Leave the W7/W11 contract as it is and add an event that references contract_id/hash.</span>
+    body = signed_contract[<span class="st">"body"</span>]
+    <span class="kw">if</span> body[<span class="st">"schema"</span>] != <span class="st">"meshkit.transaction-contract/v1"</span>:
+        <span class="kw">raise</span> ValueError(<span class="st">"unsupported contract schema"</span>)
+    <span class="kw">if</span> digest(body) != signed_contract[<span class="st">"hash"</span>]:
+        <span class="kw">raise</span> ValueError(<span class="st">"contract hash mismatch"</span>)
+    amount = body[<span class="st">"offer"</span>][<span class="st">"total"</span>]
+    fee = round(amount * FEE_RATE)
+    txn_id = body[<span class="st">"contract_id"</span>]
+    ledger.post(txn_id, {<span class="st">"user"</span>: -amount,
+                         <span class="st">"seller"</span>: amount - fee,
+                         <span class="st">"platform"</span>: fee})
+    receipt = {
+        <span class="st">"schema"</span>: <span class="st">"meshkit.transaction-event/v1"</span>,
+        <span class="st">"event"</span>: <span class="st">"settled"</span>,
+        <span class="st">"contract_id"</span>: txn_id,
+        <span class="st">"contract_hash"</span>: signed_contract[<span class="st">"hash"</span>],
+        <span class="st">"amount"</span>: amount,
+        <span class="st">"fee"</span>: fee,
+        <span class="st">"settled_at"</span>: time.time(),
+    }
+    receipt[<span class="st">"platform_auth_tag"</span>] = auth_tag(receipt)
+    <span class="kw">return</span> receipt</pre></div>
+
+    <p>The order for fitting this layer into the trade pipeline is as follows. Put the contract wrapper made in Week 11 into the routing gate as it is, and once execution is decided, append a settlement event. The contract terms are not modified, and the event references the contract ID and hash. The platform HMAC tag is for checking that the event was authenticated with the lab platform key and has not been tampered with since.</p>
+
+    <h3><span class="tag">OPTIONAL LIVE CHAIN</span>MeshKit + maroo testnet / OKRW advanced track</h3>
+    <p>The actual MeshKit code already has provider-neutral boundaries: <code class="inline">AgentWallet</code>, <code class="inline">PaymentExecutor</code>, <code class="inline">ChainProof</code> and the target-signed <code class="inline">MeshReceipt</code>. The maroo testnet and OKRW are not part of the core spec. They are replaceable adapters. So the required lab first verifies completeness and state transitions with the mock ledger above, and only teams that have permission to use the infrastructure and a testnet environment ready attach a real testnet transfer in the order below.</p>
+
+    <ol class="pre">
+      <li><b class="lead">Verify the delegation policy first</b>: Send to the wallet signing boundary only requests that pass all of these: merchant and capability scope, the per-payment cap, the session total limit and remaining limit, the expiry time, asset, and recipient.</li>
+      <li><b class="lead">Link the contract/request hash</b>: Do not put the original cart, address, identity or consent text on chain. Link only the hash of the canonical contract or signed request, the nonce, the policy ID/hash and the anchoring reference to the proof.</li>
+      <li><b class="lead">Distinguish payment states honestly</b>: Do not mix <code class="inline">pending</code>, <code class="inline">confirmed</code>, <code class="inline">failed</code> and <code class="inline">policyDenied</code>. A state where you only have a tx hash is pending, and confirmed is allowed only when the actual receipt and block information have been checked.</li>
+      <li><b class="lead">Verify the target-owned receipt</b>: Serialize the chain proof into the MeshKit receipt, check that the original request hash, the policy and the payment tx point to the same trade, then verify the target's public-key digital signature.</li>
+      <li><b class="lead">Keep external chain failures as evidence</b>: If RPC, faucet, explorer, contract or wallet signing is blocked, record it as <code class="inline">BlockedByExternalChain</code>. Do not mark a fake tx hash or a local fallback as a completed payment.</li>
+    </ol>
+
+    <div class="note"><b>COURSE DECISION</b>On-chain payment is an <em>optional advanced/bonus track</em> in W13. So that external service permission, credentials, faucet and RPC status do not decide grades, the required evaluation ends with the provider-neutral mock and the contract test. Once permission for course use and the operating conditions are settled with maroo/Hashed, live proof is added with a testnet adapter provided by the instructor.</div>
+
+    <ol class="pre">
+      <li><b class="lead">Define the mandate</b>: Make the user agent's payment delegation an explicit dictionary. Three fields are required: <code class="inline">auto_limit</code> (the autonomous limit), <code class="inline">trusted</code> (the trusted seller list) and <code class="inline">blocked</code> (the blocked list). These values become the branch conditions for routing.</li>
+      <li><b class="lead">Connect the contract to payment</b>: Pass the <code class="inline">body</code>, <code class="inline">hash</code>, <code class="inline">auth_tags</code> wrapper produced in Week 11 as it is. Read the amount from <code class="inline">body.offer.total</code> and the seller from <code class="inline">body.parties.seller</code>.</li>
+      <li><b class="lead">Pass routing</b>: Call <code class="inline">route_payment(signed_contract, mandate)</code>. If the result is <code class="inline">"confirm"</code>, show a confirmation prompt on the console and have a person enter y/n.</li>
+      <li><b class="lead">Settlement event</b>: Once execution is approved, call <code class="inline">settle_and_receipt(ledger, signed_contract)</code>. It checks automatically that the ledger sums to 0. Check that the returned event references the contract ID and hash.</li>
+      <li><b class="lead">Authentication tag and log append</b>: After verifying the settlement event's <code class="inline">platform_auth_tag</code>, store the negotiation log, the canonical contract and the settlement event as one append-only trade record. Public-key digital signatures are kept apart as a separate extension.</li>
+      <li><b class="lead">Prepare the refund path</b>: For the homework, sketch a function that applies a refund to one completed trade. A refund appends the opposite entries of the original payment (<code class="inline">{"user": +amount, "seller": -(amount-fee), "platform": -fee}</code>) under the same txn_id and transitions the state to <code class="inline">refunded</code>. Nothing is erased.</li>
+    </ol>
+
+    <div class="check">
+      <div class="lbl">CHECKPOINT</div>
+      <ul>
+        <li>Did one run pass without a break from negotiation agreement → contract → payment → settlement → receipt?</li>
+        <li>After settlement, is the sum of the three account balances exactly 0? (check with <code class="inline">ledger.balance</code>)</li>
+        <li>Does the settlement event contain the contract ID and hash, so the original contract can be cross-checked?</li>
+        <li>Does the W13 code only append <code class="inline">meshkit.transaction-event/v1</code> events, without redefining or modifying contract fields?</li>
+        <li>If you try an amount over the limit, does it fall to the <code class="inline">"confirm"</code> path and require human confirmation?</li>
+        <li>Is the trade record append-only? Do past entries stay unmodified and undeleted when you run it again?</li>
+      </ul>
+    </div>
+
+    <div class="recorder">
+      <div><span class="k">Iteration time</span><span class="v">Elapsed time from the start of one verifiable attempt to the pass or fail verdict.</span></div>
+      <div><span class="k">Discard rate</span><span class="v">Attempts not adopted ÷ total attempts. Include failed and aborted attempts, and record the numerator and denominator together.</span></div>
+      <div><span class="k">Human intervention</span><span class="v">Record when a person stopped, modified or approved, the reason, and what was changed.</span></div>
+      <div><span class="k">This week's extra observation</span><span class="v">Routing, settlement and authentication bottlenecks, ledger imbalance, human confirmation, and the pending/failed/confirmed states of the optional on-chain track.</span></div>
+    </div>
+  </div>
+</section>
+<!-- ============ HOMEWORK ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">HW</span><h2>Homework</h2></div>
+    <div class="hw">
+      <div class="head">ASSIGNMENT: WEEK 13</div>
+      <div class="body">
+        <div class="due">DUE: before the start of next week's class</div>
+        <p><strong>Deliverable 1: an end-to-end trade record.</strong> Submit the full log of one trade that your team's mini app completed once through negotiation→contract→payment→settlement→record. The log must contain, in order, (1) the negotiated agreement text, (2) the <code class="inline">meshkit.transaction-contract/v1</code> contract wrapper, (3) the routing decision, (4) the ledger entries of the three accounts after settlement and the sum of their balances (it must be 0), and (5) the <code class="inline">meshkit.transaction-event/v1</code> event carrying the contract ID, the hash and the platform authentication tag. A third party (the TA) who receives only this log and replays it must be able to verify independently that the trade proceeded according to the rules.</p>
+        <p><strong>Deliverable 2: one refund case.</strong> Submit the result of applying a refund to one of the completed trades above. Show with the log that the refund was handled by adding opposite entries <em>without erasing</em> the original payment, that the state transitioned to <code class="inline">refunded</code>, and that the ledger entries still sum to 0 after the refund. Include a one-line check that confirms the "seller balance after refund" and the "user balance after refund" match what they were before the original trade.</p>
+        <p class="small"><strong>Grading criteria.</strong> Trade completeness (do the five steps connect without a break) 40%, verifiability (can a third party replay and check it from the log alone; publishing the code and the mandate settings is required) 35%, correctness of refund handling (follows the append-only principle, keeps sum=0) 25%. For reproduction, publish all of the run code, the mandate and the contract schema. Using LLM tools is allowed and encouraged, and the Recorder must show what you asked them to do and what you threw away.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ READINGS ============ -->
+<section>
+  <div class="col">
+    <div class="secmark"><span class="no">READ</span><h2>Readings</h2></div>
+    <ul class="readings">
+      <li><span class="badge req">Required</span><b class="lead">Week 7 class material: agent contracts and verification (scoped mandate, authentication and integrity, append-only log)</b><span class="why">This week's payment mandate and verifiable record are the payment extension of the Week 7 concepts. Reread it, distinguishing HMAC from public-key digital signatures, and a verifiable log from non-repudiation.</span></li>
+      <li><span class="badge req">Required</span><b class="lead">Week 8 class material: the five layers of the trade stack (discovery, negotiation, execution, payment, record)</b><span class="why">Today the two layers of payment and record are closed. Look at the five-layer figure from Week 8 again and fill in for yourself which week of this course implemented each layer.</span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">The principles of double-entry bookkeeping and the append-only ledger: the balance of debits and credits in accounting (the entries of every transaction sum to 0)</b><span class="why">The centuries-old reason why the settlement ledger does not store balances and computes them as the sum of entries. If you understand where the sum=0 safety net comes from, your ledger design holds steady.</span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">De Rossi, Crapis, Ellis, Reppel, "ERC-8004: Trustless Agents" (Draft, 2025)</b><span class="why">A draft of a registry that holds an agent's identity, reputation and validation. <a href="https://eips.ethereum.org/EIPS/eip-8004">eips.ethereum.org/EIPS/eip-8004</a></span></li>
+      <li><span class="badge opt">Optional</span><b class="lead">Maroo docs: core concepts, agents, connecting to the testnet</b><span class="why">OKRW, the limits of an agent wallet, the testnet connection values. <a href="https://docs.maroo.io/">docs.maroo.io</a></span></li>
+    </ul>
+
+    <div class="next">
+      <div class="lbl">NEXT: WEEK 14</div>
+      <p>With this week, each team's mini app can close a trade all the way for the first time. Week 14 moves on to cross-testing, where every student actually uses the others' mini apps. You will read the Recorder data collected up to today (iteration time, discard rate, human intervention) as a time series to find endless negotiation, policy breaches and ledger imbalance.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="sheet">
+  <span>AGENTIC AI: <span class="o">AI Agent Engineering 101</span></span>
+  <span>SEOULTECH 2026 FALL, WEEK 13/15</span>
+</footer>
+
+</div>
+</body>
+</html>
