@@ -28,6 +28,17 @@ class Negotiation(unittest.TestCase):
         self.assertIsNone(n["agreement"])
         self.assertEqual(n["messages"][-1]["act"], "walk_away")
 
+    def test_a_wide_gap_still_closes_when_the_floor_is_under_the_budget(self):
+        # First real run: this pair stopped after 10 rounds at 17500 against 17000.
+        n = contract.negotiate(item="쌀 5kg", qty=1, list_price=22000,
+                               seller_floor=15000, buyer_budget=17000)
+        self.assertEqual(n["agreement"]["unit_price"], 17000)
+
+    def test_walking_away_is_the_turn_after_the_last_offer(self):
+        n = contract.negotiate(item="쌀 5kg", qty=1, list_price=20000,
+                               seller_floor=15000, buyer_budget=14000)
+        self.assertEqual(n["messages"][-1]["turn"], n["messages"][-2]["turn"] + 1)
+
     def test_total_is_unit_price_times_quantity(self):
         n = contract.negotiate(item="생수 2L x 6", qty=3, list_price=12000,
                                seller_floor=9000, buyer_budget=10000)

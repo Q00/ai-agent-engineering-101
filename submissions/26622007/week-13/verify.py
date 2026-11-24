@@ -199,7 +199,7 @@ def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     path = argv[0] if argv else os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "trade-record.jsonl")
     report = verify(path)
-    print(f"record {path}: {report['lines']} lines")
+    print(f"record {os.path.relpath(path)}: {report['lines']} lines")
     for t, s in report["trades"].items():
         print(f"  {t}: {s}")
     b = report["balances"]

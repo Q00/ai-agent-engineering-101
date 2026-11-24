@@ -211,6 +211,14 @@ def show(record, trade_id):
             print(f"  [state] {d['from']} -> {d['to']} ({d['why']})")
 
 
+def ask(question):
+    """y/n from the person at the terminal. Piped input is echoed so a saved log shows it."""
+    answer = input(question)
+    if not sys.stdin.isatty():
+        print(answer)
+    return answer
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--record", default=RECORD)
@@ -241,7 +249,7 @@ def run(a, record):
             mandate = json.load(f)
         started = time.time()
         n = contract.negotiate(a.item, a.qty, a.list_price, a.floor, a.budget)
-        out = run_trade(record, mandate, n, confirm=input)
+        out = run_trade(record, mandate, n, confirm=ask)
         show(record, out["contract_id"])
         print(f"trade {out['contract_id']}: route={out['route']} state={out['state']} "
               f"({time.time() - started:.3f} s)")

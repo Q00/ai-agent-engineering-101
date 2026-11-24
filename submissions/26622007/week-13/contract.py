@@ -16,7 +16,7 @@ BUYER = "user-agent"
 # Demo keys, like PLATFORM_SECRET in mock_payment.py. HMAC is a shared-key tag:
 # it shows integrity and that a key holder made it, not which party signed.
 PARTY_KEYS = {"buyer": b"week13-demo-buyer-key", "seller": b"week13-demo-seller-key"}
-MAX_ROUNDS = 10
+MAX_ROUNDS = 1000   # a backstop; the talk ends on agreement or when neither side can move
 
 
 def negotiate(item, qty, list_price, seller_floor, buyer_budget):
@@ -35,11 +35,14 @@ def negotiate(item, qty, list_price, seller_floor, buyer_budget):
                                  f"{ask * qty} credits in total."}
             return {"messages": messages, "agreement": agreement}
         if ask == seller_floor and bid == buyer_budget:
+            turn += 1
             break
         messages.append({"turn": turn, "from": BUYER, "act": "counter", "unit_price": bid})
         ask = max(seller_floor, ask - 500)
         bid = min(buyer_budget, bid + 700)
-    messages.append({"turn": len(messages), "from": BUYER, "act": "walk_away"})
+    else:
+        turn = MAX_ROUNDS
+    messages.append({"turn": turn, "from": BUYER, "act": "walk_away"})
     return {"messages": messages, "agreement": None}
 
 
