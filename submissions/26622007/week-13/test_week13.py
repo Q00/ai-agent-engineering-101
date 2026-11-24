@@ -39,6 +39,11 @@ class Negotiation(unittest.TestCase):
                                seller_floor=15000, buyer_budget=14000)
         self.assertEqual(n["messages"][-1]["turn"], n["messages"][-2]["turn"] + 1)
 
+    def test_a_quantity_under_one_is_refused(self):
+        for qty in (0, -1):
+            with self.assertRaises(ValueError):
+                contract.negotiate(item="우유", qty=qty, list_price=12000, seller_floor=9000, buyer_budget=10000)
+
     def test_total_is_unit_price_times_quantity(self):
         n = contract.negotiate(item="생수 2L x 6", qty=3, list_price=12000,
                                seller_floor=9000, buyer_budget=10000)
@@ -188,6 +193,33 @@ class Refund(TradeCase):
         self.assertEqual(out["check"]["seller_after_refund"], 9700)
         self.assertTrue(out["check"]["match"])
 
+    def test_refunding_an_older_trade_sets_aside_what_later_trades_moved(self):
+        # Review C1: ctr-b settled after ctr-a, so the plain before/after numbers differ.
+        out = trade.refund(self.record, "ctr-a")
+        c = out["check"]
+        self.assertEqual((c["user_before_trade"], c["user_after_refund"]), (0, -10000))
+        self.assertEqual((c["user_other_trades_since"], c["seller_other_trades_since"]), (-10000, 9700))
+        self.assertTrue(c["match"])
+        self.assertEqual(verify.verify(self.path, MANDATE)["problems"], [])
+
+    def test_a_refund_that_stopped_half_way_is_not_posted_again(self):
+        # Review C2: the process dies after the refund entries, before the state line.
+        trade.refund(self.record, "ctr-b")
+        lines = self.raw().splitlines(keepends=True)
+        last_ledger = max(i for i, l in enumerate(lines) if b'"type": "ledger"' in l)
+        with open(self.path, "wb") as f:
+            f.writelines(lines[:last_ledger + 1])
+        with self.assertRaises(trade.IllegalTransition):
+            trade.refund(self.record, "ctr-b")
+        self.assertEqual(len([l for l in self.lines("ctr-b") if l["type"] == "ledger"]), 2)
+
+    def test_a_trade_that_stopped_at_paid_cannot_be_refunded(self):
+        lines = self.raw().splitlines(keepends=True)
+        with open(self.path, "wb") as f:
+            f.writelines(lines[:6])   # ctr-a: up to its ledger line, no event, no settled
+        with self.assertRaises(trade.IllegalTransition):
+            trade.refund(self.record, "ctr-a")
+
     def test_a_trade_is_refunded_once(self):
         trade.refund(self.record, "ctr-b")
         with self.assertRaises(trade.IllegalTransition):
@@ -227,14 +259,15 @@ class Replay(TradeCase):
                 f.write(json.dumps(l, ensure_ascii=False, sort_keys=True) + "\n")
 
     def problems(self):
-        return verify.verify(self.path)["problems"]
+        return verify.verify(self.path, MANDATE)["problems"]
 
     def pick(self, lines, cid, kind, n=0):
         return [l for l in lines if l["trade"] == cid and l["type"] == kind][n]
 
     def test_an_honest_record_replays_clean(self):
-        report = verify.verify(self.path)
+        report = verify.verify(self.path, MANDATE)
         self.assertEqual(report["problems"], [])
+        self.assertEqual(report["head"], self.record.read()[-1]["hash"])
         self.assertEqual(report["trades"], {"ctr-a": "settled", "ctr-b": "refunded",
                                             "ctr-yes": "settled", "ctr-no": "cancelled"})
         self.assertEqual(report["balances"], {"user": -40000, "seller": 38800, "platform": 1200})
@@ -249,7 +282,7 @@ class Replay(TradeCase):
         kept = self.raw().splitlines(keepends=True)
         with open(self.path, "wb") as f:
             f.writelines(kept[:5] + kept[6:])
-        self.assertNotEqual(self.problems(), [])
+        self.assertTrue(any("removed or reordered" in p for p in self.problems()))
 
     def test_forged_contract_terms_do_not_match_the_contract_hash(self):
         def cheaper(lines):
@@ -288,6 +321,52 @@ class Replay(TradeCase):
             lines[:] = [l for l in lines if not (l["trade"] == "ctr-b" and l["type"] == "ledger"
                                                  and "refund_of_seq" in l["data"])]
         self.forge(erase)
+        self.assertTrue(any("ctr-b" in p and "refunded trade should hold" in p for p in self.problems()))
+
+    def test_a_cut_off_tail_is_caught_against_the_published_head(self):
+        # Review I1: dropping whole trades from the end keeps the chain intact.
+        head = self.record.read()[-1]["hash"]
+        kept = self.raw().splitlines(keepends=True)
+        with open(self.path, "wb") as f:
+            f.writelines(kept[:8])
+        self.assertEqual(verify.verify(self.path, MANDATE)["problems"], [])
+        self.assertTrue(any("head" in p for p in verify.verify(self.path, MANDATE, head=head)["problems"]))
+
+    def test_a_mandate_swapped_inside_the_record_is_caught(self):
+        # Review C3: raise the limit in the routing line and call the route "auto".
+        def loosen(lines):
+            d = self.pick(lines, "ctr-yes", "routing")["data"]
+            d["mandate"]["auto_limit"], d["decision"], d["human"] = 10 ** 9, "auto", None
+        self.forge(loosen)
+        self.assertTrue(any("ctr-yes" in p and "published mandate" in p for p in self.problems()))
+
+    def test_a_rewritten_agreement_text_is_caught(self):
+        def rewrite(lines):
+            a = self.pick(lines, "ctr-a", "negotiation")["data"]["agreement"]
+            a["text"], a["seller"] = "user-agent buys 100 x gold from mallory at 1 credit", "mallory"
+        self.forge(rewrite)
+        self.assertTrue(any("ctr-a" in p and "agreement" in p for p in self.problems()))
+
+    def test_a_cancelled_trade_whose_person_said_yes_is_caught(self):
+        def flip(lines):
+            self.pick(lines, "ctr-no", "routing")["data"]["human"]["answer"] = "y"
+        self.forge(flip)
+        self.assertTrue(any("ctr-no" in p for p in self.problems()))
+
+    def test_fractional_or_stray_ledger_amounts_are_caught(self):
+        def blur(lines):
+            entries = self.pick(lines, "ctr-a", "ledger")["data"]["entries"]
+            entries[0]["delta"] = float(entries[0]["delta"])
+        self.forge(blur)
+        self.assertTrue(any("ctr-a" in p and "whole" in p for p in self.problems()))
+
+    def test_a_broken_file_is_reported_not_crashed_on(self):
+        with open(self.path, "a", encoding="utf-8") as f:
+            f.write("{not json\n")
+        self.assertTrue(any("not JSON" in p for p in self.problems()))
+
+    def test_an_empty_record_is_not_verified(self):
+        open(self.path, "w").close()
         self.assertNotEqual(self.problems(), [])
 
     def test_an_illegal_state_move_is_caught(self):

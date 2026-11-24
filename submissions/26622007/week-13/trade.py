@@ -30,7 +30,7 @@ GENESIS = "0" * 64
 TRANSITIONS = {
     None: {"created"},
     "created": {"paid", "cancelled"},
-    "paid": {"settled", "refunded"},
+    "paid": {"settled"},
     "settled": {"refunded"},
     "refunded": set(),
     "cancelled": set(),
@@ -160,17 +160,25 @@ def refund(record, trade_id):
     wrapper = next(l["data"] for l in mine if l["type"] == "contract")
     settled = next(l for l in mine if l["type"] == "event" and l["data"]["event"] == "settled")
     amount, fee = settled["data"]["amount"], settled["data"]["fee"]
-
-    first_posting = next(l["seq"] for l in mine if l["type"] == "ledger")
-    before = balances(ledger_from([l for l in lines if l["seq"] < first_posting]))
+    postings = [l for l in mine if l["type"] == "ledger"]
+    if len(postings) != 1:
+        raise IllegalTransition(f"{trade_id}: the record already holds a refund posting; it is not posted again")
+    first = postings[0]["seq"]
+    before = balances(ledger_from([l for l in lines if l["seq"] < first]))
+    others = balances(ledger_from([l for l in lines if l["seq"] > first and l["trade"] != trade_id]))
     ledger = ledger_from(lines)
     posted = post(record, ledger, trade_id,
                   lambda: ledger.post(trade_id, {"user": amount, "seller": -(amount - fee), "platform": -fee}),
                   extra={"refund_of_seq": settled["seq"]})
     after = posted["balances"]
-    check = {"user_before_trade": before["user"], "user_after_refund": after["user"],
-             "seller_before_trade": before["seller"], "seller_after_refund": after["seller"],
-             "match": before["user"] == after["user"] and before["seller"] == after["seller"]}
+    # Balances after the refund against balances before the trade. Trades settled in
+    # between are other people's money moving, so they are set aside, not hidden.
+    check = {}
+    for acct in ("user", "seller"):
+        check[f"{acct}_before_trade"] = before[acct]
+        check[f"{acct}_other_trades_since"] = others[acct]
+        check[f"{acct}_after_refund"] = after[acct]
+    check["match"] = all(before[a] + others[a] == after[a] for a in ("user", "seller"))
 
     event = {"schema": EVENT_SCHEMA, "event": "refunded", "contract_id": trade_id,
              "contract_hash": wrapper["hash"], "amount": amount, "fee": fee,
@@ -205,8 +213,10 @@ def show(record, trade_id):
             print(f"  [event] {d['schema']} {d['event']} contract_id={d['contract_id']} "
                   f"contract_hash={d['contract_hash'][:16]}... tag={d['platform_auth_tag'][:16]}...")
         elif l["type"] == "refund_check":
+            since = (d.get("user_other_trades_since", 0), d.get("seller_other_trades_since", 0))
+            note = f" (other trades since: user {since[0]:+d}, seller {since[1]:+d})" if any(since) else ""
             print(f"  [check] user {d['user_before_trade']} -> {d['user_after_refund']}, "
-                  f"seller {d['seller_before_trade']} -> {d['seller_after_refund']}, match={d['match']}")
+                  f"seller {d['seller_before_trade']} -> {d['seller_after_refund']}{note}, match={d['match']}")
         elif l["type"] == "state":
             print(f"  [state] {d['from']} -> {d['to']} ({d['why']})")
 

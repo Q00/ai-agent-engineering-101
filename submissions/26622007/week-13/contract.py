@@ -23,6 +23,8 @@ def negotiate(item, qty, list_price, seller_floor, buyer_budget):
     """Unit-price haggling. The seller opens at the list price and comes down 500 a
     round, never under its floor; the buyer opens at 60% and goes up 700 a round,
     never over its budget. Returns {"messages": [...], "agreement": {...} | None}."""
+    if min(qty, list_price, seller_floor, buyer_budget) < 1:
+        raise ValueError("quantity and prices must be 1 or more")
     messages = []
     ask, bid = list_price, min(buyer_budget, round(list_price * 0.6))
     for turn in range(MAX_ROUNDS):

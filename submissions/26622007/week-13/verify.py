@@ -1,12 +1,16 @@
 """Replay logs/trade-record.jsonl and check every trade in it.
 
-    python verify.py [record.jsonl]
+    python verify.py [record.jsonl] [--mandate mandate.json] [--head <hash of the last line>]
 
 For someone who was not in the trade. It reads the record file only and does not
 import trade.py: the chain, the state rules and the expected amounts are worked out
 again here. From mock_payment.py it uses the hash, the HMAC tag, the routing gate
-and the fee rate; from contract.py the wrapper check. Exit code 0 means no problem.
+and the fee rate; from contract.py the wrapper check. Routing is checked against the
+published mandate.json, not against the copy inside the record. A chain cut off at
+the end still links up, so give --head (printed in the README) to rule that out.
+Exit code 0 means no problem.
 """
+import argparse
 import hashlib
 import json
 import os
@@ -17,7 +21,7 @@ import mock_payment
 
 EVENT_SCHEMA = "meshkit.transaction-event/v1"
 ACCOUNTS = ("user", "seller", "platform")
-ALLOWED = {None: {"created"}, "created": {"paid", "cancelled"}, "paid": {"settled", "refunded"},
+ALLOWED = {None: {"created"}, "created": {"paid", "cancelled"}, "paid": {"settled"},
            "settled": {"refunded"}, "refunded": set(), "cancelled": set()}
 # What may be recorded for a trade while it is in each state.
 MAY_APPEAR = {None: {"negotiation", "contract"}, "created": {"routing"}, "paid": {"ledger", "event"},
@@ -59,10 +63,16 @@ class TradeCheck:
             "cancelled": ["negotiation", "contract", "routing"],
             None: ["negotiation"]}
 
-    def __init__(self, trade_id, problems):
-        self.id, self.problems = trade_id, problems
+    def __init__(self, trade_id, problems, mandate=None):
+        self.id, self.problems, self.mandate = trade_id, problems, mandate
         self.state, self.kinds = None, []
         self.negotiation = self.wrapper = self.routing = self.settled = self.before = None
+        self.others = dict.fromkeys(ACCOUNTS, 0)   # what other trades moved since this one settled
+
+    def see_other(self, entries):
+        if self.state == "settled":
+            for e in entries:
+                self.others[e["acct"]] = self.others.get(e["acct"], 0) + e["delta"]
 
     def bad(self, msg):
         self.problems.append(f"{self.id}: {msg}")
@@ -95,6 +105,10 @@ class TradeCheck:
                 self.bad("paid on the confirm route without a person's approval")
         if d["to"] == "settled" and self.settled is None:
             self.bad("settled without a settlement event")
+        if d["to"] == "cancelled":
+            r = self.routing or {}
+            if r.get("decision") == "auto" or (r.get("decision") == "confirm" and (r["human"] or {}).get("answer") == "y"):
+                self.bad("cancelled although the routing decision approved the payment")
         self.state = d["to"]
 
     def on_negotiation(self, line, running):
@@ -109,24 +123,40 @@ class TradeCheck:
             self.bad("contract id differs from the trade id")
         if body["negotiation_hash"] != mock_payment.digest({"messages": self.negotiation["messages"]}):
             self.bad("contract does not point at the recorded negotiation")
-        if any(offer[k] != a.get(k) for k in ("item", "qty", "unit_price", "total")):
+        if any(offer[k] != a.get(k) for k in ("item", "qty", "unit_price", "total", "currency")):
             self.bad("contract offer differs from the negotiated agreement")
+        text = (f"{body['parties']['buyer']} buys {offer['qty']} x {offer['item']} from {body['parties']['seller']} "
+                f"at {offer['unit_price']} credits each, {offer['total']} credits in total.")
+        if (a.get("buyer"), a.get("seller"), a.get("text")) != (body["parties"]["buyer"], body["parties"]["seller"], text):
+            self.bad("the agreement text or parties differ from the contract")
         if offer["total"] != offer["unit_price"] * offer["qty"]:
             self.bad("offer total is not unit price times quantity")
+        if type(offer["qty"]) is not int or type(offer["unit_price"]) is not int or offer["qty"] < 1 or offer["unit_price"] < 1:
+            self.bad("quantity and unit price must be whole numbers of 1 or more")
         last = self.negotiation["messages"][-1]
         if (last.get("act"), last.get("unit_price")) != ("accept", offer["unit_price"]):
             self.bad("the negotiation does not end with an accept at the contract price")
 
     def on_routing(self, line, running):
         self.routing = d = line["data"]
-        if d["decision"] != mock_payment.route_payment(self.wrapper, d["mandate"]):
+        mandate = d["mandate"] if self.mandate is None else self.mandate
+        if d["mandate"] != mandate:
+            self.bad("routing used a mandate that is not the published mandate")
+        if d["decision"] != mock_payment.route_payment(self.wrapper, mandate):
             self.bad(f"routing decision {d['decision']} is not what the mandate gives")
+        offer, parties = self.wrapper["body"]["offer"], self.wrapper["body"]["parties"]
+        if (d.get("amount"), d.get("seller")) != (offer["total"], parties["seller"]):
+            self.bad("routing amount or seller differs from the contract")
+        if d["decision"] != "confirm" and d.get("human") is not None:
+            self.bad("a person's answer on a route that does not ask")
 
     def on_ledger(self, line, running):
         d = line["data"]
         _, _, pay = self.pay()
         want = pay if self.state == "paid" else {a: -v for a, v in pay.items()}
         moves = moves_of(line, self.id)
+        if any(type(e["delta"]) is not int for e in d["entries"]):
+            self.bad("ledger amounts must be whole numbers")
         if moves != want:
             self.bad(f"ledger entries {moves} are not the expected {want}")
         if self.state == "paid":
@@ -154,15 +184,20 @@ class TradeCheck:
             self.bad("refund event does not point at the settlement event")
 
     def on_refund_check(self, line, running):
-        d, b = line["data"], self.before
-        want = {"user_before_trade": b["user"], "user_after_refund": running.get("user", 0),
-                "seller_before_trade": b["seller"], "seller_after_refund": running.get("seller", 0)}
-        want["match"] = (want["user_before_trade"] == want["user_after_refund"]
-                         and want["seller_before_trade"] == want["seller_after_refund"])
-        if d != want or not d["match"]:
+        d, want = line["data"], {}
+        for acct in ("user", "seller"):
+            want[f"{acct}_before_trade"] = self.before[acct]
+            want[f"{acct}_other_trades_since"] = self.others[acct]
+            want[f"{acct}_after_refund"] = running.get(acct, 0)
+        want["match"] = all(self.before[a] + self.others[a] == running.get(a, 0) for a in ("user", "seller"))
+        # The first refund on record was written before "other_trades_since" existed; absent means 0.
+        got = dict({"user_other_trades_since": 0, "seller_other_trades_since": 0}, **d)
+        if got != want or not want["match"]:
             self.bad(f"refund check {d} differs from the replayed {want}")
 
     def finish(self):
+        if self.state is None and (self.negotiation or {}).get("agreement") is not None:
+            self.bad("an agreement was reached but no contract follows")
         if self.state not in self.FULL:
             self.bad(f"the trade stops at {self.state}")
         elif self.kinds != self.FULL[self.state]:
@@ -170,42 +205,83 @@ class TradeCheck:
         return self.state or "no_deal"
 
 
-def verify(path):
-    """{"problems": [...], "trades": {id: state}, "balances": {...}, "lines": n}."""
-    problems = []
+def read_lines(path, problems):
+    lines = []
     with open(path, encoding="utf-8") as f:
-        lines = [json.loads(l) for l in f if l.strip()]
+        for n, raw in enumerate(f, 1):
+            if not raw.strip():
+                continue
+            try:
+                line = json.loads(raw)
+            except ValueError:
+                problems.append(f"line {n}: not JSON")
+                continue
+            if not isinstance(line, dict) or not isinstance(line.get("trade"), str) or not isinstance(line.get("data"), dict):
+                problems.append(f"line {n}: not a record line")
+                continue
+            lines.append(line)
+    return lines
+
+
+def verify(path, mandate=None, head=None):
+    """{"problems": [...], "trades": {id: state}, "balances": {...}, "lines": n, "head": hash}.
+    `mandate` is the published mandate every routing line must have used; `head` is
+    the published hash of the last line."""
+    problems = []
+    lines = read_lines(path, problems)
+    if not lines:
+        problems.append("the record holds no lines")
     check_chain(lines, problems)
+    last = lines[-1].get("hash") if lines else None
+    if head is not None and head != last:
+        problems.append(f"record head is {last}, not the published head {head}; lines were cut off or added")
 
     running, checks, broken = {}, {}, set()
     for l in lines:
-        t = l.get("trade")
-        check = checks.setdefault(t, TradeCheck(t, problems))
+        t = l["trade"]
+        if t not in checks:
+            checks[t] = TradeCheck(t, problems, mandate)
         if t in broken:
             continue
         try:
-            check.feed(l, running)
-        except (KeyError, TypeError, IndexError, AttributeError) as e:
+            checks[t].feed(l, running)
+            if l["type"] == "ledger":
+                for other in checks.values():
+                    if other is not checks[t]:
+                        other.see_other(l["data"]["entries"])
+        except (KeyError, TypeError, IndexError, AttributeError, ValueError) as e:
             problems.append(f"{t}: line {l.get('seq')} is malformed ({type(e).__name__}: {e})")
             broken.add(t)
     trades = {t: "unreadable" if t in broken else c.finish() for t, c in checks.items()}
     if sum(running.values()) != 0:
         problems.append(f"all entries sum to {sum(running.values())}, not 0")
-    return {"problems": problems, "trades": trades,
-            "balances": {a: running.get(a, 0) for a in ACCOUNTS}, "lines": len(lines)}
+    return {"problems": problems, "trades": trades, "lines": len(lines), "head": last,
+            "balances": {a: running.get(a, 0) for a in ACCOUNTS}}
 
 
 def main(argv=None):
-    argv = sys.argv[1:] if argv is None else argv
-    path = argv[0] if argv else os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "trade-record.jsonl")
-    report = verify(path)
-    print(f"record {os.path.relpath(path)}: {report['lines']} lines")
+    here = os.path.dirname(os.path.abspath(__file__))
+    p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    p.add_argument("record", nargs="?", default=os.path.join(here, "logs", "trade-record.jsonl"))
+    p.add_argument("--mandate", default=os.path.join(here, "mandate.json"))
+    p.add_argument("--head", help="the published hash of the record's last line")
+    a = p.parse_args(argv)
+    try:
+        with open(a.mandate, encoding="utf-8") as f:
+            mandate = json.load(f)
+        report = verify(a.record, mandate, a.head)
+    except (OSError, ValueError) as e:
+        print(f"FAILED: cannot read the record or the mandate ({e})")
+        return 1
+    print(f"record {os.path.relpath(a.record)}: {report['lines']} lines, head {report['head']}")
     for t, s in report["trades"].items():
         print(f"  {t}: {s}")
     b = report["balances"]
     print(f"balances {b} sum={sum(b.values())}")
-    for p in report["problems"]:
-        print(f"PROBLEM {p}")
+    for problem in report["problems"]:
+        print(f"PROBLEM {problem}")
+    if not a.head:
+        print("note: no --head given, so lines cut off the end would not be noticed")
     print("VERIFIED: every trade replays by the rules" if not report["problems"]
           else f"FAILED: {len(report['problems'])} problem(s)")
     return 0 if not report["problems"] else 1
