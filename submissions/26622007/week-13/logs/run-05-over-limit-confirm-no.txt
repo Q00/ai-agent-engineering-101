@@ -1,0 +1,19 @@
+$ printf 'n
+' | python3 trade.py trade --qty 3
+30000 credits to nocha12 is outside the mandate's automatic range. Pay? [y/n]   [negotiation] turn 0 nocha12: offer 12000
+  [negotiation] turn 0 user-agent: counter 7200
+  [negotiation] turn 1 nocha12: offer 11500
+  [negotiation] turn 1 user-agent: counter 7900
+  [negotiation] turn 2 nocha12: offer 11000
+  [negotiation] turn 2 user-agent: counter 8600
+  [negotiation] turn 3 nocha12: offer 10500
+  [negotiation] turn 3 user-agent: counter 9300
+  [negotiation] turn 4 nocha12: offer 10000
+  [negotiation] turn 4 user-agent: accept 10000
+  [agreement] user-agent buys 3 x 우유 190mL x 24 from nocha12 at 10000 credits each, 30000 credits in total.
+  [contract] meshkit.transaction-contract/v1 id=ctr-20261124T112722Z-2867 hash=558988a30271223bf922b3725a71415daa4afabe940363b74d6e4c387a8e429e
+  [state] None -> created (contract sealed)
+  [routing] confirm (amount 30000, auto_limit 20000, person answered n)
+  [state] created -> cancelled (the person did not approve)
+trade ctr-20261124T112722Z-2867: route=confirm state=cancelled (0.003 s)
+[exit 0]
