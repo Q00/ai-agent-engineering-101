@@ -1,0 +1,106 @@
+% 한 페이지 아키텍처 그림, Week 08 중간 평가 (v11: v10 + 모델 메모 제목을 설계 판단으로, 재입고 제안 자리 표시).
+% Round 3에서 실제로 돌린 구조: 외부 시장 / 공식 키트(제공) / 직접 구현(운영 감독, 거래 실행, 재입고 검증) / 상태 파일.
+% 화살표 세 종류: 거래 실행(굵은 실선), 데이터 조회·기록(회색 실선), 승인·중단 신호(빨간 점선).
+% STOP은 정상 거래의 마지막 단계가 아니라 조건이 맞을 때만 나가는 별도 제어 신호다. 세부 기준값은 REPORT에 있다.
+% 빌드: tectonic architecture.tex (Tectonic 0.17.0, XeTeX). fontspec 없이 XeTeX \font로 시스템 글꼴
+%       나눔바른고딕(우분투 fonts-nanum 패키지, /usr/share/fonts/truetype/nanum/)을 불러온다.
+\documentclass[tikz,border=10pt]{standalone}
+\usetikzlibrary{arrows.meta}
+\font\kr="[/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf]" at 9pt
+\font\krb="[/usr/share/fonts/truetype/nanum/NanumBarunGothicBold.ttf]" at 10.5pt
+\font\krp="[/usr/share/fonts/truetype/nanum/NanumBarunGothicBold.ttf]" at 9.5pt
+\font\krs="[/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf]" at 8pt
+\font\krsb="[/usr/share/fonts/truetype/nanum/NanumBarunGothicBold.ttf]" at 8pt
+\font\krt="[/usr/share/fonts/truetype/nanum/NanumBarunGothicBold.ttf]" at 16pt
+\definecolor{ink}{RGB}{25,25,25}
+\definecolor{soft}{RGB}{105,105,105}
+\definecolor{panel}{RGB}{243,243,241}
+\definecolor{given}{RGB}{218,218,214}
+\definecolor{accent}{RGB}{175,30,40}
+\newcommand{\F}[1]{{\krs\textcolor{soft}{#1}}}
+\begin{document}
+\begin{tikzpicture}[x=1mm, y=1mm,
+  box/.style={draw=ink, fill=white, line width=0.6pt, align=center, inner sep=3pt, anchor=north,
+              font=\kr, execute at begin node={\baselineskip=12pt}},
+  givenbox/.style={box, fill=given},
+  store/.style={box, double=white, double distance=1.2pt, line width=0.5pt},
+  note/.style={box, draw=soft, dashed, text=soft, font=\krs, execute at begin node={\baselineskip=10pt}},
+  ptitle/.style={anchor=north west, font=\krp, text=ink},
+  trade/.style={{Stealth[length=2.6mm]}-{Stealth[length=2.6mm]}, line width=1.1pt, draw=ink},
+  trade1/.style={-{Stealth[length=2.6mm]}, line width=1.1pt, draw=ink},
+  data/.style={-{Stealth[length=2.3mm]}, line width=0.7pt, draw=soft},
+  data2/.style={{Stealth[length=2.3mm]}-{Stealth[length=2.3mm]}, line width=0.7pt, draw=soft},
+  ctl/.style={-{Stealth[length=2.6mm]}, line width=0.9pt, draw=accent, dash pattern=on 3.5pt off 2pt},
+  lab/.style={font=\krs, fill=white, inner sep=1.3pt, text=#1},
+  lab/.default=soft,
+]
+% ---------- 제목 ----------
+\node[anchor=west, font=\krt] at (0,12) {Round 3 에이전트 구조};
+
+% ---------- 외부 시장 ----------
+\fill[panel] (0,0) rectangle (280,-24);  \node[ptitle] at (2,-1.2) {외부 시장};
+\node[givenbox, text width=62mm] (ledger) at (44,-7.5)  {{\krb 공식 원장·리더보드} {\krs (시장 데이터)}\\ 판매, 가격, 평판, Saved};
+\node[givenbox, text width=62mm] (order)  at (142,-7.5) {{\krb 주문 창구, 정산}\\ AP2 mandate, /api/settle};
+\node[givenbox, text width=62mm] (peers)  at (240,-7.5) {{\krb 다른 가게, buyer}\\ A2A 흥정 상대};
+
+% ---------- 공식 키트 (제공, 수정 없음) ----------
+\node[givenbox, text width=174mm] (kit) at (190,-31) {{\krb 공식 Market Kit v4 (제공, 수정 없음)}\quad 가게용, buyer용 2개 프로세스\\ A2A 흥정 중계, ACP checkout과 AP2 결제, 재입고 훅 실행, 재고와 결제 기록};
+
+% ---------- 운영 감독 (직접 구현) ----------
+\fill[panel] (6,-31) rectangle (92,-152);  \node[ptitle] at (8,-32.2) {운영 감독 (규칙 기반)\ \ {\kr\textcolor{soft}{언제 사고 언제 멈출지 정함}}};
+\node[box, text width=78mm] (bsup)  at (49,-40)  {{\krb Buyer 운영 감독} \F{buyer\_ops7.py}\\ 100주문마다 정산 수, Saved 확인\\ 기준 미달이면 다음 주문 블록 중단};
+\node[box, text width=78mm] (bsav)  at (49,-69)  {{\krb Buyer Saved 감시} \F{saved\_guard7.py}\\ Saved가 설정 기준에 닿으면 신규 주문 즉시 중단};
+\node[box, text width=78mm] (ssup)  at (49,-95)  {{\krb Seller 운영 감독} \F{ops15.py}\\ 공급 창마다 원장으로 SKU 판매율, 이익 확인\\ 통과한 SKU만 매입 승인 파일 작성};
+\node[box, text width=78mm] (ssafe) at (49,-124) {{\krb Seller 안전 감시} \F{ops15.py, sell\_guard\_2355.py}\\ 손실, 환불, 파손, 중복 정산, 평판 하락\\ 신규 매입 승인만 중단, 기존 재고 판매는 계속};
+
+% ---------- 거래 실행 (직접 구현) ----------
+\fill[panel] (103,-52) rectangle (222,-130);  \node[ptitle, anchor=south west] at (105,-129) {거래 판단 및 실행\ \ {\kr\textcolor{soft}{주문마다 가격을 정하고 거래}}};
+\node[box, text width=53mm] (buyer)  at (133,-61) {{\krb Buyer} \F{market\_buyer.py}\\ 여러 판매자 호가 비교\\ 정산 가능성 × 예상 Saved로 선택\\ 등급, 유통기한, 보증 검사 후 결제};
+\node[box, text width=53mm] (seller) at (192,-61) {{\krb Seller} \F{seller.py}\\ 재고에 있는 유닛만 판매, 등급별 호가로 협상\\ 최저가 = (원가+보관비)×1.05\\ 합의 시 재고 재확인, 서명 영수증};
+\node[box, text width=112mm] (restock) at (162.5,-99) {{\krb 재입고 검증} \F{safe\_restock.py}\\ 승인 파일이 있을 때만 매입. 유효 기간, 수량, 최악 원가, 예산을 다시 확인\\ 통과한 줄만 키트 재입고 훅으로 매입, 승인 파일은 한 번만 사용};
+
+% ---------- 상태 파일 ----------
+\node[store, text width=46mm] (state) at (254,-61) {{\krb 상태 파일·로그} {\krs (이전 거래 기록)}\\ 판매 원장, 협상 이벤트\\ 재고, 결제, 파손 기록\\ 감독 상태, 운영 로그};
+
+% ---------- 사람, 모델 ----------
+\node[box, text width=78mm] (human) at (49,-161) {{\krb 운영자}\quad 구간마다 SKU, 예산, 중단 기준 승인};
+\node[note, text=ink, align=left, text width=59mm, inner xsep=2.5mm] (model) at (245.5,-138) {{\krsb 모델 사용과 설계 판단}\\ Round 2 연습까지: 모델이 흥정을 결정\\ 호출 실패가 잦아 규칙이 대신 결정함\\ \ · Week 07 테스트: 사용량 한도로 14/25 실패\\ \ · Round 2: buyer 호출 49/55 실패\\ {\krsb Round 3: 규칙 기반, 거래 중 모델 호출 0회}\\ 모델은 재입고 제안 자리로 옮겨 설계 (미실행)};
+
+% ---------- 화살표: 거래 실행 ----------
+\draw[trade] (order.south) -- node[lab=ink, right=1mm]{주문, 정산} (order.south |- kit.north);
+\draw[trade] (peers.south) -- node[lab=ink, right=1mm]{A2A 흥정, ACP 결제} (peers.south |- kit.north);
+\draw[trade] (buyer.north)  -- (buyer.north |- kit.south);
+\draw[trade] (seller.north) -- (seller.north |- kit.south);
+\draw[trade1] (162.5,-99) -- node[lab=ink, pos=0.12]{매입} (162.5,-99 |- kit.south);
+
+% ---------- 화살표: 데이터 조회, 기록 ----------
+\draw[data]  (ledger.south) -- node[lab, right=1mm]{조회} (ledger.south |- 0,-31);
+\draw[data2] (state.north) -- node[lab, right=1mm]{기록, 조회} (state.north |- kit.south);
+\draw[data2] (seller.east) -- (state.west |- seller.east);
+\draw[data]  (state.south) -- (state.south |- 0,-136) -- node[lab, above, pos=0.5]{상태 기록 → 다음 운영 판단} (92,-136);
+
+% ---------- 화살표: 승인, 중단 ----------
+\draw[ctl] (ssup.east) -- node[lab=accent, above]{승인 파일} (restock.west |- ssup.east);
+\draw[ctl] (bsup.east) -- ++(6,0) |- node[lab=accent, pos=0.25, right=0.5mm]{100주문 실행} (buyer.west);
+\draw[ctl] (bsav.north) -- node[lab=accent, right=1mm]{STOP: 신규 주문 중단} (bsav.north |- bsup.south);
+\draw[ctl] (ssafe.north) -- node[lab=accent, right=1mm]{STOP: 신규 매입 승인 중단} (ssafe.north |- ssup.south);
+\draw[ctl] (human.north) -- node[lab=accent, right=1mm]{범위 승인} (human.north |- 0,-152);
+
+% ---------- 범례 ----------
+\begin{scope}[shift={(105,-146)}]
+  \draw[trade1] (0,0) -- (10,0);  \node[anchor=west, font=\krs] at (12,0) {거래 실행};
+  \draw[data]   (30,0) -- (40,0); \node[anchor=west, font=\krs] at (42,0) {조회, 기록};
+  \draw[ctl]    (58,0) -- (68,0); \node[anchor=west, font=\krs] at (70,0) {승인, 중단 (조건 충족 시)};
+  \node[box, anchor=center, minimum height=4mm, minimum width=8mm, inner sep=0pt] at (4,-7) {}; \node[anchor=west, font=\krs] at (10,-7) {직접 구현};
+  \node[givenbox, anchor=center, minimum height=4mm, minimum width=8mm, inner sep=0pt] at (32,-7) {}; \node[anchor=west, font=\krs] at (38,-7) {공식 제공, 외부};
+  \node[store, anchor=center, minimum height=4mm, minimum width=8mm, inner sep=0pt] at (70,-7) {}; \node[anchor=west, font=\krs] at (76,-7) {저장소};
+\end{scope}
+
+% ---------- 기본 키트와 다른 점 ----------
+\node[anchor=north west, font=\krsb] at (0,-174) {기본 키트와 다른 점};
+\node[anchor=north west, font=\krs, align=left, execute at begin node={\baselineskip=11pt}] at (0,-179) {%
+1. 가격, 거래 판단: 기본형 seller는 하네스(모델)가 흥정의 매 수를 정한다. 여기서는 규칙이 등급별 호가, 최저가, 결제 전 검사를 적용한다.\\
+2. 재입고: 기본형은 재입고 명령이 없으면 키트가 무작위로 산다. 여기서는 원장 검증, 승인 파일, safe\_restock 재검사를 거친 SKU만 산다.\\
+3. 운영 통제: 직접 만든 성과 감시와 안전 감시가 조건에 맞을 때 신규 매입이나 신규 주문만 멈춘다. 종료 시각, 주문 상한에 따른 종료는 계획된 종료다.};
+\end{tikzpicture}
+\end{document}

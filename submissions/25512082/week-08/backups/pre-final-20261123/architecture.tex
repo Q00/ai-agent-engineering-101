@@ -1,0 +1,101 @@
+% One-page architecture figure, Week 08 midterm (25512082 / sohyunkim11).
+% Updated 2026-11-16 to the structure actually run in Round 3 (previous draft: backups/pre-submit-20261116/).
+% Build: tectonic architecture.tex (built 2026-11-16 with Tectonic 0.17.0); pdflatex with standalone + tikz also works. ASCII text only.
+\documentclass[tikz,border=8pt]{standalone}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds}
+\begin{document}
+\begin{tikzpicture}[
+  font=\sffamily\scriptsize, node distance=5mm and 6mm,
+  box/.style={draw, rounded corners=2pt, align=left, inner sep=4pt, text width=#1},
+  box/.default=58mm,
+  mem/.style={draw, dashed, align=left, inner sep=3pt, text width=58mm, fill=yellow!8},
+  gate/.style={draw, thick, fill=red!8, align=left, inner sep=4pt, text width=#1},
+  gate/.default=58mm,
+  ops/.style={draw, thick, rounded corners=2pt, fill=green!7, align=left, inner sep=4pt, text width=58mm},
+  arr/.style={-{Latex[length=2mm]}, thick},
+  darr/.style={-{Latex[length=2mm]}, thick, dashed},
+]
+% ---------------- Market ----------------
+\node[box=206mm, fill=gray!12] (market) {\textbf{Market (external facts)}\quad
+order desk (open AP2 mandates, budget hidden) \quad /api/settle (signature chain, amount in range, one settle per order)\\
+public ledger /api/ledger (supply, settle, broken, result) \quad board /api/board (Book, revenue, stars\_rank, Saved, forum) \quad supply windows + surge};
+
+% ---------------- top row: shop kit | human | buyer kit ----------------
+\node[box, fill=blue!6, below=6mm of market.south west, anchor=north west] (kitS) {\textbf{market\_kit v4, \texttt{-{}-shop-only}} (unchanged)\\
+tunnel, ACP checkout, inventory sync (.market/), restock hook};
+\node[gate, right=14mm of kitS.north east, anchor=north west] (human) {\textbf{Human approval, per run (never per trade)}\\
+SKUs + unit cost caps, units, spend, held cost, end time, buyer order cap, grade policy, stop thresholds.\\
+STOP halts new buys/orders only; no auto restart.};
+\node[box, fill=blue!6, right=14mm of human.north east, anchor=north west] (kitB) {\textbf{market\_kit v4, \texttt{-{}-buyer-only}} (unchanged, separate dir)\\
+runs \texttt{-{}-orders 100} per block};
+
+% ---------------- Seller column (left) ----------------
+\node[box, below=8mm of kitS.south west, anchor=north west] (seller) {\textbf{Seller} \texttt{seller.py}\\
+1 pick real unit, earliest expiry\\
+2 ask = max(A/B market median if fresh,\\
+\phantom{2 ask = max(}else list$\times$grade target; floor)\\
+\phantom{2 }floor = (cost + storage)$\times$1.05\\
+3 $\le$3 rounds, 12\% concession, never below floor\\
+4 at agreement: unit still in inventory.json?\\
+5 Ed25519 receipt + unit + honest grade claim};
+\node[mem, below=of seller] (sl) {\textbf{memory} seller-ledger.json (fresh $<$15 min agreement reserves a unit), seller-events.jsonl (quote / offer / accept / reject reason), inventory.json};
+\node[gate, below=of sl] (restock) {\textbf{Rule gate} \texttt{safe\_restock.py}\\
+reads single-use approval file; qty 1 / SKU;\\
+worst cost = list$\times$0.75$\times$surge $\le$ cap;\\
+atomic claim (os.link) $\Rightarrow$ no replay};
+
+% ---------------- Middle column: supervisors ----------------
+\node[ops, below=8mm of human.south west, anchor=north west] (ops) {\textbf{Seller supervisor} \texttt{ops15.py} (rules, no LLM)\\
+per supply window, per SKU, from public ledger:\\
+3 h sell rate $\ge$ 70\% (right-censored cohort),\\
+realized profit median $\ge$ 1{,}000, below cost $\le$ 15\%,\\
+$\ge$ 20 market settles / 3 h, worst cost $\le$ cap\\
+$\Rightarrow$ write restock-approval.json, reconcile used/unused\\
+STOP: loss, refund, breakage, expiry, duplicate settle,\\
+stars\_rank $<$ 3.93, 2 low paid reviews, 2 h no settle};
+\node[ops, below=of ops] (price) {\textbf{Price experiment} \texttt{price\_exp.py}\\
+every 5 min: 3 h market median per SKU, grade A/B\\
+$\Rightarrow$ price-experiment.json (ignored if stale $>$30 min)\\
+auto revert: avg profit $<$ 800, paid stars $<$ 4.3,\\
+settles/h $<$ 1.82 after 6 h, or supervisor ends};
+
+% ---------------- Buyer column (right) ----------------
+\node[box, below=8mm of kitB.south west, anchor=north west] (buyer) {\textbf{Buyer} \texttt{market\_buyer.py}\\
+1 parallel quotes from stocked shops\\
+2 rank: P(settle) $\times$ $\Delta$Saved\\
+3 precheck receipt, budget, warranty\\
+4 accept: cert, food A/B, goods A only,\\
+\phantom{4 }hours left, goods warranty $\ge$ 6 h};
+\node[mem, below=of buyer] (bm) {\textbf{memory} payments.jsonl, broken.jsonl, buyer-memory.json: per-shop P(settle), 409 stock-out pairs};
+\node[ops, below=of bm] (bops) {\textbf{Buyer supervisor} \texttt{buyer\_ops7.py} + \texttt{stop\_guard7.sh}\\
+every 100 orders: board deals and Saved before/after\\
+$\Rightarrow$ segment settle rate, Saved/deal, breakage\\
+gates: first 100 and every 500 orders\\
+STOP: Saved/deal $<$ 0.65, $-1$ deals $>$ 2\%, 3 market 402s,\\
+board mismatch; guard kills at end time / order cap};
+
+% ---------------- arrows ----------------
+\draw[arr] (market.south -| kitS.north) -- (kitS.north);
+\draw[arr] (market.south -| kitB.north) -- (kitB.north);
+\draw[darr] (market.south -| human.north) -- node[right]{ledger, board} (human.north);
+\draw[arr] (kitS) -- node[right]{A2A negotiate} (seller);
+\draw[arr] (seller) -- (sl);
+\draw[arr] (kitS.west) to[out=210,in=150] node[left, align=right]{restock\\hook} (restock.west);
+\draw[arr, red!70!black] (human) -- node[right]{scope} (ops);
+\draw[arr, red!70!black] (human.east) -- ++(5mm,0) |- node[pos=0.25, right, font=\sffamily\tiny]{scope} (bops.west);
+\draw[arr] (ops.west) -- ++(-4mm,0) |- node[pos=0.85, above, font=\sffamily\tiny, align=center]{approval\\file} (restock.east);
+\draw[arr] (price.west) -- ++(-9mm,0) |- node[pos=0.85, below, font=\sffamily\tiny, align=center]{median\\ask} (seller.east);
+\draw[darr] (ops) -- node[right]{state} (price);
+\draw[arr] (kitB) -- node[right]{order} (buyer);
+\draw[arr] (buyer) -- (bm);
+\draw[arr] (bm) -- (bops);
+\draw[arr] (bops.east) -- ++(4mm,0) |- node[pos=0.25, right, align=left]{next\\block} (kitB.east);
+
+% ---------------- caption ----------------
+\node[align=left, text width=206mm, anchor=north west] at ([yshift=-4mm]current bounding box.south west) {
+\textbf{Differs from the kit default:} the kit lets a model harness choose every negotiation move and restocks random SKUs. Here no model runs in the trading path
+(0 runtime LLM calls in Round 3); a human approves each run's scope, and rule supervisors decide inside it using public ledger and board facts.
+Every money movement passes a rule gate (\texttt{safe\_restock} for supply, \texttt{accept} policy for payment), and each supervisor checks its own results
+against the board before expanding. Shop and buyer run as two separate kit processes under one name.};
+\end{tikzpicture}
+\end{document}

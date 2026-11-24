@@ -1,0 +1,7 @@
+{
+  "seller": {"cmd": "python seller.py --port {port} --market-dir .market --key shop_key.pem --ledger .market/candidate-ledger.json"},
+  "buyer": {"cmd": "python buyer.py --url {url} --item {item} --catalog .market/catalog.json --budget {budget}"},
+  "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"},
+  "restock": {"cmd": "python safe_restock.py --state {state}"},
+  "status": "candidate-only-not-deployable"
+}
