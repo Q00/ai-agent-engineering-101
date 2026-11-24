@@ -1,0 +1,34 @@
+PASS  schema-card: paid=True settles=1 sessions=['completed']
+        [acp-tools] 4 tools from http://127.0.0.1:50089/acp/: cancel_checkout_session, complete_checkout_session, create_checkout_session, get_checkout_session
+        [acp] settled lamp at 120, ledger #7
+        [acp-tools] paid 120 with create_checkout_session -> complete_checkout_session, settled at ledger #7
+PASS  old-string-card: paid=True settles=1 sessions=['completed']
+        [acp-tools] 4 tools from http://127.0.0.1:50089/acp/: cancel_checkout_session, complete_checkout_session, create_checkout_session, get_checkout_session
+        [acp] settled lamp at 120, ledger #7
+        [acp-tools] paid 120 with create_checkout_session -> complete_checkout_session, settled at ledger #7
+PASS  no-tools-fallback: paid=True settles=1 sessions=['completed']
+        [acp-tools] acp.json has no checkout-creating tool (tools: []); falling back to the kit's fixed checkout
+        [acp] settled lamp at 120, ledger #7
+        [acp] paid 120 through http://127.0.0.1:50089/acp, settled at ledger #7
+PASS  over-mandate-limit: paid=False settles=0 sessions=['canceled']
+        [acp-tools] 4 tools from http://127.0.0.1:50089/acp/: cancel_checkout_session, complete_checkout_session, create_checkout_session, get_checkout_session
+        [acp-tools] checkout total 200 is above the mandate's limit; not paying
+        [acp-tools] cancel_checkout_session cs_1e5eff2d32ec2d9b: 200
+PASS  odd-complete-schema: paid=True settles=1 sessions=['completed']
+        [acp-tools] 4 tools from http://127.0.0.1:50089/acp/: cancel_checkout_session, complete_checkout_session, create_checkout_session, get_checkout_session
+        [acp-tools] tool complete_checkout_session: arguments do not fit its schema: $.loyalty_code is missing; completing with the kit's fixed request on the same session
+        [acp] settled lamp at 120, ledger #7
+        [acp-tools] paid 120 with create_checkout_session -> fixed complete, settled at ledger #7
+PASS  market-refuses-once: paid=False settles=1 sessions=['ready_for_payment']
+        [acp-tools] 4 tools from http://127.0.0.1:50089/acp/: cancel_checkout_session, complete_checkout_session, create_checkout_session, get_checkout_session
+        [acp] settle refused: ['market']
+        [acp-tools] payment not completed (complete_checkout_session): 402 {"error":"payment refused by the market","market":{"settled":false,"checks":{"checkout_mandate":true,"payment_mandate":true,"amount":true,"market":false}}}
+PASS  tampered-receipt: paid=False settles=0 sessions=[]
+        [acp-tools] 4 tools from http://127.0.0.1:50089/acp/: cancel_checkout_session, complete_checkout_session, create_checkout_session, get_checkout_session
+        [acp-tools] create_checkout_session refused: 400 {"error":"the receipt is not signed by this shop"}; falling back to the kit's fixed checkout
+        [acp] checkout refused: 400 {"error":"the receipt is not signed by this shop"}
+PASS  endpoint-other-host: paid=False settles=0 sessions=[]
+        [acp-tools] cannot make tools from http://127.0.0.1:50089's acp.json: ValueError: the ACP endpoint http://localhost:50089/acp is not on the shop's host; falling back to the kit's fixed checkout
+        [acp] the ACP endpoint http://localhost:50089/acp is not on the shop's host; not paying
+
+8/8 passed

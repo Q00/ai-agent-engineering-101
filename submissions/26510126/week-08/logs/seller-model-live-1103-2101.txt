@@ -1,0 +1,34 @@
+[21:01:15] CARD: 'thisjonghoon' at http://127.0.0.1:54435/, protocol 1.0
+[21:01:15] SEND: 'I want to buy Test Lamp (G1)'
+[21:01:15] OPEN 55ee02fb G1 Test Lamp list 100000 cost 60000 ask 95000 floor 78000 model
+[21:01:15] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Lamp (G1): grade A, market certificate attached. List price 100000, asking 95000. Send your offer as a number.'
+[21:01:15] SEND: '60000' taskId=55ee02fb
+[21:01:23] THINK 55ee02fb no usable answer: rules decide
+[21:01:23] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 81000.'
+[21:01:23] SEND: '70000' taskId=55ee02fb
+[21:01:31] THINK 55ee02fb no usable answer: rules decide
+[21:01:31] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 78000.'
+[21:01:31] SEND: '76000' taskId=55ee02fb
+[21:01:39] THINK 55ee02fb no usable answer: rules decide
+[21:01:39] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 78000.'
+[21:01:39] SEND: '80000' taskId=55ee02fb
+[21:01:39] DEAL 55ee02fb G1 at 78000 (cost 60000, list 100000, turns 4)
+[21:01:39] RECV: TASK_STATE_COMPLETED | 'Deal: Test Lamp at 78000.'
+[21:01:39] CARD: 'thisjonghoon' at http://127.0.0.1:54435/, protocol 1.0
+[21:01:39] SEND: 'I want to buy Test Kimchi (F1)'
+[21:01:39] OPEN 7bed9850 F1 Test Kimchi list 30000 cost 18000 ask 30000 floor 23400 model
+[21:01:39] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Kimchi (F1): grade A, market certificate attached, 150 h of shelf life left. List price 30000, asking 30000. Send your offer as a number.'
+[21:01:39] SEND: '15000' taskId=7bed9850
+[21:01:47] THINK 7bed9850 no usable answer: rules decide
+[21:01:47] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 24000.'
+[21:01:47] SEND: '20000' taskId=7bed9850
+[21:01:55] THINK 7bed9850 no usable answer: rules decide
+[21:01:55] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 23400.'
+[21:01:55] SEND: '24000' taskId=7bed9850
+[21:01:55] DEAL 7bed9850 F1 at 23400 (cost 18000, list 30000, turns 3)
+[21:01:55] RECV: TASK_STATE_COMPLETED | 'Deal: Test Kimchi at 23400.'
+Test Lamp (G1) -> TASK_STATE_COMPLETED 78000.0 24.1 s
+Test Kimchi (F1) -> TASK_STATE_COMPLETED 23400.0 16.0 s
+{"t": 1793707299.2, "task": "55ee02fb", "sku": "G1", "kind": "goods", "list_price": 100000, "cost": 60000, "ask0": 95000, "floor": 78000, "clear": false, "offers": [60000, 70000, 76000, 80000], "turns": 4, "event": "deal", "price": 78000, "warranty_ask": false, "model_on": true, "model_calls": 3, "ab": null}
+{"t": 1793707315.2, "task": "7bed9850", "sku": "F1", "kind": "food", "list_price": 30000, "cost": 18000, "ask0": 30000, "floor": 23400, "clear": false, "offers": [15000, 20000, 24000], "turns": 3, "event": "deal", "price": 23400, "warranty_ask": false, "model_on": true, "model_calls": 2, "ab": null}
+

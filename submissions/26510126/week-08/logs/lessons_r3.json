@@ -1,0 +1,4881 @@
+{
+ "merch": {
+  "t": 1794916743.935742,
+  "facts": 369,
+  "lessons": [
+   {
+    "rule": "Treat every shop-number row from 11/15 03:09 to 11/17 15:34 (11/15 03:09 to 11/17 15:34) as no verdict. Each was MIXED with other changes in the same hours, so the raw margin beside it is not that number's effect. Do not cite one of these rows to justify",
+    "evidence": [
+     "F324",
+     "F342",
+     "F350",
+     "F351",
+     "F355",
+     "F359",
+     "F369"
+    ],
+    "status": "unverified",
+    "trap": "Raw margin followed the pile of changes, not the number. It read +146% on both 11/17 01:37 (stock_value) and 11/17 01:53 (food_first), then -37% on 11/17 03:51, and +85% on 11/16 20:04 and",
+    "when": [
+     "11/16 02:47",
+     "11/16 20:04",
+     "11/17 01:37",
+     "11/17 01:53",
+     "11/17 03:51",
+     "11/17 10:52",
+     "11/17 15:34"
+    ]
+   },
+   {
+    "rule": "Do not step min_shelf_hours down again until its value now (36) has a closed 2 h verdict read on board points per hour. Read the value in force first (order 5), then decide.",
+    "evidence": [
+     "F347",
+     "F353",
+     "F368"
+    ],
+    "status": "unverified",
+    "trap": "It went 180 -> 132 -> 84 -> 36 in one direction in about 17 hours, each step MIXED (raw margin -18%, +6%, -38%), so no step has evidence behind it. Order 9 forb",
+    "when": [
+     "11/16 22:35",
+     "11/17 02:58",
+     "11/17 15:18"
+    ]
+   },
+   {
+    "rule": "A 'kept' on a restock_r3.py code row is not a board gain. Read shop points/h and shop revenue in the same row. Do not extend the own_floor / depth-cap / full-bar work until a clean read of points/h exists.",
+    "evidence": [
+     "F311",
+     "F339",
+     "F358",
+     "F362"
+    ],
+    "status": "unverified",
+    "trap": "All four were 'kept' and all four were MIXED. Shop points/h was -35%, -58%, -2% and -42%, and measured revenue missed the expected +3% each time (-3%, -40%, -29",
+    "when": [
+     "11/15 18:50",
+     "11/16 17:01",
+     "11/17 04:42",
+     "11/17 11:09"
+    ]
+   },
+   {
+    "rule": "Treat the buyer plan-mode rule (11/15 22:11) as evidence of cheaper buyer time only. Check board points per hour before building on it.",
+    "evidence": [
+     "F319"
+    ],
+    "status": "unverified",
+    "trap": "It won a same-hours A/B on buyer_secs_order (+37% measured against +25% expected, 120 and 132 orders). That is a part of the aim, not board points (order 1). A ",
+    "when": [
+     "11/15 22:11"
+    ]
+   },
+   {
+    "rule": "Before proposing a number, check the supervisor's pins and the negative-value list. market_ask stays at 1.0 (order 15), window_depth at 2.0 or more (order 12), sku_depth at 3 or more (order 13). Order 14 lists values whose own verdict close",
+    "evidence": [
+     "F295",
+     "F300",
+     "F313"
+    ],
+    "status": "contradicted",
+    "trap": "dear_depth went 6 -> 7 (11/15 05:38) although 7 was a closed negative, and market_ask moved 1.08 -> 1.05 (11/15 08:55) and 1.0 -> 1.03 (11/15 19:39) against the pin on 1.0. All of t",
+    "when": [
+     "11/15 05:38",
+     "11/15 08:55",
+     "11/15 19:39"
+    ]
+   }
+  ],
+  "history": [
+   {
+    "t": 1794805575.860074,
+    "lessons": [
+     {
+      "rule": "Treat every shop-number row 11/14 08:49-11/16 11:37 as no verdict. Each is MIXED with other changes in the same hours. Do not cite the raw margin beside a row as that number's effect. Judge by board_pts_h at the value now in force, and change one number ",
+      "evidence": [
+       "F272",
+       "F283",
+       "F324",
+       "F329",
+       "F332",
+       "F333"
+      ],
+      "status": "unverified",
+      "trap": "Raw margins such as +213% (order_weight 1.5 -> 2.0), -65% (goods_frac 0.9 -> 0.95), -41% (depth 5 -> 6) and +78% (min_shelf_hours 192 -> 180) were read as one n",
+      "when": [
+       "11/14 15:36",
+       "11/14 22:15",
+       "11/16 02:47",
+       "11/16 08:49",
+       "11/16 11:20",
+       "11/16 11:37"
+      ]
+     },
+     {
+      "rule": "Do not move a number and undo it within minutes, and do not re-propose a move the supervisor reverted. Check orders 9 and 14 before any change. A return to a value whose own verdict closed negative needs a new measurement taken after it.",
+      "evidence": [
+       "F255",
+       "F256",
+       "F268",
+       "F269",
+       "F270",
+       "F271",
+       "F278",
+       "F279",
+       "F295",
+       "F296",
+       "F315",
+       "F316"
+      ],
+      "status": "unverified",
+      "trap": "Move-and-undo pairs (max_list 1200000 <-> 900000.0, food_first 0.75 <-> 0.5, order_weight 2.5 <-> 2.0, dear_depth 7 <-> 6.0, max_list 750000 <-> 950000.0) lande",
+      "when": [
+       "11/14 09:40",
+       "11/14 09:40",
+       "11/14 14:08",
+       "11/14 14:08",
+       "11/14 15:02",
+       "11/14 15:03",
+       "11/14 19:28",
+       "11/14 19:28",
+       "11/15 05:38",
+       "11/15 05:39",
+       "11/15 21:36",
+       "11/15 21:36"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction until its last step has a closed 2 h verdict (order 9). This applies most to min_shelf_hours, surge_max, dear_depth and food_first. Read the value in force first.",
+      "evidence": [
+       "F259",
+       "F276",
+       "F288",
+       "F298",
+       "F304",
+       "F333",
+       "F261",
+       "F284",
+       "F292",
+       "F302"
+      ],
+      "status": "unverified",
+      "trap": "min_shelf_hours went 360 -> 312 -> 264 -> 240 -> 216 -> 204 -> 192 -> 180, and surge_max went 1.1 -> 1.15 -> 1.2 -> 1.25 -> 1.2 -> 1.25. Each step came before t",
+      "when": [
+       "11/14 11:36",
+       "11/14 18:05",
+       "11/15 02:20",
+       "11/15 05:55",
+       "11/15 14:24",
+       "11/16 11:37",
+       "11/14 12:10",
+       "11/14 23:36",
+       "11/15 03:43",
+       "11/15 11:55"
+      ]
+     },
+     {
+      "rule": "The rule-based buyer plan (own 24 h median paid share replacing the Haiku plan call) won its same-hours A/B on speed. It may stay, but check buyer saved per deal before counting it as a board gain.",
+      "evidence": [
+       "F319"
+      ],
+      "status": "unverified",
+      "trap": "The A/B measured buyer_secs_order (+37% against +25% expected, 120 vs 132 orders). That is a part, not board points. A faster buyer that saves less per deal wou",
+      "when": [
+       "11/15 22:11"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794817001.248106,
+    "lessons": [
+     {
+      "rule": "Treat every shop-number row 11/14 11:36-11/16 17:01 as no verdict, because each is MIXED with other changes in the same hours. Do not cite the raw margin beside a row as that number's effect, and do not use it to justify the next step. Judge by board_pts",
+      "evidence": [
+       "F272",
+       "F283",
+       "F324",
+       "F329",
+       "F332",
+       "F333"
+      ],
+      "status": "unverified",
+      "trap": "Raw margins such as +213% (order_weight 1.5 -> 2.0), -65% (goods_frac 0.9 -> 0.95), -41% (depth 5 -> 6) and +78% (min_shelf_hours 192 -> 180) were each read as ",
+      "when": [
+       "11/14 15:36",
+       "11/14 22:15",
+       "11/16 02:47",
+       "11/16 08:49",
+       "11/16 11:20",
+       "11/16 11:37"
+      ]
+     },
+     {
+      "rule": "Do not move a number and undo it within minutes, and do not re-propose a move the supervisor reverted. Check orders 9, 14 and 15 first. A return to a value whose own verdict closed negative needs a new measurement taken after it.",
+      "evidence": [
+       "F268",
+       "F269",
+       "F270",
+       "F271",
+       "F278",
+       "F279",
+       "F295",
+       "F296",
+       "F297",
+       "F315",
+       "F316"
+      ],
+      "status": "unverified",
+      "trap": "Move-and-undo pairs (food_first 0.75 <-> 0.5, max_list 1200000 <-> 900000.0, order_weight 2.5 <-> 2.0, dear_depth 7 <-> 6.0, max_list 750000 <-> 950000.0) lande",
+      "when": [
+       "11/14 14:08",
+       "11/14 14:08",
+       "11/14 15:02",
+       "11/14 15:03",
+       "11/14 19:28",
+       "11/14 19:28",
+       "11/15 05:38",
+       "11/15 05:39",
+       "11/15 05:39",
+       "11/15 21:36",
+       "11/15 21:36"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction until its last step has a closed 2 h verdict (order 9). This applies most to min_shelf_hours, surge_max and food_first. Read the value in force before any step.",
+      "evidence": [
+       "F259",
+       "F276",
+       "F288",
+       "F298",
+       "F300",
+       "F304",
+       "F333",
+       "F261",
+       "F284",
+       "F292",
+       "F293",
+       "F302"
+      ],
+      "status": "unverified",
+      "trap": "min_shelf_hours went 360 -> 312 -> 264 -> 240 -> 216 -> 204 -> 192 -> 180, and surge_max went 1.1 -> 1.15 -> 1.2 -> 1.25 -> 1.2 -> 1.25. Each step came before t",
+      "when": [
+       "11/14 11:36",
+       "11/14 18:05",
+       "11/15 02:20",
+       "11/15 05:55",
+       "11/15 08:55",
+       "11/15 14:24",
+       "11/16 11:37",
+       "11/14 12:10",
+       "11/14 23:36",
+       "11/15 03:43",
+       "11/15 03:59",
+       "11/15 11:55"
+      ]
+     },
+     {
+      "rule": "The rule-based buyer plan (own 24 h median paid share replacing the Haiku plan call) won its same-hours A/B on speed and may stay. Before counting it as a board gain, check buyer saved per deal against our running mean.",
+      "evidence": [
+       "F319"
+      ],
+      "status": "unverified",
+      "trap": "The A/B measured buyer_secs_order (+37% against +25% expected, 120 vs 132 orders). That is a part, not board points. A faster buyer that saves less per deal cou",
+      "when": [
+       "11/15 22:11"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794827970.183018,
+    "lessons": [
+     {
+      "rule": "Treat every shop-number row from 11/14 11:53 to 11/16 17:01 as no verdict. Each is MIXED with other changes in the same hours. Do not cite the raw margin beside a row as that number's effect, and do not use it to justify the next step. Judg",
+      "evidence": [
+       "F272",
+       "F283",
+       "F324",
+       "F329",
+       "F332",
+       "F333"
+      ],
+      "status": "unverified",
+      "trap": "Raw margins such as +213% (order_weight 1.5 -> 2.0), -65% (goods_frac 0.9 -> 0.95), -41% (depth 5 -> 6) and +78% (min_shelf_hours 192 -> 180) look like effects.",
+      "when": [
+       "11/14 15:36",
+       "11/14 22:15",
+       "11/16 02:47",
+       "11/16 08:49",
+       "11/16 11:20",
+       "11/16 11:37"
+      ]
+     },
+     {
+      "rule": "Do not read 'kept' on a code row as a board gain. Check shop points/h and revenue in the same row. Several code rows were kept while points/h fell, and all of them are MIXED, so none is evidence either way. Before building on one, ask for a",
+      "evidence": [
+       "F264",
+       "F275",
+       "F287",
+       "F311",
+       "F339"
+      ],
+      "status": "unverified",
+      "trap": "11/15 02:05 was kept with shop_revenue_h +38% but shop points/h -48%. 11/15 18:50 was kept with -35% points/h. 11/16 17:01 was kept with shop_revenue_h -40% and points/h -58%, again",
+      "when": [
+       "11/14 12:45",
+       "11/14 17:50",
+       "11/15 02:05",
+       "11/15 18:50",
+       "11/16 17:01"
+      ]
+     },
+     {
+      "rule": "Do not move a number and undo it within minutes, and do not re-propose a move the supervisor reverted or listed in orders 14 and 15. Read the value in force first. A return to a value whose own verdict closed negative needs a new measuremen",
+      "evidence": [
+       "F268",
+       "F269",
+       "F270",
+       "F271",
+       "F278",
+       "F279",
+       "F295",
+       "F296",
+       "F297",
+       "F315",
+       "F316",
+       "F306",
+       "F308",
+       "F312"
+      ],
+      "status": "unverified",
+      "trap": "Move-and-undo pairs (food_first 0.75 <-> 0.5, max_list 1200000 <-> 900000.0, order_weight 2.5 <-> 2.0, dear_depth 7 <-> 6.0, max_list 750000 <-> 950000.0) lande",
+      "when": [
+       "11/14 14:08",
+       "11/14 14:08",
+       "11/14 15:02",
+       "11/14 15:03",
+       "11/14 19:28",
+       "11/14 19:28",
+       "11/15 05:38",
+       "11/15 05:39",
+       "11/15 05:39",
+       "11/15 21:36",
+       "11/15 21:36",
+       "11/15 15:46",
+       "11/15 16:36",
+       "11/15 19:05"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction until its last step has a closed 2 h verdict (order 9). This applies most to min_shelf_hours, surge_max and food_first. Read the value in force before any step. Evidence must be measured at t",
+      "evidence": [
+       "F267",
+       "F276",
+       "F288",
+       "F298",
+       "F300",
+       "F304",
+       "F333",
+       "F261",
+       "F284",
+       "F292",
+       "F293",
+       "F302"
+      ],
+      "status": "unverified",
+      "trap": "min_shelf_hours went 360 -> 312 -> 264 -> 240 -> 216 -> 204 -> 192 -> 180, and surge_max went 1.1 -> 1.15 -> 1.2 -> 1.25 -> 1.2 -> 1.25. Each step came before t",
+      "when": [
+       "11/14 13:35",
+       "11/14 18:05",
+       "11/15 02:20",
+       "11/15 05:55",
+       "11/15 08:55",
+       "11/15 14:24",
+       "11/16 11:37",
+       "11/14 12:10",
+       "11/14 23:36",
+       "11/15 03:43",
+       "11/15 03:59",
+       "11/15 11:55"
+      ]
+     },
+     {
+      "rule": "The rule-based buyer plan (own 24 h median paid share replacing the Haiku plan call) won its same-hours A/B on speed and may stay. Before counting it as a board gain, check buyer saved per deal against our running mean.",
+      "evidence": [
+       "F319"
+      ],
+      "status": "unverified",
+      "trap": "The A/B measured buyer_secs_order (+37% against +25% expected, 120 vs 132 orders). That is a part, not board points. A faster buyer that saves less per deal cou",
+      "when": [
+       "11/15 22:11"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794839058.706469,
+    "lessons": [
+     {
+      "rule": "Treat every shop-number row from 11/14 13:18 to 11/16 21:10 as no verdict: each one is MIXED with other changes in the same hours. Do not cite the raw margin beside a row as that number's effect, and do not use it to justify the next step. Read the value",
+      "evidence": [
+       "F272",
+       "F283",
+       "F324",
+       "F333",
+       "F341",
+       "F345"
+      ],
+      "status": "unverified",
+      "trap": "Raw margins look like effects but are not: +213% (order_weight 1.5 -> 2.0, 11/14 15:36), -65% (goods_frac 0.9 -> 0.95, 11/14 22:15), -41% (depth 5 -> 6, 11/16 02:47) and +78% (min_s",
+      "when": [
+       "11/14 15:36",
+       "11/14 22:15",
+       "11/16 02:47",
+       "11/16 11:37",
+       "11/16 19:14",
+       "11/16 21:10"
+      ]
+     },
+     {
+      "rule": "Do not undo a move within minutes, and do not re-propose a value the supervisor reverted or that orders 14 and 15 list. Read the value in force before any move. A return to a value whose own verdict closed negative needs a new measurement t",
+      "evidence": [
+       "F268",
+       "F269",
+       "F270",
+       "F271",
+       "F278",
+       "F279",
+       "F295",
+       "F296",
+       "F315",
+       "F316",
+       "F306",
+       "F308",
+       "F340",
+       "F343"
+      ],
+      "status": "unverified",
+      "trap": "Move-and-undo pairs wasted cycles with no readable result: food_first 0.75 -> 0.5 in the same minute (11/14 14:08, 11/14 14:08), max_list 1200000 <-> 900000 (11/14 15:02, 11/14 15:03), ord",
+      "when": [
+       "11/14 14:08",
+       "11/14 14:08",
+       "11/14 15:02",
+       "11/14 15:03",
+       "11/14 19:28",
+       "11/14 19:28",
+       "11/15 05:38",
+       "11/15 05:39",
+       "11/15 21:36",
+       "11/15 21:36",
+       "11/15 15:46",
+       "11/15 16:36",
+       "11/16 18:41",
+       "11/16 20:37"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction until its last step has a closed 2 h verdict (order 9). This applies most to min_shelf_hours, surge_max and food_first. Evidence for a further step must be measured at the value now in force.",
+      "evidence": [
+       "F267",
+       "F276",
+       "F288",
+       "F298",
+       "F300",
+       "F304",
+       "F333",
+       "F284",
+       "F292",
+       "F293",
+       "F302",
+       "F332",
+       "F338"
+      ],
+      "status": "unverified",
+      "trap": "min_shelf_hours went 360 -> 312 -> 264 -> 240 -> 216 -> 204 -> 192 -> 180, one step after another. surge_max went 1.15 -> 1.2 -> 1.25 -> 1.2 -> 1.25. food_first",
+      "when": [
+       "11/14 13:35",
+       "11/14 18:05",
+       "11/15 02:20",
+       "11/15 05:55",
+       "11/15 08:55",
+       "11/15 14:24",
+       "11/16 11:37",
+       "11/14 23:36",
+       "11/15 03:43",
+       "11/15 03:59",
+       "11/15 11:55",
+       "11/16 11:20",
+       "11/16 15:36"
+      ]
+     },
+     {
+      "rule": "Do not read 'kept' on a code row as a board gain. Check shop points/h and revenue in the same row, and note the row is MIXED. Before building on a code change, such as the own_floor / depth-cap work in restock_r3.py, check that points/h did",
+      "evidence": [
+       "F275",
+       "F287",
+       "F311",
+       "F339",
+       "F340"
+      ],
+      "status": "unverified",
+      "trap": "11/15 02:05 was kept with shop_revenue_h +38% but shop points/h -48%. 11/15 18:50 was kept with points/h -35%. 11/16 17:01 was kept with shop_revenue_h -40% and points/h -58%, then ",
+      "when": [
+       "11/14 17:50",
+       "11/15 02:05",
+       "11/15 18:50",
+       "11/16 17:01",
+       "11/16 18:41"
+      ]
+     },
+     {
+      "rule": "The rule-based buyer plan (our 24 h median paid share replacing the Haiku plan call) won its same-hours A/B on speed and may stay. Before counting it as a board gain, check buyer saved per deal against our running mean.",
+      "evidence": [
+       "F319"
+      ],
+      "status": "unverified",
+      "trap": "The A/B measured buyer_secs_order, +37% against +25% expected (120 vs 132 orders). That is a part, not board points. A faster buyer that saves less per deal cou",
+      "when": [
+       "11/15 22:11"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794849915.174556,
+    "lessons": [
+     {
+      "rule": "Treat every shop-number row from 11/14 15:02 to 11/16 23:26 (11/14 15:02 to 11/16 23:26) as no verdict, because each one is MIXED with other changes in the same hours. Do not cite the raw margin beside a row as that number's effect, and do not use it to ",
+      "evidence": [
+       "F272",
+       "F283",
+       "F324",
+       "F333",
+       "F341",
+       "F345",
+       "F349"
+      ],
+      "status": "unverified",
+      "trap": "Raw margins look like effects but swing wildly under stacked changes: +213% (order_weight 1.5 -> 2.0, 11/14 15:36), -65% (goods_frac 0.9 -> 0.95, 11/14 22:15), -41% (depth 5 ",
+      "when": [
+       "11/14 15:36",
+       "11/14 22:15",
+       "11/16 02:47",
+       "11/16 11:37",
+       "11/16 19:14",
+       "11/16 21:10",
+       "11/16 23:26"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction until its last step has a closed 2 h verdict (order 9), and measure the evidence for a further step at the value now in force. This applies most to min_shelf_hours, stock_value, surge_max and",
+      "evidence": [
+       "F276",
+       "F288",
+       "F298",
+       "F300",
+       "F304",
+       "F333",
+       "F347",
+       "F309",
+       "F313",
+       "F317",
+       "F346",
+       "F284",
+       "F292",
+       "F293",
+       "F302",
+       "F332",
+       "F338"
+      ],
+      "status": "unverified",
+      "trap": "min_shelf_hours went 312 -> 264 -> 240 -> 216 -> 204 -> 192 -> 180 -> 132 with a new step before any window closed (11/14 18:05, 11/15 02:20, 11/15 05:55, 11/15 08:55, 11/15 14:24, 11/16 11:37, 11/16 22:35). s",
+      "when": [
+       "11/14 18:05",
+       "11/15 02:20",
+       "11/15 05:55",
+       "11/15 08:55",
+       "11/15 14:24",
+       "11/16 11:37",
+       "11/16 22:35",
+       "11/15 16:52",
+       "11/15 19:39",
+       "11/15 21:53",
+       "11/16 21:43",
+       "11/14 23:36",
+       "11/15 03:43",
+       "11/15 03:59",
+       "11/15 11:55",
+       "11/16 11:20",
+       "11/16 15:36"
+      ]
+     },
+     {
+      "rule": "Check the supervisor's fixed-value orders before proposing a number: market_ask stays at 1.0 (order 15), window_depth stays at 2.0 or more (order 12), sku_depth stays at 3 or more (order 13), and order 14 lists the values to avoid (dear_dep",
+      "evidence": [
+       "F270",
+       "F271",
+       "F295",
+       "F296",
+       "F300",
+       "F303",
+       "F313"
+      ],
+      "status": "unverified",
+      "trap": "max_list 900000 -> 1200000 (11/14 15:02) and dear_depth 6 -> 7 (11/15 05:38) went to values order 14 lists as reverted for earlier negative closes; each was undone within a m",
+      "when": [
+       "11/14 15:02",
+       "11/14 15:03",
+       "11/15 05:38",
+       "11/15 05:39",
+       "11/15 08:55",
+       "11/15 13:34",
+       "11/15 19:39"
+      ]
+     },
+     {
+      "rule": "Do not read 'kept' on a code row as a board gain. Check shop points/h and shop revenue in the same row, and note that these rows are MIXED. Before building on a code change such as the own_floor / depth-cap work in restock_r3.py, check that",
+      "evidence": [
+       "F275",
+       "F287",
+       "F311",
+       "F339",
+       "F340"
+      ],
+      "status": "unverified",
+      "trap": "11/15 02:05 was kept with shop_revenue_h +38% but shop points/h -48%. 11/15 18:50 was kept with points/h -35%. 11/16 17:01 was kept with shop_revenue_h -40% and points/h -58%, and F",
+      "when": [
+       "11/14 17:50",
+       "11/15 02:05",
+       "11/15 18:50",
+       "11/16 17:01",
+       "11/16 18:41"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794861046.288409,
+    "lessons": [
+     {
+      "rule": "Treat every shop-number row 11/14 18:05-11/17 03:15 (11/14 18:05 to 11/17 03:15) as no verdict: each is MIXED with other changes in the same hours. Do not cite the raw margin beside a row as that number's effect, and do not use it to justify or block a s",
+      "evidence": [
+       "F276",
+       "F283",
+       "F324",
+       "F342",
+       "F350",
+       "F351",
+       "F354"
+      ],
+      "status": "unverified",
+      "trap": "Raw margins swing wildly under stacked changes: -65% (goods_frac 0.9 -> 0.95, 11/14 22:15), -41% (depth 5 -> 6, 11/16 02:47), +85% (window_depth 2.0 -> 2.3, 11/16 20:04), +146% (sto",
+      "when": [
+       "11/14 18:05",
+       "11/14 22:15",
+       "11/16 02:47",
+       "11/16 20:04",
+       "11/17 01:37",
+       "11/17 01:53",
+       "11/17 03:15"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction before its last step has a closed 2 h verdict (order 9), and take evidence for a further step at the value now in force. Read the current value first (order 5). This matters most for min_shel",
+      "evidence": [
+       "F276",
+       "F288",
+       "F298",
+       "F300",
+       "F304",
+       "F333",
+       "F347",
+       "F353",
+       "F309",
+       "F313",
+       "F317",
+       "F346",
+       "F284",
+       "F292",
+       "F302"
+      ],
+      "status": "unverified",
+      "trap": "min_shelf_hours went 312 -> 264 -> 240 -> 216 -> 204 -> 192 -> 180 -> 132 -> 84, each step before any window closed. stock_value went 140000000 -> 130000000 -> ",
+      "when": [
+       "11/14 18:05",
+       "11/15 02:20",
+       "11/15 05:55",
+       "11/15 08:55",
+       "11/15 14:24",
+       "11/16 11:37",
+       "11/16 22:35",
+       "11/17 02:58",
+       "11/15 16:52",
+       "11/15 19:39",
+       "11/15 21:53",
+       "11/16 21:43",
+       "11/14 23:36",
+       "11/15 03:43",
+       "11/15 11:55"
+      ]
+     },
+     {
+      "rule": "Do not reverse a number inside the same cycle or within a few hours, and do not oscillate it. A change and its undo leave both rows MIXED and teach nothing. Move the number only when there is a new measurement to act on.",
+      "evidence": [
+       "F295",
+       "F296",
+       "F315",
+       "F316",
+       "F348",
+       "F349",
+       "F350",
+       "F352",
+       "F354",
+       "F324",
+       "F325",
+       "F340",
+       "F343"
+      ],
+      "status": "unverified",
+      "trap": "dear_depth 6 -> 7 and 7 -> 6.0 fell a minute apart, and max_list 950000 -> 750000 and back fell in the same minute. stock_value went 100000000 -> 110000000 -> 1",
+      "when": [
+       "11/15 05:38",
+       "11/15 05:39",
+       "11/15 21:36",
+       "11/15 21:36",
+       "11/16 23:08",
+       "11/16 23:26",
+       "11/17 01:37",
+       "11/17 02:42",
+       "11/17 03:15",
+       "11/16 02:47",
+       "11/16 03:03",
+       "11/16 18:41",
+       "11/16 20:37"
+      ]
+     },
+     {
+      "rule": "Check the supervisor's fixed-value orders before proposing a number: market_ask stays at 1.0 (order 15), window_depth stays at 2.0 or more (order 12), sku_depth stays at 3 or more (order 13). Order 14 lists values that closed negative, incl",
+      "evidence": [
+       "F276",
+       "F295",
+       "F296",
+       "F300",
+       "F303",
+       "F313"
+      ],
+      "status": "unverified",
+      "trap": "dear_depth 6 -> 7 (11/15 05:38) went to a value order 14 lists and was undone within a minute. market_ask moved 1.05 -> 1.0 (11/14 18:05), 1.05 -> 1.0 (11/15 08:55), 1.0 -> 1.03 (11/04 22:15",
+      "when": [
+       "11/14 18:05",
+       "11/15 05:38",
+       "11/15 05:39",
+       "11/15 08:55",
+       "11/15 13:34",
+       "11/15 19:39"
+      ]
+     },
+     {
+      "rule": "Do not read 'kept' on a code row as a board gain. Check shop points/h and shop revenue in the same row, and note whether the row is MIXED. Before building on the own_floor / depth-cap work in restock_r3.py, check that its points/h held up. ",
+      "evidence": [
+       "F287",
+       "F311",
+       "F339",
+       "F355"
+      ],
+      "status": "unverified",
+      "trap": "11/15 02:05 was kept with shop_revenue_h +38% but shop points/h -48%. 11/15 18:50 was kept with points/h -35% and revenue -3%. 11/16 17:01 was kept with shop_revenue_h -40% and poin",
+      "when": [
+       "11/15 02:05",
+       "11/15 18:50",
+       "11/16 17:01",
+       "11/17 04:42"
+      ]
+     },
+     {
+      "rule": "A same-hours code A/B is a real verdict on its own metric, but not on board points. Treat 11/15 22:11 (a rule replacing the plan-mode Haiku call, buyer_secs_order +37%) as evidence of cheaper buyer time only. Check board_pts_h before building on i",
+      "evidence": [
+       "F319"
+      ],
+      "status": "unverified",
+      "trap": "Buyer secs per order is a part of the aim, not the aim (order 1). The row shows no board points, so reading it as a board gain repeats the margin-per-talk mista",
+      "when": [
+       "11/15 22:11"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794871897.910086,
+    "lessons": [
+     {
+      "rule": "Treat every shop-number row 11/14 19:28-11/17 04:41 (11/14 19:28 to 11/17 04:41) as no verdict. Each one is MIXED with other changes in the same hours. Do not cite the raw margin beside a row as that number's effect, and do not use it to justify or block",
+      "evidence": [
+       "F283",
+       "F324",
+       "F342",
+       "F350",
+       "F351",
+       "F357"
+      ],
+      "status": "unverified",
+      "trap": "Raw margin swings with the stack of changes, not with the number: -65% on goods_frac 0.9 -> 0.95 (11/14 22:15), -41% on depth 5 -> 6 (11/16 02:47), +85% on window_depth 2.0 -",
+      "when": [
+       "11/14 22:15",
+       "11/16 02:47",
+       "11/16 20:04",
+       "11/17 01:37",
+       "11/17 01:53",
+       "11/17 04:41"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction before its last step has a closed 2 h verdict (order 9), and take evidence for the next step at the value now in force. Check min_shelf_hours, stock_value and surge_max first.",
+      "evidence": [
+       "F279",
+       "F288",
+       "F298",
+       "F300",
+       "F304",
+       "F333",
+       "F347",
+       "F353",
+       "F309",
+       "F313",
+       "F317",
+       "F284",
+       "F292",
+       "F302"
+      ],
+      "status": "unverified",
+      "trap": "min_shelf_hours went 312 -> 264 -> 240 -> 216 -> 204 -> 192 -> 180 -> 132 -> 84, each step before any window closed. stock_value went 140000000 -> 130000000 -> ",
+      "when": [
+       "11/14 19:28",
+       "11/15 02:20",
+       "11/15 05:55",
+       "11/15 08:55",
+       "11/15 14:24",
+       "11/16 11:37",
+       "11/16 22:35",
+       "11/17 02:58",
+       "11/15 16:52",
+       "11/15 19:39",
+       "11/15 21:53",
+       "11/14 23:36",
+       "11/15 03:43",
+       "11/15 11:55"
+      ]
+     },
+     {
+      "rule": "Check the supervisor's fixed-value orders before proposing a number. market_ask stays at 1.0 (order 15), window_depth stays at 2.0 or more (order 12), sku_depth stays at 3 or more (order 13). Order 14 lists values that closed negative (dear",
+      "evidence": [
+       "F295",
+       "F296",
+       "F300",
+       "F303",
+       "F313",
+       "F318"
+      ],
+      "status": "unverified",
+      "trap": "dear_depth 6 -> 7 (11/15 05:38) went to a value order 14 lists as negative and was undone within a minute. market_ask moved 1.05 -> 1.0 (11/15 13:34) and 1.0 -> 1.03 (11/15 19:39) b",
+      "when": [
+       "11/15 05:38",
+       "11/15 05:39",
+       "11/15 08:55",
+       "11/15 13:34",
+       "11/15 19:39",
+       "11/15 22:09"
+      ]
+     },
+     {
+      "rule": "Do not read 'kept' on a code row as a board gain. Check shop points/h and shop revenue in the same row and whether the row is MIXED. Before building more on the own_floor / depth-cap work in restock_r3.py, get a clean read of its points/h.",
+      "evidence": [
+       "F287",
+       "F311",
+       "F339",
+       "F358"
+      ],
+      "status": "unverified",
+      "trap": "All four depth-cap and own_floor code changes were kept, and all four were MIXED with other changes in the same hours. 11/15 02:05 had revenue +38% but points/h -48%. ",
+      "when": [
+       "11/15 02:05",
+       "11/15 18:50",
+       "11/16 17:01",
+       "11/17 04:42"
+      ]
+     },
+     {
+      "rule": "Treat the buyer plan-mode rule (11/15 22:11) as evidence of cheaper buyer time only. It won a same-hours A/B on buyer_secs_order, not on board points. Check board_pts_h before building on it.",
+      "evidence": [
+       "F319"
+      ],
+      "status": "unverified",
+      "trap": "Buyer secs per order is a part of the aim, not the aim (order 1). The row shows no board points, so reading +37% as a board gain repeats the margin-per-talk mis",
+      "when": [
+       "11/15 22:11"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794883244.6089659,
+    "lessons": [
+     {
+      "rule": "Treat every shop-number row from 11/14 19:28 to 11/17 04:41 as no verdict. Each is MIXED with other changes in the same hours, so the raw margin beside it is not that number's effect. Do not cite it to justify or block a move. When you log ",
+      "evidence": [
+       "F283",
+       "F324",
+       "F342",
+       "F350",
+       "F351",
+       "F357"
+      ],
+      "status": "unverified",
+      "trap": "Raw margin followed the pile of changes, not the number: -65% on goods_frac 0.9 -> 0.95 (11/14 22:15), -41% on depth 5 -> 6 (11/16 02:47), +85% on window_depth 2.0 -> 2.3 (11/04 22:15",
+      "when": [
+       "11/14 22:15",
+       "11/16 02:47",
+       "11/16 20:04",
+       "11/17 01:37",
+       "11/17 01:53",
+       "11/17 04:41"
+      ]
+     },
+     {
+      "rule": "A 'kept' on a code row is not a board gain. Read shop points/h and shop revenue in the same row and whether the row is MIXED. Before building more on the own_floor / depth-cap / full-bar work in restock_r3.py, get a clean read of points/h. ",
+      "evidence": [
+       "F287",
+       "F311",
+       "F339",
+       "F358",
+       "F360"
+      ],
+      "status": "unverified",
+      "trap": "All four depth-cap and own_floor changes were kept, and all four were MIXED with other changes in the same hours. 11/15 02:05 had revenue +38% but shop points/h -48%. ",
+      "when": [
+       "11/15 02:05",
+       "11/15 18:50",
+       "11/16 17:01",
+       "11/17 04:42",
+       "11/17 11:09"
+      ]
+     },
+     {
+      "rule": "Treat the buyer plan-mode rule (11/15 22:11) as evidence of cheaper buyer time only. It won a same-hours A/B on buyer_secs_order, not on board points. Check board_pts_h before building on it.",
+      "evidence": [
+       "F319"
+      ],
+      "status": "unverified",
+      "trap": "Buyer secs per order is a part of the aim, not the aim (order 1). The row shows +37% on a part with 120 and 132 orders and no board points. Reading it as a boar",
+      "when": [
+       "11/15 22:11"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794894224.124822,
+    "lessons": [
+     {
+      "rule": "Treat every shop-number row from 11/14 23:36 to 11/17 10:52 as no verdict. Each is MIXED with other changes in the same hours, so the raw margin beside it is not that number's effect. Do not cite it to justify or block a move. When you change a number, l",
+      "evidence": [
+       "F284",
+       "F324",
+       "F342",
+       "F350",
+       "F351",
+       "F355",
+       "F357",
+       "F359"
+      ],
+      "status": "unverified",
+      "trap": "Raw margin followed the pile of changes, not the number: +146% on both 11/17 01:37 (stock_value) and 11/17 01:53 (food_first), then -37% on 11/17 03:51 (stock_value), -34% on 11/17 10:52. ",
+      "when": [
+       "11/14 23:36",
+       "11/16 02:47",
+       "11/16 20:04",
+       "11/17 01:37",
+       "11/17 01:53",
+       "11/17 03:51",
+       "11/17 04:41",
+       "11/17 10:52"
+      ]
+     },
+     {
+      "rule": "A 'kept' on a code row is not a board gain. Read shop points/h and shop revenue in the same row. Do not extend the own_floor / depth-cap / full-bar work in restock_r3.py (11/15 02:05, 11/15 18:50, 11/16 17:01, 11/17 04:42, 11/17 11:09) until a clean read of points/h exists. ",
+      "evidence": [
+       "F287",
+       "F311",
+       "F339",
+       "F358",
+       "F362"
+      ],
+      "status": "unverified",
+      "trap": "All five were 'kept' and all five were MIXED. Shop points/h was negative every time (-48%, -35%, -58%, -2%, -42%), and revenue missed its +3% expectation in fou",
+      "when": [
+       "11/15 02:05",
+       "11/15 18:50",
+       "11/16 17:01",
+       "11/17 04:42",
+       "11/17 11:09"
+      ]
+     },
+     {
+      "rule": "Treat the buyer plan-mode rule (11/15 22:11) as evidence of cheaper buyer time only. It won a same-hours A/B on buyer_secs_order. Check board_pts_h before building on it.",
+      "evidence": [
+       "F319"
+      ],
+      "status": "unverified",
+      "trap": "Buyer secs per order is a part of the aim, not the aim (order 1). The +37% was measured on 120 and 132 orders with no board points. Reading it as a board win re",
+      "when": [
+       "11/15 22:11"
+      ]
+     },
+     {
+      "rule": "Check the supervisor's pinned values before proposing a number. market_ask stays at 1.0 (order 15), window_depth stays at 2.0 or more (order 12), sku_depth stays at 3 or more (order 13), and order 14 lists values that closed negative. A ret",
+      "evidence": [
+       "F300",
+       "F303",
+       "F313",
+       "F314",
+       "F329",
+       "F342"
+      ],
+      "status": "unverified",
+      "trap": "market_ask was moved to 1.03 in 11/15 19:39 (11/15 19:39), after the 11/15 18:32 order that pinned it at 1.0. That change was MIXED, so it left no verdict, and the pin",
+      "when": [
+       "11/15 08:55",
+       "11/15 13:34",
+       "11/15 19:39",
+       "11/15 19:55",
+       "11/16 08:49",
+       "11/16 20:04"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794905141.2182899,
+    "lessons": [
+     {
+      "rule": "Treat every shop-number row from 11/15 03:09 to 11/17 15:34 as no verdict. Each is MIXED with other changes in the same hours, so the raw margin beside it is not that number's effect. Do not cite one of these rows to justify or block a move",
+      "evidence": [
+       "F324",
+       "F342",
+       "F350",
+       "F351",
+       "F355",
+       "F359",
+       "F369"
+      ],
+      "status": "unverified",
+      "trap": "Raw margin followed the pile of changes, not the number. It read +146% on both 11/17 01:37 (stock_value) and 11/17 01:53 (food_first), then -37% on 11/17 03:51 ",
+      "when": [
+       "11/16 02:47",
+       "11/16 20:04",
+       "11/17 01:37",
+       "11/17 01:53",
+       "11/17 03:51",
+       "11/17 10:52",
+       "11/17 15:34"
+      ]
+     },
+     {
+      "rule": "Do not step min_shelf_hours down again until its value now (36) has a closed 2 h verdict and a read of board points per hour. Read the value in force first (order 5), and only then decide on a cut.",
+      "evidence": [
+       "F347",
+       "F353",
+       "F368"
+      ],
+      "status": "unverified",
+      "trap": "The number went 180 -> 132 -> 84 -> 36 in one direction over about 17 hours. Each step was MIXED (raw margin -18%, +6%, -38%), so none carries evidence, and ord",
+      "when": [
+       "11/16 22:35",
+       "11/17 02:58",
+       "11/17 15:18"
+      ]
+     },
+     {
+      "rule": "A 'kept' on a code row is not a board gain. Read shop points/h and shop revenue in the same row. Do not extend the own_floor / depth-cap / full-bar work in restock_r3.py until a clean read of points/h exists.",
+      "evidence": [
+       "F311",
+       "F339",
+       "F358",
+       "F362"
+      ],
+      "status": "unverified",
+      "trap": "All four were 'kept' and all four were MIXED. Shop points/h was negative every time (-35%, -58%, -2%, -42%). Measured revenue missed its +3% expectation every t",
+      "when": [
+       "11/15 18:50",
+       "11/16 17:01",
+       "11/17 04:42",
+       "11/17 11:09"
+      ]
+     },
+     {
+      "rule": "Treat the buyer plan-mode rule (11/15 22:11) as evidence of cheaper buyer time only. Check board points per hour before building on it.",
+      "evidence": [
+       "F319"
+      ],
+      "status": "unverified",
+      "trap": "It won a same-hours A/B on buyer_secs_order (+37% measured against +25% expected) on 120 and 132 orders. That is a part of the aim, not the aim (order 1), and i",
+      "when": [
+       "11/15 22:11"
+      ]
+     },
+     {
+      "rule": "Before proposing a number, check the supervisor's pins and the negative-value list. market_ask stays at 1.0 (order 15), window_depth stays at 2.0 or more (order 12), sku_depth stays at 3 or more (order 13), and order 14 lists values whose o",
+      "evidence": [
+       "F295",
+       "F300",
+       "F313"
+      ],
+      "status": "contradicted",
+      "trap": "market_ask was moved to 1.03 at 11/15 19:39, after the 11/15 18:32 pin at 1.0, and dear_depth went 6 -> 7 although 7 was a closed negative. Both were MIXED, so ",
+      "when": [
+       "11/15 05:38",
+       "11/15 08:55",
+       "11/15 19:39"
+      ]
+     }
+    ]
+   }
+  ],
+  "failed_check": {
+   "2": "Blanket hold on stock_value, max_list, food_first and depth contradicts play mode and order 9, where the opposite direction is free. The cited rows are all MIXED, so they are no evidence for it."
+  }
+ },
+ "sales": {
+  "t": 1794924459.659722,
+  "facts": 231,
+  "lessons": [
+   {
+    "rule": "Judge a number only on its own closed, non-MIXED window, measured on board points per hour. The only VERIFIED number row in this record is 11/17 07:44 (clear_hours 10 -> 12). Every other row (11/12 21:12-11/16 20:54, 11/17 11:42-11/17 12:48) is MIXED or a supervisor 'no verd",
+    "evidence": [
+     "F227",
+     "F165",
+     "F170",
+     "F228",
+     "F229",
+     "F231"
+    ],
+    "status": "verified",
+    "trap": "Raw margin swings such as +163% (11/13 09:37), +290% (11/13 18:09), -72% (11/13 12:22) and -37% (11/17 11:42) sat beside other changes in the same hours. Reading them as results would cred",
+    "when": [
+     "11/17 07:44",
+     "11/13 09:37",
+     "11/13 18:09",
+     "11/17 11:42",
+     "11/17 11:43",
+     "11/17 12:48"
+    ]
+   },
+   {
+    "rule": "clear_hours 10 -> 12 closed VERIFIED as no difference beyond noise (365/7040 -> 372/6848 sales). Do not treat clear_hours as a lever for board points. Look for gains in the rivals and edges tables, where a small move passes many rivals.",
+    "evidence": [
+     "F227"
+    ],
+    "status": "verified",
+    "trap": "The row shows value share -26% and raw margin -26%, which can be misread as a loss, or as proof that 10 is better. The verdict is noise, so a return to 10 gains",
+    "when": [
+     "11/17 07:44"
+    ]
+   }
+  ],
+  "history": [
+   {
+    "t": 1794812920.143977,
+    "lessons": [
+     {
+      "rule": "Send one net value per number per cycle. If you change your mind inside the cycle, send only the final value, never a change and its undo minutes apart.",
+      "evidence": [
+       "F139",
+       "F140",
+       "F149",
+       "F150",
+       "F154",
+       "F155",
+       "F171",
+       "F172",
+       "F177",
+       "F178",
+       "F182",
+       "F183",
+       "F212",
+       "F213",
+       "F216",
+       "F217"
+      ],
+      "status": "unverified",
+      "trap": "Change-and-undo pairs went out within a minute or two: floor_frac 0.66 -> 0.68 and back (11/12 14:51), floor_frac_food 0.56 -> 0.52 (11/12 20:23), step 0.6 -> 0",
+      "when": [
+       "11/12 14:51",
+       "11/12 14:51",
+       "11/12 20:23",
+       "11/12 20:23",
+       "11/12 22:18",
+       "11/12 22:19",
+       "11/13 20:54",
+       "11/13 20:55",
+       "11/14 10:13",
+       "11/14 10:13",
+       "11/14 11:18",
+       "11/14 11:18",
+       "11/16 10:13",
+       "11/16 10:13",
+       "11/16 13:34",
+       "11/16 13:34"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction until its last step has a closed 2 h verdict (order 9). Take the evidence for the next step from the value now in force, not from an older value.",
+      "evidence": [
+       "F152",
+       "F159",
+       "F162",
+       "F176",
+       "F190",
+       "F203",
+       "F188",
+       "F196",
+       "F200",
+       "F209",
+       "F199",
+       "F201"
+      ],
+      "status": "unverified",
+      "trap": "Chains went out with no verdict between steps: clear_hours 14 -> 12 -> 10 -> 8, ask_frac_food 0.8 -> 0.78 -> 0.75 -> 0.7, floor_frac_food 0.5 -> 0.48 -> 0.46 ->",
+      "when": [
+       "11/12 21:12",
+       "11/12 23:58",
+       "11/13 02:27",
+       "11/14 09:24",
+       "11/15 07:34",
+       "11/16 03:03",
+       "11/15 03:27",
+       "11/15 17:58",
+       "11/15 22:09",
+       "11/16 09:39",
+       "11/15 20:46",
+       "11/15 23:32"
+      ]
+     },
+     {
+      "rule": "Before proposing any number, check order 14's list of values whose own verdict closed negative. A return to one needs a new measurement taken after it. 'The opposite direction is free' does not cover such a return.",
+      "evidence": [
+       "F139",
+       "F146",
+       "F149",
+       "F154",
+       "F157",
+       "F171",
+       "F177"
+      ],
+      "status": "unverified",
+      "trap": "Returns went out as 'a different or opposite number': floor_frac back to 0.68 (11/12 14:51), clear_hours back to 14 (11/12 17:54), floor_frac_food up to 0.56 an",
+      "when": [
+       "11/12 14:51",
+       "11/12 17:54",
+       "11/12 20:23",
+       "11/12 22:18",
+       "11/12 23:41",
+       "11/13 20:54",
+       "11/14 10:13"
+      ]
+     },
+     {
+      "rule": "Leave market_ask at 1.0 for the rest of the round (order 15). Only a closed A/B can move it, never a play-mode step.",
+      "evidence": [
+       "F186",
+       "F187",
+       "F189",
+       "F191",
+       "F192",
+       "F193",
+       "F197",
+       "F198"
+      ],
+      "status": "unverified",
+      "trap": "market_ask flipped between 1.0, 1.03, 1.05 and 1.08 eight times from 11/14 18:22 to 11/15 18:32, sometimes reverted within minutes (11/15 18:14, then 11/15 18:3",
+      "when": [
+       "11/14 18:22",
+       "11/14 19:12",
+       "11/15 04:33",
+       "11/15 08:39",
+       "11/15 08:55",
+       "11/15 12:11",
+       "11/15 18:14",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not cite a supervisor row (a code line marked [supervisor]) as proof that a change worked or failed. It is the supervisor's own revert or move and carries no verdict. Judge a number only on its own closed window.",
+      "evidence": [
+       "F141",
+       "F151",
+       "F156",
+       "F169",
+       "F211"
+      ],
+      "status": "unverified",
+      "trap": "These rows (floor_frac 0.68 -> 0.66, floor_frac_food 0.56 -> 0.52 and 0.57 -> 0.52, ask_frac_food 0.83 -> 0.8, floor_frac 0.62 -> 0.61) show only that a step wa",
+      "when": [
+       "11/12 14:51",
+       "11/12 20:23",
+       "11/12 22:19",
+       "11/13 14:35",
+       "11/16 10:04"
+      ]
+     },
+     {
+      "rule": "Do not read the raw margin beside a row as the effect of the number moved. Raw margin follows the hour and the other changes. Judge a step only on its closed board_pts_h verdict, never on the raw margin.",
+      "evidence": [
+       "F165",
+       "F170",
+       "F185",
+       "F209",
+       "F210",
+       "F212",
+       "F213",
+       "F214"
+      ],
+      "status": "unverified",
+      "trap": "Raw margin swings reached +163% (11/13 09:37), +290% (11/13 18:09) and +212% (11/14 16:09). On 11/16 09:39-10:29 every row sat between -44% and -53% whichever n",
+      "when": [
+       "11/13 09:37",
+       "11/13 18:09",
+       "11/14 16:09",
+       "11/16 09:39",
+       "11/16 10:04",
+       "11/16 10:13",
+       "11/16 10:13",
+       "11/16 10:29"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794823986.911393,
+    "lessons": [
+     {
+      "rule": "Send one net value per number per cycle. If you change your mind inside the cycle, send only the final value, never a change and its undo minutes apart.",
+      "evidence": [
+       "F149",
+       "F150",
+       "F154",
+       "F155",
+       "F171",
+       "F172",
+       "F177",
+       "F178",
+       "F182",
+       "F183",
+       "F212",
+       "F213",
+       "F216",
+       "F217",
+       "F219",
+       "F220",
+       "F221"
+      ],
+      "status": "unverified",
+      "trap": "Change-and-undo pairs went out within a minute or two: floor_frac_food 0.56 -> 0.52 (11/12 20:23), fresh_premium 0.18 -> 0.15 then 0.15 -> 0.18 (11/14 10:13), s",
+      "when": [
+       "11/12 20:23",
+       "11/12 20:23",
+       "11/12 22:18",
+       "11/12 22:19",
+       "11/13 20:54",
+       "11/13 20:55",
+       "11/14 10:13",
+       "11/14 10:13",
+       "11/14 11:18",
+       "11/14 11:18",
+       "11/16 10:13",
+       "11/16 10:13",
+       "11/16 13:34",
+       "11/16 13:34",
+       "11/16 15:16",
+       "11/16 15:32",
+       "11/16 15:33"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction until its last step has a closed 2 h verdict (order 9). Take the evidence for the next step from the value now in force, not from an older value.",
+      "evidence": [
+       "F152",
+       "F159",
+       "F162",
+       "F176",
+       "F190",
+       "F203",
+       "F188",
+       "F196",
+       "F200",
+       "F209",
+       "F199",
+       "F201"
+      ],
+      "status": "unverified",
+      "trap": "Chains went out with no verdict between steps: clear_hours 14 -> 12 -> 10 -> 8, ask_frac_food 0.78 -> 0.75 -> 0.7, floor_frac_food 0.5 -> 0.48 -> 0.46 -> 0.45, ",
+      "when": [
+       "11/12 21:12",
+       "11/12 23:58",
+       "11/13 02:27",
+       "11/14 09:24",
+       "11/15 07:34",
+       "11/16 03:03",
+       "11/15 03:27",
+       "11/15 17:58",
+       "11/15 22:09",
+       "11/16 09:39",
+       "11/15 20:46",
+       "11/15 23:32"
+      ]
+     },
+     {
+      "rule": "Before proposing a number, check order 14's list of values whose own verdict closed negative. A return to one needs a new measurement taken after it. 'The opposite direction is free' does not cover such a return.",
+      "evidence": [
+       "F146",
+       "F149",
+       "F154",
+       "F157",
+       "F171",
+       "F177"
+      ],
+      "status": "unverified",
+      "trap": "Returns went out as 'a different or opposite number': clear_hours back to 14 (11/12 17:54), floor_frac_food up to 0.57 (11/12 22:18), fresh_premium down to 0.15",
+      "when": [
+       "11/12 17:54",
+       "11/12 20:23",
+       "11/12 22:18",
+       "11/12 23:41",
+       "11/13 20:54",
+       "11/14 10:13"
+      ]
+     },
+     {
+      "rule": "Do not cite a row marked [supervisor] as proof that a change worked or failed. It is the supervisor's own revert or move and carries no verdict. Judge a number only on its own closed window.",
+      "evidence": [
+       "F151",
+       "F156",
+       "F169",
+       "F211"
+      ],
+      "status": "unverified",
+      "trap": "These rows (floor_frac_food 0.56 -> 0.52 and 0.57 -> 0.52, ask_frac_food 0.83 -> 0.8, floor_frac 0.62 -> 0.61) are marked 'no verdict'. Reading a revert as proo",
+      "when": [
+       "11/12 20:23",
+       "11/12 22:19",
+       "11/13 14:35",
+       "11/16 10:04"
+      ]
+     },
+     {
+      "rule": "Do not read the raw margin beside a row as the effect of the number moved. Judge a step only on its closed board_pts_h verdict, never on the raw margin.",
+      "evidence": [
+       "F165",
+       "F170",
+       "F185",
+       "F209",
+       "F210",
+       "F212",
+       "F213",
+       "F214"
+      ],
+      "status": "unverified",
+      "trap": "Raw margin swung +163% (11/13 09:37), +290% (11/13 18:09) and +212% (11/14 16:09) on single-number steps. On 11/16 09:39-10:29 every row sat between -44% and -5",
+      "when": [
+       "11/13 09:37",
+       "11/13 18:09",
+       "11/14 16:09",
+       "11/16 09:39",
+       "11/16 10:04",
+       "11/16 10:13",
+       "11/16 10:13",
+       "11/16 10:29"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794834962.023961,
+    "lessons": [
+     {
+      "rule": "Send one net value per number per cycle. If you change your mind inside the cycle, send only the final value, never a change and its undo minutes apart. Flip-flopping market_ask, c_first and fresh_premium is the clearest case.",
+      "evidence": [
+       "F149",
+       "F150",
+       "F154",
+       "F155",
+       "F171",
+       "F172",
+       "F177",
+       "F178",
+       "F182",
+       "F183",
+       "F186",
+       "F187",
+       "F197",
+       "F198",
+       "F212",
+       "F213",
+       "F216",
+       "F217",
+       "F219",
+       "F220",
+       "F221"
+      ],
+      "status": "unverified",
+      "trap": "Change-and-undo pairs went out within a minute or two: floor_frac_food 0.56 -> 0.52 (11/12 20:23), fresh_premium 0.18 -> 0.15 then 0.15 -> 0.18 (11/14 10:13), s",
+      "when": [
+       "11/12 20:23",
+       "11/12 20:23",
+       "11/12 22:18",
+       "11/12 22:19",
+       "11/13 20:54",
+       "11/13 20:55",
+       "11/14 10:13",
+       "11/14 10:13",
+       "11/14 11:18",
+       "11/14 11:18",
+       "11/14 18:22",
+       "11/14 19:12",
+       "11/15 18:14",
+       "11/15 18:32",
+       "11/16 10:13",
+       "11/16 10:13",
+       "11/16 13:34",
+       "11/16 13:34",
+       "11/16 15:16",
+       "11/16 15:32",
+       "11/16 15:33"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction until its last step has a closed 2 h verdict (order 9). Take the evidence for the next step from the value now in force, not from an older value.",
+      "evidence": [
+       "F152",
+       "F159",
+       "F162",
+       "F176",
+       "F190",
+       "F203",
+       "F188",
+       "F196",
+       "F200",
+       "F209",
+       "F199",
+       "F201"
+      ],
+      "status": "unverified",
+      "trap": "Chains went out with no verdict between steps: clear_hours 14 -> 12 -> 10 -> 8, ask_frac_food 0.78 -> 0.75 -> 0.7, floor_frac_food 0.5 -> 0.48 -> 0.46 -> 0.45, ",
+      "when": [
+       "11/12 21:12",
+       "11/12 23:58",
+       "11/13 02:27",
+       "11/14 09:24",
+       "11/15 07:34",
+       "11/16 03:03",
+       "11/15 03:27",
+       "11/15 17:58",
+       "11/15 22:09",
+       "11/16 09:39",
+       "11/15 20:46",
+       "11/15 23:32"
+      ]
+     },
+     {
+      "rule": "Before proposing a number, check order 14's list of values whose own verdict closed negative. A return to one needs a new measurement taken after it. 'The opposite direction is free' does not cover such a return.",
+      "evidence": [
+       "F146",
+       "F149",
+       "F154",
+       "F157",
+       "F171",
+       "F177"
+      ],
+      "status": "unverified",
+      "trap": "Returns went out as 'a different or opposite number': clear_hours back to 14 (11/12 17:54), floor_frac_food up to 0.56 and 0.57 (11/12), fresh_premium down to 0",
+      "when": [
+       "11/12 17:54",
+       "11/12 20:23",
+       "11/12 22:18",
+       "11/12 23:41",
+       "11/13 20:54",
+       "11/14 10:13"
+      ]
+     },
+     {
+      "rule": "Do not cite a row marked [supervisor] as proof that a change worked or failed. It is the supervisor's own revert or move and carries no verdict. Judge a number only on its own closed window.",
+      "evidence": [
+       "F151",
+       "F156",
+       "F169",
+       "F211",
+       "F223"
+      ],
+      "status": "unverified",
+      "trap": "Rows such as floor_frac_food 0.56 -> 0.52, ask_frac_food 0.83 -> 0.8 and floor_frac 0.62 -> 0.61 are marked 'no verdict'. Reading a revert as proof that the ear",
+      "when": [
+       "11/12 20:23",
+       "11/12 22:19",
+       "11/13 14:35",
+       "11/16 10:04",
+       "11/16 20:54"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794845967.012319,
+    "lessons": [
+     {
+      "rule": "Send one net value per number per cycle. If you change your mind inside the cycle, send only the final value, never a change and its undo minutes apart.",
+      "evidence": [
+       "F149",
+       "F150",
+       "F177",
+       "F178",
+       "F182",
+       "F183",
+       "F186",
+       "F187",
+       "F197",
+       "F198",
+       "F212",
+       "F213",
+       "F219",
+       "F220",
+       "F221"
+      ],
+      "status": "unverified",
+      "trap": "Change-and-undo pairs went out within minutes: fresh_premium 0.18 -> 0.15 and back at 11/14 10:13, step 0.6 -> 0.5 and back at 11/16 10:13, c_first 1 -> 0.0, th",
+      "when": [
+       "11/12 20:23",
+       "11/12 20:23",
+       "11/14 10:13",
+       "11/14 10:13",
+       "11/14 11:18",
+       "11/14 11:18",
+       "11/14 18:22",
+       "11/14 19:12",
+       "11/15 18:14",
+       "11/15 18:32",
+       "11/16 10:13",
+       "11/16 10:13",
+       "11/16 15:16",
+       "11/16 15:32",
+       "11/16 15:33"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction until its last step has a closed 2 h verdict (order 9). Take the evidence for the next step from the value now in force, not from an older value.",
+      "evidence": [
+       "F152",
+       "F159",
+       "F162",
+       "F176",
+       "F190",
+       "F203",
+       "F188",
+       "F196",
+       "F200",
+       "F209",
+       "F199",
+       "F201"
+      ],
+      "status": "unverified",
+      "trap": "Chains went out with no verdict between steps: clear_hours 14 -> 12 -> 10 -> 8, ask_frac_food 0.8 -> 0.78 -> 0.75 -> 0.7, floor_frac_food 0.52 -> 0.5 -> 0.48 ->",
+      "when": [
+       "11/12 21:12",
+       "11/12 23:58",
+       "11/13 02:27",
+       "11/14 09:24",
+       "11/15 07:34",
+       "11/16 03:03",
+       "11/15 03:27",
+       "11/15 17:58",
+       "11/15 22:09",
+       "11/16 09:39",
+       "11/15 20:46",
+       "11/15 23:32"
+      ]
+     },
+     {
+      "rule": "Before proposing a number, check order 14's list of values whose own verdict closed negative. A return to one needs a new measurement taken after it. 'The opposite direction is free' does not cover such a return.",
+      "evidence": [
+       "F149",
+       "F154",
+       "F157",
+       "F171",
+       "F177"
+      ],
+      "status": "unverified",
+      "trap": "Returns went out as 'a different or opposite number': floor_frac_food up to 0.56 and 0.57, dear_depth back to 7, fresh_premium back down to 0.15 (11/13 20:54, 1",
+      "when": [
+       "11/12 20:23",
+       "11/12 22:18",
+       "11/12 23:41",
+       "11/13 20:54",
+       "11/14 10:13"
+      ]
+     },
+     {
+      "rule": "Keep market_ask at 1.0 (order 15). Do not use a play-mode step on it. Only a closed A/B can move it.",
+      "evidence": [
+       "F186",
+       "F187",
+       "F189",
+       "F191",
+       "F192",
+       "F193",
+       "F197",
+       "F198"
+      ],
+      "status": "unverified",
+      "trap": "market_ask moved 1.0 <-> 1.03 / 1.05 / 1.08 between 11/14 18:22 and 11/15 18:32, often back within an hour. Each move shared its hours with other changes (raw m",
+      "when": [
+       "11/14 18:22",
+       "11/14 19:12",
+       "11/15 04:33",
+       "11/15 08:39",
+       "11/15 08:55",
+       "11/15 12:11",
+       "11/15 18:14",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not cite a row marked [supervisor] as proof that a change worked or failed. It is the supervisor's own revert or move and carries 'no verdict'. Judge a number only on its own closed window.",
+      "evidence": [
+       "F151",
+       "F156",
+       "F169",
+       "F211",
+       "F226"
+      ],
+      "status": "unverified",
+      "trap": "Rows such as floor_frac_food 0.56 -> 0.52, ask_frac_food 0.83 -> 0.8 and ask_frac_food 0.72 -> 0.7 say 'no verdict'. Reading a revert as proof that the earlier ",
+      "when": [
+       "11/12 20:23",
+       "11/12 22:19",
+       "11/13 14:35",
+       "11/16 10:04",
+       "11/16 20:54"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794857008.589407,
+    "lessons": [
+     {
+      "rule": "Send one net value per number per cycle. If you change your mind inside the cycle, send only the final value, not a change and its undo minutes apart. Each pair leaves two rows that share their hours with each other, so neither can be judge",
+      "evidence": [
+       "F177",
+       "F178",
+       "F182",
+       "F183",
+       "F186",
+       "F187",
+       "F197",
+       "F198",
+       "F212",
+       "F213",
+       "F219",
+       "F220",
+       "F221"
+      ],
+      "status": "unverified",
+      "trap": "fresh_premium 0.18 -> 0.15 and back at 11/14 10:13, step 0.6 -> 0.5 and back at 11/16 10:13, and c_first 1 -> 0.0 -> 1 -> 0.0 between 11/16 15:16 and 15:33 all ",
+      "when": [
+       "11/14 10:13",
+       "11/14 10:13",
+       "11/14 11:18",
+       "11/14 11:18",
+       "11/14 18:22",
+       "11/14 19:12",
+       "11/15 18:14",
+       "11/15 18:32",
+       "11/16 10:13",
+       "11/16 10:13",
+       "11/16 15:16",
+       "11/16 15:32",
+       "11/16 15:33"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction until its last step has a closed 2 h verdict (order 9), and take the evidence for the next step from the value now in force. Every chained step so far was judged MIXED, so a chain leaves no v",
+      "evidence": [
+       "F152",
+       "F159",
+       "F162",
+       "F190",
+       "F203",
+       "F188",
+       "F196",
+       "F200",
+       "F209",
+       "F199",
+       "F201"
+      ],
+      "status": "unverified",
+      "trap": "Chains went out with no verdict between steps: clear_hours 14 -> 12 -> 10 -> 8, ask_frac_food 0.78 -> 0.75 -> 0.7, floor_frac_food 0.5 -> 0.48 -> 0.46 -> 0.45, ",
+      "when": [
+       "11/12 21:12",
+       "11/12 23:58",
+       "11/13 02:27",
+       "11/15 07:34",
+       "11/16 03:03",
+       "11/15 03:27",
+       "11/15 17:58",
+       "11/15 22:09",
+       "11/16 09:39",
+       "11/15 20:46",
+       "11/15 23:32"
+      ]
+     },
+     {
+      "rule": "Before proposing a number, check order 14's list of values whose own verdict closed negative. 'The opposite direction is free' does not cover a return to one of them; a return needs a new measurement taken after it.",
+      "evidence": [
+       "F154",
+       "F157",
+       "F171",
+       "F177"
+      ],
+      "status": "unverified",
+      "trap": "Returns went out as 'a different or opposite number': floor_frac_food back up to 0.57, dear_depth back to 7, fresh_premium back down to 0.15. The supervisor rev",
+      "when": [
+       "11/12 22:18",
+       "11/12 23:41",
+       "11/13 20:54",
+       "11/14 10:13"
+      ]
+     },
+     {
+      "rule": "A number that moves back and forth never gets a clean verdict, so for market_ask follow order 15 and move it only through a closed A/B. Do not take a play-mode step on it.",
+      "evidence": [
+       "F186",
+       "F187",
+       "F189",
+       "F191",
+       "F192",
+       "F193",
+       "F197",
+       "F198"
+      ],
+      "status": "unverified",
+      "trap": "market_ask moved 1.0 <-> 1.03 / 1.05 / 1.08 between 11/14 18:22 and 11/15 18:32, each move sharing its hours with other changes (all MIXED). The record therefor",
+      "when": [
+       "11/14 18:22",
+       "11/14 19:12",
+       "11/15 04:33",
+       "11/15 08:39",
+       "11/15 08:55",
+       "11/15 12:11",
+       "11/15 18:14",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not cite a row marked [supervisor] or a MIXED row's raw margin as proof that a change worked or failed. Judge a number only on its own closed, non-MIXED window; until one exists, treat it as untested.",
+      "evidence": [
+       "F151",
+       "F156",
+       "F169",
+       "F211",
+       "F226",
+       "F165",
+       "F170"
+      ],
+      "status": "unverified",
+      "trap": "Supervisor reverts such as floor_frac_food 0.56 -> 0.52 and ask_frac_food 0.72 -> 0.7 say 'no verdict', and a raw margin like +290% (11/13 18:09) or +163% (11/13 09:37) sat b",
+      "when": [
+       "11/12 20:23",
+       "11/12 22:19",
+       "11/13 14:35",
+       "11/16 10:04",
+       "11/16 20:54",
+       "11/13 09:37",
+       "11/13 18:09"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794867957.430576,
+    "lessons": [
+     {
+      "rule": "Send one net value per number per cycle. If you change your mind inside the cycle, send only the final value, not a change and its undo minutes apart. Each such pair leaves two rows that share their hours with each other, so neither can be ",
+      "evidence": [
+       "F177",
+       "F178",
+       "F182",
+       "F183",
+       "F186",
+       "F187",
+       "F197",
+       "F198",
+       "F212",
+       "F213",
+       "F219",
+       "F220",
+       "F221",
+       "F224",
+       "F225"
+      ],
+      "status": "unverified",
+      "trap": "fresh_premium 0.18 -> 0.15 and back at 11/14 10:13, step 0.6 -> 0.5 and back at 11/16 10:13, and c_first 1 -> 0.0 -> 1 -> 0.0 between 11/16 15:16 and 15:33 all ",
+      "when": [
+       "11/14 10:13",
+       "11/14 10:13",
+       "11/14 11:18",
+       "11/14 11:18",
+       "11/14 18:22",
+       "11/14 19:12",
+       "11/15 18:14",
+       "11/15 18:32",
+       "11/16 10:13",
+       "11/16 10:13",
+       "11/16 15:16",
+       "11/16 15:32",
+       "11/16 15:33",
+       "11/16 20:54",
+       "11/16 20:54"
+      ]
+     },
+     {
+      "rule": "Do not step a number again in the same direction until its last step has a closed 2 h verdict (order 9). Take the evidence for the next step from the value now in force, not from an older value.",
+      "evidence": [
+       "F152",
+       "F159",
+       "F162",
+       "F188",
+       "F196",
+       "F200",
+       "F209",
+       "F190",
+       "F203",
+       "F199",
+       "F201"
+      ],
+      "status": "unverified",
+      "trap": "Chains went out with no verdict between steps: clear_hours 14 -> 12 -> 10 -> 8, ask_frac_food 0.78 -> 0.75 -> 0.7, floor_frac_food 0.5 -> 0.48 -> 0.46 -> 0.45, ",
+      "when": [
+       "11/12 21:12",
+       "11/12 23:58",
+       "11/13 02:27",
+       "11/15 03:27",
+       "11/15 17:58",
+       "11/15 22:09",
+       "11/16 09:39",
+       "11/15 07:34",
+       "11/16 03:03",
+       "11/15 20:46",
+       "11/15 23:32"
+      ]
+     },
+     {
+      "rule": "Before proposing a number, check order 14's list of values whose own verdict closed negative. 'The opposite direction is free' does not cover a return to one of them. A return needs a new measurement taken after it.",
+      "evidence": [
+       "F154",
+       "F157",
+       "F171",
+       "F177"
+      ],
+      "status": "unverified",
+      "trap": "Returns were sent as 'a different or opposite number': floor_frac_food back up to 0.57, dear_depth 6 -> 7, and fresh_premium 0.18 -> 0.15 (at 11/13 20:54 and ag",
+      "when": [
+       "11/12 22:18",
+       "11/12 23:41",
+       "11/13 20:54",
+       "11/14 10:13"
+      ]
+     },
+     {
+      "rule": "Leave market_ask at 1.0 (order 15). Do not take a play-mode step on it. Any other value needs a closed A/B first.",
+      "evidence": [
+       "F186",
+       "F187",
+       "F189",
+       "F191",
+       "F192",
+       "F193",
+       "F197",
+       "F198"
+      ],
+      "status": "unverified",
+      "trap": "market_ask moved between 1.0 and 1.03, 1.05 or 1.08 from 11/14 18:22 to 11/15 18:32, often back within an hour. Every move shared its hours with other changes (",
+      "when": [
+       "11/14 18:22",
+       "11/14 19:12",
+       "11/15 04:33",
+       "11/15 08:39",
+       "11/15 08:55",
+       "11/15 12:11",
+       "11/15 18:14",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not cite a [supervisor] revert row or a MIXED row's raw margin as proof that a change worked or failed. Judge a number only on its own closed, non-MIXED window. Until one exists, treat the number as untested.",
+      "evidence": [
+       "F151",
+       "F156",
+       "F165",
+       "F169",
+       "F170",
+       "F211",
+       "F226"
+      ],
+      "status": "unverified",
+      "trap": "Supervisor reverts such as floor_frac_food 0.56 -> 0.52 and ask_frac_food 0.72 -> 0.7 say 'no verdict'. Raw margins like +290% (11/13 18:09) and +163% (11/13 09",
+      "when": [
+       "11/12 20:23",
+       "11/12 22:19",
+       "11/13 09:37",
+       "11/13 14:35",
+       "11/13 18:09",
+       "11/16 10:04",
+       "11/16 20:54"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794879268.846555,
+    "lessons": [
+     {
+      "rule": "Do not cite a [supervisor] revert row or a MIXED row's raw margin as proof that a change worked or failed. Judge a number only on its own closed, non-MIXED window. Until one exists, treat the number as untested.",
+      "evidence": [
+       "F151",
+       "F156",
+       "F165",
+       "F169",
+       "F170",
+       "F211",
+       "F226"
+      ],
+      "status": "unverified",
+      "trap": "Supervisor revert rows (11/12 20:23, 11/12 22:19, 11/13 14:35, 11/16 10:04, 11/16 20:54) say 'no verdict'. Raw margins such as +163% (11/13 09:37) and +290% (11/13 18:09) sat beside other changes in the same h",
+      "when": [
+       "11/12 20:23",
+       "11/12 22:19",
+       "11/13 09:37",
+       "11/13 14:35",
+       "11/13 18:09",
+       "11/16 10:04",
+       "11/16 20:54"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794890224.272788,
+    "lessons": [
+     {
+      "rule": "Judge a number only on its own closed, non-MIXED window. Do not cite a [supervisor] revert row (it says 'no verdict') or a MIXED row's raw margin as proof that a change worked or failed. Until a clean window exists, treat the number as unte",
+      "evidence": [
+       "F151",
+       "F156",
+       "F165",
+       "F169",
+       "F170",
+       "F211",
+       "F226"
+      ],
+      "status": "unverified",
+      "trap": "Raw margins of +163% (11/13 09:37) and +290% (11/13 18:09) sat beside other changes in the same hours, so they say nothing about the number. Supervisor revert rows carry no v",
+      "when": [
+       "11/12 20:23",
+       "11/12 22:19",
+       "11/13 09:37",
+       "11/13 14:35",
+       "11/13 18:09",
+       "11/16 10:04",
+       "11/16 20:54"
+      ]
+     },
+     {
+      "rule": "clear_hours 10 -> 12 closed VERIFIED as no difference beyond noise (365/7040 -> 372/6848 sales). Treat clear_hours as not a lever for board points, and look for gains in the rivals and edges tables instead.",
+      "evidence": [
+       "F227"
+      ],
+      "status": "verified",
+      "trap": "The row shows value share -26% and raw margin -26%, which can be misread as a loss or as proof that 10 is better. The verdict is noise. The earlier clear_hours ",
+      "when": [
+       "11/17 07:44"
+      ]
+     },
+     {
+      "rule": "Before moving ask_frac_food or floor_frac_food, read its value now, check standing orders 9 and 10, and do not step it again in the same direction before the last change has a closed verdict.",
+      "evidence": [
+       "F151",
+       "F156",
+       "F169",
+       "F190",
+       "F203",
+       "F224",
+       "F225",
+       "F226",
+       "F228"
+      ],
+      "status": "unverified",
+      "trap": "ask_frac_food was lowered 0.75 -> 0.7 (11/16 03:03) and again as 0.72 -> 0.7 (11/16 20:54), and was reverted by the supervisor at 11/16 20:54 and 11/17 11:43. floor_frac_food 0.57 -> 0.52 ",
+      "when": [
+       "11/12 20:23",
+       "11/12 22:19",
+       "11/13 14:35",
+       "11/15 07:34",
+       "11/16 03:03",
+       "11/16 20:54",
+       "11/16 20:54",
+       "11/16 20:54",
+       "11/17 11:43"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794901170.664729,
+    "lessons": [
+     {
+      "rule": "Judge a number only on its own closed, non-MIXED window. A MIXED row's raw margin and a [supervisor] revert row ('no verdict') are not proof that a change worked or failed. Until a clean window exists, treat the number as untested.",
+      "evidence": [
+       "F156",
+       "F165",
+       "F169",
+       "F170",
+       "F211",
+       "F226",
+       "F230",
+       "F227"
+      ],
+      "status": "verified",
+      "trap": "Raw margins such as +163% (11/13 09:37) and +290% (11/13 18:09) sat beside other changes in the same hours, so they say nothing about the number. Only 11/17 07:44 in this record is ",
+      "when": [
+       "11/12 22:19",
+       "11/13 09:37",
+       "11/13 14:35",
+       "11/13 18:09",
+       "11/16 10:04",
+       "11/16 20:54",
+       "11/17 11:43",
+       "11/17 07:44"
+      ]
+     },
+     {
+      "rule": "clear_hours 10 -> 12 closed VERIFIED as no difference beyond noise (365/7040 -> 372/6848 sales). Do not treat clear_hours as a lever for board points. Look for gains in the rivals and edges tables instead.",
+      "evidence": [
+       "F227"
+      ],
+      "status": "verified",
+      "trap": "The row shows value share -26% and raw margin -26%, which can be misread as a loss or as proof that 10 is better. The verdict is noise, not a loss. Earlier clea",
+      "when": [
+       "11/17 07:44"
+      ]
+     },
+     {
+      "rule": "Do not flip a number back within minutes of changing it. Let the new value run a closed window, or do not move it. Same-minute pairs leave only MIXED rows, so the evidence is lost.",
+      "evidence": [
+       "F177",
+       "F178",
+       "F212",
+       "F213",
+       "F215",
+       "F219",
+       "F220",
+       "F221",
+       "F224",
+       "F225"
+      ],
+      "status": "unverified",
+      "trap": "fresh_premium, step and c_first were each reversed within 1-40 minutes, and ask_frac_food was lowered, raised and lowered again. Every row listed the other flip",
+      "when": [
+       "11/14 10:13",
+       "11/14 10:13",
+       "11/16 10:13",
+       "11/16 10:13",
+       "11/16 13:00",
+       "11/16 15:16",
+       "11/16 15:32",
+       "11/16 15:33",
+       "11/16 20:54",
+       "11/16 20:54"
+      ]
+     },
+     {
+      "rule": "Raising floor_frac_food runs only as an A/B in one 0.01-0.02 step. A cut is a normal play-mode move under order 9. Read the value now before moving it.",
+      "evidence": [
+       "F154",
+       "F155",
+       "F156",
+       "F188",
+       "F196",
+       "F200"
+      ],
+      "status": "unverified",
+      "trap": "0.52 -> 0.57 was done together with depth and other changes, and was undone a minute later by the supervisor (11/12 22:19 'no verdict'). A 5-point raise is not a step.",
+      "when": [
+       "11/12 22:18",
+       "11/12 22:19",
+       "11/12 22:19",
+       "11/15 03:27",
+       "11/15 17:58",
+       "11/15 22:09"
+      ]
+     },
+     {
+      "rule": "Keep market_ask at 1.0 for the rest of the round (order 15). Do not propose 1.03, 1.05 or 1.08 without a closed A/B.",
+      "evidence": [
+       "F186",
+       "F187",
+       "F189",
+       "F191",
+       "F192",
+       "F193",
+       "F197",
+       "F198"
+      ],
+      "status": "unverified",
+      "trap": "market_ask moved among 1.0, 1.03, 1.05 and 1.08 many times, often back within 16-50 minutes, always beside other changes. All of these rows are MIXED (raw margi",
+      "when": [
+       "11/14 18:22",
+       "11/14 19:12",
+       "11/15 04:33",
+       "11/15 08:39",
+       "11/15 08:55",
+       "11/15 12:11",
+       "11/15 18:14",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Check order 14's list of failed values before proposing a number, including fresh_premium 0.15. A return needs a new measurement taken after the earlier verdict.",
+      "evidence": [
+       "F171",
+       "F172",
+       "F177",
+       "F178"
+      ],
+      "status": "unverified",
+      "trap": "fresh_premium 0.18 -> 0.15 was proposed twice (11/13 20:54, 11/14 10:13) and put back to 0.18 within a minute each time. Order 14 records 0.15 as closed negativ",
+      "when": [
+       "11/13 20:54",
+       "11/13 20:55",
+       "11/14 10:13",
+       "11/14 10:13"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794912829.32465,
+    "lessons": [
+     {
+      "rule": "Judge a number only on its own closed, non-MIXED window, measured on board points per hour. The only VERIFIED row in this stretch is 11/17 07:44 (11/17 07:44). Every other row is MIXED or a [supervisor] 'no verdict' row, and none of them proves a ",
+      "evidence": [
+       "F227",
+       "F165",
+       "F170",
+       "F228",
+       "F229",
+       "F231"
+      ],
+      "status": "verified",
+      "trap": "Raw margin swings such as +163% (11/13 09:37), +290% (11/13 18:09), -72% (11/13 12:22) and -37% (11/17 11:42) sat beside other changes in the same hours. Reading them as results would cred",
+      "when": [
+       "11/17 07:44",
+       "11/13 09:37",
+       "11/13 18:09",
+       "11/17 11:42",
+       "11/17 11:43",
+       "11/17 12:48"
+      ]
+     },
+     {
+      "rule": "clear_hours 10 -> 12 closed VERIFIED as no difference beyond noise (365/7040 -> 372/6848 sales). Do not treat clear_hours as a lever for board points. Look for gains in the rivals and edges tables, where a small move passes many rivals.",
+      "evidence": [
+       "F227"
+      ],
+      "status": "verified",
+      "trap": "The row shows value share -26% and raw margin -26%, which can be misread as a loss, or as proof that 10 is better. The verdict is noise, so a return to 10 gains",
+      "when": [
+       "11/17 07:44"
+      ]
+     }
+    ]
+   }
+  ],
+  "failed_check": {
+   "2": "The rule to make one change and wait for a 2 h window contradicts order 3's play mode, which says to change every number each cycle with no A/B. Its facts are also all MIXED or no-verdict.",
+   "3": "The facts are MIXED or no-verdict, so no value has a negative verdict. Order 14's return clause does not cover ask_frac_food 0.75, and the claim that a raise needs its own window overreads these rows."
+  }
+ },
+ "community": {
+  "t": 1794927395.127867,
+  "facts": 6,
+  "lessons": [
+   {
+    "rule": "Judge forum changes on the forum rating (0-1, counted as itself) and on which of our posts draw dislike stances, split by post kind, as standing order 6 says. Do not judge them on forum_votes_post read as the hour before against the hour af",
+    "evidence": [
+     "F3",
+     "F4"
+    ],
+    "status": "unverified",
+    "trap": "11/05 09:22 was reverted on forum_votes_post -20% and 11/05 10:57 was kept despite -9%. Both are raw before/after readings that read the hour of day, so neither the revert nor th",
+    "when": [
+     "11/05 09:22",
+     "11/05 10:57"
+    ]
+   },
+   {
+    "rule": "Treat the our_deals cap (11/05 10:57: a post goes to our_deals only when neither of our last two posts was, about 1 post in 3, still in force) and the narrowed note() (11/05 09:22, reverted) as open questions with no valid verdict. To retune either, compare ",
+    "evidence": [
+     "F3",
+     "F4"
+    ],
+    "status": "unverified",
+    "trap": "Taking the 11/05 09:22 revert as proof that the narrowed note() was bad, or keeping the 11/05 10:57 cap because its tests passed (14/14). Passing tests show the code runs, not th",
+    "when": [
+     "11/05 09:22",
+     "11/05 10:57"
+    ]
+   },
+   {
+    "rule": "The 310 s post cadence is fixed by code and the market's limit (11/06 15:01, 11/11 07:13), so it is not a lever. 11/06 15:01 has no verdict and 11/11 07:13 is MIXED, so neither is evidence about cadence or post quality. Spend effort on which post kinds draw dislike stances, n",
+    "evidence": [
+     "F5",
+     "F6"
+    ],
+    "status": "unverified",
+    "trap": "Citing 11/11 07:13's buyer points/h +8% or its forum_votes_post None -> None as a result of the cadence change. open_gap and dear_depth also changed in the same hours (M",
+    "when": [
+     "11/06 15:01",
+     "11/11 07:13"
+    ]
+   }
+  ],
+  "history": [
+   {
+    "t": 1794815979.378258,
+    "lessons": [
+     {
+      "rule": "Judge a forum change on the forum rating (0-1, counted as itself) and on which of our posts draw dislike stances, split by post kind, as standing order 6 says. Do not judge it on forum_votes_post read as the hour before against the hour aft",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "11/05 09:22 was reverted on forum_votes_post -20% and 11/05 10:57 was kept despite -9%. Both are raw before/after readings that depend on the hour of day, so neither outcome show",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Treat the narrowed note() (11/05 09:22, reverted) and the our_deals cap of about 1 post in 3 (11/05 10:57, still in force) as open questions with no valid verdict. Retune either only by comparing the same hours on the forum rating and on dislike stances.",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "Reading the 11/05 09:22 revert as proof that the narrowed note() was bad, or keeping the 11/05 10:57 cap because its tests passed (14/14). Passing tests show the code works, not ",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "The post-kind mix is built by code from the ledger and weighted by votes, and it has no verdict on the rating. Count dislike stances per kind and shift the mix away from the kinds that draw them, without lowering post quality.",
+      "evidence": [
+       "F1",
+       "F2"
+      ],
+      "status": "unverified",
+      "trap": "Assuming the mix is fine because it is vote-driven. Neither change has a verdict, so nothing shows that the mix avoids dislike stances.",
+      "when": [
+       "11/03 21:10",
+       "11/03 21:24"
+      ]
+     },
+     {
+      "rule": "Do not cite the cadence changes (11/06 15:01, 11/11 07:13) as a gain or a loss. Code fixes the cadence at 310 s under standing order 6, so spend effort on post quality and dislike stances instead of count.",
+      "evidence": [
+       "F5",
+       "F6"
+      ],
+      "status": "unverified",
+      "trap": "Quoting 11/11 07:13's buyer points/h +8% or its passing tests (16/16) as proof that the cadence helped. 11/11 07:13 is MIXED with open_gap and dear_depth moves in the same hours ",
+      "when": [
+       "11/06 15:01",
+       "11/11 07:13"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794826978.1855009,
+    "lessons": [
+     {
+      "rule": "Judge a forum change on the forum rating (0-1, counted as itself) and on which of our posts draw dislike stances, split by post kind, as standing order 6 says. Do not judge it on forum_votes_post read as the hour before against the hour aft",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "11/05 09:22 was reverted on forum_votes_post -20% and 11/05 10:57 was kept despite -9%. Both are raw before/after readings that depend on the hour of day, so ne",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Treat the narrowed note() (11/05 09:22, reverted) and the our_deals cap of about 1 post in 3 (11/05 10:57, still in force) as open questions with no valid verdict. Retune either only by comparing the same hours on the forum rating and on di",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "Reading the 11/05 09:22 revert as proof that the narrowed note() was bad, or keeping the 11/05 10:57 cap because its tests passed (14/14). Passing tests show th",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "The post-kind mix is built by code from the ledger and weighted by votes, and it has no verdict on the rating. Count dislike stances per kind and shift the mix away from the kinds that draw them, without lowering post quality.",
+      "evidence": [
+       "F1",
+       "F2"
+      ],
+      "status": "unverified",
+      "trap": "Assuming the mix is fine because it is vote-driven. Neither change has a verdict, so nothing shows that the mix avoids dislike stances.",
+      "when": [
+       "11/03 21:10",
+       "11/03 21:24"
+      ]
+     },
+     {
+      "rule": "Do not cite the cadence changes (11/06 15:01, 11/11 07:13) as a gain or a loss. Code fixes the cadence at 310 s under standing order 6, so spend effort on post quality and dislike stances instead of count.",
+      "evidence": [
+       "F5",
+       "F6"
+      ],
+      "status": "unverified",
+      "trap": "Quoting 11/11 07:13's buyer points/h +8% or its passing tests (16/16) as proof that the cadence helped. 11/11 07:13 is MIXED with open_gap and dear_depth moves ",
+      "when": [
+       "11/06 15:01",
+       "11/11 07:13"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794838056.758543,
+    "lessons": [
+     {
+      "rule": "Judge a forum change on the forum rating (0-1, counted as itself) and on which of our posts draw dislike stances, split by post kind, as standing order 6 says. Do not judge it on forum_votes_post read as the hour before against the hour aft",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "11/05 09:22 was reverted on forum_votes_post -20% and 11/05 10:57 was kept despite -9%. Both are raw before/after readings that depend on the hour of day, so ne",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Treat the narrowed note() (11/05 09:22, reverted) and the our_deals cap of about 1 post in 3 (11/05 10:57, still in force) as open questions with no valid verdict. Retune either only by comparing the same hours on the forum rating and on di",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "Reading the 11/05 09:22 revert as proof that the narrowed note() was bad, or keeping the 11/05 10:57 cap because its tests passed (14/14). Passing tests show th",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "The post-kind mix is built by code from the ledger and weighted by votes, and it has no verdict on the rating. Count dislike stances per kind and shift the mix away from the kinds that draw them, without lowering post quality.",
+      "evidence": [
+       "F1",
+       "F2"
+      ],
+      "status": "unverified",
+      "trap": "Assuming the mix is fine because it is vote-driven. Neither change has a verdict, so nothing shows that the mix avoids dislike stances.",
+      "when": [
+       "11/03 21:10",
+       "11/03 21:24"
+      ]
+     },
+     {
+      "rule": "Do not cite the cadence changes (11/06 15:01, 11/11 07:13) as a gain or a loss. Code fixes the cadence at 310 s under standing order 6, so spend effort on post quality and dislike stances instead of count.",
+      "evidence": [
+       "F5",
+       "F6"
+      ],
+      "status": "unverified",
+      "trap": "Quoting 11/11 07:13's buyer points/h +8% or its passing tests (16/16) as proof that the cadence helped. 11/11 07:13 is MIXED with open_gap and dear_depth moves ",
+      "when": [
+       "11/06 15:01",
+       "11/11 07:13"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794848941.061263,
+    "lessons": [
+     {
+      "rule": "Judge a forum change on the forum rating (0-1, counted as itself) and on which of our posts draw dislike stances, split by post kind, as standing order 6 says. Do not judge it on forum_votes_post read as the hour before against the hour aft",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "11/05 09:22 was reverted on forum_votes_post -20% and 11/05 10:57 was kept despite -9%. Both are raw before/after readings that depend on the hour of day, so ne",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Treat the narrowed note() (11/05 09:22, reverted) and the our_deals cap of about 1 post in 3 (11/05 10:57, still in force) as open questions with no valid verdict. Retune either only by comparing the same hours on the forum rating and on di",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "Reading the 11/05 09:22 revert as proof that the narrowed note() was bad, or keeping the 11/05 10:57 cap because its tests passed (14/14). Passing tests show th",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "The post-kind mix is built by code from the ledger and weighted by votes, and it has no verdict on the rating. Count dislike stances per kind and shift the mix away from the kinds that draw them, without lowering post quality.",
+      "evidence": [
+       "F1",
+       "F2"
+      ],
+      "status": "unverified",
+      "trap": "Assuming the mix is fine because it is vote-driven. Neither change has a verdict, so nothing shows that the mix avoids dislike stances.",
+      "when": [
+       "11/03 21:10",
+       "11/03 21:24"
+      ]
+     },
+     {
+      "rule": "Do not cite the cadence changes (11/06 15:01, 11/11 07:13) as a gain or a loss. Code fixes the cadence at 310 s under standing order 6, so spend effort on post quality and dislike stances instead of count.",
+      "evidence": [
+       "F5",
+       "F6"
+      ],
+      "status": "unverified",
+      "trap": "Quoting 11/11 07:13's buyer points/h +8% or its passing tests (16/16) as proof that the cadence helped. 11/11 07:13 is MIXED with open_gap and dear_depth moves ",
+      "when": [
+       "11/06 15:01",
+       "11/11 07:13"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794860034.531892,
+    "lessons": [
+     {
+      "rule": "Judge a forum change on the forum rating (0-1, counted as itself) and on which of our posts draw dislike stances, split by post kind, as standing order 6 says. Compare the same hours, not the hour before against the hour after. Never judge ",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "11/05 09:22 was reverted on forum_votes_post -20% and 11/05 10:57 was kept despite -9%. Both are raw before/after readings that depend on the hour of day, so ne",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Treat the narrowed note() (11/05 09:22, reverted) and the our_deals cap of about 1 post in 3 (11/05 10:57, still in force) as open questions with no valid verdict. Retune either only by comparing the same hours on the forum rating and on dislike stances for ",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "Reading the 11/05 09:22 revert as proof that the narrowed note() was bad, or keeping the 11/05 10:57 cap because its tests passed (14/14). Passing tests show the code runs, not t",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "The post-kind mix is built by code from the ledger and weighted by votes, and it has no verdict on the rating. Count dislike stances per kind, shift the mix away from the kinds that draw them, and do not lower post quality to do it.",
+      "evidence": [
+       "F1",
+       "F2"
+      ],
+      "status": "unverified",
+      "trap": "Assuming the mix is fine because it is vote-driven. Neither change has a verdict, so nothing shows that the mix avoids dislike stances.",
+      "when": [
+       "11/03 21:10",
+       "11/03 21:24"
+      ]
+     },
+     {
+      "rule": "Do not cite the cadence changes (11/06 15:01, 11/11 07:13) as a gain or a loss. Code fixes the cadence at 310 s under standing order 6, so spend effort on post quality and dislike stances instead of post count.",
+      "evidence": [
+       "F5",
+       "F6"
+      ],
+      "status": "unverified",
+      "trap": "Quoting 11/11 07:13's buyer points/h +8% or its passing tests (16/16) as proof that the cadence helped. 11/11 07:13 is MIXED with open_gap and dear_depth moves in the same hours,",
+      "when": [
+       "11/06 15:01",
+       "11/11 07:13"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794870923.012911,
+    "lessons": [
+     {
+      "rule": "Judge a forum change on the forum rating (0-1, counted as itself) and on which of our posts draw dislike stances, split by post kind, as standing order 6 says. Compare the same hours, never the hour before against the hour after, and never ",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "11/05 09:22 (11/05 09:22) was reverted on forum_votes_post -20% and 11/05 10:57 (11/05 10:57) was kept despite -9%. Both are raw before/after readings that depend on the hour of ",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Treat the narrowed note() in 11/05 09:22 (reverted) and the our_deals cap of about 1 post in 3 in 11/05 10:57 (still in force) as open questions with no valid verdict. To retune either, compare the same hours on the forum rating and on dislike stances for ou",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "Reading the 11/05 09:22 revert as proof that the narrowed note() was bad, or keeping the 11/05 10:57 cap because its tests passed (14/14). Passing tests show the code runs, not t",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "The post-kind mix is built by code from the ledger and weighted by votes, and it has no verdict on the rating. Count dislike stances per kind, shift the mix away from the kinds that draw them, and do not lower post quality to do it.",
+      "evidence": [
+       "F1",
+       "F2"
+      ],
+      "status": "unverified",
+      "trap": "Assuming the mix is fine because it is vote-driven. Neither 11/03 21:10 nor 11/03 21:24 has a verdict, so nothing shows the mix avoids dislike stances.",
+      "when": [
+       "11/03 21:10",
+       "11/03 21:24"
+      ]
+     },
+     {
+      "rule": "Do not cite the cadence changes 11/06 15:01 and 11/11 07:13 as a gain or a loss. Code fixes the cadence at 310 s under standing order 6, so spend effort on post quality and dislike stances instead of post count.",
+      "evidence": [
+       "F5",
+       "F6"
+      ],
+      "status": "unverified",
+      "trap": "Quoting 11/11 07:13's buyer points/h +8% or its passing tests (16/16) as proof the cadence helped. 11/11 07:13 is MIXED with open_gap and dear_depth moves in the same hours, so i",
+      "when": [
+       "11/06 15:01",
+       "11/11 07:13"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794882240.444212,
+    "lessons": [
+     {
+      "rule": "Judge a forum change on the forum rating (0-1, counted as itself) and on which of our posts draw dislike stances, split by post kind, as standing order 6 says. Compare the same hours. Do not compare the hour before with the hour after, and ",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "11/05 09:22 was reverted on forum_votes_post -20% and 11/05 10:57 was kept despite -9%. Both are raw before/after readings that depend on the hour of day, so they are weak. Treat",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Treat the 11/05 10:57 cap on our_deals posts (about 1 post in 3, still in force) and the 11/05 09:22 narrowed note() (reverted) as open questions with no valid verdict. To retune either one, compare the same hours on the forum rating and on dislike stances f",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "Reading the 11/05 09:22 revert as proof that the narrowed note() was bad, or keeping the 11/05 10:57 cap because its tests passed (14/14). Passing tests show the code runs, not t",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794893239.314805,
+    "lessons": [
+     {
+      "rule": "Judge a forum change on the forum rating (0-1, counted as itself) and on which of our posts draw dislike stances, split by post kind, as standing order 6 says. Compare the same hours. Do not use forum_votes_post from the hour before against",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "11/05 09:22 (11/05 09:22) was reverted on forum_votes_post -20% and 11/05 10:57 (11/05 10:57) was kept despite -9%. Both are raw before/after readings, so they are weak. Reading ",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Treat the cap on our_deals posts (11/05 10:57: a post goes to our_deals only when neither of our last two posts was, about 1 post in 3, still in force) and the narrowed note() (11/05 09:22, reverted) as open questions with no valid verdict. To retune either ",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "Taking the 11/05 09:22 revert as proof that the narrowed note() was bad, or keeping the 11/05 10:57 cap because its tests passed (14/14). Passing tests show the code runs, not th",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "The 310 s post cadence is fixed by code and the market's limit (11/06 15:01, 11/11 07:13), so it is not a lever. 11/06 15:01 has no verdict and 11/11 07:13 is MIXED, so neither gives any evidence about cadence or post quality. Spend effort on which post kinds draw dislike sta",
+      "evidence": [
+       "F5",
+       "F6"
+      ],
+      "status": "unverified",
+      "trap": "Citing 11/11 07:13's buyer points/h +8% or its forum_votes_post None -> None as a result of the cadence change. Other changes fell in the same hours (open_gap, dear_dept",
+      "when": [
+       "11/06 15:01",
+       "11/11 07:13"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794904154.398182,
+    "lessons": [
+     {
+      "rule": "Judge forum changes on the forum rating (0-1, counted as itself) and on which of our posts draw dislike stances, split by post kind, as standing order 6 says. Do not judge them on forum_votes_post read as the hour before against the hour af",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "11/05 09:22 (11/05 09:22) was reverted on forum_votes_post -20% and 11/05 10:57 (11/05 10:57) was kept despite -9%. Both are raw before/after readings that read the hour of day, ",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Treat the our_deals cap (11/05 10:57: a post goes to our_deals only when neither of our last two posts was, about 1 post in 3, still in force) and the narrowed note() (11/05 09:22, reverted) as open questions with no valid verdict. To retune either one, comp",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "Taking the 11/05 09:22 revert as proof that the narrowed note() was bad, or keeping the 11/05 10:57 cap because its tests passed (14/14). Passing tests show the code runs, not th",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "The 310 s post cadence is fixed by code and the market's limit (11/06 15:01, 11/11 07:13), so it is not a lever. 11/06 15:01 has no verdict and 11/11 07:13 is MIXED, so neither is evidence about cadence or post quality. Spend effort on which post kinds draw dislike stances, n",
+      "evidence": [
+       "F5",
+       "F6"
+      ],
+      "status": "unverified",
+      "trap": "Citing 11/11 07:13's buyer points/h +8% or its forum_votes_post None -> None as a result of the cadence change. open_gap and dear_depth also changed in the same hours (M",
+      "when": [
+       "11/06 15:01",
+       "11/11 07:13"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794915775.95942,
+    "lessons": [
+     {
+      "rule": "Judge forum changes on the forum rating (0-1, counted as itself) and on which of our posts draw dislike stances, split by post kind, as standing order 6 says. Do not judge them on forum_votes_post read as the hour before against the hour af",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "11/05 09:22 (11/05 09:22) was reverted on forum_votes_post -20% and 11/05 10:57 (11/05 10:57) was kept despite -9%. Both are raw before/after readings that read the hour of day, ",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Treat the our_deals cap (11/05 10:57: a post goes to our_deals only when neither of our last two posts was, about 1 post in 3, still in force) and the narrowed note() (11/05 09:22, reverted) as open questions with no valid verdict. To retune either, compare ",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "Taking the 11/05 09:22 revert as proof that the narrowed note() was bad, or keeping the 11/05 10:57 cap because its tests passed (14/14). Passing tests show the code runs, not th",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "The 310 s post cadence is fixed by code and the market's limit (11/06 15:01, 11/11 07:13), so it is not a lever. 11/06 15:01 has no verdict and 11/11 07:13 is MIXED, so neither is evidence about cadence or post quality. Spend effort on which post kinds draw dislike stances, n",
+      "evidence": [
+       "F5",
+       "F6"
+      ],
+      "status": "unverified",
+      "trap": "Citing 11/11 07:13's buyer points/h +8% or its forum_votes_post None -> None as a result of the cadence change. open_gap and dear_depth also changed in the same hours (M",
+      "when": [
+       "11/06 15:01",
+       "11/11 07:13"
+      ]
+     }
+    ]
+   }
+  ],
+  "failed_check": {}
+ },
+ "buying": {
+  "t": 1794925437.117366,
+  "facts": 96,
+  "lessons": [
+   {
+    "rule": "Judge every buyer change on buyer points/h and its sd (standing order 1). Close rate, saved/deal, the saved difference and the kept/not-taken label are only parts of the aim. Read the value now in force before moving a number (order 5), and",
+    "evidence": [
+     "F54",
+     "F73",
+     "F83",
+     "F85",
+     "F87"
+    ],
+    "status": "verified",
+    "trap": "The parts and the aim disagree. 11/10 08:39: close rate fell 0.775 -> 0.664 while points/h read +1%. 11/12 22:18: the saved difference was +1.4 sd but points/h ",
+    "when": [
+     "11/10 08:39",
+     "11/12 22:18",
+     "11/15 02:53",
+     "11/15 11:23",
+     "11/15 21:53"
+    ]
+   },
+   {
+    "rule": "Leave MAX_RAISE at 0.35. 0.35 -> 0.3 read +1%, -20%, -17% and -19% points/h. 0.35 -> 0.25 read -2%. 0.35 -> 0.4 read -5% and +0%. Only the first 0.4 -> 0.35 step was kept (+3%). Move it only with a new measurement at the value in force.",
+    "evidence": [
+     "F46",
+     "F54",
+     "F62",
+     "F69",
+     "F76",
+     "F79",
+     "F83",
+     "F86"
+    ],
+    "status": "verified",
+    "trap": "Both 0.3 (+1.3 sd on 11/13 23:57 and 11/15 18:32) and 0.4 (+2.1 sd on 11/13 11:32, +2.6 sd on 11/15 02:53) showed a better saved difference and often higher sav",
+    "when": [
+     "11/09 10:35",
+     "11/10 08:39",
+     "11/11 14:49",
+     "11/12 14:51",
+     "11/13 11:32",
+     "11/13 23:57",
+     "11/15 02:53",
+     "11/15 18:32"
+    ]
+   },
+   {
+    "rule": "Do not retry RAISE_FOOD 1.2 -> 1.3: it lost on points/h both times (-14%, -4%). RAISE_GOODS 0.8 -> 0.9 is split (-3%, +15%) and MAX_TRIES 6 -> 5 is split (+14%, -9%), so neither is a proven move. SCOUT_WAIT 10 -> 8 has one read, +31% points",
+    "evidence": [
+     "F65",
+     "F81",
+     "F63",
+     "F74",
+     "F71",
+     "F92",
+     "F95"
+    ],
+    "status": "verified",
+    "trap": "The +15% (11/13 02:10, -0.1 sd) and +14% (11/12 19:00) reads sit on negative points/h bases with small saved differences, so they are weak and the sign flipped ",
+    "when": [
+     "11/12 01:27",
+     "11/14 12:10",
+     "11/11 19:08",
+     "11/13 02:10",
+     "11/12 19:00",
+     "11/16 12:10",
+     "11/17 03:51"
+    ]
+   },
+   {
+    "rule": "FIRM_GAP 0.07 has no clear winning neighbour. 0.07 -> 0.05 gave -35%, -18%, +6%, +6%, +2% and -16% points/h. 0.07 -> 0.09 gave +2% and -42%. Do not move it without a new measurement at the value in force.",
+    "evidence": [
+     "F50",
+     "F52",
+     "F61",
+     "F68",
+     "F78",
+     "F82",
+     "F90",
+     "F96"
+    ],
+    "status": "verified",
+    "trap": "The small positive 0.05 reads (+6%, +6%, +2%) are all within about 0.5 sd, and two sit on negative bases. The latest 0.05 read (11/17 10:26) had +0.8 sd on the ",
+    "when": [
+     "11/09 18:04",
+     "11/09 23:48",
+     "11/11 11:18",
+     "11/12 11:03",
+     "11/13 14:35",
+     "11/14 18:55",
+     "11/16 09:05",
+     "11/17 10:26"
+    ]
+   },
+   {
+    "rule": "FOOD_MARGIN 1.15 -> 1.1 is unsettled on points/h: +9% (+1.6 sd), +33% (+1.2 sd), -24% (+1.4 sd, negative base) and -29% (-1.9 sd). It is no proven win. 1.15 -> 1.2 was not taken. Re-test only as a new measurement at the value in force, judg",
+    "evidence": [
+     "F45",
+     "F57",
+     "F64",
+     "F73",
+     "F87"
+    ],
+    "status": "verified",
+    "trap": "Saved/deal rose in the first three 1.1 trials (e.g. 0.3722 -> 0.3889) and the saved difference was positive each time, yet points/h fell 24% in the third. The l",
+    "when": [
+     "11/09 07:33",
+     "11/10 16:04",
+     "11/11 22:09",
+     "11/12 22:18",
+     "11/15 21:53"
+    ]
+   },
+   {
+    "rule": "CAP 0.75 -> 0.7 leans positive lately but is unsettled: +2%, +0%, -11%, +28% and +14% points/h (the last two at +1.0 sd and +0.7 sd). 0.75 -> 0.8 read -5%. Step it only as a new measurement at the value in force, judged on points/h, and tak",
+    "evidence": [
+     "F53",
+     "F56",
+     "F67",
+     "F80",
+     "F85",
+     "F93"
+    ],
+    "status": "verified",
+    "trap": "0.7 usually shows better saved/deal and a lower close rate (11/10 12:26, 11/15 11:23, 11/16 17:01), which makes it look like a safe win. 11/14 04:38 read -11% o",
+    "when": [
+     "11/10 03:43",
+     "11/10 12:26",
+     "11/12 05:22",
+     "11/14 04:38",
+     "11/15 11:23",
+     "11/16 17:01"
+    ]
+   },
+   {
+    "rule": "Do not add more break-rate, grade or over-cap penalties, or re-rankings by expected saved rate, to the buyer's candidate or scout ordering. Every such A/B lost: sort by surplus/list -2%, break-rate weighting -6%, grade penalty -4%, soft-bre",
+    "evidence": [
+     "F37",
+     "F39",
+     "F42",
+     "F55",
+     "F59",
+     "F66",
+     "F58"
+    ],
+    "status": "verified",
+    "trap": "Each loser was written with an expected +1% to +4% and measured negative. 11/08 11:55, 11/08 16:36 and 11/10 09:28 were still labelled kept because they were ju",
+    "when": [
+     "11/08 11:55",
+     "11/08 16:36",
+     "11/08 21:36",
+     "11/10 09:28",
+     "11/11 00:28",
+     "11/12 05:07",
+     "11/10 17:41"
+    ]
+   },
+   {
+    "rule": "A code change labelled kept can read zero or negative on the aim, or improve only a speed or part metric. Judge each code change on points/h, and do not stack a follow-up on a kept label whose own target metric missed its expectation. Treat",
+    "evidence": [
+     "F70",
+     "F75",
+     "F77",
+     "F88",
+     "F72",
+     "F84",
+     "F91",
+     "F49",
+     "F94",
+     "F26",
+     "F30"
+    ],
+    "status": "verified",
+    "trap": "Plan mode on half the orders was kept at -3% buyer_pts_h (expected +10%, 11/13 07:58). The rule-based plan step was kept for +37% seconds/order (expected +25%, ",
+    "when": [
+     "11/12 16:48",
+     "11/13 07:58",
+     "11/13 13:13",
+     "11/15 22:11",
+     "11/12 21:47",
+     "11/15 10:20",
+     "11/16 10:13",
+     "11/09 16:37",
+     "11/17 01:21",
+     "11/06 22:59",
+     "11/07 10:14"
+    ]
+   }
+  ],
+  "history": [
+   {
+    "t": 1794813954.6916428,
+    "lessons": [
+     {
+      "rule": "Judge every buyer change on buyer points/h and its sd (standing order 1). Close rate, saved/deal, the saved difference and the kept/not-taken label are only parts of the aim. Read the value now in force before moving a number (order 5), and",
+      "evidence": [
+       "F54",
+       "F73",
+       "F83",
+       "F85",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "The parts and the aim disagree. On 11/10 08:39 close rate fell 0.775 -> 0.664 while points/h was +1%. On 11/12 22:18 the saved difference was +1.4 sd, yet point",
+      "when": [
+       "11/10 08:39",
+       "11/12 22:18",
+       "11/15 02:53",
+       "11/15 11:23",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "Leave MAX_RAISE at 0.35. 0.4 -> 0.35 was kept at +3% points/h (11/09 10:35). Since then 0.35 -> 0.3 read +1%, -20%, -17% and -19%, and 0.35 -> 0.25 read -2%. 0.35 -> 0.4 read -5% and +0%. Move it only with a new measurement at the value in ",
+      "evidence": [
+       "F46",
+       "F54",
+       "F62",
+       "F69",
+       "F76",
+       "F79",
+       "F83",
+       "F86"
+      ],
+      "status": "verified",
+      "trap": "Both 0.3 (+1.3 sd on 11/13 23:57 and 11/15 18:32) and 0.4 (+2.1 sd on 11/13 11:32, +2.6 sd on 11/15 02:53) showed a better saved difference and higher saved/dea",
+      "when": [
+       "11/09 10:35",
+       "11/10 08:39",
+       "11/11 14:49",
+       "11/12 14:51",
+       "11/13 11:32",
+       "11/13 23:57",
+       "11/15 02:53",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not retry RAISE_FOOD 1.2 -> 1.3: it lost on points/h both times (-14%, -4%). RAISE_GOODS 0.8 -> 0.9 is split (-3%, then +15%). MAX_TRIES 6 -> 5 is split too (+14%, then -9%). Treat the last two as unsettled and change them only after a n",
+      "evidence": [
+       "F65",
+       "F81",
+       "F63",
+       "F74",
+       "F71",
+       "F92"
+      ],
+      "status": "verified",
+      "trap": "The +15% (-0.001027 -> -0.000873, -0.1 sd) and +14% (-0.001089 -> -0.000936, +0.5 sd) reads sit on negative bases with small saved differences. MAX_TRIES then r",
+      "when": [
+       "11/12 01:27",
+       "11/14 12:10",
+       "11/11 19:08",
+       "11/13 02:10",
+       "11/12 19:00",
+       "11/16 12:10"
+      ]
+     },
+     {
+      "rule": "FIRM_GAP 0.07 has no clear winning neighbour. 0.07 -> 0.05 gave -35%, -18%, +6%, +6% and +2% points/h. 0.07 -> 0.09 gave +2% and -42%. Do not move it without a new measurement at the value in force.",
+      "evidence": [
+       "F50",
+       "F52",
+       "F61",
+       "F68",
+       "F78",
+       "F82",
+       "F90"
+      ],
+      "status": "verified",
+      "trap": "The three latest 0.05 reads (+6%, +6%, +2%, all within about 0.5 sd) are small and two sit on negative bases. The -35% (-1.1 sd) and -42% (-2.6 sd) reads are la",
+      "when": [
+       "11/09 18:04",
+       "11/09 23:48",
+       "11/11 11:18",
+       "11/12 11:03",
+       "11/13 14:35",
+       "11/14 18:55",
+       "11/16 09:05"
+      ]
+     },
+     {
+      "rule": "FOOD_MARGIN 1.15 -> 1.1 is unsettled on points/h: +9% (+1.6 sd), +33% (+1.2 sd), -24% (+1.4 sd, negative base) and -29% (-1.9 sd). Two reads are positive and two negative, so it is no proven win. Re-test it only as a new measurement at the ",
+      "evidence": [
+       "F57",
+       "F64",
+       "F73",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "Saved/deal rose in the first three 1.1 trials (e.g. 0.3722 -> 0.3889) and the saved difference was positive each time, yet points/h fell 24% in the third. The l",
+      "when": [
+       "11/10 16:04",
+       "11/11 22:09",
+       "11/12 22:18",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "CAP 0.75 is unsettled. 0.75 -> 0.7 read +2%, +0%, -11% and +28% points/h. 0.75 -> 0.8 read -5%. Do not step CAP again without a new measurement at the value in force.",
+      "evidence": [
+       "F53",
+       "F56",
+       "F67",
+       "F80",
+       "F85"
+      ],
+      "status": "verified",
+      "trap": "0.7 showed better saved/deal on 11/10 12:26, 11/12 05:22 and 11/15 11:23 (e.g. 0.4032 -> 0.4146) and a lower close rate on 11/10 12:26 and 11/15 11:23, so it lo",
+      "when": [
+       "11/10 03:43",
+       "11/10 12:26",
+       "11/12 05:22",
+       "11/14 04:38",
+       "11/15 11:23"
+      ]
+     },
+     {
+      "rule": "Do not add more break-rate, grade or over-cap penalties or re-rankings to the buyer's candidate or scout ordering. Every such A/B lost: sort by surplus/list -2%, break-rate weighting -6%, grade penalty -4%, soft-break ban -2%, scout expecte",
+      "evidence": [
+       "F37",
+       "F39",
+       "F42",
+       "F55",
+       "F59",
+       "F66",
+       "F58"
+      ],
+      "status": "verified",
+      "trap": "Each was written with an expected +1% to +4% and measured negative. 11/08 11:55, 11/08 16:36 and 11/10 09:28 were still labelled kept. They were judged on saved/deal and close rate, no",
+      "when": [
+       "11/08 11:55",
+       "11/08 16:36",
+       "11/08 21:36",
+       "11/10 09:28",
+       "11/11 00:28",
+       "11/12 05:07",
+       "11/10 17:41"
+      ]
+     },
+     {
+      "rule": "A code change labelled kept can still read zero or negative on the aim, and a speed or part verdict is not a points result. Plan mode on half the orders was kept at -3% buyer_pts_h (expected +10%). Per-grade deal_limit was kept at -1% saved",
+      "evidence": [
+       "F70",
+       "F75",
+       "F77",
+       "F88",
+       "F72",
+       "F84",
+       "F91"
+      ],
+      "status": "verified",
+      "trap": "Stacking a follow-up on a kept label builds on a measured -3%, -1% or +0%. The +37% of 11/15 22:11 and the +22% of 11/12 21:47 measure seconds per order, not po",
+      "when": [
+       "11/12 16:48",
+       "11/13 07:58",
+       "11/13 13:13",
+       "11/15 22:11",
+       "11/12 21:47",
+       "11/15 10:20",
+       "11/16 10:13"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794824986.691437,
+    "lessons": [
+     {
+      "rule": "Judge every buyer change on buyer points/h and its sd (standing order 1), not on its parts. Close rate, saved/deal, the saved difference and the kept/not-taken label are parts only. Read the value now in force before moving a number (order ",
+      "evidence": [
+       "F54",
+       "F73",
+       "F83",
+       "F85",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "The parts and the aim disagree. 11/10 08:39: close rate fell 0.775 -> 0.664 while points/h was +1%. 11/12 22:18: the saved difference was +1.4 sd, yet points/h read -24%. 11/15 02:53: ",
+      "when": [
+       "11/10 08:39",
+       "11/12 22:18",
+       "11/15 02:53",
+       "11/15 11:23",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "Leave MAX_RAISE at 0.35. 0.4 -> 0.35 was kept at +3% points/h (11/09 10:35). Since then 0.35 -> 0.3 read +1%, -20%, -17% and -19%, and 0.35 -> 0.25 read -2%. 0.35 -> 0.4 read -5% and +0%. Move it only with a new measurement at the value in force.",
+      "evidence": [
+       "F46",
+       "F54",
+       "F62",
+       "F69",
+       "F76",
+       "F79",
+       "F83",
+       "F86"
+      ],
+      "status": "verified",
+      "trap": "Both 0.3 (+1.3 sd in 11/13 23:57 and 11/15 18:32) and 0.4 (+2.1 sd in 11/13 11:32, +2.6 sd in 11/15 02:53) showed a better saved difference and higher saved/deal, which invites a move. Points/",
+      "when": [
+       "11/09 10:35",
+       "11/10 08:39",
+       "11/11 14:49",
+       "11/12 14:51",
+       "11/13 11:32",
+       "11/13 23:57",
+       "11/15 02:53",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not retry RAISE_FOOD 1.2 -> 1.3: it lost on points/h both times (-14%, -4%). RAISE_GOODS 0.8 -> 0.9 is split (-3%, then +15%). MAX_TRIES 6 -> 5 is split too (+14%, then -9%). Treat the last two as unsettled. Change them only on a new mea",
+      "evidence": [
+       "F65",
+       "F81",
+       "F63",
+       "F74",
+       "F71",
+       "F92"
+      ],
+      "status": "verified",
+      "trap": "The +15% (-0.001027 -> -0.000873, -0.1 sd) and +14% (-0.001089 -> -0.000936, +0.5 sd) reads sit on negative bases with small saved differences, so they look lik",
+      "when": [
+       "11/12 01:27",
+       "11/14 12:10",
+       "11/11 19:08",
+       "11/13 02:10",
+       "11/12 19:00",
+       "11/16 12:10"
+      ]
+     },
+     {
+      "rule": "FIRM_GAP 0.07 has no clear winning neighbour. 0.07 -> 0.05 gave -35%, -18%, +6%, +6% and +2% points/h. 0.07 -> 0.09 gave +2% and -42%. Do not move it without a new measurement at the value in force.",
+      "evidence": [
+       "F50",
+       "F52",
+       "F61",
+       "F68",
+       "F78",
+       "F82",
+       "F90"
+      ],
+      "status": "verified",
+      "trap": "The three latest 0.05 reads (+6%, +6%, +2%, all within about 0.5 sd) are small and two sit on negative bases. The -35% (-1.1 sd) and -42% (-2.6 sd) reads are la",
+      "when": [
+       "11/09 18:04",
+       "11/09 23:48",
+       "11/11 11:18",
+       "11/12 11:03",
+       "11/13 14:35",
+       "11/14 18:55",
+       "11/16 09:05"
+      ]
+     },
+     {
+      "rule": "FOOD_MARGIN 1.15 -> 1.1 is unsettled on points/h: +9% (+1.6 sd), +33% (+1.2 sd), -24% (+1.4 sd, negative base) and -29% (-1.9 sd). It is no proven win. Re-test only as a new measurement at the value in force, and never on saved/deal alone.",
+      "evidence": [
+       "F57",
+       "F64",
+       "F73",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "Saved/deal rose in the first three 1.1 trials (e.g. 0.3722 -> 0.3889) and the saved difference was positive each time, yet points/h fell 24% in the third. The l",
+      "when": [
+       "11/10 16:04",
+       "11/11 22:09",
+       "11/12 22:18",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "CAP 0.75 is unsettled. 0.75 -> 0.7 read +2%, +0%, -11% and +28% points/h. 0.75 -> 0.8 read -5%. Do not step CAP again without a new measurement at the value in force.",
+      "evidence": [
+       "F53",
+       "F56",
+       "F67",
+       "F80",
+       "F85"
+      ],
+      "status": "verified",
+      "trap": "0.7 gave better saved/deal on 11/10 12:26, 11/12 05:22 and 11/15 11:23 (e.g. 0.4032 -> 0.4146) and a lower close rate on 11/10 12:26 and 11/15 11:23. The one la",
+      "when": [
+       "11/10 03:43",
+       "11/10 12:26",
+       "11/12 05:22",
+       "11/14 04:38",
+       "11/15 11:23"
+      ]
+     },
+     {
+      "rule": "Do not add more break-rate, grade or over-cap penalties or re-rankings to the buyer's candidate or scout ordering. Every such A/B lost: sort by surplus/list -2%, break-rate weighting -6%, grade penalty -4%, soft-break ban -2%, scout expecte",
+      "evidence": [
+       "F37",
+       "F39",
+       "F42",
+       "F55",
+       "F59",
+       "F66",
+       "F58"
+      ],
+      "status": "verified",
+      "trap": "Each was written with an expected +1% to +4% and measured negative. 11/08 11:55, 11/08 16:36 and 11/10 09:28 were still labelled kept. They were judged on saved/deal and close rate, no",
+      "when": [
+       "11/08 11:55",
+       "11/08 16:36",
+       "11/08 21:36",
+       "11/10 09:28",
+       "11/11 00:28",
+       "11/12 05:07",
+       "11/10 17:41"
+      ]
+     },
+     {
+      "rule": "A code change labelled kept can still read zero or negative on the aim, and a speed or part verdict is not a points result. Plan mode on half the orders was kept at -3% buyer_pts_h (expected +10%). Per-grade deal_limit was kept at -1% saved",
+      "evidence": [
+       "F70",
+       "F75",
+       "F77",
+       "F88",
+       "F72",
+       "F84",
+       "F91",
+       "F49"
+      ],
+      "status": "verified",
+      "trap": "Stacking a follow-up on a kept label builds on a measured -3%, -1% or +0%. The +37% of 11/15 22:11 and the +22% of 11/12 21:47 measure seconds per order, not points. 11/09 16:37 measur",
+      "when": [
+       "11/12 16:48",
+       "11/13 07:58",
+       "11/13 13:13",
+       "11/15 22:11",
+       "11/12 21:47",
+       "11/15 10:20",
+       "11/16 10:13",
+       "11/09 16:37"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794835997.492357,
+    "lessons": [
+     {
+      "rule": "Judge every buyer change on buyer points/h and its sd (standing order 1). Close rate, saved/deal, the saved difference and the kept/not-taken label are parts only. Read the value now in force before moving a number (order 5), and do not ste",
+      "evidence": [
+       "F54",
+       "F73",
+       "F83",
+       "F85",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "The parts and the aim disagree. 11/10 08:39 (11/10 08:39): close rate fell 0.775 -> 0.664 while points/h read +1%. 11/12 22:18 (11/12 22:18): the saved difference was +1.4 sd, ",
+      "when": [
+       "11/10 08:39",
+       "11/12 22:18",
+       "11/15 02:53",
+       "11/15 11:23",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "Leave MAX_RAISE at 0.35. 0.4 -> 0.35 was kept at +3% points/h (11/09 10:35). Since then 0.35 -> 0.3 read +1%, -20%, -17% and -19%, and 0.35 -> 0.25 read -2%. 0.35 -> 0.4 read -5% and +0%. Move it only with a new measurement at the value in force.",
+      "evidence": [
+       "F46",
+       "F54",
+       "F62",
+       "F69",
+       "F76",
+       "F79",
+       "F83",
+       "F86"
+      ],
+      "status": "verified",
+      "trap": "Both 0.3 (+1.3 sd in 11/13 23:57 and 11/15 18:32) and 0.4 (+2.1 sd in 11/13 11:32, +2.6 sd in 11/15 02:53) showed a better saved difference and higher saved/deal, which invites a move. Points/",
+      "when": [
+       "11/09 10:35",
+       "11/10 08:39",
+       "11/11 14:49",
+       "11/12 14:51",
+       "11/13 11:32",
+       "11/13 23:57",
+       "11/15 02:53",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not retry RAISE_FOOD 1.2 -> 1.3: it lost on points/h both times (-14%, -4%). RAISE_GOODS 0.8 -> 0.9 is split (-3%, then +15%) and MAX_TRIES 6 -> 5 is split (+14%, then -9%). Treat those two as unsettled. Change them only on a new measure",
+      "evidence": [
+       "F65",
+       "F81",
+       "F63",
+       "F74",
+       "F71",
+       "F92"
+      ],
+      "status": "verified",
+      "trap": "The +15% (11/13 02:10, saved difference -0.1 sd) and +14% (11/12 19:00, +0.5 sd) reads sit on negative points/h bases with small saved differences, so they look like wins but a",
+      "when": [
+       "11/12 01:27",
+       "11/14 12:10",
+       "11/11 19:08",
+       "11/13 02:10",
+       "11/12 19:00",
+       "11/16 12:10"
+      ]
+     },
+     {
+      "rule": "FIRM_GAP 0.07 has no clear winning neighbour. 0.07 -> 0.05 gave -35%, -18%, +6%, +6% and +2% points/h. 0.07 -> 0.09 gave +2% and -42%. Do not move it without a new measurement at the value in force.",
+      "evidence": [
+       "F50",
+       "F52",
+       "F61",
+       "F68",
+       "F78",
+       "F82",
+       "F90"
+      ],
+      "status": "verified",
+      "trap": "The three latest 0.05 reads (+6%, +6%, +2%, all within about 0.5 sd) are small and two sit on negative bases, so they do not justify a move. The -35% (11/09 23:48, -1.1",
+      "when": [
+       "11/09 18:04",
+       "11/09 23:48",
+       "11/11 11:18",
+       "11/12 11:03",
+       "11/13 14:35",
+       "11/14 18:55",
+       "11/16 09:05"
+      ]
+     },
+     {
+      "rule": "FOOD_MARGIN 1.15 -> 1.1 is unsettled on points/h: +9% (+1.6 sd), +33% (+1.2 sd), -24% (+1.4 sd, negative base) and -29% (-1.9 sd). It is no proven win. Re-test only as a new measurement at the value in force, and never on saved/deal alone.",
+      "evidence": [
+       "F57",
+       "F64",
+       "F73",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "Saved/deal rose in the first three 1.1 trials (e.g. 0.3722 -> 0.3889) and the saved difference was positive each time, yet points/h fell 24% in the third. The l",
+      "when": [
+       "11/10 16:04",
+       "11/11 22:09",
+       "11/12 22:18",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "CAP 0.75 is unsettled but leans toward 0.7 lately. 0.75 -> 0.7 read +2%, +0%, -11%, +28% and +14% points/h (the last two at +1.0 sd and +0.7 sd). 0.75 -> 0.8 read -5%. Step it again only as a new measurement at the value in force, judged on",
+      "evidence": [
+       "F53",
+       "F56",
+       "F67",
+       "F80",
+       "F85",
+       "F93"
+      ],
+      "status": "verified",
+      "trap": "0.7 usually shows better saved/deal and a lower close rate (11/10 12:26, 11/15 11:23, 11/16 17:01), which makes it look like a safe win. 11/14 04:38 read -11% on points/h, and the +28% and +14",
+      "when": [
+       "11/10 03:43",
+       "11/10 12:26",
+       "11/12 05:22",
+       "11/14 04:38",
+       "11/15 11:23",
+       "11/16 17:01"
+      ]
+     },
+     {
+      "rule": "Do not add more break-rate, grade or over-cap penalties or re-rankings to the buyer's candidate or scout ordering. Every such A/B lost: sort by surplus/list -2%, break-rate weighting -6%, grade penalty -4%, soft-break ban -2%, scout expecte",
+      "evidence": [
+       "F37",
+       "F39",
+       "F42",
+       "F55",
+       "F59",
+       "F66",
+       "F58"
+      ],
+      "status": "verified",
+      "trap": "Each was written with an expected +1% to +4% and measured negative. 11/08 11:55, 11/08 16:36 and 11/10 09:28 were still labelled kept, because they were judged on saved/deal and close ",
+      "when": [
+       "11/08 11:55",
+       "11/08 16:36",
+       "11/08 21:36",
+       "11/10 09:28",
+       "11/11 00:28",
+       "11/12 05:07",
+       "11/10 17:41"
+      ]
+     },
+     {
+      "rule": "A code change labelled kept can still read zero or negative on the aim. A speed or part verdict is not a points result. Judge a follow-up on the aim before stacking it on a kept label.",
+      "evidence": [
+       "F70",
+       "F75",
+       "F77",
+       "F88",
+       "F72",
+       "F84",
+       "F91"
+      ],
+      "status": "verified",
+      "trap": "Plan mode on half the orders was kept at -3% buyer_pts_h (expected +10%, 11/13 07:58). Per-grade deal_limit was kept at -1% saved/deal (11/13 13:13), the warranty rule at +0% (",
+      "when": [
+       "11/12 16:48",
+       "11/13 07:58",
+       "11/13 13:13",
+       "11/15 22:11",
+       "11/12 21:47",
+       "11/15 10:20",
+       "11/16 10:13"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794846980.15185,
+    "lessons": [
+     {
+      "rule": "Judge every buyer change on buyer points/h and its sd (standing order 1). Close rate, saved/deal, the saved difference and the kept/not-taken label are parts only. Read the value now in force before moving a number (order 5), and never step",
+      "evidence": [
+       "F54",
+       "F73",
+       "F83",
+       "F85",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "The parts and the aim disagree. 11/10 08:39: close rate fell 0.775 -> 0.664 while points/h read +1%. 11/12 22:18: the saved difference was +1.4 sd but points/h ",
+      "when": [
+       "11/10 08:39",
+       "11/12 22:18",
+       "11/15 02:53",
+       "11/15 11:23",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "Leave MAX_RAISE at 0.35. 0.4 -> 0.35 was kept at +3% points/h (11/09 10:35). Since then 0.35 -> 0.3 read +1%, -20%, -17% and -19%, and 0.35 -> 0.25 read -2%. 0.35 -> 0.4 read -5% and +0%. Move it only with a new measurement at the value in ",
+      "evidence": [
+       "F46",
+       "F54",
+       "F62",
+       "F69",
+       "F76",
+       "F79",
+       "F83",
+       "F86"
+      ],
+      "status": "verified",
+      "trap": "Both 0.3 (+1.3 sd on 11/13 23:57 and 11/15 18:32) and 0.4 (+2.1 sd on 11/13 11:32, +2.6 sd on 11/15 02:53) showed a better saved difference and higher saved/dea",
+      "when": [
+       "11/09 10:35",
+       "11/10 08:39",
+       "11/11 14:49",
+       "11/12 14:51",
+       "11/13 11:32",
+       "11/13 23:57",
+       "11/15 02:53",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not retry RAISE_FOOD 1.2 -> 1.3: it lost on points/h both times (-14%, -4%). RAISE_GOODS 0.8 -> 0.9 is split (-3%, then +15%) and MAX_TRIES 6 -> 5 is split (+14%, then -9%). Treat those two as unsettled and change them only on a new meas",
+      "evidence": [
+       "F65",
+       "F81",
+       "F63",
+       "F74",
+       "F71",
+       "F92"
+      ],
+      "status": "verified",
+      "trap": "The +15% (11/13 02:10, saved difference -0.1 sd) and +14% (11/12 19:00, +0.5 sd) reads sit on negative points/h bases with small saved differences, so they look",
+      "when": [
+       "11/12 01:27",
+       "11/14 12:10",
+       "11/11 19:08",
+       "11/13 02:10",
+       "11/12 19:00",
+       "11/16 12:10"
+      ]
+     },
+     {
+      "rule": "FIRM_GAP 0.07 has no clear winning neighbour. 0.07 -> 0.05 gave -35%, -18%, +6%, +6% and +2% points/h. 0.07 -> 0.09 gave +2% and -42%. Do not move it without a new measurement at the value in force.",
+      "evidence": [
+       "F50",
+       "F52",
+       "F61",
+       "F68",
+       "F78",
+       "F82",
+       "F90"
+      ],
+      "status": "verified",
+      "trap": "The three latest 0.05 reads (+6%, +6%, +2%, all within about 0.5 sd) are small and two sit on negative bases, so they do not justify a move. The -35% (11/09 23:",
+      "when": [
+       "11/09 18:04",
+       "11/09 23:48",
+       "11/11 11:18",
+       "11/12 11:03",
+       "11/13 14:35",
+       "11/14 18:55",
+       "11/16 09:05"
+      ]
+     },
+     {
+      "rule": "FOOD_MARGIN 1.15 -> 1.1 is unsettled on points/h: +9% (+1.6 sd), +33% (+1.2 sd), -24% (+1.4 sd, negative base) and -29% (-1.9 sd). It is no proven win. Re-test only as a new measurement at the value in force, and never on saved/deal alone.",
+      "evidence": [
+       "F57",
+       "F64",
+       "F73",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "Saved/deal rose in the first three 1.1 trials (e.g. 0.3722 -> 0.3889) and the saved difference was positive each time, yet points/h fell 24% in the third. The l",
+      "when": [
+       "11/10 16:04",
+       "11/11 22:09",
+       "11/12 22:18",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "CAP 0.75 is unsettled but leans toward 0.7 lately. 0.75 -> 0.7 read +2%, +0%, -11%, +28% and +14% points/h (the last two at +1.0 sd and +0.7 sd). 0.75 -> 0.8 read -5%. Step it again only as a new measurement at the value in force, judged on",
+      "evidence": [
+       "F53",
+       "F56",
+       "F67",
+       "F80",
+       "F85",
+       "F93"
+      ],
+      "status": "verified",
+      "trap": "0.7 usually shows better saved/deal and a lower close rate (11/10 12:26, 11/15 11:23, 11/16 17:01), which makes it look like a safe win. 11/14 04:38 read -11% o",
+      "when": [
+       "11/10 03:43",
+       "11/10 12:26",
+       "11/12 05:22",
+       "11/14 04:38",
+       "11/15 11:23",
+       "11/16 17:01"
+      ]
+     },
+     {
+      "rule": "Do not add more break-rate, grade or over-cap penalties or re-rankings to the buyer's candidate or scout ordering. Every such A/B lost: sort by surplus/list -2%, break-rate weighting -6%, grade penalty -4%, soft-break ban -2%, scout expecte",
+      "evidence": [
+       "F37",
+       "F39",
+       "F42",
+       "F55",
+       "F59",
+       "F66",
+       "F58"
+      ],
+      "status": "verified",
+      "trap": "Each was written with an expected +1% to +4% and measured negative. 11/08 11:55, 11/08 16:36 and 11/10 09:28 were still labelled kept, because they were judged on saved/deal and close ",
+      "when": [
+       "11/08 11:55",
+       "11/08 16:36",
+       "11/08 21:36",
+       "11/10 09:28",
+       "11/11 00:28",
+       "11/12 05:07",
+       "11/10 17:41"
+      ]
+     },
+     {
+      "rule": "A code change labelled kept can still read zero or negative on the aim. A speed or part verdict is not a points result. Judge a follow-up on the aim before stacking it on a kept label, and treat 11/17 01:21 (no verdict) as unproven.",
+      "evidence": [
+       "F70",
+       "F75",
+       "F77",
+       "F88",
+       "F72",
+       "F84",
+       "F91",
+       "F49"
+      ],
+      "status": "verified",
+      "trap": "Plan mode on half the orders was kept at -3% buyer_pts_h (expected +10%, 11/13 07:58). Per-grade deal_limit was kept at -1% saved/deal, the warranty rule at +0%",
+      "when": [
+       "11/12 16:48",
+       "11/13 07:58",
+       "11/13 13:13",
+       "11/15 22:11",
+       "11/12 21:47",
+       "11/15 10:20",
+       "11/16 10:13",
+       "11/09 16:37"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794858006.723905,
+    "lessons": [
+     {
+      "rule": "Judge every buyer change on buyer points/h and its sd (standing order 1). Close rate, saved/deal, the saved difference and the kept/not-taken label are parts only. Before moving a number, read the value now in force (order 5). Never step a ",
+      "evidence": [
+       "F54",
+       "F73",
+       "F83",
+       "F85",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "The parts and the aim disagree. 11/10 08:39: close rate fell 0.775 -> 0.664 while points/h read +1%. 11/12 22:18: the saved difference was +1.4 sd but points/h ",
+      "when": [
+       "11/10 08:39",
+       "11/12 22:18",
+       "11/15 02:53",
+       "11/15 11:23",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "Leave MAX_RAISE at 0.35. 0.4 -> 0.35 was kept at +3% points/h (11/09 10:35). Since then 0.35 -> 0.3 read +1%, -20%, -17% and -19%, and 0.35 -> 0.25 read -2%. 0.35 -> 0.4 read -5% and +0%. Move it only with a new measurement at the value in ",
+      "evidence": [
+       "F46",
+       "F54",
+       "F62",
+       "F69",
+       "F76",
+       "F79",
+       "F83",
+       "F86"
+      ],
+      "status": "verified",
+      "trap": "Both 0.3 (+1.3 sd on 11/13 23:57 and 11/15 18:32) and 0.4 (+2.1 sd on 11/13 11:32, +2.6 sd on 11/15 02:53) showed a better saved difference and higher saved/dea",
+      "when": [
+       "11/09 10:35",
+       "11/10 08:39",
+       "11/11 14:49",
+       "11/12 14:51",
+       "11/13 11:32",
+       "11/13 23:57",
+       "11/15 02:53",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not retry RAISE_FOOD 1.2 -> 1.3: it lost on points/h both times (-14%, -4%). RAISE_GOODS 0.8 -> 0.9 is split (-3%, then +15%) and MAX_TRIES 6 -> 5 is split (+14%, then -9%). Treat those two as unsettled and change them only on a new meas",
+      "evidence": [
+       "F65",
+       "F81",
+       "F63",
+       "F74",
+       "F71",
+       "F92"
+      ],
+      "status": "verified",
+      "trap": "The +15% (11/13 02:10, saved difference -0.1 sd) and +14% (11/12 19:00, +0.5 sd) reads sit on negative points/h bases with small saved differences, so they look",
+      "when": [
+       "11/12 01:27",
+       "11/14 12:10",
+       "11/11 19:08",
+       "11/13 02:10",
+       "11/12 19:00",
+       "11/16 12:10"
+      ]
+     },
+     {
+      "rule": "FIRM_GAP 0.07 has no clear winning neighbour. 0.07 -> 0.05 gave -35%, -18%, +6%, +6% and +2% points/h. 0.07 -> 0.09 gave +2% and -42%. Do not move it without a new measurement at the value in force.",
+      "evidence": [
+       "F50",
+       "F52",
+       "F61",
+       "F68",
+       "F78",
+       "F82",
+       "F90"
+      ],
+      "status": "verified",
+      "trap": "The three latest 0.05 reads (+6%, +6%, +2%, all within about 0.5 sd) are small and two sit on negative bases, so they do not justify a move. The earlier -35% (1",
+      "when": [
+       "11/09 18:04",
+       "11/09 23:48",
+       "11/11 11:18",
+       "11/12 11:03",
+       "11/13 14:35",
+       "11/14 18:55",
+       "11/16 09:05"
+      ]
+     },
+     {
+      "rule": "FOOD_MARGIN 1.15 -> 1.1 is unsettled on points/h: +9% (+1.6 sd), +33% (+1.2 sd), -24% (+1.4 sd, negative base) and -29% (-1.9 sd). It is no proven win. Re-test only as a new measurement at the value in force, and never on saved/deal alone.",
+      "evidence": [
+       "F57",
+       "F64",
+       "F73",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "Saved/deal rose in the first three 1.1 trials (e.g. 0.3722 -> 0.3889) and the saved difference was positive each time, yet points/h fell 24% in the third. The l",
+      "when": [
+       "11/10 16:04",
+       "11/11 22:09",
+       "11/12 22:18",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "CAP 0.75 is unsettled but leans toward 0.7 lately. 0.75 -> 0.7 read +2%, +0%, -11%, +28% and +14% points/h (the last two at +1.0 sd and +0.7 sd). 0.75 -> 0.8 read -5%. Step it again only as a new measurement at the value in force, judged on",
+      "evidence": [
+       "F53",
+       "F56",
+       "F67",
+       "F80",
+       "F85",
+       "F93"
+      ],
+      "status": "verified",
+      "trap": "0.7 usually shows better saved/deal and a lower close rate (11/10 12:26, 11/15 11:23, 11/16 17:01), which makes it look like a safe win. 11/14 04:38 read -11% o",
+      "when": [
+       "11/10 03:43",
+       "11/10 12:26",
+       "11/12 05:22",
+       "11/14 04:38",
+       "11/15 11:23",
+       "11/16 17:01"
+      ]
+     },
+     {
+      "rule": "Do not add more break-rate, grade or over-cap penalties or re-rankings to the buyer's candidate or scout ordering. Every such A/B lost: sort by surplus/list -2%, break-rate weighting -6%, grade penalty -4%, soft-break ban -2%, scout expecte",
+      "evidence": [
+       "F37",
+       "F39",
+       "F42",
+       "F55",
+       "F59",
+       "F66",
+       "F58"
+      ],
+      "status": "verified",
+      "trap": "Each was written with an expected +1% to +4% and measured negative. 11/08 11:55, 11/08 16:36 and 11/10 09:28 were still labelled kept, because they were judged ",
+      "when": [
+       "11/08 11:55",
+       "11/08 16:36",
+       "11/08 21:36",
+       "11/10 09:28",
+       "11/11 00:28",
+       "11/12 05:07",
+       "11/10 17:41"
+      ]
+     },
+     {
+      "rule": "A code change labelled kept can still read zero or negative on the aim, or move its target metric the wrong way. A speed or part verdict is not a points result. Judge a follow-up on the aim before stacking it on a kept label, and treat 11/1",
+      "evidence": [
+       "F70",
+       "F75",
+       "F77",
+       "F88",
+       "F72",
+       "F84",
+       "F91",
+       "F49",
+       "F94"
+      ],
+      "status": "verified",
+      "trap": "Plan mode on half the orders was kept at -3% buyer_pts_h (expected +10%, 11/13 07:58). Per-grade deal_limit was kept at -1% saved/deal, the warranty rule at +0%",
+      "when": [
+       "11/12 16:48",
+       "11/13 07:58",
+       "11/13 13:13",
+       "11/15 22:11",
+       "11/12 21:47",
+       "11/15 10:20",
+       "11/16 10:13",
+       "11/09 16:37",
+       "11/17 01:21"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794868957.971863,
+    "lessons": [
+     {
+      "rule": "Judge every buyer change on buyer points/h and its sd (standing order 1). Close rate, saved/deal, the saved difference and the kept/not-taken label are parts only. Read the value now in force before moving a number (order 5). Never step a n",
+      "evidence": [
+       "F54",
+       "F73",
+       "F83",
+       "F85",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "The parts and the aim disagree. 11/10 08:39: close rate fell 0.775 -> 0.664 while points/h read +1%. 11/12 22:18: the saved difference was +1.4 sd but points/h fell 24%. 11/15 02:53: +",
+      "when": [
+       "11/10 08:39",
+       "11/12 22:18",
+       "11/15 02:53",
+       "11/15 11:23",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "Leave MAX_RAISE at 0.35. 0.35 -> 0.3 read +1%, -20%, -17% and -19% points/h. 0.35 -> 0.25 read -2%. 0.35 -> 0.4 read -5% and +0%. Only the first 0.4 -> 0.35 step was kept (+3%). Move it only with a new measurement at the value in force.",
+      "evidence": [
+       "F46",
+       "F54",
+       "F62",
+       "F69",
+       "F76",
+       "F79",
+       "F83",
+       "F86"
+      ],
+      "status": "verified",
+      "trap": "Both 0.3 (+1.3 sd in 11/13 23:57 and 11/15 18:32) and 0.4 (+2.1 sd in 11/13 11:32, +2.6 sd in 11/15 02:53) showed a better saved difference and higher saved/deal, so they look like wins. Point",
+      "when": [
+       "11/09 10:35",
+       "11/10 08:39",
+       "11/11 14:49",
+       "11/12 14:51",
+       "11/13 11:32",
+       "11/13 23:57",
+       "11/15 02:53",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not retry RAISE_FOOD 1.2 -> 1.3: it lost on points/h both times (-14%, -4%). RAISE_GOODS 0.8 -> 0.9 is split (-3%, +15%) and MAX_TRIES 6 -> 5 is split (+14%, -9%). SCOUT_WAIT 10 -> 8 has one read, +31% points/h (+1.2 sd) with close rate ",
+      "evidence": [
+       "F65",
+       "F81",
+       "F63",
+       "F74",
+       "F71",
+       "F92",
+       "F95"
+      ],
+      "status": "verified",
+      "trap": "The +15% (11/13 02:10, -0.1 sd) and +14% (11/12 19:00) reads sit on negative points/h bases with small saved differences, so they are weak. A single +31% read (11/17 03:51) is also not",
+      "when": [
+       "11/12 01:27",
+       "11/14 12:10",
+       "11/11 19:08",
+       "11/13 02:10",
+       "11/12 19:00",
+       "11/16 12:10",
+       "11/17 03:51"
+      ]
+     },
+     {
+      "rule": "FIRM_GAP 0.07 has no clear winning neighbour. 0.07 -> 0.05 gave -35%, -18%, +6%, +6% and +2% points/h. 0.07 -> 0.09 gave +2% and -42%. Do not move it without a new measurement at the value in force.",
+      "evidence": [
+       "F50",
+       "F52",
+       "F61",
+       "F68",
+       "F78",
+       "F82",
+       "F90"
+      ],
+      "status": "verified",
+      "trap": "The three latest 0.05 reads (+6%, +6%, +2%, all within about 0.5 sd) are small and two sit on negative bases, so they do not justify a move. The earlier -35% (F",
+      "when": [
+       "11/09 18:04",
+       "11/09 23:48",
+       "11/11 11:18",
+       "11/12 11:03",
+       "11/13 14:35",
+       "11/14 18:55",
+       "11/16 09:05"
+      ]
+     },
+     {
+      "rule": "FOOD_MARGIN 1.15 -> 1.1 is unsettled on points/h: +9% (+1.6 sd), +33% (+1.2 sd), -24% (+1.4 sd, negative base) and -29% (-1.9 sd). It is no proven win. Re-test only as a new measurement at the value in force, and never on saved/deal alone.",
+      "evidence": [
+       "F57",
+       "F64",
+       "F73",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "Saved/deal rose in the first three 1.1 trials (e.g. 0.3722 -> 0.3889) and the saved difference was positive each time, yet points/h fell 24% in the third. The l",
+      "when": [
+       "11/10 16:04",
+       "11/11 22:09",
+       "11/12 22:18",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "CAP 0.75 is unsettled but leans toward 0.7 lately. 0.75 -> 0.7 read +2%, +0%, -11%, +28% and +14% points/h (the last two at +1.0 sd and +0.7 sd). 0.75 -> 0.8 read -5%. Step it again only as a new measurement at the value in force, judged on",
+      "evidence": [
+       "F53",
+       "F56",
+       "F67",
+       "F80",
+       "F85",
+       "F93"
+      ],
+      "status": "verified",
+      "trap": "0.7 usually shows better saved/deal and a lower close rate (11/10 12:26, 11/15 11:23, 11/16 17:01), which makes it look like a safe win. 11/14 04:38 read -11% on points/h with no saved differe",
+      "when": [
+       "11/10 03:43",
+       "11/10 12:26",
+       "11/12 05:22",
+       "11/14 04:38",
+       "11/15 11:23",
+       "11/16 17:01"
+      ]
+     },
+     {
+      "rule": "Do not add more break-rate, grade or over-cap penalties or re-rankings to the buyer's candidate or scout ordering. Every such A/B lost on saved_deal or close rate: sort by surplus/list -2%, break-rate weighting -6%, grade penalty -4%, soft-",
+      "evidence": [
+       "F37",
+       "F39",
+       "F42",
+       "F55",
+       "F59",
+       "F66",
+       "F58"
+      ],
+      "status": "verified",
+      "trap": "Each was written with an expected +1% to +4% and measured negative. 11/08 11:55, 11/08 16:36 and 11/10 09:28 were still labelled kept because they were judged on other terms. The kept ",
+      "when": [
+       "11/08 11:55",
+       "11/08 16:36",
+       "11/08 21:36",
+       "11/10 09:28",
+       "11/11 00:28",
+       "11/12 05:07",
+       "11/10 17:41"
+      ]
+     },
+     {
+      "rule": "A code change labelled kept can still read zero or negative on the aim, or move its target metric the wrong way. A speed or part verdict is not a points result. Judge a follow-up on the aim before stacking it on a kept label, and treat 11/17 01:21 ",
+      "evidence": [
+       "F70",
+       "F75",
+       "F77",
+       "F88",
+       "F72",
+       "F84",
+       "F91",
+       "F49",
+       "F94",
+       "F16"
+      ],
+      "status": "verified",
+      "trap": "Plan mode on half the orders was kept at -3% buyer_pts_h (expected +10%, 11/13 07:58). The rule-based plan step was kept for +37% on seconds/order (11/15 22:11) with no points ",
+      "when": [
+       "11/12 16:48",
+       "11/13 07:58",
+       "11/13 13:13",
+       "11/15 22:11",
+       "11/12 21:47",
+       "11/15 10:20",
+       "11/16 10:13",
+       "11/09 16:37",
+       "11/17 01:21",
+       "11/05 17:22"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794880259.021328,
+    "lessons": [
+     {
+      "rule": "Judge every buyer change on buyer points/h and its sd (standing order 1). Close rate, saved/deal, the saved difference and the kept/not-taken label are parts only. Read the value now in force before moving a number (order 5), and never step",
+      "evidence": [
+       "F54",
+       "F73",
+       "F83",
+       "F85",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "The parts and the aim disagree. 11/10 08:39 (11/10 08:39): close rate fell 0.775 -> 0.664 while points/h read +1%. 11/12 22:18 (11/12 22:18): the saved difference was +1.4 sd b",
+      "when": [
+       "11/10 08:39",
+       "11/12 22:18",
+       "11/15 02:53",
+       "11/15 11:23",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "Leave MAX_RAISE at 0.35. 0.35 -> 0.3 read +1%, -20%, -17% and -19% points/h. 0.35 -> 0.25 read -2%. 0.35 -> 0.4 read -5% and +0%. Only the first 0.4 -> 0.35 step was kept (+3%). Move it only with a new measurement at the value in force.",
+      "evidence": [
+       "F46",
+       "F54",
+       "F62",
+       "F69",
+       "F76",
+       "F79",
+       "F83",
+       "F86"
+      ],
+      "status": "verified",
+      "trap": "Both 0.3 (+1.3 sd in 11/13 23:57 and 11/15 18:32) and 0.4 (+2.1 sd in 11/13 11:32, +2.6 sd in 11/15 02:53) showed a better saved difference and often higher saved/deal, so they look like wins.",
+      "when": [
+       "11/09 10:35",
+       "11/10 08:39",
+       "11/11 14:49",
+       "11/12 14:51",
+       "11/13 11:32",
+       "11/13 23:57",
+       "11/15 02:53",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not retry RAISE_FOOD 1.2 -> 1.3: it lost on points/h both times (-14%, -4%). RAISE_GOODS 0.8 -> 0.9 is split (-3%, +15%) and MAX_TRIES 6 -> 5 is split (+14%, -9%). SCOUT_WAIT 10 -> 8 has one read, +31% points/h (+1.2 sd), with close rate",
+      "evidence": [
+       "F65",
+       "F81",
+       "F63",
+       "F74",
+       "F71",
+       "F92",
+       "F95"
+      ],
+      "status": "verified",
+      "trap": "The +15% (11/13 02:10, -0.1 sd) and +14% (11/12 19:00) reads sit on negative points/h bases with small saved differences, so they are weak. The single +31% read (11/17 03:51) is also n",
+      "when": [
+       "11/12 01:27",
+       "11/14 12:10",
+       "11/11 19:08",
+       "11/13 02:10",
+       "11/12 19:00",
+       "11/16 12:10",
+       "11/17 03:51"
+      ]
+     },
+     {
+      "rule": "FIRM_GAP 0.07 has no clear winning neighbour. 0.07 -> 0.05 gave -35%, -18%, +6%, +6% and +2% points/h. 0.07 -> 0.09 gave +2% and -42%. Do not move it without a new measurement at the value in force.",
+      "evidence": [
+       "F50",
+       "F52",
+       "F61",
+       "F68",
+       "F78",
+       "F82",
+       "F90"
+      ],
+      "status": "verified",
+      "trap": "The three latest 0.05 reads (+6%, +6%, +2%, all within about 0.5 sd) are small and two sit on negative bases, so they do not justify a move. The earlier -35% (F",
+      "when": [
+       "11/09 18:04",
+       "11/09 23:48",
+       "11/11 11:18",
+       "11/12 11:03",
+       "11/13 14:35",
+       "11/14 18:55",
+       "11/16 09:05"
+      ]
+     },
+     {
+      "rule": "FOOD_MARGIN 1.15 -> 1.1 is unsettled on points/h: +9% (+1.6 sd), +33% (+1.2 sd), -24% (+1.4 sd, negative base) and -29% (-1.9 sd). It is no proven win. Re-test only as a new measurement at the value in force, and never on saved/deal alone.",
+      "evidence": [
+       "F57",
+       "F64",
+       "F73",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "Saved/deal rose in the first three 1.1 trials (e.g. 0.3722 -> 0.3889) and the saved difference was positive each time, yet points/h fell 24% in the third. The l",
+      "when": [
+       "11/10 16:04",
+       "11/11 22:09",
+       "11/12 22:18",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "CAP 0.75 is unsettled but leans toward 0.7 lately. 0.75 -> 0.7 read +2%, +0%, -11%, +28% and +14% points/h (the last two at +1.0 sd and +0.7 sd). 0.75 -> 0.8 read -5%. Step it again only as a new measurement at the value in force, judged on",
+      "evidence": [
+       "F53",
+       "F56",
+       "F67",
+       "F80",
+       "F85",
+       "F93"
+      ],
+      "status": "verified",
+      "trap": "0.7 usually shows better saved/deal and a lower close rate (11/10 12:26, 11/15 11:23, 11/16 17:01), which makes it look like a safe win. 11/14 04:38 read -11% on points/h with no saved differe",
+      "when": [
+       "11/10 03:43",
+       "11/10 12:26",
+       "11/12 05:22",
+       "11/14 04:38",
+       "11/15 11:23",
+       "11/16 17:01"
+      ]
+     },
+     {
+      "rule": "Do not add more break-rate, grade or over-cap penalties, or re-rankings by expected saved rate, to the buyer's candidate or scout ordering. Every such A/B lost on saved_deal or close rate: sort by surplus/list -2%, break-rate weighting -6%,",
+      "evidence": [
+       "F37",
+       "F39",
+       "F42",
+       "F55",
+       "F59",
+       "F66",
+       "F58"
+      ],
+      "status": "verified",
+      "trap": "Each was written with an expected +1% to +4% and measured negative. 11/08 11:55, 11/08 16:36 and 11/10 09:28 were still labelled kept because they were judged on other terms. The kept ",
+      "when": [
+       "11/08 11:55",
+       "11/08 16:36",
+       "11/08 21:36",
+       "11/10 09:28",
+       "11/11 00:28",
+       "11/12 05:07",
+       "11/10 17:41"
+      ]
+     },
+     {
+      "rule": "A code change labelled kept can still read zero or negative on the aim, or move its target metric opposite to the expectation. A speed or part verdict is not a points result. Judge a follow-up on points/h before stacking it on a kept label,",
+      "evidence": [
+       "F70",
+       "F75",
+       "F77",
+       "F88",
+       "F72",
+       "F84",
+       "F91",
+       "F49",
+       "F94",
+       "F16"
+      ],
+      "status": "verified",
+      "trap": "Plan mode on half the orders was kept at -3% buyer_pts_h (expected +10%, 11/13 07:58). The rule-based plan step was kept for +37% on seconds/order (11/15 22:11) with no points ",
+      "when": [
+       "11/12 16:48",
+       "11/13 07:58",
+       "11/13 13:13",
+       "11/15 22:11",
+       "11/12 21:47",
+       "11/15 10:20",
+       "11/16 10:13",
+       "11/09 16:37",
+       "11/17 01:21",
+       "11/05 17:22"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794891264.2351391,
+    "lessons": [
+     {
+      "rule": "Judge every buyer change on buyer points/h and its sd (standing order 1). Close rate, saved/deal, the saved difference and the kept/not-taken label are only parts. Read the value now in force before moving a number (order 5), and do not ste",
+      "evidence": [
+       "F54",
+       "F73",
+       "F83",
+       "F85",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "The parts and the aim disagree. 11/10 08:39: close rate fell 0.775 -> 0.664 while points/h read +1%. 11/12 22:18: the saved difference was +1.4 sd but points/h ",
+      "when": [
+       "11/10 08:39",
+       "11/12 22:18",
+       "11/15 02:53",
+       "11/15 11:23",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "Leave MAX_RAISE at 0.35. 0.35 -> 0.3 read +1%, -20%, -17% and -19% points/h. 0.35 -> 0.25 read -2%. 0.35 -> 0.4 read -5% and +0%. Only the first 0.4 -> 0.35 step was kept (+3%). Move it only with a new measurement at the value in force.",
+      "evidence": [
+       "F46",
+       "F54",
+       "F62",
+       "F69",
+       "F76",
+       "F79",
+       "F83",
+       "F86"
+      ],
+      "status": "verified",
+      "trap": "Both 0.3 (+1.3 sd on 11/13 23:57 and 11/15 18:32) and 0.4 (+2.1 sd on 11/13 11:32, +2.6 sd on 11/15 02:53) showed a better saved difference and often higher sav",
+      "when": [
+       "11/09 10:35",
+       "11/10 08:39",
+       "11/11 14:49",
+       "11/12 14:51",
+       "11/13 11:32",
+       "11/13 23:57",
+       "11/15 02:53",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not retry RAISE_FOOD 1.2 -> 1.3: it lost on points/h both times (-14%, -4%). RAISE_GOODS 0.8 -> 0.9 is split (-3%, +15%) and MAX_TRIES 6 -> 5 is split (+14%, -9%), so neither is a proven move. SCOUT_WAIT 10 -> 8 has one read, +31% points",
+      "evidence": [
+       "F65",
+       "F81",
+       "F63",
+       "F74",
+       "F71",
+       "F92",
+       "F95"
+      ],
+      "status": "verified",
+      "trap": "The +15% (11/13 02:10, -0.1 sd) and +14% (11/12 19:00) reads sit on negative points/h bases with small saved differences, so they are weak and flip sign on repe",
+      "when": [
+       "11/12 01:27",
+       "11/14 12:10",
+       "11/11 19:08",
+       "11/13 02:10",
+       "11/12 19:00",
+       "11/16 12:10",
+       "11/17 03:51"
+      ]
+     },
+     {
+      "rule": "FIRM_GAP 0.07 has no clear winning neighbour. 0.07 -> 0.05 gave -35%, -18%, +6%, +6%, +2% and -16% points/h. 0.07 -> 0.09 gave +2% and -42%. Do not move it without a new measurement at the value in force.",
+      "evidence": [
+       "F50",
+       "F52",
+       "F61",
+       "F68",
+       "F78",
+       "F82",
+       "F90",
+       "F96"
+      ],
+      "status": "verified",
+      "trap": "The small positive 0.05 reads (+6%, +6%, +2%) are all within about 0.5 sd, and two sit on negative bases. The latest 0.05 read (11/17 10:26) had +0.8 sd on the ",
+      "when": [
+       "11/09 18:04",
+       "11/09 23:48",
+       "11/11 11:18",
+       "11/12 11:03",
+       "11/13 14:35",
+       "11/14 18:55",
+       "11/16 09:05",
+       "11/17 10:26"
+      ]
+     },
+     {
+      "rule": "FOOD_MARGIN 1.15 -> 1.1 is unsettled on points/h: +9% (+1.6 sd), +33% (+1.2 sd), -24% (+1.4 sd, negative base) and -29% (-1.9 sd). It is no proven win. Re-test only as a new measurement at the value in force, and never on saved/deal alone.",
+      "evidence": [
+       "F57",
+       "F64",
+       "F73",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "Saved/deal rose in the first three 1.1 trials (e.g. 0.3722 -> 0.3889) and the saved difference was positive each time, yet points/h fell 24% in the third. The l",
+      "when": [
+       "11/10 16:04",
+       "11/11 22:09",
+       "11/12 22:18",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "CAP 0.75 -> 0.7 leans positive lately but is unsettled: +2%, +0%, -11%, +28% and +14% points/h (the last two at +1.0 sd and +0.7 sd). 0.75 -> 0.8 read -5%. Step it only as a new measurement at the value in force, judged on points/h, and tak",
+      "evidence": [
+       "F53",
+       "F56",
+       "F67",
+       "F80",
+       "F85",
+       "F93"
+      ],
+      "status": "verified",
+      "trap": "0.7 usually shows better saved/deal and a lower close rate (11/10 12:26, 11/15 11:23, 11/16 17:01), which makes it look like a safe win. 11/14 04:38 read -11% o",
+      "when": [
+       "11/10 03:43",
+       "11/10 12:26",
+       "11/12 05:22",
+       "11/14 04:38",
+       "11/15 11:23",
+       "11/16 17:01"
+      ]
+     },
+     {
+      "rule": "Do not add more break-rate, grade or over-cap penalties, or re-rankings by expected saved rate, to the buyer's candidate or scout ordering. Every such A/B lost: sort by surplus/list -2%, break-rate weighting -6%, grade penalty -4%, soft-bre",
+      "evidence": [
+       "F37",
+       "F39",
+       "F42",
+       "F55",
+       "F59",
+       "F66",
+       "F58"
+      ],
+      "status": "verified",
+      "trap": "Each was written with an expected +1% to +4% and measured negative. 11/08 11:55, 11/08 16:36 and 11/10 09:28 were still labelled kept because they were judged o",
+      "when": [
+       "11/08 11:55",
+       "11/08 16:36",
+       "11/08 21:36",
+       "11/10 09:28",
+       "11/11 00:28",
+       "11/12 05:07",
+       "11/10 17:41"
+      ]
+     },
+     {
+      "rule": "A code change labelled kept can read zero or negative on the aim, or improve only a speed or part metric. Judge each code change on points/h, and do not stack a follow-up on a kept label whose own target metric missed its expectation. Treat",
+      "evidence": [
+       "F70",
+       "F75",
+       "F77",
+       "F88",
+       "F72",
+       "F84",
+       "F91",
+       "F49",
+       "F94"
+      ],
+      "status": "verified",
+      "trap": "Plan mode on half the orders was kept at -3% buyer_pts_h (expected +10%, 11/13 07:58). The rule-based plan step was kept for +37% seconds/order (expected +25%, ",
+      "when": [
+       "11/12 16:48",
+       "11/13 07:58",
+       "11/13 13:13",
+       "11/15 22:11",
+       "11/12 21:47",
+       "11/15 10:20",
+       "11/16 10:13",
+       "11/09 16:37",
+       "11/17 01:21"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794902176.401487,
+    "lessons": [
+     {
+      "rule": "Judge every buyer change on buyer points/h and its sd (standing order 1). Close rate, saved/deal, the saved difference and the kept/not-taken label are only parts. Read the value now in force before moving a number (order 5), and do not ste",
+      "evidence": [
+       "F54",
+       "F73",
+       "F83",
+       "F85",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "The parts and the aim disagree. 11/10 08:39: close rate fell 0.775 -> 0.664 while points/h read +1%. 11/12 22:18: the saved difference was +1.4 sd but points/h ",
+      "when": [
+       "11/10 08:39",
+       "11/12 22:18",
+       "11/15 02:53",
+       "11/15 11:23",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "Leave MAX_RAISE at 0.35. 0.35 -> 0.3 read +1%, -20%, -17% and -19% points/h. 0.35 -> 0.25 read -2%. 0.35 -> 0.4 read -5% and +0%. Only the first 0.4 -> 0.35 step was kept (+3%). Move it only with a new measurement at the value in force.",
+      "evidence": [
+       "F46",
+       "F54",
+       "F62",
+       "F69",
+       "F76",
+       "F79",
+       "F83",
+       "F86"
+      ],
+      "status": "verified",
+      "trap": "Both 0.3 (+1.3 sd on 11/13 23:57 and 11/15 18:32) and 0.4 (+2.1 sd on 11/13 11:32, +2.6 sd on 11/15 02:53) showed a better saved difference and often higher sav",
+      "when": [
+       "11/09 10:35",
+       "11/10 08:39",
+       "11/11 14:49",
+       "11/12 14:51",
+       "11/13 11:32",
+       "11/13 23:57",
+       "11/15 02:53",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not retry RAISE_FOOD 1.2 -> 1.3: it lost on points/h both times (-14%, -4%). RAISE_GOODS 0.8 -> 0.9 is split (-3%, +15%) and MAX_TRIES 6 -> 5 is split (+14%, -9%), so neither is a proven move. SCOUT_WAIT 10 -> 8 has one read, +31% points",
+      "evidence": [
+       "F65",
+       "F81",
+       "F63",
+       "F74",
+       "F71",
+       "F92",
+       "F95"
+      ],
+      "status": "verified",
+      "trap": "The +15% (11/13 02:10, -0.1 sd) and +14% (11/12 19:00) reads sit on negative points/h bases with small saved differences, so they are weak and flip sign on repe",
+      "when": [
+       "11/12 01:27",
+       "11/14 12:10",
+       "11/11 19:08",
+       "11/13 02:10",
+       "11/12 19:00",
+       "11/16 12:10",
+       "11/17 03:51"
+      ]
+     },
+     {
+      "rule": "FIRM_GAP 0.07 has no clear winning neighbour. 0.07 -> 0.05 gave -35%, -18%, +6%, +6%, +2% and -16% points/h. 0.07 -> 0.09 gave +2% and -42%. Do not move it without a new measurement at the value in force.",
+      "evidence": [
+       "F50",
+       "F52",
+       "F61",
+       "F68",
+       "F78",
+       "F82",
+       "F90",
+       "F96"
+      ],
+      "status": "verified",
+      "trap": "The small positive 0.05 reads (+6%, +6%, +2%) are all within about 0.5 sd, and two sit on negative bases. The latest 0.05 read (11/17 10:26) had +0.8 sd on the ",
+      "when": [
+       "11/09 18:04",
+       "11/09 23:48",
+       "11/11 11:18",
+       "11/12 11:03",
+       "11/13 14:35",
+       "11/14 18:55",
+       "11/16 09:05",
+       "11/17 10:26"
+      ]
+     },
+     {
+      "rule": "FOOD_MARGIN 1.15 -> 1.1 is unsettled on points/h: +9% (+1.6 sd), +33% (+1.2 sd), -24% (+1.4 sd, negative base) and -29% (-1.9 sd). It is no proven win. 1.15 -> 1.2 was not taken. Re-test only as a new measurement at the value in force, and ",
+      "evidence": [
+       "F45",
+       "F57",
+       "F64",
+       "F73",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "Saved/deal rose in the first three 1.1 trials (e.g. 0.3722 -> 0.3889) and the saved difference was positive each time, yet points/h fell 24% in the third. The l",
+      "when": [
+       "11/09 07:33",
+       "11/10 16:04",
+       "11/11 22:09",
+       "11/12 22:18",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "CAP 0.75 -> 0.7 leans positive lately but is unsettled: +2%, +0%, -11%, +28% and +14% points/h (the last two at +1.0 sd and +0.7 sd). 0.75 -> 0.8 read -5%. Step it only as a new measurement at the value in force, judged on points/h, and tak",
+      "evidence": [
+       "F53",
+       "F56",
+       "F67",
+       "F80",
+       "F85",
+       "F93"
+      ],
+      "status": "verified",
+      "trap": "0.7 usually shows better saved/deal and a lower close rate (11/10 12:26, 11/15 11:23, 11/16 17:01), which makes it look like a safe win. 11/14 04:38 read -11% o",
+      "when": [
+       "11/10 03:43",
+       "11/10 12:26",
+       "11/12 05:22",
+       "11/14 04:38",
+       "11/15 11:23",
+       "11/16 17:01"
+      ]
+     },
+     {
+      "rule": "Do not add more break-rate, grade or over-cap penalties, or re-rankings by expected saved rate, to the buyer's candidate or scout ordering. Every such A/B lost: sort by surplus/list -2%, break-rate weighting -6%, grade penalty -4%, soft-bre",
+      "evidence": [
+       "F37",
+       "F39",
+       "F42",
+       "F55",
+       "F59",
+       "F66",
+       "F58"
+      ],
+      "status": "verified",
+      "trap": "Each was written with an expected +1% to +4% and measured negative. 11/08 11:55, 11/08 16:36 and 11/10 09:28 were still labelled kept because they were judged o",
+      "when": [
+       "11/08 11:55",
+       "11/08 16:36",
+       "11/08 21:36",
+       "11/10 09:28",
+       "11/11 00:28",
+       "11/12 05:07",
+       "11/10 17:41"
+      ]
+     },
+     {
+      "rule": "A code change labelled kept can read zero or negative on the aim, or improve only a speed or part metric. Judge each code change on points/h, and do not stack a follow-up on a kept label whose own target metric missed its expectation. Treat",
+      "evidence": [
+       "F70",
+       "F75",
+       "F77",
+       "F88",
+       "F72",
+       "F84",
+       "F91",
+       "F49",
+       "F94"
+      ],
+      "status": "verified",
+      "trap": "Plan mode on half the orders was kept at -3% buyer_pts_h (expected +10%, 11/13 07:58). The rule-based plan step was kept for +37% seconds/order (expected +25%, ",
+      "when": [
+       "11/12 16:48",
+       "11/13 07:58",
+       "11/13 13:13",
+       "11/15 22:11",
+       "11/12 21:47",
+       "11/15 10:20",
+       "11/16 10:13",
+       "11/09 16:37",
+       "11/17 01:21"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794913821.1721642,
+    "lessons": [
+     {
+      "rule": "Judge every buyer change on buyer points/h and its sd (standing order 1). Close rate, saved/deal, the saved difference and the kept/not-taken label are only parts of the aim. Read the value now in force before moving a number (order 5). Do ",
+      "evidence": [
+       "F54",
+       "F73",
+       "F83",
+       "F85",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "The parts and the aim disagree. 11/10 08:39: close rate fell 0.775 -> 0.664 while points/h read +1%. 11/12 22:18: the saved difference was +1.4 sd but points/h ",
+      "when": [
+       "11/10 08:39",
+       "11/12 22:18",
+       "11/15 02:53",
+       "11/15 11:23",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "Leave MAX_RAISE at 0.35. 0.35 -> 0.3 read +1%, -20%, -17% and -19% points/h. 0.35 -> 0.25 read -2%. 0.35 -> 0.4 read -5% and +0%. Only the first 0.4 -> 0.35 step was kept (+3%). Move it only with a new measurement at the value in force.",
+      "evidence": [
+       "F46",
+       "F54",
+       "F62",
+       "F69",
+       "F76",
+       "F79",
+       "F83",
+       "F86"
+      ],
+      "status": "verified",
+      "trap": "Both 0.3 (+1.3 sd on 11/13 23:57 and 11/15 18:32) and 0.4 (+2.1 sd on 11/13 11:32, +2.6 sd on 11/15 02:53) showed a better saved difference and often higher sav",
+      "when": [
+       "11/09 10:35",
+       "11/10 08:39",
+       "11/11 14:49",
+       "11/12 14:51",
+       "11/13 11:32",
+       "11/13 23:57",
+       "11/15 02:53",
+       "11/15 18:32"
+      ]
+     },
+     {
+      "rule": "Do not retry RAISE_FOOD 1.2 -> 1.3: it lost on points/h both times (-14%, -4%). RAISE_GOODS 0.8 -> 0.9 is split (-3%, +15%) and MAX_TRIES 6 -> 5 is split (+14%, -9%), so neither is a proven move. SCOUT_WAIT 10 -> 8 has one read, +31% points",
+      "evidence": [
+       "F65",
+       "F81",
+       "F63",
+       "F74",
+       "F71",
+       "F92",
+       "F95"
+      ],
+      "status": "verified",
+      "trap": "The +15% (11/13 02:10, -0.1 sd) and +14% (11/12 19:00) reads sit on negative points/h bases with small saved differences, so they are weak and flip sign on repe",
+      "when": [
+       "11/12 01:27",
+       "11/14 12:10",
+       "11/11 19:08",
+       "11/13 02:10",
+       "11/12 19:00",
+       "11/16 12:10",
+       "11/17 03:51"
+      ]
+     },
+     {
+      "rule": "FIRM_GAP 0.07 has no clear winning neighbour. 0.07 -> 0.05 gave -35%, -18%, +6%, +6%, +2% and -16% points/h. 0.07 -> 0.09 gave +2% and -42%. Do not move it without a new measurement at the value in force.",
+      "evidence": [
+       "F50",
+       "F52",
+       "F61",
+       "F68",
+       "F78",
+       "F82",
+       "F90",
+       "F96"
+      ],
+      "status": "verified",
+      "trap": "The small positive 0.05 reads (+6%, +6%, +2%) are all within about 0.5 sd, and two sit on negative bases. The latest 0.05 read (11/17 10:26) had +0.8 sd on the ",
+      "when": [
+       "11/09 18:04",
+       "11/09 23:48",
+       "11/11 11:18",
+       "11/12 11:03",
+       "11/13 14:35",
+       "11/14 18:55",
+       "11/16 09:05",
+       "11/17 10:26"
+      ]
+     },
+     {
+      "rule": "FOOD_MARGIN 1.15 -> 1.1 is unsettled on points/h: +9% (+1.6 sd), +33% (+1.2 sd), -24% (+1.4 sd, negative base) and -29% (-1.9 sd). It is no proven win. 1.15 -> 1.2 was not taken. Re-test only as a new measurement at the value in force, judg",
+      "evidence": [
+       "F45",
+       "F57",
+       "F64",
+       "F73",
+       "F87"
+      ],
+      "status": "verified",
+      "trap": "Saved/deal rose in the first three 1.1 trials (e.g. 0.3722 -> 0.3889) and the saved difference was positive each time, yet points/h fell 24% in the third. The l",
+      "when": [
+       "11/09 07:33",
+       "11/10 16:04",
+       "11/11 22:09",
+       "11/12 22:18",
+       "11/15 21:53"
+      ]
+     },
+     {
+      "rule": "CAP 0.75 -> 0.7 leans positive lately but is unsettled: +2%, +0%, -11%, +28% and +14% points/h (the last two at +1.0 sd and +0.7 sd). 0.75 -> 0.8 read -5%. Step it only as a new measurement at the value in force, judged on points/h, and tak",
+      "evidence": [
+       "F53",
+       "F56",
+       "F67",
+       "F80",
+       "F85",
+       "F93"
+      ],
+      "status": "verified",
+      "trap": "0.7 usually shows better saved/deal and a lower close rate (11/10 12:26, 11/15 11:23, 11/16 17:01), which makes it look like a safe win. 11/14 04:38 read -11% o",
+      "when": [
+       "11/10 03:43",
+       "11/10 12:26",
+       "11/12 05:22",
+       "11/14 04:38",
+       "11/15 11:23",
+       "11/16 17:01"
+      ]
+     },
+     {
+      "rule": "Do not add more break-rate, grade or over-cap penalties, or re-rankings by expected saved rate, to the buyer's candidate or scout ordering. Every such A/B lost: sort by surplus/list -2%, break-rate weighting -6%, grade penalty -4%, soft-bre",
+      "evidence": [
+       "F37",
+       "F39",
+       "F42",
+       "F55",
+       "F59",
+       "F66",
+       "F58"
+      ],
+      "status": "verified",
+      "trap": "Each loser was written with an expected +1% to +4% and measured negative. 11/08 11:55, 11/08 16:36 and 11/10 09:28 were still labelled kept because they were ju",
+      "when": [
+       "11/08 11:55",
+       "11/08 16:36",
+       "11/08 21:36",
+       "11/10 09:28",
+       "11/11 00:28",
+       "11/12 05:07",
+       "11/10 17:41"
+      ]
+     },
+     {
+      "rule": "A code change labelled kept can read zero or negative on the aim, or improve only a speed or part metric. Judge each code change on points/h, and do not stack a follow-up on a kept label whose own target metric missed its expectation. Treat",
+      "evidence": [
+       "F70",
+       "F75",
+       "F77",
+       "F88",
+       "F72",
+       "F84",
+       "F91",
+       "F49",
+       "F94"
+      ],
+      "status": "verified",
+      "trap": "Plan mode on half the orders was kept at -3% buyer_pts_h (expected +10%, 11/13 07:58). The rule-based plan step was kept for +37% seconds/order (expected +25%, ",
+      "when": [
+       "11/12 16:48",
+       "11/13 07:58",
+       "11/13 13:13",
+       "11/15 22:11",
+       "11/12 21:47",
+       "11/15 10:20",
+       "11/16 10:13",
+       "11/09 16:37",
+       "11/17 01:21"
+      ]
+     }
+    ]
+   }
+  ],
+  "failed_check": {}
+ }
+}

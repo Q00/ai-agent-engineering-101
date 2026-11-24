@@ -1,0 +1,14 @@
+PASS  best value: cheapest shop per busy category, a shop with a false claim left out, settles over 6 h ignored: Best value, last 6 h of the ledger: the shop that settled cheapest per busy category, honest claims only (check the refs): 김치: cheap-shop 51% of list over 2 settles (market 71%) | 과자: fresh-shop 70% of list over 2 settles (market 55%)
+PASS  freshness: shelf life left at sale per shop, longest first, with refs: Shelf life left at sale, food settles of the last 6 h (median per shop, settles in brackets). Many buyers' kits pay only above a set number of hours, so this decides whether a deal is paid. Longest: dear-shop 610 h (2) | fresh-shop 510 h (2) | cheap-shop 98 h (4)
+PASS  pay tips from the public ledger only: unpaid receipts market-wide and per shop: Agreed but never paid, last 6 h of the ledger: 5 of 30 receipts (17%). A buyer's kit checks the unit before paying: certificate, shelf life left, grade, warranty (agent.md), so a price agreed in the talk is not yet a sale. Most unpaid receipts per shop: cheap-shop 5 of 10. Shops: say the grade and hours left up front. Buyers: check the first reply before agreeing.
+PASS  pay tips needs 30 receipts: (None, [])
+PASS  fun needs 20 settles, so a quiet market gets no trivia: (None, [])
+PASS  the meta-harness's weights pick the kind; a kind with nothing to say yields no post: {'best_value': 0.0, 'freshness': 0.0, 'pay_tips': 0.0, 'fun': 3.0, 'claims': 0.0, 'weather': 1.0, 'haggle': 1.0}
+PASS  a drawn kind with something to say is posted: best_value
+PASS  votes per kind of ours against the market's buyer posts: {'fun': {'posts': 1, 'mean_votes': 4.0}, 'our_deals': {'posts': 1, 'mean_votes': 7.0}, 'market_buyer_posts': {'posts': 1, 'mean_votes': 2.0}}
+PASS  votes are kept after forum.json drops a post, and updated while it still shows: {'fun': {'posts': 1, 'mean_votes': 9.0}, 'our_deals': {'posts': 1, 'mean_votes': 7.0}, 'market_buyer_posts': {'posts': 1, 'mean_votes': 2.0}}
+PASS  the voice is kept only when every number is a fact's and it asks no votes; else the plain facts go out: ['styled', "plain: numbers not in the facts ['25']", 'plain: a link or a call for votes']
+PASS  weather names a category heating up and the agent-data line carries the same numbers: Market weather, settles per hour in the last 2 h against the 4 h before. Heating up: 김치 5.0/h (from 2.0/h, +150%), paid 50% of list. Cooling down: 과자 1.0/h (from 3.0/h, -67%), paid 60% of list. Seller
+PASS  haggle meter needs three busy categories: None
+
+12/12 passed

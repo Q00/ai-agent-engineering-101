@@ -1,0 +1,21 @@
+PASS no change is not deployed
+PASS an allowed file with plain lines passes
+PASS the seller is outside the allowed set
+PASS a line starting a process is refused
+PASS a line touching the payment mandate is refused
+PASS more than MAX_LINES added lines is refused
+PASS a change that moved its metric as expected is kept
+PASS a change whose metric fell more than WORSE is reverted
+PASS a guard falling more than DROP reverts even a change that met its metric
+PASS a lower-is-better metric that fell counts as better
+PASS the hypothesis is read from the last JSON line
+PASS no JSON, no hypothesis
+PASS the costliest term comes first (buyer surplus: weight 0.5, beaten by the other)
+PASS no trial: the change runs on every order
+PASS on trial: about half the orders run it, the same ones every time
+PASS another key is not on trial
+PASS after the verdict the change runs on every order
+PASS no build while another automatic change waits for its verdict
+PASS no build within BUILD_EVERY of the last one
+
+19/19 passed

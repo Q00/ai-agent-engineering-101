@@ -1,0 +1,72 @@
+[20:44:43] CARD: 'thisjonghoon' at http://127.0.0.1:50531/, protocol 1.0
+[20:44:43] SEND: 'I want to buy Test Lamp (G1)'
+[20:44:43] OPEN e9efb020 G1 Test Lamp list 100000 cost 60000 ask 95000 floor 78000
+[20:44:43] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Lamp (G1): grade A, market certificate attached. List price 100000, asking 95000. Send your offer as a number.'
+[20:44:43] SEND: '50000' taskId=e9efb020
+[20:44:43] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 78000.'
+[20:44:43] SEND: '70000' taskId=e9efb020
+[20:44:43] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 78000.'
+[20:44:43] SEND: '76000' taskId=e9efb020
+[20:44:43] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 78000.'
+[20:44:43] SEND: '79000' taskId=e9efb020
+[20:44:43] DEAL e9efb020 G1 at 78000 (cost 60000, list 100000, turns 4)
+[20:44:43] RECV: TASK_STATE_COMPLETED | 'Deal: Test Lamp at 78000.'
+PASS  goods floor, no warranty by default: {'shop': 'thisjonghoon', 'item': 'G1', 'unit': 'u-goods', 'price': 78000.0, 'task': 'e9efb020-4e13-4c23-9436-7c722a214d2b', 'sig_seller': 'mcsfXDUBGLVFZFRwgAMLq1vgEDNUX14E7Ti2U3+qHOS4PmFeRymqBt1BcMWl2NhvdOGhgycKUShcy7d27jLzDA==', 'claim': 'A'}
+[20:44:43] CARD: 'thisjonghoon' at http://127.0.0.1:50531/, protocol 1.0
+[20:44:43] SEND: 'I want to buy Test Kimchi (F1)'
+[20:44:43] OPEN b4454a3b F1 Test Kimchi list 30000 cost 18000 ask 30000 floor 23400
+[20:44:43] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Kimchi (F1): grade A, market certificate attached, 150 h of shelf life left. List price 30000, asking 30000. Send your offer as a number.'
+[20:44:43] SEND: '29000' taskId=b4454a3b
+[20:44:43] DEAL b4454a3b F1 at 29000 (cost 18000, list 30000, turns 1)
+[20:44:43] RECV: TASK_STATE_COMPLETED | 'Deal: Test Kimchi at 29000.'
+PASS  fresh food: the ask carries the freshness premium, so 29000 is accepted; honest claim: {'shop': 'thisjonghoon', 'item': 'F1', 'unit': 'u-food', 'price': 29000.0, 'task': 'b4454a3b-3933-4599-9857-f71ac178e865', 'sig_seller': 'nnMXikKaO+7vrH5XQvb7kPz5h8qO7u9Um8LTT/rN0XKBvRHqDtK5AfBjXNhWnF3k3dKcXNkosSii5SnUWvReBg==', 'claim': 'A'}
+[20:44:43] CARD: 'thisjonghoon' at http://127.0.0.1:50531/, protocol 1.0
+[20:44:43] SEND: 'I want to buy Old Kimchi (F2)'
+[20:44:43] OPEN 3130c614 F2 Old Kimchi list 30000 cost 18000 ask 25752 floor 10800
+[20:44:43] RECV: TASK_STATE_INPUT_REQUIRED | 'Old Kimchi (F2): grade C, market certificate attached, 3 h of shelf life left. List price 30000, asking 25752. Send your offer as a number.'
+[20:44:43] SEND: '9000' taskId=3130c614
+[20:44:43] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 19051.'
+[20:44:43] SEND: '11000' taskId=3130c614
+[20:44:43] DEAL 3130c614 F2 at 11000 (cost 18000, list 30000, turns 2)
+[20:44:43] RECV: TASK_STATE_COMPLETED | 'Deal: Old Kimchi at 11000.'
+PASS  near-date food cleared under cost: {'shop': 'thisjonghoon', 'item': 'F2', 'unit': 'u-old', 'price': 11000.0, 'task': '3130c614-6246-43da-a8a2-6f3dd8618524', 'sig_seller': 'QVyIahsq0bU24RCEjhmoul+G7IvG19qmMKdneKtqo9oWmdZJmI+A/SL81jZT9loCiI0sutkx2ke6v3/1Ae5vDA==', 'claim': 'C'}
+[20:44:43] CARD: 'thisjonghoon' at http://127.0.0.1:50531/, protocol 1.0
+[20:44:43] SEND: 'I want to buy Test Chair (G2)'
+[20:44:43] OPEN 8b882fbc G2 Test Chair list 100000 cost 60000 ask 95000 floor 78000
+[20:44:43] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Chair (G2): grade B, market certificate attached. List price 100000, asking 95000. Send your offer as a number.'
+[20:44:43] SEND: 'For G2 I offer 79,000' taskId=8b882fbc
+[20:44:43] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 88600.'
+[20:44:43] SEND: 'OK, 79,000 for G2 then' taskId=8b882fbc
+[20:44:43] DEAL 8b882fbc G2 at 79000 (cost 60000, list 100000, turns 2)
+[20:44:43] RECV: TASK_STATE_COMPLETED | 'Deal: Test Chair at 79000.'
+PASS  offer read past the SKU's digits: {'shop': 'thisjonghoon', 'item': 'G2', 'unit': 'u-goods2', 'price': 79000.0, 'task': '8b882fbc-6a94-4668-86e4-10c6bf8d5756', 'sig_seller': 'qjmW5dLK7bHWvTR6XsMQ+O4hyX2AhltQtos+ncn523lx8uEt3l+Cx/4eIg1BatP3csVU7wYBqNrlxb7mQyZACA==', 'claim': 'B'}
+[20:44:43] CARD: 'thisjonghoon' at http://127.0.0.1:50531/, protocol 1.0
+[20:44:43] SEND: 'I want to buy Test Lamp (G1)'
+[20:44:43] RECV: TASK_STATE_REJECTED | 'Sorry, we have none of that in stock.'
+PASS  a sold unit is not offered again within 60 s: TASK_STATE_REJECTED
+PASS  an abandoned negotiation frees its unit: ['u-y']
+PASS  no grade claim within an hour of a line: ('A', 134.89999998801284, None)
+PASS  goods past goods_age_days may go down to cost + 3%: ((95000, 61800), (95000, 78000))
+PASS  hidden demand: requests to our shop are logged, misses marked: [(None, True), (None, True), (None, True), (None, True), (None, False)]
+PASS  no experiment file: the seller logs no A/B events: /tmp/claude-501/r3md-dwjbv1tx/logs/ab_r3.jsonl
+PASS  an experiment on goods leaves food alone: (None, None)
+[20:44:43] CARD: 'thisjonghoon' at http://127.0.0.1:50531/, protocol 1.0
+[20:44:43] SEND: 'I want to buy Test Desk (G3)'
+[20:44:43] OPEN db879f74 G3 Test Desk list 100000 cost 50000 ask 95000 floor 78000 ab t1:A
+[20:44:43] RECV: TASK_STATE_INPUT_REQUIRED | 'Test Desk (G3): grade B, market certificate attached. List price 100000, asking 95000. Send your offer as a number.'
+[20:44:43] SEND: '80000' taskId=db879f74
+[20:44:43] RECV: TASK_STATE_INPUT_REQUIRED | 'Counteroffer: 89000.'
+[20:44:43] SEND: '80000' taskId=db879f74
+[20:44:43] DEAL db879f74 G3 at 80000 (cost 50000, list 100000, turns 2)
+[20:44:43] RECV: TASK_STATE_COMPLETED | 'Deal: Test Desk at 80000.'
+PASS  a negotiation draws an arm, asks with it and logs open and deal with the margin: {'receipt': 80000.0, 'events': [{'id': 't1', 'arm': 'A', 'task': 'db879f74-2609-4e1f-8a7b-47ba7a238c93', 'event': 'open', 'sku': 'G3', 'kind': 'goods', 'list_price': 100000, 'cost': 50000, 'ask': 95000, 'floor': 78000, 't': 1793706283.4}, {'id': 't1', 'arm': 'A', 'task': 'db879f74-2609-4e1f-8a7b-47ba7a238c93', 'event': 'deal', 'reward': 0.3, 't': 1793706283.4}]}
+PASS  the arm with fewer negotiations is drawn first: ['B']
+PASS  the bandit leans to the arm that earns more, and a winner is called: {'B share': 1.0, 'summary': {'id': 't1', 'param': 'ask_frac', 'kind': 'goods', 'A': {'value': 0.95, 'n': 41, 'deals': 21, 'mean_reward': 0.0349}, 'B': {'value': 0.7, 'n': 40, 'deals': 26, 'mean_reward': 0.0976}, 'p_B_better': 1.0}}
+[20:44:43] CARD: 'thisjonghoon' at http://127.0.0.1:50531/, protocol 1.0
+[20:44:43] SEND: 'I want to buy Test Desk (G3), with a warranty please'
+[20:44:43] RECV: TASK_STATE_REJECTED | 'Sorry, we have none of that in stock.'
+FAIL  every ended negotiation is one raw line with the buyer's offers, ask, floor and outcome: [('G1', 'deal', [50000, 70000, 76000, 79000], 78000), ('F1', 'deal', [29000], 29000), ('F2', 'deal', [9000, 11000], 11000), ('G2', 'deal', [79000, 79000], 79000), ('G3', 'deal', [80000, 80000], 80000)]
+FAIL  a request that asks for a warranty is marked: [False, False, False, False, False]
+PASS  replaying what we did gives what happened (fidelity 1.0 on fixed test buyers), playbooks are scored: {'fidelity': 1.0, 'actual': {'deals': 5, 'revenue': 277000, 'margin': 71000}, 'current': {'deals': 5, 'revenue': 276500, 'margin': 70500}, 'costco': {'deals': 5, 'revenue': 263900, 'margin': 57900}, 'walmart_edlp': {'deals': 5, 'revenue': 273500, 'margin': 67500}}
+
+15/17 passed

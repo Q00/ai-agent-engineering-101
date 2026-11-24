@@ -1,0 +1,16 @@
+PASS  food: picks F1 (biggest surplus with enough shelf life), not F3 (20 h shelf life < 24 h needed): receipt {'shop': 'good-shop', 'item': 'F1', 'price': 22051, 'task': '002641eb-5eb7-42fd-ac26-759981c102d8', 'sig_seller': 'x'}
+PASS  price under 0.9 x list and within budget: paid 22051
+PASS  accept: certificate and 24 x 1.1 h of shelf life: {'cert': True, 'min_hours_left': 26.4}
+PASS  opens with the product name and SKU, asks for shelf life: I want to buy 포기김치 5kg (F1). I need it to last 24 hours: please ship a unit with at least 26.4 hours of shelf life left, with the market's certificate.
+PASS  leaves out the shop that claimed false grades: http://127.0.0.1:61545
+PASS  no stock anywhere: empty result line: {'shop': '', 'receipt': None, 'stars': None, 'review': None}
+PASS  review: false grade claim is 1 star with the ledger ref: 포기김치 5kg: the shop claimed grade A but shipped grade B (ledger #777). Paid 70% of list 30000.
+PASS  review: settled facts recorded for the shop
+PASS  payments.jsonl refusal recorded once: [{'time': '2026-11-02 13:25:05', 'kind': 'payment', 'round': 3, 'order': 'o-2', 'shop': 'good-shop', 'sku': 'F1', 'price': 20000, 'paid': False, 'ledger': None, 'reason': 'no certificate, and the policy asks for one'}]
+PASS  broken.jsonl matched to our purchase and shop: [{'time': '2026-11-02 13:25:05', 'kind': 'broken', 'round': 3, 'name': '포기김치 5kg', 'broke_at': 1793593510.771754, 'shop': 'good-shop', 'order': 'o-1', 'price': 21000, 'warranty_hours': None, 'covered': False}]
+PASS  sync is idempotent
+PASS  forum: case 2's run queued one note with that shop's false claims: Buyer notes from our own settled deals (check the refs): liar-shop: 2 settled, paid 50% of list price (median), grade claims true 0/2; claimed A shipped C (#101
+PASS  forum: no second post within 5 minutes
+PASS  forum note: only new facts, with ledger refs: Buyer notes from our own settled deals (check the refs): good-shop: 1 settled, paid 70% of list price (median), grade claims true 0/1; claimed A shipped B (#777) | 포기김치 5kg from good-shop broke after 
+
+14/14 passed

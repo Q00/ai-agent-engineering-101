@@ -1,0 +1,19 @@
+PASS  one author posting fifty times counts once: {'식품>김치': 1}
+PASS  ten authors count at most 3: {'가구>의자': 3}
+PASS  a post naming more than three categories counts nothing
+PASS  a post over the length cap counts nothing
+PASS  our own post counts nothing
+PASS  a post older than six hours counts nothing
+PASS  a SKU in a post maps to its category; malformed posts are skipped: {'가구>침대': 1}
+FAIL  food first: with 600,000 of goods held (cap 0.35 x 2,000,000 = 700,000), the buy is food plus at most one 30,000 goods unit: {'food': 0, 'goods': 10}
+FAIL  reserve 0 from the meta-harness: code still keeps 700,000 (balance 800,000, so at most 100,000 spent): {'spent (estimated)': 0, 'lines': 0}
+FAIL  under the cash floor nothing is bought: spend limit reached (balance 650000, cash floor 1000000, stock at cost 0)
+PASS  runs 20 min apart: depth x4 for a selling food category (4 units, not 2): {'SF1': 4, 'why': '31 SKUs short, buying 10 lines (runs 1200 s apart: depth x4.0)'}
+FAIL  a raised bankruptcy line (900,000) raises the cash floor to 1,100,000: nothing bought at 1,000,000: spend limit reached (balance 1000000, cash floor 1400000, stock at cost 0)
+PASS  window closed: no lines, and the scores still update: supply closed until 13:21:36
+PASS  window open: depth x2 for a selling food category (4 units), lines bought: {'SF1': 4, 'lines': 10, 'why': '31 SKUs short, buying 10 lines (runs 30 s apart: depth x2.0)'}
+PASS  orders become category weight, a nearest-reference SKU and a reference price: ({'F>hot': 6.0}, {'SH1': 6.0}, {'F>hot': 15000.000000000004})
+PASS  restock buys the ordered category first, at the reference price (not the 10,000 median alone), with depth: {'first': {'sku': 'SH1', 'qty': 3}, 'hot': {'SH0': None, 'SH1': 3, 'SH2': 2}}
+PASS  order weights are not written into the decaying scores (no compounding)
+
+13/17 passed
