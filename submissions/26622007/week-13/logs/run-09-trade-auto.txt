@@ -1,0 +1,36 @@
+$ python3 trade.py trade --item '쌀 5kg' --list-price 22000 --floor 15000 --budget 17000
+  [negotiation] turn 0 nocha12: offer 22000
+  [negotiation] turn 0 user-agent: counter 13200
+  [negotiation] turn 1 nocha12: offer 21500
+  [negotiation] turn 1 user-agent: counter 13900
+  [negotiation] turn 2 nocha12: offer 21000
+  [negotiation] turn 2 user-agent: counter 14600
+  [negotiation] turn 3 nocha12: offer 20500
+  [negotiation] turn 3 user-agent: counter 15300
+  [negotiation] turn 4 nocha12: offer 20000
+  [negotiation] turn 4 user-agent: counter 16000
+  [negotiation] turn 5 nocha12: offer 19500
+  [negotiation] turn 5 user-agent: counter 16700
+  [negotiation] turn 6 nocha12: offer 19000
+  [negotiation] turn 6 user-agent: counter 17000
+  [negotiation] turn 7 nocha12: offer 18500
+  [negotiation] turn 7 user-agent: counter 17000
+  [negotiation] turn 8 nocha12: offer 18000
+  [negotiation] turn 8 user-agent: counter 17000
+  [negotiation] turn 9 nocha12: offer 17500
+  [negotiation] turn 9 user-agent: counter 17000
+  [negotiation] turn 10 nocha12: offer 17000
+  [negotiation] turn 10 user-agent: accept 17000
+  [agreement] user-agent buys 1 x 쌀 5kg from nocha12 at 17000 credits each, 17000 credits in total.
+  [contract] meshkit.transaction-contract/v1 id=ctr-20261124T112757Z-6c08 hash=d895d105b0ce82d5aeb58330ace16781e395c6f8da300fe2b5dff06bf6038b28
+  [state] None -> created (contract sealed)
+  [routing] auto (amount 17000, auto_limit 20000)
+  [state] created -> paid (payment approved by route=auto)
+  [ledger] txn=ctr-20261124T112757Z-6c08 user     -17000
+  [ledger] txn=ctr-20261124T112757Z-6c08 seller   +16490
+  [ledger] txn=ctr-20261124T112757Z-6c08 platform +510
+  [balances] {'platform': 1710, 'seller': 55290, 'user': -57000} sum=0
+  [event] meshkit.transaction-event/v1 settled contract_id=ctr-20261124T112757Z-6c08 contract_hash=d895d105b0ce82d5... tag=164b18cef130c9ea...
+  [state] paid -> settled (settlement event appended)
+trade ctr-20261124T112757Z-6c08: route=auto state=settled (0.005 s)
+[exit 0]

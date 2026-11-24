@@ -1,0 +1,38 @@
+$ printf 'y
+' | python3 trade.py trade --item '쌀 5kg' --qty 2 --list-price 22000 --floor 15000 --budget 17000
+34000 credits to nocha12 is outside the mandate's automatic range. Pay? [y/n] y
+  [negotiation] turn 0 nocha12: offer 22000
+  [negotiation] turn 0 user-agent: counter 13200
+  [negotiation] turn 1 nocha12: offer 21500
+  [negotiation] turn 1 user-agent: counter 13900
+  [negotiation] turn 2 nocha12: offer 21000
+  [negotiation] turn 2 user-agent: counter 14600
+  [negotiation] turn 3 nocha12: offer 20500
+  [negotiation] turn 3 user-agent: counter 15300
+  [negotiation] turn 4 nocha12: offer 20000
+  [negotiation] turn 4 user-agent: counter 16000
+  [negotiation] turn 5 nocha12: offer 19500
+  [negotiation] turn 5 user-agent: counter 16700
+  [negotiation] turn 6 nocha12: offer 19000
+  [negotiation] turn 6 user-agent: counter 17000
+  [negotiation] turn 7 nocha12: offer 18500
+  [negotiation] turn 7 user-agent: counter 17000
+  [negotiation] turn 8 nocha12: offer 18000
+  [negotiation] turn 8 user-agent: counter 17000
+  [negotiation] turn 9 nocha12: offer 17500
+  [negotiation] turn 9 user-agent: counter 17000
+  [negotiation] turn 10 nocha12: offer 17000
+  [negotiation] turn 10 user-agent: accept 17000
+  [agreement] user-agent buys 2 x 쌀 5kg from nocha12 at 17000 credits each, 34000 credits in total.
+  [contract] meshkit.transaction-contract/v1 id=ctr-20261124T112757Z-76df hash=313360ccf7597a4061b5b1861928d02fa2d2ef08035e70e0f55716a35f7c12bd
+  [state] None -> created (contract sealed)
+  [routing] confirm (amount 34000, auto_limit 20000, person answered y)
+  [state] created -> paid (payment approved by route=confirm)
+  [ledger] txn=ctr-20261124T112757Z-76df user     -34000
+  [ledger] txn=ctr-20261124T112757Z-76df seller   +32980
+  [ledger] txn=ctr-20261124T112757Z-76df platform +1020
+  [balances] {'platform': 2220, 'seller': 71780, 'user': -74000} sum=0
+  [event] meshkit.transaction-event/v1 settled contract_id=ctr-20261124T112757Z-76df contract_hash=313360ccf7597a40... tag=531def376baa10e7...
+  [state] paid -> settled (settlement event appended)
+trade ctr-20261124T112757Z-76df: route=confirm state=settled (0.005 s)
+[exit 0]
