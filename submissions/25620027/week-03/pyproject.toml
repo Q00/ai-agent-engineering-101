@@ -1,0 +1,35 @@
+[project]
+name = "ax-week03-contract-net"
+version = "0.1.0"
+requires-python = ">=3.12"
+# Course-compatible SDK; its own HTTP transport is retained for reproducibility.
+dependencies = ["openai==3.8.0", "pydantic>=2.12,<3", "typer>=0.16,<1"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.12", "basedpyright>=1.31"]
+
+[tool.basedpyright]
+typeCheckingMode = "all"
+reportUnnecessaryComparison = "none" # Exhaustive assert_never match guards are intentional.
+reportImplicitStringConcatenation = "none" # Multiline SQL literals stay readable.
+pythonVersion = "3.12"
+include = ["cnp", "run.py", "collect_results.py", "tests"]
+reportUnusedCallResult = "none" # SQLite cursors and CLI writes have intentional side effects.
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["COM812", "ISC001", "D203", "D213", "CPY001", "FBT001", "FBT002", "D107"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "D", "ARG", "PLR2004", "INP001", "SLF001"]
+"run.py" = ["T201", "INP001"]
+"cnp/engine.py" = ["T201"] # Assignment requires a console capture of protocol activity.
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
