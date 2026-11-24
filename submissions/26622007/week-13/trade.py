@@ -227,6 +227,14 @@ def main(argv=None):
     sub.add_parser("status")
     a = p.parse_args(argv)
     record = Record(a.record)
+    try:
+        return run(a, record)
+    except (IllegalTransition, ValueError) as e:
+        print(f"refused: {e}")
+        return 2
+
+
+def run(a, record):
 
     if a.cmd == "trade":
         with open(a.mandate, encoding="utf-8") as f:
