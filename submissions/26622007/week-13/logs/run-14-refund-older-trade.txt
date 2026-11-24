@@ -1,0 +1,31 @@
+$ python3 trade.py refund --contract ctr-20261124T112722Z-d51e
+  [negotiation] turn 0 nocha12: offer 12000
+  [negotiation] turn 0 user-agent: counter 7200
+  [negotiation] turn 1 nocha12: offer 11500
+  [negotiation] turn 1 user-agent: counter 7900
+  [negotiation] turn 2 nocha12: offer 11000
+  [negotiation] turn 2 user-agent: counter 8600
+  [negotiation] turn 3 nocha12: offer 10500
+  [negotiation] turn 3 user-agent: counter 9300
+  [negotiation] turn 4 nocha12: offer 10000
+  [negotiation] turn 4 user-agent: accept 10000
+  [agreement] user-agent buys 3 x 우유 190mL x 24 from nocha12 at 10000 credits each, 30000 credits in total.
+  [contract] meshkit.transaction-contract/v1 id=ctr-20261124T112722Z-d51e hash=ce947d9c917137b161c813fe798031a31e5f61420e85c4d6c5a4a1a45943fe14
+  [state] None -> created (contract sealed)
+  [routing] confirm (amount 30000, auto_limit 20000, person answered y)
+  [state] created -> paid (payment approved by route=confirm)
+  [ledger] txn=ctr-20261124T112722Z-d51e user     -30000
+  [ledger] txn=ctr-20261124T112722Z-d51e seller   +29100
+  [ledger] txn=ctr-20261124T112722Z-d51e platform +900
+  [balances] {'platform': 1200, 'seller': 38800, 'user': -40000} sum=0
+  [event] meshkit.transaction-event/v1 settled contract_id=ctr-20261124T112722Z-d51e contract_hash=ce947d9c917137b1... tag=762ca8534b053792...
+  [state] paid -> settled (settlement event appended)
+  [ledger] txn=ctr-20261124T112722Z-d51e user     +30000
+  [ledger] txn=ctr-20261124T112722Z-d51e seller   -29100
+  [ledger] txn=ctr-20261124T112722Z-d51e platform -900
+  [balances] {'platform': 1320, 'seller': 42680, 'user': -44000} sum=0
+  [event] meshkit.transaction-event/v1 refunded contract_id=ctr-20261124T112722Z-d51e contract_hash=ce947d9c917137b1... tag=70211dbf0d34da0f...
+  [check] user -10000 -> -44000, seller 9700 -> 42680 (other trades since: user -34000, seller +32980), match=True
+  [state] settled -> refunded (refund entries appended)
+refund ctr-20261124T112722Z-d51e: state=refunded (0.011 s)
+[exit 0]
