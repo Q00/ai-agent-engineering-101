@@ -1,0 +1,204 @@
+{
+ "verdicts": [
+  {
+   "pid": "harness#1",
+   "verdict": "overmerged",
+   "reason": "Kit compatibility, snapshot semantics, and bankruptcy are independent rules. The quoted bankruptcy evidence does not itself establish the numeric threshold.",
+   "status": "confirmed",
+   "rules": [
+    "Round 3 requires market kit version 4; verify that the first log line says `market_kit 4`.",
+    "Market JSON files are replaced whole, never half-written; read them as whole-file snapshots.",
+    "The kit files bankruptcy automatically when the shop is below the bankruptcy line with nothing left to sell. The restock hook may request earlier filing by printing `\"bankrupt\": true`; bankruptcy requires explicit user authorization."
+   ]
+  },
+  {
+   "pid": "harness#2",
+   "verdict": "overmerged",
+   "reason": "Credential handling, redesign logging, trading validation, and honesty are separate obligations; omission of prompts is specifically evidenced for redesign calls.jsonl.",
+   "status": "user",
+   "rules": [
+    "Never print, log, or commit private-key material or OPENROUTER_API_KEY. Obtain the OpenRouter key from the environment, using the Windows user environment fallback when needed, and apply a credit cap.",
+    "Redesign calls.jsonl must contain neither the OpenRouter key nor prompts.",
+    "Enforce hard trading limits in validation and execution code: never exceed the order budget or pay a receipt that was not agreed.",
+    "Everything the shop or buyer writes must be true; never make false grade claims, impersonate, hide instructions, or advertise in another shop's review."
+   ]
+  },
+  {
+   "pid": "harness#3",
+   "verdict": "drop",
+   "reason": "These are instructions and implementation details for this isolated redesign session, not trading-harness rules. OpenRouter-only redesign does not replace the live Claude runtime.",
+   "status": "user",
+   "rules": []
+  },
+  {
+   "pid": "harness#4",
+   "verdict": "overmerged",
+   "reason": "Combines execution policy, configuration versioning, anomaly feedback, and restock authority. The original staged shadow rollout is not a perpetual rollout requirement.",
+   "status": "user",
+   "rules": [
+    "Seller, buyer, and restock execute routine playbook decisions directly in code, calling an LLM only for exceptions the rules cannot handle.",
+    "Playbook parameters in active.json must pass schema validation; changing them creates a new strategy version, and their values should adapt to evidence within delegated authority.",
+    "Record each execution exception as an exec.anomaly event with role, type, situation, action, and result; aggregate types and examples in anomalies.json for analysis and strategy briefs.",
+    "Repeated exceptions may prompt playbook parameter changes or proposals for new rule code; new rule code requires user approval.",
+    "Restock executes purchases only from a predetermined candidate list."
+   ]
+  },
+  {
+   "pid": "harness#5",
+   "verdict": "overmerged",
+   "reason": "Failure isolation, bus contracts, monitoring, code authority, and schema deployment are distinct. Automatic schema restart is a listed need, not established live behavior.",
+   "status": "user",
+   "rules": [
+    "Run inner trading and outer analysis as separate processes communicating through memory/bus files, so outer failure does not stop trading with the last valid strategy and facts.",
+    "Shared bus files must have one writer, atomic replacement, a schema version, and a write time. On validation failure, retain the last passing version and raise an alert.",
+    "Publish inner and outer status every 60 seconds. Treat outer status older than about 10 minutes as an outage; alert when inner status becomes stale.",
+    "The analysis layer must not modify seller, buyer, restock, or kit code; strategy changes pass through the authorized installation flow.",
+    "Deploying an incompatible schema requires restarting affected long-running processes. Automatic restart was identified as a harness need, but is not demonstrated as implemented."
+   ]
+  },
+  {
+   "pid": "harness#6",
+   "verdict": "overmerged",
+   "reason": "Card governance, role visibility, prompt construction, and external-input isolation are separate. The token figures are targets, not hard limits.",
+   "status": "user",
+   "rules": [
+    "Use a model-neutral Markdown internal system card, distinct from the public A2A shop card. Increment card_version when it changes and record the version with events and judgments.",
+    "L1 reads the core, its own role, intent, active priorities and limits, and relevant situation facts; analysis, strategy, and audit may read all roles.",
+    "Order prompts from static to dynamic: system card, role, tool descriptions, current priorities, then current situation. Target about 2,000 tokens for the card and 4,000 for the full L1 prompt, prioritizing clear role information over a rigid token cap.",
+    "Preload frequently needed counterpart and unit facts, including cost, grade, expiry, and category price range, to avoid unnecessary tool calls.",
+    "Pass participant names into prompts only as short plain names using safe_name, and isolate external messages as untrusted input using the documented regex-first handling."
+   ]
+  },
+  {
+   "pid": "harness#7",
+   "verdict": "overmerged",
+   "reason": "Tool contracts, access restrictions, call logging, and malformed-input handling must remain independently visible.",
+   "status": "user",
+   "rules": [
+    "Function calling and MCP share JSON Schema tool definitions. Each contract specifies purpose, input/output, determinism, side effects, target latency, and success or error responses; keep tool tables and descriptions synchronized.",
+    "Limit each L1 role to at most eight lookup, calculation, and validation tools plus its execution tools, with concise lookup results by default. L2, L3, and audit may access the full tool list subject to explicit restrictions.",
+    "Audit must not inspect other agents' tool calls through memory.raw.",
+    "Log tool.call before execution and tool.result afterward; blocked, refused, or killed calls must not disappear from the record.",
+    "Normalize supported malformed tool-input shapes and truncate overlong string fields at their documented limits rather than crashing; shop-card descriptions are limited to 600 characters."
+   ]
+  },
+  {
+   "pid": "harness#8",
+   "verdict": "overmerged",
+   "reason": "Combines raw-record integrity, incremental indexing, exact aggregation, retrieval policy, and collection schedules.",
+   "status": "user",
+   "rules": [
+    "Keep raw events and ledger copies append-only. Events carry ts, strategy_version, epoch, linking keys, and unique writer-time-sequence IDs.",
+    "Persist reader cursors, do not process an event ID twice, and serialize incremental index writers. Derived indexes must be rebuildable from raw records.",
+    "Compute exact counts with deterministic aggregation tools, never similarity or keyword search.",
+    "Memory MCP exposes read tools only. Search filters by time, participant, and version before BM25 and returns no record when fewer than half the query's important terms match.",
+    "Return the latest profile by default; historical versions require history=true and must be marked superseded.",
+    "Every three minutes, derive the seven evaluation event types from kit files and the ledger and update live facts. Append the full public market board every ten minutes without overwriting history on restart."
+   ]
+  },
+  {
+   "pid": "harness#9",
+   "verdict": "overmerged",
+   "reason": "Scheduling, telemetry, live Claude fallback, and degradation policy are separate. OpenRouter-only applies to the redesign session, not the live harness; the ten-second target was proposed, not established as a hard requirement.",
+   "status": "user",
+   "rules": [
+    "Prioritize model calls in this order: seller, buyer, restock, strategy, analysts, then forum/review; defer lower-priority work when capacity is tight.",
+    "Record role, model, latency, tokens, cost, and failure for every model call and aggregate them with eval.decision_quality.",
+    "The live harness uses isolated Claude Code calls with built-in tools and project settings disabled, with OpenRouter fallback for trading-seat rate limits or timeouts.",
+    "The documented live trading-seat fallback waits at most six seconds for Claude before using OpenRouter gpt-4o-mini; repeated failures use a 300-second breaker, with every-fifth-call probing during repeated timeouts.",
+    "When the shared Claude account has recent inner quota failures, defer outer calls. The documented capacity-degradation order is review/forum to OpenRouter, analysis every four hours, sonnet strategy, buyer to OpenRouter, and seller last."
+   ]
+  },
+  {
+   "pid": "harness#10",
+   "verdict": "overmerged",
+   "reason": "Deterministic evaluation contracts, evaluator independence, experiment expressions, and health monitoring are separate; alert throttling is per crossed threshold.",
+   "status": "user",
+   "rules": [
+    "Expose record-computable evaluation metrics as deterministic tools taking scope and slice or epoch and returning value, sample count, and source location. Cover score, decision quality, integrity, guess accuracy, experiments, proposals, and audits.",
+    "Express experiment success, rollback, and hypothesis metrics using deterministic evaluation-tool calculations.",
+    "L1 must not evaluate itself and reads only prior evaluations needed for its next action. Judgment-based evaluation flows outward: execution to self-analysis, analysis to strategy and audit, and strategy to audit and user.",
+    "Every five minutes, compute operational health over the preceding full thirty minutes, including trading funnels, no-stock items, payment failures, timeouts, and tool refusals. Rate-limit alerts to once per hour per crossed threshold."
+   ]
+  },
+  {
+   "pid": "harness#11",
+   "verdict": "overmerged",
+   "reason": "Combines many independent operating rules and imports the auditor's historical-performance input from an unapproved v5 section.",
+   "status": "user",
+   "rules": [
+    "Run outer slices under a lock and skip a new slice if the previous one is still running.",
+    "Maintain a thirty-minute strategy cadence and a twenty-five-minute minimum installation hold. A slice may install only after the hold expires; installation is not mandatory each slice.",
+    "Reject installation of a brief based on an older strategy version unless --stale-ok explicitly permits it.",
+    "Market and self analysts have up to twelve tool-loop steps. Profile active participants, create initial profiles after several trades, and mark changed when features differ substantially from the previous period.",
+    "Run an independent cross-vendor audit in a separate non-blocking process against the finished brief and its options and evidence. Audit failure leaves the brief intact; show strategy-audit disagreements to the user.",
+    "Include only user_notes.md sections from the last six hours in brief inputs; this briefing expiry does not revoke durable user decisions.",
+    "After 08:00, write logs/strategy/morning-<date>.md with overnight installations and diffs, first-to-last board rank changes, and alerts."
+   ]
+  },
+  {
+   "pid": "harness#12",
+   "verdict": "stale",
+   "reason": "The 80% price floor and user-set 0.6 stock share are superseded. Live v68 permits a 70% list floor and 0.7 equity stock share; the exact current unsafe() bounds are not supplied.",
+   "status": "user",
+   "rules": [
+    "Drafts and proposals do not take effect until installed. Stock and playbook changes are delegated for daytime and night auto-installation only with audit agreement and passing current safety checks.",
+    "Current v68 user-authorized limits include a 500,000 cash floor, stock at cost no greater than 70% of equity, food share no greater than 35%, certified-only goods, no below-cost sales, and a twelve-hour goods warranty.",
+    "Current seller pricing may fall to 70% of list but must also satisfy cost times 1.12. Do not substitute the historical 80%-of-list guard or treat current user-set limits as authority to relax them autonomously.",
+    "Counterpart avoidance or release, risk-limit overrides, shop-card description changes, and bankruptcy require explicit user confirmation. The authorized skip_unsigned filter is temporary shop selection, not a permanent avoidance stance."
+   ]
+  },
+  {
+   "pid": "harness#13",
+   "verdict": "ok",
+   "reason": "Supported by the user-directed score-reporting changes and live position report. Board agreement is a validation requirement, not a claim that the current shop calculation already matches.",
+   "status": "user",
+   "rules": []
+  },
+  {
+   "pid": "harness#14",
+   "verdict": "wrong",
+   "reason": "The cited v5 sections 1+ are explicitly design-only and awaiting approval. They do not authorize mandatory outcome labels, experiment thresholds, briefing restrictions, or implementation.",
+   "status": "observed",
+   "rules": []
+  },
+  {
+   "pid": "harness#15",
+   "verdict": "stale",
+   "reason": "Live v68 has shelf_guard=true and explicitly keeps it. The parallel-probing design and proposed rollout tests do not establish current operational requirements.",
+   "status": "user",
+   "rules": [
+    "Buyer shelf_guard is enabled in live v68 and was explicitly retained by the user on 11/5 at 01:42; do not disable it on the basis of the earlier draft default.",
+    "Parallel buyer probing remains a draft in the supplied evidence; do not treat its proposed threading design, tests, or one-hour rollout plan as installed behavior or approved requirements."
+   ]
+  },
+  {
+   "pid": "harness#16",
+   "verdict": "stale",
+   "reason": "Archiving is setup history, and the blanket exclusion list is no longer current: later evidence includes replay testing and proposed experiment ledgers, while the user permits core redesign.",
+   "status": "user",
+   "rules": [
+    "Keep archived week-7 code off the live execution path.",
+    "Do not use the initial deferred-feature list as a permanent prohibition or as a substitute for checking later user authorization and current implementation."
+   ]
+  },
+  {
+   "pid": "harness#17",
+   "verdict": "drop",
+   "reason": "A collection of dated benchmarks, historical ranks, incidents, and a test-repair task, not one durable harness rule. Some precise claims also rely on quotes that failed verification.",
+   "status": "observed",
+   "rules": []
+  },
+  {
+   "pid": "harness#18",
+   "verdict": "drop",
+   "reason": "An assorted backlog of unresolved design and setup questions. Questions and draft policies do not authorize the proposed immediate actions or blanket approval requirements.",
+   "status": "observed",
+   "rules": []
+  }
+ ],
+ "area": "harness",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

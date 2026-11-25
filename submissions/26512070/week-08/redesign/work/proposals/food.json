@@ -1,0 +1,169 @@
+{
+ "rules": [
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Food grade is the share of remaining shelf life (A >= 80%, B 45-80%, C < 45% of shelf_hours; on arrival A 25%, B 50%, C 25%) and falls with time. Shop inventory data may be up to 10 s old, and spoken food-grade claims are judged at checkout/settlement. A food unit past its date becomes expired and is discarded at full cost once.",
+   "harness": "Track food shelf life and grade decay using fresh inventory data, avoid unsupported food-grade claims near grade boundaries, and record a one-time full-cost loss when an unsold food unit expires.",
+   "evidence": [
+    "270ce6a22bde-7",
+    "ece2408ce643-8",
+    "ecbe121caad7-12",
+    "e54bc7cc16e5-29",
+    "34d7381d0edb-9",
+    "34d7381d0edb-10",
+    "16d9e8a34cd0-12",
+    "16d9e8a34cd0-27",
+    "17f1df4c235a-11"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "F1",
+    "relation": "refines"
+   },
+   "pid": "food#1",
+   "area": "food",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "design/buyer-parallel.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Food orders specify use_within_hours, the duration the food must last for the buyer. Food that spoils before use_within_hours is worth 0 surplus, and the kit refuses payment at ACP checkout if the unit's certificate has fewer hours left than required. The receipt seen by the buyer before finishing contains the shop's claimed grade, not the certificate body (which the kit receives during ACP payment).",
+   "harness": "Check the order's use_within_hours against the SKU's shelf_hours and the shop's claimed grade before accepting a food receipt, since the certificate's exact hours are only checked by the kit at payment.",
+   "evidence": [
+    "270ce6a22bde-3",
+    "ece2408ce643-9",
+    "34d7381d0edb-14",
+    "914b9d6b33cb-26"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "F2",
+    "relation": "refines"
+   },
+   "pid": "food#2",
+   "area": "food",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "design/buyer-parallel.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "On the seller side, food stock is capped at 25% of total stock cost (food_share_max) because spoilage risk is highest for food, and food restocking scales with measured demand up to 10 units per SKU each supply window. For Welcome Food promotions, below-cost pricing (60% of cost) applies only to a buyer with no prior deal with the shop.",
+   "harness": "Enforce the 25% food share cap and 10-unit-per-SKU demand-scaled cap during each restock window; offer 60%-of-cost welcome pricing on food only when the buyer has no recorded prior deal.",
+   "evidence": [
+    "b2f6029bd469-30",
+    "b7afbcaf45e5-11",
+    "19fb13795de6-5",
+    "19fb13795de6-14",
+    "6c71f11c898a-5"
+   ],
+   "conflict": "",
+   "history": "On 2026-11-03 20:34, the user set Welcome Food at 60% of cost for first visits only, and at 20:39 changed restocking from a fixed 09:00/17:00 schedule to every supply window. On 2026-11-04 17:08, food restocking was set to grow with measured demand up to 10 units per SKU.",
+   "existing": null,
+   "pid": "food#3",
+   "area": "food",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "On food orders, the buyer states the required shelf life (use_within_hours) in its first message, opens bids at 55% of list price, aims for 68% of list, caps at 82% of list, and allows up to 30 s per food order, 8 s per message, and 12 shops.",
+   "harness": "Configure the buyer on food orders to state required shelf life in the opening message, bid 55% open / 68% target / 82% ceiling of list price, and enforce limits of 30 s per order, 8 s per message, and 12 shops.",
+   "evidence": [
+    "839f2f1fd6bf-5",
+    "839f2f1fd6bf-19",
+    "3109604ad9f8-15",
+    "6c71f11c898a-12"
+   ],
+   "conflict": "Earlier on 2026-11-04 11:01 (3109604ad9f8-15), food buyer bids opened at 55%, aimed at 70%, with an 80% ceiling; on 2026-11-04 20:43 (6c71f11c898a-12), the user selected option A+B changing aim to 68% and ceiling to 82%.",
+   "history": "2026-11-04 01:40: buyer required to state needed shelf life in first message after 8-10 h food units were refused at payment. 2026-11-04 11:01: bids set to 55% open / 70% aim / 80% ceiling. 2026-11-04 20:43: updated to 55% open / 68% aim / 82% ceiling with 30 s order, 8 s message, and 12-shop limits.",
+   "existing": null,
+   "pid": "food#4",
+   "area": "food",
+   "sources": [
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Pre-payment food shelf-life guard (2026-11-04 21:0x design): before returning a food receipt, compare use_within_hours / shelf_hours against the grade range in receipt.claim (A: 0.8-1.0, B: 0.45-0.8, C: 0-0.45). If the claimed grade's upper bound is below use_within_hours (specifically C claims where use_within_hours > 0.45 * shelf_hours), reject the receipt before finishing and try the next shop. Leave uncertain ranges (such as B with 45-80% required or C with <= 45% required) alone, and record shop-specific shelf-life payment rejections (including false A claims) to penalize that shop's expected value in future shop selection. Targets: food receipt payment rejection <= 15%, food order settlement >= 50%, median food-order time no slower than v62, and timeouts <= half of the 211 baseline.",
+   "harness": "Filter out food receipts before payment when receipt.claim is C and use_within_hours > 0.45 * shelf_hours so the buyer loop tries the next shop; pass uncertain B/C claims through, log per-shop shelf-life rejections from payments.jsonl to down-weight offending shops, and track rejection rate, settlement rate, order time, and timeouts against the v62 targets.",
+   "evidence": [
+    "34d7381d0edb-15",
+    "34d7381d0edb-16",
+    "34d7381d0edb-18",
+    "34d7381d0edb-31"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "food#5",
+   "area": "food",
+   "sources": [
+    "design/buyer-parallel.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "Across a 6-hour window on 2026-11-04 (~20:43-21:15), our buyer settled 34% of food orders at a median 54% of list price (with 1,258 of 2,321 shop talks rejected and 214 timeouts), whereas competitor lee-sungsoo (buyer ALL 0.733, 87% food) settled 62% of food orders at a median 69% of list. Of 1,058 food receipts our buyer agreed to, the kit refused payment on 360 (34%), 343 of them for insufficient shelf life. In ~750 matched payment records by claimed grade vs. use_within_hours / shelf_hours: C claims with use > 45% had 138 shelf-life rejections vs. 8 payments (95% rejected); C claims with use <= 45% had 0 rejections vs. 149 payments; B claims with use in 45-80% had 84 rejections vs. 65 payments; A or B claims with use <= lower bound had 25 rejections (false A claims) vs. 270 payments. In the v62 30-minute check (11/4 21:15), raising bids increased food receipts from 53% to 73% of orders, but settlements stayed flat at 24 (34%) because 55 of 122 food payments were refused for shelf life.",
+   "harness": "Log food order outcomes broken down by shop refusal, timeout, receipt rate, and kit shelf-life rejection by claimed grade vs. required shelf-life share.",
+   "evidence": [
+    "34d7381d0edb-6",
+    "34d7381d0edb-8",
+    "34d7381d0edb-11",
+    "34d7381d0edb-12",
+    "34d7381d0edb-13",
+    "914b9d6b33cb-25",
+    "3109604ad9f8-16",
+    "6c71f11c898a-13",
+    "5a8684c5fdbd-1"
+   ],
+   "conflict": "",
+   "history": "Earlier snapshots on 2026-11-04 showed food agreements dropping from 44/118 to 2/26 right after 01:47 when strict shelf-life phrasing was added, and recovering to 37/84 completed (35 refused at first message, 7 walked) at 11:01 after raising opening bids to 55%.",
+   "existing": {
+    "id": "B5",
+    "relation": "refines"
+   },
+   "pid": "food#6",
+   "area": "food",
+   "sources": [
+    "design/buyer-parallel.md",
+    "git log"
+   ],
+   "flags": []
+  }
+ ],
+ "dropped": [
+  {
+   "cid": "10fc7e5bd4c0-6",
+   "reason": "Fixed prompt wording bug from 2026-11-03 where the buyer misread the seller's 'No food' stock note as its own rule; seller and buyer now run independently (G2)."
+  }
+ ],
+ "area": "food",
+ "candidates": 36,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}

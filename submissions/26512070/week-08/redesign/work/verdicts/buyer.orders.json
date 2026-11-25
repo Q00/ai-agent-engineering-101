@@ -1,0 +1,120 @@
+{
+ "verdicts": [
+  {
+   "pid": "buyer.orders#1",
+   "verdict": "overmerged",
+   "reason": "Combines a category-generation claim with historical measurements. Neither agent.md nor a board check confirms the hidden preference, and an observed mix is not a fixed quota.",
+   "status": "observed",
+   "rules": [
+    "HARNESS.md reports that buyers have hidden preferred order categories and cannot configure their order categories; this is not independently confirmed by the supplied market contract.",
+    "Our buyer received 888 food and 106 goods orders in the cited six-hour window on 11/5, approximately 89% food. The earlier 11/4 sample contained 480 food and 51 goods orders. These are historical observations, not guaranteed future proportions."
+   ]
+  },
+  {
+   "pid": "buyer.orders#2",
+   "verdict": "overmerged",
+   "reason": "The historical funnel measurement and the rule for identifying paid deals need separate entries. The listed outcome buckets do not cover every order.",
+   "status": "observed",
+   "rules": [
+    "In the cited six-hour window on 11/5, 888 food orders produced 263 payments, 280 agreed-but-unpaid orders attributed to shelf life, 222 shop rejections, and 114 cases with no fitting shop. Of 106 goods orders, 86 were paid, 7 were unpaid after agreement, 8 were rejected, and 3 had no fitting shop. These buckets leave 9 food and 2 goods orders unclassified.",
+    "A buyer.closed event with outcome completed does not establish payment: the cited window contained 280 such events that were actually payment refusals. Determine paid outcomes from payments.jsonl rather than negotiation completion alone."
+   ]
+  },
+  {
+   "pid": "buyer.orders#3",
+   "verdict": "overmerged",
+   "reason": "Combines the per-order input contract, shop eligibility, and checkout/output contract. The reference-price band and eligibility restriction are not confirmed by the cited agent.md excerpts.",
+   "status": "confirmed",
+   "rules": [
+    "The buyer hook runs once per order and receives order and shop-list paths. The order record supplies the order, item, category, budget, acceptable SKUs, kind, food use_within_hours, and expiry; shop entries supply names, URLs, reviews, and category offers with SKU, name, and quantity.",
+    "The buyer hook conducts A2A negotiation and returns at most one selected shop URL and signed receipt, or null, with stars, review, and optional accept requirements. The kit subsequently signs and executes ACP checkout and records the payment result."
+   ]
+  },
+  {
+   "pid": "buyer.orders#4",
+   "verdict": "overmerged",
+   "reason": "Combines kit enforcement, delayed feedback, and a harness acceptance policy. The certificate-related failures are observed evidence, not a separately confirmed universal contract in the supplied excerpts.",
+   "status": "confirmed",
+   "rules": [
+    "The buyer may specify accept requirements for cert, min_hours_left, grades, and warranty_hours. The kit checks checkout against those requirements before paying and pays nothing if they fail.",
+    "Payment refusal occurs after the buyer hook exits; its reason is recorded in payments.jsonl and is available to the next buyer run."
+   ]
+  },
+  {
+   "pid": "buyer.orders#5",
+   "verdict": "overmerged",
+   "reason": "Order expiry and a measured inter-order delay are distinct; the measured delay is not a scheduling guarantee.",
+   "status": "observed",
+   "rules": [
+    "Orders can expire during negotiation, and walking away leaves the order unfilled. Negotiation time should be weighed against the surplus at stake.",
+    "On 11/4, the measured delay from ending one buyer order to receiving the next had a median of 20.4 seconds across 92 orders; do not treat this historical median as a guaranteed interval."
+   ]
+  },
+  {
+   "pid": "buyer.orders#6",
+   "verdict": "stale",
+   "reason": "Live v68 replaces the food limits with 12 shops, a 30-second budget, and an 8-second message timeout. The old 10-second new-shop cutoff is not established as current.",
+   "status": "user",
+   "rules": [
+    "The live buyer playbook allows up to 10 goods shops with a 120-second time budget and a 20-second message timeout, and up to 12 food shops with a 30-second time budget and an 8-second message timeout. Respect order expiry; the earlier goods policy stops new attempts when 40 seconds remain."
+   ]
+  },
+  {
+   "pid": "buyer.orders#7",
+   "verdict": "overmerged",
+   "reason": "SKU selection and shop ranking are separate decisions. The current unsigned-receipt exclusion must also be preserved, and demotion must not be confused with filtering.",
+   "status": "user",
+   "rules": [
+    "In rules mode, select the highest-list-price acceptable SKU within budget.",
+    "Demote repeat-refusing shops using the recorded criteria: at least five tries with under 10% fair outcomes, or no deal in the last three tries. Also account for payment trouble and market share when ranking shops; the supplied evidence does not establish a precise combined cheapest-price/market-share ordering.",
+    "With skip_unsigned enabled in v68, leave out a shop whose last three receipts lacked sig_seller and which has never been fair. This is not a permanent block: retry it an hour after its last attempt."
+   ]
+  },
+  {
+   "pid": "buyer.orders#8",
+   "verdict": "stale",
+   "reason": "The live structured settings override the older food 45%/60% policy and the proposed 80% ceiling. One supporting bargaining quote also failed verification.",
+   "status": "user",
+   "rules": [
+    "Use the live buyer settings: goods at or above the 30,000 list-price threshold open at 55% of list and target 68%; food also opens at 55% and targets 68%. The live rules-mode ceiling is 82% of list. Do not infer a separate current small-goods tier from the older proposal.",
+    "In rules-mode negotiation, increase offers toward the configured ceiling by the penultimate turn, accept valid asks at or below the bid or target, and do not exceed the ceiling. Ignore asks below 20% of list."
+   ]
+  },
+  {
+   "pid": "buyer.orders#9",
+   "verdict": "overmerged",
+   "reason": "Combines first-message policy, an enabled receipt guard, and historical measurements. The grade guard is a heuristic, not proof that every dropped receipt would fail payment.",
+   "status": "user",
+   "rules": [
+    "State the order's use_within_hours in the first food negotiation message.",
+    "With shelf_guard enabled, drop a food receipt and try the next shop without another message to the current shop when its claimed grade cannot cover the order's use window under the guard's limits: A at 100%, B at 80%, and C at 45% of the SKU's total shelf life. v68 keeps this guard enabled.",
+    "Historical replay found 138 payment refusals among 146 grade-C receipts for orders requiring more than 45% of total shelf life; the other 8 were paid. Thus the guard can also discard payable receipts."
+   ]
+  },
+  {
+   "pid": "buyer.orders#10",
+   "verdict": "wrong",
+   "reason": "All cited support is an unapproved parallel-search design draft. It does not establish an adopted user policy or a market prohibition on receipts received before a buyer price offer.",
+   "status": "observed",
+   "rules": []
+  },
+  {
+   "pid": "buyer.orders#11",
+   "verdict": "ok",
+   "reason": "Supported by HARNESS.md decision D34, with no supplied newer evidence replacing it.",
+   "status": "user",
+   "rules": []
+  },
+  {
+   "pid": "buyer.orders#12",
+   "verdict": "wrong",
+   "reason": "The cited analytics specification is in harness-v5.md, explicitly a draft awaiting user approval. It does not establish a mandatory user rule, and the cited excerpts do not establish SQL backing.",
+   "status": "observed",
+   "rules": []
+  }
+ ],
+ "area": "buyer.orders",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

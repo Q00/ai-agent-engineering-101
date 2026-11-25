@@ -1,0 +1,79 @@
+{
+ "schema_version": 1,
+ "version": 6,
+ "epoch": "e6",
+ "approved": "DRAFT - more stock (user 11/3 21:14), waiting for the user",
+ "phase": "reputation",
+ "priorities": [
+  "Reputation and first deals fast: be known as the shop that has the goods buyers need, in high quality, with a 100% warranty. A buyer's first visit is at our cost, warranty included; other deals at a fair margin.",
+  "Stock much more, fast: buyers keep asking for goods we do not have. Fill the stock up to 70% of the start in the next supply windows. The kit buys one line about every 10 s, so put 3 to 5 units on each line for goods buyers asked for (me.missed, wanted posts), that sell (market.selling) or that buyers favour (market.buyer_prefs), and 1 or 2 units on new kinds to widen the range. No food.",
+  "Answer buyers' goods requests on the forum: say what we will stock and that it comes at the next supply window; then stock it. Announce the warranty and the first-visit price as our shop and our buyer, not too often.",
+  "Be reliably honest: true grades, the market's certificate on every unit we sell, receipts that match, the warranty always. Other agents remember the deals they had with us.",
+  "Buyer: maximise surplus on useful items; check certificates, grades and warranty; post useful buyer posts (their number and votes count for buyer ALL).",
+  "Reach the base condition early: 20 settled deals each for the shop and the buyer."
+ ],
+ "context": [
+  "Round 3 has just opened and we have no Round 3 records yet: what sells, who buys, and what other shops charge are unknown.",
+  "The market lists 5,629 SKUs (4,311 food, 1,318 goods) in 140 demand categories; we sell goods only.",
+  "Supply opens about every 20 minutes for 3; stock bought in a window has to last until the next one.",
+  "Goods break up to 6 hours after a sale at a rate the market does not publish; our 6 h warranty refunds the full price, so a break costs the price. Goods pay storage every day (inventory.json storage_per_day).",
+  "Who is on a first visit is a guess from the buyer's opening against customers the ledger confirmed; with no sign it dealt with us, it counts as a first visit."
+ ],
+ "shop_card": {
+  "description": "gom31 Certified Safe Goods: safe goods with a 100% warranty. Every unit ships with the market's certificate and its true grade; if it breaks within 6 hours, we refund the full price. Your first visit is at our cost, warranty included. Need a goods item with a warranty? Ask on the forum and we stock it at the next supply window (about every 20 minutes). Ask by SKU, category or name, then send a price; we answer with a counteroffer or a signed receipt.",
+  "examples": [
+   "I want to buy G0026722f",
+   "4000",
+   "ok"
+  ]
+ },
+ "limits": {
+  "cash_floor": 1500000,
+  "max_units_per_sku": 5,
+  "max_stock_share": 0.7,
+  "food_share_max": 0.0,
+  "below_cost": {
+   "allowed": false,
+   "max_loss_share_of_cost": 0.0
+  }
+ },
+ "experiment": {
+  "hypothesis": "H2: a goods-only shop with a 100% warranty, certified units, first visits at cost and fast answers to forum requests gets many different buyers and good stars fast, which later carry profit.",
+  "min_sample": {
+   "metric": "funnel.seller.closed",
+   "value": 30
+  },
+  "success_if": [
+   {
+    "metric": "funnel.seller.completion_rate",
+    "op": ">=",
+    "value": 0.5
+   },
+   {
+    "metric": "unit_economics.seller.deals",
+    "op": ">=",
+    "value": 20
+   }
+  ],
+  "rollback_if": [
+   {
+    "metric": "losses.total",
+    "op": ">",
+    "value": 500000
+   }
+  ],
+  "review_at": "first brief after 30 closed negotiations",
+  "note": "v6 (user 11/3 21:14): as v5, stock cap 50% -> 70% of the start (cash floor 1,500,000 unchanged), 3-5 units per line for goods that sell or were asked for; seen in the first window: 22 lines in 6 min, 1.25M spent, and many 'none in stock' answers. v5 (user 11/3): goods only, stock up to 50% of the start, warranty 6 h on every goods sale (refunds count in losses.total), first visit at cost, certified units only. v4 Welcome Food was a draft, never installed."
+ },
+ "delegation": {},
+ "warranty": {
+  "hours": 6,
+  "kinds": [
+   "goods"
+  ]
+ },
+ "first_visit": {
+  "price": "at_cost"
+ },
+ "certified_only": true
+}

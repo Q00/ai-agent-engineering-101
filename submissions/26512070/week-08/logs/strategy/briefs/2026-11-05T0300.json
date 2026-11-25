@@ -1,0 +1,57 @@
+{
+ "proposal_id": "2026-11-05T0300",
+ "slice": "2026-11-05T0300",
+ "ts": 1793815430.3749938,
+ "version_from": 73,
+ "score": "Players rank 18 of 56, down from 14 one hour ago. We trail Nocha12 by 0.006.\n\nShop parts:\n- Profit: rank 7 of 52, 64.95M. yms979 is 6.14M ahead.\n- Revenue: rank 4, 739.8M. dragonash is 90.5M ahead.\n- Stars: 4.53, rank 33, percentile 0.365. dyishappy is 0.03 ahead.\n\nBuyer parts:\n- Surplus: 35.07M, rank 25 of 49, percentile 0.5. ggari0703 is 404k ahead.\n- Forum: 0.619, rank 24. buyer-01 is 0.001 ahead.\n- Deals: 1,310, rank 28. nocha12 is 8 ahead.\n- Posts: 325, rank 7.\n\nRoom left (weight x (1 - percentile)):\n- Buyer surplus 0.25\n- Buyer forum 0.141\n- Shop stars 0.127\n- Shop profit 0.063\n- Buyer …",
+ "happened": [
+  {
+   "claim": "v73 (more fresh food stock) was installed less than 25 minutes ago. The experiment has 22 of 30 closed negotiations, so there is not enough data to judge it yet.",
+   "evidence": [
+    "eval.experiment: verdict 'not enough data', sample 22, needed 30"
+   ]
+  },
+  {
+   "claim": "The shop is selling steadily. In the last 30 minutes it had 196 visits and 130 completed deals, with revenue of 37.98M on a cost of sales of 30.76M. Few buyers met missing stock: only 3 no-stock visits (Gdf79cd07, G66ded25b).",
+   "evidence": [
+    "health.seller: visits 196, completed 130, revenue 37,981,705, cost_of_sales 30,759,448, no_stock 3, missing_skus Gdf79cd07 and G66ded25b"
+   ]
+  },
+  {
+   "claim": "Over the slice, the shop's main leak was cancellation after agreement. 54 of 189 closed negotiations died after a price was agreed, against 9 lost before closing. Extra losses stayed tiny: storage 18,140, no expired food, no refunds, no sales below cost.",
+   "evidence": [
+    "self summary e72: closed 189, completed 135, settled 122; canceled 51, rejected 3",
+    "self summary: storage 18,140, 0 expired, 0 refunds"
+   ]
+  },
+  {
+   "claim": "The buyer side is still leaky. In the last 30 minutes it had 80 orders (73 food) and 29 paid. Of the 9 unpaid, 5 were stale 'unit not in stock' offers, 3 had too little shelf life and 1 had no certificate. These could be filtered before agreeing.",
+   "evidence": [
+    "health.buyer: orders 80, paid 29, unpaid 9; unit-not-in-stock 3+2, shelf-life 3, no certificate 1"
+   ]
+  },
+  {
+   "claim": "The market is stable. Our four regulars (inextro, YAHO1212, move_76, buyer-02) all grew organically. A new buyer, lee3q, made 2 deals with us on the mattress and Pringles.",
+   "evidence": [
+    "market summary e72: inextro 261 deals, YAHO1212 269, move_76 167, buyer-02 334; lee3q 2 deals, 474,002 paid"
+   ]
+  }
+ ],
+ "hypothesis": "H2 is not yet judged: 22 of 30 closed negotiations so far. Loss so far is far below the 500k rollback line.",
+ "counterparts": "Regulars inextro, YAHO1212, move_76 and buyer-02 look steady. Our stance toward them stays unchanged. lee3q is a new first-timer: give it a good first deal. No red flags were seen among our counterparts.",
+ "options": [],
+ "recommendation": null,
+ "status": "report",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "H2 is not yet judged: 22 of 30 closed negotiations so far. Loss so far is far below the 500k rollback line.",
+    "why": "The claim is accurate, as eval.experiment shows 'not enough data' for the current hypothesis and the loss is minimal."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793815433.9120173
+ }
+}

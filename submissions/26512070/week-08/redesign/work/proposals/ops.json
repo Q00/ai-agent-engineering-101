@@ -1,0 +1,396 @@
+{
+ "rules": [
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "The harness runs as two separate runtimes registered as Task Scheduler items (registered by the user) with restart-on-failure: (1) the market kit in the background, whose watchdog restarts the long-running seller and stops the seller and tunnel when the kit stops; (2) the outer runtime. Stopping trading requires stopping the whole kit; changing the strategy schema (`core/schema.py`) or long-running code requires restarting the seller (so it loads the new schema instead of falling back to the last valid `active.json`) and the outer process, while buyer, restock, forum, and slice processes start fresh on each run. Analysis and documentation changes do not require stopping trading.",
+   "harness": "Run the kit and outer loop as separate restartable services. Restart both seller and outer processes after schema or long-running code changes; stop the whole kit only when intentionally pausing trading.",
+   "evidence": [
+    "0ef848343fa5-9",
+    "6c5961061b47-1",
+    "219550a5625a-24",
+    "e54bc7cc16e5-24",
+    "64b1177cc65b-17",
+    "64b1177cc65b-18",
+    "bdfb2e39cd10-8",
+    "19fb13795de6-27",
+    "839f2f1fd6bf-15",
+    "6c71f11c898a-17",
+    "5a8684c5fdbd-3",
+    "5a8684c5fdbd-16"
+   ],
+   "conflict": "",
+   "history": "2026-11-03: week-07 v3 kit stopped after Round 2; week-08 kit v4 launched and moved from laptop to home PC after 11/3 22:35 snapshot (31 shop settlements, balance 3,009,784).",
+   "existing": {
+    "id": "G2",
+    "relation": "refines"
+   },
+   "pid": "ops#1",
+   "area": "ops",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "design/harness-v5.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "Seller, per-order buyer, 60-second restock, review, forum, L2, and L3 processes run concurrently. Every raw event log has a single writer process (append-only, never edited), and shared state JSON files are updated via atomic replacement. The seller writes `bus/status/inner.json` every minute. Never run `git stash` or reset files while the kit is running, as it overwrites live logs like `market-kit.log` to HEAD.",
+   "harness": "Enforce one writer per append-only raw file, atomic replacement for state JSON, 1-minute inner status heartbeats from the seller, and prohibit `git stash` or working-tree resets while the kit is active.",
+   "evidence": [
+    "0d9d65d638d4-12",
+    "219550a5625a-25",
+    "0e618b1ca536-18",
+    "b6412ce6ced0-37",
+    "19fb13795de6-26",
+    "839f2f1fd6bf-22"
+   ],
+   "conflict": "",
+   "history": "On 2026-11-03 23:12, running `git stash` while the kit was active reset `logs/market-kit.log` to HEAD, requiring 56 lines to be recovered from the stash.",
+   "existing": null,
+   "pid": "ops#2",
+   "area": "ops",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "Execution tools must validate actions and return a refusal reason and hint when rejecting; callers must log tool arguments before execution and the result and elapsed time afterward, obtaining numbers from tools rather than memory or guesses. Market data collectors must tolerate missing API fields (recording them as unknown) and fall back to local records when fields are absent.",
+   "harness": "Wrap tool calls with pre/post logging (args, result, latency), enforce validation inside execution tools with clear refusal reasons, and make collectors resilient to missing fields or transient HTTP 502 errors.",
+   "evidence": [
+    "ecbe121caad7-2",
+    "ecbe121caad7-37",
+    "219550a5625a-22",
+    "0e618b1ca536-18",
+    "b7afbcaf45e5-23"
+   ],
+   "conflict": "",
+   "history": "On 2026-11-03 19:19, a single market 502 error caused the first outer-loop pass to lose both collection and forum work before job isolation was fixed.",
+   "existing": null,
+   "pid": "ops#3",
+   "area": "ops",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "The outer runtime runs isolated jobs that fail independently with an alert: status check every 30 seconds, market/ledger collection every 3 minutes (fetching up to 500 rows after the cursor and deferring 502 errors to the next cycle), forum turn every 30 minutes in its own process, and an analysis/strategy slice every 2 hours on even hours (in which market and self analysts summarize records, the strategy agent proposes priorities and hypotheses, and a cross-vendor audit agent started from the code folder checks the proposal).",
+   "harness": "Schedule outer-loop jobs at 30 s (status), 3 min (collector, 500-row batches), 30 min (forum subprocess), and 2 h even hours (analyst-strategy-audit slice, with audit started from the code directory), isolating failures per job.",
+   "evidence": [
+    "ecbe121caad7-4",
+    "ecbe121caad7-10",
+    "0e618b1ca536-17",
+    "b7afbcaf45e5-24",
+    "bdfb2e39cd10-2"
+   ],
+   "conflict": "Pre-Round-3 monitoring (`219550a5625a-22`, 11/3 14:24 while Round 2 was still open) polled endpoints every 5 minutes; the live Round 3 outer loop (`ecbe121caad7-4`, `b7afbcaf45e5-24`, 11/3 19:19) collects every 3 minutes.",
+   "history": "",
+   "existing": null,
+   "pid": "ops#4",
+   "area": "ops",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Every 2 hours, commit a strategy briefing (`logs/strategy/briefs/<time>.md`) and analysis logs containing: (1) element-wise percentile scoreboard, changes, and distance to the next interval; (2) 3-line evidence-backed event summary; (3) hypothesis status; (4) counterparty and stance changes; and when a decision is needed, (5–6) 2–3 options with effects, risks, reversibility, recommendation, and audit opinion. Three approval levels apply: facts need no approval; adjustments within pre-set `delegation` scope (daytime: stock and playbook changes) are applied and reported afterward; directional changes require user confirmation. No reply maintains the current plan; a one-line user decision is logged to `logs/strategy/decisions.jsonl`, creates a new `active.json` version, and starts a new branch.",
+   "harness": "Generate and commit 2-hour briefings and analysis logs, enforce the three-tier approval gate (blocking unapproved directional changes), and version `active.json` + branch on user decisions.",
+   "evidence": [
+    "ecbe121caad7-24",
+    "b2f6029bd469-10",
+    "b2f6029bd469-11",
+    "b2f6029bd469-12",
+    "b2f6029bd469-16",
+    "219550a5625a-26",
+    "64b1177cc65b-15",
+    "b6412ce6ced0-36"
+   ],
+   "conflict": "",
+   "history": "First briefing was designated to set initial delegation scope and counterparty stance criteria.",
+   "existing": null,
+   "pid": "ops#5",
+   "area": "ops",
+   "sources": [
+    "HARNESS.md",
+    "design/harness-v5.md",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "During night hours (01:00–08:00, configurable by the user; 00:00–07:59 in the 11/4 overnight run), briefings omit decision options (including only sections 1–4), safe adjustments agreed to by the audit agent and passing `unsafe()` checks can be installed automatically, and all overnight changes and pending decisions are consolidated into a single morning report after 08:00.",
+   "harness": "Between 01:00 and 08:00, emit status-only briefings (sections 1–4), allow auto-installation only for audit-approved changes passing safety checks, and compile a consolidated morning report after 08:00.",
+   "evidence": [
+    "ecbe121caad7-24",
+    "b2f6029bd469-15",
+    "219550a5625a-26",
+    "34a180580b1c-14",
+    "b6412ce6ced0-36",
+    "06b10b2a463e-4",
+    "8f903d669414-30"
+   ],
+   "conflict": "Initial 2026-11-03 design (`b2f6029bd469-15`, `06b10b2a463e-4`) specified status-only briefings during 01:00–08:00; during the 2026-11-04 overnight run (`b6412ce6ced0-36`, `8f903d669414-30`), 30-minute night slices auto-installed safe, audit-approved stock adjustments (e.g., v31 and v37), and in harness v5 (`34a180580b1c-14`, 2026-11-05) the user confirmed collecting overnight changes into one morning report after 08:00.",
+   "history": "",
+   "existing": null,
+   "pid": "ops#6",
+   "area": "ops",
+   "sources": [
+    "HARNESS.md",
+    "design/harness-v5.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "On every pass, `outer/watch.py` measures health metrics and writes warn/urgent alerts to `logs/strategy/URGENT.md` (requesting a user decision while keeping tool limits active). Alert conditions: inner status (`bus/status/inner.json`) older than 10 min; cash balance approaching the 1,500,000 floor; seller or buyer median response time > 10 s or timeout rate > 30%; > 1.5 model calls per decision or > 20% tool rejections; 0 purchases in 2 consecutive supply windows; 0 shop payments in 30 min or stockout rate > 60%; 0 buyer payments in 30 min or the same payment rejection reason 3 times; rising spoilage; > 10 exceptions of one type in 30 min; or harness job failures.",
+   "harness": "Run `outer/watch.py` each pass to compute health metrics and update `logs/strategy/URGENT.md` whenever any threshold or floor is breached.",
+   "evidence": [
+    "b2f6029bd469-14",
+    "b2f6029bd469-35",
+    "e54bc7cc16e5-14",
+    "e54bc7cc16e5-15",
+    "64b1177cc65b-15",
+    "19fb13795de6-26"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "ops#7",
+   "area": "ops",
+   "sources": [
+    "HARNESS.md",
+    "design/harness-v5.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Allow at most 3 concurrent Claude Code calls across all processes via OS file locks, assigning waiting slots by priority (seller, buyer, restock, review, forum, analysts, audit) and then oldest ticket. Try Claude first on every trading call with a 6-second wait cap; if a seat wait or call times out, fall back to OpenRouter for that L1 call without opening the circuit breaker.",
+   "harness": "Enforce the 3-slot OS lock semaphore with priority+FIFO queuing, a 6-second trading seat timeout, and per-call OpenRouter fallback without tripping the breaker on timeout.",
+   "evidence": [
+    "219550a5625a-21",
+    "bdfb2e39cd10-0",
+    "839f2f1fd6bf-12"
+   ],
+   "conflict": "",
+   "history": "On 2026-11-03 23:36, after API latency spikes stalled visitors, the user directed that Claude be tried first on every trading call with a 6-second cap and per-call fallback instead of opening the breaker.",
+   "existing": null,
+   "pid": "ops#8",
+   "area": "ops",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "While baseline Haiku calls took ~3 s (and 3–8 s in standalone test scripts), live kit Haiku calls on the home PC on 2026-11-03 23:21–23:46 experienced API-side delays of 40–60 s (median seller 47 s, buyer 40 s; 46 of 53 seller calls > 15 s), causing buyers to wait ~20 s per message and shop visitor traffic to drop from 3.1/min to 1–2/min.",
+   "harness": "Bound model call wait times (6 s cap) so API-side latency spikes cannot stall buyer messages or depress visitor traffic.",
+   "evidence": [
+    "219550a5625a-20",
+    "b7afbcaf45e5-7",
+    "839f2f1fd6bf-13",
+    "839f2f1fd6bf-21"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "ops#9",
+   "area": "ops",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "On 2026-11-17 at 12:00 (12 hours before the 23:59 Round 3 deadline), stop restocking purchases and liquidate remaining inventory, because unsold stock at 23:59 counts as zero (full cost loss).",
+   "harness": "Schedule a restock cutoff at 2026-11-17 12:00 and switch seller pricing/stance to inventory liquidation until 23:59.",
+   "evidence": [
+    "b6412ce6ced0-38"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "S8",
+    "relation": "refines"
+   },
+   "pid": "ops#10",
+   "area": "ops",
+   "sources": [
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Secrets (claim codes, API keys, `*.pem` files) must never be committed or tracked in git; keep OpenRouter keys (with a credit limit set) and claim codes in environment variables or files outside the repository. The join script must refuse to start without copied keys unless `-NewKeys` is explicitly passed.",
+   "harness": "Load keys and claim codes exclusively from environment variables or outside-repo files, block `.pem`/key commits, and require existing keys on startup unless `-NewKeys` is specified.",
+   "evidence": [
+    "219550a5625a-24",
+    "219550a5625a-28",
+    "a7f4ae86e56e-18",
+    "a7f4ae86e56e-19",
+    "bdfb2e39cd10-9"
+   ],
+   "conflict": "",
+   "history": "Path and untracked-key check passed on 2026-11-03.",
+   "existing": null,
+   "pid": "ops#11",
+   "area": "ops",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "The week-08 submission PR to `gom31/ai-agent-engineering-101-upstream` (title `[week-08] 26512070`, opened by 2026-11-17 23:59, commits not squashed) must include: (1) the deployed kit log (`logs/market-kit.log`) starting with `[kit] market_kit 4`, shop round 3 registration, supply, settled, paid, and forum lines, with >= 20 shop settlements, >= 20 buyer settlements, and over-limit checkouts left incomplete; (2) the modified modules; (3) a one-page `architecture.tex` and `.pdf` built via user-installed TeX/tectonic; and (4) `REPORT.md` covering component designs (layered models, call manager/breaker, system card, strategy vs. factual context, branching/chunk summaries, profiles, communication space, tool namespaces, deterministic tools), architecture vs. kit default (two runtimes, outer loop, counterparty stances, experiments, 3-stage approval), and Round 3 log-cited results (settlement counts, Players and 6 element percentiles, rejection reason distributions, hypothesis verdicts).",
+   "harness": "Preserve un-squashed commits and the complete `market-kit.log` from `market_kit 4` onward, verify >= 20 settlements per role, and generate the required `REPORT.md` and `architecture.pdf` before 2026-11-17 23:59.",
+   "evidence": [
+    "6c5961061b47-1",
+    "219550a5625a-27",
+    "a7f4ae86e56e-11",
+    "a7f4ae86e56e-12",
+    "a7f4ae86e56e-13",
+    "a7f4ae86e56e-14",
+    "a7f4ae86e56e-15",
+    "a7f4ae86e56e-16",
+    "a7f4ae86e56e-17",
+    "a7f4ae86e56e-18",
+    "a7f4ae86e56e-26",
+    "a7f4ae86e56e-28",
+    "a7f4ae86e56e-29",
+    "a7f4ae86e56e-30",
+    "06b10b2a463e-5",
+    "bdfb2e39cd10-6"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "G1",
+    "relation": "refines"
+   },
+   "pid": "ops#12",
+   "area": "ops",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "git log"
+   ],
+   "flags": []
+  }
+ ],
+ "dropped": [
+  {
+   "cid": "0ef848343fa5-2",
+   "reason": "Initial setup instruction for creating the agent-market folder."
+  },
+  {
+   "cid": "0ef848343fa5-3",
+   "reason": "Initial Windows PowerShell setup instruction."
+  },
+  {
+   "cid": "0ef848343fa5-4",
+   "reason": "Initial Python 3.10 installation setup instruction."
+  },
+  {
+   "cid": "0ef848343fa5-11",
+   "reason": "Initial registration log polling setup instruction."
+  },
+  {
+   "cid": "6c5961061b47-2",
+   "reason": "Generic starter setup instruction for rejoining."
+  },
+  {
+   "cid": "0d9d65d638d4-3",
+   "reason": "Pure implementation detail of how Claude Code launches the stdio MCP server."
+  },
+  {
+   "cid": "219550a5625a-18",
+   "reason": "One-time pre-Round-3 build order note with no runtime harness behavior."
+  },
+  {
+   "cid": "219550a5625a-23",
+   "reason": "Outdated point-in-time observation prior to Round 3 opening (11/3 14:24)."
+  },
+  {
+   "cid": "219550a5625a-30",
+   "reason": "One-time retirement of Round 2 week-7 processes on 11/3."
+  },
+  {
+   "cid": "a7f4ae86e56e-20",
+   "reason": "One-time migration step turning off the v3 kit on 11/3."
+  },
+  {
+   "cid": "a7f4ae86e56e-25",
+   "reason": "One-time file migration step between week-07 and week-08 folders."
+  },
+  {
+   "cid": "a7f4ae86e56e-27",
+   "reason": "One-time shell `cp -r` directory copying note."
+  },
+  {
+   "cid": "7e373f0ea358-2",
+   "reason": "Pre-Round-3 (2026-10-27) reversion of scratch edits."
+  },
+  {
+   "cid": "7e373f0ea358-3",
+   "reason": "Pre-Round-3 (2026-10-27) scratch observation."
+  },
+  {
+   "cid": "bdfb2e39cd10-7",
+   "reason": "Duplicate one-time note that week-07 kit was stopped."
+  },
+  {
+   "cid": "10fc7e5bd4c0-30",
+   "reason": "One-time PC migration snapshot note (recorded in history of Rule 1)."
+  },
+  {
+   "cid": "839f2f1fd6bf-14",
+   "reason": "Environment setup detail for Windows Python launcher (`PYLAUNCHER_NO_SEARCH_PATH=1`)."
+  },
+  {
+   "cid": "839f2f1fd6bf-23",
+   "reason": "Implementation test suite detail about a flaky unit test (`test_index`)."
+  }
+ ],
+ "area": "ops",
+ "candidates": 87,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}

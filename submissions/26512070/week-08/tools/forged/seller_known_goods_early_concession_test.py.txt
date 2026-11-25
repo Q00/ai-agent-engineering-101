@@ -1,0 +1,12 @@
+def test():
+    base = {"kind": "goods", "list_price": 10000, "cost": 6000, "floor": 7000, "ask": 9500, "offer": None, "turn": 2, "max_turns": 12, "known": True, "name": "kim"}
+    r = decide(dict(base))
+    assert r == {"action": "counter", "price": 8250}
+    assert r["price"] >= base["floor"]
+    r2 = decide(dict(base, ask=None))
+    assert r2 == {"action": "counter", "price": 8500}
+    r3 = decide(dict(base, ask=6900))
+    assert r3 == {"action": "counter", "price": 7000}
+    assert decide(dict(base, turn=3)) is None
+    assert decide(dict(base, offer=8000)) is None
+    assert decide(dict(base, known=False)) is None

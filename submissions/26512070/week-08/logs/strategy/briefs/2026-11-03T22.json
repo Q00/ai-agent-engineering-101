@@ -1,0 +1,143 @@
+{
+ "proposal_id": "2026-11-03T22",
+ "slice": "2026-11-03T22",
+ "ts": 1793711206.0067859,
+ "version_from": 9,
+ "score": "Board (last collected): shop ALL 0.43, 24 deals, 99 visits, share 1.9%, stars 4.92 from 24 reviews, revenue 1,879,390, 0 refunds, 0 broken, 22 of 22 claims honest. Board profit is -2,056,609 because the board counts the stock we hold as zero until it sells. Our own records are ahead of the board: 57 settled shop deals, revenue 2,280,417, 357,129 profit before losses at a median margin of 4,946, and losses of 10 (storage). Our buyer has 25 paid, useful deals, so it has reached the base condition of 20. The shop has 57 on our records, which also clears 20, but 24 on the board.",
+ "happened": [
+  {
+   "claim": "Demand we cannot serve is our largest shop loss: 136 requests were missed in 4 h. Most were mattresses (G0f415407 asked 55 times), bedding (Ge62449c9 asked 27 times) and sofas (Gaae7863f asked 14 times).",
+   "evidence": [
+    "self summary 2026-11-03T22: me.missed G0f415407 55, Ge62449c9 27, Gaae7863f 14; categories 침대/매트리스 58, 침구 42, 소파/의자/스툴 16"
+   ]
+  },
+  {
+   "claim": "Across the market, bedding and mattresses are the goods that sell most.",
+   "evidence": [
+    "market summary 2026-11-03T22: G0be9ed07 222, G07ec17d5 205, Ge62449c9 203, G1515d951 77 deals in 6 h"
+   ]
+  },
+  {
+   "claim": "Margins are thin but losses are almost zero. There were no below-cost deals, no refunds and no expiry.",
+   "evidence": [
+    "eval.unit_economics seller: 57 deals, median_margin 4946, below_cost_deals 0",
+    "self summary: eval.losses total 10"
+   ]
+  },
+  {
+   "claim": "The seller funnel is inconsistent: it reports 32 completed against 57 settled, and 149 of 215 negotiations were rejected by buyers.",
+   "evidence": [
+    "self summary: eval.funnel seller completed 32, settled 57, rejected 149"
+   ]
+  },
+  {
+   "claim": "Our buyer loses most deals before agreement: of 126 orders, 79 were picked, 33 agreed and 25 paid. Its forum posts earn votes: 3 posts, 16 likes.",
+   "evidence": [
+    "self summary: buyer funnel agree_rate 0.26; forum buyer 3 posts 16 likes"
+   ]
+  }
+ ],
+ "hypothesis": "H2 cannot be judged yet. eval.experiment returns 'not enough data': the sample is 21 closed negotiations in epoch e9 against the 30 needed. Early signs favour it: stars are 4.92 from 24 reviews, 22 of 22 claims were honest, and there are 0 refunds. The rollback condition (losses above 500,000) is far away, with losses at 10. One caveat: the success condition uses funnel.seller.completion_rate, and that metric is unreliable because of the completed/settled mismatch.",
+ "counterparts": "Kiro729 is our most frequent repeat customer: 10 deals with us, 132,860 KRW, favours bedding at 35%. inextro brings the most value per customer: 6 deals, 485,505 KRW, favours mattresses at 52%. Both are partner candidates; I propose no label change, since only the user confirms labels. As a shop, dragonash treated our buyer fairly twice (0 cheated). We have no profile for Kiro Everyday because its file failed to save, so we know nothing about it yet. No dishonest counterpart is confirmed this slice.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "priorities": [
+     "Restock missed demand first: mattresses G0f415407, bedding Ge62449c9 and sofas Gaae7863f. After those, stock other bedding and mattress lines that buyers asked for, within the stock-value cap.",
+     "Keep the reputation terms unchanged: a first visit is at cost with the warranty included, and a returning buyer pays at or above the list price.",
+     "Serve repeat bedding and mattress buyers (Kiro729, inextro) reliably: keep their favourite lines in stock.",
+     "Buyer: more deals. Take an ask at or under the list price when the item is useful for the order. Keep posting useful buyer posts."
+    ],
+    "limits": {
+     "units_per_sku": 8
+    },
+    "context": [
+     "136 requests were missed in 4 h, mostly mattresses, bedding and sofas. Missed demand is the largest shop loss.",
+     "Losses are near zero (10 KRW). Stars are 4.92 and there are 0 refunds."
+    ]
+   },
+   "targets": "shop revenue (0.3) and profit (0.5), through more settled deals on lines buyers already ask for",
+   "expected": "More deals each slice on the three most-asked lines, with no new price risk. Revenue rises; profit rises slowly because margins stay thin.",
+   "risk": "Stock tied up in expensive mattresses raises storage costs and lowers board profit until the units sell. Warranty refunds grow with volume. The 50% stock-value cap still bounds both.",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {
+    "priorities": [
+     "Start raising profit: returning buyers' opening ask goes to list + 10%, while never going below the list price.",
+     "Keep first visits at cost to continue gaining exposure."
+    ],
+    "context": [
+     "Median margin is only 4,946 KRW across 57 deals. Stars are 4.92."
+    ]
+   },
+   "targets": "shop profit (0.5)",
+   "expected": "Higher margin per repeat deal. Some returning buyers may walk away.",
+   "risk": "This is early: the evidence is 24 board reviews in Round 3's first hours. Returning buyers decide 76% on their own past deals, so harder bargaining could cost us repeat customers.",
+   "reversible": true
+  },
+  {
+   "id": "C",
+   "change": {
+    "experiment": {
+     "hypothesis": "H2: a goods-only shop with a 100% warranty, certified units, first visits at cost and fast answers to forum requests gets many different buyers and good stars fast, which later carry profit.",
+     "min_sample": {
+      "metric": "unit_economics.seller.deals",
+      "value": 30
+     },
+     "success_if": [
+      {
+       "metric": "unit_economics.seller.deals",
+       "op": ">=",
+       "value": 20
+      }
+     ],
+     "rollback_if": [
+      {
+       "metric": "losses.total",
+       "op": ">",
+       "value": 500000
+      }
+     ],
+     "review_at": "first brief after 30 settled seller deals in the epoch"
+    },
+    "context": [
+     "The funnel's completed count (32) conflicts with settled deals (57), so the experiment is now judged on settled deals."
+    ]
+   },
+   "targets": "measurement: a reliable judgement of H2",
+   "expected": "The experiment is judged on settled deals, which we trust, instead of the inconsistent completion_rate.",
+   "risk": "This drops the completion-rate check. It changes no market behaviour.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "rejected",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "H2 cannot be judged yet. eval.experiment returns 'not enough data': the sample is 21 closed negotiations in epoch e9 against the 30 needed. Early signs favour it: stars are 4.92 from 24 reviews, 22 of 22 claims were honest, and there are 0 refunds. The rollback condition (losses above 500,000) is far away, with losses at 10. One caveat: the success condition uses funnel.seller.completion_rate, and that metric is unreliable because of the completed/settled mismatch.",
+    "why": "The brief correctly states that H2 cannot be fully judged yet due to insufficient data for eval.experiment. The positive early indicators (high stars, honesty, low losses) and the clear discrepancy in funnel metrics are all accurately reported and support the claim."
+   },
+   {
+    "claim": "Option A, 'Restock missed demand first: mattresses G0f415407, bedding Ge62449c9 and sofas Gaae7863f. After those, stock other bedding and mattress lines that buyers asked for, within the stock-value cap.', directly addresses the largest observed shop loss (missed demand) and aligns with the user's intent to get seen by many different agents and build trust by reliably having stock. It targets revenue and profit through more settled deals, which is consistent with the shop's ALL score components. The risks are acknowledged and bounded by existing limits.",
+    "why": "Option A directly links to the 'happened' section's primary finding: significant missed demand. Addressing this aligns with the user's overall intent of gaining exposure and building a reputation for reliable stock. The targeted metrics (revenue and profit through more deals) are central to the shop's ALL score. The risk of increased storage and warranty costs is real but mitigated by the existing stock-value cap and the fact that these items are in high demand."
+   },
+   {
+    "claim": "Option B, 'Start raising profit: returning buyers' opening ask goes to list + 10%, while never going below the list price.' is a premature move towards profit over exposure. While profit is 0.5 of shop ALL, the current phase is 'reputation', and the user's intent prioritizes getting seen and building memory first. This option also risks alienating returning buyers, who are crucial for 'memory and relations' and contribute significantly to revenue and potentially future profit.",
+    "why": "Option B is inconsistent with the 'reputation' phase and the user's intent to prioritize exposure and trust-building. Moving to higher prices for returning buyers too early, with only 24 board reviews, could disrupt the process of building 'memory and relations' which is explicitly stated as a prerequisite for profit adjustment. The risk of losing repeat customers, which the brief highlights as deciding 76% on past deals, is a significant threat to long-term trust and profit."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793711215.4940295
+ },
+ "decision": {
+  "choice": "reject",
+  "note": "option A folded into strategy v10 by the user's direction (22:06-22:08: more deals, buy what buyers need); A as written would have dropped the honesty and no-food priorities",
+  "ts": 1793711428.4139128
+ }
+}

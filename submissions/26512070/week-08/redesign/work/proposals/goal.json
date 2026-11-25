@@ -1,0 +1,136 @@
+{
+ "rules": [
+  {
+   "kind": "definition",
+   "status": "confirmed",
+   "rule": "The final score is the Players percentile (shop ALL + buyer ALL for the same GitHub account) on the board at 11/17 23:59. Every component is a percentile of a cumulative total among ranked players only (buyers with a deal, shops with a deal or a purchase; missing values count as 0, ties count half, and stars use stars_rank), so only our relative position against competitors counts.",
+   "harness": "Optimize and report the combined Players percentile (shop ALL + buyer ALL) and its component percentiles against ranked competitors for the 11/17 23:59 deadline.",
+   "evidence": [
+    "270ce6a22bde-14",
+    "9ccbdd6e4a37-14",
+    "ece2408ce643-20",
+    "ece2408ce643-23",
+    "c8be6d835be5-0",
+    "34a180580b1c-1",
+    "34a180580b1c-2",
+    "34a180580b1c-8",
+    "0e618b1ca536-3",
+    "0e618b1ca536-6",
+    "b6412ce6ced0-0",
+    "81323a6db552-0"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "G1",
+    "relation": "refines"
+   },
+   "pid": "goal#1",
+   "area": "goal",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "design/harness-v5.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "definition",
+   "status": "user",
+   "rule": "The course evaluation weights are 40% for the model criterion, 30% for structural originality, and 30% for ranking. The required base condition is at least 20 settled deals each for the shop and the buyer.",
+   "harness": "Track settled deals for the shop and the buyer separately to ensure each reaches at least 20, and align design evaluations with the 40% model, 30% structural originality, and 30% ranking weights.",
+   "evidence": [
+    "88cdf8ccd767-12",
+    "88cdf8ccd767-13",
+    "0e618b1ca536-10"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "goal#2",
+   "area": "goal",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "Score opportunity for a component is weight * (1 - percentile), with distance to the next player's value reported. In harness v5 (11/5), strategic priority is set by a ranking forecast to 11/17 23:59: extrapolate recent 6-hour growth rates for our agent and the 5 ranking neighbors above and below, recalculate percentiles, and compute how much the final ALL percentile rises if a component increases by X per day (using board-ours.jsonl and the current snapshot labeled as an estimate when 6-hour history is unavailable).",
+   "harness": "Expose each component's value, percentile, weight * (1 - percentile) opportunity, and distance to the next player; forecast 11/17 23:59 percentiles from 6-hour growth rates of our agent and +/-5 neighbors, and rank priorities by the marginal ALL percentile gain from adding X per day.",
+   "evidence": [
+    "c8be6d835be5-0",
+    "0e618b1ca536-7",
+    "64b1177cc65b-0",
+    "64b1177cc65b-1",
+    "64b1177cc65b-2"
+   ],
+   "conflict": "",
+   "history": "v4 / system_card used current weight * (1 - percentile) and next-bracket distance; harness v5 (2026-11-05 draft) added 6-hour linear extrapolation to 11/17 23:59 with +/-5 neighbors and marginal ALL gain per +X/day.",
+   "existing": null,
+   "pid": "goal#3",
+   "area": "goal",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "design/harness-v5.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "The user's seller priority (11/4 02:2x, strategy v19) is to recover the early loss by selling many units at a profit, judging strategy changes by settled deals and profit per deal.",
+   "harness": "Prioritize profitable unit volume on the seller side and evaluate strategy changes by settled deals and profit per deal.",
+   "evidence": [
+    "d29a6cd738ca-0",
+    "914b9d6b33cb-21",
+    "c766038e6250-7"
+   ],
+   "conflict": "",
+   "history": "2026-11-03 13:44 initial thesis was exposure first, spread honest information, then adjust prices; 2026-11-04 02:09 (strategy v19) focused on winning back the early loss by selling many units at a profit, later refined into S7.",
+   "existing": {
+    "id": "S7",
+    "relation": "same"
+   },
+   "pid": "goal#4",
+   "area": "goal",
+   "sources": [
+    "git log",
+    "logs/strategy/user_notes.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "Players standing progression: at 11/4 02:28, player percentile was 31.2; at 11/4 08:35, player score was 0.993 (percentile 52.1, shop ALL 0.613 with 2,164,095 profit, 34,983,436 revenue, 252 deals, 4.52 stars; buyer surplus 2,828,339, 327 deals, 114 posts); at 11/5 01:47, Players rank was 14/56 (shop profit 6/52, revenue 4/52, stars 33/52; buyer surplus 25/49, forum 23/49, deals 28/49, posts 7/49).",
+   "harness": "Record and report the Players rank and percentile alongside the rank and value of each shop and buyer component.",
+   "evidence": [
+    "1dcdff1dfe1b-9",
+    "3109604ad9f8-4",
+    "5a8684c5fdbd-19"
+   ],
+   "conflict": "",
+   "history": "11/4 02:28 percentile 31.2 -> 11/4 08:35 percentile 52.1 (score 0.993) -> 11/5 01:47 rank 14/56.",
+   "existing": null,
+   "pid": "goal#5",
+   "area": "goal",
+   "sources": [
+    "git log"
+   ],
+   "flags": []
+  }
+ ],
+ "dropped": [],
+ "area": "goal",
+ "candidates": 25,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}

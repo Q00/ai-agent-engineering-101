@@ -1,0 +1,86 @@
+{
+ "proposal_id": "2026-11-04T0600",
+ "slice": "2026-11-04T0600",
+ "ts": 1793739826.3954825,
+ "version_from": 38,
+ "score": "Shop ALL 0.246: 129 deals, 425 visits (0.8% share), revenue 13,634,898, profit -2,535,674 (the stock we hold counts as zero until it sells), stars 4.38 from 128 reviews, 126/126 honest claims, 4 broken and refunded. Buyer: 25.3 deals/h, 14% goods, surplus 13,495 per deal. The top buyers make 24-54k per deal with 34-71% goods. Experiment H2: 'neither yet'. 40 negotiations closed, completion 0.275, which is under the 0.5 target. No losses.",
+ "happened": [
+  {
+   "claim": "Since 05:3x the shop closed 45 negotiations, completed 13 and settled 8. Cancellations (31) are the main loss, rejections only 1. All 8 settled deals made a profit: revenue 801,677, margin 138,989, median margin 14,400, none below cost.",
+   "evidence": [
+    "self summary 2026-11-04T0600: eval.funnel seller",
+    "eval.unit_economics seller 8 deals"
+   ]
+  },
+  {
+   "claim": "Most lost demand is one SKU we do not hold. In 2 h, 53 of 69 missed requests were for mattress G1515d951. The next highest was G5cd4ffbc with 9. The top shops sold G1515d951 194 times in 6 h; it is first on 'their_best_we_lack'.",
+   "evidence": [
+    "me.missed hours=2",
+    "benchmark their_best_we_lack G1515d951 194"
+   ]
+  },
+  {
+   "claim": "The buy list holds 0 units of G1515d951, G5cd4ffbc, G75f11c19, G5e3784e6, G30604071 and G6b9db161, while 8 of our SKUs sold nothing in 6 h. These are slow SKUs that tie up cash.",
+   "evidence": [
+    "restock buy list now",
+    "benchmark ours_nobody_sold"
+   ]
+  },
+  {
+   "claim": "Our repeat buyers (inextro, chaewoonee, shaun0927, Kiro729) are converging on the same mattress, bedding and sofa-pad cluster, and several grew fast during the slice.",
+   "evidence": [
+    "market summary 2026-11-04T0600"
+   ]
+  },
+  {
+   "claim": "Buyer side: 7 of 11 unpaid agreed deals were food refused for shelf life. Surplus per deal is about a quarter of the top buyers'.",
+   "evidence": [
+    "self summary 2026-11-04T0600"
+   ]
+  }
+ ],
+ "hypothesis": "H2 is not judged yet. Completion is 0.275 against the 0.5 target, but only because 31 negotiations were cancelled. When we hold an item it sells at a profit. The problem is not having it: orders only visit shops that hold one of their accepted SKUs, and the most-asked SKU is at 0. Answer to the user's question (breadth or depth): depth, but in the market's best sellers rather than in our own odd misses. Breadth (24 SKUs x 5) spreads the window's money so thin that the 424k mattress rarely gets bought. Fewer lines (about 12), each deeper, keeps the best sellers in stock every window.",
+ "counterparts": "dae-yangkim (benchmark shop) treats our buyer fairly: 2 fair deals, 0 cheats. shaun0927-lab1 is a new shop with 0 deals from our buyer and 3 no-deals; keep watching. No stance changes are proposed.",
+ "options": [
+  {
+   "id": "A_depth_best_sellers",
+   "change": {
+    "playbook": {
+     "restock": {
+      "market_top": 12,
+      "market_units": 6,
+      "max_line_share": 0.6
+     }
+    },
+    "context": "Restock goes deep on the 12 best-selling goods rather than wide on 24. G1515d951 was asked 53 times in 2 h with 0 held, so a line may now take up to 60% of a window's money so the mattress gets units every window. Units held over 8 h still clear down to cost x 1.05 to free cash."
+   },
+   "targets": "shop revenue (0.3) and profit (0.5) through more settled deals on high-list SKUs",
+   "expected": "Each window buys at least 1-2 G1515d951 plus the next best sellers. Fewer visitors find no stock, and settled deals per hour move from about 13 toward 20 at a margin of about 12-20%. The next slice can check G1515d951 held and sold, and the me.missed count.",
+   "risk": "More concentrated stock: if mattress demand falls, a 424k unit sits with 1%/day storage. Clearance at 8 h limits the exposure. Some smaller asked-for SKUs get fewer units.",
+   "reversible": true
+  },
+  {
+   "id": "B_keep_wide",
+   "change": {},
+   "targets": "nothing changes (control)",
+   "expected": "The list stays at 24 SKUs x 5 with a 50% line cap. The mattress stays mostly out of stock, and misses stay at about 50 per 2 h.",
+   "risk": "We keep losing the market's largest goods demand to the top shops.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A_depth_best_sellers",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [],
+  "by": "audit",
+  "ts": 1793739831.601368
+ },
+ "decision": {
+  "choice": "A_depth_best_sellers",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793739831.63209,
+  "installed": 39
+ }
+}

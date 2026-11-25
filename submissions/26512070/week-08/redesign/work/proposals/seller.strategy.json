@@ -1,0 +1,532 @@
+{
+ "rules": [
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Overall seller plan: make no losing deals, build strong stars (a percentile-ranked score where everyone is high), sell high volume to raise revenue and repeat-business memory, and convert stock and customer relationships into profit. Accepted cost: the profit percentile dips while stock is built up (S6). Strategy agent proposes phase transitions from records; the user decides.",
+   "harness": "Optimize seller pricing, warranty, and stock breadth/depth for profitable deal volume, stars percentile, and revenue; require user approval for phase transitions.",
+   "evidence": [
+    "9ccbdd6e4a37-23",
+    "9ccbdd6e4a37-24",
+    "9ccbdd6e4a37-25",
+    "9ccbdd6e4a37-26",
+    "ece2408ce643-3",
+    "ece2408ce643-25",
+    "ece2408ce643-30",
+    "ece2408ce643-37",
+    "ece2408ce643-38",
+    "b2f6029bd469-18",
+    "b2f6029bd469-19",
+    "b2f6029bd469-20",
+    "b2f6029bd469-27",
+    "219550a5625a-7",
+    "0e618b1ca536-15",
+    "0e618b1ca536-19",
+    "0e618b1ca536-22",
+    "16d9e8a34cd0-0",
+    "16d9e8a34cd0-1",
+    "16d9e8a34cd0-2",
+    "16d9e8a34cd0-10",
+    "eee151d72bb5-0",
+    "7e373f0ea358-0",
+    "c766038e6250-1",
+    "c766038e6250-2",
+    "06b10b2a463e-15",
+    "19fb13795de6-4",
+    "19fb13795de6-6",
+    "1dcdff1dfe1b-0",
+    "81323a6db552-19"
+   ],
+   "conflict": "Early v1-v12 strategies on 2026-11-03 allowed below-cost sales (up to 10% loss, or food at 90%/60% of cost) or at-cost first-visit offers for exposure. On 2026-11-03 22:37 (v13) and 2026-11-04 02:24, the user ended at-cost/below-cost selling in favor of making many deals at a strict profit (never below cost).",
+   "history": "2026-10-27 R2 3-day lowest-price plan reverted after 0 trades -> 2026-11-03 exposure phase with small losses / first visit at cost -> 2026-11-04 00:00 (v13) ended at-cost offers -> 2026-11-04 02:24 user set direction to make many deals at a profit -> 2026-11-04 12:31 user emphasized stars percentile alongside profit and revenue.",
+   "existing": {
+    "id": "S7",
+    "relation": "refines"
+   },
+   "pid": "seller.strategy#1",
+   "area": "seller.strategy",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "git log",
+    "logs/strategy/changes.jsonl",
+    "logs/strategy/decisions.jsonl"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Restocking stops buying at 11/17 12:00 so the shop can sell down its inventory before Round 3 closes at 11/17 23:59, because unsold stock at the end of the round counts as a loss (S2). Stock cost was 39.0M at 11/5 01:50.",
+   "harness": "Enforce a hard stop on all restock purchases starting at 11/17 12:00 and preserve the round-end stop across all strategy and delegated playbook installs.",
+   "evidence": [
+    "ece2408ce643-5",
+    "10fc7e5bd4c0-13",
+    "914b9d6b33cb-15"
+   ],
+   "conflict": "",
+   "history": "Set on 2026-11-03 22:37 (d11861c) and protected against night/delegated overrides on 2026-11-04 02:08.",
+   "existing": {
+    "id": "S8",
+    "relation": "refines"
+   },
+   "pid": "seller.strategy#2",
+   "area": "seller.strategy",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "question",
+   "status": "question",
+   "rule": "How far can the profit percentile dip from restocking and how should large free cash (17.93M at 11/4 17:1x, 23.19M balance at 19:47) be deployed across supply windows without dropping shop ALL more than revenue and stars gain, or leaving too many buy-list lines unstocked (33 of 40 lines left out for cash at 17:1x)?",
+   "harness": "Evaluate restock spending rate, expected-cost budgeting (65% vs 75% worst case), second-plan window buying, and warranty reserve share against the profit percentile spread on the board.",
+   "evidence": [
+    "d29a6cd738ca-6",
+    "d29a6cd738ca-8",
+    "d29a6cd738ca-11",
+    "6c71f11c898a-8"
+   ],
+   "conflict": "",
+   "history": "2026-11-04 02:2x user asked whether to favor breadth vs depth -> 2026-11-04 17:1x user asked how to deploy large cash and whether spending all available cash every window is optimal.",
+   "existing": {
+    "id": "S9",
+    "relation": "refines"
+   },
+   "pid": "seller.strategy#3",
+   "area": "seller.strategy",
+   "sources": [
+    "git log",
+    "logs/strategy/user_notes.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "The seller executes routine negotiations and restocking deterministically by rules without calling an LLM; the model is called only for exceptions. Seller negotiation exceptions are: unparseable price or item, prompt-injection-like instructions, no exact stock match when a similar item exists, a buyer question with words but no number, or a rejected rule-based tool call. Restock calls the agent only as an anomaly when the precomputed buy list cannot buy anything.",
+   "harness": "Run the rule-based seller and restock playbooks by default; log shadow moves when in shadow mode and invoke the LLM agent only on the defined exception and anomaly triggers.",
+   "evidence": [
+    "e54bc7cc16e5-1",
+    "e54bc7cc16e5-6",
+    "e54bc7cc16e5-8",
+    "e54bc7cc16e5-9",
+    "e54bc7cc16e5-23",
+    "b7afbcaf45e5-5",
+    "b7afbcaf45e5-6",
+    "b7afbcaf45e5-8",
+    "b7afbcaf45e5-9",
+    "b7afbcaf45e5-12",
+    "19fb13795de6-12",
+    "19fb13795de6-13",
+    "839f2f1fd6bf-20",
+    "914b9d6b33cb-6",
+    "914b9d6b33cb-8",
+    "1dcdff1dfe1b-23"
+   ],
+   "conflict": "",
+   "history": "2026-11-03 LLM seller/restock took 10-60s under load and failed 28 of 32 restock plans (gpt-4o-mini fallback invented SKUs) -> 2026-11-04 01:55 restock moved to deterministic buy list -> 2026-11-04 02:58 seller moved to deterministic rules mode with exception escalation (D34).",
+   "existing": null,
+   "pid": "seller.strategy#4",
+   "area": "seller.strategy",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Seller pricing schedule (as of 11/4 12:31): open every SKU at 72% of list price, concede 1% of list per turn down to a floor of max(70% of list, cost * 1.12), accept buyer offers at or above the current ask, and from turn 2 accept offers at or above the floor. Units held in stock for more than 8 hours use the clearance floor of cost * 1.12. Never sell below cost, and never trade below-floor discounts for promised reviews.",
+   "harness": "Enforce the price schedule (72% open, 1%/turn step, floor max(70% list, 1.12 * cost), turn-2 floor acceptance, 8h clearance at 1.12 * cost) in code and check.price before sending any counter or accept.",
+   "evidence": [
+    "270ce6a22bde-9",
+    "270ce6a22bde-26",
+    "ece2408ce643-40",
+    "c8be6d835be5-9",
+    "c8be6d835be5-12",
+    "219550a5625a-2",
+    "e54bc7cc16e5-19",
+    "16d9e8a34cd0-15",
+    "b6412ce6ced0-14",
+    "b6412ce6ced0-17",
+    "b6412ce6ced0-22",
+    "b6412ce6ced0-23",
+    "b6412ce6ced0-24",
+    "09d820310e90-7",
+    "09d820310e90-8",
+    "09d820310e90-9",
+    "09d820310e90-10",
+    "09d820310e90-11",
+    "09d820310e90-12",
+    "09d820310e90-13",
+    "09d820310e90-14",
+    "09d820310e90-15",
+    "09d820310e90-16",
+    "b7afbcaf45e5-1",
+    "10fc7e5bd4c0-31",
+    "914b9d6b33cb-0",
+    "914b9d6b33cb-17",
+    "1dcdff1dfe1b-1",
+    "1dcdff1dfe1b-22",
+    "1dcdff1dfe1b-24",
+    "1dcdff1dfe1b-25",
+    "1dcdff1dfe1b-29",
+    "8f903d669414-17",
+    "8f903d669414-19",
+    "8f903d669414-20",
+    "8f903d669414-21",
+    "3109604ad9f8-0",
+    "3109604ad9f8-1",
+    "3109604ad9f8-2",
+    "81323a6db552-18",
+    "81323a6db552-22"
+   ],
+   "conflict": "Opening price and floor were lowered step-by-step on 11/4 as high openings caused buyer exits: v13 (00:00) 100% open / 90% floor (16 of 27 buyers left immediately, 0 sales in 34 min) -> 02:24 80% floor -> 03:00 85% open / 80% & 1.05x cost floor (39 left at 85%) -> 04:35 78% open / 76% floor (31 real buyers left at 78%) -> 06:06 (v44) 74% open / 72% & 1.12x cost floor -> 12:10 80% open for in-demand SKUs (51-68% of real buyers left at opening ask between 11:24 and 12:12) -> 12:31 withdrawn to 72% open / 70% & 1.12x cost floor for all SKUs. Clearance floor rose from 1.0x/1.05x cost to 1.12x cost in v44.",
+   "history": "11/3 first-visit-at-cost -> 11/4 00:00 100%/90% -> 03:00 85%/80% -> 04:35 78%/76% -> 06:06 74%/72% (cost*1.12) -> 12:10 80% in-demand / 74% other -> 12:31 72% open / max(70% list, 1.12*cost) floor for all SKUs.",
+   "existing": null,
+   "pid": "seller.strategy#5",
+   "area": "seller.strategy",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "git log",
+    "logs/strategy/URGENT.md",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Shop identity, certification, and warranty: entry name is fixed as 'gom31-certified-goods' and the shop card is served dynamically on every request without restart. The shop positions itself as premium and fully guaranteed (never 'expensive'): every unit carries the market certificate, every stated grade matches the unit's actual current grade, receipts match the agreed price, and every goods sale includes a 12-hour full-refund warranty (raised from 6 hours on 11/4 12:31).",
+   "harness": "Serve the active strategy's shop_card without restarting, attach the market certificate and a 12-hour warranty to goods sales, and block any grade claim that does not match actual current unit grade.",
+   "evidence": [
+    "9ccbdd6e4a37-5",
+    "219550a5625a-0",
+    "219550a5625a-1",
+    "16d9e8a34cd0-8",
+    "b6412ce6ced0-29",
+    "7e373f0ea358-1",
+    "c766038e6250-5",
+    "b7afbcaf45e5-13",
+    "b7afbcaf45e5-14",
+    "b7afbcaf45e5-15",
+    "839f2f1fd6bf-9",
+    "81323a6db552-17",
+    "81323a6db552-22"
+   ],
+   "conflict": "Shop display name evolved from 'gom31 Honest Shop' (11/3 18:42, v3) to 'gom31 Certified Safe Goods' (11/3, v4) to premium/fully-guaranteed positioning covering goods and long-shelf-life food (11/3 23:50 & 11/4 v44). Warranty duration increased from 6 hours (100% coverage of the 6h failure window) to 12 hours on 11/4 12:31 to boost stars percentile against competitors offering 2-6h warranties.",
+   "history": "2026-10-27 'easy, cheap and friendly' card reverted -> 2026-11-03 'gom31 Honest Shop' -> 'gom31 Certified Safe Goods' with 6h warranty -> 2026-11-03 23:50 'premium and fully guaranteed' -> 2026-11-04 12:31 12h warranty.",
+   "existing": null,
+   "pid": "seller.strategy#6",
+   "area": "seller.strategy",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "git log",
+    "logs/strategy/changes.jsonl",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "For food sales, when food_fit is enabled, the seller selects the first-to-expire unit whose remaining shelf life is at least 1.05 times the buyer's stated required hours; if no unit in stock qualifies, the seller states the true hours and sells nothing. Built on 11/5 01:20 (initially off by default) to protect shop stars after 61 of 109 low ratings (<=3 stars) in 6 hours came from selling shorter-lived food units while longer-lived units of the same SKU were in stock.",
+   "harness": "Check buyer required hours against unit remaining shelf life * 1.05 (FEFO among qualifying units) when food_fit is active; refuse to sell shorter units and report true hours when none qualify.",
+   "evidence": [
+    "64b1177cc65b-19",
+    "5a8684c5fdbd-6",
+    "5a8684c5fdbd-7",
+    "5a8684c5fdbd-9"
+   ],
+   "conflict": "",
+   "history": "Added on 2026-11-05 01:20 (e57b96a) after 6h rating analysis.",
+   "existing": null,
+   "pid": "seller.strategy#7",
+   "area": "seller.strategy",
+   "sources": [
+    "design/harness-v5.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Restock builds a deterministic buy list once per supply window (when open or opening within 75s) from: (1) our shop's missed buyer requests (6h), (2) our shop's sales (6h), (3) the market's top selling goods (up to 30 SKUs, e.g. top 24 goods x 3 and top 8 food x 3 with >=72h shelf life in v44), and (4) benchmark top-profit shops' best sellers that we lack. Deduplicate to one line per SKU keeping the larger target and value; never reduce a market bestseller to 1 unit just because we had 1 sale. Rank lines and allocate money by demand first (requested/sold units), using expected sales value (count * list price) as tie-breaker, covering 2 supply windows. Fit lines in order taking the most units cash and stock caps allow (at least 1 unit if affordable) rather than dropping earlier lines.",
+   "harness": "Precompute the deduplicated buy list per supply window from missed requests, own sales, market top sellers, and benchmark best sellers; rank by demand then value, and fit quantities line-by-line within caps.",
+   "evidence": [
+    "eb6259c7432f-20",
+    "e54bc7cc16e5-2",
+    "e54bc7cc16e5-22",
+    "16d9e8a34cd0-25",
+    "16d9e8a34cd0-26",
+    "d29a6cd738ca-4",
+    "b6412ce6ced0-13",
+    "b6412ce6ced0-18",
+    "b6412ce6ced0-19",
+    "b6412ce6ced0-25",
+    "b6412ce6ced0-35",
+    "06b10b2a463e-10",
+    "bdfb2e39cd10-3",
+    "bdfb2e39cd10-12",
+    "bdfb2e39cd10-14",
+    "bdfb2e39cd10-26",
+    "19fb13795de6-18",
+    "19fb13795de6-19",
+    "10fc7e5bd4c0-1",
+    "10fc7e5bd4c0-2",
+    "10fc7e5bd4c0-9",
+    "10fc7e5bd4c0-10",
+    "10fc7e5bd4c0-11",
+    "10fc7e5bd4c0-12",
+    "839f2f1fd6bf-10",
+    "839f2f1fd6bf-17",
+    "914b9d6b33cb-7",
+    "914b9d6b33cb-9",
+    "914b9d6b33cb-10",
+    "914b9d6b33cb-23",
+    "8f903d669414-12",
+    "8f903d669414-13",
+    "8f903d669414-15",
+    "8f903d669414-18",
+    "3109604ad9f8-3",
+    "3109604ad9f8-9",
+    "6c71f11c898a-6",
+    "6c71f11c898a-7",
+    "5a8684c5fdbd-21"
+   ],
+   "conflict": "1) Food share: initial 11/3 strategy set food inventory to 0% (non-food specialist); by 11/4 v44, the buy list included the market's top 8 food SKUs x 3 units with >=72h shelf life while keeping night/delegated installs from altering the configured food share. 2) Ranking order: overnight v44 sorted the buy list by expected revenue (demand * list price), which caused a 2.2M sofa to displace water G7fa48eaa (asked 20 times, given 1 unit); on 11/4 17:08 (d7c66a1), ranking was changed to demand first, then value.",
+   "history": "11/3 LLM restock & cheapest-first trial (dropped after buying spray paint/gum) -> 11/4 01:55 deterministic buy list (missed + sales + market top 5x2) -> 03:16 added benchmark bestsellers and 1-line-per-SKU deduplication -> 06:06 (v44) expanded to market top 24 goods x 3 and top 8 food (>=72h) x 3 -> 10:37 top 3 goods SKUs allowed 20 units and 50% window budget (others 12 units, 20% budget; night mode 60%) -> 17:08 sorted by demand first, then value.",
+   "existing": null,
+   "pid": "seller.strategy#8",
+   "area": "seller.strategy",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md",
+    "logs/strategy/user_notes.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Restock financial and inventory limits (as of 11/4 19:47): cash floor is 500,000 won; warranty reserve is 6% of sales currently under warranty; stock cap is up to 160% of equity (balance + stock at cost, capped at max 2.0x in validation); per-SKU cap is 20 units and 50% of window money for the top 3 goods SKUs by expected sales value, and 12 units (20% of window money, 60% in night mode) for other SKUs. Buy-list sizing uses expected unit cost of 65% of list price (cost_share = 0.65), while worst-case cost (75% of list) must still preserve the plain 500,000 cash floor in check.buy and act.allocate by trimming plans rather than refusing them. Automatic bankruptcy filing triggers only when below the 500,000 bankruptcy line with filings left and zero inventory (the kit cannot file while stock remains).",
+   "harness": "Calculate spendable restock budget from equity-based stock cap, 500,000 cash floor, 6% active-warranty reserve, and 0.65 expected cost share; enforce 0.75 worst-case cost against the plain cash floor by trimming quantities.",
+   "evidence": [
+    "eb6259c7432f-21",
+    "219550a5625a-3",
+    "219550a5625a-5",
+    "219550a5625a-8",
+    "219550a5625a-9",
+    "d29a6cd738ca-10",
+    "b6412ce6ced0-20",
+    "b6412ce6ced0-21",
+    "b6412ce6ced0-26",
+    "eb9189af1afa-11",
+    "06b10b2a463e-16",
+    "b7afbcaf45e5-10",
+    "10fc7e5bd4c0-0",
+    "839f2f1fd6bf-8",
+    "839f2f1fd6bf-16",
+    "914b9d6b33cb-18",
+    "914b9d6b33cb-19",
+    "914b9d6b33cb-20",
+    "1dcdff1dfe1b-14",
+    "1dcdff1dfe1b-15",
+    "1dcdff1dfe1b-26",
+    "1dcdff1dfe1b-27",
+    "1dcdff1dfe1b-28",
+    "8f903d669414-14",
+    "8f903d669414-16",
+    "81323a6db552-24",
+    "6c71f11c898a-2",
+    "6c71f11c898a-3",
+    "6c71f11c898a-9",
+    "6c71f11c898a-10",
+    "6c71f11c898a-11"
+   ],
+   "conflict": "Limits were progressively relaxed as revenue grew and the old starting-capital caps strangled restocking: Cash floor: 1.5M (11/3) -> 1.0M (11/4 02:09) -> 500k (11/4 03:02). Warranty reserve: 50% (11/3, left only 155k cash) -> 10% of in-warranty sales (11/4 02:09, as market failure rate was 0.5%) -> 6% (11/4 19:47, as 10% tied up 14.5M on 242M of sales). Stock cap: 35% -> 45% -> 50% -> 60% -> 80% -> 120% -> 160% of starting capital (11/4 05:07), then rebased from starting capital to equity (balance + stock at cost) on 11/4 13:59 because starting-capital basis left only 2.1M room at 15.7M balance. Cost budgeting: 75% worst-case (11/3) -> 65% expected cost with 75% plain-cash-floor check (11/4 19:47, observed median cost 62-65%). SKU cap: 5 -> 8 -> 12 (20 for top 3 goods).",
+   "history": "11/3 1.5M cash floor, 50% reserve, 50% start-cap, 5/SKU -> 11/4 02:09 1.0M floor, 10% reserve, 60% cap -> 03:02 500k floor, 120% cap -> 05:07 160% cap, 12/SKU -> 10:37 20/SKU & 50% line share for top 3 -> 13:59 stock_base = equity -> 19:47 cost_share = 0.65, warranty reserve = 6%.",
+   "existing": null,
+   "pid": "seller.strategy#9",
+   "area": "seller.strategy",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md",
+    "logs/strategy/user_notes.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Counterpart identification and stances: A2A negotiation messages do not identify the buyer and the order ID arrives only at payment. The shop must never ask a buyer for its name, never advertise in reviews or first messages, and use the default active strategy for all unconfirmed counterparts. A deterministic tool (calc.guess_counterpart) guesses the buyer on the first message from opening-template fingerprints, and post-settlement payment matching confirms the buyer and scores guess accuracy by confidence band. Customer labels (partner, regular, first-timer, lost, black) are optional evidence-backed lenses; the user defines stance criteria, the strategy agent assigns stances within policy, and only the user may approve changing treatment or avoiding/refusing/blocking a counterpart (never refuse based on a guess).",
+   "harness": "Run calc.guess_counterpart on first negotiation messages without model calls, match settled deals to payment order IDs to update fingerprints.json and accuracy metrics, apply default strategy to unverified buyers, and require user approval for treatment changes or refusals.",
+   "evidence": [
+    "9ccbdd6e4a37-29",
+    "0d9d65d638d4-15",
+    "0d9d65d638d4-16",
+    "0d9d65d638d4-21",
+    "0d9d65d638d4-22",
+    "0d9d65d638d4-23",
+    "0d9d65d638d4-24",
+    "0d9d65d638d4-25",
+    "0d9d65d638d4-26",
+    "0d9d65d638d4-27",
+    "0d9d65d638d4-28",
+    "0d9d65d638d4-29",
+    "ecbe121caad7-18",
+    "ecbe121caad7-20",
+    "c8be6d835be5-29",
+    "16d9e8a34cd0-4",
+    "16d9e8a34cd0-11",
+    "c766038e6250-3",
+    "c766038e6250-4",
+    "c766038e6250-5",
+    "c766038e6250-6",
+    "bdfb2e39cd10-20"
+   ],
+   "conflict": "",
+   "history": "Designed 2026-10-27 to 2026-11-03 (D18, section 2.2) and implemented with calc.guess_counterpart and fingerprints.json on 2026-11-03 19:59.",
+   "existing": null,
+   "pid": "seller.strategy#10",
+   "area": "seller.strategy",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "Strategy benchmarking, diagnostics, and delegation: every 25 minutes, benchmark our shop against the top 3 shops by board profit (deals/h, paid % of list, goods revenue share, stock bought, their best sellers we lack, our unsold SKUs). Slice and forecast analysis must report SKU-level profit (margin * sales, losses from disposal/storage/refunds, turnover), missed requests from stockouts by SKU and amount, sold-price distributions, and buyer departure rate at the opening ask (with supporting row counts). Strategy proposals must state file changes, target score, expected effect, risks, reversibility, and one recommendation; delegated or night installs may auto-apply within bounds (keeping the round-end stop, food share, and delegated price floor) and report afterward.",
+   "harness": "Run the 25-minute top-3 profit shop benchmark and SKU/stockout/opening-exit diagnostics; enforce proposal schema and delegation guardrails on automated strategy installs.",
+   "evidence": [
+    "ecbe121caad7-25",
+    "ecbe121caad7-26",
+    "64b1177cc65b-8",
+    "64b1177cc65b-9",
+    "eb9189af1afa-9",
+    "914b9d6b33cb-15",
+    "914b9d6b33cb-17",
+    "914b9d6b33cb-22",
+    "8f903d669414-9",
+    "8f903d669414-10"
+   ],
+   "conflict": "Night/delegated installs initially had an 80%-of-list price floor guardrail (11/4 01:56, 79ecb43) before the user lowered the active seller floor to 72% (06:06) and 70% (12:31).",
+   "history": "2026-11-03 outer runtime proposal/delegation design -> 2026-11-04 03:16 25-minute benchmark added -> 2026-11-04 harness-v5 SKU profit and stockout diagnostics added.",
+   "existing": null,
+   "pid": "seller.strategy#11",
+   "area": "seller.strategy",
+   "sources": [
+    "HARNESS.md",
+    "design/harness-v5.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "Competitor benchmark and stockout observations on 11/4: top-profit shops earned 95-99% of revenue from goods, making 45-90 deals/h at 75-85% of list price and turning stock rapidly (e.g., 40.4M stock bought and 524 deals at 79% of list in 5.4h; dae-yangkim sold scarce high-list mattresses/furniture at 85% of list with 2h warranty). In our shop, when stock caps or cash limits bound (11/4 13:40-13:55 and 17:20), 41-50% of visits found no stock (most-missed SKUs: mattress G1515d951 up to 41 asks, G00327e80 21, G03d0199f 20, G9a240832 12, Ge62449c9 10-27, G6b9db161 10, G5e3784e6 8, G5cd4ffbc 7). Raising caps and stocking bestsellers cut no-stock visits from 41 to 4 in 30 min (05:05->05:35) and swung profit from -2.11M (06:35) to +1.90M (08:02).",
+   "harness": "Use observed competitor turnover (45-90 deals/h, 75-85% of list on goods) and no-stock visit alerts to tune restock depth on high-demand goods SKUs.",
+   "evidence": [
+    "b6412ce6ced0-15",
+    "b6412ce6ced0-18",
+    "09d820310e90-1",
+    "09d820310e90-2",
+    "09d820310e90-3",
+    "09d820310e90-4",
+    "09d820310e90-5",
+    "1dcdff1dfe1b-10",
+    "1dcdff1dfe1b-11",
+    "8f903d669414-11"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "seller.strategy#12",
+   "area": "seller.strategy",
+   "sources": [
+    "git log",
+    "logs/strategy/URGENT.md",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  }
+ ],
+ "dropped": [
+  {
+   "cid": "270ce6a22bde-4",
+   "reason": "Duplicate of existing market rule M2 (starting balance 5,000,000 and buying stock in supply windows)."
+  },
+  {
+   "cid": "eb6259c7432f-1",
+   "reason": "Kit implementation detail (inventory snapshot file refresh interval of 10s)."
+  },
+  {
+   "cid": "eb6259c7432f-13",
+   "reason": "Duplicate of existing market rule F1 (food grade arrival distribution)."
+  },
+  {
+   "cid": "eb6259c7432f-14",
+   "reason": "Duplicate of existing market rules M5 and D1 (goods grade and cost share distributions)."
+  },
+  {
+   "cid": "eb6259c7432f-18",
+   "reason": "Duplicate of existing market rule M2 (restock hook cadence and 1-20 unit lines)."
+  },
+  {
+   "cid": "eb6259c7432f-19",
+   "reason": "Duplicate of existing market rule M2 (max 10 lines, whole-batch refusal above balance)."
+  },
+  {
+   "cid": "eb6259c7432f-25",
+   "reason": "Pure kit I/O format detail for the restock hook."
+  },
+  {
+   "cid": "ece2408ce643-16",
+   "reason": "Duplicate of existing market rule M2 (10 lines, 1-20 units, whole-batch refusal)."
+  },
+  {
+   "cid": "c8be6d835be5-6",
+   "reason": "Internal message-parser implementation detail."
+  },
+  {
+   "cid": "34d7381d0edb-25",
+   "reason": "Buyer parallel-search design note explicitly stating no seller behavior change."
+  },
+  {
+   "cid": "17f1df4c235a-9",
+   "reason": "Duplicate of existing market rule M2 (5,000,000 start, 10 lines of 1-20 units every 60s)."
+  },
+  {
+   "cid": "b6412ce6ced0-32",
+   "reason": "Belongs to buyer area (how the buyer responds when no shop carries a requested goods SKU), not seller.strategy."
+  },
+  {
+   "cid": "c766038e6250-0",
+   "reason": "One-off workflow instruction from 2026-10-27 prior to Round 3 launch."
+  }
+ ],
+ "area": "seller.strategy",
+ "candidates": 231,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}

@@ -1,0 +1,183 @@
+{
+ "chunk": "0ef848343fa5",
+ "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Do not change the person's own agent code, and never print or commit private keys.",
+   "quote": "Do not change the person's own agent code. Do not print or commit private keys (`*.pem`).",
+   "harness": "Preserve the supplied agent code and prevent private keys from being printed or committed.",
+   "cid": "0ef848343fa5-0",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Ask the person only for missing inputs: a nickname of at most 32 letters, digits, or dashes; an optional claim code; and an optional agent folder containing `agent.json`.",
+   "quote": "Inputs from the person's message (ask only if missing):",
+   "harness": "Check supplied inputs first and ask only for missing required information.",
+   "cid": "0ef848343fa5-1",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "Create a new `agent-market` folder in the current directory and use its absolute path as ROOT.",
+   "quote": "Work in a new folder `agent-market` inside the current directory. Call its absolute path ROOT.",
+   "harness": "Set up the work in a new folder and retain its absolute path for subsequent commands.",
+   "cid": "0ef848343fa5-2",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "On Windows, run all setup commands in PowerShell; each PowerShell call must start in ROOT once ROOT exists.",
+   "quote": "run every Windows command below in PowerShell",
+   "harness": "Use PowerShell for Windows setup and begin each call by changing to ROOT.",
+   "cid": "0ef848343fa5-3",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "Windows setup requires Python 3.10 or newer; install a suitable version and recheck it in a new PowerShell if none is listed.",
+   "quote": "If no 3.10 or newer is listed:",
+   "harness": "Verify the Windows Python version before creating the environment; install and recheck if needed.",
+   "cid": "0ef848343fa5-4",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "market_rule",
+   "rule": "A claim code is optional and associates the person's GitHub with the leaderboard.",
+   "quote": "it puts their GitHub on the leaderboard",
+   "harness": "Pass the claim code when supplied; do not require one.",
+   "cid": "0ef848343fa5-5",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "market_rule",
+   "rule": "Without a supplied agent folder, use the starter agent, which provides a working shop and buyer.",
+   "quote": "Without AGENT_DIR, write the starter (a working shop and buyer):",
+   "harness": "Use the starter only when the person has not supplied an agent folder.",
+   "cid": "0ef848343fa5-6",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "market_rule",
+   "rule": "If cloudflared cannot be installed, join in buyer-only mode and tell the person that their shop will not be in the market.",
+   "quote": "If cloudflared cannot be installed at all, use `--buyer-only` instead of `--tunnel` in step 6 and tell the person their shop will not be in the market.",
+   "harness": "Switch to buyer-only mode and clearly disclose that no shop will participate.",
+   "cid": "0ef848343fa5-7",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The starter needs Claude Code or Codex signed in; if only Codex is available, configure the specified Codex harness command, and if neither is available, tell the person the starter cannot proceed without one.",
+   "quote": "With neither, tell the person the starter needs Claude Code or Codex signed in.",
+   "harness": "Check for a supported signed-in coding harness and report when neither is available.",
+   "cid": "0ef848343fa5-8",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "Keep the kit running while the agent is in the market; start it detached and write its output to a log.",
+   "quote": "The kit keeps running while the agent is in the market, so start it detached and write its output to a log.",
+   "harness": "Run the join process in the background and retain its logs.",
+   "cid": "0ef848343fa5-9",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "market_rule",
+   "rule": "Wait until the logs confirm shop and buyer registration; in buyer-only mode, wait for only the buyer registration line.",
+   "quote": "Wait for the two lines",
+   "harness": "Do not treat joining as complete until the required registration line or lines appear in the log.",
+   "cid": "0ef848343fa5-10",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "Read the join log every 10 seconds while waiting for registration; the tunnel may take about a minute before the first registration line.",
+   "quote": "Read the log every 10 seconds",
+   "harness": "Poll the log at 10-second intervals and allow for tunnel startup delay.",
+   "cid": "0ef848343fa5-11",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "process",
+   "rule": "If the nickname is already taken by another key, choose another nickname and retry joining.",
+   "quote": "another person has NICK; pick another nickname and run step 6 again",
+   "harness": "On a nickname collision, request or choose a different nickname and retry.",
+   "cid": "0ef848343fa5-12",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "process",
+   "rule": "If the claim code is unknown, copy it again from the market join page.",
+   "quote": "copy the code again from https://market.ourolabs.ai/join",
+   "harness": "On an unknown-claim error, have the person verify and resupply the claim code.",
+   "cid": "0ef848343fa5-13",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "process",
+   "rule": "If the network blocks the tunnel or no tunnel URL appears, retry in buyer-only mode.",
+   "quote": "the network blocks the tunnel; join with the buyer only",
+   "harness": "Fall back to buyer-only mode when the tunnel cannot be established.",
+   "cid": "0ef848343fa5-14",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "process",
+   "rule": "If the log says the seller did not start and its agent card cannot be read, show the person the end of the seller logs and stop.",
+   "quote": "show them the end of `my-agent/logs/` and stop",
+   "harness": "Display the seller log tail and stop the join procedure.",
+   "cid": "0ef848343fa5-15",
+   "source": "agent.md",
+   "loc": "agent.md lines 1-112 (Agent Market: setup instructions for a coding agent)",
+   "quote_ok": true
+  }
+ ]
+}

@@ -1,0 +1,53 @@
+{
+ "proposal_id": "2026-11-04T0100",
+ "slice": "2026-11-04T0100",
+ "ts": 1793721810.830673,
+ "version_from": 16,
+ "score": "Players ALL 0.269 for the shop. Shop: 52 board deals, revenue 3,784,204, board profit -1,010,294, stars 4.37 from 51 reviews, 49 of 49 claims honest, 1 refund and 1 break. The board profit is balance minus the 5,000,000 start, so it counts stock we bought but have not sold yet. It is not a loss on the units we sold.",
+ "happened": [
+  {
+   "claim": "On the units we sold, the shop makes a profit. It is thin per deal and nothing has been sold below cost.",
+   "evidence": [
+    "eval.unit_economics seller (all): 84 deals, revenue 4,177,721, profit_before_losses 956,425, median_margin 4,376, below_cost_deals 0, exposure_cost 0"
+   ]
+  },
+  {
+   "claim": "Losses besides cost are small and are all storage.",
+   "evidence": [
+    "eval.losses: storage 2,633, expired 0, refunds 0, total 2,633"
+   ]
+  },
+  {
+   "claim": "No shop deal has settled yet in epoch e16, which started 00:34. It is too early to judge v16.",
+   "evidence": [
+    "eval.unit_economics seller epoch e16: deals 0"
+   ]
+  },
+  {
+   "claim": "Repeat buyers are forming on the regulars' SKUs. Those SKUs are also among the market's best sellers.",
+   "evidence": [
+    "market summary 2026-11-04T0100: Kiro729 11 deals, dae-yangkim 10, YAHO1212 7, inextro 6, myeonggi 5",
+    "market.selling: G0be9ed07 681, G07ec17d5 582, Ge62449c9 467 in 6h"
+   ]
+  },
+  {
+   "claim": "The board's stars (4.37) are below the 4.81 seen at v13.",
+   "evidence": [
+    "eval.score shop stars 4.37, reviews 51",
+    "experiment note v13: stars were 4.81"
+   ]
+  }
+ ],
+ "hypothesis": "H2: not enough data yet. The sample is 27 closed negotiations and 30 are needed. The rollback condition is not met: losses are 2,633 against a limit of 500,000. Keep v16 as it is until the review point.",
+ "counterparts": "The five regulars (Kiro729, dae-yangkim, inextro, YAHO1212, myeonggi) are heavy market buyers who favour bedding and mattresses. They fit our regulars' SKU list, so keep stocking those SKUs deep. No new black or avoid signals. No stance changes.",
+ "options": [],
+ "recommendation": "No change tonight. Keep v16, let the experiment reach 30 closed negotiations and judge it at the next slice. Watch three things: whether e16 shop deals resume, why stars fell to 4.37 (read the recent low reviews), and whether held stock turns into sales, since that would show in board profit.",
+ "status": "report",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [],
+  "by": "audit",
+  "ts": 1793721818.0346596
+ }
+}

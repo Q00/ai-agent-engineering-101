@@ -1,0 +1,123 @@
+{
+ "proposal_id": "2026-11-04T18",
+ "slice": "2026-11-04T18",
+ "ts": 1793783078.063073,
+ "version_from": 59,
+ "score": "Shop ALL 0.804: profit 26.50M (percentile 0.91; the next player has 34.64M, 4 rows above), revenue 218.6M (0.89; 5 above), stars_rank 4.55 (0.38; 30 above, the next is 4.56). Buyer: surplus 11.40M (0.365; the next has 11.95M), forum 0.626 (0.552), deals 798 (0.448), posts 221 (0.865). Room left (weight x (1 - percentile)): buyer surplus 0.318, buyer forum 0.134, shop stars 0.124, buyer deals 0.055, shop profit 0.045, shop revenue 0.033.",
+ "happened": [
+  {
+   "claim": "The 17:1x cash answer is already in force (v59): the buy list counts units at about 65% of list and the warranty reserve is 6% of 6 h sales instead of 10%, which frees about 5.2M. The shop then closed 44 of 108 negotiations for 33.8M revenue and 7.19M profit before losses, with no deal below cost.",
+   "evidence": [
+    "self summary 2026-11-04T18: completion_rate 0.50, revenue 33.8M, profit 7.19M, median margin 123k",
+    "eval.losses: total 45,768, all storage, no expired food, no refunds"
+   ]
+  },
+  {
+   "claim": "Shortages still cost us sales. In the last 30 min, 6 visits found no stock (G5e3784e6 3, Ge62449c9 2, G8ec51935 1). The top shops' high-list best sellers that we lack are G8ec51935 (241 sold, list 2.32M), G00327e80 (96, 2.25M), G03d0199f (88, 1.61M) and G04ee8423 (79, 1.62M).",
+   "evidence": [
+    "health 30 min: no_stock 6, missing_skus",
+    "benchmark their_best_we_lack"
+   ]
+  },
+  {
+   "claim": "Our shop card on the board still promises 'your first visit is at our cost' and a 6-hour warranty. The first-visit-at-cost offer ended under v13, and the priorities state the warranty as 12 h. The card is not true as written.",
+   "evidence": [
+    "eval.score shop.card.description",
+    "experiment note v13: the first-visit-at-cost offer ends"
+   ]
+  },
+  {
+   "claim": "The buyer loses many agreed food deals on shelf-life policy: all 12 unpaid orders in the last 30 min were 'N h of shelf life left'. Some missed by only a few hours, e.g. 74 h against a policy of 84 h. Goods are 19% of our buyer's deals; the top buyers have 42-81%.",
+   "evidence": [
+    "health buyer unpaid_reasons 12/12 shelf life",
+    "self summary unpaid_by sample",
+    "benchmark buyer_ours goods_share 0.19"
+   ]
+  },
+  {
+   "claim": "Our regulars are deepening: inextro is at 167 deals and 43.3M, shaun0927-labbuyer at 60 deals and 43.9M. None of the four new entrants (jiseokkk, leeuichann, moss-and-oak, sohyunkim11) has dealt with us yet.",
+   "evidence": [
+    "market summary 2026-11-04T18"
+   ]
+  }
+ ],
+ "hypothesis": "H2: neither yet. The sample is 106 closed negotiations and completion is 0.509 (target 0.5, met), with losses at 45,768 against a rollback line of 500k. The unit_economics.seller.deals metric reads 0 for this epoch while the self analyst counts 44 settled deals, so the second condition looks like a counting gap in the epoch window, not a failure.",
+ "counterparts": "Keep regulars (inextro, chaewoonee, YAHO1212, shaun0927, shaun0927-labbuyer, buzllightyear) at the guarantee price. Treat shaun0927-labbuyer as a separate high-ticket buyer and stock its lines (G5e3784e6, G00327e80, G8ec51935). Give the new entrants the normal first-time terms. No avoid stances are proposed.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "shop_card": {
+     "description": "gom31 Certified Safe Goods: goods with a full warranty. Every unit ships with the market's certificate and its true grade; if it breaks within the warranty window stated on your receipt, we refund the full price. Missing a goods item? Ask on the forum and we stock it at the next supply window."
+    }
+   },
+   "targets": "shop stars (0.124 room) and honesty",
+   "expected": "The card states only what we do now: no cost-price first visit and no fixed hour figure that may conflict with the 12 h in the priorities. This removes a source of disappointed first-timers and of low stars.",
+   "risk": "Slightly less pull for first-timers who came for the cost offer; small, because the offer has been off since 11/4 00:00 anyway.",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {
+    "restock": {
+     "market_top": 28,
+     "market_units": 6,
+     "max_line_share": 0.2
+    },
+    "context": "Stock out costs visits (6 no_stock in 30 min). Buy the high-list lines top shops sell that we lack: G8ec51935, G00327e80, G03d0199f, G04ee8423, and keep G5e3784e6 and Ge62449c9 deep. Size at the expected cost, about 65% of list."
+   },
+   "targets": "shop profit (0.045) and revenue (0.033): we need +8.1M profit to pass the next row",
+   "expected": "More of the 6 h cash goes into lines with proven demand and a list of 1.6-2.3M. At about 20% margin, 10 more units sold per window is about +3-4M profit.",
+   "risk": "Stock value rises toward the cap; storage at 1%/day on expensive units. The round end on 11/17 needs the refill-only-what-sold rule.",
+   "reversible": true
+  },
+  {
+   "id": "C",
+   "change": {
+    "buyer": {
+     "food_shelf_rule": "pay when the shelf life left covers the item's use window plus 10%, instead of the fixed policy hours; still never pay for food that would spoil before use",
+     "goods_push": "goods of list 30,000+: open at 55%, aim at 70%, ceiling 82%, ask several shops"
+    }
+   },
+   "targets": "buyer surplus (0.318 room) and deals (0.055)",
+   "expected": "Recover part of the 12 agreed-but-unpaid food deals per 30 min, and close more high-list goods, where the top buyers earn 50-141k surplus per deal against our 28.6k.",
+   "risk": "Some food may come out worthless if the use-window estimate is wrong; this can be checked in eval.unit_economics(buyer) for worthless items.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "rejected",
+ "audit": {
+  "agrees": false,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "The strategy agent's assessment of H2 as 'neither yet' is inconsistent with its own evidence and the 'success_if' condition for completion_rate.",
+    "why": "The hypothesis states 'completion is 0.509 (target 0.5, met)', which implies the completion_rate part of the success_if condition is met. The strategy agent should conclude 'success' for that part, not 'neither yet'. The strategy agent's statement 'unit_economics.seller.deals metric reads 0 for this epoch while the self analyst counts 44 settled deals, so the second condition looks like a counting gap in the epoch window, not a failure' explains why the 'unit_economics.seller.deals' metric might not be registering, but it doesn't change the fact that the completion rate target was met."
+   },
+   {
+    "claim": "Option A, to update the shop card description, directly addresses a critical honesty issue and aligns with the core goal of being reliably honest, which is fundamental to building trust and reputation.",
+    "why": "The current shop card promises 'first visit is at our cost' and a '6-hour warranty', which are both false according to the brief's evidence. Rectifying this immediately removes a source of potential distrust and negative first impressions, which could impact stars and future deals. The risk of 'slightly less pull for first-timers' is small and justified given the current false advertising."
+   },
+   {
+    "claim": "Option B's proposed restock strategy aligns with the benchmark goal of buying high-list, best-selling goods to increase profit and revenue, directly addressing the identified stock shortages and the need to turn stock into cash.",
+    "why": "The brief clearly states 'Shortages still cost us sales' and lists specific high-value SKUs that are selling well in the market but we lack. The top shops profit from these items, and our current profit and revenue percentiles still have room for growth. Increasing inventory in these proven lines, even with the associated storage risk, is a direct move towards the 'more deals, each above cost, and turn the stock into cash' goal. The 'max_line_share' and 'market_top' changes support a deeper, more focused inventory."
+   },
+   {
+    "claim": "Option C for the buyer's food shelf-life policy change is crucial for improving buyer deals and surplus by reducing unnecessary rejections, aligning with the goal of increasing deals.",
+    "why": "The evidence shows that 'all 12 unpaid orders in the last 30 min were 'N h of shelf life left'', with some missed by only a few hours. The proposed change to 'pay when the shelf life left covers the item's use window plus 10%' is a more flexible and realistic approach than a fixed policy, and directly aims to capture deals that are currently being lost. This aligns with increasing 'deals' (0.055 room) and potentially 'surplus' by preventing missed opportunities."
+   },
+   {
+    "claim": "The buyer's 'goods_push' in Option C to increase opening and aiming percentages for high-list goods aligns with the benchmark of top buyers, who secure many expensive goods, and with our buyer's current low goods share.",
+    "why": "Our buyer's goods share is only 19%, while top buyers are at 42-81%. The brief notes that the 'whole gap is goods of 100k+' and top buyers pay 0.67-0.80 of list. By increasing our opening and aiming percentages for these goods, our buyer is more likely to close high-value deals, directly addressing the 'buyer surplus' (0.318 room) and 'buyer deals' (0.055 room) metrics."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793783083.683091
+ },
+ "decision": {
+  "choice": "reject",
+  "note": "user 11/6 00:xx: stale, written on an older strategy and superseded by later versions",
+  "ts": 1793891381.6642168
+ }
+}

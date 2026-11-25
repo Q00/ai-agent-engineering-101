@@ -1,0 +1,37 @@
+# Alerts (newest first)
+
+- 11-06 09:09 **warn** health: 52% of agreed deals were not paid: [('N {"error":"Sorry, this item is currently', 8), ('N h of shelf life left,', 4)]
+- 11-05 16:53 **warn** health: seller/claude: 8 of 12 calls timed out
+- 11-05 14:21 **warn** health: 51% of agreed deals were not paid: [('N h of shelf life left,', 12), ('no certificate to show the shelf', 5)]
+- 11-05 12:31 **warn** health: seller/claude: 6 of 9 calls timed out
+- 11-05 05:59 **warn** health: 51% of agreed deals were not paid: [('N {"error":"unit u-edNaNfNf is not in', 11), ('N h of shelf life left,', 6)]
+- 11-05 05:54 **warn** health: 58% of agreed deals were not paid: [('N {"error":"unit u-edNaNfNf is not in', 11), ('N h of shelf life left,', 7)]
+- 11-05 05:49 **warn** health: 63% of agreed deals were not paid: [('N {"error":"unit u-edNaNfNf is not in', 12), ('N h of shelf life left,', 8)]
+- 11-05 05:43 **warn** health: 59% of agreed deals were not paid: [('N {"error":"unit u-edNaNfNf is not in', 13), ('N h of shelf life left,', 9)]
+- 11-05 05:38 **warn** health: 53% of agreed deals were not paid: [('N h of shelf life left,', 9), ('N {"error":"unit u-edNaNfNf is not in', 9)]
+- 11-05 00:06 **warn** health: 51% of agreed deals were not paid: [('N h of shelf life left,', 14), ('no certificate to show the shelf', 2)]
+- 11-04 17:20 **warn** health: 41% of visits found no stock; most asked [('G00327e80', 21), ('G03d0199f', 20), ('G5cd4ffbc', 5)]
+- 11-04 13:55 **warn** health: 41% of visits found no stock; most asked [('G1515d951', 20), ('G9a240832', 11), ('G7fa48eaa', 1)]
+- 11-04 13:50 **warn** health: 47% of visits found no stock; most asked [('G1515d951', 30), ('G9a240832', 12), ('G7fa48eaa', 1)]
+- 11-04 13:45 **warn** health: 49% of visits found no stock; most asked [('G1515d951', 38), ('G9a240832', 11), ('Ge62449c9', 1)]
+- 11-04 13:40 **warn** health: 50% of visits found no stock; most asked [('G1515d951', 41), ('G9a240832', 9), ('Ge62449c9', 1)]
+- 11-04 12:59 **warn** health: 52% of agreed deals were not paid: [('N h of shelf life left,', 20), ('N {"error":"unit u-NcNfcaN is not in', 1)]
+- 11-04 12:12 **warn** health: 51% of real buyers left at our opening ask
+- 11-04 12:07 **warn** health: 53% of real buyers left at our opening ask
+- 11-04 12:01 **warn** health: 56% of real buyers left at our opening ask
+- 11-04 11:56 **warn** health: 60% of real buyers left at our opening ask
+- 11-04 11:51 **warn** health: 58% of real buyers left at our opening ask
+- 11-04 11:46 **warn** health: 65% of real buyers left at our opening ask
+- 11-04 11:40 **warn** health: 68% of real buyers left at our opening ask
+- 11-04 11:35 **warn** health: 61% of real buyers left at our opening ask
+- 11-04 11:30 **warn** health: 54% of real buyers left at our opening ask
+- 11-04 11:24 **warn** health: 52% of real buyers left at our opening ask
+- 11-04 10:35 **warn** health: the buyer paid nothing in 30 min (52 orders)
+- 11-04 03:02 **warn** strategy: active.json does not fit the strategy schema; using the last good copy
+- 11-04 02:24 **warn** seller-status: active.json does not fit the strategy schema; using the last good copy
+- 11-04 02:22 **warn** seller-card: active.json does not fit the strategy schema; using the last good copy
+- 11-03 23:33 **warn** model-buyer: buyer: 5 rate limits or timeouts in a row, Claude Code paused for 300 s
+- 11-03 23:31 **warn** model-seller: seller: 4 rate limits or timeouts in a row, Claude Code paused for 300 s
+- 11-03 23:27 **warn** model-buyer: buyer: 4 rate limits or timeouts in a row, Claude Code paused for 300 s
+- 11-03 23:24 **warn** model-seller: seller: 3 rate limits or timeouts in a row, Claude Code paused for 300 s
+- 11-03 23:22 **warn** model-buyer: buyer: 3 rate limits or timeouts in a row, Claude Code paused for 300 s

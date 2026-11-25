@@ -1,0 +1,293 @@
+{
+ "chunk": "81323a6db552",
+ "loc": "git log 7fb07cf .. 12e111a",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "goal",
+   "kind": "definition",
+   "rule": "The harness score is the Players percentile, calculated from buyer ALL and shop ALL.",
+   "quote": "the Players percentile (shop ALL + buyer ALL)",
+   "harness": "Optimize and report the combined buyer ALL and shop ALL percentile.",
+   "cid": "81323a6db552-0",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": false
+  },
+  {
+   "area": "seller.score",
+   "kind": "definition",
+   "rule": "The board ranks buyers with a deal and shops with a deal or a purchase; missing values count as 0 and ties count as half. Shop stars use stars_rank.",
+   "quote": "buyers with a deal, shops with a deal or a purchase), missing as 0, ties half, stars_rank",
+   "harness": "Use these eligible pools, missing-value handling, tie handling, and stars_rank when computing scores.",
+   "cid": "81323a6db552-1",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "user_decision",
+   "rule": "On November 4, the user required the scoring metric to be updated in the harness.",
+   "quote": "user 11/4 11:2x: the metric must be updated in the harness",
+   "harness": "Keep the harness scoring metric aligned with the board rule.",
+   "cid": "81323a6db552-2",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The collector must record each score part's value, percentile, contribution, next player's value, rows above, and room weight multiplied by one minus percentile; eval.score, the strategy brief, and the system card must expose or explain the scoring rule and room.",
+   "quote": "the collector writes score (each part's value, percentile, contribution, the next player's value, rows above, and the room weight x (1 - percentile))",
+   "harness": "Persist those score fields and make the scoring rule and room available to agents.",
+   "cid": "81323a6db552-3",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.score",
+   "kind": "observation",
+   "rule": "On November 4 at 11:31, buyer room weights were surplus 0.358 and forum 0.140; shop room weight for stars was 0.123.",
+   "quote": "buyer room surplus 0.358, forum 0.140; shop room stars 0.123",
+   "harness": "Record these observed room weights with their date and time, and refresh them from current board data.",
+   "cid": "81323a6db552-4",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "observation",
+   "rule": "The buyer's orders were 90% food, attributed to hidden favourite categories.",
+   "quote": "our buyer's orders are 90% food (hidden favourite categories, agent.md)",
+   "harness": "Track category mix and account for hidden favourite categories when evaluating buyer orders.",
+   "cid": "81323a6db552-5",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "user_decision",
+   "rule": "On November 4, the user wanted the buyer to pursue high-list goods bought cheaply and benchmark its performance properly.",
+   "quote": "user 11/4 11:3x: go for high-list goods bought cheap, benchmark properly",
+   "harness": "Prioritize high-list goods and compare buyer performance against top buyers.",
+   "cid": "81323a6db552-6",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "market_rule",
+   "rule": "The buyer strategy set goods listed at 30,000 or more to open at 55% of list, aim for 68%, and cap at 82%; food offers were set to 45%/60%.",
+   "quote": "goods of list 30,000+ open 55%, aim 68%, ceiling 82%: ... food back to 45%/60%",
+   "harness": "Apply these buyer offer targets unless a later user decision changes them.",
+   "cid": "81323a6db552-7",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": false
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "market_rule",
+   "rule": "Asks below 20% of list are ignored.",
+   "quote": "asks under 20% of list are ignored",
+   "harness": "Do not submit buyer offers below 20% of list.",
+   "cid": "81323a6db552-8",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "observation",
+   "rule": "Over six hours, buyer food surplus was 1.45M for list prices under 30,000, versus 1.64–1.70M for top buyers; the buyer paid 0.59 of list versus their 0.62–0.70.",
+   "quote": "<30k: 1.45M vs 1.64-1.70M, we pay 0.59 of list, they 0.62-0.70",
+   "harness": "Benchmark food surplus and paid share by list-price band against top buyers.",
+   "cid": "81323a6db552-9",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "observation",
+   "rule": "Over six hours, the buyer closed 11 goods deals for 1.2M, while inextro closed 335 for 31.7M and myeonggi closed 98 for 10.4M; top buyers won by closing many expensive goods rather than squeezing prices.",
+   "quote": "ours 11 deals 1.2M; inextro 335 deals 31.7M; myeonggi 98 deals 10.4M",
+   "harness": "Measure expensive-goods deal count and surplus, not just how low the purchase price is.",
+   "cid": "81323a6db552-10",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "market_rule",
+   "rule": "Food orders stop trying new shops after 10 seconds, and a new order starts about 20 seconds after the previous one ends.",
+   "quote": "food orders stop trying new shops after 10 s ... the next order comes about 20 s after one ends",
+   "harness": "Enforce the food-shop search window and order cadence.",
+   "cid": "81323a6db552-11",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": false
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "market_rule",
+   "rule": "Rank shops by expected surplus using the smoothed deal record multiplied by one minus the shop's share of list price; increase the goods estimate according to the shop's warranty share.",
+   "quote": "rank shops by expected surplus - our smoothed record of deals with the shop x (1 - the share of list it sells at), goods up by the shop's warranty share",
+   "harness": "Rank candidate shops by smoothed expected surplus and adjust goods estimates for warranty share.",
+   "cid": "81323a6db552-12",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "observation",
+   "rule": "Over six hours, top buyers made 133–169 orders per hour and closed 0.47–0.64; this buyer made 110 orders per hour and closed 0.42. Top buyers settled 135–406 goods, 75% under warranty.",
+   "quote": "top buyers 133-169 orders/h and close 0.47-0.64 ... ours 110 orders/h, 0.42, 23 goods",
+   "harness": "Benchmark orders per hour, close rate, and goods settlements against those ranges.",
+   "cid": "81323a6db552-13",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": false
+  },
+  {
+   "area": "market.trust",
+   "kind": "market_rule",
+   "rule": "Goods refunds for purchases under warranty are automatic and come from the shop's balance.",
+   "quote": "goods ... under warranty, refunds are automatic from the shop's balance",
+   "harness": "Model warranty refunds as automatic deductions from shop balance.",
+   "cid": "81323a6db552-14",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": false
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "observation",
+   "rule": "Since strategy v49, 51 food orders in 36 minutes closed at 0.76 versus 0.42 before; the median shop attempt took 1.9 seconds and an order took 6.3 seconds, with 5,950 surplus per deal and 3 unpaid payments among the last 16.",
+   "quote": "food closes 0.76 (0.42 before) ... median 1.9 s an attempt and 6.3 s an order, surplus 5,950 a deal, unpaid 3 of the last 16 payments",
+   "harness": "Track food close rate, timing, surplus, and unpaid payments when evaluating fast shop searches.",
+   "cid": "81323a6db552-15",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": false
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "market_rule",
+   "rule": "A food shop gets 4 seconds to answer; the previous timeout was 8 seconds, and the 90th-percentile attempt took 28.6 seconds.",
+   "quote": "a food shop gets 4 s to answer (was 8; the p90 attempt took 28.6 s)",
+   "harness": "Set the food-shop response timeout to 4 seconds.",
+   "cid": "81323a6db552-16",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "On November 4, dae-yangkim sold mattresses and furniture at 0.85 of list with a 2-hour warranty; dragonash gave 3 hours, while inextro and this shop gave 6 hours.",
+   "quote": "dae-yangkim (top profit) sells mattresses and furniture at 0.85 of list with a 2 h warranty, dragonash 3 h, inextro and we 6 h",
+   "harness": "Include price, warranty duration, and goods mix when benchmarking shops.",
+   "cid": "81323a6db552-17",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "On November 4, the user initially chose 80% of list as the opening price for in-demand SKUs and 74% for other SKUs; a later decision replaced this pricing.",
+   "quote": "user 11/4 11:5x, benchmark dae-yangkim - top profit at 0.85 of list on scarce high-list goods - with 80%",
+   "harness": "Treat this as a superseded decision; use the later November 4 pricing rule.",
+   "cid": "81323a6db552-18",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "On November 4, the user decided that stars matter because shops are ranked by percentile.",
+   "quote": "user 11/4 12:4x: stars matter, everyone is high and it is a percentile",
+   "harness": "Optimize shop stars as a percentile-ranked outcome, not merely for an absolute rating.",
+   "cid": "81323a6db552-19",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "review",
+   "kind": "observation",
+   "rule": "Across 947 reviews, this shop averaged 4.83 stars at 70% of list or less, 4.57 at 75%, and 4.11 at 80%; inextro averaged 3 stars at about 79%.",
+   "quote": "4.83 at 70% of list or less, 4.57 at 75%, 4.11 at 80% (947 reviews; inextro gives 3 at about 79%)",
+   "harness": "Track review stars against sale price as a share of list.",
+   "cid": "81323a6db552-20",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "observation",
+   "rule": "On November 4 at 12:31, ranked shops' stars_rank clustered from 4.5 to 4.84; this shop had 4.50 at percentile 0.36, and reaching 4.7 was estimated to add about 0.07 shop ALL.",
+   "quote": "ours 4.50, percentile 0.36), so 4.7 is worth about +0.07 shop ALL",
+   "harness": "Estimate the shop ALL effect of stars using the current ranked-shop distribution.",
+   "cid": "81323a6db552-21",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "The final November 4 seller strategy sets every SKU's opening price to 72% of list, a floor of 70% of list and cost times 1.12, and a 12-hour warranty; it replaced the 80% opening for in-demand SKUs.",
+   "quote": "every SKU opens at 72% of list (the 80% for SKUs in demand is withdrawn), floor 70% of list and cost x 1.12, warranty 6 h -> 12 h",
+   "harness": "Use the final 72% opening, specified floor, and 12-hour warranty for every SKU.",
+   "cid": "81323a6db552-22",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "goods",
+   "kind": "market_rule",
+   "rule": "Goods break only within six hours of sale, even when the stated warranty lasts 12 hours.",
+   "quote": "goods break only within 6 h of the sale",
+   "harness": "Limit the warranty reserve calculation to the six-hour break window.",
+   "cid": "81323a6db552-23",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "process",
+   "rule": "The seller was restarted after the reserve change, and the seller and outer process were restarted for the earlier seller schema change.",
+   "quote": "seller restarted for the reserve change",
+   "harness": "Restart the seller when applying the reserve change.",
+   "cid": "81323a6db552-24",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "HARNESS 1.3 records the buyer's order pools and its 90% food-order mix.",
+   "quote": "HARNESS 1.3 records the pools and that our buyer's orders are 90% food",
+   "harness": "Preserve the eligible pools and buyer category mix in harness records.",
+   "cid": "81323a6db552-25",
+   "source": "git log",
+   "loc": "git log 7fb07cf .. 12e111a",
+   "quote_ok": true
+  }
+ ]
+}

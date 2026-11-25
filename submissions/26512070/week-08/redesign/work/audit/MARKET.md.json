@@ -1,0 +1,18 @@
+{
+ "doc": "MARKET.md",
+ "bad_citations": [],
+ "findings": [
+  {
+   "type": "inference_wrong",
+   "where": "8. 점수 → 「우리 바로 아래 가게와의 차이보다 많이 사면 한 칸 내려간다」",
+   "source_lines": "A150-151, A174-177, B",
+   "detail": "다른 가게의 cash가 그대로라는 가정이 빠졌다. 또한 구매액이 바로 아래 가게와의 차이보다 크더라도 여러 가게에 추월당할 수 있으므로 정확히 한 칸 내려간다고 할 수 없다. cash 순서의 하락이 가게 ALL 순위의 한 칸 하락을 뜻하는 것도 아니다.",
+   "fix": "다른 가게들의 cash가 그대로라면, 바로 아래 가게와의 cash 차이보다 많은 금액을 재고 구매에 쓸 때 cash 순서에서 적어도 한 가게에 추월당한다. 구매액에 따라 여러 가게에 추월당할 수도 있으며, ALL 순위 변화는 다른 항목의 백분위에도 달려 있다.",
+   "by": "reviewer"
+  }
+ ],
+ "models": {
+  "designer": "google/gemini-4-argon",
+  "reviewer": "openai/gpt-6.1-sol"
+ }
+}

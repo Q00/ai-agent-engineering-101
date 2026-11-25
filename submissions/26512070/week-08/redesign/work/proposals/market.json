@@ -1,0 +1,366 @@
+{
+ "rules": [
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Round 3 on market.ourolabs.ai runs 11/3 - 11/17 2026 23:59 KST, and final rankings are determined by the board at 11/17 23:59. The catalog is available at market start with about 5,600 SKUs, mapping each SKU to name, category, list_price, kind, and (for food) shelf_hours. An order names a catalog category, acceptable SKUs priced 0.5-1.5x a reference price, and a budget (food orders add use_within_hours). A receipt's item may be the order item or an acceptable SKU, while checkout and ledger records always name the SKU shipped. The market enforces no minimum sale price. Once a unit is chosen for a deal, it cannot be changed.",
+   "harness": "Load the catalog at start to look up SKU attributes. Match offers to acceptable SKUs, lock a selected unit once chosen, and match receipts and ledger rows to the shipped SKU. Do not assume a market-enforced floor price; apply any harness safety floor separately.",
+   "evidence": [
+    "270ce6a22bde-0",
+    "270ce6a22bde-1",
+    "270ce6a22bde-18",
+    "eb6259c7432f-2",
+    "e54bc7cc16e5-25",
+    "e54bc7cc16e5-31",
+    "0e618b1ca536-0",
+    "17f1df4c235a-13",
+    "bdfb2e39cd10-25"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "M1",
+    "relation": "refines"
+   },
+   "pid": "market#1",
+   "area": "market",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "A shop and a buyer with the same GitHub owner cannot settle with each other. Starting capital is 5,000,000 credits. A shop with balance below 500,000 credits may file bankruptcy at most twice; filing seizes its stock and restores its balance to 5,000,000, but the bankruptcy aid is deducted from net profit.",
+   "harness": "Never pair or attempt settlement between our own shop and buyer. Base capital calculations on the 5,000,000 starting capital, and treat bankruptcy as a last-resort reset that seizes stock and reduces net profit by the aid received.",
+   "evidence": [
+    "270ce6a22bde-15",
+    "270ce6a22bde-25",
+    "ece2408ce643-17",
+    "ece2408ce643-18",
+    "e54bc7cc16e5-37",
+    "17f1df4c235a-17",
+    "06b10b2a463e-8"
+   ],
+   "conflict": "Git log 4b9cbec (2026-11-03 15:25, D31) calculated stock cap against a 2,000,000 starting capital from earlier rounds; agent.md and M2 confirm Round 3 starting balance and bankruptcy reset are 5,000,000.",
+   "history": "",
+   "existing": {
+    "id": "M7",
+    "relation": "refines"
+   },
+   "pid": "market#2",
+   "area": "market",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "The kit checks the buyer's accept terms {cert, min_hours_left, grades, warranty_hours} before paying and writes the refusal reason to payments.jsonl. A buyer cannot finish an order requiring grades or shelf life (min_hours_left) unless the unit carries a market certificate; the kit refuses payment otherwise.",
+   "harness": "Require a market certificate whenever accept terms specify grades or min_hours_left before finishing a deal, and read refusal reasons from payments.jsonl.",
+   "evidence": [
+    "b7afbcaf45e5-3"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "M8",
+    "relation": "refines"
+   },
+   "pid": "market#3",
+   "area": "market",
+   "sources": [
+    "git log"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Supply opens every 20 minutes at a slightly shifting time; outside a window the market returns HTTP 429 with wait and opens_at. While agent.md states windows last 3 minutes (10 minutes for the first window at round start), observed Round 3 supply windows last about 10 minutes.",
+   "harness": "Read wait and opens_at on 429 responses and make at most one restock decision per open supply window (while open or within 75 seconds of opening).",
+   "evidence": [
+    "270ce6a22bde-5",
+    "219550a5625a-4"
+   ],
+   "conflict": "agent.md and HARNESS.md state supply opens for 3 minutes every ~20 minutes (first window 10 minutes); live Round 3 observation (M3) showed supply windows lasting about 10 minutes.",
+   "history": "",
+   "existing": {
+    "id": "M3",
+    "relation": "refines"
+   },
+   "pid": "market#4",
+   "area": "market",
+   "sources": [
+    "HARNESS.md",
+    "agent.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "A unit's cost is fixed on arrival. A goods unit's grade is fixed on arrival, whereas a food unit's grade reflects remaining shelf life and declines over time.",
+   "harness": "Record unit cost and arrival grade on restock, and recompute food grade and shelf risk (remaining hours, next grade-drop time, and whether use_within_hours is met) as time passes.",
+   "evidence": [
+    "270ce6a22bde-6",
+    "c8be6d835be5-4"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "M5",
+    "relation": "same"
+   },
+   "pid": "market#5",
+   "area": "market",
+   "sources": [
+    "HARNESS.md",
+    "agent.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "When a goods unit breaks within the warranty period, the shop refunds the full price from its own balance.",
+   "harness": "Account for warranty refunds as direct deductions from shop balance and revenue.",
+   "evidence": [
+    "e54bc7cc16e5-34"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "D2",
+    "relation": "same"
+   },
+   "pid": "market#6",
+   "area": "market",
+   "sources": [
+    "HARNESS.md"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "The board (GET /api/board: shops, buyers, players, reviews, totals) ranks only buyers with at least one settled trade and shops with at least one settled trade or stock purchase (at 11/4 09:00: 44 buyers and 47 shops). For coursework grading, both our shop and our buyer must reach at least 20 settled deals in Round 3.",
+   "harness": "Compute percentiles against the eligible active cohorts on /api/board, and ensure both our shop and buyer exceed 20 settled deals.",
+   "evidence": [
+    "9ccbdd6e4a37-19",
+    "b6412ce6ced0-2"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "S1",
+    "relation": "refines"
+   },
+   "pid": "market#7",
+   "area": "market",
+   "sources": [
+    "HARNESS.md",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Round 3 is an open market of heterogeneous student and instructor agents that can join, leave, learn, and change strategy or act dishonestly at any time. One participant operates a shop and a buyer under the same participant name. Opponents' internals, best-selling products, and buyer preferred categories are private; only messages, forum posts, shop inventory, and public market records are observable. In Round 3 the ledger records a settle line and a result line for a paid deal (and a result line for an unpaid receipt), and settled lines expose the shipped SKU, price, buyer, task, and stars.",
+   "harness": "Key counterpart profiles by participant name across shop and buyer roles, and continuously update demand and buyer category preferences from verified settled result lines (mapping result seq to the order's settle line without double-counting settle + result lines).",
+   "evidence": [
+    "9ccbdd6e4a37-10",
+    "9ccbdd6e4a37-13",
+    "ece2408ce643-15",
+    "0d9d65d638d4-14",
+    "ecbe121caad7-0",
+    "ecbe121caad7-1",
+    "e54bc7cc16e5-36",
+    "e54bc7cc16e5-39",
+    "0e618b1ca536-2",
+    "c766038e6250-8",
+    "19fb13795de6-16",
+    "10fc7e5bd4c0-26",
+    "10fc7e5bd4c0-28"
+   ],
+   "conflict": "Pre-Round 3 drafts on 2026-11-03 (ecbe121caad7-1, e54bc7cc16e5-39) questioned whether Round 3 ledger rows would hide prices or buyer names; live Round 3 ledger inspection on 2026-11-03 22:33 (10fc7e5bd4c0-26, 10fc7e5bd4c0-28) confirmed verified result lines carry price, buyer, SKU, task, and stars.",
+   "history": "Initially on 11/3 the collector counted both settle and result lines as separate sales; fixed at 2026-11-03 22:33 (9fcd2e2) to count only verified result lines.",
+   "existing": null,
+   "pid": "market#8",
+   "area": "market",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "The kit refreshes local `.market/` files on fixed intervals: `inventory.json` every 10 s, `demand.json` and `forum.json` every 30 s, alongside `catalog.json`, `orders.jsonl`, `shops.json`, `payments.jsonl`, `deals.jsonl`, and `broken.jsonl`. Direct API endpoint `GET /api/ledger?after=N` returns up to 500 rows per call and occasionally returns HTTP 502. A seller negotiates turn by turn (one message at a time) until accepting, the buyer walks away, or the seller ends the negotiation. Round 3 negotiation messages can include SKUs and hour counts after prices.",
+   "harness": "Read `.market/` files at their refresh cadences, paginate `/api/ledger` with a cursor while retrying on 502, handle negotiations turn-by-turn, and parse prices explicitly rather than taking the last number in a message.",
+   "evidence": [
+    "e54bc7cc16e5-38",
+    "16d9e8a34cd0-7",
+    "06b10b2a463e-6"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "market#9",
+   "area": "market",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "An external collector refreshes `live.json` every few minutes with recent (6-hour) settled market sales by SKU and category, sales speed, price distribution, competitor stock, buyer category counts (`market.buyer_prefs`), shop observed deals and ratings, and our shop's recent sales. The collector records the round number, resets counts on round change, flags SKUs absent from the current catalog, and attaches a small-sample warning early in the round (decided 2026-11-03). Counterpart profiles must match aggregate tool facts, require evidence for interpretations (such as impersonation, prompt injection, or collusion), preserve prior versions, and watch LAB-listed items; avoiding a counterpart requires the user's decision.",
+   "harness": "Maintain the collector and counterpart profiles with round-aware resets, catalog validation, and small-sample warnings; require user approval before blacklisting/avoiding any counterpart.",
+   "evidence": [
+    "0d9d65d638d4-18",
+    "ecbe121caad7-7",
+    "ecbe121caad7-22",
+    "c8be6d835be5-1",
+    "c8be6d835be5-2",
+    "c8be6d835be5-3",
+    "c766038e6250-19",
+    "bdfb2e39cd10-4",
+    "bdfb2e39cd10-13"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "market#10",
+   "area": "market",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "In Round 2, 60.4% of buyers purchased again from the same shop as their immediately preceding purchase. In Round 3 (observed 2026-11-04 02:2x over 6 hours), bedding SKUs accepted by orders sold over 1,600 units at a median price of 75% of list price, led by sofa pad G0be9ed07 (772 sold) and mattress G07ec17d5 (675 sold).",
+   "harness": "Factor repeat-customer retention and high-velocity order-accepted SKUs into restock and pricing decisions.",
+   "evidence": [
+    "ece2408ce643-26",
+    "d29a6cd738ca-3"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "market#11",
+   "area": "market",
+   "sources": [
+    "HARNESS.md",
+    "logs/strategy/user_notes.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Market entry nicknames may contain only letters, digits, and hyphens (no spaces, max 32 characters) and are displayed separately from agent card and receipt names. Our Round 3 entry name is `gom31-honest-shop` and our card/receipt shop name is `gom31 Honest Shop`.",
+   "harness": "Use `gom31-honest-shop` as the market join nickname and `gom31 Honest Shop` on the agent card and receipts.",
+   "evidence": [
+    "ecbe121caad7-3",
+    "a7f4ae86e56e-21",
+    "b7afbcaf45e5-16"
+   ],
+   "conflict": "On 2026-11-03 the user initially requested joining as `gom31 Honest Shop` (a7f4ae86e56e-21), but the market join rule forbids spaces (ecbe121caad7-3), so the join nickname was set to `gom31-honest-shop` at 2026-11-03 19:04 (3343524).",
+   "history": "",
+   "existing": null,
+   "pid": "market#12",
+   "area": "market",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  }
+ ],
+ "dropped": [
+  {
+   "cid": "0ef848343fa5-5",
+   "reason": "One-time setup instruction for joining the market."
+  },
+  {
+   "cid": "0ef848343fa5-6",
+   "reason": "One-time setup instruction for joining the market."
+  },
+  {
+   "cid": "0ef848343fa5-7",
+   "reason": "One-time setup instruction for joining the market."
+  },
+  {
+   "cid": "0ef848343fa5-10",
+   "reason": "One-time setup instruction for joining the market."
+  },
+  {
+   "cid": "0ef848343fa5-12",
+   "reason": "One-time setup instruction for joining the market."
+  },
+  {
+   "cid": "0ef848343fa5-13",
+   "reason": "One-time setup instruction for joining the market."
+  },
+  {
+   "cid": "0ef848343fa5-14",
+   "reason": "One-time setup instruction for joining the market."
+  },
+  {
+   "cid": "0ef848343fa5-15",
+   "reason": "One-time setup instruction for joining the market."
+  },
+  {
+   "cid": "6c5961061b47-0",
+   "reason": "One-time setup instruction for joining the market."
+  },
+  {
+   "cid": "a7f4ae86e56e-22",
+   "reason": "One-time pre-entry setup check about week-7 keys."
+  },
+  {
+   "cid": "bdfb2e39cd10-16",
+   "reason": "Pure implementation detail of internal event logging."
+  },
+  {
+   "cid": "10fc7e5bd4c0-29",
+   "reason": "Pure implementation detail of historical log migration."
+  }
+ ],
+ "area": "market",
+ "candidates": 66,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}

@@ -1,0 +1,99 @@
+{
+ "proposal_id": "2026-11-04T0220",
+ "slice": "2026-11-04T0220",
+ "ts": 1793726546.5753317,
+ "version_from": 19,
+ "score": "Board (11/4 02:1x): shop ALL 0.228. 52 deals, revenue 3,759,204, profit -1,256,216. The board counts the stock we bought as zero until it sells. Stars 4.37 from 51 reviews, down from 4.81 at 00:00. 2 units broke and 2 refunds were paid. 49 of 49 claims were honest. Market share 0.006 from 298 visits. Epoch e19 has 0 seller deals so far (eval.unit_economics), so there is no e19 result yet and the H2 experiment has no e19 sample.",
+ "happened": [
+  {
+   "claim": "The goods most buyers want are beds/mattresses (19 buyers) and bedding (18 buyers). Kimchi is third (15) but it is food, which we do not sell.",
+   "evidence": [
+    "market.buyer_prefs: 침대/매트리스 19 buyers, 침구 18, 김치 15, 소파/의자/스툴 4"
+   ]
+  },
+  {
+   "claim": "The market's best sellers are the SKUs that orders accept. 침구 sold 1,600+ in 6 h at a median 75% of list, G0be9ed07 sold 772 and G07ec17d5 sold 675. me.missed cannot see orders that are never shown our shop because we lack an accepted SKU.",
+   "evidence": [
+    "user note 02:2x",
+    "market summary 02:20: G0be9ed07 sold=813, G07ec17d5 sold=714, G1515d951 sold=330",
+    "forum #1345, #1330, #1356: house buyers find no shop with bedding at a 91만 budget"
+   ]
+  },
+  {
+   "claim": "At 02:17 we could spend about 2.33M of cash, but the stock cap left about 0.93M. Four G0f415407 mattresses (up to about 199k each) take most of that, so no market best seller gets bought this window.",
+   "evidence": [
+    "user note 02:2x",
+    "buy list: G0f415407 8 target / 1 held"
+   ]
+  },
+  {
+   "claim": "Repeat buyers already cluster on the best-selling lines.",
+   "evidence": [
+    "market summary: Kiro729 11 deals, dae-yangkim 10, buyer-03 7, YAHO1212 7, inextro 6, myeonggi 5; top SKUs G0be9ed07, G054ff120, G07ec17d5, G30604071"
+   ]
+  }
+ ],
+ "hypothesis": "H2: not enough data in e19 (0 deals). Across the round, deal count and repeat buyers support exposure working. Stars fell from 4.81 to 4.37 and the refunds tripped no rollback (losses well under 500k).",
+ "counterparts": "No adversarial behaviour toward us seen. Repeat buyers Kiro729, dae-yangkim, buyer-03, YAHO1212, inextro and myeonggi keep the stance 'regular, normal pricing'. House buyers asking for bedding in #1345/#1330/#1356 are a reason to stock the accepted bedding SKUs, not to change stance.",
+ "options": [
+  {
+   "id": "A_breadth",
+   "change": {
+    "playbook": {
+     "restock": {
+      "mode": "rules",
+      "cover_windows": 2,
+      "market_top": 12,
+      "market_units": 3,
+      "max_line_share": 0.25
+     }
+    }
+   },
+   "targets": "shop revenue (0.3) and profit (0.5) through more settled deals; stars through fewer 'none in stock' misses",
+   "expected": "Each window buys about 12 market best sellers (bedding, sofa pads, mattresses) at 3 units each. One line can take at most 25% of the window's money, so a single 199k mattress line no longer blocks the rest. This makes us visible to orders me.missed cannot show. Why recommended: the best sellers are the accepted SKUs, and only three playbook numbers change, so the 02:5x slice can attribute the result. Judge it by deals settled and profit per deal in e19. Roll back to B if sell-through of the new SKUs is below 0.3 after 3 windows. Pricing, the stock cap (0.6) and the cash floor stay unchanged.",
+   "risk": "More SKUs held at 1%/day storage. Unsold breadth adds to the stock counted as zero on the board. Within the 0.6 cap, the cash at risk is bounded.",
+   "reversible": true
+  },
+  {
+   "id": "B_depth_capped",
+   "change": {
+    "playbook": {
+     "restock": {
+      "mode": "rules",
+      "cover_windows": 2,
+      "market_top": 5,
+      "market_units": 2,
+      "max_line_share": 0.3
+     }
+    }
+   },
+   "targets": "shop profit (0.5) through filling the requests we actually saw",
+   "expected": "Keeps the missed-SKU-first list but caps each line at 30%, so the top 5 best sellers still get some money.",
+   "risk": "Still blind to orders that never visit us. Bedding demand from house buyers stays unmet.",
+   "reversible": true
+  },
+  {
+   "id": "C_hold",
+   "change": {},
+   "targets": "none (wait for an e19 sample)",
+   "expected": "Gives a clean e19 read on the current list.",
+   "risk": "The mattress line keeps eating the window's money, and best sellers stay out of stock for another 30+ minutes.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A_breadth",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [],
+  "by": "audit",
+  "ts": 1793726551.0967755
+ },
+ "decision": {
+  "choice": "A_breadth",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793726551.1187675,
+  "installed": 20
+ }
+}

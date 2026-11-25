@@ -1,0 +1,143 @@
+{
+ "schema_version": 1,
+ "version": 36,
+ "epoch": "e36",
+ "approved": "DRAFT",
+ "phase": "reputation",
+ "priorities": [
+  "Goal now (user 11/4 02:2x): we are at an early loss (the board counts the stock we bought as zero until it sells); win it back by selling many units at a profit - more deals, each above cost, and turn the stock into cash. Judge every change by deals settled and profit per deal.",
+  "Benchmark (user 11/4 03:0x: copy what wins): the top-profit shops (winun1127 'Harness Furniture Shop' 9.1M, dae-yangkim 9.9M) are 95-99% goods by revenue and turn their cash over every window: winun1127 bought 40.4M of stock in 5.4 h (8 times the start) and sold 524 deals at a median 79% of list, deep in the market's best sellers (G1515d951 mattress list 423,810: 75 units; Ge62449c9, G0be9ed07, Ga7918a2e, G07ec17d5), with food for 37% of its units. We bought cheap items (pillow 7,900, apron 15,500) and sold 53 deals in a day. So: stock deep in the best sellers with a high list price, refill every window, sell at about 80% of list, keep the cash turning.",
+  "Guaranteed goods shop: every unit carries the market certificate, its true grade and a full refund if it breaks within 6 hours. Open at 78% of list (the rules), 1% a turn down to 76% and explain what the guarantee covers. Come down to 76% of list at most (never below cost), and close there rather than lose the buyer. Speak of the guarantee and quality, never of price levels we cannot keep.",
+  "More deals by buying what the market buys: first the SKUs buyers asked us for (me.missed, most asked first: G0f415407, Ge62449c9, Gaae7863f) up to 8 units each, plus goods named in forum wanted posts. Then the regulars' SKUs (G0be9ed07, G07ec17d5, G30604071, G054ff120, G03cab593) and the market's best-selling goods 3 to 8 units deep. Then 1 or 2 units of other SKUs in asked-for categories. Keep the stock within 160% of the start (cash floor 500,000: the rest of the cash goes into stock that sells), and sell what we hold before buying more. No food in our shop.",
+  "Our shop sells food too (user 11/4 03:0x): the market's best-selling food that keeps 72 h or more, up to 3 units a SKU and 35% of the stock; sell the units with the most hours left first.",
+  "Answer buyers' goods requests on the forum: say what we will stock and that it arrives at the next supply window, then stock it.",
+  "Be reliably honest: true grades, a certificate on every unit, receipts that match, the warranty always.",
+  "Buyer (benchmark myeonggi, user 11/4 03:2x: buyer ALL 0.888, 401 deals at 70/h, a median 70% of list, 11.5M surplus, mostly from high-list goods bought near 55-60%; we did 12.7/h at 85% for 0.32M): the buyer runs by rules - the cheapest shop, the highest-list SKU in budget, offers rising from the open share to the ceiling (playbook.buyer.ceiling_share, 80% of list) by the last turn but one, any ask at or under our bid or the target taken, nothing over the ceiling. Goods ask no certificate or grade; food only the use window. The agent only when a shop's message needs reading. Post as our buyer: purchase records with their ledger line.",
+  "Round end: from 11/16 refill only what sold; restock stops at 11/17 12:00; sell the stock down before the end."
+ ],
+ "context": [
+  "Round 3 has just opened and we have no Round 3 records yet: what sells, who buys, and what other shops charge are unknown.",
+  "The market lists 5,629 SKUs (4,311 food, 1,318 goods) in 140 demand categories; we sell goods only.",
+  "Supply opens about every 20 minutes for 3; stock bought in a window has to last until the next one.",
+  "Goods break up to 6 hours after a sale at a rate the market does not publish; our 6 h warranty refunds the full price, so a break costs the price. Goods pay storage every day (inventory.json storage_per_day).",
+  "Who is on a first visit is a guess from the buyer's opening against customers the ledger confirmed; with no sign it dealt with us, it counts as a first visit.",
+  "Board weights (market agent.md, 11/3 23:1x): shop ALL = 0.5 profit + 0.3 revenue + 0.2 stars; buyer ALL = 0.5 surplus + 0.3 votes on buyer posts + 0.1 deals + 0.1 number of buyer posts (hidden posts do not count); each a percentile. Votes on shop posts do not count.",
+  "11/3 23:4x: our buyer had 4 goods deals, paid a median 95% of list on goods of list ~24,550, and the kit refused to pay 15 agreed deals on the laptop for grade C or a missing certificate.",
+  "11/3 23:4x: with the stock at 38.6% of the start the 35% cap stopped restock (nothing bought since 23:00) while 'none in stock' stayed the most common lost request.",
+  "11/4 02:1x (HARNESS 14, D34): restock buys a buy list fixed in advance by rules (memory/facts/buy_list.json); the strategy agent keeps the playbook numbers up to date (delegated).",
+  "11/4 02:2x (user: use the cash, put more into stock): warranty reserve 50% -> 10% of sales in warranty (the market broke 21 of 4,057 settles, ours 0), cash floor 1,500,000 -> 1,000,000 (bankruptcy line 500,000), stock cap 45% -> 60%; before, the cash we could spend was 154,924 of a 3.74M balance.",
+  "11/4 02:2x: balance 3,743,784 of the 5,000,000 start; stock at cost about 2.06M; board profit is negative until that stock sells.",
+  "11/4 02:3x (user: many deals at a profit): the floor goes from 90% to 80% of list (never below cost) - our stock costs a median 62-65% of list, the market sells goods at 75% of list, and in 3 h six buyers offered more than cost +5% but under 90% of list and left.",
+  "11/4 03:0x: buy list ordered by expected sales value (asked or sold x list price) across our misses, the market's goods and food; market top 10 goods x 6 units, food top 8 x 3, at most 12 per SKU.",
+  "11/4 03:1x: with the stock at 2.93M (cap 60% = 3.0M) the benchmark list could buy 46k while 1.5M cash sat idle; the cap goes to 80% so the cash (floor 1.0M + warranty reserve) is what limits, and one line takes at most 22% of it.",
+  "11/4 02:5x (HARNESS 14 step 2): the seller's rules run in shadow first (seller.shadow events: the rule's move next to the agent's); switch playbook.seller.mode to rules once they agree well enough.",
+  "11/4 03:0x: 02:26-03:00 the shop sold nothing - 27 visitors, none turned away for stock, but 16 cancelled right after our first ask at the full list price (the market settles goods at 75-79% of list); the seller now runs by rules, opening at 85% of list, 3% a turn, floor 80% of list and cost x 1.05.",
+  "11/4 03:0x (user: keep 500,000 and put the rest into stock, as the benchmark does): cash floor 1,000,000 -> 500,000, stock cap 80% -> 120% of the start; the warranty reserve (10% of sales in warranty) still holds.",
+  "11/4 03:2x (user): a goods order visits as many shops as time allows (up to 10, stop with 40 s left); food tries 3. Over all 531 orders only 10% were goods and most were lost at the first shop.",
+  "11/4 03:3x benchmark (logs/strategy/benchmark.md, every 25 min): the top shops sold G1515d951 (mattress, list 423,810) 225 times in 6 h, G07ec17d5 82, G5cd4ffbc 51; we hold none of them, and at a 22% line cap one G1515d951 (worst cost 317,858) never fit; the cap goes to 35%. Our buyer's deals are 11% goods, the top buyers' 38-70% (surplus per deal 4,898 vs 23,375-50,881).",
+  "11/4 04:0x: 03:35-04:05 the shop sold 23 at a median 80% of list (the floor) while 39 visitors left after our 85% opening and 38 found no stock, 31 of them asking for G1515d951 (we bought 2 a window and they sold at once); the seller opens at 80% and holds it, one buy-list line may take 50% of the window's money.",
+  "11/4 04:3x: 04:05-04:35 24 visitors left after our 80% opening without an offer and 11 bought; the top shops sell at a median 75-79% of list (benchmark), so the floor goes to 76% (cost x 1.05 still holds; our stock costs a median 62-65% of list) and the seller opens at 78%.",
+  "11/4 05:0x: 41 of 171 visitors found no stock in 30 min, 33 of them asking for G1515d951 (1 held): the stock cap (5.88M of 6.0M, mostly slow SKUs) and the line cap kept it at 0 units. Stock cap 120% -> 160% (cash is the limit, as the user asked), a line that fits the money gets at least one unit, and units held over 8 h sell down to cost x 1.05 (clearance) to free cash for the best sellers."
+ ],
+ "shop_card": {
+  "description": "gom31 Certified Safe Goods: every unit ships with the market certificate and its true grade, and if it breaks within 6 hours we refund the full price. We stock the market's best-selling bedding, mattresses and sofa pads. Need a goods item with a warranty? Ask on the forum and we stock it for the next supply window.",
+  "examples": [
+   "I want to buy G0026722f",
+   "4000",
+   "ok"
+  ]
+ },
+ "limits": {
+  "cash_floor": 500000,
+  "max_units_per_sku": 12,
+  "max_stock_share": 1.6,
+  "food_share_max": 0.35,
+  "below_cost": {
+   "allowed": false,
+   "max_loss_share_of_cost": 0.0
+  }
+ },
+ "experiment": {
+  "hypothesis": "H2: a goods-only shop with a 100% warranty, certified units, first visits at cost and fast answers to forum requests gets many different buyers and good stars fast, which later carry profit.",
+  "min_sample": {
+   "metric": "funnel.seller.closed",
+   "value": 30
+  },
+  "success_if": [
+   {
+    "metric": "funnel.seller.completion_rate",
+    "op": ">=",
+    "value": 0.5
+   },
+   {
+    "metric": "unit_economics.seller.deals",
+    "op": ">=",
+    "value": 20
+   }
+  ],
+  "rollback_if": [
+   {
+    "metric": "losses.total",
+    "op": ">",
+    "value": 500000
+   }
+  ],
+  "review_at": "first brief after 30 closed negotiations",
+  "note": "v13 (user 11/3 22:3x, from 11/4 00:00): as v12, the first-visit-at-cost offer ends (stars were 4.81, the reputation goal is met); every buyer may pay down to 90% of list; the card no longer promises cost. v12 (user 11/3 22:3x, 'apply the rest in the recommended order'): as v11, buyer targets 55% of list on goods orders of list 50,000+, restock holds the best sellers deep (ours and the market's), restock stops at 11/17 12:00 to sell the stock down; the collector's double count was fixed (27 paid sales, not 59). v11 (user 11/3 22:25): as v10, a returning buyer may pay down to 90% of list (at list, 1 sale in 25 min after 21:59: returning buyers rose to 90% of list and walked). v10 (user 11/3 22:06-22:08, 'more deals first', 'buying what is needed stays'; brief 2026-11-03T22 option A folded in): as v9, restock shows the SKUs buyers asked for first (8 per SKU), then up to 8 SKUs per asked-for category near its median price, none from categories nobody asked for (146 'none in stock' answers: bed/mattress 61, bedding 46, sofa 16, curtain/rug 10; the last window bought aprons and chargers). v9 (user 11/3 21:53): as v8, a returning buyer pays at least the list price (enforced by act.counter/act.accept); warranty reserve: restock keeps 50% of our sales still in warranty above the cash floor (at 21:5x: 24 sales, 1,879,390 open, no break on the ledger yet). v8 (user 11/3 21:5x): as v7, repeat buyers at list price (down at most 10%), first visit at cost kept; buyer takes zero-surplus useful deals, accepts grade B, asks no warranty on food; the shop's 'No food' line now says it is about our stock (the buyer read it as its own rule and walked from food orders). v7 (user 11/3 21:46): as v6, stock cap back to 50% of the start; refill what sold; first visit at cost kept (reputation phase, the profit loss accepted). Seen on the board 21:3x: shop ALL 0.569 -> 0.409 with profit -1.56M (balance - start; stock counts 0), stars 4.94, revenue 1.48M. v6 (user 11/3 21:14): as v5, stock cap 50% -> 70% of the start (cash floor 1,500,000 unchanged), 3-5 units per line for goods that sell or were asked for; seen in the first window: 22 lines in 6 min, 1.25M spent, and many 'none in stock' answers. v5 (user 11/3): goods only, stock up to 50% of the start, warranty 6 h on every goods sale (refunds count in losses.total), first visit at cost, certified units only. v4 Welcome Food was a draft, never installed."
+ },
+ "delegation": {
+  "auto": [
+   "stock",
+   "playbook"
+  ]
+ },
+ "warranty": {
+  "hours": 6,
+  "kinds": [
+   "goods"
+  ],
+  "reserve_share": 0.1
+ },
+ "certified_only": true,
+ "repeat_buyer": {
+  "min_price": "list",
+  "min_share_of_list": 0.76
+ },
+ "restock": {
+  "per_asked_category": 8,
+  "stop_after": 1794884400.0
+ },
+ "buyer": {
+  "big_list": 30000,
+  "target_share": 0.5,
+  "open_share": 0.4,
+  "food_target_share": 0.6,
+  "food_open_share": 0.45
+ },
+ "playbook": {
+  "restock": {
+   "mode": "rules",
+   "cover_windows": 2,
+   "market_top": 16,
+   "market_units": 8,
+   "max_line_share": 0.5,
+   "food_top": 8,
+   "food_units": 3,
+   "food_min_shelf_hours": 72
+  },
+  "buyer": {
+   "mode": "rules",
+   "ceiling_share": 0.8,
+   "max_shops_goods": 10,
+   "max_shops_food": 3
+  },
+  "seller": {
+   "mode": "rules",
+   "open_share": 0.78,
+   "step_share": 0.01,
+   "min_margin": 0.05,
+   "accept_from_turn": 4,
+   "clearance_hours": 8
+  }
+ }
+}

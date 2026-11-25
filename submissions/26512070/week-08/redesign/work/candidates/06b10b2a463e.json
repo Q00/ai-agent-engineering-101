@@ -1,0 +1,205 @@
+{
+ "chunk": "06b10b2a463e",
+ "loc": "git log fb2703f .. 42e0685",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The harness must run two runtimes: an inner kit/L1 runtime and an outer collection, analysis, strategy, and audit runtime. They may communicate only through memory and bus files, with schema checks and heartbeats, and the inner runtime gets model-budget priority.",
+   "quote": "two runtimes (inner: kit and L1, outer: collection, analysis, strategy, audit) talking only through memory/bus/ files with schema checks, heartbeats and inner-first model budget",
+   "harness": "Enforce the runtime boundary, file-only communication, schemas, heartbeats, and inner-first model budgeting.",
+   "cid": "06b10b2a463e-0",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Each L1 role may have at most eight tools; prompts must put static material first, isolate counterpart messages regex-first, and use a model-call breaker.",
+   "quote": "at most 8 tools per L1 role (T1), static-first prompt order (C1), regex-first isolation of counterpart messages (S1)",
+   "harness": "Apply the tool limit and prompt ordering/isolation rules, and stop calls through a breaker when needed.",
+   "cid": "06b10b2a463e-1",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Bus events must have event IDs and readers must use cursors.",
+   "quote": "event ids and cursors on the bus (S2)",
+   "harness": "Attach event IDs and track reader cursors on bus events.",
+   "cid": "06b10b2a463e-2",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Log each tool call before it runs and log its result afterward.",
+   "quote": "tool.call logged before running, tool.result after",
+   "harness": "Write the call record before execution and the result record after execution.",
+   "cid": "06b10b2a463e-3",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "During night mode from 01:00 through 08:00, operate in reports-only mode.",
+   "quote": "night reports-only (01-08) confirmed",
+   "harness": "Do not take market actions during the 01:00–08:00 reports-only period.",
+   "cid": "06b10b2a463e-4",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "When copying a run, copy keys and memory but not logs; the log must start with `market_kit 4`.",
+   "quote": "copy keys and memory but not logs (log must start with market_kit 4)",
+   "harness": "Copy keys and memory only, and verify the required log header.",
+   "cid": "06b10b2a463e-5",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "lesson",
+   "rule": "Round 3 messages can contain SKUs and hour counts after prices, so the final number must not automatically be interpreted as the price.",
+   "quote": "'last number is the price' misread SKUs and hour counts in Round 3 messages",
+   "harness": "Parse message fields and distinguish prices from SKUs and hour counts.",
+   "cid": "06b10b2a463e-6",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "market.buy",
+   "kind": "market_rule",
+   "rule": "A goods purchase must be refused when it would lower an over-limit food share.",
+   "quote": "check.buy refused goods purchases that lower an over-limit food share",
+   "harness": "Reject goods purchases that meet this stated food-share condition.",
+   "cid": "06b10b2a463e-7",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "market_rule",
+   "rule": "The stock cap is calculated as a share of the 2,000,000 starting capital, not the shrinking balance.",
+   "quote": "the stock cap is a share of the starting capital (D31: 2,000,000), not of the shrinking balance",
+   "harness": "Calculate the stock cap using 2,000,000 as the capital base.",
+   "cid": "06b10b2a463e-8",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "market.trust",
+   "kind": "market_rule",
+   "rule": "Shops that cheated the agent are blocked immediately.",
+   "quote": "shops that cheated us blocked at once",
+   "harness": "Block a shop as soon as cheating is established.",
+   "cid": "06b10b2a463e-9",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "Seller priority 1 is to watch what sells now, rather than relying on the A2A card.",
+   "quote": "priority 1 watches what sells now (market.selling planned for step 5), not the A2A card",
+   "harness": "Base the top seller priority on current selling information, not the A2A card.",
+   "cid": "06b10b2a463e-10",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Executors must read only their own role’s card section.",
+   "quote": "executors read only their own role",
+   "harness": "Restrict each executor to its own role’s card section.",
+   "cid": "06b10b2a463e-11",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The card must carry the strategy in force, including phase, analyst and strategy context, hypothesis, limits, and priorities.",
+   "quote": "the card carries the strategy in force (phase, context from analysts and strategy, hypothesis, limits, priorities)",
+   "harness": "Supply those current strategy fields in the card passed to the executor.",
+   "cid": "06b10b2a463e-12",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "observation",
+   "rule": "The seller card was about 1,300 tokens before priorities and exceeded the 2,000-token L1 budget once tools and situation context were added.",
+   "quote": "The seller's card is ~1,300 tokens before priorities, over the 2,000-token L1 budget once tools and the situation are added",
+   "harness": "Keep the assembled L1 prompt within its 2,000-token budget.",
+   "cid": "06b10b2a463e-13",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "lesson",
+   "rule": "The reviewed L1 prompt was about 4,000 tokens, exceeding the stated 2,000-token budget.",
+   "quote": "L1 prompt ~4,000 tokens",
+   "harness": "Measure assembled prompts and reduce them to fit the 2,000-token budget.",
+   "cid": "06b10b2a463e-14",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "The user approved and installed strategy v1; its thresholds are starting points, not fixed final values.",
+   "quote": "strategy v1 approved by the user and installed",
+   "harness": "Use the installed strategy and treat its thresholds as initial values that can be revised.",
+   "cid": "06b10b2a463e-15",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "The user chose strategy v2 with rollback when total losses exceed 500,000.",
+   "quote": "strategy v2 = v1 with rollback at losses.total > 500,000 (user)",
+   "harness": "Roll back the strategy when total losses exceed 500,000.",
+   "cid": "06b10b2a463e-16",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "definition",
+   "rule": "Unit-economics exposure cost measures below-cost differences separately from losses.",
+   "quote": "eval.unit_economics reports exposure_cost (below-cost differences) apart from losses",
+   "harness": "Report exposure cost as a separate measure from losses.",
+   "cid": "06b10b2a463e-17",
+   "source": "git log",
+   "loc": "git log fb2703f .. 42e0685",
+   "quote_ok": true
+  }
+ ]
+}

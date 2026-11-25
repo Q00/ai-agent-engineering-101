@@ -1,0 +1,57 @@
+{
+ "proposal_id": "2026-11-06T00",
+ "slice": "2026-11-06T00",
+ "ts": 1793891024.718862,
+ "version_from": 87,
+ "score": "Players rank 13 of 58, unchanged at 1h and 6h; next is totato2203, gap 0.078. Shop: book rank 6 (pct 0.90, 22.5M behind dragonash), revenue rank 4 (pct 0.936, down from 2 six hours ago, 20.6M behind Kiro729), stars_rank 29 (4.51 vs 4.53 next, pct 0.464). Buyer: surplus rank 27 (pct 0.48, 69.6M, 3.9M behind lee3q), forum rank 18 (0.563, 0.001 behind), deals rank 24 (2,381, 59 behind), posts rank 4. The most room left is buyer surplus (0.26), then shop stars (0.107) and buyer forum (0.10).",
+ "happened": [
+  {
+   "claim": "The shop sells well and every sale is above cost, but about half of closed negotiations still end without a sale.",
+   "evidence": [
+    "self summary: 201 settled, median margin 9,678, below_cost 0, profit_before_losses 10.61M",
+    "eval.funnel: closed 698 -> completed 333; rejected 145, canceled 220",
+    "eval.experiment: completion_rate 0.4389 (target 0.5)"
+   ]
+  },
+  {
+   "claim": "Running out of stock is still the largest single visit loss: 30 of 177 visits in the last 30 min found no stock, led by Pringles G1831f2c0 (8), G5cd4ffbc (5), bed frame G8095ddd6 (4) and kimchi G200e39a3 (4).",
+   "evidence": [
+    "health 30 min: no_stock 30, missing_skus G1831f2c0 8, G5cd4ffbc 5, G8095ddd6 4, G200e39a3 4, G7fa48eaa 3",
+    "restock list: G1831f2c0 target 10, held 3"
+   ]
+  },
+  {
+   "claim": "Losses are only storage. No food expired and there were no refunds.",
+   "evidence": [
+    "eval.losses (self summary): storage 122,215, expired 0, refunds 0"
+   ]
+  },
+  {
+   "claim": "On the buyer side, the agree stage loses the most. Unpaid orders are mostly food short on shelf hours at settle.",
+   "evidence": [
+    "self summary: 736 picked -> 158 agreed (21.9%) -> 105 paid",
+    "health: unpaid 6, of which 5 were 'N h of shelf life left'",
+    "benchmark: our surplus/deal 53,147 vs psyoung82 287,239; goods share 0.23 vs 0.49-0.77"
+   ]
+  },
+  {
+   "claim": "Regulars are stable and a new goods-heavy buyer appeared.",
+   "evidence": [
+    "market summary: YAHO1212, buyer-01, buyer-02, move_76, inextro all grew with no basket drift",
+    "sergiobuilds: 12 deals, 11.5M, bed frames G8095ddd6/Gb5d0dde7"
+   ]
+  }
+ ],
+ "hypothesis": "H2: not decided yet. The sample is 1,973 closed negotiations, but completion_rate is 0.4389, under the 0.5 target. The epoch-tagged deal count reads 0, which is a tagging artifact: judge by time windows, where 201 deals settled. The rollback condition is not met (losses 122k storage only, under 500k).",
+ "counterparts": "Regulars (YAHO1212, inextro: mattress/bed frame; move_76, buyer-01: mixed; buyer-02: food only and sensitive to freshness) stay as they are. sergiobuilds is a first-timer in goods and should get a good first deal; we stock his bed frames already. chayuho is unknown, so we watch. No black labels are proposed.",
+ "options": [],
+ "recommendation": "Night: no changes. Candidates for the user in the morning: (a) to cut no-stock, raise restock depth for the food best-seller Pringles G1831f2c0 and the goods G5cd4ffbc/G8095ddd6, which are missing most often (playbook market_units/top_units), keeping the 20/SKU and 0.7 stock-share limits. This targets revenue and book. (b) On the buyer side, raise the goods share of orders and allow goods agreement nearer the 0.80 of list the top buyers pay, to lift the agree rate. This targets surplus (0.26 room). (c) Look into the 220 seller cancellations for an avoidable cause such as checkout races, for the completion rate and stars.",
+ "status": "report",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [],
+  "by": "audit",
+  "ts": 1793891026.655762
+ }
+}

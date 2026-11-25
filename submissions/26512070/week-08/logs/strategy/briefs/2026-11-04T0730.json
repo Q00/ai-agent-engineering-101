@@ -1,0 +1,109 @@
+{
+ "proposal_id": "2026-11-04T0730",
+ "slice": "2026-11-04T0730",
+ "ts": 1793745244.3964465,
+ "version_from": 42,
+ "score": "Players ALL 0.374 (shop). Shop: 194 deals, revenue 24.29M, board profit -599,171, 4.49 stars on 193 reviews, 7 refunds, 191/191 honest claims. The board counts held stock as zero until it sells. Buyer: about 37 deals/h, but only 13,128 surplus per deal. The top buyers get 26-58k per deal. Experiment H2: 'neither yet'. Sample 72 closed, completion 0.43 against a target of 0.5, losses 0. The e42 deal counter reads 0 only because the epoch just started.",
+ "happened": [
+  {
+   "claim": "The shop sells what it buys and makes money per unit. Profit per deal and stock depth are the limits, not waste.",
+   "evidence": [
+    "self summary 07:30: 34 deals, revenue 5,693,887, profit before losses 1,040,472, median margin 25,648, no below-cost sales, sell-through 1.06, storage loss 2,202, zero waste"
+   ]
+  },
+  {
+   "claim": "Our average ticket is about half the profit leader's, and the gap is the high-list mattresses we do not hold.",
+   "evidence": [
+    "benchmark: ours avg_paid 146,538 vs dae-yangkim 274,421",
+    "their_best_we_lack: G1515d951 307 sold, list 423,810; G30604071 60 sold, list 344,640; G6b9db161 59 sold, list 420,000",
+    "buy list now: G1515d951 wanted 12, held 0"
+   ]
+  },
+  {
+   "claim": "Breadth in slow SKUs does not sell.",
+   "evidence": [
+    "ours_nobody_sold: G111530e5, Ge37f9697, G114eb392, G872a6c14, G756fd2e8, G1efc85ca, Gaa1d3c1f, G0bb411dd (1-3 units each, no sales)"
+   ]
+  },
+  {
+   "claim": "Our regulars buy the same best-seller cluster that the depth list targets.",
+   "evidence": [
+    "market summary: shaun0927, inextro, chaewoonee and dae-yangkim center on G1515d951, G07ec17d5, G0be9ed07, G054ff120, G5cd4ffbc"
+   ]
+  },
+  {
+   "claim": "The seller loses more than half of its negotiations to cancellation.",
+   "evidence": [
+    "funnel seller: 84 negotiations, 36 canceled, 8 rejected, completion 0.443"
+   ]
+  },
+  {
+   "claim": "The buyer drops agreed food deals because of its own shelf-life rule. Each drop wastes deal count.",
+   "evidence": [
+    "funnel buyer: pay_rate 0.707, all 12 unpaid cases are shelf-life refusals (e.g. 17.5 h vs 24 h)"
+   ]
+  }
+ ],
+ "hypothesis": "H2 is not decided yet. Stars (4.49) and buyer variety are good. Completion is 0.43, under 0.5, so the success condition is not met. No rollback: losses are 0.",
+ "counterparts": "Regulars: shaun0927 is the fastest-growing (30 deals, 3.86M), inextro has the highest value (26 deals, 5.25M), chaewoonee is flat, dae-yangkim buys small and steady (sofa-pad). Keep all as regulars. None showed adversarial behaviour. No stance change.",
+ "options": [
+  {
+   "id": "A_depth_line",
+   "change": {
+    "playbook": {
+     "restock": {
+      "max_line_share": 0.5
+     }
+    }
+   },
+   "targets": "shop profit (0.5) and revenue (0.3)",
+   "expected": "The top mattress line (G1515d951, list 423,810) can take more of the window's money, so the high-list best seller is actually stocked. Average ticket and margin per deal rise toward the benchmark. Everything else stays the same.",
+   "risk": "More cash sits in one line. If G1515d951 stalls, 8 h clearance down to cost x1.05 bounds the loss.",
+   "reversible": true
+  },
+  {
+   "id": "B_breadth",
+   "change": {
+    "playbook": {
+     "restock": {
+      "market_top": 24,
+      "market_units": 3,
+      "max_line_share": 0.25
+     }
+    }
+   },
+   "targets": "shop deals and revenue (0.3), visits from orders that accept only certain SKUs",
+   "expected": "We appear in more order SKU lists, so more first-time visitors come. The money goes to cheaper lines.",
+   "risk": "Our record shows slow SKUs sit unsold (8 of them with zero sales). The ticket stays low, profit per deal stays thin, and storage grows.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A_depth_line",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "The proposal A_depth_line directly addresses the low average ticket and thin profit per deal, which is a major contributor to the current negative profit and lower rank compared to top shops.",
+    "why": "The `eval.score()` output shows a profit of -599,171, and `eval.unit_economics()` shows a median margin of 16,389, which the brief notes is about half of the profit leader's. The proposed action of stocking high-list, best-selling items like G1515d951 (list 423,810) from the benchmark (dae-yangkim, 274,421 avg_paid) directly aims to increase the 'profit' and 'revenue' components of the shop's ALL score (0.5 and 0.3 weight respectively)."
+   },
+   {
+    "claim": "The risk of increased cash in one line (G1515d951) is mitigated by the 8-hour clearance rule to cost x1.05, and the item's strong sales record in the market.",
+    "why": "The brief states 'benchmark: winun1127 bought 40.4M of stock in 5.4 h...deep in the market's best sellers (G1515d951 mattress list 423,810: 75 units)'. This indicates G1515d951 is a proven seller. The stated risk of more cash sitting in one line is directly addressed by the rule of clearing down to cost x1.05, limiting potential losses if the item stalls, aligning with the overall strategy to 'turn the stock into cash'."
+   },
+   {
+    "claim": "The 'Breadth in slow SKUs does not sell' evidence directly contradicts option B_breadth, making option A_depth_line more aligned with observed market behavior and profitability.",
+    "why": "The brief's evidence `ours_nobody_sold` lists 8 SKUs with zero sales, directly supporting the claim that 'Breadth in slow SKUs does not sell'. Option B_breadth proposes increasing breadth, which historical data suggests would lead to unsold stock and lower profit per deal, going against the current priority to 'sell many units at a profit - more deals, each above cost, and turn the stock into cash'."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793745253.5349946
+ },
+ "decision": {
+  "choice": "A_depth_line",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793745253.5699177,
+  "installed": 43
+ }
+}

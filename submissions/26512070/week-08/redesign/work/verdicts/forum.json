@@ -1,0 +1,71 @@
+{
+ "verdicts": [
+  {
+   "pid": "forum#1",
+   "verdict": "overmerged",
+   "reason": "Combines posting limits, transport, snapshots, and response parsing. The exact 10-second send interval has a failed quote check and is not established.",
+   "status": "confirmed",
+   "rules": [
+    "Agents can post, reply, and vote through the market outbox.",
+    "Each shop and buyer may post at most once per five minutes, separately; votes are unlimited. The market imposes no forum content rules.",
+    "forum.json refreshes every 30 seconds and contains the newest 100 posts, including author, role, thread, text, references, and counted vote totals.",
+    "The market's post response uses {\"post\": id}; parse this field to track our own post IDs."
+   ]
+  },
+  {
+   "pid": "forum#2",
+   "verdict": "overmerged",
+   "reason": "Score weights, voter eligibility, deferred counting, and attribution are separate rules. The voter—not the post—must reach five settled deals.",
+   "status": "confirmed",
+   "rules": [
+    "Buyer ALL includes a 0.3 weight for votes on buyer posts and a 0.1 weight for buyer post count.",
+    "A forum vote counts only when the voter has at least five settled deals and a different GitHub owner from the post author. Earlier votes are retained as counted:false and begin counting when the voter qualifies.",
+    "The likes, dislikes, and score fields in forum.json contain counted votes only.",
+    "Attribute forum votes to the side recorded on the post; do not credit votes on shop posts to the buyer."
+   ]
+  },
+  {
+   "pid": "forum#3",
+   "verdict": "ok",
+   "reason": "The later five-minute cadence and per-side posting behavior supersede the early 30-minute draft.",
+   "status": "user",
+   "rules": []
+  },
+  {
+   "pid": "forum#4",
+   "verdict": "overmerged",
+   "reason": "Combines reference integrity, an older settlement-post validator, expanded permitted topics, request fulfillment, and noise control. Ledger-line requirements must not be applied indiscriminately to the later permitted notices.",
+   "status": "user",
+   "rules": [
+    "Forum posts must be truthful and useful. Any ledger refs must identify actual ledger sequence numbers supporting the claims.",
+    "For settlement-record posts, validate the cited facts and numbers against the settlement lines and append the supporting lines. The historical settlement-only restriction does not exclude later permitted offer, stock, and buyer-need notices.",
+    "The buyer may post actual unserved order needs, including category and budget; the shop may truthfully announce current offers and held stock, including SKU, units, grade, list price, certificate, and warranty.",
+    "Reply to non-food goods wanted posts in their requesting threads, state what we plan to stock, and then stock it. Give readiness as the next supply window, approximately every 20 minutes, rather than promising five-minute preparation.",
+    "Avoid repetitive forum notices that create noise."
+   ]
+  },
+  {
+   "pid": "forum#5",
+   "verdict": "overmerged",
+   "reason": "Combines two independent historical observations. Neither establishes a general causal result about post effectiveness.",
+   "status": "observed",
+   "rules": [
+    "The overnight report ending 11/4 09:00 recorded buyer post-count percentile 94.1 and forum-vote percentile 31.2 while buyer posts were limited to ledger-backed purchase records. This is historical evidence, not proof that another post type earns more votes.",
+    "The 11/4 02:2x note reported that reply #1349 offering Ge62449c9 did not help because that SKU was absent from the buyer order's accepted-SKU list. Check order compatibility before treating an offered SKU as a fulfillment opportunity."
+   ]
+  },
+  {
+   "pid": "forum#6",
+   "verdict": "fix",
+   "reason": "The comparison is an open hypothesis, not an established winning policy. forum.json aggregate likes and dislikes expose counted votes only, so they cannot supply uncounted vote totals.",
+   "status": "observed",
+   "rules": [
+    "It remains unproven which truthful, ledger-backed buyer post types earn the most counted votes. Track changes in counted likes, dislikes, and score from forum.json by post and post type to evaluate market summaries, shop or goods quality reports, and settlement records. Track uncounted votes only if a separate source exposes them; do not infer them from forum.json aggregate totals."
+   ]
+  }
+ ],
+ "area": "forum",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

@@ -1,0 +1,121 @@
+{
+ "proposal_id": "2026-11-04T0330",
+ "slice": "2026-11-04T0330",
+ "ts": 1793730914.608088,
+ "version_from": 30,
+ "score": "Board (11/4 03:3x): shop gom31-certified-goods has 75 deals, 4.31 stars over 74 reviews, revenue 6,003,130, profit -3,094,488 and shop ALL 0.228. Profit is negative mainly because the board counts unsold stock as zero until it sells. Since the last slice (1793727002) the shop settled 22 deals: revenue 2,130,904, profit before losses 496,648, median margin 4,847, none below cost, no losses. Our shop does 9.3 deals/h against 45-90 for the top shops. Our buyer does 14.3/h with a surplus of 4,938 per deal, against 23,377-51,276 for the top buyers.",
+ "happened": [
+  {
+   "claim": "Most seller negotiations die after we close: 96 negotiations, 22 completed, 54 cancelled after closing. The market settles goods at 75-79% of list; our floor is 80%.",
+   "evidence": [
+    "self summary 2026-11-04T0330: eval.funnel seller negotiations 96, completed 22, canceled 54",
+    "benchmark: winun1127 median 79% of list"
+   ]
+  },
+  {
+   "claim": "Goods demand is concentrated in bedding, mattress and sofa-pad SKUs. Orders only reach shops that hold one of their accepted SKUs, so any SKU we lack sends us no visits at all.",
+   "evidence": [
+    "market summary 0330: G0be9ed07 919, G07ec17d5 833, Ge62449c9 613, G1515d951 433 sold",
+    "user note: house bedding posts #1345 #1330 #1356 find no shop"
+   ]
+  },
+  {
+   "claim": "Our current stock list includes SKUs that nobody bought, while the top shops' best sellers are missing from it.",
+   "evidence": [
+    "benchmark ours_nobody_sold: Gc44de87c, G8ab37c61 x5, G1efc85ca x3",
+    "their_best_we_lack: G1515d951 225, G07ec17d5 82, G5cd4ffbc 51, G6b9db161 29"
+   ]
+  },
+  {
+   "claim": "Our shop card still promises a first visit at cost, which we stopped offering in v13. Every claim we make has to be true.",
+   "evidence": [
+    "eval.score card.description",
+    "experiment note v13: card no longer promises cost"
+   ]
+  }
+ ],
+ "hypothesis": "H2 not decided yet: 48 closed negotiations, completion 0.354 against the 0.5 target, losses 0. Completion is below target. The cause looks like price and stock reach, not the warranty or our reputation (stars 4.31, all 72 claims honest).",
+ "counterparts": "Regular clusters are forming. Bedding/sofa-pad: Kiro729, buyer-03, dae-yangkim as a buyer. High-ticket mattresses: inextro, chaewoonee. Keep these SKUs in stock for them. No stance changes; nobody is flagged as dishonest this slice.",
+ "options": [
+  {
+   "id": "A_breadth",
+   "change": {
+    "playbook": {
+     "restock": {
+      "market_top": 16,
+      "market_units": 3
+     }
+    },
+    "shop_card": {
+     "description": "gom31 Certified Safe Goods: every unit ships with the market certificate and its true grade, and if it breaks within 6 hours we refund the full price. We stock the market's best-selling bedding, mattresses and sofa pads. Need a goods item with a warranty? Ask on the forum and we stock it for the next supply window."
+    }
+   },
+   "targets": "shop revenue and profit (more different orders can find us), deal count",
+   "expected": "Orders that accept any of 16 best sellers can reach us, instead of 10. The same cash is spread over 3 units each instead of 6, so fewer lines run dry before anything else is bought. The card becomes true.",
+   "risk": "Thin depth: a hot SKU can sell out within a window, and cover_windows still refills it. A few more lines may sit unsold and pay storage of 1%/day.",
+   "reversible": true
+  },
+  {
+   "id": "B_depth",
+   "change": {
+    "playbook": {
+     "restock": {
+      "market_top": 6,
+      "market_units": 8
+     }
+    },
+    "shop_card": {
+     "description": "gom31 Certified Safe Goods: every unit ships with the market certificate and its true grade, and if it breaks within 6 hours we refund the full price. We stock the market's best-selling bedding, mattresses and sofa pads. Need a goods item with a warranty? Ask on the forum and we stock it for the next supply window."
+    }
+   },
+   "targets": "shop revenue on the top SKUs",
+   "expected": "Deep stock of the 6 biggest sellers, so they never run out.",
+   "risk": "Fewer accepted-SKU lists include us, so fewer visits. Heavy capital sits in a few mattress lines.",
+   "reversible": true
+  },
+  {
+   "id": "C_card_only",
+   "change": {
+    "shop_card": {
+     "description": "gom31 Certified Safe Goods: every unit ships with the market certificate and its true grade, and if it breaks within 6 hours we refund the full price. We stock the market's best-selling bedding, mattresses and sofa pads. Need a goods item with a warranty? Ask on the forum and we stock it for the next supply window."
+    }
+   },
+   "targets": "stars and trust (honest card)",
+   "expected": "Removes the false promise of a first visit at cost and leaves the stock rules as they are.",
+   "risk": "Reach does not change.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A_breadth",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "Our shop card still promises a first visit at cost, which we stopped offering in v13. Every claim we make has to be true.",
+    "why": "This is a direct contradiction of the 'Be reliably honest' core principle and the specific intent that 'everything we write is true'. Correcting the shop card is essential for maintaining trust and the shop's star rating."
+   },
+   {
+    "claim": "Most seller negotiations die after we close: 96 negotiations, 22 completed, 54 cancelled after closing. The market settles goods at 75-79% of list; our floor is 80%.",
+    "why": "The discrepancy between our floor price (80%) and the market's typical settlement price (75-79%) is a clear reason for the high cancellation rate after closing. While Option A focuses on breadth of stock, the underlying price issue will still limit conversions. The audit acknowledges that the strategy agent hasn't directly addressed this in the proposed options, but the 'reputation' phase prioritizes deals over immediate profit, suggesting price adjustments may follow once exposure is gained."
+   },
+   {
+    "claim": "Goods demand is concentrated in bedding, mattress and sofa-pad SKUs. Orders only reach shops that hold one of their accepted SKUs, so any SKU we lack sends us no visits at all.",
+    "why": "This is a critical observation for increasing shop visits and deal count. Option A_breadth directly addresses this by expanding the range of top-selling SKUs we stock, increasing the likelihood of our shop being visible to buyers. This aligns with the 'get seen by many different agents' and 'build trust into profit' parts of the user's intent."
+   },
+   {
+    "claim": "Our current stock list includes SKUs that nobody bought, while the top shops' best sellers are missing from it.",
+    "why": "This directly impacts revenue and profit. Selling irrelevant stock incurs storage costs and ties up capital, while missing out on best-sellers means lost opportunities for deals. Option A_breadth aims to rectify this by prioritizing market top sellers, which will increase the chances of making deals and improving inventory turnover."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793730921.1383212
+ },
+ "decision": {
+  "choice": "A_breadth",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793730921.1663125,
+  "installed": 31
+ }
+}

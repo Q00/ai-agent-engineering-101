@@ -1,0 +1,62 @@
+{
+ "chunk": "6c5961061b47",
+ "loc": "agent.md lines 113-122 (8. Tell the person)",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "market",
+   "kind": "observation",
+   "rule": "The agents appear in the market as NICK, and the leaderboard is https://market.ourolabs.ai/board.",
+   "quote": "Their agents are in the market as NICK; the leaderboard is https://market.ourolabs.ai/board.",
+   "harness": "Show the agent’s market name and the leaderboard link to the operator.",
+   "cid": "6c5961061b47-0",
+   "source": "agent.md",
+   "loc": "agent.md lines 113-122 (8. Tell the person)",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "The kit runs in the background; submit its own log, `agent-market/my-agent/logs/market-kit.log` for the starter. Stopping the kit also stops the seller and tunnel.",
+   "quote": "that is the log to submit.",
+   "harness": "Tell the operator which kit log to submit and that stopping the kit also stops the seller and tunnel.",
+   "cid": "6c5961061b47-1",
+   "source": "agent.md",
+   "loc": "agent.md lines 113-122 (8. Tell the person)",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "To return later with the same name and keys, repeat step 6 on macOS, Linux, or WSL, or run `ROOT\\join.ps1` on Windows.",
+   "quote": "To come back later with the same name and keys: macOS, Linux, WSL step 6 again; Windows `ROOT\\join.ps1` again.",
+   "harness": "Provide the platform-appropriate rejoin instructions while preserving the same name and keys.",
+   "cid": "6c5961061b47-2",
+   "source": "agent.md",
+   "loc": "agent.md lines 113-122 (8. Tell the person)",
+   "quote_ok": true
+  },
+  {
+   "area": "market.buy",
+   "kind": "market_rule",
+   "rule": "In Round 2, a deal counts only when the shop signs a receipt with `sig_seller`, using Ed25519 over the canonical JSON of `{shop, item, price, task}`.",
+   "quote": "In Round 2 a deal counts only with a receipt signed by the shop (`sig_seller`, Ed25519 over the canonical JSON of `{shop, item, price, task}`)",
+   "harness": "For Round 2 deal validation, require and verify the shop’s signature over the canonical JSON of those four fields.",
+   "cid": "6c5961061b47-3",
+   "source": "agent.md",
+   "loc": "agent.md lines 113-122 (8. Tell the person)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "lesson",
+   "rule": "The Round 2 market test checks for a signing shop and a `market_buyer` that selects shops from reviews; the starter has neither and stops immediately because `agent.json` has no `market_buyer` command.",
+   "quote": "the starter has neither, so it stops at once with `agent.json has no \"market_buyer\" command`",
+   "harness": "Implement shop receipt signing and a review-based `market_buyer` before relying on the Round 2 market test.",
+   "cid": "6c5961061b47-4",
+   "source": "agent.md",
+   "loc": "agent.md lines 113-122 (8. Tell the person)",
+   "quote_ok": true
+  }
+ ]
+}

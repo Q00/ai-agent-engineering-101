@@ -1,0 +1,177 @@
+{
+ "schema_version": 1,
+ "version": 198,
+ "epoch": "e198",
+ "approved": "autopilot 2026-11-11 23:31: request 20261111-233117-2 (restock.max_line_share 0.42 -> 0.52: let the high-list best sellers take a larger share of each restock); autopilot: before/after test",
+ "phase": "reputation",
+ "priorities": [
+  "Goal (patch 3.4, 11/6): the Class-view percentile of shop ALL + buyer ALL on 11/17 23:59. Shop ALL = 0.5 book + 0.3 revenue + 0.2 stars; unsold stock counts at cost in book, also when the round ends, so stock that sells does not lower the score (goods storage 1%/day and spoiled food do). Buyer ALL = 0.5 saved + 0.3 forum + 0.1 deals + 0.1 posts; saved is the share of list price kept per deal.",
+  "Benchmark (user 11/4 03:0x: copy what wins): the top-profit shops (winun1127 'Harness Furniture Shop' 9.1M, dae-yangkim 9.9M) are 95-99% goods by revenue and turn their cash over every window: winun1127 bought 40.4M of stock in 5.4 h (8 times the start) and sold 524 deals at a median 79% of list, deep in the market's best sellers (G1515d951 mattress list 423,810: 75 units; Ge62449c9, G0be9ed07, Ga7918a2e, G07ec17d5), with food for 37% of its units. We bought cheap items (pillow 7,900, apron 15,500) and sold 53 deals in a day. So: stock deep in the best sellers with a high list price, refill every window, sell at about 80% of list, keep the cash turning.",
+  "Guaranteed goods shop: every unit carries the market certificate, its true grade and a full refund if it breaks within 12 hours. Open at 72% of list (the rules), 1% a turn; take a real offer at or over the floor from the second turn and explain what the guarantee covers. Come down to 70% of list at most, and never under cost x 1.12 (never below cost), and close there rather than lose the buyer. Speak of the guarantee and quality, never of price levels we cannot keep.",
+  "More deals by buying what the market buys: first the SKUs buyers asked us for (me.missed, most asked first: G0f415407, Ge62449c9, Gaae7863f) up to 8 units each, plus goods named in forum wanted posts. Then the regulars' SKUs (G0be9ed07, G07ec17d5, G30604071, G054ff120, G03cab593) and the market's best-selling goods 3 to 8 units deep. Then 1 or 2 units of other SKUs in asked-for categories. Keep the stock within 70% of our equity (balance + stock at cost) (cash floor 500,000: the rest of the cash goes into stock that sells), and sell what we hold before buying more.",
+  "Our shop sells food too (user 11/4 03:0x): the market's best-selling food that keeps 72 h or more, up to 3 units a SKU and 35% of the stock; sell the units with the most hours left first.",
+  "Answer buyers' goods requests on the forum: say what we will stock and that it arrives at the next supply window, then stock it.",
+  "Be reliably honest: true grades, a certificate on every unit, receipts that match, the warranty always.",
+  "Buyer (patch 3.4): the score is the share of list price kept per deal, so a cheap item and an expensive one at the same discount count the same, and a deal that serves nothing counts -1. Keep the share high on every deal: goods of list 30,000+ open at 55% and aim at 68%, food opens 45% and aims 60%, never over the playbook's ceiling; walk away rather than pay near list. Food must last the order's hours. Avoid shops that agree but do not deliver.",
+  "Round end (open, D-14): stock counts at cost at 11/17 23:59 (patch 3.3), so the old reason to stop restock at 11/17 12:00 and sell the stock down is gone; restock.stop_after stays until the user decides."
+ ],
+ "context": [
+  "Out of stock in 30 of 149 visits (kimchi G200e39a3 13, G66ded25b 9). Goods may now go to 20 units per SKU, the risk limit; food stays at 8 units per SKU, cover 4 windows. Keep within the 0.7 stock share and the 500k cash floor."
+ ],
+ "shop_card": {
+  "description": "gom31 Certified Safe Goods: every unit ships with the market's certificate and its true grade, and carries our full-refund warranty if it breaks within the warranty window. We stock the market's favourite goods and long-life food. Need an item? Ask on the forum and we stock it at the next supply window.",
+  "examples": [
+   "I want to buy G0026722f",
+   "4000",
+   "ok"
+  ]
+ },
+ "limits": {
+  "cash_floor": 500000,
+  "max_units_per_sku": 30,
+  "max_stock_share": 0.9,
+  "food_share_max": 0.35,
+  "below_cost": {
+   "allowed": false,
+   "max_loss_share_of_cost": 0.0
+  },
+  "stock_base": "equity"
+ },
+ "experiment": {
+  "hypothesis": "H2: a goods-only shop with a 100% warranty, certified units, first visits at cost and fast answers to forum requests gets many different buyers and good stars fast, which later carry profit.",
+  "min_sample": {
+   "metric": "funnel.seller.closed",
+   "value": 30
+  },
+  "success_if": [
+   {
+    "metric": "funnel.seller.completion_rate",
+    "op": ">=",
+    "value": 0.5
+   },
+   {
+    "metric": "unit_economics.seller.deals",
+    "op": ">=",
+    "value": 20
+   }
+  ],
+  "rollback_if": [
+   {
+    "metric": "losses.total",
+    "op": ">",
+    "value": 500000
+   }
+  ],
+  "review_at": "first brief after 30 closed negotiations",
+  "note": "v13 (user 11/3 22:3x, from 11/4 00:00): as v12, the first-visit-at-cost offer ends (stars were 4.81, the reputation goal is met); every buyer may pay down to 90% of list; the card no longer promises cost. v12 (user 11/3 22:3x, 'apply the rest in the recommended order'): as v11, buyer targets 55% of list on goods orders of list 50,000+, restock holds the best sellers deep (ours and the market's), restock stops at 11/17 12:00 to sell the stock down; the collector's double count was fixed (27 paid sales, not 59). v11 (user 11/3 22:25): as v10, a returning buyer may pay down to 90% of list (at list, 1 sale in 25 min after 21:59: returning buyers rose to 90% of list and walked). v10 (user 11/3 22:06-22:08, 'more deals first', 'buying what is needed stays'; brief 2026-11-03T22 option A folded in): as v9, restock shows the SKUs buyers asked for first (8 per SKU), then up to 8 SKUs per asked-for category near its median price, none from categories nobody asked for (146 'none in stock' answers: bed/mattress 61, bedding 46, sofa 16, curtain/rug 10; the last window bought aprons and chargers). v9 (user 11/3 21:53): as v8, a returning buyer pays at least the list price (enforced by act.counter/act.accept); warranty reserve: restock keeps 50% of our sales still in warranty above the cash floor (at 21:5x: 24 sales, 1,879,390 open, no break on the ledger yet). v8 (user 11/3 21:5x): as v7, repeat buyers at list price (down at most 10%), first visit at cost kept; buyer takes zero-surplus useful deals, accepts grade B, asks no warranty on food; the shop's 'No food' line now says it is about our stock (the buyer read it as its own rule and walked from food orders). v7 (user 11/3 21:46): as v6, stock cap back to 50% of the start; refill what sold; first visit at cost kept (reputation phase, the profit loss accepted). Seen on the board 21:3x: shop ALL 0.569 -> 0.409 with profit -1.56M (balance - start; stock counts 0), stars 4.94, revenue 1.48M. v6 (user 11/3 21:14): as v5, stock cap 50% -> 70% of the start (cash floor 1,500,000 unchanged), 3-5 units per line for goods that sell or were asked for; seen in the first window: 22 lines in 6 min, 1.25M spent, and many 'none in stock' answers. v5 (user 11/3): goods only, stock up to 50% of the start, warranty 6 h on every goods sale (refunds count in losses.total), first visit at cost, certified units only. v4 Welcome Food was a draft, never installed."
+ },
+ "delegation": {
+  "auto": []
+ },
+ "warranty": {
+  "hours": 12,
+  "kinds": [
+   "goods"
+  ],
+  "reserve_share": 0.06
+ },
+ "certified_only": true,
+ "repeat_buyer": {
+  "min_price": "list",
+  "min_share_of_list": 0.7
+ },
+ "restock": {
+  "per_asked_category": 8,
+  "stop_after": 1794920400.0,
+  "cover_windows": 2,
+  "market_top": 24,
+  "market_units": 3,
+  "max_line_share": 0.2,
+  "top_n": 3,
+  "top_units": 20,
+  "top_line_share": 0.5,
+  "note": "Raise targets on the lines that ran out (G7fa48eaa to 20 within the food limits; G07ec17d5, Gbec2b68f, G1831f2c0 to target first). Add probes of 3 units for G75f11c19 and Gfb2c0249 if they are goods, within the 20-per-SKU, 70%-stock and 35%-food limits.",
+  "refill_first": [
+   "Gbec2b68f",
+   "G07ec17d5",
+   "G1831f2c0",
+   "Gdf79cd07",
+   "G7fa48eaa",
+   "G9a240832"
+  ],
+  "min_units_on_hand": {
+   "Gbec2b68f": 8,
+   "G07ec17d5": 8,
+   "G1831f2c0": 3,
+   "Gdf79cd07": 3,
+   "G7fa48eaa": 3,
+   "G9a240832": 3
+  }
+ },
+ "playbook": {
+  "restock": {
+   "mode": "rules",
+   "cover_windows": 4.0,
+   "market_top": 24,
+   "market_units": 8,
+   "max_line_share": 0.52,
+   "food_top": 8,
+   "food_units": 8,
+   "food_min_shelf_hours": 72,
+   "top_n": 10,
+   "top_units": 35,
+   "top_line_share": 0.5,
+   "units_cap": 20,
+   "own_sales": true,
+   "own_cover": 2.0,
+   "probe_units": 2,
+   "food_cap": 5,
+   "cost_share": 0.65,
+   "food_windows": 2,
+   "food_fresh_share": 0.5,
+   "food_old_windows": 2,
+   "food_min": 2,
+   "own_floor": true,
+   "react": true
+  },
+  "buyer": {
+   "mode": "rules",
+   "ceiling_share": 0.7,
+   "max_shops_goods": 20,
+   "max_shops_food": 15,
+   "food_time_budget": 30,
+   "goods_time_budget": 120,
+   "food_msg_timeout": 13,
+   "goods_msg_timeout": 20,
+   "shelf_guard": true,
+   "skip_unsigned": true,
+   "min_pay_rate": 0.38,
+   "value_gate": true,
+   "value_margin": 0.02,
+   "big_list": 30000,
+   "open_share": 0.55,
+   "target_share": 0.68,
+   "food_open_share": 0.55,
+   "food_target_share": 0.68
+  },
+  "seller": {
+   "mode": "rules",
+   "open_share": 0.68,
+   "step_share": 0.01,
+   "min_margin": 0.06,
+   "accept_from_turn": 2,
+   "clearance_hours": 8,
+   "hot_n": 5,
+   "food_fit": true,
+   "food_fresh_unknown": true,
+   "food_review_need": true,
+   "forged": ""
+  },
+  "review": {
+   "mode": "rules",
+   "base": 4,
+   "five_share": 0.6
+  }
+ },
+ "note": "v87 (user 17:56): as v86, delegation.auto emptied - the strategy agent no longer installs by day (v86 went in at 16:04 without approval); outer/slice.py AUTO_HOURS emptied for the night. Briefs are still written as proposals. v85 (user 09:07): as v84, restock buys food for 2 windows of its own sales, counts only units with half the shelf left, and buys none while old units cover 2 windows (goods keep cover_windows); buyer.pre_agree_check (auto v76: check shelf life and certificate before agreeing) dropped - code never read it, 0 of 1,581 offers mentioned it, and asking shops for the hours cut agreements 44/118 -> 2/26 on 11/4 01:47. v84 (user 08:43): as v83 without the kimchi hold - with the freshest unit sold first kimchi rated 4.57 (3 of 28 at 2 stars) in the 30 min before the hold, and the hold lost those 28 sales. v75 (user 03:11): as v74, kimchi on hold - the seller does not sell it, restock does not buy it (G200e39a3, G66ded25b and the 김치 category; 172 of the 'I needed' reviews were these two); other food sells without the review bar, the freshest unit to a buyer stating no hours, food_fit for stated hours. v74 (user 03:04: not more stock - a higher bar for what we sell; buyers say how long they need it): as v73, food_cap back to 10; a food buyer stating no hours gets only a unit lasting the most hours reviews of that SKU said were needed (x1.05: 132 h of 168, 567 h of 720), else the true hours and a request for its hours. v73 (user 03:00, after buyer-02's 'Only 115.2 h of shelf life left; I needed 126.0 h'): as v72, food depth up to 20 a SKU (was 10): our food SKUs sell 19-27 an hour, a window bought at most 10, and the freshest units sold first (v72) left only 0.29-0.74 of the shelf (G200e39a3 sold out). v72 (user 02:48): as v71, a food buyer that states no hours gets the freshest unit of the SKU (buyer-02 states none and rated grade B/C 2 stars 79 of 227 times in 12 h, grade A 4.83); stated hours keep food_fit. v71 (user 02:47: selling is about selling a lot; get good ratings by selling good quality): as v70 without seller.food_unknown_share - v70 refused food to buyers stating no hours. v70 (user 02:46: food is for stars and deals; sell it so buyers can use it without trouble): as v69, a food buyer that states no hours gets only a unit with 75% of its shelf life left (x1.05), else the true hours and a request for the hours it needs; stated needs keep food_fit. v68 (user 01:42): as v67, the seller sells food only in a unit lasting the hours the buyer states (x1.05) and says the true hours when none does (61 of 109 ratings of 3 or less in 6 h were food short of the stated hours); the buyer skips a shop whose last 3 receipts had no sig_seller (willow-goods: 44 in an hour); the shelf guard stays on (01:12-01:39: its 6 drops were receipts the kit refuses; food paid fell 23 -> 10 with fewer agreements, cause unclear). v66 (user 01:12): as v65, the buyer leaves a food receipt whose claimed grade cannot last the order's use window and tries the next shop (playbook.buyer.shelf_guard; 6 h on 11/4: 138 of 146 such receipts were refused at payment). buyer.food_shelf_check (v65, 'ask the shop for the hours before agreeing') is dropped: asking shops for the hours made them refuse at once on 11/4 01:47 (44 of 118 agreed before, 2 of 26 after). v62 (user 20:43, benchmark lee-sungsoo: food 87% of deals, buyer ALL 0.733, closes 62% of orders paying a median 69% of list; we close 34% at 54%, 1,258 of 2,321 shop talks in 6 h rejected, 214 timed out): as v61, food bids open at 55% (was 45%) and aim at 68% (was 60%), ceiling 82% unchanged; a food order may take 30 s (was 10), 8 s a message (was 4), up to 12 shops (was 8). Goal: food close rate 50%+. v60 (user 11/4 17:3x, brief 17:15 option A): as v59, restock plans at the expected cost (playbook.restock.cost_share 0.65; bought units came in at about 62% of list, the worst is 75%) and the warranty reserve is 6% of the sales still in warranty (was 10%; refunds were 43 of 847 deals, about 5%). The worst cost still keeps the plain cash floor. "
+}

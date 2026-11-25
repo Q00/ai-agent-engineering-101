@@ -1,0 +1,196 @@
+{
+ "rules": [
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "A shop starts with a 5,000,000 balance and buys stock through the restock hook every 60 seconds: up to 10 lines of 1-20 units each; a batch above the balance is refused whole, and if the restock hook is missing the kit restocks at random.",
+   "harness": "Always provide a restock hook and submit at most 10 lines of 1-20 units each within the available balance every 60 seconds.",
+   "evidence": [
+    "e54bc7cc16e5-27"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "M2",
+    "relation": "refines"
+   },
+   "pid": "market.buy#1",
+   "area": "market.buy",
+   "sources": [
+    "HARNESS.md"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "A SKU's supply cost rises with market-wide purchases in the last hour: the first 50 units cost the base supply price, and each additional unit adds 0.2%, up to +50%.",
+   "harness": "Check current supply prices and account for market-wide surge pricing up to +50% when restocking.",
+   "evidence": [
+    "270ce6a22bde-17"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "M5",
+    "relation": "refines"
+   },
+   "pid": "market.buy#2",
+   "area": "market.buy",
+   "sources": [
+    "agent.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "Supply opens roughly every 20 minutes with inventory.json exposing open, opens_at, and closes_at; live supply windows were observed to last 10 minutes on 2026-11-03, whereas agent.md states 3 minutes.",
+   "harness": "Read open, opens_at, and closes_at from inventory.json rather than assuming a fixed 3-minute window, and plan restocking so inventory lasts until the next window.",
+   "evidence": [
+    "19fb13795de6-10",
+    "19fb13795de6-11"
+   ],
+   "conflict": "agent.md states a 3-minute supply window (19fb13795de6-10, 2026-11-03T20:39), while live observation on 2026-11-03T21:08 showed 10-minute supply windows (19fb13795de6-11).",
+   "history": "",
+   "existing": {
+    "id": "M3",
+    "relation": "refines"
+   },
+   "pid": "market.buy#3",
+   "area": "market.buy",
+   "sources": [
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Restock runs deterministically by rule only while the supply window is open: it computes spendable cash (balance minus cash floor and warranty reserve) and stock room once, merges duplicate SKUs, trims each line to its per-SKU room, and drops lines from the end until cash and stock checks pass (allowing goods purchases even when food share is over limit so the food share can fall). It calls the agent only on exceptions (empty candidate list, all candidates blocked by limits, or rejected supply purchase), and if the buy list is full or funds are tied up it emits a no_budget anomaly without calling the agent.",
+   "harness": "In the restock hook, verify the supply window is open, compute spendable cash and stock room once, merge and trim the buy plan to fit per-SKU and budget limits, emit no_budget without an LLM call when funds are tied up, and invoke the LLM agent only when candidates are empty, all blocked, or rejected by the market.",
+   "evidence": [
+    "e54bc7cc16e5-11",
+    "06b10b2a463e-7",
+    "839f2f1fd6bf-18",
+    "914b9d6b33cb-11",
+    "914b9d6b33cb-12",
+    "914b9d6b33cb-13"
+   ],
+   "conflict": "",
+   "history": "2026-11-03 15:25: fixed bug where check.buy refused goods purchases that lowered an over-limit food share. 2026-11-04 01:40-02:08 (D34): moved restock to rule-based allocation with single-pass budget/room checks and exception-only agent calls.",
+   "existing": null,
+   "pid": "market.buy#4",
+   "area": "market.buy",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "An order's SKU price is between 0.5 and 1.5 times its base reference price, and buyer surplus is calculated from the list price.",
+   "harness": "Expect order SKU prices in the 0.5x-1.5x base price band and compute buyer surplus against list price.",
+   "evidence": [
+    "ece2408ce643-14"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "M1",
+    "relation": "same"
+   },
+   "pid": "market.buy#5",
+   "area": "market.buy",
+   "sources": [
+    "HARNESS.md"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Before paying, the kit checks the buyer's accept policy {cert, min_hours_left, grades, warranty_hours} and refuses payment if the order budget is exceeded; because the kit does not know the negotiated price, the harness must never offer or pay above the order budget and must pass null instead of paying any receipt priced above the agreed price.",
+   "harness": "Enforce the order budget cap on all buyer offers and payments, configure the accept policy {cert, min_hours_left, grades, warranty_hours}, and verify the receipt price against the agreed price before checkout (passing null if the receipt exceeds the agreed price).",
+   "evidence": [
+    "b2f6029bd469-25",
+    "a7f4ae86e56e-9",
+    "0e618b1ca536-11",
+    "0e618b1ca536-12",
+    "17f1df4c235a-15"
+   ],
+   "conflict": "",
+   "history": "Carried over from Weeks 1-7 lessons (Appendix B) into Round 3 system card (2026-11-03).",
+   "existing": {
+    "id": "M8",
+    "relation": "refines"
+   },
+   "pid": "market.buy#6",
+   "area": "market.buy",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "In the first three days (exposure stage), below-cost sales are allowed only up to a 10% loss relative to cost per transaction; afterward, no losing deals are allowed.",
+   "harness": "Block below-cost sales except during the first-three-day exposure stage where loss is capped at 10% of unit cost.",
+   "evidence": [
+    "b2f6029bd469-31"
+   ],
+   "conflict": "Earlier exposure-stage rule (b2f6029bd469-31) allowed up to 10% loss in the first three days, whereas existing rule S7 states 'no losing deals'.",
+   "history": "First 3 days (11/03-11/05) allowed up to 10% below-cost exposure sales; superseded by S7 no-losing-deals policy.",
+   "existing": {
+    "id": "S7",
+    "relation": "refines"
+   },
+   "pid": "market.buy#7",
+   "area": "market.buy",
+   "sources": [
+    "HARNESS.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Outgoing negotiation messages must contain the exact price checked by the pricing tool (mismatching numbers are refused and no number is added if none was checked); when an incoming message contains no number, whether it accepts the seller's ask is decided by the model rather than substring matching, and act.accept uses the buyer's offer or the seller's last ask.",
+   "harness": "Verify that outgoing message text matches the tool-checked price before sending, and use the model decision to trigger act.accept with the offer or last ask when the counterparty's message has no number.",
+   "evidence": [
+    "bdfb2e39cd10-21",
+    "bdfb2e39cd10-23"
+   ],
+   "conflict": "",
+   "history": "Added 2026-11-03T20:13 (commit 83766cf).",
+   "existing": null,
+   "pid": "market.buy#8",
+   "area": "market.buy",
+   "sources": [
+    "git log"
+   ],
+   "flags": []
+  }
+ ],
+ "dropped": [
+  {
+   "cid": "6c5961061b47-3",
+   "reason": "Specific to Round 2 receipt signing; the harness is running in Round 3."
+  }
+ ],
+ "area": "market.buy",
+ "candidates": 20,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}

@@ -1,0 +1,63 @@
+{
+ "proposal_id": "2026-11-06T06",
+ "slice": "2026-11-06T06",
+ "ts": 1793912617.5348725,
+ "version_from": 88,
+ "score": "Players rank 3 of 58, up from 11 an hour ago and 13 six hours ago. The gap to Lee-sungsoo (rank 2) is 0.043.\n\nShop parts (percentile, rank of 55):\n- book: 0.882, rank 7. Gap to dragonash is 14.6M.\n- revenue: 0.90, rank 6. Gap to dae-yangkim is 4.0M.\n- stars_rank: 0.745 (4.35 stars), rank 14, up from 30. Gap to Kiro729 is 0.02.\n\nBuyer parts (percentile, rank of 51):\n- surplus: 0.50, rank 26. This part has the most room left (0.25).\n- forum: 0.814, rank 7.\n- deals: 0.52, rank 25.\n- posts: 0.931, rank 4.",
+ "happened": [
+  {
+   "claim": "The shop sells fast and above cost, but stock-outs are now the biggest leak: 41 of 209 visits found no stock. The SKUs missed most were mattress Ge62449c9 (7), G5cd4ffbc (6), food G66ded25b (5) and kimchi G200e39a3 (4).",
+   "evidence": [
+    "health 30 min: seller visits 209, completed 106, no_stock 41, left_at_opening 46",
+    "health missing_skus: Ge62449c9 7, G5cd4ffbc 6, G66ded25b 5, G200e39a3 4, Gb5d0dde7 4"
+   ]
+  },
+  {
+   "claim": "Unit economics are healthy: the slice made 10.1M margin on 344 deals, with no below-cost deals and no expired food. Storage (139k) was the only loss.",
+   "evidence": [
+    "self summary: unit_economics seller deals 344, revenue 56,115,953, profit_before_losses 10,108,059, below_cost 0",
+    "eval.losses: expired 0, storage 139,315, refunds 0"
+   ]
+  },
+  {
+   "claim": "Many closed negotiations still do not settle (161 rejected, 233 canceled). The seller model fell back to OpenRouter on 24 of 29 calls, with 40 tool refusals.",
+   "evidence": [
+    "eval.funnel seller: closed 783, completed 389, settled 344",
+    "decision_quality seller: fallback 24/29, failed 3, tool_refusals 40"
+   ]
+  },
+  {
+   "claim": "On the buyer side, orders are lost to our own food freshness filter and to units sold out from under us at checkout. The buyer agrees on only 17.4% of the listings it picks.",
+   "evidence": [
+    "self summary: 117 of 671 picked listings agreed; unpaid reasons: shelf life short of our requirement (at least 7 orders), 409 unit not in stock (at least 6)",
+    "health buyer: 73 orders, 18 paid, 1 unpaid"
+   ]
+  },
+  {
+   "claim": "Our regulars keep growing with unchanged baskets. No new participants appeared this slice.",
+   "evidence": [
+    "market summary: YAHO1212 deals 680->715, +13.85M; inextro 402->422, goods only",
+    "new_6h empty"
+   ]
+  },
+  {
+   "claim": "Data anomaly: the benchmark shows our shop at 0.0 deals/h, but health shows 106 completions in 30 minutes. The benchmark's own-shop row is likely broken and should not be used for decisions.",
+   "evidence": [
+    "benchmark shop_ours deals_per_h 0.0",
+    "health seller completed 106"
+   ]
+  }
+ ],
+ "hypothesis": "H2 is holding. Completion is about 50% (389 of 783 closed), there are far more than 20 paid deals, losses are 139k (rollback only above 500k), and stars are rising (rank 30 -> 14). Not yet tested: whether depth (20 units per SKU) closes the stock-out gap. The next window's no_stock count is the test.",
+ "counterparts": "YAHO1212 is now our top buyer (285.9M; bedding/mattress basket of G1515d951, Ge62449c9, Gdf79cd07, G5cd4ffbc, G8095ddd6) and is the reason those SKUs must stay deep. inextro buys goods only. buyer-02 buys food only and is sensitive to freshness, so serve it the units with the most hours left. No dishonest behaviour was seen and no stance changes are proposed.",
+ "options": [],
+ "recommendation": "Night: no change. Topics for the morning brief:\n1. Stock-outs on the regulars' bedding SKUs (Ge62449c9, G5cd4ffbc) and on kimchi.\n2. Buyer surplus, our weakest part at percentile 0.5. Look at loosening the food freshness margin to the order's actual use_within, and at more goods orders of list 100k+.\n3. Repair the benchmark's own-shop row.",
+ "status": "report",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [],
+  "by": "audit",
+  "ts": 1793912623.2146943
+ }
+}

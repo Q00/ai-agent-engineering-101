@@ -1,0 +1,116 @@
+{
+ "proposal_id": "2026-11-04T08",
+ "slice": "2026-11-04T08",
+ "ts": 1793747020.142109,
+ "version_from": 43,
+ "score": "Board: shop ALL 0.583. 226 deals, 4.51 stars from 225 reviews, revenue 29.4M, profit 1.90M, 223 of 223 claims honest, forum 0.588. Epoch e43 started minutes ago, so eval.unit_economics(e43) still shows 0 deals. The slice since 1793745027 shows 25 settled deals, revenue 4.51M, profit before losses 0.93M, median margin 24,434, nothing below cost, and losses of 0.",
+ "happened": [
+  {
+   "claim": "Depth restock turns stock fast and loses nothing: we bought 16, sold 25 (sell-through 1.56), with no waste, storage or refund losses.",
+   "evidence": [
+    "self summary 2026-11-04T08: eval.stock_health bought 16 sold 25, waste 0",
+    "eval.losses total 0"
+   ]
+  },
+  {
+   "claim": "The biggest loss point is deals cancelled before completion, not price. Of 74 closed negotiations, only 28 completed (38 cancelled, 8 rejected). The experiment's completion rate is 0.366, below its 0.5 success bar.",
+   "evidence": [
+    "eval.funnel seller: completion_rate 0.3784, lost_by canceled 38 rejected 8",
+    "eval.experiment: sample 71, completion 0.3662, verdict neither yet"
+   ]
+  },
+  {
+   "claim": "The top seller, G1515d951 mattress (list 423,810), sits at 0 units. Its line of 12 units at about 300k each cannot fit under the 160% stock cap after the other lines, so no window buys it, yet top shops sold 240 in 6 h.",
+   "evidence": [
+    "restock buy list: G1515d951 want 12 hold 0",
+    "benchmark their_best_we_lack G1515d951 240",
+    "market.selling G1515d951 622"
+   ]
+  },
+  {
+   "claim": "Some cheap SKUs we stock sold nothing, while top shops sell high-list bedding we lack (G6b9db161 420,000; G30604071 344,640).",
+   "evidence": [
+    "benchmark ours_nobody_sold: G111530e5, Ge37f9697, G114eb392 ... 1-3 units each",
+    "their_best_we_lack G6b9db161 50, G30604071 29"
+   ]
+  },
+  {
+   "claim": "Regulars are buying more, concentrated in our deep best sellers.",
+   "evidence": [
+    "market summary: shaun0927 30->37 deals 3.86M->5.10M; inextro 26->33 deals 5.25M->6.81M"
+   ]
+  }
+ ],
+ "hypothesis": "H2 is not judged yet: 71 closed negotiations is enough sample, but its two success conditions disagree. Repeat buyers and stars (4.51) support H2. Completion of 0.37 is below the 0.5 bar, and the cause is cancellation, not price. Answer to the user's question (breadth or depth): neither extreme. Depth wins on turnover and margin, so keep it. But a 50% line share lets a few lines fill the cap, which shuts out the highest-list best sellers and the specific bedding SKUs that house orders accept. Since orders only visit shops holding an accepted SKU, holding a little of many best sellers adds vis…",
+ "counterparts": "Regulars shaun0927, inextro, chaewoonee, dae-yangkim and buzllightyear: keep them stocked in G1515d951, G07ec17d5, G0be9ed07, G30604071 and G5cd4ffbc. New: yeonsong2, a first-timer buying small SKUs; treat it as a first-timer and give it a good first deal at our rules. New: ggari-shop, an honest food shop that correctly refused our buyer an item with 7.35 h of shelf life against its 24 h policy; it is a fair counterpart for our buyer. No stance changes proposed.",
+ "options": [
+  {
+   "id": "A_capped_breadth",
+   "change": {
+    "playbook": {
+     "restock": {
+      "cover_windows": 2,
+      "market_top": 24,
+      "market_units": 3,
+      "max_line_share": 0.2
+     }
+    },
+    "context": "11/4 08:xx: depth turns well (sell-through 1.56, 0 losses), but the 50% line share and 3-window cover let a few lines fill the 160% cap, so G1515d951 (top seller, list 423,810) stayed at 0. Now: up to 24 market best sellers at 3 units each, 2 windows of cover, at most 20% of the window's money per line. High-list bedding (G1515d951, G6b9db161, G30604071) gets 1-3 units every window. Do not rebuy SKUs that sold nothing (G111530e5, Ge37f9697, G114eb392 ...)."
+   },
+   "targets": "shop revenue (0.3) and profit (0.5): more SKUs that house orders accept means more visits, and the high-list items carry higher margins per deal",
+   "expected": "G1515d951 and the other high-list bedding SKUs come into stock within 1-2 windows. More distinct SKUs held means the bedding orders posted on the forum can reach us. Deal count up, median margin about the same or higher.",
+   "risk": "Thinner lines run out between windows, so a regular may find nothing. Some new SKUs may sell slowly, with storage at 1%/day. Mitigation: regulars' SKUs still get 3-unit lines.",
+   "reversible": true
+  },
+  {
+   "id": "B_depth_unblock",
+   "change": {
+    "playbook": {
+     "restock": {
+      "cover_windows": 3,
+      "market_top": 18,
+      "market_units": 4,
+      "max_line_share": 0.3
+     }
+    },
+    "context": "11/4 08:xx: keep depth, but cap each line at 30% of the window's money so G1515d951 and the other high-list best sellers get bought instead of being crowded out."
+   },
+   "targets": "shop profit (0.5)",
+   "expected": "A smaller change: G1515d951 gets 2-3 units, and the current turnover pattern is kept.",
+   "risk": "Breadth stays limited, so the bedding orders that accept SKUs we lack still never visit us.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A_capped_breadth",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "The strategy agent's analysis of the problem (inability to stock high-list best sellers like G1515d951 due to stock cap and line share) is accurate.",
+    "why": "The market.selling data and the restock buy list in the brief's evidence clearly show G1515d951 is a top seller, we have 0 units, and the restock system wants 12 units but cannot buy them. This directly impacts potential revenue and profit from high-margin items."
+   },
+   {
+    "claim": "Option A (A_capped_breadth) directly addresses the core problem of increasing shop visits and revenue by stocking a wider variety of best-selling, high-list items.",
+    "why": "The scoring formula for 'shop ALL' heavily weights revenue (0.3) and profit (0.5). By stocking more distinct SKUs, especially high-list ones, we increase the chances of matching buyer orders, thus increasing visits, settled deals, and potential revenue/profit. The proposed change to 'market_top 24' and 'max_line_share 0.2' directly aims to achieve this, as stated in the 'expected' section of option A."
+   },
+   {
+    "claim": "The risk of thinner lines running out is acknowledged and mitigated by ensuring regulars' SKUs still get 3-unit lines.",
+    "why": "This shows an understanding of the balance needed between acquiring new customers and retaining existing ones, which aligns with the user's intent of building trust and good relations with customers (regulars)."
+   },
+   {
+    "claim": "The recommendation aligns with the user's goal of moving from exposure to profit, as 'more visits' from a broader stock base (exposure) are expected to lead to 'higher margins per deal' (profit).",
+    "why": "The user's intent states: 'Once memory and relations build up, adjust prices step by step to raise profit and rank.' Option A, by increasing exposure to more buyers via a wider range of desirable stock, sets the stage for future profit increases, even if initial margins remain similar. The emphasis on high-list items also inherently implies higher potential profit per deal."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793747028.9916372
+ },
+ "decision": {
+  "choice": "A_capped_breadth",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793747029.0096173,
+  "installed": 44
+ }
+}

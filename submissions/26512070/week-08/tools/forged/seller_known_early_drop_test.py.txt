@@ -1,0 +1,18 @@
+def test():
+    v = {"kind": "goods", "list_price": 10000, "cost": 6000, "floor": 7000, "ask": 9500, "offer": None, "turn": 2, "max_turns": 12, "known": True, "name": "kim"}
+    r = decide(v)
+    assert r["action"] == "counter" and r["price"] == 7875
+    assert 7000 <= r["price"] < 9500
+    v2 = dict(v, ask=None, list_price=12000, floor=8000, cost=7000)
+    r2 = decide(v2)
+    assert r2["action"] == "counter" and 8000 <= r2["price"] < 12000
+    v3 = dict(v, ask=7000)
+    r3 = decide(v3)
+    assert r3 == {"action": "counter", "price": 7000}
+    v4 = dict(v, floor=7000.5, ask=7000.6)
+    r4 = decide(v4)
+    assert r4["price"] >= 7000.5
+    assert decide(dict(v, known=False)) is None
+    assert decide(dict(v, offer=8000)) is None
+    assert decide(dict(v, turn=3)) is None
+    assert decide(dict(v, list_price=400000)) is None

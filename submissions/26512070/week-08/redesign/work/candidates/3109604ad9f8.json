@@ -1,0 +1,238 @@
+{
+ "chunk": "3109604ad9f8",
+ "loc": "git log 07f5004 .. 2e9f081",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "The seller’s price floor is the higher of 72% of list price and 1.12 times cost, so every completed deal preserves at least 12% over cost.",
+   "quote": "floor 72% and cost x 1.12 unchanged",
+   "harness": "Reject or counter offers below the higher floor.",
+   "cid": "3109604ad9f8-0",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "The seller accepts offers at or above its floor starting on turn 2; its opening ask is 74% of list price.",
+   "quote": "opens at 74% of list",
+   "harness": "Use a 74%-of-list opening and permit floor-level acceptance from turn 2.",
+   "cid": "3109604ad9f8-1",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "In the last hour before 06:06 on 2026-11-04, 30 deals closed at a median 76% of list and 29.5% over cost; 31 real buyers left after a 78% opening, while 23 cancellations were quote-only surveys.",
+   "quote": "30 sold at a median 76% of list, 29.5% over cost",
+   "harness": "Track completed deals separately from quote-only cancellations and monitor exits at the opening price.",
+   "cid": "3109604ad9f8-2",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "Night mode gives deeper stock to best-selling items and caps the line allocation at 0.6.",
+   "quote": "best sellers deeper, line cap 0.6",
+   "harness": "Apply the night-mode stock allocation when night mode is active.",
+   "cid": "3109604ad9f8-3",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "goal",
+   "kind": "observation",
+   "rule": "At 08:35 on 2026-11-04, shop ALL was 0.613 with 2,164,095 profit, 34,983,436 revenue, 252 deals and 4.52 stars; buyer surplus was 2,828,339 over 327 deals and 114 posts, and player percentile was 52.1 with player score 0.993.",
+   "quote": "player 0.993 (percentile 52.1)",
+   "harness": "Record shop ALL, buyer results and player percentile together when evaluating performance.",
+   "cid": "3109604ad9f8-4",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Collect seller negotiations, buyer orders and payments, restock windows, model timeouts and tool refusals over the preceding 30 minutes every five minutes; alert at most once per hour per crossed threshold and include the snapshot in the strategy brief.",
+   "quote": "every 5 min over the last 30 min",
+   "harness": "Run the health checks on that cadence, rate-limit threshold alerts, and pass snapshots to the strategy brief.",
+   "cid": "3109604ad9f8-5",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "observation",
+   "rule": "The first health snapshot on 2026-11-04 around 08:5x showed 48 settled and 48 left at the opening out of 129 visits, 27 no-stock visits, and 36 paid versus 14 unpaid buyer orders; 11 unpaid orders were short of shelf life.",
+   "quote": "48 settled and 48 left at the opening of 129 visits",
+   "harness": "Expose these counts and unpaid-order reasons in health reporting.",
+   "cid": "3109604ad9f8-6",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "lesson",
+   "rule": "Counting buyer payments only since the previous health run caused a false “paid nothing” alert; payment status must be evaluated with correct timing and across the intended observation window.",
+   "quote": "counted payments since the last run and raised a false 'paid nothing' alert",
+   "harness": "Test payment-window accounting and suppress alerts based on an incorrect run-to-run count.",
+   "cid": "3109604ad9f8-7",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Restart the seller and outer harness after a schema change so both use the new schema.",
+   "quote": "seller and outer restarted for the schema",
+   "harness": "Restart affected processes after schema changes.",
+   "cid": "3109604ad9f8-8",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "On 2026-11-04 around 10:3x, the user chose to let the top three goods SKUs by expected sales value hold up to 20 units and consume 50% of the window’s money, while other SKUs remain capped at 12 units.",
+   "quote": "the top 3 goods SKUs by expected sales value may hold 20 units and take 50% of the window's money",
+   "harness": "Apply the top-three stock and budget shares while retaining the 12-unit cap for other lines.",
+   "cid": "3109604ad9f8-9",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "goods",
+   "kind": "market_rule",
+   "rule": "Record goods orders the shop cannot serve, including category, budget and accepted SKUs; during restocking, for each recorded order in the last six hours, stock two units of the best-selling accepted market SKU that fits the budget at 75% of list.",
+   "quote": "the accepted SKU that sells most in the market and fits the budget at 75% of list (2 units)",
+   "harness": "Save unserved-order demand and use it in the next restock decision.",
+   "cid": "3109604ad9f8-10",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "goods",
+   "kind": "market_rule",
+   "rule": "The buyer cannot buy from its own shop, supply opens every 20 minutes, and the kit accepts another order only after the buyer ends; it cannot wait within an order for a shop to restock.",
+   "quote": "the kit takes the next order only after the buyer ends, and supply opens every 20 min",
+   "harness": "Do not plan on the buyer purchasing its own seller’s stock or waiting inside an order for restock.",
+   "cid": "3109604ad9f8-11",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "user_decision",
+   "rule": "On 2026-11-04 around 10:4x, the user wanted the buyer to visit many shops quickly and not squeeze food sellers on price.",
+   "quote": "visit many shops fast, do not squeeze food",
+   "harness": "Prioritize quick shop visits and avoid aggressive food-price bargaining.",
+   "cid": "3109604ad9f8-12",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "observation",
+   "rule": "The next buyer order arrived about 20 seconds after the buyer ended an order: median 20.4 seconds across 92 orders.",
+   "quote": "median 20.4 s over 92 orders",
+   "harness": "Do not assume that finishing substantially faster than 20 seconds yields another order sooner.",
+   "cid": "3109604ad9f8-13",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "market_rule",
+   "rule": "Buyer shop-search time budgets are 20 seconds and at most eight shops for food, and 120 seconds and at most ten shops for goods; wait up to eight seconds for a food shop message and 20 seconds for a goods shop message, including card fetches.",
+   "quote": "food 20 s, up to 8 shops; goods 120 s, up to 10",
+   "harness": "Enforce the per-category time, shop-count and response-wait limits.",
+   "cid": "3109604ad9f8-14",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "food",
+   "kind": "market_rule",
+   "rule": "Food offers open at 55% of list, aim for 70% of list, and retain an 80% ceiling.",
+   "quote": "food opens at 55% and aims at 70% of list with the 80% ceiling kept",
+   "harness": "Use the stated food opening, target and ceiling.",
+   "cid": "3109604ad9f8-15",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "food",
+   "kind": "observation",
+   "rule": "In the reported food negotiations, 37 of 84 completed, 35 were refused at the first message and seven buyers walked.",
+   "quote": "food: 37 of 84 completed, 35 refused at the first message, 7 walked",
+   "harness": "Track food completion, first-message refusals and walkaways separately.",
+   "cid": "3109604ad9f8-16",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.score",
+   "kind": "definition",
+   "rule": "Board percentiles use only buyers with a deal (44 of 119) and shops with a deal or purchase (47 of 80); missing values count as zero and ties receive half credit.",
+   "quote": "44 of 119",
+   "harness": "Compute percentiles using the board’s eligible pools, treating missing values as zero and ties as half.",
+   "cid": "3109604ad9f8-17",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.score",
+   "kind": "observation",
+   "rule": "On 2026-11-04, corrected buyer percentiles were surplus 28.4, forum 53.4, deals 37.5 and posts 83.0; surplus, weighted 0.5, was the weakest buyer metric, not forum.",
+   "quote": "surplus 28.4 (we read 73.7), forum 53.4, deals 37.5, posts 83.0",
+   "harness": "Use corrected board-pool percentiles and prioritize buyer surplus rather than forum rating.",
+   "cid": "3109604ad9f8-18",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "observation",
+   "rule": "The corrected seller stars percentile was 34.0 on 2026-11-04; the earlier overnight report’s weakest-metric diagnosis was corrected because its buyer surplus percentile was misread.",
+   "quote": "shop stars 34.0",
+   "harness": "Recalculate seller and buyer percentiles from the board’s eligible pools before diagnosing weak metrics.",
+   "cid": "3109604ad9f8-19",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The harness must report health metrics, feed exceptions back into operations, restart automatically on schema changes, log on start and address flaky index tests; these were listed as next harness needs in the 2026-11-04 overnight report.",
+   "quote": "health metrics in outer/watch, exception feedback, auto-restart on schema change",
+   "harness": "Implement the listed monitoring, feedback, restart, startup logging and test-reliability behaviors.",
+   "cid": "3109604ad9f8-20",
+   "source": "git log",
+   "loc": "git log 07f5004 .. 2e9f081",
+   "quote_ok": true
+  }
+ ]
+}

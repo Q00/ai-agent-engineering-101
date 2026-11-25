@@ -1,0 +1,188 @@
+{
+ "rules": [
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Goods grades on arrival are A (normal, 70%), B (damaged box, 20%), and C (refurbished, 10%). Acquisition cost is fixed on arrival by grade: A costs 55-75% of list price, B 40-60%, and C 25-45%. Goods in stock incur a storage cost of 1% of unit cost per day.",
+   "harness": "Account for the goods grade distribution (A 70%, B 20%, C 10%), grade-based cost ranges (A 55-75%, B 40-60%, C 25-45% of list), and the 1% daily storage cost when valuing inventory and setting price floors. When estimating non-food storage loss hourly as inventory cost * 1%/day * elapsed time, mark the figure as estimated.",
+   "evidence": [
+    "270ce6a22bde-8",
+    "ece2408ce643-10",
+    "ecbe121caad7-14",
+    "e54bc7cc16e5-28",
+    "e54bc7cc16e5-30",
+    "16d9e8a34cd0-13",
+    "17f1df4c235a-10",
+    "17f1df4c235a-12"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "D1",
+    "relation": "refines"
+   },
+   "pid": "goods#1",
+   "area": "goods",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "An undisclosed share of goods break within 6 hours of the sale (even if the stated warranty is longer, e.g., 12 hours). A seller may specify warranty_hours for goods; if the unit breaks within that period, the market refunds the full price from the shop's balance, the deal leaves the shop's revenue, and its stars stay. When a unit breaks, the kit records only the broken item's name and break time; identifying the purchase, seller, and warranty coverage requires the agent's own records.",
+   "harness": "Limit warranty reserve calculations to the 6-hour post-sale break window. Retain purchase, seller, and warranty records for at least 6 hours after goods sales to match break events, and subtract warranty refunds from revenue while keeping the deal's stars.",
+   "evidence": [
+    "270ce6a22bde-8",
+    "270ce6a22bde-19",
+    "270ce6a22bde-24",
+    "ece2408ce643-11",
+    "17f1df4c235a-12",
+    "81323a6db552-23"
+   ],
+   "conflict": "Candidate 270ce6a22bde-19 paraphrases that a refunded deal remains in shop revenue, but its direct quote from agent.md ('the deal leaves the shop's revenue, its stars stay') and existing rule S3 ('Revenue = settled prices - refunds') confirm that refunds are removed from revenue.",
+   "history": "",
+   "existing": {
+    "id": "D2",
+    "relation": "refines"
+   },
+   "pid": "goods#2",
+   "area": "goods",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "The buyer purchases goods without requiring a warranty, market certificate, or grade. In the 11/3 22:58 - 11/4 09:00 KST overnight report, the observed goods failure rate was 0.5% (one mattress failed at 06:17, reducing buyer surplus by about KRW 90,000), and the decision was to maintain the no-warranty buyer policy for goods.",
+   "harness": "In the buyer's accept rules for goods orders, do not require warranty_hours, certificate, or specific grades; continue logging product failures and their surplus impact.",
+   "evidence": [
+    "839f2f1fd6bf-4",
+    "eb9189af1afa-13",
+    "eb9189af1afa-14",
+    "eb9189af1afa-15"
+   ],
+   "conflict": "",
+   "history": "2026-11-03 23:42 (9248aad): buyer set not to ask for certificate or grade on goods. 2026-11-04 09:00 overnight report: confirmed buyer buys goods without warranty and kept policy after observing 0.5% failure rate (1 mattress failure at 06:17, -90,000 KRW surplus).",
+   "existing": null,
+   "pid": "goods#3",
+   "area": "goods",
+   "sources": [
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "For shop goods restocking (as of 2026-11-04 17:08), target stock per SKU is 1.5 times the sum of units sold and units visitors asked for but found missing over the previous 2 hours.",
+   "harness": "Record unserved visitor demand alongside sales, and size goods restock quantities at 1.5x (2h sold + 2h missed demand) per SKU.",
+   "evidence": [
+    "19fb13795de6-7",
+    "3109604ad9f8-10",
+    "6c71f11c898a-4"
+   ],
+   "conflict": "Replaced earlier restock/shop rules: on 2026-11-03 20:56 (6637700, draft v5 not installed) the user drafted a goods-only strategy (food share 0, stock up to 50% of starting capital, 2 plans per supply window, 6h warranty on every goods sale, first visit at cost, only market-certified units); on 2026-11-04 10:39 (c8a9816) the shop stocked 2 units of the best-selling accepted SKU fitting the budget at 75% of list for each unserved goods order in the last 6 hours; on 2026-11-04 17:08 (d7c66a1) this was updated to 1.5x (sold + missing visitor demand in the last 2 hours).",
+   "history": "11/3 20:56 (6637700): draft v5 goods-only strategy. 11/4 10:39 (c8a9816): restock 2 units per unserved 6h goods order at <=75% list. 11/4 17:08 (d7c66a1): restock 1.5x (2h sold + 2h missed demand).",
+   "existing": null,
+   "pid": "goods#4",
+   "area": "goods",
+   "sources": [
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "The kit takes the next buyer order only after the current buyer run ends, so a buyer cannot wait inside an order for a shop to restock, nor can the buyer purchase from its own shop. When a shop is out of stock on a requested item, it cannot promise 5-minute fulfillment and can only point to future supply windows.",
+   "harness": "Do not make a buyer wait within an order for restocking or attempt to buy from our own shop; do not promise 5-minute restock delivery on out-of-stock goods.",
+   "evidence": [
+    "19fb13795de6-9",
+    "3109604ad9f8-11"
+   ],
+   "conflict": "Both 19fb13795de6-9 (11/3) and 3109604ad9f8-11 (11/4) assumed supply windows open every 20 minutes, whereas existing rule M3 observed ~10-minute windows and agent.md states 3 minutes.",
+   "history": "11/3 20:56 (6637700): user asked for a 5-minute goods-request offer, which was changed to promising the next supply window because supply windows are longer than 5 minutes.",
+   "existing": {
+    "id": "M7",
+    "relation": "refines"
+   },
+   "pid": "goods#5",
+   "area": "goods",
+   "sources": [
+    "git log"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "A shop must never claim a unit has a grade that it does not currently have.",
+   "harness": "Verify a unit's current grade before making any spoken grade claim.",
+   "evidence": [
+    "0e618b1ca536-13"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "S5",
+    "relation": "refines"
+   },
+   "pid": "goods#6",
+   "area": "goods",
+   "sources": [
+    "card/system_card.md"
+   ],
+   "flags": [
+    "confirmed without agent.md evidence"
+   ]
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "In the 11/3 22:58 - 11/4 09:00 KST overnight report, our buyer's goods purchases were 10% of its orders while top buyers had 38-70% goods trades, consistent with the market assigning each buyer a hidden preferred category.",
+   "harness": "Treat order category mix as market-assigned per buyer (food-heavy for our buyer per B4) while ensuring incoming goods orders are still handled.",
+   "evidence": [
+    "b6412ce6ced0-30"
+   ],
+   "conflict": "In the 11/4 সকাল report (b6412ce6ced0-30) it was not yet confirmed that the market sets each buyer's order category; this was later confirmed in B4.",
+   "history": "",
+   "existing": {
+    "id": "B4",
+    "relation": "refines"
+   },
+   "pid": "goods#7",
+   "area": "goods",
+   "sources": [
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  }
+ ],
+ "dropped": [
+  {
+   "cid": "ecbe121caad7-11",
+   "reason": "Pure accounting/telemetry implementation detail for inferring restock events between inventory checks."
+  },
+  {
+   "cid": "ecbe121caad7-13",
+   "reason": "Pure accounting/telemetry implementation detail for categorizing seized inventory during bankruptcy."
+  }
+ ],
+ "area": "goods",
+ "candidates": 25,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}

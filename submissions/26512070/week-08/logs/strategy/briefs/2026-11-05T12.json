@@ -1,0 +1,123 @@
+{
+ "proposal_id": "2026-11-05T12",
+ "slice": "2026-11-05T12",
+ "ts": 1793847832.392411,
+ "version_from": 85,
+ "score": "Players rank 14 of 56. We are 0.026 behind dragonash22, and the rank has not moved in 6 h. Shop: profit rank 4 (107.5M, up from rank 8 six hours ago), revenue rank 3 (1.38B), stars rank 32 of 52 (4.52; the next shop has 4.53). Buyer: surplus rank 27 of 49 (43.2M, 2.6M behind dragonash), forum rank 20, deals rank 25 (1,792, 76 behind the next buyer), posts rank 6. Where ALL can still grow (weight x room left): buyer surplus 0.27, stars 0.12, forum votes 0.12, buyer deals 0.05. The shop's profit and revenue have little room left.",
+ "happened": [
+  {
+   "claim": "The shop is strong and growing. It settled 332 deals in this slice for 116.9M revenue and 21.2M profit before losses, and its best sellers match the market's: Pringles, the duvet, the Simmons mattress and water. Sell-through was 92.2%, no food expired, and storage cost was 94k.",
+   "evidence": [
+    "self summary 2026-11-05T12: settled 332/773, revenue 116.86M, profit-before-losses 21.2M, sell-through 92.2%, storage 94,385",
+    "market summary: our top sold G1831f2c0 166, Ge62449c9 160, Gb5d0dde7 117"
+   ]
+  },
+  {
+   "claim": "Our buyer loses deals after agreeing to them. Of 191 agreed deals only 117 were paid (77.5%), and almost every unpaid one was food with fewer use-within hours left than our own policy asks (11.15 h vs 18 h, 22.29 h vs 24 h, 328 h vs 540 h). In the last 30 min, 5 of 6 unpaid deals had this same cause. v85 dropped buyer.pre_agree_check, which fits the timing.",
+   "evidence": [
+    "eval.funnel(buyer): picked 563, agreed 191, paid 117",
+    "health 30 min: unpaid 6, of which 5 were 'N h of shelf life left'",
+    "v85 approval: 'buyer.pre_agree_check dropped'"
+   ]
+  },
+  {
+   "claim": "Our buyer's surplus gap is about goods. We earn 52k surplus per deal and 22% of our deals are goods; the top buyers earn 98-250k per deal with 70-73% goods. 90% of our orders are food (hidden favourite categories), so the lever is closing every goods order and every food order we agree to, not changing which orders we get.",
+   "evidence": [
+    "benchmark buyer_ours: surplus_per_deal 52,397, goods_share 0.22, paid_share_goods 0.66",
+    "buyer_top: inextro 165,649 per deal at 0.73 goods, psyoung82 250,048 per deal at 0.70 goods"
+   ]
+  },
+  {
+   "claim": "Some measurements are broken. The experiment reads 0 unit-economics deals and 0 losses, but the shop paid 187 warranty refunds. H2 cannot be judged until these readings are fixed. Judged by time windows instead, it holds: completion rate is 0.536 (target 0.5), there are thousands of deals, and stars are 4.52.",
+   "evidence": [
+    "eval.experiment: sample 1078, completion_rate 0.5362, unit_economics.seller.deals 0, losses.total 0",
+    "self summary: 187 broken units, 187 refunds"
+   ]
+  },
+  {
+   "claim": "Counterparts are stable. No new participants arrived. The five biggest buyers (YAHO1212, move_76, inextro, buyer-01, buyer-02) all grew without changing what they buy. buyer-02 buys only small food and is strict about freshness.",
+   "evidence": [
+    "market summary: all profiles changed=false; buyer-01 deals 313->427, YAHO1212 464->512"
+   ]
+  }
+ ],
+ "hypothesis": "H2: verdict 'neither yet' because the metrics are broken (unit_economics deals and losses.total both read 0). Judged by time windows it holds: completion rate 0.536 (target 0.5), losses come only from honoured warranty refunds, stars 4.52. Keep H2. Fixing the epoch tagging of the metrics is a separate engineering task.",
+ "counterparts": "No change in stance. Keep the regulars served: YAHO1212 and inextro buy mattresses and bedding, so stay deep in G1515d951, Ge62449c9, G07ec17d5 and Gb5d0dde7. buyer-02 buys only food and rates food that runs short 2 stars, so sell it only the freshest units. No black or lost labels are proposed.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "buyer": {
+     "pre_agree_check": true
+    },
+    "context": "Restored the pre-agree check: before agreeing to a food deal, the buyer checks that the unit's use-within hours left meet our policy. 5 of the last 6 unpaid deals failed this check after we had agreed."
+   },
+   "targets": "buyer deals (0.05 room) and surplus (0.27 room); also how other shops see us, since we stop agreeing and then not paying",
+   "expected": "The buyer's agreed-to-paid rate rises from 77% toward 95%. The cycles spent on deals we then refuse go to orders we can actually pay, which should add 10+ paid deals per 2 h. Fewer unpaid agreements also protect our name with other shops.",
+   "risk": "Fewer food deals get agreed at all. If the check is too strict, the deal count may fall for a window.",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {
+    "restock": {
+     "food_min_shelf_hours": 96
+    },
+    "context": "Food is now bought only with 96 h+ shelf life (was 72), so units sold to strict-freshness buyers such as buyer-02 do not run short. Freshest units go first."
+   },
+   "targets": "stars_rank (0.12 room; the next shop is only 0.01 above us)",
+   "expected": "Fewer 2-star food reviews. A few hundredths of a star would move us up several stars ranks.",
+   "risk": "Fewer food SKUs qualify, so there may be more no-stock visits for food (16 of 174 visits had no stock in 30 min).",
+   "reversible": true
+  },
+  {
+   "id": "C",
+   "change": {
+    "priorities": "Buyer goods of list 30,000+ open at 60% of list (was 55%), aim at 72%, ceiling 82%, to close more goods orders: we pay for 66% of goods deals, the top buyers 72-79%."
+   },
+   "targets": "buyer surplus (0.27 room)",
+   "expected": "More goods deals close. Each goods deal is worth about 100k+ surplus, against roughly 15k for food.",
+   "risk": "Less surplus per goods deal. Only 1 in 87 recent orders was goods, so the effect is small in volume.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "rejected",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "The strategy agent accurately assesses the shop's performance as strong and growing, with good profit, revenue, and sell-through, and its top sellers matching market trends.",
+    "why": "The self summary and market summary data provided (332 deals, 116.9M revenue, 21.2M profit, 92.2% sell-through, matching top SKUs) fully support this claim."
+   },
+   {
+    "claim": "The strategy agent correctly identifies that the buyer's low agreed-to-paid rate (77.5%) is primarily due to a lack of use-within-hours left for food items, and links this to the dropped `buyer.pre_agree_check` in v85.",
+    "why": "The evidence states 'Of 191 agreed deals only 117 were paid (77.5%)' and 'almost every unpaid one was food with fewer use-within hours left than our own policy asks'. The 'health 30 min' data specifically mentions '5 of 6 unpaid deals had this same cause', and the 'v85 approval' confirms 'buyer.pre_agree_check dropped'."
+   },
+   {
+    "claim": "The strategy agent's analysis of the buyer's surplus gap, attributing it to goods deals, is consistent with the provided benchmark data.",
+    "why": "The comparison between 'benchmark buyer_ours' and 'buyer_top' shows a significant difference in 'surplus_per_deal' and 'goods_share'. Our buyer has a lower surplus per deal and a much lower share of goods deals, while top buyers have higher values for both. This suggests that increasing goods deals (or successfully closing existing ones) is a key lever for surplus."
+   },
+   {
+    "claim": "The strategy agent correctly notes that the experiment metrics (unit_economics deals, losses.total) are broken, and thus the hypothesis cannot be judged purely by these metrics. Its alternative judgment based on completion rate and stars is reasonable given the circumstances.",
+    "why": "The `eval.experiment` output explicitly states 'unit_economics.seller.deals 0, losses.total 0'. The `self summary` also confirms 187 refunds, which should contribute to losses but aren't being captured by the tool. The use of completion rate (0.536 > 0.5 target) and stars (4.52) as alternative indicators is a logical workaround."
+   },
+   {
+    "claim": "Option A, restoring the `buyer.pre_agree_check`, is a direct and appropriate action to address the buyer's low payment rate and aligns with improving buyer deals and surplus, which have high room for growth.",
+    "why": "The primary issue identified for the buyer is agreeing to deals it cannot complete due to freshness. Restoring this check directly targets this problem, preventing wasted cycles and potential reputation damage with other shops. This directly impacts 'buyer deals' and 'surplus', which the score analysis shows have significant room for improvement (0.05 and 0.27 respectively)."
+   },
+   {
+    "claim": "Option B, increasing `food_min_shelf_hours` to 96h, is a reasonable measure to improve stars rank by ensuring fresher food, particularly for buyers like buyer-02 who are strict about freshness.",
+    "why": "The 'happened' section notes 'buyer-02 buys only food and rates food that runs short 2 stars'. Increasing the minimum shelf life directly addresses this, aiming to prevent negative reviews and improve 'stars_rank' (0.12 room for growth)."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793847838.4025135
+ },
+ "decision": {
+  "choice": "reject",
+  "note": "user 11/6 00:xx: pre_agree_check was removed by decision (v85), kimchi done in v84/v85; goods ceiling and food 96 h kept as experiment candidates after the move (design 20)",
+  "ts": 1793891382.7749112
+ }
+}

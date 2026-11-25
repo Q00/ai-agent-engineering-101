@@ -1,0 +1,83 @@
+{
+ "schema_version": 1,
+ "version": 9,
+ "epoch": "e9",
+ "approved": "DRAFT - returning buyers at or above list, warranty reserve (user 11/3 21:53), waiting for the user",
+ "phase": "reputation",
+ "priorities": [
+  "Reputation and first deals fast: be known as the shop that has the goods buyers need, in high quality, with a 100% warranty. A buyer's first visit is at our cost, warranty included. A buyer that dealt with us before (no first-visit offer) negotiates at or above the list price: open above it, explain the certificate and the warranty, and never go below the list price (the tools refuse it).",
+  "Keep the stock near 50% of the start and refill what sold: the board counts profit as balance minus the start with unsold stock at zero, so stock above that only lowers profit until it sells. Refill goods that sold or that buyers asked for (me.missed, wanted posts), 2 to 5 units per line for those; no new kinds while the stock is at the cap. Our shop stocks no food (this is about our shop's stock only; our buyer buys food orders as usual).",
+  "Answer buyers' goods requests on the forum: say what we will stock and that it comes at the next supply window; then stock it. Announce the warranty and the first-visit price as our shop and our buyer, not too often.",
+  "Be reliably honest: true grades, the market's certificate on every unit we sell, receipts that match, the warranty always. Other agents remember the deals they had with us.",
+  "Buyer: more deals. Every useful deal counts (0.1 of buyer ALL), and a deal at zero surplus does not lower surplus: take the shop's ask even when it equals the list price, if the item is useful for the order (food: shelf life left covers the order's use window; goods: certified). Walk away only when the ask is over budget or over the list price, or the item would be worthless. Accept policy (act.finish): certificate yes, grades A or B, warranty hours only for goods (food has none), food min hours left = the order's use window. Post useful buyer posts.",
+  "Reach the base condition early: 20 settled deals each for the shop and the buyer."
+ ],
+ "context": [
+  "Round 3 has just opened and we have no Round 3 records yet: what sells, who buys, and what other shops charge are unknown.",
+  "The market lists 5,629 SKUs (4,311 food, 1,318 goods) in 140 demand categories; we sell goods only.",
+  "Supply opens about every 20 minutes for 3; stock bought in a window has to last until the next one.",
+  "Goods break up to 6 hours after a sale at a rate the market does not publish; our 6 h warranty refunds the full price, so a break costs the price. Goods pay storage every day (inventory.json storage_per_day).",
+  "Who is on a first visit is a guess from the buyer's opening against customers the ledger confirmed; with no sign it dealt with us, it counts as a first visit."
+ ],
+ "shop_card": {
+  "description": "gom31 Certified Safe Goods: safe goods with a 100% warranty. Every unit ships with the market's certificate and its true grade; if it breaks within 6 hours, we refund the full price. Your first visit is at our cost, warranty included. Need a goods item with a warranty? Ask on the forum and we stock it at the next supply window (about every 20 minutes). Ask by SKU, category or name, then send a price; we answer with a counteroffer or a signed receipt.",
+  "examples": [
+   "I want to buy G0026722f",
+   "4000",
+   "ok"
+  ]
+ },
+ "limits": {
+  "cash_floor": 1500000,
+  "max_units_per_sku": 5,
+  "max_stock_share": 0.5,
+  "food_share_max": 0.0,
+  "below_cost": {
+   "allowed": false,
+   "max_loss_share_of_cost": 0.0
+  }
+ },
+ "experiment": {
+  "hypothesis": "H2: a goods-only shop with a 100% warranty, certified units, first visits at cost and fast answers to forum requests gets many different buyers and good stars fast, which later carry profit.",
+  "min_sample": {
+   "metric": "funnel.seller.closed",
+   "value": 30
+  },
+  "success_if": [
+   {
+    "metric": "funnel.seller.completion_rate",
+    "op": ">=",
+    "value": 0.5
+   },
+   {
+    "metric": "unit_economics.seller.deals",
+    "op": ">=",
+    "value": 20
+   }
+  ],
+  "rollback_if": [
+   {
+    "metric": "losses.total",
+    "op": ">",
+    "value": 500000
+   }
+  ],
+  "review_at": "first brief after 30 closed negotiations",
+  "note": "v9 (user 11/3 21:53): as v8, a returning buyer pays at least the list price (enforced by act.counter/act.accept); warranty reserve: restock keeps 50% of our sales still in warranty above the cash floor (at 21:5x: 24 sales, 1,879,390 open, no break on the ledger yet). v8 (user 11/3 21:5x): as v7, repeat buyers at list price (down at most 10%), first visit at cost kept; buyer takes zero-surplus useful deals, accepts grade B, asks no warranty on food; the shop's 'No food' line now says it is about our stock (the buyer read it as its own rule and walked from food orders). v7 (user 11/3 21:46): as v6, stock cap back to 50% of the start; refill what sold; first visit at cost kept (reputation phase, the profit loss accepted). Seen on the board 21:3x: shop ALL 0.569 -> 0.409 with profit -1.56M (balance - start; stock counts 0), stars 4.94, revenue 1.48M. v6 (user 11/3 21:14): as v5, stock cap 50% -> 70% of the start (cash floor 1,500,000 unchanged), 3-5 units per line for goods that sell or were asked for; seen in the first window: 22 lines in 6 min, 1.25M spent, and many 'none in stock' answers. v5 (user 11/3): goods only, stock up to 50% of the start, warranty 6 h on every goods sale (refunds count in losses.total), first visit at cost, certified units only. v4 Welcome Food was a draft, never installed."
+ },
+ "delegation": {},
+ "warranty": {
+  "hours": 6,
+  "kinds": [
+   "goods"
+  ],
+  "reserve_share": 0.5
+ },
+ "first_visit": {
+  "price": "at_cost"
+ },
+ "certified_only": true,
+ "repeat_buyer": {
+  "min_price": "list"
+ }
+}

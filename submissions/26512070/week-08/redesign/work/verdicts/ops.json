@@ -1,0 +1,140 @@
+{
+ "verdicts": [
+  {
+   "pid": "ops#1",
+   "verdict": "overmerged",
+   "reason": "Service lifecycle, restart requirements, and documentation changes are independent rules; task registration is setup rather than a trading invariant.",
+   "status": "user",
+   "rules": [
+    "Keep the market kit and outer runtime running as separate, independently restartable runtimes. The kit runs in the background with its output logged.",
+    "To intentionally stop trading, stop the whole kit: its watchdog otherwise restarts the seller, and stopping the kit stops the seller and tunnel.",
+    "Restart the seller and outer processes after changes to code or schemas they retain in memory. In particular, restart the seller after strategy-schema changes to avoid validation with the old schema and fallback to an older valid strategy. Buyer, restock, forum, and slice processes start fresh on each run.",
+    "Analysis and documentation changes do not require stopping trading; changes confined to the outer runtime require only the relevant outer restart."
+   ]
+  },
+  {
+   "pid": "ops#2",
+   "verdict": "overmerged",
+   "reason": "Concurrency, log ownership, atomic state writes, heartbeats, and protection from destructive git operations are separate requirements.",
+   "status": "user",
+   "rules": [
+    "Support concurrent seller, per-order buyer, one-minute restock, review, forum, analyst, and audit processes.",
+    "Give each raw event file a single writer; append events without editing existing events.",
+    "Update shared state JSON files by atomic replacement.",
+    "The seller writes bus/status/inner.json every minute.",
+    "While the kit is active, do not run git stash or working-tree resets that can overwrite live logs."
+   ]
+  },
+  {
+   "pid": "ops#3",
+   "verdict": "overmerged",
+   "reason": "Tool validation, call logging, numerical grounding, and resilient collection are independent rules. Some cited logging quotes also failed verification.",
+   "status": "user",
+   "rules": [
+    "Execution tools validate actions themselves and return a refusal reason and actionable hint when rejecting an action; callers must read the refusal.",
+    "Log tool-call arguments before execution and results and elapsed time afterward.",
+    "Obtain numbers from tools and recorded data, not memory or guesses.",
+    "Collectors tolerate absent API fields, record unavailable values as unknown, and use local records where available rather than inventing missing values.",
+    "Isolate collection failures from other outer jobs; defer transient ledger HTTP 502 failures to the next collection cycle."
+   ]
+  },
+  {
+   "pid": "ops#4",
+   "verdict": "stale",
+   "reason": "The two-hour slice schedule was replaced by the user's 30-minute pace; the current installation hold is 25 minutes, not two hours.",
+   "status": "user",
+   "rules": [
+    "Run outer status checks every 30 seconds, collection every three minutes, and forum turns every 30 minutes in a separate process. Isolate job failures and raise alerts without cancelling unrelated jobs.",
+    "Collect ledger rows after the cursor in batches of up to 500; defer HTTP 502 failures to the next cycle.",
+    "Run strategy slices every 30 minutes. Do not automatically install a strategy while the active strategy is younger than 25 minutes; this hold applies to night-mode and delegated installations.",
+    "Have market and self analysts summarize records, a strategy agent propose priorities and hypotheses, and a cross-vendor auditor check the proposal. Start the audit from the code directory rather than the records directory."
+   ]
+  },
+  {
+   "pid": "ops#5",
+   "verdict": "overmerged",
+   "reason": "Briefing content, approval authority, decision recording, and evidence retention are separate rules. The two-hour cadence is obsolete.",
+   "status": "user",
+   "rules": [
+    "Produce strategy briefings on the current 30-minute slice cadence and retain committed briefings and analysis logs as process evidence.",
+    "Briefings show component percentiles, changes and distance to the next rank; a three-line evidence-backed event summary; hypothesis status; and counterparty and stance changes. When a decision is needed, add two or three options with effects, risks, reversibility, a recommendation, and the audit opinion.",
+    "Facts require no approval. Adjustments may be installed only within the pre-set delegation scope and must be reported afterward; the live scope is stock and playbook. Directional changes require user confirmation. No reply preserves the current plan.",
+    "Record a user decision in logs/strategy/decisions.jsonl, create a new active.json version, and start a new branch.",
+    "Feed briefings only user_notes sections from the last six hours, rather than presenting old user notes as current instructions."
+   ]
+  },
+  {
+   "pid": "ops#6",
+   "verdict": "overmerged",
+   "reason": "Night reporting, installation authority, and morning consolidation are separate rules. Evidence does not establish 01:00 as the current configured start, and the live installation hold must still apply.",
+   "status": "user",
+   "rules": [
+    "During configured night hours, accumulate status-only briefings without decision options. The original configurable window was 01:00–08:00; the documented 11/4 run used 00:00–07:59.",
+    "Night-mode automatic installations require audit agreement and passing unsafe() safety checks, and must respect the current 25-minute minimum age of the active strategy.",
+    "Consolidate overnight changes and pending decisions into one morning report after 08:00."
+   ]
+  },
+  {
+   "pid": "ops#7",
+   "verdict": "fix",
+   "reason": "The cash floor is now 500,000, not 1,500,000. Other listed monitoring thresholds are supported as initial thresholds.",
+   "status": "user",
+   "rules": [
+    "On every outer pass, outer/watch.py measures health and writes warn/urgent alerts to logs/strategy/URGENT.md, requesting user decisions where needed while keeping tool limits enforced. Alert on inner status older than 10 minutes; cash approaching the active 500,000 floor; seller or buyer median response time over 10 seconds or timeout rate over 30%; over 1.5 model calls per decision or over 20% tool rejections; no purchases in two consecutive supply windows; no shop payments in 30 minutes or stockouts over 60%; no buyer payments in 30 minutes or the same payment rejection reason three times; rising spoilage; over 10 exceptions of one type in 30 minutes; or harness job failures."
+   ]
+  },
+  {
+   "pid": "ops#8",
+   "verdict": "overmerged",
+   "reason": "Global concurrency arbitration and per-call fallback are distinct policies. The six-second evidence concerns the Claude seat cap, not a demonstrated six-second bound on all model execution.",
+   "status": "user",
+   "rules": [
+    "Allow at most three concurrent Claude Code calls across processes using OS slot-file locks. Allocate waiting slots by seller, buyer, restock, review, forum, analysts, then audit priority, with oldest ticket first within a priority.",
+    "For trading model calls, try Claude first with a six-second Claude seat-wait cap. Fall back to OpenRouter for that L1 call when the seat is unavailable or the call times out; a timeout must not open the circuit breaker."
+   ]
+  },
+  {
+   "pid": "ops#9",
+   "verdict": "drop",
+   "reason": "This is a dated latency incident, not a standing rule. The supported fallback policy belongs in ops#8; the incident does not establish a six-second total execution cap.",
+   "status": "observed",
+   "rules": []
+  },
+  {
+   "pid": "ops#10",
+   "verdict": "ok",
+   "reason": "The restock cutoff and inventory sell-down are current user policy; the live board confirms unsold inventory contributes no terminal value.",
+   "status": "user",
+   "rules": []
+  },
+  {
+   "pid": "ops#11",
+   "verdict": "overmerged",
+   "reason": "Secret protection, credential storage, and join initialization are separate concerns. The proposal also broadens API-key storage beyond the environment-only instruction; join initialization is setup.",
+   "status": "user",
+   "rules": [
+    "Never commit or track secrets, including claim codes, API keys, and *.pem files.",
+    "Keep OpenRouter API keys in environment variables, never repository files; configure a credit limit and do not log the key.",
+    "Obtain the kit claim code only from an environment variable or a file outside the repository."
+   ]
+  },
+  {
+   "pid": "ops#12",
+   "verdict": "overmerged",
+   "reason": "Submission timing, evidence, deliverables, and report content are independent requirements. Most are supported by HARNESS.md rather than agent.md or a board check, so confirmed is unjustified. The live score has seven components, not six.",
+   "status": "user",
+   "rules": [
+    "Open the week-08 submission PR from a fork of gom31/ai-agent-engineering-101-upstream by 2026-11-17 23:59 with title [week-08] 26512070. Do not squash commits.",
+    "Preserve and submit the deployed kit's logs/market-kit.log, beginning with market_kit 4 and retaining Round 3 registration, supply, settlement, payment, and forum evidence. Commit logs without secrets.",
+    "Before submission, verify at least 20 shop settlements and 20 buyer settlements, and verify that over-limit checkouts remain incomplete.",
+    "Submit the modified code, REPORT.md, and a one-page architecture figure as architecture.tex and PDF.",
+    "REPORT.md must explain component design and rationale, architecture differences from the kit default, the two runtimes and outer loop, profiles and stances, experiments, approval gates, model and tool management, context organization, and deterministic execution tools.",
+    "Report submission-time shop and buyer settlement counts, Players ranking, all seven current score-component percentiles, payment and settlement rejection distributions, and hypothesis verdicts, citing logs and briefings. The components are shop profit, revenue, and stars, plus buyer surplus, forum votes, deal count, and post count."
+   ]
+  }
+ ],
+ "area": "ops",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

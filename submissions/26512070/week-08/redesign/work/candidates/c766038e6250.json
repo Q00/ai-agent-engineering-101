@@ -1,0 +1,293 @@
+{
+ "chunk": "c766038e6250",
+ "loc": "git log 4d8f8a5 .. b3919b3",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "The user wants the full design finished before any shop changes are made.",
+   "quote": "user: finish the whole design before changing the shop",
+   "harness": "Keep shop settings unchanged until the full design is complete.",
+   "cid": "c766038e6250-0",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "The initial lowest-price phase was live for a few minutes and produced zero trades before being reverted.",
+   "quote": "phase-1 lowest prices were live a few minutes and reverted (0 trades)",
+   "harness": "Record the zero-trade outcome and avoid treating the brief phase as a successful experiment.",
+   "cid": "c766038e6250-1",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "The design includes a three-day period at the lowest prices.",
+   "quote": "3 days at the lowest price",
+   "harness": "Support a three-day lowest-price phase when the active strategy calls for it.",
+   "cid": "c766038e6250-2",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "The design includes a ledger for each customer.",
+   "quote": "per-customer ledger",
+   "harness": "Maintain customer-level records for the seller.",
+   "cid": "c766038e6250-3",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "Five customer types were proposed by the agent and reviewed by the user; the log does not specify their names or confirm further details.",
+   "quote": "five customer types proposed by the agent and reviewed by the user",
+   "harness": "Preserve the reviewed customer-type design without inventing type names or attributes.",
+   "cid": "c766038e6250-4",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "The design drops fixed opening values for every counterpart and forbids advertisements in reviews or first messages.",
+   "quote": "drop fixed opening values for every counterpart, no ads in reviews or first message",
+   "harness": "Do not apply universal fixed opening values or place ads in reviews or first messages.",
+   "cid": "c766038e6250-5",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "Relationship treatment is guidance in the prompt; the model chooses the amount while code enforces the limits.",
+   "quote": "the model decides the amount, code keeps the limits",
+   "harness": "Give the model relationship-specific direction, but enforce treatment limits in code.",
+   "cid": "c766038e6250-6",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "goal",
+   "kind": "definition",
+   "rule": "The user's core thesis is to prioritize exposure, spread honest information, and then adjust prices.",
+   "quote": "exposure first, spread honest information, then adjust prices",
+   "harness": "Order strategy priorities as exposure, honest information-sharing, then price adjustment.",
+   "cid": "c766038e6250-7",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "definition",
+   "rule": "The market is described as an open market of opaque agents.",
+   "quote": "open market of opaque agents",
+   "harness": "Assume counterpart strategies are not directly observable.",
+   "cid": "c766038e6250-8",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The Round 3 design distinguishes the rubric from the kit baseline and retains directions from Week 7.",
+   "quote": "rubric vs the kit baseline, Round 3 facts, directions kept from week-07",
+   "harness": "Keep rubric criteria, kit baseline facts, and retained Week 7 directions distinct in the harness.",
+   "cid": "c766038e6250-9",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The architecture has a slow strategy agent (L3) briefing the user, market and self analysts (L2) working from epoch or slice summaries, and executors (L1) reading only the active playbook.",
+   "quote": "strategy agent (L3) briefs the user, market and self analysts (L2) on epoch/slice summaries, executors (L1) read only the active playbook",
+   "harness": "Enforce the stated role boundaries and give L1 executors only the active playbook.",
+   "cid": "c766038e6250-10",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "user_decision",
+   "rule": "Slow strategy is user-confirmed, fast facts are determined by code without approval, and briefings and slices occur every two hours.",
+   "quote": "slow strategy (user-confirmed) and fast facts (code, no approval) for L1; briefing and slices every 2 hours",
+   "harness": "Require user confirmation for slow strategy changes, calculate fast facts in code without approval, and schedule two-hour briefings and slices.",
+   "cid": "c766038e6250-11",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Restocking is an L1 agent like seller and buyer, activated by model-selected triggers; experiment fields are tracked per strategy version.",
+   "quote": "restock is an L1 agent like seller and buyer (model on triggers), experiment fields per strategy version",
+   "harness": "Run restocking as an L1 role with trigger-based decisions and associate experiment fields with each strategy version.",
+   "cid": "c766038e6250-12",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "user_decision",
+   "rule": "The approval process has three steps and permits delegation.",
+   "quote": "three-step approval with delegation",
+   "harness": "Implement a three-step approval process that supports delegated approval.",
+   "cid": "c766038e6250-13",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The memory MCP server is introduced after entry.",
+   "quote": "memory MCP server after entry",
+   "harness": "Make the memory MCP server available after entry.",
+   "cid": "c766038e6250-14",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The harness uses a model-neutral system card organized in layers, with a version and intent marked for each reader.",
+   "quote": "one model-neutral system card in layers with a version, intent marked per reader",
+   "harness": "Maintain a versioned, model-neutral layered system card and mark its intent for each reader.",
+   "cid": "c766038e6250-15",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Tools are exposed as JSON Schema over MCP.",
+   "quote": "tools as JSON Schema over MCP",
+   "harness": "Expose tools through MCP using JSON Schema.",
+   "cid": "c766038e6250-16",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "user_decision",
+   "rule": "The audit agent is assigned to a model from another vendor.",
+   "quote": "audit agent on another vendor's model (D29)",
+   "harness": "Run the audit agent on a different vendor's model.",
+   "cid": "c766038e6250-17",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The design supplies role objectives, trade-offs, rule consequences, and hypothesis candidates as tactical material rather than hard-coded tactics.",
+   "quote": "materials for tactics instead of rules",
+   "harness": "Provide objectives, trade-offs, consequences, and hypotheses as guidance while leaving tactical choices to agents.",
+   "cid": "c766038e6250-18",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "market_rule",
+   "rule": "A market analyst creates a strategy profile for each counterpart, while the strategy agent maintains stances; avoiding a counterpart requires the user's decision.",
+   "quote": "per-participant profiles of each counterpart's strategy (market analyst) and per-counterpart stances (strategy, delegated; avoid needs the user)",
+   "harness": "Maintain counterpart profiles and delegated stances, but require user direction before avoiding a counterpart.",
+   "cid": "c766038e6250-19",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "market_rule",
+   "rule": "Buyer identity must be inferred from fingerprints and confirmed after the fact, never by asking; shop-wide strategy is the default, and counterpart-specific stances apply only to confirmed or well-guessed buyers.",
+   "quote": "identify the buyer by inference (fingerprints) and post-hoc confirmation, never by asking",
+   "harness": "Infer buyer identity from fingerprints, seek post-hoc confirmation without asking, and apply counterpart-specific stances only when identity is sufficiently established.",
+   "cid": "c766038e6250-20",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Deterministic metrics are evaluation tools; L1 reads only information needed for its next decision, while outside agents provide judgment-based evaluation.",
+   "quote": "L1 only reads what its next decision needs, judgment-based evaluation by outside agents",
+   "harness": "Limit L1 context to next-decision needs and use outside agents for judgment-based evaluation alongside deterministic metrics.",
+   "cid": "c766038e6250-21",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "definition",
+   "rule": "Stars given by the shop are strategic judgments based on a factual baseline.",
+   "quote": "stars we give are a strategic judgment from a fact baseline",
+   "harness": "Separate factual star baselines from the shop's strategic star decisions.",
+   "cid": "c766038e6250-22",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The pre-mortem calls for prefetch and tool-loop testing, stepping down under rate limits, and delegating the first briefing.",
+   "quote": "prefetch and tool-loop test, rate-limit step-down, per-writer files, first-brief delegation",
+   "harness": "Test prefetch and tool loops, reduce activity when rate-limited, and delegate the first briefing.",
+   "cid": "c766038e6250-23",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "user_decision",
+   "rule": "The pre-mortem lists proposed risk limits, but the log does not state their values.",
+   "quote": "proposed risk limits D31",
+   "harness": "Do not invent risk-limit values; obtain or load the actual limits before enforcing them.",
+   "cid": "c766038e6250-24",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "user_decision",
+   "rule": "The user accepted pre-mortem risk 1.",
+   "quote": "risk 1 accepted by the user",
+   "harness": "Preserve the accepted status of risk 1; the log does not provide its description.",
+   "cid": "c766038e6250-25",
+   "source": "git log",
+   "loc": "git log 4d8f8a5 .. b3919b3",
+   "quote_ok": true
+  }
+ ]
+}

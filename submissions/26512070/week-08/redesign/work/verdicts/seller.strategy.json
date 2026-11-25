@@ -1,0 +1,146 @@
+{
+ "verdicts": [
+  {
+   "pid": "seller.strategy#1",
+   "verdict": "overmerged",
+   "reason": "Combines current trading priorities, score accounting, relationship hypotheses, and phase-change authority. Historical exposure hypotheses are not current mandates.",
+   "status": "user",
+   "rules": [
+    "Prioritize many settled seller deals at a profit and turn stock into cash; judge changes by settled deals and profit per deal. Below-cost selling is currently prohibited.",
+    "Optimize seller performance across profit, revenue, and stars percentiles; high absolute stars alone do not ensure a high stars percentile.",
+    "Stock purchases reduce board net profit until the stock sells: board net profit is balance minus starting capital, with unsold stock excluded.",
+    "The strategy agent proposes transitions from exposure to profit using records; the user decides phase transitions."
+   ]
+  },
+  {
+   "pid": "seller.strategy#2",
+   "verdict": "fix",
+   "reason": "The stop is supported, but the 39.0M snapshot is not supported by the cited candidates and is not a limit. The live sell-down plan also restricts refills from 11/16.",
+   "status": "user",
+   "rules": [
+    "For Round 3, from 2026-11-16 refill only items that sold; stop all restock purchases at 2026-11-17 12:00 and sell down inventory before the 23:59 close. Night and delegated installs must preserve the stop. Unsold inventory at round end remains a loss in board net profit."
+   ]
+  },
+  {
+   "pid": "seller.strategy#3",
+   "verdict": "stale",
+   "reason": "The spending question received a user-approved answer on 11/4 19:47, now present in v68. The old cash snapshots are not an unresolved policy.",
+   "status": "user",
+   "rules": [
+    "Size restock plans using expected unit cost of 65% of list and a 6% warranty reserve, retaining the 500,000-won cash floor. Worst-case cost of 75% of list must still preserve the plain cash floor; trim unaffordable quantities rather than reject the whole plan. A second same-window plan was an option, not an approved requirement."
+   ]
+  },
+  {
+   "pid": "seller.strategy#4",
+   "verdict": "overmerged",
+   "reason": "Seller exception routing and restock anomaly routing are independent execution rules.",
+   "status": "user",
+   "rules": [
+    "Run routine seller negotiations deterministically in rules mode. Escalate exceptions to the agent: unparseable price or item, instruction-like messages, no exact stock match when a similar item exists, a buyer question with words but no number, or a rejected rule-based tool call.",
+    "In seller shadow mode, log the rule-based move alongside the agent's move without treating the shadow move as execution.",
+    "Run routine restocking from a precomputed deterministic buy list without model calls. If the list cannot buy anything, record an exec.anomaly event and invoke the agent."
+   ]
+  },
+  {
+   "pid": "seller.strategy#5",
+   "verdict": "overmerged",
+   "reason": "The live pricing schedule is supported, but review-linked discount restrictions and action validation are separate rules.",
+   "status": "user",
+   "rules": [
+    "For every SKU, use a 72%-of-list opening ask and concede one percentage point of list per turn, subject to a floor of max(70% of list, 1.12 times unit cost). Accept offers at or above the current ask; from turn 2 accept offers at or above the floor. For units held more than 8 hours, the clearance floor is 1.12 times cost. Never sell below cost.",
+    "Do not grant below-floor discounts in exchange for promised favorable reviews.",
+    "Validate seller counter and accept prices against the active price limits before sending them; reject actions that violate those limits."
+   ]
+  },
+  {
+   "pid": "seller.strategy#6",
+   "verdict": "overmerged",
+   "reason": "Entry identity, dynamic card serving, truthful sale claims, and warranty coverage are independent obligations.",
+   "status": "user",
+   "rules": [
+    "The Round 3 entry name is gom31-certified-goods and stays fixed after entry. The live shop-card description identifies the shop as gom31 Certified Safe Goods, stocking goods and long-life food; the old goods-only positioning is superseded.",
+    "Serve the active strategy's shop_card on every card request without requiring a restart. Position the shop as premium and fully guaranteed, not expensive.",
+    "Sell only certified units, include the market certificate with every unit, state only the unit's actual current grade, and make receipts match the agreed price.",
+    "Every goods sale carries a 12-hour full-refund warranty if the unit breaks within the warranty window. This goods warranty does not imply a food warranty."
+   ]
+  },
+  {
+   "pid": "seller.strategy#7",
+   "verdict": "fix",
+   "reason": "The rule text has the correct threshold, but the harness text puts the 1.05 multiplier on the wrong side. v68 enabled food_fit on 11/5 01:42.",
+   "status": "user",
+   "rules": [
+    "Seller food_fit is enabled in live strategy v68. When a food buyer states required hours H, select the first-to-expire unit among those with remaining shelf life at least 1.05 times H. If none qualifies, state the true remaining hours and sell nothing."
+   ]
+  },
+  {
+   "pid": "seller.strategy#8",
+   "verdict": "stale",
+   "reason": "The planning principles remain supported, but v68 replaces the historical two-window and market-unit settings. The proposal also omits forum wanted posts.",
+   "status": "user",
+   "rules": [
+    "Prepare the deterministic restock list once per supply window, when open or opening within 75 seconds; buy shortages within the active financial and inventory limits.",
+    "Use recent missed requests and own sales over six hours, market best sellers, benchmark shops' best sellers we lack, and forum wanted posts as restock demand evidence. demand.json lists possible order categories, not what is currently selling.",
+    "Deduplicate the buy list to one line per SKU, retaining the larger target and value. Do not reduce a market bestseller to a one-unit target solely because our shop recorded one sale.",
+    "Rank restock lines by demand first and expected sales value as the tie-breaker. Fit quantities in list order within cash and stock limits rather than discard an earlier affordable line because a later line does not fit.",
+    "The live v68 restock playbook uses cover_windows 2.5, market_top 24, market_units 6, own_sales true, own_cover 1.5, and probe_units 2.",
+    "The live food restock settings are food_top 8, food_units 3, food_min_shelf_hours 72, and food_cap 10, with food limited to 35% of total stock."
+   ]
+  },
+  {
+   "pid": "seller.strategy#9",
+   "verdict": "stale",
+   "reason": "Live v68 caps stock at 70% of equity, not 160%, and gives the top four goods lines the deeper allowance, not three. Bankruptcy is a separate rule.",
+   "status": "user",
+   "rules": [
+    "Keep a cash floor of 500,000 won and cap stock at cost at 70% of equity, defined as balance plus stock at cost.",
+    "The live warranty reserve share is 6%; active strategy context specifies 6% of six-hour sales for reserve planning. Do not silently substitute all sales within the 12-hour warranty window for that stated planning base.",
+    "Under the live restock playbook, the top four goods SKUs by expected sales value may hold up to 20 units and use up to 50% of window money per line. Other lines use a 12-unit cap and 20% line share. Do not treat the historical night-mode 60% line share as the current default.",
+    "Use expected unit cost of 65% of list for restock sizing. At worst-case cost of 75% of list, check.buy and act.allocate must preserve the plain 500,000-won cash floor by trimming quantities rather than rejecting the whole plan.",
+    "Automatically file bankruptcy only when below the bankruptcy line, filings remain, and there is nothing to sell; send an urgent alert. Do not file while inventory remains."
+   ]
+  },
+  {
+   "pid": "seller.strategy#10",
+   "verdict": "overmerged",
+   "reason": "Combines identity constraints, inference evaluation, communication policy, and stance authority. It also incorrectly excludes sufficiently confident inferred counterparts from stance overlays.",
+   "status": "user",
+   "rules": [
+    "Seller A2A bargaining messages do not directly identify the buyer; the order number arrives at payment completion. Never ask the bargaining counterpart for its name.",
+    "Record calc.guess_counterpart on the first negotiation message without a model call. After settlement, match payment order numbers to confirm the buyer, update opening-template fingerprints, and measure guess accuracy by confidence band.",
+    "Use the active default strategy for counterparts without a usable counterpart-specific strategy. Overlay an approved stance only for a confirmed or sufficiently confidently inferred counterpart, considering recorded inference accuracy; never refuse or avoid solely on a guess.",
+    "Customer labels are optional evidence-backed perspectives, not compulsory classifications. The user sets stance criteria and approves treatment changes, avoidance, refusal, blocking, and lifting those actions; the strategy agent assigns stances within that policy.",
+    "Do not advertise in reviews or first negotiation messages."
+   ]
+  },
+  {
+   "pid": "seller.strategy#11",
+   "verdict": "overmerged",
+   "reason": "Combines benchmarking, draft diagnostics, proposal requirements, and installation authority. v5 diagnostics are explicitly draft, the exact proposal-schema quote failed verification, and the current 25-minute install hold is missing.",
+   "status": "user",
+   "rules": [
+    "Every 25 minutes, benchmark our shop against the top three shops by board profit: deals per hour, paid share of list, goods revenue share, stock bought, their best sellers we lack, and our unsold SKUs. Retain results in benchmark records and include them in the strategy brief.",
+    "Use sold-price distributions, opening-ask departure rates, and stockout SKUs to inform strategy adjustments.",
+    "SKU-level profit, disposal/storage/refund losses, turnover, missed-request amounts, and supporting row counts are proposed v5 diagnostics, not established live capabilities.",
+    "Install strategy changes as a new version and record the decision. Automatic installs are permitted only within delegated scope and must be reported afterward; live delegation covers stock and playbook. Preserve the round-end stop and food-share guardrails, and do not reinstate the obsolete 80%-of-list floor as current policy.",
+    "The live automatic-install hold is 25 minutes, not two hours. Keep the 30-minute strategy-slice pace; a recent user install can hold the next automatic install."
+   ]
+  },
+  {
+   "pid": "seller.strategy#12",
+   "verdict": "overmerged",
+   "reason": "Combines observations from different windows, rounds 75–84% into 75–85%, and implies causation not established by the records.",
+   "status": "observed",
+   "rules": [
+    "Historical 11/4 benchmark: top-profit shops earned 95–99% of revenue from goods; one bought 40.4M of stock and settled 524 deals at median 79% of list over 5.4 hours. These are dated observations, not guaranteed current targets.",
+    "The 11/4 03:13 benchmark reported top shops at 45–90 deals per hour and 75–84% of list. A separate later observation reported dae-yangkim selling mattresses and furniture at 85% of list with a two-hour warranty.",
+    "Dated 11/4 alerts reported 41–50% no-stock visits during the cited 13:40–13:55 and 17:20 windows. Preserve each alert's window and SKU counts rather than combine them into a current demand ranking.",
+    "After stocking changes, reported no-stock visits fell from 41 to 4 between 05:05 and 05:35; reported profit later moved from -2.11M at 06:35 to +1.90M at 08:02. The sequence does not isolate cap increases or bestseller stocking as the sole cause."
+   ]
+  }
+ ],
+ "area": "seller.strategy",
+ "missing": [],
+ "unknown": [],
+ "model": "openai/gpt-6.1-sol"
+}

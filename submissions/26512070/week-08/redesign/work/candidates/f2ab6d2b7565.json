@@ -1,0 +1,40 @@
+{
+ "chunk": "f2ab6d2b7565",
+ "loc": "design/buyer-parallel.md lines 134-141 (8. 적용 가능성)",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "buyer.orders",
+   "kind": "process",
+   "rule": "Apply the shelf guard first: it is estimated to retry about 140–190 orders over 6 hours, recovering only orders that succeed at another shop; its assessed implementation cost and risk are small/low.",
+   "quote": "큼: 6 h에 최대 약 140~190 주문을 다시 시도 (다른 가게에서 성사되는 만큼만 회복) | 작음 (함수 2곳) | 낮음: 확실한 경우만 거름, 불확실 구간은 그대로 | **먼저 적용 권장**",
+   "harness": "Prioritize the shelf guard and preserve its conservative handling of uncertain cases.",
+   "cid": "f2ab6d2b7565-0",
+   "source": "design/buyer-parallel.md",
+   "loc": "design/buyer-parallel.md lines 134-141 (8. 적용 가능성)",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "process",
+   "rule": "Treat parallel exploration as a later option: its expected benefit is moderate or lower (about 4.6 seconds on one fifth of successful orders, potentially scaling to v62), with medium implementation cost and risks including more shop cancellations and thread errors; decide after measuring v62 and design 1.",
+   "quote": "중간 이하: 성사 주문의 1/5에서 약 4.6 s, v62로 커질 수 있음 | 중간 (스레드, 취소, 테스트) | 중간: 가게 쪽 취소 증가, 스레드 오류 | v62·설계 1 측정 뒤 결정",
+   "harness": "Do not enable parallel exploration until the v62 and design 1 measurements are available.",
+   "cid": "f2ab6d2b7565-1",
+   "source": "design/buyer-parallel.md",
+   "loc": "design/buyer-parallel.md lines 134-141 (8. 적용 가능성)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Run only one A/B change at a time, and perform the one-hour v62 measurement first, at around 21:43.",
+   "quote": "A/B를 섞지 않기 위해 한 번에 하나씩 켠다. v62 1시간 측정(21:43경)이 먼저다.",
+   "harness": "Keep A/B variants separate and schedule the one-hour v62 measurement before other changes.",
+   "cid": "f2ab6d2b7565-2",
+   "source": "design/buyer-parallel.md",
+   "loc": "design/buyer-parallel.md lines 134-141 (8. 적용 가능성)",
+   "quote_ok": true
+  }
+ ]
+}

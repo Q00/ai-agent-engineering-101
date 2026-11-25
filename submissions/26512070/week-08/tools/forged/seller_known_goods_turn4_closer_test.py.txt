@@ -1,0 +1,16 @@
+def test():
+    base = {"kind": "goods", "list_price": 50000, "cost": 35000, "floor": 40000, "ask": 47887, "turn": 4, "max_turns": 12, "known": True, "name": "kim"}
+    v = dict(base, offer=45000)
+    assert decide(v) == {"action": "accept"}
+    v = dict(base, offer=38000)
+    r = decide(v)
+    assert r["action"] == "counter" and r["price"] == 41954 and r["price"] >= v["floor"]
+    v = dict(base, offer=30000)
+    r = decide(v)
+    assert r == {"action": "counter", "price": 40000}
+    v = dict(base, offer=38000, known=False)
+    assert decide(v) is None
+    v = dict(base, offer=47000)
+    assert decide(v) is None
+    v = dict(base, offer=None)
+    assert decide(v) is None

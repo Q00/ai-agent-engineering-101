@@ -1,0 +1,11 @@
+def test():
+    b = {"kind": "goods", "list_price": 25000, "cost": 15000, "floor": 18000, "ask": 22000, "turn": 3, "max_turns": 12, "known": True, "name": "a"}
+    assert decide(dict(b, offer=19000)) == {"action": "accept"}
+    assert decide(dict(b, offer=15000)) == {"action": "counter", "price": 18500}
+    assert decide(dict(b, offer=10000)) == {"action": "counter", "price": 18000}
+    assert decide(dict(b, offer=15000, turn=2)) is None
+    assert decide(dict(b, offer=15000, kind="food")) is None
+    m = {"kind": "goods", "list_price": 1200000, "cost": 800000, "floor": 900000, "ask": 1000000, "turn": 4, "max_turns": 12, "known": True, "name": "b"}
+    assert decide(dict(m, offer=950000)) == {"action": "accept"}
+    assert decide(dict(m, offer=800000)) == {"action": "counter", "price": 900000}
+    assert decide(dict(m, offer=800000, known=False)) is None

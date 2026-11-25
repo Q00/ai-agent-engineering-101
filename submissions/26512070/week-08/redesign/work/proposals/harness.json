@@ -1,0 +1,652 @@
+{
+ "rules": [
+  {
+   "kind": "market_rule",
+   "status": "confirmed",
+   "rule": "Round 3 requires market kit version 4 (first log line `market_kit 4`). Market JSON files are replaced whole, never half-written. The kit files bankruptcy automatically when the shop is below 500,000 credits with nothing left to sell; the restock hook can request early filing by printing `\"bankrupt\": true`.",
+   "harness": "Verify `market_kit 4` on startup, read and write market JSON files atomically as whole-file snapshots, and never print `\"bankrupt\": true` unless early bankruptcy is explicitly chosen.",
+   "evidence": [
+    "270ce6a22bde-16",
+    "270ce6a22bde-27",
+    "eb6259c7432f-0"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "M7",
+    "relation": "refines"
+   },
+   "pid": "harness#1",
+   "area": "harness",
+   "sources": [
+    "agent.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Never print, log, or commit private keys (`*.pem`) or `OPENROUTER_API_KEY`. Keep `OPENROUTER_API_KEY` only in the environment/memory (with a credit cap and Windows user-environment fallback) and omit both keys and prompts from `calls.jsonl`. Hard market and honesty prohibitions are enforced in code: never exceed the order budget, pay an unagreed receipt, make a false grade claim, impersonate, hide instructions, put advertising in another shop's review, or write anything untrue.",
+   "harness": "Enforce hard pre-checks in validation and execution tools against budget overrun, unagreed receipts, false grade claims, impersonation, prompt injection, and review ads; sanitize all logs so `*.pem`, `OPENROUTER_API_KEY`, and raw prompts never reach disk or git.",
+   "evidence": [
+    "0ef848343fa5-0",
+    "ece2408ce643-21",
+    "88cdf8ccd767-7",
+    "16d9e8a34cd0-6",
+    "bdfb2e39cd10-10",
+    "0340713513af-2"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "M6",
+    "relation": "refines"
+   },
+   "pid": "harness#2",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "agent.md",
+    "card/system_card.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "On 11/5 the user decided to redesign the whole harness with code, write down the rule book first (30 rules covering goal, seller/buyer score, market buy, food, goods, and open questions) before the new harness decides, allow core changes, use OpenRouter only with stronger models (`google/gemini-4-argon` as designer, `openai/gpt-6.1-sol` as cross-vendor reviewer of core changes, `openai/gpt-6-luna` as bulk-reading worker), and isolate the redesign from the live week-08 harness (blocking week-08 imports, writing only under `redesign/work/`, and reading live harness files only as data).",
+   "harness": "Load the rule book before making design decisions, route redesign calls through OpenRouter (`gemini-4-argon`, `gpt-6.1-sol`, `gpt-6-luna`), and enforce the redesign guard so live week-08 code is never imported or overwritten.",
+   "evidence": [
+    "0340713513af-0",
+    "0340713513af-1",
+    "0340713513af-3",
+    "0340713513af-4",
+    "0340713513af-5",
+    "0340713513af-6"
+   ],
+   "conflict": "Earlier HARNESS v4 (11/3) used Claude Code (`haiku`, `sonnet`, `opus`) as primary models with cheap OpenRouter fallback on quota failures; on 11/5 (e8dbd70, 84eca75) the user switched the redesign to OpenRouter-only with stronger models.",
+   "history": "11/3: Claude Code primary + OpenRouter fallback -> 11/4: 6s Claude timeout to OpenRouter gpt-4o-mini -> 11/5: OpenRouter-only redesign with stronger models and rule-book-first workflow.",
+   "existing": null,
+   "pid": "harness#3",
+   "area": "harness",
+   "sources": [
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Execution roles (seller, buyer, restock) run deterministic playbook rules in code that call tools directly for routine cases, invoking an LLM agent only on exceptions that rules cannot handle (D34, 11/4). Every exception emits an `exec.anomaly` event (role, type, situation, action, result) aggregated into `anomalies.json` for analysis and strategy briefs; repeated exceptions prompt playbook parameter updates or user-approved rule code. Playbook parameters are schema-validated in `active.json`, versioned on change, and must keep adapting to data. Restock buys only from a predetermined candidate list.",
+   "harness": "Execute routine seller, buyer, and restock decisions via schema-validated playbook rules in `active.json`; call the model only on unhandled exceptions, log `exec.anomaly` events, aggregate them into `anomalies.json`, and stage new rule rollouts with shadow tests.",
+   "evidence": [
+    "9ccbdd6e4a37-0",
+    "9ccbdd6e4a37-1",
+    "ece2408ce643-43",
+    "b2f6029bd469-0",
+    "b2f6029bd469-1",
+    "e54bc7cc16e5-4",
+    "e54bc7cc16e5-5",
+    "e54bc7cc16e5-12",
+    "e54bc7cc16e5-13",
+    "e54bc7cc16e5-16",
+    "e54bc7cc16e5-18",
+    "a7f4ae86e56e-4",
+    "a7f4ae86e56e-6",
+    "0e618b1ca536-16",
+    "b6412ce6ced0-10",
+    "eb9189af1afa-2",
+    "c766038e6250-10",
+    "c766038e6250-12",
+    "c766038e6250-18",
+    "914b9d6b33cb-3",
+    "914b9d6b33cb-4"
+   ],
+   "conflict": "On 11/3 (9ccbdd6e4a37-0, b2f6029bd469-0), every customer message and buyer order called an LLM (`haiku`) with unforced tactical choices. On 11/4 (D34, e54bc7cc16e5-4, b6412ce6ced0-10), after high latency and 1.88 calls/decision, the user directed routine seller, buyer, and restock actions to run directly from playbook rules in code, calling the model only on exceptions.",
+   "history": "11/3 v4: LLM per message/order (haiku) -> 11/4 D34: rule-based playbook execution with LLM only for exceptions.",
+   "existing": null,
+   "pid": "harness#4",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "The harness is split into two independent OS processes that communicate only through atomic, single-writer, schema-validated files in `memory/bus/`: (1) the inner runtime runs kit v4 and L1 execution (seller, buyer, restock, review, forum) and continues with the last valid `active.json` and `live.json` if the outer runtime stops or a new file fails schema validation; (2) the outer runtime is read-only toward trading code and runs collection, live aggregation, profiles, L2 analysis, L3 strategy, audits, and user briefings. Both write 60 s heartbeats (`bus/status/inner.json`, `bus/status/outer.json`); outer status older than 10 min is treated as an outer outage, and schema version changes must automatically restart affected long-running processes.",
+   "harness": "Run inner and outer in separate processes talking only via atomic temp-file-and-rename writes in `memory/bus/`; validate schema version and write timestamp on every read, fall back to the last good copy with an alert on failure, and auto-restart inner/outer processes when schema definitions change.",
+   "evidence": [
+    "0d9d65d638d4-0",
+    "0d9d65d638d4-1",
+    "0d9d65d638d4-2",
+    "0d9d65d638d4-4",
+    "0d9d65d638d4-5",
+    "0d9d65d638d4-6",
+    "0d9d65d638d4-7",
+    "0d9d65d638d4-8",
+    "0d9d65d638d4-10",
+    "0d9d65d638d4-13",
+    "b2f6029bd469-33",
+    "34a180580b1c-23",
+    "eb9189af1afa-3",
+    "09d820310e90-18",
+    "09d820310e90-19",
+    "09d820310e90-20",
+    "06b10b2a463e-0",
+    "1dcdff1dfe1b-8",
+    "8f903d669414-27",
+    "3109604ad9f8-8",
+    "3109604ad9f8-20"
+   ],
+   "conflict": "",
+   "history": "11/4 02:22-03:02: schema changes caused long-running seller and outer processes to reject v20 and v28 and stick to old copies until manually restarted, motivating auto-restart on schema change.",
+   "existing": {
+    "id": "G2",
+    "relation": "refines"
+   },
+   "pid": "harness#5",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "design/harness-v5.md",
+    "git log",
+    "logs/strategy/URGENT.md",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "All agents read a single model-neutral Markdown internal system card (`card_version` incremented and logged on every event and judgment), kept distinct from the public A2A shop card. Prompts are ordered from static to dynamic for cache fit: system card -> role -> tool descriptions -> current priorities (`active.json`) -> current situation, targeting ~2,000 tokens for the card and ~4,000 tokens total for L1. L1 executors read only core, their own role, intent, active strategy/limits, and preloaded situation facts (`me.counterpart`, unit cost/grade/expiry, category price range); L2, L3, and audit read all roles. Counterpart names and messages are regex-sanitized (`safe_name`) before entering prompts.",
+   "harness": "Build prompts in static-first order from the versioned Markdown system card, restrict L1 to its own role section plus preloaded unit/counterpart facts, keep L1 prompts under ~4,000 tokens, and sanitize all external participant names and messages.",
+   "evidence": [
+    "9ccbdd6e4a37-2",
+    "9ccbdd6e4a37-3",
+    "9ccbdd6e4a37-4",
+    "9ccbdd6e4a37-6",
+    "9ccbdd6e4a37-7",
+    "9ccbdd6e4a37-8",
+    "9ccbdd6e4a37-9",
+    "ece2408ce643-42",
+    "88cdf8ccd767-2",
+    "88cdf8ccd767-9",
+    "88cdf8ccd767-10",
+    "219550a5625a-19",
+    "a7f4ae86e56e-2",
+    "b6412ce6ced0-8",
+    "eb9189af1afa-8",
+    "c766038e6250-15",
+    "06b10b2a463e-1",
+    "06b10b2a463e-11",
+    "06b10b2a463e-12",
+    "06b10b2a463e-13",
+    "06b10b2a463e-14",
+    "19fb13795de6-23",
+    "914b9d6b33cb-2"
+   ],
+   "conflict": "Early commit notes (06b10b2a463e-13, 06b10b2a463e-14) referred to a 2,000-token total L1 budget, whereas HARNESS ch. 7 (88cdf8ccd767-9) set the user decision to ~2,000 tokens for the card and ~4,000 tokens for the full L1 prompt; overnight logs (b6412ce6ced0-8) found actual seller prompts had bloated to ~30,000 characters and ordered them cut back to the ch. 7 target.",
+   "history": "",
+   "existing": null,
+   "pid": "harness#6",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "Tools share one JSON Schema across function calling and MCP, with explicit contracts (name, purpose, input/output schema, determinism, side effects, target latency, and `{ok}` or `{error, reason, hint}` responses). L1 roles are limited to at most 8 concise-by-default lookup/calculation/validation tools plus their execution tools; L2, L3, and audit access the full tool list (except `memory.raw` cannot be used by audit to inspect other agents' tool calls). Every tool call is logged before execution (`tool.call`) and after (`tool.result`), including blocked, refused, or killed calls. Overlong string inputs are normalized or truncated (e.g., shop-card descriptions at 600 chars) rather than crashing.",
+   "harness": "Enforce the <=8 lookup/calc/check tool cap per L1 role, log `tool.call` before running and `tool.result` after (even when killed or refused), keep tool descriptions synchronized with the tool table, and normalize or truncate oversized inputs safely.",
+   "evidence": [
+    "ecbe121caad7-36",
+    "ecbe121caad7-38",
+    "ecbe121caad7-39",
+    "c8be6d835be5-16",
+    "c8be6d835be5-33",
+    "c8be6d835be5-34",
+    "a7f4ae86e56e-0",
+    "a7f4ae86e56e-1",
+    "a7f4ae86e56e-3",
+    "a7f4ae86e56e-5",
+    "eb9189af1afa-4",
+    "c766038e6250-16",
+    "06b10b2a463e-3",
+    "19fb13795de6-21",
+    "1dcdff1dfe1b-2",
+    "1dcdff1dfe1b-3",
+    "8f903d669414-28",
+    "8f903d669414-29"
+   ],
+   "conflict": "",
+   "history": "11/4 02:20-05:30: analyst summaries and `rec.brief` calls failed on string length or format mismatches; tool inputs were updated to normalize strings and truncate overlong fields instead of crashing.",
+   "existing": null,
+   "pid": "harness#7",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "Raw events and ledger copies are append-only, carrying `ts`, `strategy_version`, `epoch`, linking keys, and unique `<writer>-<ts>-<seq>` event IDs. Readers and single-writer indexers process incrementally from persisted cursors (never processing an ID twice), and derived SQLite/aggregate indexes can be rebuilt from raw files. Exact counts must come from deterministic aggregation tools, never similarity or keyword search. Memory MCP is read-only: BM25 search filters by time, participant, and version first and returns 'no record' if fewer than half the query's key terms match; profiles return the latest version by default (marking older versions `superseded` when `history=true`). Every 3 min the collector derives 7 evaluation event types from kit files and the ledger, updates `live.json`, and appends the full public market board every 10 min (preserving logs across restarts).",
+   "harness": "Keep raw event logs and board history append-only with unique event IDs and persisted reader cursors; run the collector every 3 min for ledger/kit events and every 10 min for full board snapshots; expose read-only memory MCP tools and use deterministic SQL/code aggregation for all counts.",
+   "evidence": [
+    "ece2408ce643-41",
+    "ece2408ce643-44",
+    "0d9d65d638d4-9",
+    "ecbe121caad7-28",
+    "ecbe121caad7-29",
+    "ecbe121caad7-30",
+    "ecbe121caad7-31",
+    "ecbe121caad7-32",
+    "ecbe121caad7-33",
+    "a7f4ae86e56e-7",
+    "c766038e6250-14",
+    "06b10b2a463e-2",
+    "b7afbcaf45e5-17",
+    "b7afbcaf45e5-18",
+    "5a8684c5fdbd-12",
+    "5a8684c5fdbd-22"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "harness#8",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "Model call priority is L1 (`seller`, `buyer`, `restock`) -> `strategy` -> `analysts` -> `forum`/`review`, with an L1 response target of <=10 s per message. Every model call logs seat, model, latency, tokens, cost, and failure. Under the Claude Code runtime, calls run isolated (`--tools \"\" --setting-sources \"\"`) with a 6 s L1 timeout to OpenRouter `gpt-4o-mini`, a 3-failure 300 s circuit breaker (probing every 5th call during repeated timeouts), and outer deferral when inner has quota failures; when capacity is tight, degradation steps down in order: review/forum to OpenRouter -> 4 h analysis -> `sonnet` strategy -> buyer to OpenRouter -> seller last.",
+   "harness": "Prioritize L1 calls over outer analysis/strategy, log latency, tokens, cost, and errors on every model call, and enforce per-seat timeouts and circuit breakers with fast fallback.",
+   "evidence": [
+    "0d9d65d638d4-11",
+    "b2f6029bd469-8",
+    "b2f6029bd469-9",
+    "88cdf8ccd767-0",
+    "88cdf8ccd767-3",
+    "88cdf8ccd767-4",
+    "88cdf8ccd767-5",
+    "88cdf8ccd767-6",
+    "88cdf8ccd767-8",
+    "88cdf8ccd767-11",
+    "b6412ce6ced0-7",
+    "c766038e6250-23",
+    "b7afbcaf45e5-0",
+    "19fb13795de6-24",
+    "19fb13795de6-25",
+    "1dcdff1dfe1b-7"
+   ],
+   "conflict": "On 11/5 (0340713513af-0), the user directed the redesigned harness to use OpenRouter only rather than Claude Code CLI.",
+   "history": "11/3: Claude Code CLI with 3-strike 300s breaker -> 11/4: 6s timeout to OpenRouter gpt-4o-mini and every-5th-call probe -> 11/5: OpenRouter-only in the redesign.",
+   "existing": null,
+   "pid": "harness#9",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "All record-computable evaluation metrics must be deterministic tools taking `(scope, slice|epoch)` and returning `(value, sample_count, source_loc)`: `eval.score`, `eval.decision_quality` (latency, calls, tool errors, limit rejections, harness failures, expired orders, L1 uptime, quota conflicts), `eval.integrity` (receipt mismatches, review-fact match, valid forum refs, grade-claim truth rate), `eval.guess_accuracy`, `eval.experiment`, `eval.proposals`, and `eval.audits`. L1 agents never self-evaluate and read only prior evaluations needed for their next action; judgment-based evaluation flows outward (L1 evaluated by self-analysis, L2 analysis by strategy and audit, L3 strategy by audit and user). Every 5 min, `outer/watch` computes 30-min health snapshots (funnels, no-stock SKUs, unpaid reasons, timeouts, refusals) and rate-limits threshold alerts to at most once per hour.",
+   "harness": "Provide the deterministic `eval.*` tool suite and 5-min rolling 30-min health watcher (`outer/watch`), prevent L1 self-evaluation, and route judgment evaluations outward.",
+   "evidence": [
+    "c8be6d835be5-19",
+    "c8be6d835be5-20",
+    "c8be6d835be5-26",
+    "c8be6d835be5-27",
+    "c8be6d835be5-30",
+    "c8be6d835be5-31",
+    "c8be6d835be5-32",
+    "88cdf8ccd767-14",
+    "88cdf8ccd767-15",
+    "88cdf8ccd767-16",
+    "88cdf8ccd767-17",
+    "88cdf8ccd767-23",
+    "88cdf8ccd767-24",
+    "88cdf8ccd767-25",
+    "88cdf8ccd767-26",
+    "88cdf8ccd767-27",
+    "e54bc7cc16e5-3",
+    "eb9189af1afa-1",
+    "c766038e6250-21",
+    "914b9d6b33cb-5",
+    "3109604ad9f8-5",
+    "3109604ad9f8-7"
+   ],
+   "conflict": "",
+   "history": "11/4 morning: after operators had to grep logs manually overnight and a run-to-run payment counter caused a false 'paid nothing' alert, 5-min health checks over a full 30-min window were added.",
+   "existing": null,
+   "pid": "harness#10",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "The outer slice runs under a lock (skipping if the previous slice is still running). Strategy changes run on a 30-minute cadence with a 25-minute installation hold (`HOLD_S = 25 min`); if the user installs a strategy mid-slice, the next slice's automatic install is held, and stale briefs written against an older strategy version are rejected unless `--stale-ok` is passed. Market and self analysts run up to 12 tool-loop steps to summarize active participants (marking `changed` profiles after several trades) and our shop/buyer losses. An independent cross-vendor audit model runs in its own non-blocking process on every finished brief (receiving the brief, proposal, evidence, and its own past accuracy); audit failure leaves the brief intact, and strategy-audit disagreements are shown to the user. User notes in `user_notes.md` (`# YYYY-MM-DD HH:MM — question`) expire from briefings after 6 hours. After 08:00, `outer/morning.py` writes `logs/strategy/morning-<date>.md` summarizing overnight installs, diffs, board rank changes, and alerts.",
+   "harness": "Run locked outer slices on a 30-min strategy cadence with a 25-min hold, 12-step L2 analysts, non-blocking cross-vendor audit, 6-hour user-note expiry, stale-brief rejection, and an 08:00 morning report.",
+   "evidence": [
+    "0d9d65d638d4-19",
+    "0d9d65d638d4-20",
+    "ecbe121caad7-23",
+    "ecbe121caad7-27",
+    "b2f6029bd469-4",
+    "b2f6029bd469-5",
+    "b2f6029bd469-6",
+    "b2f6029bd469-7",
+    "219550a5625a-13",
+    "34a180580b1c-11",
+    "34a180580b1c-12",
+    "64b1177cc65b-14",
+    "64b1177cc65b-16",
+    "17f1df4c235a-3",
+    "17f1df4c235a-4",
+    "17f1df4c235a-5",
+    "17f1df4c235a-7",
+    "c766038e6250-11",
+    "c766038e6250-17",
+    "bdfb2e39cd10-1",
+    "bdfb2e39cd10-10",
+    "19fb13795de6-20",
+    "839f2f1fd6bf-11",
+    "914b9d6b33cb-16",
+    "5a8684c5fdbd-10",
+    "5a8684c5fdbd-11",
+    "5a8684c5fdbd-17",
+    "5a8684c5fdbd-18",
+    "5a8684c5fdbd-20"
+   ],
+   "conflict": "Cadence and hold changed across dates: on 11/3 (219550a5625a-13, ecbe121caad7-23) slices were every 2 hours with an 8-step analyst loop and no night installs (b7afbcaf45e5-20); on 11/3 19:34 (bdfb2e39cd10-10) analyst steps were raised to 12; on 11/3 23:24 (839f2f1fd6bf-11) 30-min night slices were enabled; on 11/5 01:38 (5a8684c5fdbd-10) `HOLD_S` was set to 2 h after v67 overwrote v66 in 21 min; on 11/5 02:0x (34a180580b1c-11, 5a8684c5fdbd-17, 5a8684c5fdbd-18) the user set a 30-min strategy cadence with a 25-min hold.",
+   "history": "11/3: 2h slices, 8 analyst steps, no night auto-install -> 11/3 night: 12 analyst steps, 30-min night slices -> 11/5 01:38: 2h hold -> 11/5 01:48: 30-min pace with 25-min hold and 08:00 morning report.",
+   "existing": null,
+   "pid": "harness#11",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "design/harness-v5.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Strategy proposals and draft versions never take effect until installed. Under daytime and night delegation (`delegation.auto = [\"stock\", \"playbook\"]`, 11/4), the strategy agent may auto-install stock and playbook updates only when the audit agrees and all `unsafe()` checks pass: cash floor, no below-cost sales, certified-only goods, warranty hours preserved, price floor >= 80% of list price, autonomous `limits.max_stock_share <= 0.5` (preserving the user's 0.6 when user-set), food share cap, and round-end stop; restock parameters stay within `cover_windows` 0.5-6, `market_top` 0-30, `market_units` 0-8, and `max_line_share` 0.05-1. Counterpart avoidance (`avoid=true`, with English/Korean blacklist keyword backstops) or its release, risk-limit overrides, shop-card description changes, and bankruptcy always require explicit user confirmation.",
+   "harness": "Gate every automatic strategy installation on audit agreement plus the `unsafe()` guard checks; keep counterpart `avoid`/release, risk-limit overrides, and bankruptcy in pending-user-confirmation state.",
+   "evidence": [
+    "ece2408ce643-22",
+    "c8be6d835be5-17",
+    "c8be6d835be5-18",
+    "b2f6029bd469-13",
+    "b2f6029bd469-17",
+    "219550a5625a-15",
+    "e54bc7cc16e5-17",
+    "17f1df4c235a-6",
+    "d29a6cd738ca-5",
+    "eb9189af1afa-12",
+    "c766038e6250-13",
+    "c766038e6250-24",
+    "c766038e6250-25",
+    "b7afbcaf45e5-20",
+    "19fb13795de6-8",
+    "19fb13795de6-22"
+   ],
+   "conflict": "On 11/3 (b7afbcaf45e5-20, c8be6d835be5-18) all strategy changes waited for user confirmation and none ran at night; on 11/3 23:24 (839f2f1fd6bf-11) night auto-install with audit consent was added; on 11/4 (e54bc7cc16e5-17) the user expanded `delegation.auto = [\"stock\", \"playbook\"]` to daytime as well, subject to audit consent and `unsafe()` checks.",
+   "history": "11/3: user confirmation required for all strategy changes -> 11/3 night: night auto-install with audit consent -> 11/4: daytime and night auto-install for `stock` and `playbook` with audit consent and `unsafe()` guard.",
+   "existing": {
+    "id": "S7",
+    "relation": "refines"
+   },
+   "pid": "harness#12",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "card/system_card.md",
+    "git log",
+    "logs/strategy/overnight-report-20261104.md",
+    "logs/strategy/user_notes.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Score and position reporting must align with the live board formula and show each score component's value, percentile, weighted contribution, live rank, gap to the participant immediately above, rows above, ALL-score gain from moving up one rank, room `weight * (1 - percentile)`, and ranks from 1 hour and 6 hours ago (v5 section 0, applied 11/5).",
+   "harness": "Compute and display per-item live ranks, next-player gaps, 1-rank ALL gains, room `weight * (1 - percentile)`, and 1h/6h rank deltas in `eval.score` and strategy briefings, verified against the board's `all` percentile.",
+   "evidence": [
+    "34a180580b1c-0",
+    "34a180580b1c-10",
+    "34a180580b1c-13",
+    "64b1177cc65b-21",
+    "81323a6db552-2",
+    "81323a6db552-3",
+    "81323a6db552-25"
+   ],
+   "conflict": "",
+   "history": "Applied on 11/5 02:1x as section 0 of harness v5.",
+   "existing": {
+    "id": "G1",
+    "relation": "refines"
+   },
+   "pid": "harness#13",
+   "area": "harness",
+   "sources": [
+    "design/harness-v5.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "Harness v5 analysis design (sections 1+, drafted 11/5 after 30-min branch changes and 4,500-char metric dumps obscured verdicts): (1) normalize every trade into one canonical final outcome in one place — buyer: `paid`, `refused_shelf`, `refused_other`, `rejected_by_shop`, `no_shop`, `walked`, `error`; seller: `sold`, `left_at_open`, `left_after_offer`, `no_stock`, `refused_by_us`, `error` — reconciling 6h `buyer_orders` paid count to `payments.jsonl` and `shop_visits` `sold` count to ledger settlements; (2) treat each installation as one experiment in a unified ledger (backfilling v1-v67 and flagging `overlapped` windows like v66/v67), auto-selecting metrics by area changed (`playbook.buyer.*` -> food payment rate and surplus/payment; `restock` -> out-of-stock rate, hourly sales, margin; `seller`/card -> `left_at_open` and stars), comparing 2h before vs up to 2h after (or next install) plus same-time-yesterday, and marking verdicts `better`, `worse`, or `unclear` when sample < 30 or difference < 2 SE; (3) require every `rec.brief` option to touch only one area and specify `metric` and `window_h` (default 2), feeding briefings only the forecast summary, prior change verdicts, and changed answers to score-weighted questions (keeping health metrics as alerts only).",
+   "harness": "Implement canonical buyer/seller outcome classification with ledger/payment reconciliation, the unified installation experiment ledger with 2-SE / N>=30 verdicts and overlap flags, single-area `rec.brief` options requiring `metric` and `window_h`, and concise score-question briefings.",
+   "evidence": [
+    "34a180580b1c-19",
+    "34a180580b1c-20",
+    "34a180580b1c-22",
+    "34a180580b1c-24",
+    "34a180580b1c-25",
+    "34a180580b1c-26",
+    "34a180580b1c-27",
+    "34a180580b1c-28",
+    "34a180580b1c-29",
+    "34a180580b1c-30",
+    "34a180580b1c-32",
+    "34a180580b1c-33",
+    "64b1177cc65b-11",
+    "64b1177cc65b-12",
+    "64b1177cc65b-13",
+    "64b1177cc65b-20",
+    "64b1177cc65b-22"
+   ],
+   "conflict": "",
+   "history": "Drafted 11/5 02:1x in `design/harness-v5.md` after v1-v67 retrospective showed branch-based evaluation failed when strategies changed every 30 min.",
+   "existing": {
+    "id": "B5",
+    "relation": "refines"
+   },
+   "pid": "harness#14",
+   "area": "harness",
+   "sources": [
+    "design/harness-v5.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "process",
+   "status": "user",
+   "rule": "Buyer parallel probing and pre-payment shelf-life guard design (`design/buyer-parallel.md`, 11/4 21:0x draft, not live): worker threads send only opening inquiry messages and return responses while all tool calls, state reads, event logging, and outcome updates stay on the main thread. Both `shelf_guard` (default off) and `parallel_probe` (default `K=1`) require unit tests (rejecting insufficient C-claim receipts, canceling losing parallel conversations, ignoring unsolicited first-message receipts, preserving `K=1` event order), a 3-fake-shop local A2A test (0/3/9 s delays), and staged 1-hour single-variable A/B rollout (reverting `shelf_guard` if hourly food ledger settlements drop).",
+   "harness": "Keep `shelf_guard=off` and `parallel_probe=1` as defaults until approved; keep all tool calls and event logging on the main thread, pass unit and 3-shop local A2A tests before rollout, and test one A/B change at a time for 1 hour.",
+   "evidence": [
+    "34d7381d0edb-0",
+    "34d7381d0edb-24",
+    "34d7381d0edb-26",
+    "34d7381d0edb-27",
+    "34d7381d0edb-28",
+    "34d7381d0edb-29",
+    "f2ab6d2b7565-2",
+    "6c71f11c898a-16"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": {
+    "id": "F2",
+    "relation": "refines"
+   },
+   "pid": "harness#15",
+   "area": "harness",
+   "sources": [
+    "design/buyer-parallel.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "user_decision",
+   "status": "user",
+   "rule": "Week-7 memory and trade records are archived to `week-08/memory/legacy/` as initial counterparty history and week-7 code to `week-08/legacy/week-07-code/` off the execution path. Deferred complexity (reflection loops, probabilistic reputation, exploration math, strategy ledgers, concession curves, memory scoring, blind audits, record-based replay testing) is excluded unless later approved by the user.",
+   "harness": "Keep legacy week-7 code off the execution path and do not implement the excluded complexity features without explicit user approval.",
+   "evidence": [
+    "219550a5625a-31",
+    "a7f4ae86e56e-23",
+    "a7f4ae86e56e-24",
+    "c766038e6250-9"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "harness#16",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "git log"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "observation",
+   "status": "observed",
+   "rule": "Observed harness baselines and operational bottlenecks (11/3 - 11/5): (1) Indexing (11/3): on 60,000 events (16 MB), SQLite index cut settlement queries from 1,040 ms to 68 ms (50 new events in 105 ms, initial build 12.9 s); Round 2 read-only collection processed 1,249 ledger rows in 2 min (385 deals in 6 h); scratch outer slices ran in 2 min 00 s to 2 min 14 s (strategy brief 47 s, 6 steps). (2) Model latency and timeouts (11/3 - 11/4): short Haiku calls took ~3 s (week-7 median 7 s; local A2A 4-60 s), but on 11/3 23:22-23:33 seller and buyer hit 3-5 consecutive Claude rate limits/timeouts (triggering 300 s pauses), and on 11/4 02:00-02:28 158 of 159 seller/buyer Claude calls exceeded 6 s, shifting almost all real-time decisions to playbook rules and OpenRouter. On the home PC, seller averaged 1.88 model calls/decision (vs 1.52 on laptop; 27% took 3 calls) because 71 of 312 seller action calls were refused below the 90%-of-list floor. (3) Health and rank snapshots: on 11/4 08:5x (30-min window), seller had 48 settled, 48 left at open, and 27 no-stock out of 129 visits, while buyer had 36 paid and 14 unpaid (11 shelf-life); at 11/5 01:47, board ranks were Players 14/56, shop profit 6/52, revenue 4/52, stars 33/52, buyer surplus 25/49, votes 23/49, deals 28/49, posts 7/49. (4) Flaky test: on 11/4 - 11/5, `tests/test_index.py::test_incremental_filter_rebuild` failed ~1 in 4 runs (`5 != 6`) while the other 127 tests passed.",
+   "harness": "Size timeouts, indexing, and prompts against these observed measurements, expose price/limit floors to agents so action calls are not wasted on refusals, and fix the flaky `test_incremental_filter_rebuild` index test before relying on the test suite.",
+   "evidence": [
+    "ecbe121caad7-34",
+    "88cdf8ccd767-1",
+    "88cdf8ccd767-28",
+    "88cdf8ccd767-29",
+    "88cdf8ccd767-30",
+    "34a180580b1c-9",
+    "eb9189af1afa-0",
+    "eb9189af1afa-6",
+    "eb9189af1afa-7",
+    "09d820310e90-21",
+    "09d820310e90-22",
+    "09d820310e90-23",
+    "09d820310e90-24",
+    "09d820310e90-25",
+    "b7afbcaf45e5-19",
+    "bdfb2e39cd10-11",
+    "bdfb2e39cd10-15",
+    "914b9d6b33cb-1",
+    "1dcdff1dfe1b-6",
+    "3109604ad9f8-6",
+    "5a8684c5fdbd-26"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "harness#17",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "design/harness-v5.md",
+    "git log",
+    "logs/strategy/URGENT.md",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  },
+  {
+   "kind": "question",
+   "status": "question",
+   "rule": "Open harness and operational questions as of 11/5: (1) whether to adopt harness v5 sections 1+ in full, adjust the fixed score-question list, enforce the single-area-per-choice restriction, or group consecutive same-area changes when 30-min slices yield <30 samples; (2) whether to pause the kit during steps 5-6 of a harness switchover; (3) whether our tunnel URL is missing from the benchmark's URL-to-shop-name mapping (which made benchmark shop sales appear to be 0/h); (4) how to calibrate D31 risk limits (cash floor, stock cap, per-SKU cap, food share) from live loss and rejection data; (5) whether keyword/BM25 memory search suffices on 20-30 real Round 3 questions without embeddings; (6) when to commit raw logs/judgments to the public fork and how to align with the week-08 README/checker once released; and (7) whether the user approves registering a Windows login scheduled task for reboot recovery.",
+   "harness": "Verify the benchmark tunnel-URL mapping immediately, keep D31 risk limits and v5 rollout switches configurable pending user decision, and do not register OS scheduled tasks or commit raw event logs without user approval.",
+   "evidence": [
+    "ece2408ce643-45",
+    "ecbe121caad7-35",
+    "219550a5625a-14",
+    "219550a5625a-16",
+    "219550a5625a-17",
+    "a7f4ae86e56e-10",
+    "34a180580b1c-18",
+    "34a180580b1c-34",
+    "64b1177cc65b-23",
+    "64b1177cc65b-24",
+    "64b1177cc65b-25",
+    "64b1177cc65b-26",
+    "eb9189af1afa-5"
+   ],
+   "conflict": "",
+   "history": "",
+   "existing": null,
+   "pid": "harness#18",
+   "area": "harness",
+   "sources": [
+    "HARNESS.md",
+    "design/harness-v5.md",
+    "logs/strategy/overnight-report-20261104.md"
+   ],
+   "flags": []
+  }
+ ],
+ "dropped": [
+  {
+   "cid": "0ef848343fa5-1",
+   "reason": "Initial onboarding setup instruction for joining the market (asking for nickname and claim code)."
+  },
+  {
+   "cid": "0ef848343fa5-8",
+   "reason": "Initial starter onboarding setup instruction for checking Claude Code or Codex login."
+  },
+  {
+   "cid": "6c5961061b47-4",
+   "reason": "Onboarding setup note about the Round 2 starter template lacking market_buyer."
+  }
+ ],
+ "area": "harness",
+ "candidates": 269,
+ "missing": [],
+ "unknown": [],
+ "model": "google/gemini-4-argon"
+}

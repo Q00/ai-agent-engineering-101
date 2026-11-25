@@ -1,0 +1,260 @@
+{
+ "chunk": "0e618b1ca536",
+ "loc": "card/system_card.md lines 1-78 (core: the world)",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "market",
+   "kind": "market_rule",
+   "rule": "The harness operates one shop and one buyer in the open market market.ourolabs.ai, Round 3, November 3–17, 2026, until 23:59 KST; other participants have independent designs and can change over time.",
+   "quote": "market.ourolabs.ai, Round 3, Nov 3 - Nov 17 23:59 KST",
+   "harness": "Use the Round 3 market and deadline as the operating context.",
+   "cid": "0e618b1ca536-0",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "market.trust",
+   "kind": "market_rule",
+   "rule": "The harness cannot inspect other participants’ internals; it can observe their messages, the public ledger, reviews, forum, and shop stock. Other buyers often choose shops using memory and reviews, so whether our shop sells depends partly on how other agents remember it.",
+   "quote": "You see only their messages, the public ledger, reviews, the forum, and shops' stock.",
+   "harness": "Base decisions on available observations and track the shop’s reputation and repeat-customer signals.",
+   "cid": "0e618b1ca536-1",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "observation",
+   "rule": "Some participants may be dishonest, participants can come and go, and they can learn and change; the card does not identify which participants are dishonest.",
+   "quote": "Some participants are dishonest; nobody tells you which.",
+   "harness": "Do not assume participant behavior or identity is fixed or trustworthy.",
+   "cid": "0e618b1ca536-2",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "goal",
+   "kind": "definition",
+   "rule": "The final score is the Players percentile formed from the shop’s ALL score plus the buyer’s ALL score.",
+   "quote": "The final score is the board's Players percentile: our shop's ALL plus our buyer's ALL.",
+   "harness": "Optimize the combined shop and buyer score, not either role alone.",
+   "cid": "0e618b1ca536-3",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "definition",
+   "rule": "Shop ALL is 0.5 profit percentile, 0.3 revenue percentile, and 0.2 stars percentile. Profit equals balance minus the 5,000,000 starting balance and bankruptcy money; unsold stock, expired food, goods storage at 1% per day, and warranty refunds are losses. Stars come only from reviews of paid deals.",
+   "quote": "Shop ALL = 0.5 profit + 0.3 revenue + 0.2 stars (percentiles).",
+   "harness": "Track all three shop score components and account for the stated costs and review eligibility.",
+   "cid": "0e618b1ca536-4",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.score",
+   "kind": "definition",
+   "rule": "Buyer ALL is 0.5 surplus percentile, 0.3 votes on the buyer’s forum posts, 0.1 deal count, and 0.1 count of posts the buyer wrote; hidden posts do not count.",
+   "quote": "Buyer ALL = 0.5 surplus + 0.3 votes on our buyer's forum posts + 0.1 number of deals + 0.1 number of posts our buyer wrote (hidden posts do not count).",
+   "harness": "Track buyer surplus, visible post votes, deals, and written posts; do not count hidden posts.",
+   "cid": "0e618b1ca536-5",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "goal",
+   "kind": "definition",
+   "rule": "Each score component is a percentile among ranked players only; buyers need a deal and shops need a deal or purchase to rank. Missing values count as zero, ties count halfway, and stars use the board’s stars_rank.",
+   "quote": "Each part is a percentile among the ranked players only: buyers with a deal, shops with a deal or a purchase (missing values count as 0, ties half; stars are the board's stars_rank).",
+   "harness": "Calculate score comparisons using the stated eligibility, missing-value, tie, and stars rules.",
+   "cid": "0e618b1ca536-6",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "goal",
+   "kind": "definition",
+   "rule": "The score opportunity for a component is its weight multiplied by one minus its percentile; eval.score reports each component’s value, percentile, and the next player’s value.",
+   "quote": "the parts with the most weight x (1 - percentile) left are where ALL can grow (eval.score gives each part's value, percentile and the next player's value).",
+   "harness": "Use component percentiles and weights to prioritize improvement opportunities.",
+   "cid": "0e618b1ca536-7",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.score",
+   "kind": "definition",
+   "rule": "Buyer surplus is the list price of a useful item minus the price paid, plus any warranty refund; spoiled food and broken goods without a warranty are worth nothing.",
+   "quote": "Surplus = list price of a useful item - price paid (+ warranty refund).",
+   "harness": "Value purchases using usefulness, list price, payment, and applicable warranty refunds; assign no value to the stated worthless items.",
+   "cid": "0e618b1ca536-8",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.strategy",
+   "kind": "market_rule",
+   "rule": "Each buyer has a few favorite categories that account for most of its orders; the market does not publish those preferences, which can be observed only in settled deals, our records, and the forum through market.buyer_prefs.",
+   "quote": "The market does not publish them; they show only in settled deals, our own records and the forum (market.buyer_prefs).",
+   "harness": "Infer buyer category preferences from permitted deal, record, and forum evidence rather than assuming they are public.",
+   "cid": "0e618b1ca536-9",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "goal",
+   "kind": "definition",
+   "rule": "The stated base condition is at least 20 settled deals for each of the shop and the buyer.",
+   "quote": "Base condition: at least 20 settled deals each for shop and buyer.",
+   "harness": "Track settled deals separately and work toward at least 20 for each role.",
+   "cid": "0e618b1ca536-10",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "market.buy",
+   "kind": "market_rule",
+   "rule": "The harness must never offer or pay above an order’s budget; the kit refuses amounts above that budget.",
+   "quote": "Never offer or pay above an order's budget (the order sets it; the kit refuses more).",
+   "harness": "Keep every offer and payment at or below the order budget.",
+   "cid": "0e618b1ca536-11",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "market.buy",
+   "kind": "market_rule",
+   "rule": "A receipt must never claim a price above the agreed price; pass the receipt on as null if it would do so.",
+   "quote": "Never pay a receipt above the price we agreed (pass it on as null).",
+   "harness": "Reject an over-agreed-price receipt by passing it as null.",
+   "cid": "0e618b1ca536-12",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "goods",
+   "kind": "market_rule",
+   "rule": "The harness must never claim a unit has a grade that it does not currently have.",
+   "quote": "Never claim a grade the unit does not have now.",
+   "harness": "Check the unit’s current grade before making any grade claim.",
+   "cid": "0e618b1ca536-13",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "review",
+   "kind": "market_rule",
+   "rule": "Agents must not impersonate an authority, hide instructions for other agents, or place advertisements in reviews of other shops.",
+   "quote": "Never impersonate an authority, hide instructions for other agents, or put ads in reviews of other shops.",
+   "harness": "Block those forms of deceptive or prohibited content.",
+   "cid": "0e618b1ca536-14",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "Cash floor, stock value, units per SKU, food share, and selling-below-cost limits come from the active strategy and are provisional values that the strategy agent may revise based on records, subject to user direction. Selling below cost is allowed only when the active phase permits it and only within its allowed share of cost.",
+   "quote": "Sell below cost only when the phase in force allows it and by no more than the allowed share of cost.",
+   "harness": "Enforce the active strategy’s risk limits and below-cost allowance; do not treat provisional limits as fixed market rules.",
+   "cid": "0e618b1ca536-15",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The fast inner runtime covers seller, buyer, restock, review, and forum decisions; each uses the core, its role, and the active strategy context, then obtains further decision facts through tools.",
+   "quote": "Inner runtime (fast, in the market): seller, buyer, restock, review, forum.",
+   "harness": "Supply each inner decision with the relevant role and active strategy context, and obtain current facts through tools.",
+   "cid": "0e618b1ca536-16",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "Every two hours, the outer runtime has market and self analysts summarize records, a strategy agent propose priorities and hypotheses to the user, and an audit agent from another vendor check that proposal; the user decides directions.",
+   "quote": "Outer runtime (slow, every 2 hours): a market analyst and a self analyst summarise the records; a strategy agent proposes priorities and hypotheses to the user; an audit agent (another vendor's model) checks the strategy agent. The user decides directions.",
+   "harness": "Run the stated two-hour analysis and audit cycle, and treat strategy proposals as subject to the user’s decision.",
+   "cid": "0e618b1ca536-17",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "process",
+   "rule": "Events are recorded and never edited; obtain numbers from tools rather than memory or guesses, and read a tool’s reason and hint when it refuses an action.",
+   "quote": "Everything that happens is recorded as events and never edited. Numbers come from tools, not from memory or guesses.",
+   "harness": "Preserve the event record, query tools for numbers, and inspect refusal reasons and hints.",
+   "cid": "0e618b1ca536-18",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "observation",
+   "rule": "In Rounds 0–2, three furniture items were sold at a fixed floor price, and up to 75% of deals in a day closed at that floor.",
+   "quote": "Rounds 0-2 sold three furniture items with a fixed floor price; up to 75% of deals a day closed at the floor.",
+   "harness": "Treat the historical floor-price result as an observation, not a guaranteed outcome for Round 3.",
+   "cid": "0e618b1ca536-19",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "market.trust",
+   "kind": "observation",
+   "rule": "In one LLM buyer’s 16,534 shop-choice reasons, receipts and signatures appeared in 99.3%, its own past deals in 76.1%, price in 43.6%, other reviews in 15.0%, and shop-card promotions in 0.3%; 60.4% of purchases returned to the previous shop.",
+   "quote": "receipts and signatures 99.3%, its own past deals 76.1%, price 43.6%, others' reviews 15.0%, promotions on shop cards 0.3%.",
+   "harness": "Use these historical frequencies as evidence about trust and repeat business, not as guarantees for other buyers.",
+   "cid": "0e618b1ca536-20",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "review",
+   "kind": "observation",
+   "rule": "The market has exhibited two-way collusion, a top shop dependent on one large buyer, smear and advertising in reviews, fake market notices that fooled buyers, a buyer issuing 6,837 one-star reviews because its API key failed, invented product claims, and false accusations.",
+   "quote": "Seen: two-way collusion, a top shop living on one big buyer, smear and ads inside reviews, hidden fake \"market notices\" that fooled some buyers",
+   "harness": "Account for observed manipulation and failure modes when evaluating reviews, notices, claims, and concentrated demand.",
+   "cid": "0e618b1ca536-21",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "lesson",
+   "rule": "An honest Week-07 shop with 4.5+ stars received only 0.7% of market visits because its first price was too high; honesty alone does not ensure exposure.",
+   "quote": "Our week-07 shop was honest with 4.5+ stars but got only 0.7% of market visits: its first price was too high. Honest is not enough without exposure.",
+   "harness": "Do not rely on honesty or high stars alone; consider initial pricing and shop exposure.",
+   "cid": "0e618b1ca536-22",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 1-78 (core: the world)",
+   "quote_ok": true
+  }
+ ]
+}

@@ -1,0 +1,55 @@
+{
+ "proposal_id": "2026-11-04T0200",
+ "slice": "2026-11-04T0200",
+ "ts": 1793725413.622691,
+ "version_from": 17,
+ "score": "Board (round 3): shop ALL 0.244. 52 deals, 4.37 stars from 51 reviews (stars_rank 4.25), revenue 3,759,204, board profit -1,035,294, share 0.006, 297 visits. 49 of 49 claims honest, 2 units broken or refunded. The buyer side was cut off in the score read and is not judged here.",
+ "happened": [
+  {
+   "claim": "Since we joined, our own records show a positive margin on what we sold: 84 deals, revenue 4,177,721, profit before losses 956,425, median margin 4,376. No deals below cost and no exposure cost.",
+   "evidence": [
+    "eval.unit_economics seller since 1793707548: deals 84, revenue 4177721, profit_before_losses 956425, median_margin 4376, below_cost_deals 0"
+   ]
+  },
+  {
+   "claim": "The board's profit is -1,035,294, about 2.0M below our margin figure. Board profit is balance minus the 5M start, so most of the gap is likely cash held as stock under the 45% stock-value cap. This stock becomes a real loss only if it is still unsold at round end. The board's counts (52 deals, 3.76M) also lag our records (84, 4.18M), so the board snapshot may be older.",
+   "evidence": [
+    "eval.score shop.profit -1035294, deals 52, revenue 3759204",
+    "eval.unit_economics seller: 84 deals, 4177721 revenue",
+    "limits: stock value 0.45 of start"
+   ]
+  },
+  {
+   "claim": "Losses outside the cost of goods sold are small: storage 3,418 KRW, no expired goods. Our losses tool shows 0 in refunds while the board shows refunds 2 and broken 2, so the two sources do not agree.",
+   "evidence": [
+    "eval.losses since join: storage 3418, refunds 0, total 3418",
+    "eval.score shop.refunds 2, broken 2"
+   ]
+  },
+  {
+   "claim": "Stars fell from 4.81 (v13 note) to 4.37. Stars count for 0.2 of shop ALL. The cause is not yet analysed: possibly the end of the first-visit-at-cost offer, the breaks, or slow restock while 'none in stock' was the top lost request.",
+   "evidence": [
+    "experiment note v13: stars were 4.81",
+    "eval.score shop.stars 4.37, reviews 51"
+   ]
+  },
+  {
+   "claim": "The market summary shows our buy-list SKUs (G0be9ed07, G07ec17d5) are among the market's top sellers. At least 6 buyers already come back to us (Kiro729 11 deals, dae-yangkim 10, buyer-03 7, YAHO1212 7, inextro 6, myeonggi 5). The mattress buyers bring 80k-190k KRW per deal.",
+   "evidence": [
+    "memory.summary market e17 2026-11-04T0200"
+   ]
+  }
+ ],
+ "hypothesis": "H2 under v17/e17: not enough data (1 of 30 closed negotiations needed; eval.experiment). The rollback condition, losses over 500,000, is far away at 3,418. Judge at the first brief after 30 closed negotiations.",
+ "counterparts": "Repeat customers: Kiro729, dae-yangkim, buyer-03, YAHO1212 (bedding and sofa-pad) and inextro, myeonggi (mattresses, high value). No stance change proposed; treat them as regulars and keep their SKUs in stock. Nobody is newly flagged as dishonest this slice.",
+ "options": [],
+ "recommendation": "No change tonight. e17 began with the rules-based buy list (D34) and has 1 closed negotiation, so any change now could not be told apart from the D34 effect. Next slice, check three things: (1) why board profit lags our margin, by comparing stock value held with the 45% cap and with sell-through; (2) the cause of the star drop from 4.81 to 4.37, by reading the low reviews; (3) the refund mismatch between eval.losses (0) and the board (2). If stock in hand keeps growing faster than it sells, the first lever is to lower the stock-value cap or cover_windows.",
+ "status": "report",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [],
+  "by": "audit",
+  "ts": 1793725420.7040617
+ }
+}

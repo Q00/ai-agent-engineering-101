@@ -1,0 +1,117 @@
+{
+ "proposal_id": "2026-11-04T0300",
+ "slice": "2026-11-04T0300",
+ "ts": 1793729039.0949023,
+ "version_from": 21,
+ "score": "Players ALL 0.202. Shop: 53 deals, revenue 3,872,226, profit -2,067,459 (the board counts bought stock as zero until it sells), stars 4.38 from 52 reviews, 2 warranty refunds, 50 of 50 claims honest. Since the last slice (ts 1793727002) the seller settled 3 deals: revenue 321,160, margin 87,936 (median 24,713), 0 below cost, 0 exposure cost.",
+ "happened": [
+  {
+   "claim": "The seller turns little interest into deals. The self analyst counted 26 negotiations, 20 closed, 14 canceled and 4 rejected, and 9 units bought with 0 sold. eval.unit_economics shows 3 settled deals in the same window, so the two counts disagree: settles may have landed after the analyst's cut.",
+   "evidence": [
+    "self summary e26 2026-11-04T0300: funnel.seller closed 20, lost_by canceled 14 rejected 4",
+    "eval.unit_economics(seller, since 1793727002): deals 3, revenue 321,160"
+   ]
+  },
+  {
+   "claim": "The seller's decision pipeline is strained: 19 of 78 model calls failed and 66 of 178 tool calls were refused. Some of the cancellations may come from this and not from price.",
+   "evidence": [
+    "eval.decision_quality(seller): model_calls 78, failed 19, fallback 59, tool_refusals 66, guard_overrides 6"
+   ]
+  },
+  {
+   "claim": "Who sees us depends on each order's accepted SKUs. The market's best sellers are the SKUs orders accept: 침구 1,600+ in 6 h at a median 75% of list, G0be9ed07 772, G07ec17d5 675. Our cost is a median 62-65% of list, so these sell above cost.",
+   "evidence": [
+    "user question 11/4 02:2x",
+    "market summary e26: G0be9ed07 and G07ec17d5 top sellers; regulars Kiro729, dae-yangkim, YAHO1212 cluster on bedding/sofa-pad"
+   ]
+  },
+  {
+   "claim": "The depth line crowds out breadth. 4 mattresses G0f415407 (worst cost about 199k each) take most of the ~0.93M left under the stock cap, so no market best seller gets bought this window.",
+   "evidence": [
+    "user question: cash we may spend ~2.33M, cap room ~0.93M at 02:17"
+   ]
+  },
+  {
+   "claim": "The buy list holds food SKUs (G200e39a3, Gdf79cd07, G582603b2, G010744b7, G476cc094, G80435d53, G1831f2c0) although the food limit is 0.0. These lines will be refused and waste top-N slots. The restock rule should skip food when it picks market_top.",
+   "evidence": [
+    "restock buy list now",
+    "limits: food share 0.0"
+   ]
+  }
+ ],
+ "hypothesis": "H2 does not have enough data yet. The seller has under 30 closed negotiations counted as settled this slice, and losses are far below the 500,000 rollback line (2 refunds). Stars 4.38 and 50/50 honest claims support the reputation half. Conversion is the weak half.",
+ "counterparts": "Regulars Kiro729, dae-yangkim (also a top shop, 306 deals, 4.48 stars) and YAHO1212 buy bedding/sofa-pad (G0be9ed07, G054ff120, G03cab593). inextro made one mattress burst (6 deals, 485,505 in ~10 min) and should not be treated as steady demand. Keep all stances friendly. No avoid changes.",
+ "options": [
+  {
+   "id": "A_breadth",
+   "change": {
+    "playbook": {
+     "restock": {
+      "mode": "rules",
+      "cover_windows": 2,
+      "market_top": 20,
+      "market_units": 2,
+      "max_line_share": 0.12
+     }
+    }
+   },
+   "targets": "shop revenue (0.3) and profit (0.5) through more settled deals; deals also feed stars",
+   "expected": "One line can take at most 12% of the window's money, so the 4-mattress line shrinks to about 1 unit and frees money for 2 units each of up to 20 best-selling goods (after the food lines are skipped). That puts us in many more orders' accepted-SKU lists. Judge it next slice by deals settled, distinct buyers and sell-through.",
+   "risk": "Thin stock per SKU can run out between windows. Missed asks such as G0f415407 (81 in 6 h) get fewer units. Wider stock pays more storage at 1%/day. It does not fix seller cancellations caused by failed calls.",
+   "reversible": true
+  },
+  {
+   "id": "B_cap_only",
+   "change": {
+    "playbook": {
+     "restock": {
+      "mode": "rules",
+      "cover_windows": 2,
+      "market_top": 12,
+      "market_units": 3,
+      "max_line_share": 0.12
+     }
+    }
+   },
+   "targets": "shop revenue and profit",
+   "expected": "This changes one number only. The mattress line no longer eats the window, and the current top 12 x 3 get bought. It is a smaller step and easier to attribute.",
+   "risk": "With food in the top 12, few goods lines remain, so breadth gains are small.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A_breadth",
+ "status": "rejected",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "The hypothesis H2 is still in test and not enough data to confirm success/rollback.",
+    "why": "The current deal count for the seller is 53, which is close to the minimum sample size of 30 for the experiment, but not significantly above it to declare success or rollback. The losses are well below the rollback line, and stars are good, but conversion is low, so the reputation-building phase needs to continue."
+   },
+   {
+    "claim": "The strategy agent's assessment of low deal conversion is supported by the data.",
+    "why": "The self analyst's report of 26 negotiations with only 20 closed and 14 cancelled, coupled with the low number of settled deals in the last window (3 deals), suggests a conversion problem. While the exact cause (system errors vs. pricing) is not fully clear, increasing shop visibility and accepted SKUs can help."
+   },
+   {
+    "claim": "Option A_breadth directly addresses the goal of getting seen by many different agents and building memory, even at a small potential loss (higher storage costs).",
+    "why": "By limiting the share one SKU can take and increasing the number of market best-selling SKUs we stock, we increase the chances of our shop appearing in more buyers' accepted-SKU lists. This directly supports the user's intent to 'get seen by many different agents' and 'a good first deal for as many as possible', which drives 'memory and relations' to later adjust prices for profit. While it increases storage risk, the primary goal at this phase is exposure."
+   },
+   {
+    "claim": "The strategy agent correctly identifies and addresses the issue of food SKUs in the buy list, which would be refused and waste slots.",
+    "why": "Our shop is explicitly goods-only, and the food share limit is 0.0. Including food SKUs in the market_top selection wastes resources and agent turns, so ensuring they are skipped is a necessary correction."
+   },
+   {
+    "claim": "The shift from deep stock to broad stock under A_breadth aligns with the goal of gaining 'many different buyers' and addresses the 'conversion is the weak half' point.",
+    "why": "Having a wider variety of in-demand items will increase the number of orders our shop can fulfill, thereby leading to more settled deals with a more diverse set of buyers. This builds the 'memory' and 'reputation' outlined in the user's intent."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793729051.2253616
+ },
+ "decision": {
+  "choice": "reject",
+  "note": "user 11/6 00:xx: stale, written on an older strategy and superseded by later versions",
+  "ts": 1793891380.9083438
+ }
+}

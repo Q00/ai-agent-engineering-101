@@ -1,0 +1,81 @@
+{
+ "schema_version": 1,
+ "version": 4,
+ "epoch": "e4",
+ "approved": "DRAFT - Welcome Food, waiting for the user",
+ "phase": "exposure",
+ "priorities": [
+  "Exposure first, through Welcome Food: a buyer's first visit gets fresh food (grade A now, list price up to 30,000) at 60% of our cost. Other deals at cost or above. Each supply window (about every 20 minutes) restock brings Welcome Food; stock many categories in small quantities, and move stock toward what sells and what buyers favour (market.selling, market.buyer_prefs, wanted posts).",
+  "Be reliably honest: true grade claims, receipts that match, the market's certificate shown. Other agents remember the deals they had with us.",
+  "Buyer: maximise surplus on useful items. Read market prices, check certificates, shelf life and warranty, and be patient only when the surplus is large.",
+  "Learn: explore participants we have not traded with, and record everything; the next strategy is built from these records.",
+  "Reach the base condition early: 20 settled deals each for the shop and the buyer."
+ ],
+ "context": [
+  "Round 3 has just opened and we have no Round 3 records yet: what sells, who buys, and what other shops charge are unknown.",
+  "The market lists 5,629 SKUs (4,311 food, 1,318 goods) in 140 demand categories.",
+  "Our week-07 shop was honest with 4.5+ stars but got only 0.7% of market visits, because its first prices were too high.",
+  "Welcome Food: who is new is a guess from the buyer's opening against customers the ledger confirmed; when there is no sign the buyer dealt with us, it counts as a first visit. The loss is capped at 40% of cost per deal, on food only.",
+  "Forum: announce Welcome Food as our shop and as our buyer with the shop name: first-time visitors who like the post get fresh discounted food at our shop, that fresh food arrives at each supply window (about every 20 minutes; the forum agent sees the next opening) and is sold while it is grade A. Write to what buyers favour. Our buyer's number of posts and the votes on them count for buyer ALL; repeating one notice is noise."
+ ],
+ "shop_card": {
+  "description": "gom31 Honest Shop: we only tell the truth. Every grade we state is the grade the unit has right now, the market's certificate comes with every unit that has one, and the receipt always matches the price we agreed. Welcome Food: on your first visit, fresh food (grade A, list price up to 30,000) at 60% of our cost, fresh from each supply window. Groceries and goods. Ask for an item by SKU, category or name, then send a price; we answer with a counteroffer or a signed receipt.",
+  "examples": [
+   "I want to buy G0011e806",
+   "21000",
+   "ok"
+  ]
+ },
+ "limits": {
+  "cash_floor": 1500000,
+  "max_units_per_sku": 5,
+  "max_stock_share": 0.4,
+  "food_share_max": 0.25,
+  "below_cost": {
+   "allowed": true,
+   "only_in_phase": "exposure",
+   "max_loss_share_of_cost": 0.4,
+   "first_deal_only": true,
+   "kinds": [
+    "food"
+   ],
+   "max_list_price": 30000,
+   "grades": [
+    "A"
+   ]
+  }
+ },
+ "experiment": {
+  "hypothesis": "H1': a first visit with fresh food at 60% of cost (Welcome Food), announced on the forum, brings many different buyers, who come back at normal prices.",
+  "min_sample": {
+   "metric": "funnel.seller.closed",
+   "value": 30
+  },
+  "success_if": [
+   {
+    "metric": "funnel.seller.completion_rate",
+    "op": ">=",
+    "value": 0.5
+   },
+   {
+    "metric": "unit_economics.seller.deals",
+    "op": ">=",
+    "value": 20
+   }
+  ],
+  "rollback_if": [
+   {
+    "metric": "losses.total",
+    "op": ">",
+    "value": 500000
+   }
+  ],
+  "review_at": "first brief after 30 closed negotiations",
+  "note": "Thresholds are a starting point the user accepted on 2026-11-03, to be adjusted from the first results. v2 changes only the rollback threshold, 300,000 -> 500,000 (10% of the starting capital; about one full food stock thrown away). Selling below cost is not in losses.total; the brief shows it as unit_economics.seller.exposure_cost, with no threshold. The risk limits are a first guess too: the strategy agent proposes new values from the records and the user decides. Repeat-visit, star and sell-through metrics need the outer runtime's ledger collection (build step 5). v4 (Welcome Food, user 11/3): below cost only on a first visit (unknown counts as first), food at grade A now with list price up to 30,000 (cap: draft), at 60% of cost (loss up to 40% of cost per deal); restocked at each supply window (the market opens supply about every 20 minutes for 3, agent.md 11/3); announced on the forum as shop and buyer. Watch exposure_cost and repeat visits."
+ },
+ "delegation": {},
+ "welcome_food": {
+  "each_supply_window": true,
+  "share_of_cost": 0.6
+ }
+}

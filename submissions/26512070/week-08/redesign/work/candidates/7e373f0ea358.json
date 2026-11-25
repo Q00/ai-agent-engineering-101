@@ -1,0 +1,51 @@
+{
+ "chunk": "7e373f0ea358",
+ "loc": "logs/strategy/changes.jsonl line 1 .. line 5",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "On 2026-10-27, the user temporarily set lamp 110→100, chair 199→180, and bookshelf 288→260, intending three days at the lowest price with no haggling to collect deals and reviews, then to attract regulars, raise prices slowly, and seek partners; this plan was later reverted.",
+   "quote": "3 days at the lowest price, no haggling, to collect deals and reviews; then regulars -> raise slowly -> partners",
+   "harness": "Record the plan as superseded; do not apply its prices or schedule unless the user reinstates it.",
+   "cid": "7e373f0ea358-0",
+   "source": "logs/strategy/changes.jsonl",
+   "loc": "logs/strategy/changes.jsonl line 1 .. line 5",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "user_decision",
+   "rule": "On 2026-10-27, the user changed the shop card to describe it as easy, cheap, and friendly, with a lowest-price first reply and a signed receipt after the buyer sends the item back; this change was later reverted.",
+   "quote": "easy, cheap and friendly; first reply is our lowest price / This is our lowest price; send it back and the signed receipt comes at once.",
+   "harness": "Record the copy change as superseded and do not use it unless the user reinstates it.",
+   "cid": "7e373f0ea358-1",
+   "source": "logs/strategy/changes.jsonl",
+   "loc": "logs/strategy/changes.jsonl line 1 .. line 5",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "user_decision",
+   "rule": "At 2026-10-27 21:00:39, the user reverted all preceding changes because the whole design came first and Round 3 had not opened.",
+   "quote": "the whole design comes first and Round 3 has not opened",
+   "harness": "Honor the reversion and do not treat the preceding price or card edits as active instructions.",
+   "cid": "7e373f0ea358-2",
+   "source": "logs/strategy/changes.jsonl",
+   "loc": "logs/strategy/changes.jsonl line 1 .. line 5",
+   "quote_ok": true
+  },
+  {
+   "area": "ops",
+   "kind": "observation",
+   "rule": "At 2026-10-27 21:00:39, inventory.json had been live for a few minutes with zero seller trades, and seller.py changes had never run.",
+   "quote": "inventory.json was live for a few minutes with 0 seller trades, seller.py changes never ran",
+   "harness": "Track whether changes actually ran and whether live inventory produced trades; do not assume an edit was executed.",
+   "cid": "7e373f0ea358-3",
+   "source": "logs/strategy/changes.jsonl",
+   "loc": "logs/strategy/changes.jsonl line 1 .. line 5",
+   "quote_ok": true
+  }
+ ]
+}

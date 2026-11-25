@@ -1,0 +1,118 @@
+{
+ "proposal_id": "2026-11-04T0630",
+ "slice": "2026-11-04T0630",
+ "ts": 1793741642.809289,
+ "version_from": 40,
+ "score": "Board 11/4 06:3x: shop ALL 0.246, profit -2,113,417 (stock still counted at zero), revenue 16,266,115, 148 deals, stars 4.41 from 147 reviews, 145 of 145 claims honest, 5 refunds. Since 1793739620: 18 settled deals, 2,832,153 revenue, 605,862 margin before losses, median margin 28,641, 0 below cost.",
+ "happened": [
+  {
+   "claim": "Each deal we close is profitable, but we close few of them. Completion is 0.35 against the 0.5 target, and most losses are cancels right after the open quote.",
+   "evidence": [
+    "eval.unit_economics seller since 1793739620: deals 18, profit_before_losses 605862, median_margin 28641, below_cost_deals 0",
+    "eval.experiment: sample 71, completion_rate 0.3521, verdict neither yet",
+    "self summary: lost_by canceled 53, rejected 2"
+   ]
+  },
+  {
+   "claim": "Stock is the limit, not demand. Every unit we bought sold, and asks for SKUs we do not hold go unmet.",
+   "evidence": [
+    "eval.stock_health: bought 18, sold 18, sell_through 1.0, waste 0",
+    "me.missed 6h: 178 missed, G1515d951 asked 97 times with 0 held, bedding 77"
+   ]
+  },
+  {
+   "claim": "me.missed undercounts demand. An order only sees shops that hold one of its accepted SKUs, so best sellers we lack never show up as asks.",
+   "evidence": [
+    "forum #1345 #1330 #1356: bedding wanted, no shop has it",
+    "benchmark their_best_we_lack: G1515d951 232, G6b9db161 44, G30604071 17, G5e3784e6 16",
+    "market: G0be9ed07 714, G07ec17d5 645, G1515d951 532 sold in 6h"
+   ]
+  },
+  {
+   "claim": "The top shops win by breadth and turnover. We sell 15.3 deals an hour; dragonash sells 94.5 and winun1127 81.",
+   "evidence": [
+    "benchmark shop_top: winun1127 527 units bought, dragonash 538 units, ours 15.3 deals per hour"
+   ]
+  }
+ ],
+ "hypothesis": "H2: neither verdict yet. The sample is 71 closed with 0 losses, so there is no rollback. Completion is 0.35, under 0.5. The success metric scoped to epoch e40 reads 0 deals, while the same metric with a since filter reads 18, so the experiment counter looks mis-scoped. Stars are 4.41, so the reputation part holds. Deal count is held back by stock.",
+ "counterparts": "Regulars inextro, shaun0927, chaewoonee and Kiro729 all grew their deals this slice and cluster on mattress, bedframe and sofa pad (G1515d951, G07ec17d5, Gc44de87c, G30604071, G0be9ed07). We keep them as partners with an unchanged stance. dae-yangkim treats our buyer fairly (2 fair, 0 cheated). New: ggari-shop, shaun0927-lab1 and yeonsong2, with no contact yet, so we watch them. No adversarial behaviour was seen.",
+ "options": [
+  {
+   "id": "A_breadth_moderate",
+   "change": {
+    "playbook": {
+     "restock": {
+      "market_top": 18,
+      "market_units": 4,
+      "max_line_share": 0.4
+     }
+    }
+   },
+   "targets": "shop revenue 0.3 and profit 0.5: more deals because more orders can see us",
+   "expected": "Each window buys about 18 lines at 3-4 units instead of 4 mattresses taking most of the money. Every accepted SKU we hold makes us visible to a new set of orders. The 0.4 line cap still gives G1515d951 about 2 units a window.",
+   "risk": "Thinner lines run out faster; a few lines may not sell (storage at 1% a day; units held over 8 h clear at cost x 1.05).",
+   "reversible": true
+  },
+  {
+   "id": "B_breadth_wide",
+   "change": {
+    "playbook": {
+     "restock": {
+      "market_top": 24,
+      "market_units": 3,
+      "max_line_share": 0.3
+     }
+    }
+   },
+   "targets": "shop revenue and deal count, fastest exposure",
+   "expected": "Coverage is widest, so the most orders can see us. The mattress gets about 1 unit a window.",
+   "risk": "The hottest line (G1515d951, 97 asks) stays short, and we hold more slow tail SKUs. Too big a jump to read cleanly next slice.",
+   "reversible": true
+  },
+  {
+   "id": "C_hold",
+   "change": {},
+   "targets": "control: keep depth",
+   "expected": "The mattress fills first and the market top lines get little.",
+   "risk": "Deals stay near 15 an hour while the top shops sell 80 or more an hour; the loss is won back slowly.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A_breadth_moderate",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "Each deal we close is profitable, but we close few of them. Completion is 0.35 against the 0.5 target, and most losses are cancels right after the open quote.",
+    "why": "The `eval.unit_economics` for the specified period confirms 18 deals with a positive profit_before_losses and median_margin, and 0 below_cost_deals. The `eval.experiment` data, while potentially mis-scoped for the epoch, indicates a completion rate of 0.3521, which is below the 0.5 target. The 'self summary' evidence of 53 cancels supports the claim that most losses are cancels."
+   },
+   {
+    "claim": "Stock is the limit, not demand. Every unit we bought sold, and asks for SKUs we do not hold go unmet.",
+    "why": "The `eval.stock_health` showing 'bought 18, sold 18, sell_through 1.0' indicates that all purchased stock is selling. The `me.missed` data, particularly 'G1515d951 asked 97 times with 0 held', directly supports the claim of unmet demand for SKUs we don't hold."
+   },
+   {
+    "claim": "me.missed undercounts demand. An order only sees shops that hold one of its accepted SKUs, so best sellers we lack never show up as asks.",
+    "why": "This claim is supported by the `forum` evidence for wanted bedding with 'no shop has it', and the `benchmark their_best_we_lack` data showing high sales of specific SKUs (e.g., G1515d951 232 sales) that our shop does not stock. The `market` data further reinforces these as best-selling items."
+   },
+   {
+    "claim": "The top shops win by breadth and turnover. We sell 15.3 deals an hour; dragonash sells 94.5 and winun1127 81.",
+    "why": "The `benchmark shop_top` directly provides the deal per hour figures for our shop and the top shops, supporting the claim about their higher turnover and suggesting a strategy focused on breadth (as implied by their high unit purchases)."
+   },
+   {
+    "claim": "The experiment counter looks mis-scoped.",
+    "why": "The hypothesis states 'The success metric scoped to epoch e40 reads 0 deals, while the same metric with a since filter reads 18'. This indicates a discrepancy in how the experiment is tracking deals, suggesting a potential scoping issue."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793741650.4838908
+ },
+ "decision": {
+  "choice": "A_breadth_moderate",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793741650.4996474,
+  "installed": 41
+ }
+}

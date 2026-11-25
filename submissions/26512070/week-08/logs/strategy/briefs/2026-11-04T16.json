@@ -1,0 +1,126 @@
+{
+ "proposal_id": "2026-11-04T16",
+ "slice": "2026-11-04T16",
+ "ts": 1793775822.724362,
+ "version_from": 56,
+ "score": "Shop: profit 18.79M (percentile 0.87, 6 rows above, next 21.86M), revenue 136.7M (0.89), stars 4.54 (0.37, next 4.55, 31 rows above). Buyer: surplus 9.27M (0.344, 31 rows above, next 9.83M), forum 0.625 (0.51), deals 689 (0.448), posts 200 (0.865). Most room left: buyer surplus 0.328, buyer forum 0.147, shop stars 0.126. Shop profit and revenue are already near the top.",
+ "happened": [
+  {
+   "claim": "The shop now sells many units at a profit, and none below cost. The early loss is won back.",
+   "evidence": [
+    "eval.unit_economics seller: 770 deals, revenue 142,592,280, profit before losses 30,690,317, median margin 27,462, below-cost deals 0, exposure cost 0",
+    "board: profit 18,788,259 (percentile 0.87)"
+   ]
+  },
+  {
+   "claim": "H2 is not judged yet. Completion is above the success bar, losses are 0, but the deal count in the epoch sample reads 0.",
+   "evidence": [
+    "eval.experiment: verdict 'neither yet', closed 197, completion_rate 0.5808 (bar 0.5), losses.total 0, unit_economics.seller.deals 0 in the experiment window"
+   ]
+  },
+  {
+   "claim": "The depth answer of v56 works: regulars deepened and a tester became a top-5 regular. G1515d951 still runs out.",
+   "evidence": [
+    "market summary e56/16: inextro 98->147 deals, YAHO1212 7->53 deals (9.28M paid)",
+    "health 30 min: 59 completed, 19.0M revenue; missing G1515d951 x4, Ge62449c9 x1"
+   ]
+  },
+  {
+   "claim": "The buyer side is where the score is lost. Only 18% of our buyer's deals are goods, against 71-79% for top buyers. Many paid food deals are also refused by our own shelf-life policy.",
+   "evidence": [
+    "benchmark: buyer_ours goods_share 0.18, surplus/deal 21,998; inextro 0.71 / 72,080; shaun0927 0.79 / 39,256",
+    "health: 11 unpaid in 30 min, 10 for shelf life ('6.14 h left, policy asks 18.0'; '325.72 h left, policy asks 540.0')"
+   ]
+  },
+  {
+   "claim": "Stars sit in a tight cluster. One hundredth of a star separates us from 31 rows above.",
+   "evidence": [
+    "board stars_rank value 4.54, next 4.55, percentile 0.37",
+    "seller funnel: lost by canceled 151, rejected 68 (self summary)"
+   ]
+  }
+ ],
+ "hypothesis": "H2 is not yet judged (sample 197 closed, completion 0.58 ≥ 0.5, losses 0; the epoch's deal count reads 0, so the success test cannot pass yet). It is supported in substance: 770 deals, 0 below cost, regulars growing. Answer to the 02:2x question: depth in the best sellers, breadth for the rest. That is what v56 runs (top_n 3 x 20 units, own_cover 1.5, market_top 24 x 3). Do not go back to deep buys of missed expensive SKUs like G0f415407.",
+ "counterparts": "inextro, chaewoonee, YAHO1212: regulars of the mattress cluster. Keep G1515d951/G07ec17d5/Ge62449c9 in stock for them. thisjonghoon: a distinct favourite (G81ade83e, G476cc094, G29a60380). Keep 3 units each. shaun0927 and buzllightyear are levelling off and drifting to food/misc. No avoid stances are proposed.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "playbook": {
+     "restock": {
+      "top_n": 4,
+      "market_units": 4,
+      "max_line_share": 0.25
+     }
+    },
+    "context": "Depth stays on the sellers that empty every window (G1515d951, G07ec17d5, Ge62449c9 plus one more). Breadth across the market top 24 at 4 units each, including G0be9ed07 (we lack it; top shops sold 172 in 6 h). Never deep-buy a missed SKU that has not sold for us."
+   },
+   "targets": "shop revenue/profit (fewer no_stock visits); stars indirectly (fewer canceled visits)",
+   "expected": "Cuts the ~6 no-stock visits per 30 min, mostly G1515d951 and Ge62449c9. That is roughly +5-10 deals/h at a median margin of about 27k.",
+   "risk": "More capital sits in one more deep line. The 0.7 equity cap and 20 units per SKU still bound it.",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {
+    "buyer": {
+     "goods_open": 0.6,
+     "goods_aim": 0.72,
+     "goods_ceiling": 0.82,
+     "nonfood_shelf_rule": "accept goods whose remaining shelf life covers the use window, not 540 h",
+     "food_min_shelf_hours": "use-window based, not fixed 18 h"
+    }
+   },
+   "targets": "buyer surplus (room 0.328) and buyer deals (0.055)",
+   "expected": "Recovers about 10 refused deals per 30 min and closes more goods of 100k+, where the top buyers earn about 72k surplus per deal against our 22k.",
+   "risk": "Some food may spoil before use, which gives zero surplus. Goods paid closer to list earn less per deal. The user must decide this.",
+   "reversible": true
+  },
+  {
+   "id": "C",
+   "change": {
+    "priorities": "stars: in every closed negotiation, confirm stock before the deal is agreed (no cancels from stockouts); after delivery, remind the buyer of the 12 h guarantee"
+   },
+   "targets": "shop stars (room 0.126; 0.01 star = many rows)",
+   "expected": "Fewer canceled deals and better reviews. A move from 4.54 to 4.56 could pass 20+ rows.",
+   "risk": "Small. Slightly slower answers.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "accepted",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "The shop now sells many units at a profit, and none below cost. The early loss is won back.",
+    "why": "The unit economics and board profit percentile support this claim. The shop has a positive profit and 0 below-cost deals."
+   },
+   {
+    "claim": "H2 is not judged yet. Completion is above the success bar, losses are 0, but the deal count in the epoch sample reads 0.",
+    "why": "eval.experiment states 'neither yet' and shows 0 deals in the experiment window for 'unit_economics.seller.deals', preventing a success verdict based on that metric, even though other conditions are met."
+   },
+   {
+    "claim": "The depth answer of v56 works: regulars deepened and a tester became a top-5 regular. G1515d951 still runs out.",
+    "why": "The market summary and health data confirm increased deals with specific regulars and continued stockouts of a key item, indicating that the current strategy for deepening stock for regulars is working but that demand for G1515d951 exceeds current stock levels."
+   },
+   {
+    "claim": "The buyer side is where the score is lost. Only 18% of our buyer's deals are goods, against 71-79% for top buyers. Many paid food deals are also refused by our own shelf-life policy.",
+    "why": "Benchmark data explicitly shows a low goods share for our buyer compared to top buyers, and the 'health' evidence points to numerous food deals being rejected due to strict shelf-life policies, directly impacting buyer deals and surplus."
+   },
+   {
+    "claim": "Stars sit in a tight cluster. One hundredth of a star separates us from 31 rows above.",
+    "why": "The board's stars_rank value and percentile, combined with the seller funnel data (canceled and rejected deals), confirm that a small improvement in stars could significantly improve rank."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793775827.963259
+ },
+ "decision": {
+  "choice": "A",
+  "note": "night mode or delegation: audit agreed",
+  "ts": 1793775827.9865754,
+  "installed": 57
+ }
+}

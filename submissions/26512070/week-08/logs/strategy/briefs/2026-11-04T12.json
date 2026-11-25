@@ -1,0 +1,139 @@
+{
+ "proposal_id": "2026-11-04T12",
+ "slice": "2026-11-04T12",
+ "ts": 1793761437.6400113,
+ "version_from": 49,
+ "score": "Board (last collected): shop profit 9,516,493 at percentile 0.844 (7 rows above, next 10,623,058). Revenue 72,209,165 at 0.823. Stars 4.53 at 0.385 (29 rows above, next 4.54). Buyer surplus 4,360,223 at 0.30 (31 above). Forum votes 0.624 at 0.533. Deals 485 at 0.389. Posts 153 at 0.833. Most room left (weight x (1 - percentile)): buyer surplus 0.35, buyer forum 0.140, shop stars 0.123, shop profit 0.078. The single biggest lever is buyer surplus, not the shop.",
+ "happened": [
+  {
+   "claim": "The shop converts stock well once a deal closes. 138 deals, revenue 23.33M, profit before losses 4.92M, median margin 24,646, no deal below cost. Sell-through 1.24 and losses only 4,157 (storage).",
+   "evidence": [
+    "self summary e49 2026-11-04T12: eval.unit_economics seller, eval.stock_health, eval.losses"
+   ]
+  },
+  {
+   "claim": "Volume leaks before the deal. Of 415 closed negotiations only 158 completed (38%): 219 canceled, 38 rejected. In the last 30 min, 61 of 113 visits (56%) left at our opening ask (74% of list).",
+   "evidence": [
+    "eval.funnel seller via self summary: lost_by canceled 219, rejected 38",
+    "health 30 min: left_at_opening 61 of 113 visits"
+   ]
+  },
+  {
+   "claim": "The market's best sellers are still the high-list bedding SKUs we stock deep. G1515d951 sold 915 in 6 h, G0be9ed07 762, G07ec17d5 698. Top regulars inextro (98 deals, 22.1M), chaewoonee (64, 14.3M) and shaun0927 (63, 9.94M) buy mostly these from us, and they are still speeding up.",
+   "evidence": [
+    "market summary e49 2026-11-04T12, market.selling 6h"
+   ]
+  },
+  {
+   "claim": "Our buyer is the weak half. Goods are 8% of its orders against 63-77% for the top buyers, and surplus per deal is 10,455 against 29,676-59,036. In 30 min, 5 of 36 agreed food orders went unpaid because the shop's shelf life was below our own use window: wasted negotiation time, and the next order comes about 20 s after one ends.",
+   "evidence": [
+    "benchmark 6h buyer_ours vs buyer_top",
+    "health 30 min: unpaid 5, reason 'N h of shelf life left'",
+    "self summary: agree rate 39.5%, pay rate 74.2%"
+   ]
+  },
+  {
+   "claim": "Answer to the 02:2x restock question: breadth with the top-3 depth stays. The current buy list already puts G1515d951 (20 units, holding 0), G07ec17d5 and G5e3784e6 at 20 and the rest at 3-9. The forum's bedding demand (budgets around 910k) is met only by holding the exact SKUs orders accept. Our best-selling-SKUs-we-lack list has G1515d951, G5cd4ffbc and G30604071, all on the buy list. SKUs that…",
+   "evidence": [
+    "restock buy list now",
+    "benchmark their_best_we_lack and ours_nobody_sold"
+   ]
+  }
+ ],
+ "hypothesis": "H2: neither yet. The sample is 102 closed negotiations, at least 30, so the review is due. Completion is 0.363, below the 0.5 success bar. The deals counter reads 0 in this epoch's window while the slice shows 138 deals, so treat that counter as a scope artefact rather than evidence. Losses are 0, far from the 500,000 rollback. H2 as written ('goods-only, first visits at cost') no longer matches what we run: food is on, the cost offer ended at v13. It should be restated as: certified goods with a warranty, sold deep in the best sellers at about 72-74% of list, keep completion of closed negoti…",
+ "counterparts": "inextro, chaewoonee, shaun0927: partners/regulars, keep stocking their SKUs (G1515d951, G07ec17d5, G30604071, G6b9db161, G054ff120, G5cd4ffbc, G75f11c19) every window. Note that inextro is also the market's largest shop (215 deals/h); its buying from us is real demand and our main revenue. fair-furniture (new shop): 0 of 3 with our buyer (1 walked, 2 rejected); stance normal, re-check next slice, no avoid. baesamaith-cmd, chanarun: first-timers, normal treatment. chanarun's buy of Ge37f9697 is not a preference signal.",
+ "options": [
+  {
+   "id": "A",
+   "change": {
+    "buyer": {
+     "food_check_shelf_before_negotiate": true,
+     "food_skip_shop_if_shelf_hours_below_use_window": true,
+     "goods_priority": "rank goods orders first, open 55% / aim 68% / ceiling 82% of list unchanged, up to 10 shops within 120 s"
+    },
+    "context": "Our buyer loses paid food deals by agreeing with shops whose units fail our own use window. Check shelf hours from the shop's stock before the first message and skip shops that fail. The surplus gap to the top buyers is in goods of list 100k+, so never let a goods order end early."
+   },
+   "targets": "buyer surplus (weight 0.5, room 0.35) and buyer deals (room 0.061)",
+   "expected": "Turns the about 5 in 36 unpaid food agreements per 30 min into either paid deals elsewhere or a faster next order. That means roughly +8-10 paid deals/h, about +0.1M surplus/h at food median, plus more time for goods orders. Measured by the buyer's pay rate (now 74%) and surplus per hour.",
+   "risk": "Low. Some orders find no shop that passes the shelf check and end with no deal, but those would have gone unpaid anyway. It is a buyer playbook change, outside the delegation, so it waits for the user.",
+   "reversible": true
+  },
+  {
+   "id": "B",
+   "change": {
+    "priorities": "Guaranteed goods shop: open at 72% of list (was 74%), 1% a turn, close at 70% at most and never under cost x 1.12. Speak of the certificate and the 6-hour full refund.",
+    "experiment": {
+     "hypothesis": "H3: certified, warranty goods deep in the best sellers at 70-72% of list lift completion of closed negotiations to 0.5 and stars rank, at a median margin of 15,000 or more.",
+     "min_sample": {
+      "metric": "funnel.seller.closed",
+      "value": 100
+     },
+     "success_if": [
+      {
+       "metric": "funnel.seller.completion_rate",
+       "op": ">=",
+       "value": 0.5
+      }
+     ],
+     "rollback_if": [
+      {
+       "metric": "losses.total",
+       "op": ">",
+       "value": 500000
+      }
+     ]
+    }
+   },
+   "targets": "shop revenue (room 0.053) and stars (room 0.123: more paid deals give more reviews); costs some profit per deal",
+   "expected": "56% of visits leave at the opening ask. Two points off the open, on an average paid 171k, is about 3.4k less margin per deal against a 24.6k median margin. If 1 in 5 of those leavers closes, that is about +12 deals per 30 min.",
+   "risk": "Medium. Profit (weight 0.5, percentile 0.844) could fall if the leavers do not come back. Cost x 1.12 still bounds the loss per deal. Needs the user.",
+   "reversible": true
+  },
+  {
+   "id": "C",
+   "change": {
+    "restock": {
+     "top_n": 4,
+     "top_units": 20,
+     "top_line_share": 0.5,
+     "max_line_share": 0.3,
+     "market_top": 24,
+     "market_units": 3,
+     "units_cap": 12
+    },
+    "context": "Restock answer: breadth with top depth stays. Top 4 by expected sales value (G1515d951, G07ec17d5, G5e3784e6, G5cd4ffbc) up to 20 units. Others 3, up to 12 a SKU. No rebuy of SKUs that sold nothing (G114eb392, G872a6c14, G43f4ed02, G756fd2e8, Gac3a59ab, Gaa1d3c1f, Ge37f9697)."
+   },
+   "targets": "shop profit and revenue: sell-through stays above 1, deeper in the SKU the market and the top shops sell most",
+   "expected": "G5cd4ffbc (list 199,000, the top shops sold 50 in 6 h, we hold 0) goes from 9 units to a 20-unit line. That is about +10 deals a window at about a 40k margin, within the stock cap.",
+   "risk": "Low. It ties more cash in one more expensive line. Storage is 1%/day and sell-through is 1.24 now. Delegated (restock), so it installs once the audit agrees.",
+   "reversible": true
+  }
+ ],
+ "recommendation": "A",
+ "status": "rejected",
+ "audit": {
+  "agrees": true,
+  "prefer": null,
+  "points": [
+   {
+    "claim": "The single biggest lever is buyer surplus, not the shop.",
+    "why": "eval.score() shows buyer surplus with a weight of 0.5 and (1 - percentile) of 0.7, yielding a product of 0.35. Shop profit is 0.5 * (1 - 0.844) = 0.078. This confirms the strategy agent's assessment."
+   },
+   {
+    "claim": "Our buyer is the weak half. Goods are 8% of its orders against 63-77% for the top buyers, and surplus per deal is 10,455 against 29,676-59,036. In 30 min, 5 of 36 agreed food orders went unpaid because the shop's shelf life was below our own use window: wasted negotiation time, and the next order comes about 20 s after one ends.",
+    "why": "The evidence cited ('benchmark 6h buyer_ours vs buyer_top', 'health 30 min: unpaid 5, reason 'N h of shelf life left'', 'self summary: agree rate 39.5%, pay rate 74.2%') directly supports these claims. Option A addresses the unpaid food deals directly, which should improve the pay rate and surplus."
+   },
+   {
+    "claim": "Option A is low risk.",
+    "why": "The rationale for low risk is sound: 'Some orders find no shop that passes the shelf check and end with no deal, but those would have gone unpaid anyway.' This means the worst outcome is equivalent to the current problematic outcome, and the best is improved efficiency and surplus."
+   }
+  ],
+  "by": "audit",
+  "ts": 1793761441.0991025
+ },
+ "decision": {
+  "choice": "reject",
+  "note": "user 11/6 00:xx: stale, written on an older strategy and superseded by later versions",
+  "ts": 1793891381.4082093
+ }
+}

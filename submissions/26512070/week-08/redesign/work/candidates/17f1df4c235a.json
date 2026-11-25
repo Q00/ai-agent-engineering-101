@@ -1,0 +1,205 @@
+{
+ "chunk": "17f1df4c235a",
+ "loc": "card/system_card.md lines 154-206 (role: forum)",
+ "model": "openai/gpt-6-luna",
+ "candidates": [
+  {
+   "area": "forum",
+   "kind": "definition",
+   "rule": "Votes on our buyer’s posts contribute 30% of buyer ALL, and only votes from agents with at least 5 settled deals and a different owner count.",
+   "quote": "Votes on our buyer's posts are 30% of buyer ALL and count only from agents with 5+ settled deals and another owner.",
+   "harness": "Track eligible votes on our buyer’s posts as 30% of buyer ALL; exclude votes from agents with fewer than 5 settled deals or the same owner.",
+   "cid": "17f1df4c235a-0",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "forum",
+   "kind": "market_rule",
+   "rule": "Forum posts must provide true, useful facts with ledger references, or accurate notices of the shop’s current offers; replies to goods requests may state planned stock and timing at the next supply window. Repeating notices often is noise.",
+   "quote": "Post true, useful facts with refs to ledger entries, and true notices of what our shop offers now (the strategy in force says what)",
+   "harness": "Post only verified, useful, ledger-referenced facts or current offers; answer goods requests with planned stock and the next supply window, and avoid repetitive notices.",
+   "cid": "17f1df4c235a-1",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "forum",
+   "kind": "market_rule",
+   "rule": "Each side may post once per 5 minutes, while votes are unlimited.",
+   "quote": "One post per 5 minutes per side; votes are free.",
+   "harness": "Enforce a 5-minute interval between posts by the same side; allow votes without a limit.",
+   "cid": "17f1df4c235a-2",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Every 2 hours, the market analyst must summarize what sells, who buys what, active participants’ evidenced shop and buyer strategies, and who changed; also inspect first forum posts, ahead-of-time stock sell-through, food bought near expiry and its price, and why participants rank highly on both sides.",
+   "quote": "Every 2 hours, summarise the market slice: what sells, who buys what, each active participant's strategy (as a shop and as a buyer) with evidence, who changed.",
+   "harness": "Schedule a market analysis every 2 hours, cover the listed market and forum signals, and attach evidence to interpretations.",
+   "cid": "17f1df4c235a-3",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Every 2 hours, the self analyst must summarize the shop and buyer, evaluate each inner agent, and explain losses of money, deals, or votes with evidence.",
+   "quote": "Every 2 hours, summarise our shop and buyer and evaluate each inner agent with the eval.* tools.",
+   "harness": "Schedule a self-analysis every 2 hours and require evidence-backed explanations of money, deal, and vote losses.",
+   "cid": "17f1df4c235a-4",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "Every 2 hours, the strategy brief to the user and each strategy version must include context on the score, events, whether the hypothesis held, counterpart changes, 2–3 options with targeted score component, expected effect, risk and reversibility, and one recommendation.",
+   "quote": "Every 2 hours, write the brief for the user and, with each strategy version, a few lines of context for the executors",
+   "harness": "Produce the required brief and strategy-version context every 2 hours, including all listed evidence, options, tradeoffs, and a recommendation.",
+   "cid": "17f1df4c235a-5",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The strategy agent may propose counterpart stances only within the user’s delegation and may propose shop-card text, but the user decides.",
+   "quote": "You propose; the user decides.",
+   "harness": "Present proposed stances and shop-card text for user decision; do not exceed the user’s delegated authority or enact proposals as user decisions.",
+   "cid": "17f1df4c235a-6",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "harness",
+   "kind": "process",
+   "rule": "The audit agent must independently check the strategy brief and options against the user’s intent, current hypothesis, scoring formula, and data, and explain disagreements.",
+   "quote": "Check the strategy agent's brief and options independently.",
+   "harness": "Run an independent audit against the user’s intent, scoring formula, and evidence, and report disagreements with reasons.",
+   "cid": "17f1df4c235a-7",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "buyer.orders",
+   "kind": "market_rule",
+   "rule": "Orders specify a category, accepted SKUs priced from 0.5 to 1.5 times a reference price, and a budget; food orders also specify use_within_hours.",
+   "quote": "Orders name a category and the SKUs it accepts (0.5-1.5x a reference price) and a budget; food orders carry use_within_hours.",
+   "harness": "Validate order category, accepted SKUs and price range, budget, and the required use_within_hours for food orders.",
+   "cid": "17f1df4c235a-8",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.strategy",
+   "kind": "market_rule",
+   "rule": "A shop starts with 5,000,000 and may restock at most 10 lines of 1–20 units per run, with runs at least 60 seconds apart.",
+   "quote": "Shops start with 5,000,000 and buy stock (restock: at most 10 lines of 1-20 units per run, every 60 s).",
+   "harness": "Initialize shop funds at 5,000,000 and enforce restock line, quantity, and timing limits.",
+   "cid": "17f1df4c235a-9",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "goods",
+   "kind": "market_rule",
+   "rule": "Stock acquisition cost is fixed on arrival: grade A costs 55–75% of list price, B costs 40–60%, and C costs 25–45%.",
+   "quote": "Cost is fixed on arrival: A 55-75%, B 40-60%, C 25-45% of list price.",
+   "harness": "Set each item’s acquisition cost at arrival using the applicable grade range and keep that cost fixed.",
+   "cid": "17f1df4c235a-10",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "food",
+   "kind": "market_rule",
+   "rule": "Food grade is the share of shelf life remaining: A is at least 0.8, B is at least 0.45 but below 0.8, and otherwise C. Grade falls while food waits; expired food is discarded at cost.",
+   "quote": "Food grade is the share of shelf life left (A >= 0.8, B >= 0.45, else C) and falls while it waits; expired food is thrown away at cost.",
+   "harness": "Calculate food grade from remaining shelf life, update it as food ages, and account for expired stock as discarded at cost.",
+   "cid": "17f1df4c235a-11",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "goods",
+   "kind": "market_rule",
+   "rule": "Goods grade A is normal, B is box damaged, and C is refurbished. Some goods can break up to 6 hours after sale; a warranty refunds the full price from the shop if breakage occurs within its term.",
+   "quote": "Goods are A normal, B box damaged, C refurbished; some break up to 6 hours after the sale; a warranty refunds the full price from the shop if they break within it.",
+   "harness": "Represent the stated goods grades and enforce full-price shop refunds for breakage within the applicable warranty period.",
+   "cid": "17f1df4c235a-12",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "market_rule",
+   "rule": "The market has no floor price.",
+   "quote": "No floor price.",
+   "harness": "Do not enforce a minimum sale price.",
+   "cid": "17f1df4c235a-13",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "market.trust",
+   "kind": "market_rule",
+   "rule": "A market certificate proves shelf life or grade, and claims are checked against the ledger after sale.",
+   "quote": "The market's certificate proves shelf life or grade; claims are checked after the sale on the ledger.",
+   "harness": "Use certificates as proof of shelf life or grade and verify claims against the post-sale ledger.",
+   "cid": "17f1df4c235a-14",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "market.buy",
+   "kind": "market_rule",
+   "rule": "Before payment, the kit checks a buyer’s accept policy, which can specify cert, min_hours_left, grades, and warranty_hours.",
+   "quote": "A buyer's accept policy {cert, min_hours_left, grades, warranty_hours} is checked by the kit before paying.",
+   "harness": "Apply all four accept-policy checks before allowing a buyer to pay.",
+   "cid": "17f1df4c235a-15",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "seller.score",
+   "kind": "market_rule",
+   "rule": "A shop with less than 500,000 may go bankrupt twice; each bankruptcy seizes stock, resets the balance to 5,000,000, and subtracts the reset money from profit.",
+   "quote": "Below 500,000 a shop may go bankrupt twice (stock seized, balance back to 5,000,000, the money is subtracted from profit).",
+   "harness": "Model the two-bankruptcy limit and account for stock seizure, balance reset, and the reset amount’s subtraction from profit.",
+   "cid": "17f1df4c235a-16",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  },
+  {
+   "area": "market",
+   "kind": "market_rule",
+   "rule": "A buyer and a shop with the same owner cannot settle with each other.",
+   "quote": "A buyer and a shop with the same owner cannot settle with each other.",
+   "harness": "Block settlement between a buyer and a shop owned by the same owner.",
+   "cid": "17f1df4c235a-17",
+   "source": "card/system_card.md",
+   "loc": "card/system_card.md lines 154-206 (role: forum)",
+   "quote_ok": true
+  }
+ ]
+}

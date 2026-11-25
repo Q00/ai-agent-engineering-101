@@ -1,0 +1,12 @@
+def test():
+    base = {"kind": "goods", "list_price": 500000, "cost": 250000, "floor": 300000, "ask": 450000, "offer": 320000, "turn": 4, "max_turns": 12, "known": True, "name": "a"}
+    assert decide(dict(base)) == {"action": "accept"}
+    assert decide(dict(base, offer=200000)) == {"action": "counter", "price": 300000}
+    assert decide(dict(base, offer=200000, turn=3)) is None
+    assert decide(dict(base, offer=200000, known=False)) is None
+    g = {"kind": "goods", "list_price": 20000, "cost": 8000, "floor": 10000, "ask": 18000, "offer": 9000, "turn": 4, "max_turns": 12, "known": True, "name": "b"}
+    assert decide(g) == {"action": "counter", "price": 12150}
+    f = {"kind": "food", "list_price": 50000, "cost": 25000, "floor": 30000, "ask": 45000, "offer": 38000, "turn": 4, "max_turns": 12, "known": True, "name": "c"}
+    assert decide(f) == {"action": "accept"}
+    res = decide(dict(f, offer=20000))
+    assert res["action"] == "counter" and res["price"] >= 30000
