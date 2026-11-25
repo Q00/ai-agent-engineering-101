@@ -1,0 +1,88 @@
+[ask] I want to buy a lamp
+[unit] lamp lamp grade A cost 100 list 130 floor 100 opening 120 (adapt: 50% of my last 20 negotiations closed; 10 Round 3 reviews, avg 4.4)
+[harness] {"action": "counter", "price": 120}
+[guard] offer 120 is within 3% of my ask 120: accept
+[receipt] {"shop": "bjeon01", "item": "lamp", "price": 120, "task": "e2f28230-e58c-447b-85de-85f125d2fcae", "sig_seller": "jcGAusX+hArAbZoZ61Oy20uhSh/V5m+ccYBiL6qOtWLgmjhXkOV7/PDK1NqYvZHxro3xbknQeGCLNQ6WlkzoDg=="}
+Failed to detach context
+Traceback (most recent call last):
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7fc2e7c34b30> at 0x7fc2e7155740> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-40' coro=<EventQueueSource._dispatch_loop() done, defined at /data/jj275/venvs/a2a/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/data/jj275/venvs/a2a/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x7fc2e7c34b30> at 0x7fc2e7636f00> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-41' coro=<EventQueueSource._dispatch_loop() done, defined at /data/jj275/venvs/a2a/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+[ask] I want to buy a lamp
+[unit] lamp lamp grade A cost 100 list 130 floor 100 opening 120 (adapt: 50% of my last 20 negotiations closed; 10 Round 3 reviews, avg 4.4)
+[harness] {"action": "counter", "price": 120}
+[guard] offer 120 is within 3% of my ask 120: accept
+[receipt] {"shop": "bjeon01", "item": "lamp", "price": 120, "task": "06720abe-309e-4a69-b183-1d1bda07b573", "sig_seller": "LsyfN5C1kSPoqhOE4oDmaAs1cVXcpt8HxKAG4Pw6N8ukeArw1CQRPOT57dmZm4DC6Zw/e41u8RQR9M0lB9HVCQ=="}
+[ask] I want to buy a lamp
+[unit] lamp lamp grade A cost 100 list 130 floor 100 opening 120 (adapt: 50% of my last 20 negotiations closed; 10 Round 3 reviews, avg 4.4)
+[harness] {"action": "counter", "price": 120}
+[guard] offer 120 is within 3% of my ask 120: accept
+[receipt] {"shop": "bjeon01", "item": "lamp", "price": 120, "task": "4d53acb6-d9b3-4244-8943-d91004b4c186", "sig_seller": "wZODIEUgx2EcSq7w6aHL+WbQsh18/W9dkT/XulLyrY5kppVaPOfFkOQEc4kLSVwknzoVNSRxaNqHd36RiiSKBg=="}
+[ask] I want to buy a bookshelf
+[unit] bookshelf bookshelf grade A cost 260 list 338 floor 260 opening 312 (adapt: 50% of my last 20 negotiations closed; 10 Round 3 reviews, avg 4.4)
+[harness] {"action": "counter", "price": 312}
+[harness] {"action": "counter", "price": 278}
+[harness] {"action": "counter", "price": 260}
+[harness] {"action": "counter", "price": 260}
+[harness] {"action": "counter", "price": 260}
+[harness] {"action": "counter", "price": 260}
+[harness] {"action": "counter", "price": 260}
+[ask] I want to buy a bookshelf
+[unit] bookshelf bookshelf grade A cost 260 list 338 floor 260 opening 312 (adapt: 50% of my last 20 negotiations closed; 10 Round 3 reviews, avg 4.4)
+[harness] {"action": "counter", "price": 312}
+[harness] {"action": "counter", "price": 278}
+[harness] {"action": "counter", "price": 260}
+[harness] {"action": "counter", "price": 260}
+[harness] {"action": "counter", "price": 260}
+[harness] {"action": "counter", "price": 260}
+[harness] {"action": "counter", "price": 260}
+[ask] I want to buy a bookshelf
+[unit] bookshelf bookshelf grade A cost 260 list 338 floor 260 opening 312 (adapt: 55% of my last 20 negotiations closed; 10 Round 3 reviews, avg 4.3)
+[harness] {"action": "counter", "price": 312}
+[harness] {"action": "counter", "price": 277}
+[harness] {"action": "counter", "price": 262}
+[harness] {"action": "counter", "price": 260}
+[harness] {"action": "counter", "price": 260}
+[harness] {"action": "counter", "price": 260}
+[harness] {"action": "counter", "price": 260}

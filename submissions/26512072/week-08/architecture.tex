@@ -1,0 +1,91 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,landscape,margin=7mm]{geometry}
+\usepackage{fontspec}
+\setmainfont{UnDotum.ttf}[BoldFont=UnDotumBold.ttf]
+\XeTeXlinebreaklocale ""
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,shapes.geometric,calc}
+\pagestyle{empty}
+
+% 주황 = 모델(claude haiku)이 하는 일, 파랑 = 코드가 하는 일, 보라 = 기억, 초록 = 모델이 쓰는 도구, 회색 = 수업이 준 것
+% 상자 안 회색 글씨 "기본:"은 수업 키트의 기본형이 하는 일(우리와 다른 점)
+\tikzset{
+  b/.style={draw,rounded corners=4pt,align=center,inner sep=5pt,minimum height=11mm,text width=#1,font=\normalsize},
+  model/.style={b=#1,fill=orange!28,draw=orange!75!black,thick},
+  code/.style={b=#1,fill=blue!9,draw=blue!60!black},
+  tool/.style={b=#1,fill=green!15,draw=green!50!black},
+  mem/.style={b=#1,fill=violet!8,draw=violet!60!black,dashed},
+  ext/.style={b=#1,fill=gray!15,draw=gray!60!black},
+  hub/.style={b=#1,fill=violet!14,draw=violet!75!black,very thick},
+  ask/.style={diamond,aspect=2.3,draw=blue!60!black,fill=blue!9,align=center,font=\normalsize,inner sep=1pt},
+  go/.style={-{Stealth[length=2.6mm]},thick},
+  rd/.style={-{Stealth[length=2.6mm]},violet!75!black,very thick},
+  lab/.style={font=\small,fill=white,inner sep=1.5pt},
+  num/.style={circle,fill=red!75!black,text=white,font=\bfseries,inner sep=1.5pt,minimum size=6mm},
+  panel/.style={draw,rounded corners=8pt,thick,inner sep=9pt},
+}
+\newcommand{\D}[1]{\\[0.5mm]{\scriptsize\color{gray!80!black} 기본: #1}}
+
+\begin{document}
+\centering
+{\LARGE\bfseries 가게 하나, 구매자 하나: 계산은 코드가, 판단만 모델이}\\[2mm]
+{\small \colorbox{orange!28}{모델(claude haiku)이 하는 일}\enspace \colorbox{blue!9}{코드가 하는 일}\enspace
+\colorbox{green!15}{모델이 쓰는 도구}\enspace \colorbox{violet!14}{기억}\enspace \colorbox{gray!15}{수업이 준 것}\enspace
+{\color{gray!80!black}기본: = 수업 키트의 기본형}}
+\vspace{2mm}
+
+\resizebox{!}{0.85\textheight}{\begin{tikzpicture}
+% ---------- 시장
+\node[ext=27cm] (market) at (11.3,0) {\textbf{시장} (수업)\quad 2주 동안 열림 · 구매자에게 주문을 20초에 하나씩 · 가게는 20분마다 3분 동안만 재고를 살 수 있음 · 모든 거래를 \textbf{공개 장부}에 적음};
+
+% ---------- 가운데: 공개 장부 요약
+\node[hub=4.6cm] (hub) at (11.3,-5.3) {\textbf{공개 장부 요약}\\[1mm] \small 물건마다 원가\\ 가게마다 실제 판매가\\ 가게마다 깎인 마진 비율\\ 내 판매와 고장 환불};
+\draw[rd] (market.south -| hub) -- node[lab]{1분마다 읽음} (hub.north);
+\node[num] at (hub.north west) {3};
+
+% ---------- 왼쪽: 가게
+\node[code=4.8cm] (buy) at (0,-3.1) {재고 사 오기\\ \small 잘 팔리는 것, 식품과 가구를 따로\D{재고가 줄면 무작위로}};
+\node[model=4.8cm,below=7mm of buy] (sneg) {손님과 흥정\\ \small 최저가 = 원가×1.08(식품), ×1.2(가구·가전)\D{최저가만 막음}};
+\node[code=4.8cm,below=7mm of sneg] (rcpt) {서명한 영수증\\ \small 실제 등급, 시장 인증서, 고장 보증 6시간\D{등급·보증 없음}};
+\draw[go] (buy) -- (sneg); \draw[go] (sneg) -- (rcpt);
+\node[num] at (sneg.north west) {1};
+\node[code=3.3cm] (tune) at (5.0,-3.1) {한도 자동 조정\\ \small 3시간마다\\ 환불 많으면 줄이고\\ 잘 팔리면 늘림};
+\draw[go] (tune) -- node[lab,above]{한도} (buy);
+\node[mem=3.3cm] (smem) at (5.0,-7.8) {판매 기억\\ \small 흥정마다 한 줄};
+\draw[go,violet!60!black,dashed] (rcpt.east) -- (rcpt.east -| smem.west);
+\begin{scope}[on background layer]
+\node[panel,draw=blue!50!black,fit=(buy)(rcpt)(tune)(smem),label={[font=\Large\bfseries]above:가게}] (shop) {};
+\end{scope}
+\draw[rd] (hub.west) -- node[lab,above=1mm]{내 판매·환불} (hub.west -| tune.east);
+
+% ---------- 오른쪽: 구매자
+\node[code=5.2cm] (score) at (20.5,-3.1) {주문이 오면 가게마다 점수\\ \small 믿을 만한가 × 깎이는 마진 × 결제까지 가나\D{가게를 고르지 않음}};
+\node[ask,below=6mm of score] (q) {애매한가?};
+\node[code=3.4cm] (fast) at ($(q)+(-3.0,-2.3)$) {코드가 바로 고름\\ \small (약 4건 중 3건)};
+\node[model=3.8cm] (slow) at ($(q)+(3.6,-2.3)$) {모델이 조사해서 고름\\ \small 거래 20건 미만, 거짓 등급 전력,\\ 게시판 경고, 비슷한 후보일 때};
+\node[tool=3.8cm,below=4mm of slow] (tools) {도구 4개\\ \small 가게 기록, 후기,\\ 시세, 게시판 검색};
+\draw[go,<->,green!50!black] (slow) -- (tools);
+\draw[go] (score) -- (q);
+\draw[go] (q.west) -| node[lab,pos=0.25]{아니오} (fast.north);
+\draw[go] (q.east) -| node[lab,pos=0.25]{예} (slow.north);
+\node[num] at ($(q.north)+(-1.2,0.15)$) {2};
+\node[code=4.8cm] (bneg) at ($(q)+(-0.6,-7.0)$) {흥정\\ \small 첫 제안 = 추정 원가, 상한 = 원가 + 마진의 30\%\D{모델이 가격을 다 정함}};
+\draw[go] (fast.south) |- (bneg.west); \draw[go] (tools.south) |- (bneg.east);
+\node[code=4.8cm,below=7mm of bneg] (pay) {결제 조건 걸고 키트가 결제\\ \small 인증서, 유통기한, 보증 6시간\D{조건 없음}};
+\draw[go] (bneg) -- (pay);
+\node[mem=3.2cm] (bmem) at ($(pay -| tools)+(0.6,0)$) {구매 기억\\ \small 결제 거부, 고장, 거짓 등급};
+\draw[go,violet!60!black,dashed] (pay.east) -- (bmem.west);
+\begin{scope}[on background layer]
+\node[panel,draw=orange!60!black,fit=(score)(fast)(tools)(pay)(bmem),label={[font=\Large\bfseries]above:구매자}] (buyer) {};
+\end{scope}
+\draw[rd] (hub.east) -- node[lab,above=1mm]{원가, 가게 가격} (hub.east -| buyer.west);
+
+% ---------- 아래: 핵심 세 가지 + 운영 + 결과
+\node[anchor=north west,align=left,text width=27cm,font=\normalsize] (keys) at ($(shop.west |- buyer.south)+(0,-0.6)$) {
+\tikz[baseline=-0.6ex]\node[num]{1}; \textbf{정직한 가게}: 가격의 바닥은 코드가 지키고, 모델은 말만 한다. 등급을 속인 적 0번(14,110건 모두 사실).\\[1.5mm]
+\tikz[baseline=-0.6ex]\node[num]{2}; \textbf{모델은 애매할 때만}: 주문은 20초에 하나씩 온다. 확실한 주문은 코드가 즉시 처리해서 시간당 결제가 50건 → 약 90건.\\[1.5mm]
+\tikz[baseline=-0.6ex]\node[num]{3}; \textbf{같은 장부를 보고 스스로 고친다}: 가게는 내 판매·환불로 재고 한도를, 구매자는 원가와 가게별 가격으로 점수와 상한을 정한다.};
+\node[ext=27cm,anchor=north west] (ops) at ($(keys.south west)+(0,-0.3)$) {\textbf{운영}\quad 키트가 8분 멈추면 감시 프로그램이 다시 켜고 끊긴 연결을 정리 (서버 이전 뒤 5일 동안 재시작 0번) · 로그는 넘어갈 때마다 보관};
+\node[ext=27cm,anchor=north west] (result) at ($(ops.south west)+(0,-0.25)$) {\textbf{결과}\quad 72명 중 30위 (학생 46명 중 26위)\quad·\quad 가게 정산 14,223건, 장부가치 500만 → 1억 원\quad·\quad 구매 정산 19,231건};
+\end{tikzpicture}}
+\end{document}
