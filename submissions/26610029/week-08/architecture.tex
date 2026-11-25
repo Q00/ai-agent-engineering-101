@@ -66,7 +66,7 @@
   {\tg{code}{TOOL}\texttt{find\_unit}: the soonest-expiring unit in stock that fits the request};
 \node[box] (S2) [below=4mm of S1]
   {\tg{code}{TOOL}\texttt{terms}: floor $=$ cost $\times$ 1.05,
-   target $=$ list $\times$ (market rate $-$ undercut), ask $=$ target $+$ premium};
+   target $=$ max(floor, list $\times$ (market rate $-$ undercut)), ask $=$ target $+$ premium};
 \node[dec] (D1) [below=5mm of S2] {offer $\geq$ target?};
 \node[dec] (D2) [below=6mm of D1] {first offer far\\under ask?};
 \node[llmb] (S3) [below=6mm of D2]
@@ -216,11 +216,11 @@
 \node[base=13.4cm, draw=black!45, anchor=north west] (diff) at (lTop -| xD)
   {\textbf{What differs from the kit default}\\[2pt]
    \begin{tabular}{@{}p{4.5cm}p{8.0cm}@{}}
-   \textit{kit default} & \textit{real\_yellow}\\
-   harness picks every move above cost & code computes floor / target / ask, the LLM only moves inside that band\\
-   random SKUs when under 20 units & sales $\times$ margin ranking, my own per-SKU deal rate, category spread\\
-   (week 7) harness picks the shop & DB score, no LLM (the week-7 pick made 0 deals in 22 orders on Nov 3)\\
-   no memory: hooks are fresh processes & one shared DB: what the market did, what I did, how to act\\
+   \textit{kit default} & \textit{real\_yellow}\\ \hline
+   \rule{0pt}{10pt}harness picks every move above cost & code computes floor / target / ask, the LLM only moves inside that band\\[2pt]
+   random SKUs when under 20 units & sales $\times$ margin ranking, my own per-SKU deal rate, category spread\\[2pt]
+   (week 7) harness picks the shop & DB score, no LLM (the week-7 pick made 0 deals in 22 orders on Nov 3)\\[2pt]
+   no memory: hooks are fresh processes & one shared DB: what the market did, what I did, how to act\\[2pt]
    a human edits code to tune & the meta harness rewrites \texttt{policy} every 20 min
    \end{tabular}};
 
