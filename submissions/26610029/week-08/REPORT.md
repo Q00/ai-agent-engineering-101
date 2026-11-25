@@ -87,6 +87,69 @@ LLM에게 툴 호출을 맡기지 않았다(하네스는 `--tools ""`). 대신 *
 
 가게와 buyer는 서로 직접 말하지 않지만, buyer가 본 경쟁 가게 재고(`offers_seen`)와 buyer가 겪은 품절(`stockout`)이 restock의 입력이 된다. 즉 **buyer가 가게의 시장 조사원 역할**을 한다.
 
+아래는 GitHub에서 바로 보이도록 같은 구조를 Mermaid로 줄인 버전이다(공식 figure는 `architecture.pdf`). 주황 = MODEL, 파랑 = TOOL, 초록 = CONTEXT, 마름모 = 코드 안의 판단 규칙, 점선 = DB 읽기/쓰기.
+
+```mermaid
+flowchart TB
+  MK["MARKET + KIT<br/>orders, ledger, supply window, ACP settle"]
+
+  subgraph SHOP["SHOP seller_r3.py: when another buyer asks my shop"]
+    S1["TOOL find_unit"] --> S2["TOOL terms<br/>floor = cost x 1.05<br/>target = max(floor, list x (rate - undercut))"]
+    S2 --> D1{"offer at or above target?"}
+    D1 -- yes --> SA["accept: signed receipt"]
+    D1 -- no --> D2{"first offer far under ask?"}
+    D2 -- yes --> SC["counter at target"]
+    D2 -- no --> SM["MODEL Haiku<br/>counter / accept / reject"]
+    SM --> SG["TOOL guard: never below floor"]
+    SG -- accept --> SA
+    SG -- counter --> SC
+  end
+
+  subgraph BUY["BUYER market_buyer.py: when an order arrives, no LLM"]
+    B1["TOOL filter shops"] --> B2["TOOL score shops from the DB"]
+    B2 --> B3["TOOL pick 1 of top 3, haggle 6 rounds"]
+    B3 --> D3{"receipt signed and matches?"}
+    D3 -- no --> BB["blacklist the shop"]
+    D3 -- yes --> B4["kit pays, review.py: stars and forum post"]
+  end
+
+  subgraph RES["RESTOCK restock.py: each supply window, no LLM"]
+    C1["TOOL collector"] --> C2["TOOL rank SKUs: sales x margin"]
+    C2 --> D4{"I sell it well and held cost is sane?"}
+    D4 -- no --> CS["skip the SKU"]
+    D4 -- yes --> C3["buy list, kit buys"]
+    CT["TOOL trials: out-of-stock categories"] --> C3
+  end
+
+  subgraph META["META HARNESS meta_harness.py: every 20 min"]
+    M1["TOOL stats, last 35 min"] --> M2["TOOL rules propose a change"]
+    M2 --> M3["MODEL Sonnet: keep / adjust / drop"]
+    M3 --> M4["TOOL clamp to BOUNDS, write policy"]
+  end
+
+  DB[("CONTEXT: Neon Postgres<br/>market: settles, broken, shops, forum, offers_seen<br/>me: trajectory<br/>act: policy, state")]
+
+  MK -->|"a buyer asks"| S1
+  MK -->|"an order"| B1
+  DB -.->|"market rate, policy"| S2
+  SA -.->|"sell outcome"| DB
+  DB -.->|"shop stats, my history"| B2
+  B4 -.->|"buy, settled"| DB
+  C1 -.->|"market copy"| DB
+  DB -.->|"sales, my deal rate"| C2
+  DB -.->|"trajectory"| M1
+  M4 -.->|"policy"| DB
+
+  classDef model fill:#fde3cc,stroke:#d66e14,stroke-width:2px,color:#000
+  classDef tool fill:#e8eef7,stroke:#3465a4,color:#000
+  classDef ctx fill:#e3f1e4,stroke:#2e7d32,stroke-width:2px,color:#000
+  classDef ext fill:#eeeeee,stroke:#696969,color:#000
+  class SM,M3 model
+  class S1,S2,SG,B1,B2,B3,C1,C2,CT,M1,M2,M4 tool
+  class DB ctx
+  class MK ext
+```
+
 ### 2-2. 키트 기본형(`scripts/starter_round3`, `market_kit.py`)과 다른 점
 
 | | 키트 기본형 | real_yellow |
