@@ -1,0 +1,27 @@
+{
+  "about": "Astra가 기대 추가 Players 순서로 정리한 직렬 큐. 종료 이력은 experiments_log.jsonl에 보존하며 수정하지 않는다.",
+  "queue": [
+    {
+      "id": "g2-loss-target-1110",
+      "change": "시작 시 숙성10건 이상 순기여≤0를 재확인하고 pricing.json restock.sku_target_units.G2c023a8c를3에서2로 한 단계 축소한다. 다른 SKU와 총상한 유지.",
+      "evidence": "meta/evidence/astra-1110-021612-findings.jsonl:6 숙성58건 순기여−447774원, 건당−7720.24원; meta/changes.jsonl:128-129 이전축소 반려",
+      "metric": "변경 후6h 숙성 G2 판매순기여와 목표 구속으로 줄어든 실제 매입수",
+      "direction": "below",
+      "threshold": "숙성 건당 순기여≤0이고 실제 목표 구속으로 매입≥1개 감소; 회피손실은 추정과 실제를 구분",
+      "min_sample": "변경 후6h 숙성결제10건, 완료 공급창2개, 실제 목표 구속1건",
+      "hours": 12,
+      "undo": "숙성순익>0 또는 실제 구속0 또는 표본미달이면2→3복원하고 효과미확정/불필요 종료. 사람의 동시 변경이 있으면 자동 덮어쓰기 대신 충돌과 현재값 보고"
+    },
+    {
+      "id": "concentration-probe-1110",
+      "change": "주 실험 종료 뒤 restock.GOAL에 Gc2f7811b 후보를 auto_market_research_pack(query=SKU,limit=20)로 읽고 서로 다른 구매자·정가·서지·보증을 확인하라는 한 문장 추가. 읽기전용이며 신규 매입/게시/투표 없음.",
+      "evidence": "meta/evidence/astra-1110-021612-findings.jsonl:1 2h3결제/구매자1,정가259000/중앙지급380000; test_research_pack.py 집중도·SKU결제연결 회귀",
+      "metric": "독립구매자와 실제 결제 및 최악원가/보증하한을 갖춘 탐색 후보 수",
+      "direction": "above",
+      "threshold": "후보≥1: 구매자≥3, 결제≥10건, 정가이하 지급으로도 보증하한 초과; 실행오류/허위결제0",
+      "min_sample": "조사3건과 후보별결제10건/구매자3명",
+      "hours": 12,
+      "undo": "기준미달 또는 표본부족이면 이번 GOAL 한 문장만 제거. 구조적 의미 오류가 발견되면 도구 수리를 재검증; 자동 매입 금지"
+    }
+  ]
+}

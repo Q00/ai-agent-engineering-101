@@ -1,0 +1,102 @@
+\documentclass[tikz,border=16pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{Apple SD Gothic Neo}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds,calc}
+\begin{document}
+\begin{tikzpicture}[font=\small,
+  card/.style={draw=black!35,rounded corners=3pt,fill=white,align=left,inner sep=5pt,text width=#1,anchor=north west},
+  card/.default=5.2cm,
+  zone/.style={draw=#1!70!black,line width=1.3pt,rounded corners=8pt,fill=#1!12,inner sep=8pt},
+  ztitle/.style={font=\bfseries\large,text=#1!60!black,anchor=south west,inner sep=3pt},
+  eff/.style={font=\footnotesize,text=black!75,align=left,text width=#1,anchor=north west},
+  flow/.style={-{Stealth[length=3.2mm]},line width=1.4pt,draw=black!70},
+  fix/.style={-{Stealth[length=3.2mm]},line width=1.4pt,draw=red!70!black,dashed},
+  lbl/.style={font=\footnotesize\bfseries,fill=white,inner sep=2pt,rounded corners=2pt}]
+
+% 열 x: 매매 0, 가운데 7.6, 오른쪽 15.2  /  행 y: 0, -5.6, -11.6
+% ===== 외부 마켓 =====
+\node[draw=green!50!black,line width=1pt,fill=green!8,rounded corners=6pt,minimum width=23.4cm,minimum height=1.3cm,align=center,anchor=north west] (mkt) at (-0.2,2.6)
+ {\textbf{\large 외부 마켓 market.ourolabs.ai}\quad 주문 · 결제 위임서 검증(/api/settle) · 공개 거래 장부 · 포럼 · 게시판};
+
+% ===== ① 매매 =====
+\node[card] (buy) at (0,0)
+ {\textbf{구매자} \texttt{market\_buyer.py}\\ 가게 고르기는 규칙(11/07부터)\\ 흥정 답 일부만 LLM\\ 예산·정가 상한·영수증 검사는 코드};
+\node[card] (sell) at ($(buy.south west)+(0,-0.45)$)
+ {\textbf{가게 상담} \texttt{seller.py}\\ 원가 밑으로 안 팖\\ 실제 등급·인증서·보증을 말함};
+\node[card] (stock) at ($(sell.south west)+(0,-0.45)$)
+ {\textbf{재고 매입} \texttt{restock.py}\\ 수요 추정 → LLM이 결정\\ \texttt{guard()}가 줄마다 검사};
+\node[card] (forum) at ($(stock.south west)+(0,-0.45)$)
+ {\textbf{게시판} \texttt{forum.py}\\ 남의 글은 자료로만 읽음};
+\node[card,fill=black!4] (kit) at ($(forum.south west)+(0,-0.45)$)
+ {\textbf{수업 키트 v4} (고쳐 씀)\\ 체크아웃·위임서 서명·정산 요청};
+\node[eff=5.2cm] (e1) at ($(kit.south west)+(0,-0.35)$)
+ {\textbf{결과}: 가게 정산 57,292건\\ 구매 정산 20,650건 · 등급 주장 57,032건 중 57,030건 정직};
+\begin{scope}[on background layer]\node[zone=blue,fit=(buy)(e1)] (Z1) {};\end{scope}
+\node[ztitle=blue] at (Z1.north west) {① 매매};
+
+% ===== ③ 컨텍스트 (가운데 위) =====
+\node[card=6.2cm] (ctx) at (8.6,0)
+ {\textbf{\texttt{select()} — 이번 결정에 넣을 것만}\\ 기억 전체가 아니라 관련 줄만\\ 최대 2,500자 (게시판 1,500자)\\ 설정 \texttt{pricing.json}은 결정마다 다시 읽음};
+\begin{scope}[on background layer]\node[zone=yellow,fit=(ctx)] (Z3) {};\end{scope}
+\node[ztitle=yellow!70!black] at (Z3.north west) {③ 컨텍스트 관리};
+
+% ===== ④ 메모리 (오른쪽 위) =====
+\node[card] (m1) at (17.4,0) {\textbf{가게 노트} \texttt{MEMORY.md} · 일일 기록 · 교훈};
+\node[card] (m2) at ($(m1.south west)+(0,-0.35)$) {\textbf{거래 기억} 흥정 기록 · SKU·가게별 구매};
+\node[card] (m3) at ($(m2.south west)+(0,-0.35)$) {\textbf{결정의 결과} 팔림·남음·폐기 · 이익 묶음};
+\node[card] (m4) at ($(m3.south west)+(0,-0.35)$) {\textbf{시장 추정} 공개 장부로 수요 추정};
+\begin{scope}[on background layer]\node[zone=violet,fit=(m1)(m4)] (Z4) {};\end{scope}
+\node[ztitle=violet] at (Z4.north west) {④ 메모리 관리};
+
+% ===== ② 판단 엔진 (가운데 아래) =====
+\node[card=6.2cm,fill=orange!8] (brain) at (8.6,-5.9)
+ {\textbf{\large LLM 판단 루프}\\ \texttt{harness.py} + \texttt{agent\_loop.py}\\ 모델 gpt-6-luna (OpenRouter)\\[2pt]
+ 1) 필요하면 도구부터 부름\\ 2) 답은 정해진 JSON으로만\\ 3) 도구 결과를 인용 못 하면 \textbf{되돌림}\\[2pt]
+ \textbf{코드가 결과를 정하는 차례는 LLM 없이}\\ 가게 고르기·한 방 제안·호가 읽기·정확한 제안 수락};
+\node[eff=6.2cm] (e2) at ($(brain.south west)+(0,-0.3)$)
+ {\textbf{결과}: 정산 1건당 LLM 호출 4.02 → 0.46\\ 시간당 정산 169 → 223건 (11/05–07 → 11/11–17)};
+\begin{scope}[on background layer]\node[zone=orange,fit=(brain)(e2)] (Z2) {};\end{scope}
+\node[ztitle=orange] at (Z2.north west) {② 판단 엔진};
+
+% ===== ⑤ 도구 (오른쪽 아래) =====
+\node[card] (tools) at (17.4,-5.9)
+ {\textbf{읽기 도구 18개} \texttt{tools/}\\ 장부 검색 · 내 상태 · 고객 · 이익 묶음 · 공급 점검 …\\ 샌드박스: 네트워크·키 없음\\ \texttt{tool\_forge}: 6시간마다 새 도구 자동 생성};
+\node[eff=5.2cm] (e5) at ($(tools.south west)+(0,-0.3)$)
+ {\textbf{교훈}: 자동 도구가 668번 실패 0인데\\ 틀린 값을 줌 → 의미 검사 추가};
+\begin{scope}[on background layer]\node[zone=teal,fit=(tools)(e5)] (Z5) {};\end{scope}
+\node[ztitle=teal] at (Z5.north west) {⑤ 도구};
+
+% ===== ⑥ 자기 개선 (가운데 맨 아래) =====
+\node[card=6.2cm] (meta) at (8.6,-13.0)
+ {\textbf{\texttt{meta\_harness.py}} (11/03–11/11)\\ Terra 매시간 · Astra 12시간마다\\ 점수표 → 고침 → 시험 → 커밋 → 10분 감시\\[2pt]
+ \textbf{11/11 이후}: 스위치 끈 채 넣고 A/B 시험};
+\node[eff=6.2cm] (e6) at ($(meta.south west)+(0,-0.3)$)
+ {\textbf{결과}: 168번 시도 중 40번 통과 → 11/11에 끔};
+\begin{scope}[on background layer]\node[zone=red,fit=(meta)(e6)] (Z6) {};\end{scope}
+\node[ztitle=red] at (Z6.north west) {⑥ 자기 개선};
+
+% ===== ⑦ 안전장치 (오른쪽 맨 아래) =====
+\node[card,fill=black!82,text=white,draw=black] (lim) at (17.4,-13.0)
+ {\textbf{\texttt{hard\_limits.py}} (사람만 수정)\\ 파산선 밑으로 사지 않기\\ 환불할 돈 남겨 두기\\ 설정 변경 폭 · 도구 샌드박스};
+\node[eff=5.2cm] (e7) at ($(lim.south west)+(0,-0.3)$)
+ {\textbf{결과}: 2주 동안 파산 0회};
+\begin{scope}[on background layer]\node[zone=gray,fit=(lim)(e7)] (Z7) {};\end{scope}
+\node[ztitle=gray] at (Z7.north west) {⑦ 안전장치};
+
+% ===== 최종 결과 =====
+\node[anchor=north west,draw=black!60,line width=1pt,rounded corners=6pt,fill=yellow!20,inner sep=6pt,font=\bfseries] at (0,-13.3)
+ {Round 3 최종: 72명 중 6위 · 학생 46명 중 5위};
+
+% ===== 흐름 =====
+\draw[flow] ($(mkt.south west)+(1.6,0)$) -- node[lbl,right]{주문} ($(Z1.north west)+(1.4,0)$);
+\draw[flow] ($(Z1.north west)+(4.2,0)$) -- node[lbl,right]{정산} ($(mkt.south west)+(4.4,0)$);
+\draw[flow] (Z1.east |- brain) -- node[lbl,above]{결정 요청} (Z2.west |- brain);
+\draw[flow] (Z4.west |- ctx) -- node[lbl,above]{관련 줄 검색} (Z3.east |- ctx);
+\draw[flow] (Z3.south) -- node[lbl,right]{필요한 것만 넣음} (Z2.north);
+\draw[flow] (Z2.east |- brain) -- node[lbl,above]{도구 호출} (Z5.west |- brain);
+\draw[flow] ($(Z2.north east)+(-0.4,0)$) to[out=60,in=210] node[lbl,pos=0.45]{결과 기록} ($(Z4.south west)+(0.6,0)$);
+\draw[fix] (Z6.north) -- node[lbl,right,text=red!70!black]{설정·기억·코드 고침} (Z2.south);
+\draw[fix] ($(Z6.north east)+(-0.3,0)$) to[out=40,in=230] node[lbl,text=red!70!black,pos=0.55]{도구 수리} ($(Z5.south west)+(0.5,0)$);
+\draw[-{Stealth[length=3.2mm]},line width=1.4pt] (Z7.west) -- node[lbl,above]{위험한 변경 거부} (Z6.east |- Z7.west);
+\end{tikzpicture}
+\end{document}

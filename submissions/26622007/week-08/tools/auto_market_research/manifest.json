@@ -1,0 +1,35 @@
+{
+ "name": "auto_market_research",
+ "purpose": "Read-only market research in one call: search the catalog and inspect matching public settled deals, with optional own purchase history. Query and category filter catalog and deal results; shop filters the public results by seller and personal history by shop. Returns counts and recent matches.",
+ "args": {
+  "type": "object",
+  "properties": {
+   "category": {
+    "type": "string"
+   },
+   "query": {
+    "type": "string"
+   },
+   "shop": {
+    "type": "string"
+   },
+   "limit": {
+    "type": "integer",
+    "minimum": 1,
+    "maximum": 100
+   },
+   "include_purchases": {
+    "type": "boolean"
+   }
+  }
+ },
+ "selftest": {
+  "args": {
+   "category": "food",
+   "query": "",
+   "limit": 10,
+   "include_purchases": true
+  }
+ },
+ "evidence": "made by tool_forge.py: A combined catalog and public-deal lookup can cover the repeated scan/search/lookup/ledger pattern in one call, and an optional purchase-history slice reduces the extra personal-history call. The output reports matches and rows rather than giving buying advice."
+}

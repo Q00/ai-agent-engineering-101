@@ -1,0 +1,7 @@
+{
+ "name": "my_customers",
+ "purpose": "Who buys from my shop: per buyer, my settled deals with them, the share of list price they paid, what they buy most and what of it broke. From the public ledger and the kit's record of my settles (.market/loss_state.json). Use it to judge repeat customers and which products and price levels they accept.",
+ "args": {"type": "object", "properties": {"limit": {"type": "integer"}, "min_deals": {"type": "integer"}}},
+ "selftest": {"args": {"limit": 3}},
+ "evidence": "the seller cannot see who it talks to during a negotiation (A2A carries no buyer identity), so buyer-level patterns are learned after the sale, from settles in the ledger"
+}

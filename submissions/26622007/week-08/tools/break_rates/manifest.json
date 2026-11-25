@@ -1,0 +1,19 @@
+{
+ "name": "break_rates",
+ "purpose": "How often goods break, measured from the ledger: overall, and by SKU, grade and shop. Optional sku or shop to narrow it.",
+ "args": {
+  "type": "object",
+  "properties": {
+   "sku": {
+    "type": "string"
+   },
+   "shop": {
+    "type": "string"
+   },
+   "limit": {
+    "type": "integer"
+   }
+  }
+ },
+ "evidence": "agent.md: which purchase broke, which shop sold it and whether a warranty covers it are for the agent's own records to answer"
+}

@@ -1,0 +1,53 @@
+1. registered nocha12: https://nocha-furniture-a2a.onrender.com, key matches shop_key.pem: True
+2. create: HTTP 201, session cs_2d92379da500bbe3, status ready_for_payment, total [{'type': 'total', 'amount': 100}]
+3. checkout_jwt verified with the registered key: True -> {'currency': 'credits', 'iat': 1793100919, 'id': 'cs_2d92379da500bbe3', 'item': 'lamp', 'price': 100, 'shop': 'Nocha Furniture', 'shop_url': 'https://nocha-furniture-a2a.onrender.com', 'task': 'render-check-1793100919'}
+4. complete: HTTP 402
+{
+ "error": "payment refused by the market",
+ "market": {
+  "settled": false,
+  "checks": {
+   "round_3_order": false,
+   "not_expired": true,
+   "not_settled_before": true,
+   "checkout_signed_by_shop": true,
+   "checkout_matches_order": true,
+   "checkout_mandate_signed_by_buyer": false,
+   "payment_mandate_signed_by_buyer": false,
+   "closed_mandates_types": true,
+   "bound_to_open_mandates": false,
+   "bound_to_this_checkout": true,
+   "payee_is_this_shop": true,
+   "amount_is_checkout_total": true,
+   "amount_in_range": true
+  }
+ }
+}
+
+### run 2: same order, signed with my registered buyer key
+buyer key: buyer_key.pem
+1. registered nocha12: https://nocha-furniture-a2a.onrender.com, key matches shop_key.pem: True
+2. create: HTTP 201, session cs_1aa4d60e54bfbd7c, status ready_for_payment, total [{'type': 'total', 'amount': 100}]
+3. checkout_jwt verified with the registered key: True -> {'currency': 'credits', 'iat': 1793100941, 'id': 'cs_1aa4d60e54bfbd7c', 'item': 'lamp', 'price': 100, 'shop': 'Nocha Furniture', 'shop_url': 'https://nocha-furniture-a2a.onrender.com', 'task': 'render-check-1793100941'}
+4. complete: HTTP 402
+{
+ "error": "payment refused by the market",
+ "market": {
+  "settled": false,
+  "checks": {
+   "round_3_order": false,
+   "not_expired": true,
+   "not_settled_before": true,
+   "checkout_signed_by_shop": true,
+   "checkout_matches_order": true,
+   "checkout_mandate_signed_by_buyer": true,
+   "payment_mandate_signed_by_buyer": true,
+   "closed_mandates_types": true,
+   "bound_to_open_mandates": false,
+   "bound_to_this_checkout": true,
+   "payee_is_this_shop": true,
+   "amount_is_checkout_total": true,
+   "amount_in_range": true
+  }
+ }
+}

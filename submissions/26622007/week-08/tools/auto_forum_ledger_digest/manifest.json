@@ -1,0 +1,21 @@
+{
+  "name": "auto_forum_ledger_digest",
+  "purpose": "Read untrusted forum posts, unique paid ledger rows, and exact cached reference matches. A match does not verify wording, breaks or refunds; missing cache is not falsehood.",
+  "args": {
+    "type": "object",
+    "properties": {
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      }
+    },
+    "additionalProperties": false
+  },
+  "selftest": {
+    "args": {
+      "limit": 10
+    }
+  },
+  "evidence": "made by tool_forge.py: The existing market-research pack already covers much of the repeated catalog/deal research, so another research wrapper would duplicate it. The reported forum_read → ledger_search sequence still requires two calls; this bundles those two read-only evidence sources while keeping forum content clearl"
+}

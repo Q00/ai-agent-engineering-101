@@ -1,0 +1,184 @@
+test_a_captive_buyer_is_left_out_but_mine_or_split_are_not (test_market_model.EstimateTest.test_a_captive_buyer_is_left_out_but_mine_or_split_are_not) ... ok
+test_a_lone_sale_leans_on_the_category (test_market_model.EstimateTest.test_a_lone_sale_leans_on_the_category) ... ok
+test_favourites_and_active_threshold (test_market_model.EstimateTest.test_favourites_and_active_threshold) ... ok
+test_few_deals_do_not_make_a_buyer_captive (test_market_model.EstimateTest.test_few_deals_do_not_make_a_buyer_captive) ... ok
+test_my_own_buyer_is_not_demand_for_my_shop (test_market_model.EstimateTest.test_my_own_buyer_is_not_demand_for_my_shop) ... ok
+test_rate_is_deals_per_hour_and_recent_deals_weigh_more (test_market_model.EstimateTest.test_rate_is_deals_per_hour_and_recent_deals_weigh_more) ... ok
+test_share_grows_with_my_sales_and_the_price_is_the_median_paid (test_market_model.EstimateTest.test_share_grows_with_my_sales_and_the_price_is_the_median_paid) ... ok
+test_shop_comes_from_the_result_when_the_settle_has_none (test_market_model.EstimateTest.test_shop_comes_from_the_result_when_the_settle_has_none) ... ok
+test_unknown_skus_are_ignored (test_market_model.EstimateTest.test_unknown_skus_are_ignored) ... ok
+test_a_ledger_failure_still_plans (test_market_model.PlanWithModelTest.test_a_ledger_failure_still_plans) ... ok
+test_best_profit_first_within_the_line_limit (test_market_model.PlanWithModelTest.test_best_profit_first_within_the_line_limit) ... ok
+test_counts_what_i_have (test_market_model.PlanWithModelTest.test_counts_what_i_have) ... ok
+test_explores_only_selling_categories_where_i_have_nothing (test_market_model.PlanWithModelTest.test_explores_only_selling_categories_where_i_have_nothing) ... ok
+test_food_is_stocked_only_for_what_can_sell_while_fresh (test_market_model.PlanWithModelTest.test_food_is_stocked_only_for_what_can_sell_while_fresh) ... ok
+test_near_the_end_it_buys_only_what_can_sell_in_time (test_market_model.PlanWithModelTest.test_near_the_end_it_buys_only_what_can_sell_in_time) ... ok
+test_never_past_the_cash_line (test_market_model.PlanWithModelTest.test_never_past_the_cash_line) ... ok
+test_no_margin_no_stock (test_market_model.PlanWithModelTest.test_no_margin_no_stock) ... ok
+test_one_sku_cannot_take_the_shop (test_market_model.PlanWithModelTest.test_one_sku_cannot_take_the_shop) ... ok
+test_stocks_what_sells_for_the_cover_time (test_market_model.PlanWithModelTest.test_stocks_what_sells_for_the_cover_time) ... ok
+test_too_little_expected_is_not_bought (test_market_model.PlanWithModelTest.test_too_little_expected_is_not_bought) ... ok
+test_warming_up_or_no_model_uses_the_first_stock_rule (test_market_model.PlanWithModelTest.test_warming_up_or_no_model_uses_the_first_stock_rule) ... ok
+test_a_lost_cursor_does_not_count_deals_twice (test_market_model.SyncTest.test_a_lost_cursor_does_not_count_deals_twice) ... ok
+test_an_empty_folder_rebuilds_all_of_it (test_market_model.SyncTest.test_an_empty_folder_rebuilds_all_of_it) ... ok
+test_finds_the_start_quickly_and_reads_only_round_3 (test_market_model.SyncTest.test_finds_the_start_quickly_and_reads_only_round_3) ... ok
+test_keeps_broken_and_result_and_lists_unknown_fields (test_market_model.SyncTest.test_keeps_broken_and_result_and_lists_unknown_fields) ... ok
+test_not_open_yet_means_nothing_and_no_cursor (test_market_model.SyncTest.test_not_open_yet_means_nothing_and_no_cursor) ... ok
+test_resumes_where_it_stopped_within_the_page_limit (test_market_model.SyncTest.test_resumes_where_it_stopped_within_the_page_limit) ... ok
+test_round_3_starting_at_the_first_entry (test_market_model.SyncTest.test_round_3_starting_at_the_first_entry) ... ok
+test_accept_asks_proof_only_for_food (test_round3.BuyerTest.test_accept_asks_proof_only_for_food) ... ok
+test_kit_refusals_reach_memory (test_round3.BuyerTest.test_kit_refusals_reach_memory) ... [11:06:19] buyer [payments] s: G1 not paid: no certificate
+ok
+test_main_asks_for_the_sku_within_its_value_and_withholds_a_bad_receipt (test_round3.BuyerTest.test_main_asks_for_the_sku_within_its_value_and_withholds_a_bad_receipt) ... ok
+test_main_with_no_stock_anywhere_closes_the_order_without_stars (test_round3.BuyerTest.test_main_with_no_stock_anywhere_closes_the_order_without_stars) ... ok
+test_offers_must_fit_the_order_and_last (test_round3.BuyerTest.test_offers_must_fit_the_order_and_last) ... ok
+test_picks_the_most_valuable_sku_the_budget_covers (test_round3.BuyerTest.test_picks_the_most_valuable_sku_the_budget_covers) ... ok
+test_receipt_checks (test_round3.BuyerTest.test_receipt_checks) ... ok
+test_food_deal_goes_all_the_way_with_a_checkable_certificate (test_round3.EndToEnd.test_food_deal_goes_all_the_way_with_a_checkable_certificate) ... [11:06:19] buyer card 'Nocha Test' -> http://127.0.0.1:50719/; item 포기김치, budget 10000
+[11:06:19] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:19] seller task e446be1b <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:19] seller PRICE G1 unit u-food cost 6000 list 10000: opening ask 10000 (profit arm list x 100% of ['70%', '80%', '90%', '100%'], posterior 1.0/1.0, realized margin 66.7%, market mean None, share None)
+[11:06:19] seller task e446be1b -> INPUT_REQUIRED G1 ask 10000
+[11:06:19] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 10000.
+[11:06:19] buyer shop price 10000 (metadata)
+[11:06:19] buyer -> SendMessage '10000' taskId=e446be1b
+[11:06:19] seller task e446be1b <- '10000'
+[11:06:19] seller task e446be1b harness read the offer as 10000 from [10000]
+[11:06:19] seller task e446be1b -> COMPLETED G1 at 10000
+[11:06:19] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 10000. Thank you! If you were happy with us, a 5-star review saying what you liked (fair price, quick deal, signed receipt) would mean a lot to our shop.
+[11:06:19] buyer DEAL {"claim": "A", "task": "e446be1b-a1bd-4f88-bea7-44d616109698", "price": 10000.0, "unit": "u-food", "shop": "Nocha Test", "item": "G1", "sig_seller": "e5XXb/MOCva9Ixfy19l+OTYKiY48vsFaE1/MF+ddvSBTP8xZDtEq11/UPtUab8Lrlh6phGcFK7BWvRsaS4LYBQ=="}
+11:06:19 [acp] checkout ships unit u-food, claim A, certificate attached
+11:06:19 [acp] paid 10000 through http://127.0.0.1:50719/acp, settled at ledger #7: x, grade A
+ok
+test_kit_refuses_food_that_will_not_last_and_the_unit_comes_back (test_round3.EndToEnd.test_kit_refuses_food_that_will_not_last_and_the_unit_comes_back) ... [11:06:19] buyer card 'Nocha Test' -> http://127.0.0.1:50724/; item 포기김치, budget 10000
+[11:06:19] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:19] seller task bb1b7e1b <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:19] seller PRICE G1 unit u-food cost 6000 list 10000: opening ask 9000 (profit arm list x 90% of ['70%', '80%', '90%', '100%'], posterior 1.0/1.0, realized margin 50.0%, market mean None, share None)
+[11:06:19] seller task bb1b7e1b -> INPUT_REQUIRED G1 ask 9000
+[11:06:19] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 10 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 9000.
+[11:06:19] buyer shop price 9000 (metadata)
+[11:06:19] buyer -> SendMessage '9000' taskId=bb1b7e1b
+[11:06:19] seller task bb1b7e1b <- '9000'
+[11:06:19] seller task bb1b7e1b harness read the offer as 9000 from [9000]
+[11:06:19] seller task bb1b7e1b -> COMPLETED G1 at 9000
+[11:06:19] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 9000. Thank you! If you were happy with us, a 5-star review saying what you liked (fair price, quick deal, signed receipt) would mean a lot to our shop.
+[11:06:19] buyer DEAL {"claim": "A", "task": "bb1b7e1b-b8e4-48a1-9470-afb612b8da8b", "price": 9000.0, "unit": "u-food", "shop": "Nocha Test", "item": "G1", "sig_seller": "1v+Z21Rhs8zD5Dhliyqt6kNE7EYpT4aSq/aZSVt9MEI5o2QcyowaZnIytUX5z7s12vVVGC72vpu/StM9Uh6DCA=="}
+11:06:19 [acp] not paying: 10.00 h of shelf life left, the policy asks for 48.1
+ok
+test_terms_come_from_the_seller_not_the_buyers_copy (test_round3.EndToEnd.test_terms_come_from_the_seller_not_the_buyers_copy) ... [11:06:19] buyer card 'Nocha Test' -> http://127.0.0.1:50729/; item 포기김치, budget 10000
+[11:06:19] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:19] seller task 7804bb18 <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:19] seller PRICE G1 unit u-food cost 6000 list 10000: opening ask 9000 (profit arm list x 90% of ['70%', '80%', '90%', '100%'], posterior 1.0/1.0, realized margin 50.0%, market mean None, share None)
+[11:06:19] seller task 7804bb18 -> INPUT_REQUIRED G1 ask 9000
+[11:06:19] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 9000.
+[11:06:19] buyer shop price 9000 (metadata)
+[11:06:19] buyer -> SendMessage '9000' taskId=7804bb18
+[11:06:19] seller task 7804bb18 <- '9000'
+[11:06:19] seller task 7804bb18 harness read the offer as 9000 from [9000]
+[11:06:19] seller task 7804bb18 -> COMPLETED G1 at 9000
+[11:06:19] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 9000. Thank you! If you were happy with us, a 5-star review saying what you liked (fair price, quick deal, signed receipt) would mean a lot to our shop.
+[11:06:19] buyer DEAL {"claim": "A", "task": "7804bb18-7520-411a-bd84-e443e58dc132", "price": 9000.0, "unit": "u-food", "shop": "Nocha Test", "item": "G1", "sig_seller": "3gW8V4utzkMdHVaj9M3oFeNwh31k1/QPBCsL8RqXGygxwFUEd/2svPdNu3QmsikdjMXdyRFkAg4G/mnpb2biBQ=="}
+11:06:19 [acp] checkout ships unit u-food, claim A, certificate attached
+11:06:19 [acp] paid 9000 through http://127.0.0.1:50729/acp, settled at ledger #7: x, grade A
+ok
+test_unit_is_not_promised_twice_and_out_of_stock_is_refused (test_round3.EndToEnd.test_unit_is_not_promised_twice_and_out_of_stock_is_refused) ... [11:06:20] buyer card 'Nocha Test' -> http://127.0.0.1:50734/; item 포기김치, budget 10000
+[11:06:20] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:20] seller task 0e9f7f16 <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:20] seller PRICE G1 unit u-food cost 6000 list 10000: opening ask 10000 (profit arm list x 100% of ['70%', '80%', '90%', '100%'], posterior 1.0/1.0, realized margin 66.7%, market mean None, share None)
+[11:06:20] seller task 0e9f7f16 -> INPUT_REQUIRED G1 ask 10000
+[11:06:20] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 10000.
+[11:06:20] buyer shop price 10000 (metadata)
+[11:06:20] buyer -> SendMessage '10000' taskId=0e9f7f16
+[11:06:20] seller task 0e9f7f16 <- '10000'
+[11:06:20] seller task 0e9f7f16 harness read the offer as 10000 from [10000]
+[11:06:20] seller task 0e9f7f16 -> COMPLETED G1 at 10000
+[11:06:20] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 10000. Thank you! If you were happy with us, a 5-star review saying what you liked (fair price, quick deal, signed receipt) would mean a lot to our shop.
+[11:06:20] buyer DEAL {"claim": "A", "task": "0e9f7f16-a2db-4a7c-99b1-bdfec74dc3c6", "price": 10000.0, "unit": "u-food", "shop": "Nocha Test", "item": "G1", "sig_seller": "N/MMYOnS4ZoT95H4vIqsW3QAE4it0aGp8U5ugLTZ1lZvYQjyrd203zfrRI4vITWGkwYGFmRp8E579adm2uBuDw=="}
+[11:06:20] buyer card 'Nocha Test' -> http://127.0.0.1:50734/; item 포기김치, budget 10000
+[11:06:20] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:20] seller task bf3f107e <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:20] seller task bf3f107e -> REJECTED (not in stock)
+[11:06:20] buyer <- TASK_STATE_REJECTED | Sorry, we have none of that in stock.
+[11:06:20] buyer END TASK_STATE_REJECTED, no deal
+ok
+test_warranty_only_on_goods_and_only_when_configured (test_round3.EndToEnd.test_warranty_only_on_goods_and_only_when_configured) ... [11:06:20] buyer card 'Nocha Test' -> http://127.0.0.1:50740/; item 포기김치, budget 10000
+[11:06:20] buyer -> SendMessage 'I want to buy 포기김치 10kg G2 (G2)'
+[11:06:20] seller task ca5b0fc1 <- 'I want to buy 포기김치 10kg G2 (G2)'
+[11:06:20] seller PRICE G2 unit u-goods cost 6000 list 10000: opening ask 10000 (revenue arm list x 100% of ['100%'], posterior 1.0/1.0, market mean None, share None)
+[11:06:20] seller task ca5b0fc1 -> INPUT_REQUIRED G2 ask 10000
+[11:06:20] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G2 [G2], grade B. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 10000.
+[11:06:20] buyer shop price 10000 (metadata)
+[11:06:20] buyer -> SendMessage '10000' taskId=ca5b0fc1
+[11:06:20] seller task ca5b0fc1 <- '10000'
+[11:06:20] seller task ca5b0fc1 harness read the offer as 10000 from [10000]
+[11:06:20] seller task ca5b0fc1 -> COMPLETED G2 at 10000
+[11:06:20] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G2 at 10000. Thank you! If you were happy with us, a 5-star review saying what you liked (fair price, quick deal, signed receipt) would mean a lot to our shop.
+[11:06:20] buyer DEAL {"claim": "B", "shop": "Nocha Test", "warranty_hours": 6.0, "item": "G2", "price": 10000.0, "task": "ca5b0fc1-879d-4f50-be89-df4158de8a01", "unit": "u-goods", "sig_seller": "xRNPFthlfHmkiCRva9Gwa92QVpoe61wkvE0MZ1t3qXNVb82VZ0HV6qnIXiZdQFqE433Kl5Jj3NJCtor6QDrnBg=="}
+[11:06:20] buyer card 'Nocha Test' -> http://127.0.0.1:50740/; item 포기김치, budget 10000
+[11:06:20] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:20] seller task 238d8ec0 <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:06:20] seller PRICE G1 unit u-food cost 6000 list 10000: opening ask 10000 (revenue arm list x 100% of ['100%'], posterior 1.0/1.0, market mean None, share None)
+[11:06:20] seller task 238d8ec0 -> INPUT_REQUIRED G1 ask 10000
+[11:06:20] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 10000.
+[11:06:20] buyer shop price 10000 (metadata)
+[11:06:20] buyer -> SendMessage '10000' taskId=238d8ec0
+[11:06:20] seller task 238d8ec0 <- '10000'
+[11:06:20] seller task 238d8ec0 harness read the offer as 10000 from [10000]
+[11:06:20] seller task 238d8ec0 -> COMPLETED G1 at 10000
+[11:06:20] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 10000. Thank you! If you were happy with us, a 5-star review saying what you liked (fair price, quick deal, signed receipt) would mean a lot to our shop.
+[11:06:20] buyer DEAL {"claim": "A", "task": "238d8ec0-4e17-431f-a916-4effee33abba", "price": 10000.0, "unit": "u-food", "shop": "Nocha Test", "item": "G1", "sig_seller": "vnw07QAq1PfFhffi1rGofFWTJn/1J7QfPJG5kvRn572ueYhf+iMom7UD6b8DUb2kU5KgwIv377wvsEZkKcdLAQ=="}
+ok
+test_agent_json_gives_the_kit_what_it_fills (test_round3.HooksTest.test_agent_json_gives_the_kit_what_it_fills) ... ok
+test_expired_units_do_not_count_and_files_when_stuck (test_round3.HooksTest.test_expired_units_do_not_count_and_files_when_stuck) ... ok
+test_first_stock_is_long_shelf_food_and_cheap_goods_near_the_median (test_round3.HooksTest.test_first_stock_is_long_shelf_food_and_cheap_goods_near_the_median) ... ok
+test_only_what_is_missing_and_never_past_the_cash_line (test_round3.HooksTest.test_only_what_is_missing_and_never_past_the_cash_line) ... ok
+test_review_hook_prints_for_the_kit_and_remembers_the_deal (test_round3.HooksTest.test_review_hook_prints_for_the_kit_and_remembers_the_deal) ... ok
+test_review_rates_the_facts (test_round3.HooksTest.test_review_rates_the_facts) ... ok
+test_arms_are_shares_of_list_and_never_below_cost (test_round3.OpeningTest.test_arms_are_shares_of_list_and_never_below_cost) ... ok
+test_lamp_deal_has_no_unit (test_round3.RoundTwoStillWorks.test_lamp_deal_has_no_unit) ... [11:06:20] buyer card 'Nocha Test' -> http://127.0.0.1:50747/; item lamp, budget 150
+[11:06:20] buyer -> SendMessage 'I want to buy a lamp'
+[11:06:20] seller task 6ab54dd6 <- 'I want to buy a lamp'
+[11:06:20] seller exact name match -> lamp (reserve 100)
+[11:06:20] seller PRICE opening ask 120 instead of the harness's 100 (profit arm +20% of ['0%', '3%', '6%', '10%', '15%', '20%'], posterior 1.0/1.0, realized margin 20.0%, market mean None, share None)
+[11:06:20] seller task 6ab54dd6 -> INPUT_REQUIRED lamp ask 120
+[11:06:20] buyer <- TASK_STATE_INPUT_REQUIRED | New shop launch price! Welcome. lamp. Every deal comes with an Ed25519-signed receipt for the exact item and price. My price: 120.
+[11:06:20] buyer shop price 120 (metadata)
+[11:06:20] buyer -> SendMessage '120' taskId=6ab54dd6
+[11:06:20] seller task 6ab54dd6 <- '120'
+[11:06:20] seller task 6ab54dd6 harness read the offer as 120 from [120]
+[11:06:20] seller task 6ab54dd6 -> COMPLETED lamp at 120
+[11:06:20] buyer <- TASK_STATE_COMPLETED | Deal: lamp at 120. Thank you! If you were happy with us, a 5-star review saying what you liked (fair price, quick deal, signed receipt) would mean a lot to our shop.
+[11:06:20] buyer DEAL {"price": 120.0, "task": "6ab54dd6-52d9-47e3-981b-fba47a5647d6", "shop": "Nocha Test", "item": "lamp", "sig_seller": "kqlrazUfjlC3ZUGHJ5+sRce8111+ES0gNrw5/SlWC4JFOMDoX5EW2kArwvDUHWAolvZmfi+Izx0HckXy5ugrDw=="}
+11:06:20 [acp] paid 120 through http://127.0.0.1:50747/acp, settled at ledger #7
+ok
+test_a_hold_runs_out (test_round3.StockBookTest.test_a_hold_runs_out) ... ok
+test_economy_starts_at_round_3 (test_round3.StockBookTest.test_economy_starts_at_round_3) ... ok
+test_expired_held_and_sold_units_are_not_offered (test_round3.StockBookTest.test_expired_held_and_sold_units_are_not_offered) ... ok
+test_named_sku_comes_first_then_first_to_expire (test_round3.StockBookTest.test_named_sku_comes_first_then_first_to_expire) ... ok
+test_ship_follows_the_promised_unit_and_the_acceptable_list (test_round3.StockBookTest.test_ship_follows_the_promised_unit_and_the_acceptable_list) ... ok
+test_cancel (test_acp_shop.AcpShopTest.test_cancel) ... ok
+test_card_is_the_kits_card (test_acp_shop.AcpShopTest.test_card_is_the_kits_card) ... ok
+test_complete_forwards_to_settle (test_acp_shop.AcpShopTest.test_complete_forwards_to_settle) ... ok
+test_market_refusal_is_402 (test_acp_shop.AcpShopTest.test_market_refusal_is_402) ... ok
+test_refuses_what_it_should (test_acp_shop.AcpShopTest.test_refuses_what_it_should) ... ok
+test_session_matches_the_kit_and_its_jwt_verifies (test_acp_shop.AcpShopTest.test_session_matches_the_kit_and_its_jwt_verifies) ... ok
+test_wrong_amount_never_reaches_the_market (test_acp_shop.AcpShopTest.test_wrong_amount_never_reaches_the_market) ... ok
+test_off_without_token_and_guarded_with_one (test_acp_shop.KitlogTest.test_off_without_token_and_guarded_with_one) ... ok
+test_round_2_does_not_check (test_profit_strategy.AcpChoiceTest.test_round_2_does_not_check) ... ok
+test_round_3_skips_a_shop_without_acp (test_profit_strategy.AcpChoiceTest.test_round_3_skips_a_shop_without_acp) ... ok
+test_default_is_the_weeks_6_7_schedule (test_profit_strategy.ConcessionTest.test_default_is_the_weeks_6_7_schedule) ... ok
+test_never_below_the_reserve (test_profit_strategy.ConcessionTest.test_never_below_the_reserve) ... ok
+test_steps_down_to_the_reserve (test_profit_strategy.ConcessionTest.test_steps_down_to_the_reserve) ... ok
+test_the_seller_uses_it (test_profit_strategy.ConcessionTest.test_the_seller_uses_it) ... /Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-08/test_profit_strategy.py:97: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-08/seller.py' mode='r' encoding='utf-8'>
+  src = open(os.path.join(HERE, "seller.py"), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_profit_counts_the_price_deals_closed_at (test_profit_strategy.OpeningTest.test_profit_counts_the_price_deals_closed_at) ... ok
+test_profit_prefers_margin_over_volume (test_profit_strategy.OpeningTest.test_profit_prefers_margin_over_volume) ... ok
+test_revenue_objective_keeps_the_old_behavior (test_profit_strategy.OpeningTest.test_revenue_objective_keeps_the_old_behavior) ... ok
+test_untried_arms_get_explored (test_profit_strategy.OpeningTest.test_untried_arms_get_explored) ... ok
+
+----------------------------------------------------------------------
+Ran 71 tests in 1.598s
+
+OK

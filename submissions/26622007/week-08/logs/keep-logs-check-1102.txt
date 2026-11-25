@@ -1,0 +1,15 @@
+### keep_logs.sh rotation check 2026-11-02 11:19:17 KST in a temp folder, KEEP_LOGS_EVERY=1
+after rotation 1: 1 part(s)
+after rotation 2: 2 part(s)
+after 2 idle polls: 2 part(s) (no duplicates)
+--- market-kit-1102-111917-e12b73e94a13c4c8.log.gz
+10:00:00 [kit] market_kit 4, part A
+10:00:01 [acp] settled G1 at 8000
+--- market-kit-1102-111920-4ef14a37345b08f3.log.gz
+11:00:00 [kit] part B, the kit replaced .log.1
+11:00:05 [acp] settled S2 at 120
+--- keep_logs.log
+11-02 11:19:17 [keep_logs] watching <tmp>/logs/market-kit.log.1 every 1s
+11-02 11:19:17 [keep_logs] saved 70 bytes as logs/kit-parts/market-kit-1102-111917-e12b73e94a13c4c8.log.gz
+11-02 11:19:20 [keep_logs] saved 80 bytes as logs/kit-parts/market-kit-1102-111920-4ef14a37345b08f3.log.gz
+pid file: written

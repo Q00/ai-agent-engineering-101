@@ -1,0 +1,1368 @@
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_acp_gate.py:19: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+.........11:42:15 [acp] gate failed: RuntimeError: boom
+11:42:15 [acp] settled G1 at 77000, ledger #9
+.11:42:15 [acp] checkout gate acp_gate.py loaded
+.11:42:15 [acp] settled G1 at 77000, ledger #9
+..................................................................[11:42:16] buyer [quote] failed: TimeoutError: test network boundary
+....[11:42:16] buyer [choose] no shops with this order in stock
+..............[11:42:16] buyer shop price 12000 (metadata)
+[11:42:16] buyer harness: walk away
+[11:42:16] buyer stopping after turn 1; walking away
+[11:42:16] buyer -> CancelTask t-1
+[11:42:16] buyer <- TASK_STATE_CANCELED
+[11:42:16] buyer END TASK_STATE_CANCELED, no deal
+.[11:42:16] buyer TAKE the ask 9000 is within 10000 -> offering it
+[11:42:16] buyer DEAL {"price": 9000, "item": "G1"}
+.[11:42:16] buyer TAKE the ask 9000 is within 10000 -> offering it
+[11:42:16] buyer TAKE the ask 8500 is within 10000 -> offering it
+[11:42:16] buyer DEAL {"price": 8500}
+.[11:42:16] buyer shop price 9000 (read by the harness)
+[11:42:16] buyer harness: walk away
+[11:42:16] buyer stopping after turn 1; walking away
+[11:42:16] buyer -> CancelTask t-1
+[11:42:16] buyer <- TASK_STATE_CANCELED
+[11:42:16] buyer END TASK_STATE_CANCELED, no deal
+.[11:42:16] buyer TAKE the ask 9000 is within 10000 -> offering it
+[11:42:16] buyer shop price 9000 (metadata)
+[11:42:16] buyer harness: walk away
+[11:42:16] buyer stopping after turn 2; walking away
+[11:42:16] buyer -> CancelTask t-1
+[11:42:16] buyer <- TASK_STATE_CANCELED
+[11:42:16] buyer END TASK_STATE_CANCELED, no deal
+.[11:42:16] buyer shop price 10500 (metadata)
+[11:42:16] buyer harness: walk away
+[11:42:16] buyer stopping after turn 1; walking away
+[11:42:16] buyer -> CancelTask t-1
+[11:42:16] buyer <- TASK_STATE_CANCELED
+[11:42:16] buyer END TASK_STATE_CANCELED, no deal
+........................[restock] guard: H1 breaks 39% > 15%, left out
+.[restock] guard: H1 5 -> 0 (units per SKU)
+[restock] guard: H1 20 -> 0 (cash kept)
+[restock] guard: H1 20 -> 2 (cash kept)
+[restock] guard: H1 20 -> 1 (cash kept)
+.[restock] guard: M2 4 -> 2 (units per SKU)
+[restock] guard: M3 high price, not in high_price_proven_skus / priority_skus, left out
+[restock] guard: H1 4 -> 1 (units per SKU)
+[restock] guard: M2 4 -> 2 (units per SKU)
+[restock] guard: M3 4 -> 2 (units per SKU)
+[restock] guard: H1 4 -> 1 (units per SKU)
+[restock] guard: M1 4 -> 2 (units per SKU)
+[restock] guard: M2 4 -> 1 (units per SKU)
+[restock] guard: M3 4 -> 2 (units per SKU)
+.[tools] left out bad: exit 3: 
+[tools] left out flaky: 5 of its last 5 calls failed
+.../Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/catalog.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/tool_forge.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/negotiate_pro.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/measure.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/strategy_screen.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/harness.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/sim_restock.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/buyer_post.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/run_market.sh' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/buyer.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/oneshot.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/market_model.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/profit_price.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/agent_loop.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/opening.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/review.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/shop_stock.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/agent_memory.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/scorecard.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/ask_read.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/rival_deny.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/restock.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/lib_single.sh' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/seller.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/rival_vote.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/hard_limits.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/profit_cohorts.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/shop_forum.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/install_launchd.sh' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/forum.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/acp_gate.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/run_meta.sh' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/loss_watch.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/meta_harness.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/keep_logs.sh' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/render_start.sh' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/shop_memory.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/acp_local_check.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/fast_classify.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/decision_memory.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/scale_measure.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/acp_shop.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/ensure_running.sh' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/agent_tools.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/acp_render_check.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/negotiate.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/market_buyer.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_caution.py:347: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/patch_notes.py' mode='r' encoding='utf-8'>
+  text = open(os.path.join(HERE, name), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+..[11:42:16] buyer [choose] mode trusted: 3 of 3 shops (0 new with <= 3 reviews, 0 found cheap before)
+[11:42:16] buyer [choose] mode trusted: 3 of 3 shops (0 new with <= 3 reviews, 0 found cheap before)
+.[11:42:16] buyer [choose] skip 'cheat': my memory caught it 1 time(s): ['receipt did not match']
+[11:42:16] buyer [choose] mode all: 2 of 2 shops (0 new with <= 3 reviews, 0 found cheap before)
+..[11:42:17] buyer-choose attempt 1: timeout after 1s
+.[11:42:17] seller-harness codex gpt-6-luna effort=low output-schema 0.3s -> {"a": 1}
+[11:42:17] seller-harness codex gpt-6-luna effort=low output-schema 0.0s -> {"a": 2}
+.[11:42:18] harness attempt 1: codex exit 0: stream closed
+[11:42:18] harness attempt 2: codex exit 0: stream closed
+.[11:42:18] harness attempt 1: codex exit 1: 
+[11:42:18] harness codex gpt-6-luna effort=low output-schema 0.0s -> {"a": 6}
+.[11:42:18] harness codex gpt-6-luna effort=low output-schema 0.3s -> {"a": 1}
+.[11:42:19] harness attempt 1: timeout after 1s
+.[11:42:20] harness attempt 1: timeout after 1s
+.[11:42:21] harness attempt 1: codex took actions ['command_execution'] with every tool off
+[11:42:21] harness attempt 1: codex took actions ['collab_tool_call:spawn_agent'] with every tool off
+.[11:42:21] restock-agent attempt 1: codex exit 1: You've hit your usage limit.
+..[11:42:22] harness codex gpt-6-luna effort=low output-schema 0.3s -> {"a": 4}
+.[11:42:22] harness attempt 1: invalid answer: a='x' is not an integer
+[11:42:22] harness codex gpt-6-luna effort=low output-schema 0.0s -> {"a": 2}
+[11:42:22] buyer-agent attempt 1: invalid answer: Expecting value: line 1 column 1 (char 0)
+[11:42:22] buyer-agent attempt 2: invalid answer: missing field 'a' in {'b': 1}
+..[11:42:22] seller-harness codex gpt-6-luna effort=low output-schema 0.3s -> {"a": 1}
+.[11:42:22] seller-harness codex gpt-6-luna effort=low output-schema 0.3s -> {"a": 1}
+[11:42:22] seller-harness codex gpt-6-luna effort=low output-schema 0.0s -> {"a": 2}
+[11:42:22] buyer/agent codex gpt-6-luna effort=low output-schema 0.0s -> {"a": 3}
+[11:42:22] seller-harness codex gpt-6-luna effort=low output-schema 0.0s -> {"a": 4}
+.[11:42:23] buyer-agent codex gpt-6-luna effort=low output-schema 0.3s -> {"reason": "look", "evidence": [], "action": "call_tool", "tool": "t", "args_json": "{}", "final": null}
+[11:42:23] buyer-agent codex gpt-6-luna effort=low output-schema 0.0s -> {"reason": "c1", "evidence": ["c1"], "action": "finish", "tool": "", "args_json": "", "final": {"x": 1}}
+..[11:42:23] seller-harness codex gpt-6-luna effort=low output-schema 0.3s -> {"a": 3}
+.[11:42:23] harness codex gpt-6-luna effort=low output-schema 0.2s -> {"a": 1}
+.[tools] left out auto_auto_market_brief: exit 1: bmissions/26622007/week-08/tools/auto_auto_market_brief/tool.py", line 46, in <module>
+    main()
+  File "/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/tools/auto_auto_market_brief/tool.py", line 40, in main
+    with open(os.path.join(md, 'catalog.json'), encoding='utf-8') as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpt28s2j_y/catalog.json'
+
+[tools] left out auto_market_research: exit 1: 1/submissions/26622007/week-08/tools/auto_market_research/tool.py", line 46, in <module>
+    main()
+  File "/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/tools/auto_market_research/tool.py", line 35, in main
+    with open(os.path.join(md, 'catalog.json'), encoding='utf-8') as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpt28s2j_y/catalog.json'
+
+[tools] left out auto_market_scan: exit 1: ering-101/submissions/26622007/week-08/tools/auto_market_scan/tool.py", line 46, in <module>
+    main()
+  File "/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/tools/auto_market_scan/tool.py", line 40, in main
+    with open(os.path.join(md, 'catalog.json'), encoding='utf-8') as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpt28s2j_y/catalog.json'
+
+[11:42:24] restock-agent codex gpt-6-luna effort=low output-schema 0.3s -> {"reason": "c0 shows it", "evidence": ["c0"], "action": "finish", "tool": "", "args_json": "", "final": {"x": 5}}
+..[11:42:24] t wire model=openai/gpt-6-luna response_format=json_schema/strict=True provider={'only': ['openai'], 'allow_fallbacks': False, 'require_parameters': True} reasoning={'effort': 'low'} temperature_sent=False
+[11:42:24] t attempt 1: HTTP 500: no
+[11:42:24] t wire model=openai/gpt-6-luna response_format=json_schema/strict=True provider={'only': ['openai'], 'allow_fallbacks': False, 'require_parameters': True} reasoning={'effort': 'low'} temperature_sent=False
+[11:42:24] t openrouter openai/gpt-6-luna response_format=json_schema(strict) 0.0s -> {"a": 1}
+........................../Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_fast_classify.py:90: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/seller.py' mode='r' encoding='utf-8'>
+  src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "seller.py"), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+..........................[restock] ledger tail of 300 bytes does not reach back 6 h: exposure unknown, buying nothing
+................[restock] guard: H1 20 -> 19 (cash kept)
+............11:42:25 [acp] checkout refused: unit u-1 is not in stock for this order
+11:42:25 [acp] settled G1 at 100, ledger #1
+.11:42:25 [acp] checkout cs_a49c8e29801a15f4 on unit u-1 canceled: a new deal took the unit
+.11:42:25 [acp] checkout refused: unit u-1 is not in stock for this order
+.11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:25 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+11:42:26 [acp] checkout refused: no G1 in stock
+..11:42:26 [acp] checkout cs_f1df248a7a3b14e2 on unit u-1 canceled: a new deal took the unit
+....................................[restock] guard: F1 6 -> 0 (food stock cost)
+.......[restock] guard: F1 10 -> 0 (cash kept)
+........................[11:42:32] seller-harness openrouter openai/gpt-6-luna response_format=json_schema(strict) 0.0s -> {}
+.[11:42:32] buyer-harness openrouter openai/gpt-6-luna response_format=json_schema(strict) 0.0s -> {}
+.[11:42:32] seller-harness openrouter openai/gpt-6-luna response_format=json_schema(strict) 0.0s -> {}
+[11:42:32] seller-jev openrouter openai/gpt-6-luna response_format=json_schema(strict) 0.0s -> {}
+[11:42:32] buyer-agent openrouter openai/gpt-6-luna response_format=json_schema(strict) 0.0s -> {}
+[11:42:32] buyer-choose openrouter openai/gpt-6-luna response_format=json_schema(strict) 0.0s -> {}
+[11:42:32] forum-agent openrouter openai/gpt-6-luna response_format=json_schema(strict) 0.0s -> {}
+.[measure] forum failed: RuntimeError: boom
+[measure] forum failed: RuntimeError: boom
+../Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_measure.py:102: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpewt1ejb7/measure/state.json' mode='r' encoding='UTF-8'>
+  self.assertEqual(json.load(open(os.path.join(self.md, "measure", "state.json")))["posts"], {})
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.[measure] supply failed: AttributeError: 'str' object has no attribute 'get'
+[measure] sales failed: AttributeError: 'NoneType' object has no attribute 'get'
+[measure] z: OSError: [Errno 30] Read-only file system: '/nonexistent'
+......[11:42:32] buyer-harness attempt 1: ReadTimeout: slow
+[11:42:32] buyer-harness attempt 2: ReadTimeout: slow
+[11:42:32] buyer-harness openrouter openai/gpt-6-luna response_format=json_schema(strict) 0.0s -> {}
+.[11:42:32] seller-harness attempt 1: ReadTimeout: slow
+[11:42:32] seller-harness attempt 2: ReadTimeout: slow
+...[11:42:32] seller harness failed on the search (timed out); keyword search
+[11:42:32] seller search {'keywords': 'I want to buy a sofa', 'category': '', 'filters': []} -> 1 candidates: ['S1']
+[11:42:32] seller harness failed on the pick (timed out); rule pick S1
+[11:42:32] seller harness failed on the search (timed out); keyword search
+[11:42:32] seller search {'keywords': 'I want to buy a lamp', 'category': '', 'filters': []} -> 1 candidates: ['S1']
+[11:42:32] seller harness failed on the pick (timed out); rule pick none
+[11:42:32] seller exact name match -> S1 (reserve 50)
+[11:42:32] seller harness failed on the opening (timed out); rule opening
+..............................[11:42:34] restock-agent wire model=openai/gpt-6-luna response_format=json_schema/strict=True provider={'only': ['openai'], 'allow_fallbacks': False, 'require_parameters': True} reasoning={'effort': 'low'} temperature_sent=False
+[11:42:34] restock-agent openrouter openai/gpt-6-luna response_format=json_schema(strict) 0.0s -> {"reason": "r", "evidence": ["c0"], "action": "finish", "tool": "", "args_json": "", "final": {"why": "w", "buy": [{"sku": "F1", "qty": 2}]}}
+..................../Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_meta.py:412: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmped98modh/repo/logs/market-kit.log' mode='a' encoding='UTF-8'>
+  open(log, "a").write("10:01:00 [acp] settled y at 6\n")        # Astra's commit carries the log
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_meta.py:415: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmped98modh/repo/logs/market-kit.log' mode='a' encoding='UTF-8'>
+  open(log, "a").write("10:05:00 [acp] settled z at 7\n")    # and the kit goes on writing it
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_meta.py:421: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmped98modh/repo/logs/market-kit.log' mode='r' encoding='UTF-8'>
+  self.assertIn("settled z", open(log).read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_meta.py:423: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmped98modh/repo/meta/grades.jsonl' mode='r' encoding='UTF-8'>
+  self.assertIn('"canary_failed"', open(os.path.join(self.root, "meta", "grades.jsonl")).read())
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+..../Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_meta.py:478: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpxqeqcrqf/repo/logs/market-kit.log' mode='a' encoding='UTF-8'>
+  open(log, "a").write("10:00:00 [seller] Failed to detach context\n10:00:00 [seller] Traceback (most recent call last):\n"
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+......./Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_meta.py:426: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmp99dol2i2/repo/gone.py' mode='w' encoding='UTF-8'>
+  open(os.path.join(self.root, "gone.py"), "w").write("y = 1\n")
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_meta.py:430: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmp99dol2i2/repo/changed.py' mode='w' encoding='UTF-8'>
+  open(os.path.join(self.root, "changed.py"), "w").write("x = 1\n")
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.........error: pathspec 'changed.py' did not match any file(s) known to git
+error: pathspec 'changed.py' did not match any file(s) known to git
+......../Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_meta.py:460: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpln23r5en/repo/logs/market-kit.log' mode='a' encoding='UTF-8'>
+  open(log, "a").write("".join(f"10:00:{i:02d} [acp] settled x at 5\n" for i in range(10)))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_meta.py:467: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpln23r5en/repo/logs/market-kit.log' mode='w' encoding='UTF-8'>
+  open(log, "w").write("10:09:00 [acp] settled y at 6\n")
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_meta.py:426: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpscgw60rs/repo/gone.py' mode='w' encoding='UTF-8'>
+  open(os.path.join(self.root, "gone.py"), "w").write("y = 1\n")
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_meta.py:430: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpscgw60rs/repo/changed.py' mode='w' encoding='UTF-8'>
+  open(os.path.join(self.root, "changed.py"), "w").write("x = 1\n")
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+......[restock] agent gave no evidenced decision
+..................................................[11:42:48] buyer CODE the ask 8000 (metadata) -> offer 7200, no harness call
+[11:42:48] buyer shop price 8000 (metadata)
+[11:42:48] buyer CODE the ask 7600 (shop template) -> offer 7600, no harness call
+[11:42:48] buyer shop price 7600 (read by the harness)
+[11:42:48] buyer DEAL {"price": 7600, "item": "G1"}
+.[11:42:48] buyer GUARD harness read the price as 0, not a number in []; walking away
+[11:42:48] buyer stopping after turn 1; walking away
+[11:42:48] buyer -> CancelTask t-1
+[11:42:48] buyer <- TASK_STATE_CANCELED
+[11:42:48] buyer END TASK_STATE_CANCELED, no deal
+.[11:42:48] buyer CODE the ask 10000 (metadata) -> offer 9000, no harness call
+[11:42:48] buyer shop price 10000 (metadata)
+[11:42:48] buyer CODE the ask 9500 (metadata) -> offer 9500, no harness call
+[11:42:48] buyer shop price 9500 (metadata)
+[11:42:48] buyer DEAL {"price": 9500, "item": "G1"}
+.[11:42:48] buyer shop price 12000 (read by the harness)
+[11:42:48] buyer DEAL {"price": 11000, "item": "G1"}
+.[11:42:48] buyer CODE the ask 14000 (metadata) -> offer 10000, no harness call
+[11:42:48] buyer shop price 14000 (metadata)
+[11:42:48] buyer CODE the ask 13000 (metadata) -> walk_away , no harness call
+[11:42:48] buyer shop price 13000 (metadata)
+[11:42:48] buyer harness: walk away
+[11:42:48] buyer stopping after turn 2; walking away
+[11:42:48] buyer -> CancelTask t-1
+[11:42:48] buyer <- TASK_STATE_CANCELED
+[11:42:48] buyer END TASK_STATE_CANCELED, no deal
+.............[11:42:48] buyer END TASK_STATE_CANCELED, no deal
+.[11:42:48] buyer CODE the ask 10000 (metadata) -> offer 9000, no harness call
+[11:42:48] buyer shop price 10000 (metadata)
+[11:42:48] buyer shop price 9600 (read by the harness)
+[11:42:48] buyer DEAL {"price": 9600, "item": "G1"}
+.................[11:42:48] t attempt 1: HTTP 503: busy
+[11:42:48] t attempt 2: HTTP 503: busy
+.[11:42:48] t attempt 1: HTTP 429: rate limited
+....................................................[shop_stock] unit rank failed, oldest unit first: ZeroDivisionError: division by zero
+.....[restock] guard: H1 3 -> 1 (cash kept)
+.[restock] guard: F1 3 -> 1 (food stock cost)
+.[restock] guard: BIG 2 -> 1 (units per SKU)
+[restock] guard: X is in skip_skus, left out
+[restock] guard: BIG 1 -> 0 (units per SKU)
+.[restock] guard: H1 3 -> 0 (stock cost)
+...[restock] guard: H1 5 -> 1 (units per SKU)
+[restock] guard: H1 2 -> 0 (units per SKU)
+...................................[restock] guard: H1 4 -> 2 (units per SKU)
+[restock] guard: F2 surge 1.3 >= 1.3, left out until it falls
+[restock] guard: H1 4 -> 1 (units per SKU)
+[restock] guard: F1 2 -> 1 (units per SKU)
+[restock] guard: H1 4 -> 1 (units per SKU)
+[restock] guard: F1 2 -> 0 (units per SKU)
+..[restock] guard: H1 8 -> 6 (stock cost)
+[restock] guard: H1 8 -> 5 (stock cost)
+.......[restock] guard: F2 3 -> 0 (stock cost)
+......./Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_profit_strategy.py:118: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/seller.py' mode='r' encoding='utf-8'>
+  src = open(os.path.join(HERE, "seller.py"), encoding="utf-8").read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+................[restock] model warming up: 0 reachable deals (+1 rows), 0 SKUs, 0 captive buyers, top 
+..................[rival_vote] rivals []: next dislike fee None: not free, nothing sent
+..[rival_vote] failed: ValueError: bad json
+.../Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_rival_vote.py:143: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpu8idywb7/forum.json' mode='w' encoding='UTF-8'>
+  json.dump(POSTS, open(os.path.join(md, "forum.json"), "w"))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_rival_vote.py:144: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpu8idywb7/inventory.json' mode='w' encoding='UTF-8'>
+  json.dump({"next_dislike_fee": 0}, open(os.path.join(md, "inventory.json"), "w"))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_rival_vote.py:150: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpu8idywb7/rival_vote_state.json' mode='w' encoding='UTF-8'>
+  json.dump({"authors": dict(many, **{"1": "mjforge", "2": "mjforge", "13": "mjforge"}),
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+[rival_vote] rivals ['mjforge', 'buzllightyear']: dislike mjforge (2 votes, my net was 1)
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_rival_vote.py:154: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpu8idywb7/rival_vote_state.json' mode='r' encoding='UTF-8'>
+  state = json.load(open(os.path.join(md, rv.STATE)))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+./Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_rival_vote.py:74: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmp8q5t_7y7/forum.json' mode='w' encoding='UTF-8'>
+  json.dump(POSTS, open(os.path.join(md, "forum.json"), "w"))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_rival_vote.py:75: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmp8q5t_7y7/inventory.json' mode='w' encoding='UTF-8'>
+  json.dump({"next_dislike_fee": 0}, open(os.path.join(md, "inventory.json"), "w"))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+[rival_vote] rivals ['mjforge', 'buzllightyear']: dislike mjforge (1 votes, my net was 0)
+[rival_vote] rivals ['mjforge', 'buzllightyear']: no rival within band with enough unvoted posts
+............[11:42:59] buyer [payments] s: G1 not paid: no certificate
+...........[11:43:02] buyer card 'Nocha Test' -> http://127.0.0.1:59216/; item 김치, budget 10000
+[11:43:02] buyer -> SendMessage 'I want to buy a 김치'
+[11:43:02] seller task 74773f6a <- 'I want to buy a 김치'
+[11:43:02] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:02] seller task 74773f6a -> INPUT_REQUIRED G1 ask 7080
+[11:43:02] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:02] buyer shop price 7080 (metadata)
+[11:43:02] buyer -> SendMessage '7080' taskId=74773f6a
+[11:43:02] seller task 74773f6a <- '7080'
+[11:43:02] seller task 74773f6a FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:02] seller task 74773f6a harness read the offer as 7080 from [7080]
+[11:43:02] seller task 74773f6a -> COMPLETED G1 at 7080
+[11:43:02] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:02] buyer DEAL {"price": 7080.0, "sig_seller": "DjLu+O8vMO8/EJsa1FLBUgv8KvRn6/7gc7di5ZdbBj/skB8zRL/8pxgcfHLL4eTbzJRXLT+pqLU+hlJ/k7oMAg==", "unit": "u-food", "item": "\uae40\uce58", "shop": "Nocha Test", "task": "74773f6a-42ff-4d8d-9008-e0c25b3ed986", "claim": "A"}
+11:43:02 [acp] checkout ships unit u-food, claim A, certificate attached
+[11:43:02] seller PAID G1 unit u-food at 7080 (task 74773f6a)
+11:43:02 [acp] paid 7080 through http://127.0.0.1:59216/acp, settled at ledger #7: x, grade A
+.[11:43:02] buyer card 'Nocha Test' -> http://127.0.0.1:59225/; item 포기김치, budget 10000
+[11:43:02] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:02] seller task 83ca9545 <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:02] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:02] seller task 83ca9545 -> INPUT_REQUIRED G1 ask 7080
+[11:43:02] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:02] buyer shop price 7080 (metadata)
+[11:43:02] buyer -> SendMessage '7080' taskId=83ca9545
+[11:43:02] seller task 83ca9545 <- '7080'
+[11:43:02] seller task 83ca9545 FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:02] seller task 83ca9545 harness read the offer as 7080 from [7080]
+[11:43:02] seller task 83ca9545 -> COMPLETED G1 at 7080
+[11:43:02] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:02] buyer DEAL {"price": 7080.0, "sig_seller": "g2+Kme511Z/xb/BUA0Pz5BwcF0A6u6FpzayM8xsPv8+V/RTi/TigruEiUiTPqUhTcKhe4NNd/SiQ8F2ZOhO4BQ==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "83ca9545-9ec3-434c-bc88-5a1e5ecaf280", "claim": "A"}
+.[11:43:02] buyer card 'Nocha Test' -> http://127.0.0.1:59229/; item 포기김치, budget 10000
+[11:43:02] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:02] seller task 92179f47 <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:02] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:02] seller task 92179f47 -> INPUT_REQUIRED G1 ask 7080
+[11:43:02] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:02] buyer shop price 7080 (metadata)
+[11:43:02] buyer -> SendMessage '7080' taskId=92179f47
+[11:43:02] seller task 92179f47 <- '7080'
+[11:43:02] seller task 92179f47 FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:02] seller task 92179f47 harness read the offer as 7080 from [7080]
+[11:43:02] seller task 92179f47 -> COMPLETED G1 at 7080
+[11:43:02] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:02] buyer DEAL {"price": 7080.0, "sig_seller": "fPXjs2JSYj9KKLtwE1e7Q4MFglY84wWXTTdGVPYxK5aNP/ABjo2YF2+EqsdWpSImYgbMCu178z+olElsjk/EBA==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "92179f47-1d5b-4331-b2a6-442dbd7ebd70", "claim": "A"}
+11:43:02 [acp] checkout ships unit u-food, claim A, certificate attached
+[11:43:02] seller PAID G1 unit u-food at 7080 (task 92179f47)
+11:43:02 [acp] paid 7080 through http://127.0.0.1:59229/acp, settled at ledger #7: x, grade A
+.[11:43:02] buyer card 'Nocha Test' -> http://127.0.0.1:59234/; item 포기김치, budget 10000
+[11:43:02] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:02] seller task 572363cf <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:02] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:02] seller task 572363cf -> INPUT_REQUIRED G1 ask 7080
+[11:43:02] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:02] buyer shop price 7080 (metadata)
+[11:43:02] buyer -> SendMessage '7080' taskId=572363cf
+[11:43:02] seller task 572363cf <- '7080'
+[11:43:02] seller task 572363cf FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:02] seller task 572363cf harness read the offer as 7080 from [7080]
+[11:43:02] seller task 572363cf -> COMPLETED G1 at 7080
+[11:43:02] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:02] buyer DEAL {"price": 7080.0, "sig_seller": "0L3djCXByLLcJJE1veQa5NRJYPJIHJtYV4ui0jOAW1002PvhSYKMRmSA+6Q3KCPPdx/qXgttAIeAg3MjxzQDCw==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "572363cf-e7e8-4e02-ba1f-bf7f5e85a7d0", "claim": "A"}
+11:43:02 [acp] checkout ships unit u-food, claim A, certificate attached
+[11:43:02] seller UNPAID G1 unit u-food at 7080: checkout cancelled or refused; the unit is on sale again
+11:43:02 [acp] payment not completed: 402 {"error":"payment refused by the market","market":{"settled":false,"checks":{"payment_mandate":false}}}
+.[11:43:03] buyer -> SendMessage 'I want to buy 청소기 (G2) with a 6 h warranty'
+[11:43:03] seller task 979858d1 <- 'I want to buy 청소기 (G2) with a 6 h warranty'
+[11:43:03] seller PRICE G2 unit u-goods cost 6000 list 10000: floor 6852 (b 12%), first ask 7550 (1 x 75.5% of list (no SKU median)), floor at b 25% 8022 - the first ask loses money there
+[11:43:03] seller WARRANTY 72 h for G2: break chance 12.2% is in the reserve 6852
+[11:43:03] seller task 979858d1 -> INPUT_REQUIRED G2 ask 7550
+[11:43:03] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G2 [G2], grade B. Every deal comes with a signed receipt and the market's certificate of the unit. This unit comes with a 72 h warranty: if it breaks within 72 h, you get the full price back. My price: 7550.
+[11:43:03] buyer going on with task 979858d1 at http://127.0.0.1:59239/; item 청소기, budget 10000
+[11:43:03] buyer shop price 7550 (metadata)
+[11:43:03] buyer -> SendMessage '7550' taskId=979858d1
+[11:43:03] seller task 979858d1 <- '7550'
+[11:43:03] seller task 979858d1 FAST bare offer 7550 >= floor 7061: no harness call
+[11:43:03] seller task 979858d1 harness read the offer as 7550 from [7550]
+[11:43:03] seller task 979858d1 -> COMPLETED G2 at 7550
+[11:43:03] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G2 at 7550. Thank you!
+[11:43:03] buyer DEAL {"price": 7550.0, "sig_seller": "u2+PJv53knu5XDe2HSU7iw8AtemiC67bfAZhMPNXjmSwDQZlgae/eL1jJLXq3ufR6t9YxseGJLTl5Bq0s6zqAg==", "item": "G2", "shop": "Nocha Test", "claim": "B", "warranty_hours": 72.0, "task": "979858d1-e474-43ce-89bf-2c589b447b15", "unit": "u-goods"}
+[11:43:03] buyer -> SendMessage 'I want to buy 청소기 (G2) with a 6 h warranty'
+[11:43:03] seller task b6cb840f <- 'I want to buy 청소기 (G2) with a 6 h warranty'
+[11:43:04] seller PRICE G2 unit u-g3 cost 6000 list 10000: floor 6235 (b 4%), first ask 7550 (1 x 75.5% of list (no SKU median)), floor at b 25% 8022 - the first ask loses money there
+[11:43:04] seller WARRANTY 72 h for G2: break chance 3.5% is in the reserve 6235
+[11:43:04] seller task b6cb840f -> INPUT_REQUIRED G2 ask 7550
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G2 [G2], grade A. Every deal comes with a signed receipt and the market's certificate of the unit. This unit comes with a 72 h warranty: if it breaks within 72 h, you get the full price back. My price: 7550.
+[11:43:04] buyer [quote] closing the talk with s
+[11:43:04] seller task b6cb840f -> CANCELED
+.[11:43:04] buyer card 'Nocha Test' -> http://127.0.0.1:59247/; item 포기김치, budget 10000
+[11:43:04] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:04] seller task f3ffcadb <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:04] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:04] seller task f3ffcadb -> INPUT_REQUIRED G1 ask 7080
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:04] buyer shop price 7080 (metadata)
+[11:43:04] buyer -> SendMessage '7080' taskId=f3ffcadb
+[11:43:04] seller task f3ffcadb <- '7080'
+[11:43:04] seller task f3ffcadb FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:04] seller task f3ffcadb harness read the offer as 7080 from [7080]
+[11:43:04] seller task f3ffcadb -> COMPLETED G1 at 7080
+[11:43:04] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:04] buyer DEAL {"price": 7080.0, "sig_seller": "brN/xFYmZwhhcK3peOxkvCNCHFbcZCcYl558Cz2m8qrKfq2MD2pJ0Hty96taa6/445iPXVwDH1CGGrO2LP4sAA==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "f3ffcadb-6361-4319-946f-2b491db5e260", "claim": "A"}
+[11:43:04] seller UNPAID G1 unit u-food at 7080: not paid within 120 s (watched 15 min more); the unit is on sale again
+.[11:43:04] buyer card 'Nocha Test' -> http://127.0.0.1:59251/; item 포기김치, budget 4000
+[11:43:04] buyer -> SendMessage 'I want to buy (G1)'
+[11:43:04] seller task 5890c4ea <- 'I want to buy (G1)'
+[11:43:04] seller MARKDOWN G1 unit u-food: 6.0 h of shelf life left, floor 1500 instead of 6016
+[11:43:04] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:04] seller task 5890c4ea -> INPUT_REQUIRED G1 ask 1770
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 6 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 1770.
+[11:43:04] buyer shop price 1770 (metadata)
+[11:43:04] buyer -> SendMessage '1770' taskId=5890c4ea
+[11:43:04] seller task 5890c4ea <- '1770'
+[11:43:04] seller task 5890c4ea FAST bare offer 1770 >= floor 1689: no harness call
+[11:43:04] seller task 5890c4ea harness read the offer as 1770 from [1770]
+[11:43:04] seller task 5890c4ea -> COMPLETED G1 at 1770
+[11:43:04] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 1770. Thank you!
+[11:43:04] buyer DEAL {"price": 1770.0, "sig_seller": "eY96og3f0haJtmYh0J5xIqHz7wVUxJAjZ8mYLltVuaAecfA2Mwq55at8GKE19oL+vRVooEgD6BB/+0zVqn2tBw==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "5890c4ea-95a6-4f72-b673-b92adb9d1015", "claim": "A"}
+.[11:43:04] buyer card 'Nocha Test' -> http://127.0.0.1:59255/; item 포기김치, budget 10000
+[11:43:04] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:04] seller task 4f5f01ca <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:04] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:04] seller task 4f5f01ca -> INPUT_REQUIRED G1 ask 7080
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:04] buyer shop price 7080 (metadata)
+[11:43:04] buyer -> SendMessage '7080' taskId=4f5f01ca
+[11:43:04] seller task 4f5f01ca <- '7080'
+[11:43:04] seller task 4f5f01ca FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:04] seller task 4f5f01ca harness read the offer as 7080 from [7080]
+[11:43:04] seller task 4f5f01ca -> COMPLETED G1 at 7080
+[11:43:04] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:04] buyer DEAL {"price": 7080.0, "sig_seller": "uWi0cxhEDOLaHDIkOTITLwqkAtEPWePIPH4chMujJOt936NjkM9VNeEKGAnerdqmvn+mITCK+hQGEN98rGohDQ==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "4f5f01ca-2314-452f-b2cc-bb710bebd19b", "claim": "A"}
+11:43:04 [acp] checkout ships unit u-food, claim A, certificate attached
+[11:43:04] seller PAID G1 unit u-food at 7080 (task 4f5f01ca)
+11:43:04 [acp] paid 7080 through http://127.0.0.1:59255/acp, settled at ledger #7: x, grade A
+.[11:43:04] buyer card 'Nocha Test' -> http://127.0.0.1:59260/; item 포기김치, budget 10000
+[11:43:04] buyer -> SendMessage 'I want to buy (G1) with a warranty'
+[11:43:04] seller task 9b5aea6b <- 'I want to buy (G1) with a warranty'
+[11:43:04] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:04] seller task 9b5aea6b -> INPUT_REQUIRED G1 ask 7080
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:04] buyer shop price 7080 (metadata)
+[11:43:04] buyer -> SendMessage '7080' taskId=9b5aea6b
+[11:43:04] seller task 9b5aea6b <- '7080'
+[11:43:04] seller task 9b5aea6b FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:04] seller task 9b5aea6b harness read the offer as 7080 from [7080]
+[11:43:04] seller task 9b5aea6b -> COMPLETED G1 at 7080
+[11:43:04] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:04] buyer DEAL {"price": 7080.0, "sig_seller": "Z8RlJyUa0i2Nz1JAXHntiuJnBd6PRhKr3wAqHGreemtGDwiXziwCETDqvlvz5bIQpNRq3epvwP/sa+XQqNXoDQ==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "9b5aea6b-fd26-4235-8335-da03a62e6972", "claim": "A"}
+.[11:43:04] buyer card 'Nocha Test' -> http://127.0.0.1:59264/; item 청소기, budget 10000
+[11:43:04] buyer -> SendMessage 'I want to buy (G2)'
+[11:43:04] seller task 2f38c7c6 <- 'I want to buy (G2)'
+[11:43:04] seller PRICE G2 unit u-goods cost 6000 list 10000: floor 6852 (b 12%), first ask 7550 (1 x 75.5% of list (no SKU median)), floor at b 25% 8022 - the first ask loses money there
+[11:43:04] seller WARRANTY 72 h for G2: break chance 12.2% is in the reserve 6852
+[11:43:04] seller task 2f38c7c6 -> INPUT_REQUIRED G2 ask 7550
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G2 [G2], grade B. Every deal comes with a signed receipt and the market's certificate of the unit. This unit comes with a 72 h warranty: if it breaks within 72 h, you get the full price back. My price: 7550.
+[11:43:04] buyer shop price 7550 (metadata)
+[11:43:04] buyer -> SendMessage '7550' taskId=2f38c7c6
+[11:43:04] seller task 2f38c7c6 <- '7550'
+[11:43:04] seller task 2f38c7c6 FAST bare offer 7550 >= floor 7061: no harness call
+[11:43:04] seller task 2f38c7c6 harness read the offer as 7550 from [7550]
+[11:43:04] seller task 2f38c7c6 -> COMPLETED G2 at 7550
+[11:43:04] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G2 at 7550. Thank you!
+[11:43:04] buyer DEAL {"price": 7550.0, "sig_seller": "m0euaVz7vNDcDCA73KsJ4ut8FtBw2rxnPlor9fmDFIdpcAraPWW5KBzp26Bz8esqSAnV+vH9nldUKwHLot58DA==", "item": "G2", "shop": "Nocha Test", "claim": "B", "warranty_hours": 72.0, "task": "2f38c7c6-4afa-4835-b991-1c73a72ccd91", "unit": "u-goods"}
+.[11:43:04] buyer card 'Nocha Test' -> http://127.0.0.1:59268/; item 청소기, budget 10000
+[11:43:04] buyer -> SendMessage 'I want to buy (G2) with a warranty'
+[11:43:04] seller task a033e364 <- 'I want to buy (G2) with a warranty'
+[11:43:04] seller PRICE G2 unit u-goods cost 6000 list 10000: floor 12032 (b 50%), first ask 12032 (1 x 75.5% of list (no SKU median)), floor at b 50% 12032
+[11:43:04] seller WARRANTY 72 h for G2: break chance 50.0% is in the reserve 12032
+[11:43:04] seller task a033e364 -> INPUT_REQUIRED G2 ask 12032
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G2 [G2], grade B. Every deal comes with a signed receipt and the market's certificate of the unit. This unit comes with a 72 h warranty: if it breaks within 72 h, you get the full price back. My price: 12032.
+[11:43:04] buyer shop price 12032 (metadata)
+[11:43:04] buyer -> SendMessage '10000' taskId=a033e364
+[11:43:04] seller task a033e364 <- '10000'
+[11:43:04] seller task a033e364 FAST offer 10000 under the floor 12032 our ask is already at: the final answer: no harness call
+[11:43:04] seller task a033e364 harness read the offer as 10000 from [10000]
+[11:43:04] seller task a033e364 -> INPUT_REQUIRED ask 12032
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | Thanks for the offer. This is already the lowest price we can sell it for. This is our final price. My price: 12032.
+[11:43:04] buyer shop price 12032 (metadata)
+[11:43:04] buyer -> SendMessage '10000' taskId=a033e364
+[11:43:04] seller task a033e364 <- '10000'
+[11:43:04] seller task a033e364 FAST offer 10000 under the floor 12032 our ask is already at: the final answer: no harness call
+[11:43:04] seller task a033e364 harness read the offer as 10000 from [10000]
+[11:43:04] seller task a033e364 -> INPUT_REQUIRED ask 12032
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | I appreciate it, but we are already at our floor price for this item. This is our final price. My price: 12032.
+[11:43:04] buyer shop price 12032 (metadata)
+[11:43:04] buyer -> SendMessage '10000' taskId=a033e364
+[11:43:04] seller task a033e364 <- '10000'
+[11:43:04] seller task a033e364 FAST offer 10000 under the floor 12032 our ask is already at: the final answer: no harness call
+[11:43:04] seller task a033e364 harness read the offer as 10000 from [10000]
+[11:43:04] seller task a033e364 -> INPUT_REQUIRED ask 12032
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | Thanks for the offer. This is already the lowest price we can sell it for. This is our final price. My price: 12032.
+[11:43:04] buyer shop price 12032 (metadata)
+[11:43:04] buyer -> SendMessage '10000' taskId=a033e364
+[11:43:04] seller task a033e364 <- '10000'
+[11:43:04] seller task a033e364 FAST offer 10000 under the floor 12032 our ask is already at: the final answer: no harness call
+[11:43:04] seller task a033e364 harness read the offer as 10000 from [10000]
+[11:43:04] seller task a033e364 -> INPUT_REQUIRED ask 12032
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | That is a fair try, but our price is already as low as it goes. This is our final price. My price: 12032.
+[11:43:04] buyer shop price 12032 (metadata)
+[11:43:04] buyer -> SendMessage '10000' taskId=a033e364
+[11:43:04] seller task a033e364 <- '10000'
+[11:43:04] seller task a033e364 FAST offer 10000 under the floor 12032 our ask is already at: the final answer: no harness call
+[11:43:04] seller task a033e364 harness read the offer as 10000 from [10000]
+[11:43:04] seller task a033e364 -> INPUT_REQUIRED ask 12032
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | I appreciate it, but we are already at our floor price for this item. This is our final price. My price: 12032.
+[11:43:04] buyer shop price 12032 (metadata)
+[11:43:04] buyer -> SendMessage '10000' taskId=a033e364
+[11:43:04] seller task a033e364 <- '10000'
+[11:43:04] seller task a033e364 FAST offer 10000 under the floor 12032 our ask is already at: the final answer: no harness call
+[11:43:04] seller task a033e364 harness read the offer as 10000 from [10000]
+[11:43:04] seller task a033e364 -> INPUT_REQUIRED ask 12032
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | We have priced it at our minimum already, so we cannot go below it. This is our final price. My price: 12032.
+[11:43:04] buyer shop price 12032 (metadata)
+[11:43:04] buyer -> SendMessage '10000' taskId=a033e364
+[11:43:04] seller task a033e364 <- '10000'
+[11:43:04] seller task a033e364 FAST offer 10000 under the floor 12032 our ask is already at: the final answer: no harness call
+[11:43:04] seller task a033e364 harness read the offer as 10000 from [10000]
+[11:43:04] seller task a033e364 -> INPUT_REQUIRED ask 12032
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | I appreciate it, but we are already at our floor price for this item. This is our final price. My price: 12032.
+[11:43:04] buyer shop price 12032 (metadata)
+[11:43:04] buyer -> SendMessage '10000' taskId=a033e364
+[11:43:04] seller task a033e364 <- '10000'
+[11:43:04] seller task a033e364 FAST offer 10000 under the floor 12032 our ask is already at: the final answer: no harness call
+[11:43:04] seller task a033e364 harness read the offer as 10000 from [10000]
+[11:43:04] seller task a033e364 -> INPUT_REQUIRED ask 12032
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | That is a fair try, but our price is already as low as it goes. This is our final price. My price: 12032.
+[11:43:04] buyer shop price 12032 (metadata)
+[11:43:04] buyer -> SendMessage '10000' taskId=a033e364
+[11:43:04] seller task a033e364 <- '10000'
+[11:43:04] seller task a033e364 FAST offer 10000 under the floor 12032 our ask is already at: the final answer: no harness call
+[11:43:04] seller task a033e364 harness read the offer as 10000 from [10000]
+[11:43:04] seller task a033e364 -> INPUT_REQUIRED ask 12032
+[11:43:04] buyer <- TASK_STATE_INPUT_REQUIRED | That is a fair try, but our price is already as low as it goes. This is our final price. My price: 12032.
+[11:43:04] buyer shop price 12032 (metadata)
+[11:43:04] buyer -> SendMessage '10000' taskId=a033e364
+[11:43:04] seller task a033e364 <- '10000'
+[11:43:04] seller task a033e364 FAST offer 10000 under the floor 12032 our ask is already at: the final answer: no harness call
+[11:43:04] seller task a033e364 harness read the offer as 10000 from [10000]
+[11:43:04] seller GUARD round limit 10 -> reject
+[11:43:04] seller task a033e364 -> REJECTED
+[11:43:04] buyer <- TASK_STATE_REJECTED | Thanks for the offer, but we cannot go lower than this right now. We are so sorry we could not meet your budget this time! No deal.
+[11:43:04] buyer END TASK_STATE_REJECTED, no deal
+.[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59281/; item 포기김치, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller task 56a3d93c <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:05] seller task 56a3d93c -> INPUT_REQUIRED G1 ask 7080
+[11:43:05] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 10 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:05] buyer shop price 7080 (metadata)
+[11:43:05] buyer -> SendMessage '7080' taskId=56a3d93c
+[11:43:05] seller task 56a3d93c <- '7080'
+[11:43:05] seller task 56a3d93c FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:05] seller task 56a3d93c harness read the offer as 7080 from [7080]
+[11:43:05] seller task 56a3d93c -> COMPLETED G1 at 7080
+[11:43:05] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:05] buyer DEAL {"price": 7080.0, "sig_seller": "KNVMZ8+0ONxVSuG7QUZdxQKjB0WGSoQRhLyrBONCCvX/t2I3AiLcCGv6T0A8whFuSXBJZVtqbPuv8rqFn5crCg==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "56a3d93c-433b-453a-9b34-2c5626f067cd", "claim": "A"}
+11:43:05 [acp] not paying: 10.00 h of shelf life left, the policy asks for 48.1
+[11:43:05] seller UNPAID G1 unit u-food at 7080: checkout cancelled or refused; the unit is on sale again
+.[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59286/; item 포기김치, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy (G1). I need at least 72 hours of shelf life.'
+[11:43:05] seller task d7a6bb4f <- 'I want to buy (G1). I need at least 72 hours of shelf life.'
+[11:43:05] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:05] seller task d7a6bb4f -> INPUT_REQUIRED G1 ask 7080
+[11:43:05] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:05] buyer shop price 7080 (metadata)
+[11:43:05] buyer -> SendMessage '7080' taskId=d7a6bb4f
+[11:43:05] seller task d7a6bb4f <- '7080'
+[11:43:05] seller task d7a6bb4f FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:05] seller task d7a6bb4f harness read the offer as 7080 from [7080]
+[11:43:05] seller task d7a6bb4f -> COMPLETED G1 at 7080
+[11:43:05] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:05] buyer DEAL {"price": 7080.0, "sig_seller": "xWhiWkfQ+24jTIhLAIqmF1KjPsz6JS4daqZ56B5op6x5+ZykjMshxCWaIE3VAYb9k03n8ygIDUka+X3tDr2zAw==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "d7a6bb4f-a888-4fce-81ef-ebe4cbb7cef7", "claim": "A"}
+[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59286/; item 포기김치, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy (G1). I need at least 72 hours of shelf life.'
+[11:43:05] seller task 559cb7e5 <- 'I want to buy (G1). I need at least 72 hours of shelf life.'
+[11:43:05] seller PAID G1 unit u-food at 7080 (task d7a6bb4f)
+[11:43:05] seller task 559cb7e5 -> REJECTED (60.0 h of shelf life left, 72 h asked)
+[11:43:05] buyer <- TASK_STATE_REJECTED | Sorry, none of our units fits your order: 60.0 h of shelf life left, 72 h asked.
+[11:43:05] buyer END TASK_STATE_REJECTED, no deal
+.[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59292/; item 포기김치, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller task 9bdd3cde <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:05] seller task 9bdd3cde -> INPUT_REQUIRED G1 ask 7080
+[11:43:05] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:05] buyer shop price 7080 (metadata)
+[11:43:05] buyer -> SendMessage '7080' taskId=9bdd3cde
+[11:43:05] seller task 9bdd3cde <- '7080'
+[11:43:05] seller task 9bdd3cde FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:05] seller task 9bdd3cde harness read the offer as 7080 from [7080]
+[11:43:05] seller task 9bdd3cde -> COMPLETED G1 at 7080
+[11:43:05] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:05] buyer DEAL {"price": 7080.0, "sig_seller": "MFCAJYaEFOjiW2yC3aAqlsbExMJwdEmX5nJZtKqXPe6S8drGJs3K7LQVsjIWpgtYtmGqnYlH3v8KTjuOdAA/BQ==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "9bdd3cde-9ee1-40b2-a163-5784a68c6eef", "claim": "A"}
+[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59292/; item 청소기, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy (G2)'
+[11:43:05] seller task 50817a9d <- 'I want to buy (G2)'
+[11:43:05] seller PRICE G2 unit u-goods cost 6000 list 10000: floor 6852 (b 12%), first ask 7550 (1 x 75.5% of list (no SKU median)), floor at b 25% 8022 - the first ask loses money there
+[11:43:05] seller WARRANTY 72 h for G2: break chance 12.2% is in the reserve 6852
+[11:43:05] seller task 50817a9d -> INPUT_REQUIRED G2 ask 7550
+[11:43:05] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G2 [G2], grade B. Every deal comes with a signed receipt and the market's certificate of the unit. This unit comes with a 72 h warranty: if it breaks within 72 h, you get the full price back. My price: 7550.
+[11:43:05] buyer shop price 7550 (metadata)
+[11:43:05] buyer -> SendMessage '7550' taskId=50817a9d
+[11:43:05] seller task 50817a9d <- '7550'
+[11:43:05] seller task 50817a9d FAST bare offer 7550 >= floor 7061: no harness call
+[11:43:05] seller task 50817a9d harness read the offer as 7550 from [7550]
+[11:43:05] seller task 50817a9d -> COMPLETED G2 at 7550
+[11:43:05] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G2 at 7550. Thank you!
+[11:43:05] buyer DEAL {"price": 7550.0, "sig_seller": "ewQSKtMLhop+soDkDAoDkZNLFxY2CRvVpnjHpdmS9u8lBTgNQA+6IbppLK4vC6rI/U0qFxPHn2mWwJb/ZDoDDA==", "item": "G2", "shop": "Nocha Test", "claim": "B", "warranty_hours": 72.0, "task": "50817a9d-038e-4fc3-ab89-f0a614dd0caa", "unit": "u-goods"}
+.[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59299/; item 포기김치, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller task b42426ab <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:05] seller task b42426ab -> INPUT_REQUIRED G1 ask 7080
+[11:43:05] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:05] buyer shop price 7080 (metadata)
+[11:43:05] buyer -> SendMessage '7080' taskId=b42426ab
+[11:43:05] seller task b42426ab <- '7080'
+[11:43:05] seller task b42426ab FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:05] seller task b42426ab harness read the offer as 7080 from [7080]
+[11:43:05] seller task b42426ab -> COMPLETED G1 at 7080
+[11:43:05] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:05] buyer DEAL {"price": 7080.0, "sig_seller": "vx7VfYlhlAqUDCZZjnj5a0ULvSRACffWEy3NAvTxc8JT3VE/Ti97+hZ1qW1lQlclzaUkVEKtGAvDdUYVZnKFBA==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "b42426ab-f004-457b-8280-26adcaa78c6e", "claim": "A"}
+11:43:05 [acp] checkout ships unit u-food, claim A, certificate attached
+[11:43:05] seller PAID G1 unit u-food at 7080 (task b42426ab)
+11:43:05 [acp] paid 7080 through http://127.0.0.1:59299/acp, settled at ledger #7: x, grade A
+.[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59304/; item 포기김치, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller task 51be77ff <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:05] seller task 51be77ff -> INPUT_REQUIRED G1 ask 7080
+[11:43:05] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:05] buyer shop price 7080 (metadata)
+[11:43:05] buyer -> SendMessage '7080' taskId=51be77ff
+[11:43:05] seller task 51be77ff <- '7080'
+[11:43:05] seller task 51be77ff FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:05] seller task 51be77ff harness read the offer as 7080 from [7080]
+[11:43:05] seller task 51be77ff -> COMPLETED G1 at 7080
+[11:43:05] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:05] buyer DEAL {"price": 7080.0, "sig_seller": "7o3aoccJDP2H0m7zr3oL9U0mEF9j2lGDAVPXs5+9W1UcEhkK4Krr5KwZ2dFzXcoOsq8ufjJZd3D6/ZjF5AauCQ==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "51be77ff-6dfd-463d-b533-521d21b58f18", "claim": "A"}
+[11:43:05] seller PAID G1 unit u-food at 7080 (task 51be77ff)
+.[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59308/; item 포기김치, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller task ae29c7f5 <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[11:43:05] seller task ae29c7f5 -> INPUT_REQUIRED G1 ask 7080
+[11:43:05] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7080.
+[11:43:05] buyer shop price 7080 (metadata)
+[11:43:05] buyer -> SendMessage '7080' taskId=ae29c7f5
+[11:43:05] seller task ae29c7f5 <- '7080'
+[11:43:05] seller task ae29c7f5 FAST bare offer 7080 >= floor 6761: no harness call
+[11:43:05] seller task ae29c7f5 harness read the offer as 7080 from [7080]
+[11:43:05] seller task ae29c7f5 -> COMPLETED G1 at 7080
+[11:43:05] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7080. Thank you!
+[11:43:05] buyer DEAL {"price": 7080.0, "sig_seller": "ssE9HVo9f5w2z0bd0tH7PJNHIZkX4dvXF5moCmTb1Zo4aXslpjU9OMsLMC/P4xatkA7WsTLXr58tWGnw+FvOBQ==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "ae29c7f5-8088-440a-93da-490884884571", "claim": "A"}
+[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59308/; item 포기김치, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller task a9544d85 <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller task a9544d85 -> REJECTED (not in stock)
+[11:43:05] buyer <- TASK_STATE_REJECTED | Sorry, we have none of that in stock.
+[11:43:05] buyer END TASK_STATE_REJECTED, no deal
+.[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59314/; item 청소기, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy (G2) with a 6 h warranty'
+[11:43:05] seller task 358752e0 <- 'I want to buy (G2) with a 6 h warranty'
+[11:43:05] seller PRICE G2 unit u-goods cost 6000 list 10000: floor 6852 (b 12%), first ask 7550 (1 x 75.5% of list (no SKU median)), floor at b 25% 8022 - the first ask loses money there
+[11:43:05] seller WARRANTY 72 h for G2: break chance 12.2% is in the reserve 6852
+[11:43:05] seller task 358752e0 -> INPUT_REQUIRED G2 ask 7550
+[11:43:05] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G2 [G2], grade B. Every deal comes with a signed receipt and the market's certificate of the unit. This unit comes with a 72 h warranty: if it breaks within 72 h, you get the full price back. My price: 7550.
+[11:43:05] buyer shop price 7550 (metadata)
+[11:43:05] buyer -> SendMessage '7550' taskId=358752e0
+[11:43:05] seller task 358752e0 <- '7550'
+[11:43:05] seller task 358752e0 FAST bare offer 7550 >= floor 7061: no harness call
+[11:43:05] seller task 358752e0 harness read the offer as 7550 from [7550]
+[11:43:05] seller task 358752e0 -> COMPLETED G2 at 7550
+[11:43:05] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G2 at 7550. Thank you!
+[11:43:05] buyer DEAL {"price": 7550.0, "sig_seller": "A9GcaJfHx285cpXjLZ7XCE2pNGHihCFzdUXRDl8RaMG6z2zAapV2dDxDj1PeLEJe2WUrxYdz4m1u3n2EbINkBA==", "item": "G2", "shop": "Nocha Test", "claim": "B", "warranty_hours": 72.0, "task": "358752e0-e8ba-44d1-9250-ef939bba2eca", "unit": "u-goods"}
+.[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59318/; item 포기김치, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy 포기김치 10kg G2 (G2)'
+[11:43:05] seller task a52e351c <- 'I want to buy 포기김치 10kg G2 (G2)'
+[11:43:05] seller PRICE G2 unit u-goods cost 6000 list 10000: floor 8253 (b 15%), first ask 8253 (1.05 x 75.5% of list (no SKU median)), floor at b 25% 9354 - the first ask loses money there
+[11:43:05] seller WARRANTY 72 h for G2: break chance 15.0% is in the reserve 8253
+[11:43:05] seller task a52e351c -> INPUT_REQUIRED G2 ask 8253
+[11:43:05] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G2 [G2], grade B. Every deal comes with a signed receipt and the market's certificate of the unit. This unit comes with a 72 h warranty: if it breaks within 72 h, you get the full price back. My price: 8253.
+[11:43:05] buyer shop price 8253 (metadata)
+[11:43:05] buyer -> SendMessage '8253' taskId=a52e351c
+[11:43:05] seller task a52e351c <- '8253'
+[11:43:05] seller task a52e351c FAST bare offer 8253 >= floor 8253: no harness call
+[11:43:05] seller task a52e351c harness read the offer as 8253 from [8253]
+[11:43:05] seller task a52e351c -> COMPLETED G2 at 8253
+[11:43:05] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G2 at 8253. Thank you!
+[11:43:05] buyer DEAL {"price": 8253.0, "sig_seller": "xcq3l5dBaeVzqECiXfYnFbSb2jiF6YBdTHuMHzRuH6GnGL4YlPo9Qr8msVwmBWtJbsMfyiYEGOYgB0MI67/bDQ==", "item": "G2", "shop": "Nocha Test", "claim": "B", "warranty_hours": 72.0, "task": "a52e351c-dbdb-446d-9f25-27d6432cc495", "unit": "u-goods"}
+[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59318/; item 포기김치, budget 10000
+[11:43:05] buyer -> SendMessage 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller task a92a1c66 <- 'I want to buy 포기김치 10kg G1 (G1)'
+[11:43:05] seller PRICE G1 unit u-food cost 6000 list 10000: floor 7015 (b 0%), first ask 7434 (1.05 x 70.8% of list (no SKU median))
+[11:43:05] seller task a92a1c66 -> INPUT_REQUIRED G1 ask 7434
+[11:43:05] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 7434.
+[11:43:05] buyer shop price 7434 (metadata)
+[11:43:05] buyer -> SendMessage '7434' taskId=a92a1c66
+[11:43:05] seller task a92a1c66 <- '7434'
+[11:43:05] seller task a92a1c66 FAST bare offer 7434 >= floor 7015: no harness call
+[11:43:05] seller task a92a1c66 harness read the offer as 7434 from [7434]
+[11:43:05] seller task a92a1c66 -> COMPLETED G1 at 7434
+[11:43:05] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 7434. Thank you!
+[11:43:05] buyer DEAL {"price": 7434.0, "sig_seller": "r1fQ3PFTu+hXgj1nE1LCCKmodcvxbHfYQJniCCrJox+XGv0s0FZZp6PeHTuC5jw20s7Xtk4SY0D9rj6rjlftBw==", "unit": "u-food", "item": "G1", "shop": "Nocha Test", "task": "a92a1c66-88a8-47df-8134-036336ddd096", "claim": "A"}
+...[restock] guard: H1 2 -> 0 (cash kept)
+[restock] guard: F1 2 -> 0 (cash kept)
+..[restock] guard: F1 2 -> 0 (cash kept)
+[restock] guard: H1 2 -> 0 (cash kept)
+..........[11:43:05] buyer card 'Nocha Test' -> http://127.0.0.1:59325/; item lamp, budget 150
+[11:43:05] buyer -> SendMessage 'I want to buy a lamp'
+[11:43:05] seller task 92ecc80e <- 'I want to buy a lamp'
+[11:43:05] seller exact name match -> lamp (reserve 100)
+[11:43:05] seller PRICE opening ask 120 instead of the harness's 100 (profit arm +20% of ['0%', '3%', '6%', '10%', '15%', '20%'], posterior 1.0/1.0, realized margin 20.0%, market mean None, share None)
+[11:43:05] seller task 92ecc80e -> INPUT_REQUIRED lamp ask 120
+[11:43:05] buyer <- TASK_STATE_INPUT_REQUIRED | New shop launch price! Welcome. lamp. Every deal comes with an Ed25519-signed receipt for the exact item and price. My price: 120.
+[11:43:05] buyer shop price 120 (metadata)
+[11:43:05] buyer -> SendMessage '120' taskId=92ecc80e
+[11:43:05] seller task 92ecc80e <- '120'
+[11:43:05] seller task 92ecc80e FAST bare offer 120 >= floor 106: no harness call
+[11:43:05] seller task 92ecc80e harness read the offer as 120 from [120]
+[11:43:05] seller task 92ecc80e -> COMPLETED lamp at 120
+[11:43:05] buyer <- TASK_STATE_COMPLETED | Deal: lamp at 120. Thank you!
+[11:43:05] buyer DEAL {"price": 120.0, "item": "lamp", "shop": "Nocha Test", "task": "92ecc80e-e643-48f4-9065-51bd18316a85", "sig_seller": "CUBVTG2xDrg8mkSR7aD53APtYke0Ox8aAuqu23YtMcxfXJj9lkP/XnWCvsUe948yPvC+oXNXdR1OHcmQdHI4Bg=="}
+11:43:05 [acp] paid 120 through http://127.0.0.1:59325/acp, settled at ledger #7
+........../Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_scorecard_drift.py:89: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpj_z6aifo/catalog.json' mode='w' encoding='UTF-8'>
+  json.dump({'G1': {'list_price': 1000}}, open(os.path.join(md, 'catalog.json'), 'w'))
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_scorecard_drift.py:90: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/18/7qk7ysq17d9d2_1y0jwvrrn00000gp/T/tmpj_z6aifo/inventory.json' mode='w' encoding='UTF-8'>
+  json.dump({'units': [{'sku': 'G1', 'cost': 950, 'supplied_at': now - 60},
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+...................[shop_forum] proof: nocha12 (card: Nocha Furniture) on the ledger: 3 settled sales, grade claims honest in 3 of 3, 0 unit(s) broke after sal
+.[shop_forum] proof: nocha12 (card: Nocha Furniture) on the ledger: 2 settled sales, grade claims honest in 2 of 2, 0 unit(s) broke after sal
+.[shop_forum] proof: nocha12 (card: Nocha Furniture) on the ledger: 2 settled sales, grade claims honest in 2 of 2, 0 unit(s) broke after sal
+[shop_forum] proof: nocha12 (card: Nocha Furniture) on the ledger: 2 settled sales, grade claims honest in 2 of 2, 0 unit(s) broke after sal
+[shop_forum] proof: nocha12 (card: Nocha Furniture) on the ledger: 2 settled sales, grade claims honest in 2 of 2, 0 unit(s) broke after sal
+......[shop_forum] reply: nocha12 has this in stock now: 소파패드 (G0be9ed07) grade A x1, 72 h warranty, list 37,900. Ask our shop for it by name and 
+.[shop_forum] proof: nocha12 (card: Nocha Furniture) on the ledger: 2 settled sales, grade claims honest in 2 of 2, 0 unit(s) broke after sal
+..[shop_forum] proof: nocha12 (card: Nocha Furniture) on the ledger: 2 settled sales, grade claims honest in 2 of 2, 0 unit(s) broke after sal
+[shop_forum] stock: nocha12 in stock now (3 units, prices negotiable): 포기김치 10kg (G200e39a3) grade A/B x2, 30 h shelf life, list 37,900; 소파패
+.[shop_forum] proof: nocha12 (card: Nocha Furniture) on the ledger: 2 settled sales, grade claims honest in 2 of 2, 0 unit(s) broke after sal
+.[shop_forum] reply: nocha12 has this in stock now: 포기김치 10kg (G200e39a3) grade A/B x2, 30 h shelf life, list 37,900, sold here at 26,151. As
+[shop_forum] proof: nocha12 (card: Nocha Furniture) on the ledger: 2 settled sales, grade claims honest in 2 of 2, 0 unit(s) broke after sal
+.[shop_forum] proof: nocha12 (card: Nocha Furniture) on the ledger: 2 settled sales, grade claims honest in 2 of 2, 0 unit(s) broke after sal
+[shop_forum] stock: nocha12 in stock now (3 units, prices negotiable): 포기김치 10kg (G200e39a3) grade A/B x2, 30 h shelf life, list 37,900; 소파패
+[shop_forum] stock: nocha12 in stock now (3 units, prices negotiable): 포기김치 10kg (G200e39a3) grade A/B x2, 29 h shelf life, list 37,900; 소파패
+..............
+----------------------------------------------------------------------
+Ran 762 tests in 50.617s
+
+OK

@@ -1,0 +1,1070 @@
+{
+  "changed": true,
+  "hypothesis": "조사 도구의 SKU·결제·재고 연결을 바로잡고 구매자 집중도를 구분하면 잘못된 수요 판단을 줄일 수 있다.",
+  "change_summary": "auto_market_research_pack의 의미 오류를 수리하고 회귀검사 5개를 추가했다. 전략, Terra 판정선, 직렬 실험 큐와 REPORT-notes를 갱신했다. 가격설정·보호한도·사람의 운영 스위치는 변경하지 않았다.",
+  "target_metric": "도구 의미 오류, 근거를 갖춘 재입고 판단, 현행 대비 추가 Players",
+  "expected": "기존 의미검사 실패 4→0을 확인했다. 전체 1,595개 테스트가 통과했다. 직접적인 Players 개선 효과는 아직 미확정이다.",
+  "evidence": [
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:1",
+      "excerpt": "구매결제 37→36",
+      "meaning": "b9c1ea57 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:2",
+      "excerpt": "구매결제 36→41",
+      "meaning": "d85a9e95 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:3",
+      "excerpt": "구매결제 35→46",
+      "meaning": "8ca80f55 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:4",
+      "excerpt": "구매결제 33→49",
+      "meaning": "3a1a17f4 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:5",
+      "excerpt": "구매결제 42→53",
+      "meaning": "d4014ea9 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:6",
+      "excerpt": "상점결제 117→100",
+      "meaning": "60012afe 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:7",
+      "excerpt": "상점결제 118→100",
+      "meaning": "47e976e4 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:8",
+      "excerpt": "상점결제 118→100",
+      "meaning": "80982949 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:9",
+      "excerpt": "상점결제 95→138",
+      "meaning": "6e3fc0c7 전후 관측. 지침 자체의 판정은 최초 3개 판단 표본과 구분했다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:10",
+      "excerpt": "상점결제 109→122",
+      "meaning": "52c34b22 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:11",
+      "excerpt": "구매결제 50→50",
+      "meaning": "6da6edae 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:12",
+      "excerpt": "구매결제 48→47",
+      "meaning": "bd93ff38 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:13",
+      "excerpt": "구매결제 51→42",
+      "meaning": "b63473b7 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:14",
+      "excerpt": "구매결제 49→40",
+      "meaning": "a9aa73f7 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:15",
+      "excerpt": "구매결제 46→38",
+      "meaning": "0eb0313e 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:16",
+      "excerpt": "구매결제 46→36",
+      "meaning": "5afdaaf4 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:17",
+      "excerpt": "상점결제 114→102",
+      "meaning": "1d7d4150 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:18",
+      "excerpt": "구매결제 38→42",
+      "meaning": "edab2aa7 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:19",
+      "excerpt": "상점결제 102→107",
+      "meaning": "77a7e99c 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:20",
+      "excerpt": "상점결제 116→87",
+      "meaning": "803d21c7 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:21",
+      "excerpt": "상점결제 116→86",
+      "meaning": "83c0eaef 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:22",
+      "excerpt": "상점결제 119→83",
+      "meaning": "11422a7a 전후 관측. 중단조건 실행의 타당성과 복원 후 인과효과는 별개다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:23",
+      "excerpt": "상점결제 113→92",
+      "meaning": "0a700a7a 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:24",
+      "excerpt": "상점결제 114→91",
+      "meaning": "742a7885 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:25",
+      "excerpt": "구매결제 34→26",
+      "meaning": "e5b66632 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:26",
+      "excerpt": "구매결제 34→26",
+      "meaning": "0af5ea01 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:27",
+      "excerpt": "구매결제 34→26",
+      "meaning": "9b04abfc 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:28",
+      "excerpt": "구매결제 34→26",
+      "meaning": "a8af91a4 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:29",
+      "excerpt": "구매결제 34→26",
+      "meaning": "0b5899ed 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:30",
+      "excerpt": "구매결제 34→26",
+      "meaning": "ddad926b 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:31",
+      "excerpt": "구매결제 34→26",
+      "meaning": "20a5f1ed 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:32",
+      "excerpt": "구매결제 34→26",
+      "meaning": "a44c148e 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:33",
+      "excerpt": "구매결제 31→27",
+      "meaning": "bf6de590 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:34",
+      "excerpt": "구매결제 28→26",
+      "meaning": "094f49fb 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:35",
+      "excerpt": "상점결제 103→86",
+      "meaning": "2056a2ef 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:36",
+      "excerpt": "상점결제 113→103",
+      "meaning": "fa3f60d0 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:37",
+      "excerpt": "구매결제 29→33",
+      "meaning": "765244e8 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:38",
+      "excerpt": "구매결제 27→38",
+      "meaning": "08b282dd 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:39",
+      "excerpt": "구매결제 28→39",
+      "meaning": "f69d5860 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:40",
+      "excerpt": "구매결제 30→40",
+      "meaning": "0c81ca5c 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:41",
+      "excerpt": "구매결제 37→36",
+      "meaning": "211c9a4b 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:42",
+      "excerpt": "구매결제 38→38",
+      "meaning": "0258f9fb 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:43",
+      "excerpt": "상점결제 92→71",
+      "meaning": "3ba85bd4 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:44",
+      "excerpt": "구매결제 36→30",
+      "meaning": "c1974cb1 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:45",
+      "excerpt": "구매결제 36→30",
+      "meaning": "144c15e1 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:46",
+      "excerpt": "구매결제 36→30",
+      "meaning": "ca7aef4a 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:47",
+      "excerpt": "상점결제 64→105",
+      "meaning": "0d9c822c 전후 관측. 양쪽 모두 미숙성."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:48",
+      "excerpt": "상점결제 71→99",
+      "meaning": "b55c4f66 전후 관측. 양쪽 모두 미숙성."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:49",
+      "excerpt": "상점결제 99→73",
+      "meaning": "40aa8553 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:50",
+      "excerpt": "구매결제 38→30",
+      "meaning": "ffb0caf1 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:51",
+      "excerpt": "구매결제 38→28",
+      "meaning": "f33d70d2 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:52",
+      "excerpt": "구매결제 36→30",
+      "meaning": "1c9526be 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:53",
+      "excerpt": "상점결제 92→119",
+      "meaning": "3f8de34e 전후 관측. 양쪽 모두 미숙성."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:54",
+      "excerpt": "상점결제 95→110",
+      "meaning": "820b4fac 전후 관측. 양쪽 모두 미숙성."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:55",
+      "excerpt": "상점결제 99→104",
+      "meaning": "293120e6 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:56",
+      "excerpt": "상점결제 107→105",
+      "meaning": "d5b60bec 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:57",
+      "excerpt": "상점결제 107→105",
+      "meaning": "e412db0e 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:58",
+      "excerpt": "상점결제 107→105",
+      "meaning": "4f42ef98 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:59",
+      "excerpt": "구매결제 34→34",
+      "meaning": "1586af85 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:60",
+      "excerpt": "구매결제 34→34",
+      "meaning": "d59b75be 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:61",
+      "excerpt": "구매결제 33→39",
+      "meaning": "1fb2cf9c 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:62",
+      "excerpt": "구매결제 34→35",
+      "meaning": "eda1eae1 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:63",
+      "excerpt": "상점결제 97→110",
+      "meaning": "77bdf3cf 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:64",
+      "excerpt": "구매결제 34→39",
+      "meaning": "1b96bb76 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:65",
+      "excerpt": "구매결제 37→36",
+      "meaning": "48075ef9 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:66",
+      "excerpt": "상점결제 97→129",
+      "meaning": "d0916abb 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:67",
+      "excerpt": "상점결제 96→129",
+      "meaning": "c0da41b4 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:68",
+      "excerpt": "상점결제 96→129",
+      "meaning": "ec36993f 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:69",
+      "excerpt": "구매결제 21→30",
+      "meaning": "dc6e2cdc 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:70",
+      "excerpt": "구매결제 19→34",
+      "meaning": "799247a2 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:71",
+      "excerpt": "상점결제 98→141",
+      "meaning": "20b32e6a 전후 관측. 도구 수리의 직접 매출 효과로 해석하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:72",
+      "excerpt": "상점결제 113→130",
+      "meaning": "79f35ce1 전후 관측."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:73",
+      "excerpt": "구매결제 38→32",
+      "meaning": "cfe7831a 전후 관측. 이후 창은 팩 시각에서 잘린다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:74",
+      "excerpt": "구매결제 40→18",
+      "meaning": "89b89d49 전후 관측. 이후 창은 팩 시각에서 잘린다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:75",
+      "excerpt": "구매결제 36→16",
+      "meaning": "8b091cb3 전후 관측. 이후 창은 팩 시각에서 잘린다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:76",
+      "excerpt": "구매결제 37→10",
+      "meaning": "8e007b6e 전후 관측. 이후 창은 팩 시각에서 잘린다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:77",
+      "excerpt": "구매결제 33→8",
+      "meaning": "3993cbeb 전후 관측. 이후 창은 팩 시각에서 잘린다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-findings.jsonl:6",
+      "excerpt": "\"net_per_sale\": -7720.24",
+      "meaning": "G2c023a8c의 숙성 58건은 건당 순손실이다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-findings.jsonl:1",
+      "excerpt": "\"paid\": 3, \"buyers\": 1",
+      "meaning": "새 탐색 후보의 관측 수요가 구매자 한 명에 집중됐다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-guards.jsonl:1",
+      "excerpt": "\"units per SKU\": 23",
+      "meaning": "첫 공급창의 검증목록 SKU 제한 행. 총상한 절단은 없었다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-guards.jsonl:2",
+      "excerpt": "\"units per SKU\": 21",
+      "meaning": "둘째 공급창의 검증목록 SKU 제한 행. 반복 모의검사를 포함한다."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-validation-v2.json:2",
+      "excerpt": "\"citations\": 116",
+      "meaning": "상세 감사의 116개 인용을 검증했다. 같은 파일에 증거·보호한도·큐·전략 검사 결과를 보존했다."
+    }
+  ],
+  "evidence_gap": {
+    "missing": "동시 가격·등급·보증 실험 각각의 추가 Players 효과, 식품의 실제 사용기한 가치, G2 목표축소의 실제 매입 구속.",
+    "measurement": "77커밋 전후30분 결제·숙성순익, 주문→정산 A/B 지급, 모든 목표 SKU의 두 공급창 단위 ID와 가드를 계산했다. 상품 사다리 지급 A107/B131, 등급 지급 A101/B98이다. 식품 실제가치 97/87건과 버전별 교란은 남아 있다.",
+    "judge_line": {
+      "metric": "동시처치를 분리한 처리군의 현행 대비 추가 Players",
+      "direction": "above",
+      "threshold": "0 초과이며 원래 실험의 무해·중단조건 충족",
+      "min_sample": "군별 6시간 숙성 20결제와 실제가치·원가·환불 연결. G2는 변경 후 숙성10건·실제 목표구속1건.",
+      "expires": "2026-11-10 14:16 KST. 큐 실험은 각각 시작+12시간.",
+      "undo": "표본 부족은 unclear로 남기고 확대하지 않는다. 사람 변경은 원래 undo 조건을 인용할 때만 복원한다. G2 시험이 무구속·양수회복·표본미달이면2→3복원하고, 집중도 시험 미달이면 새 지침만 제거한다."
+    }
+  },
+  "summary": "Players 1.646, 6/66위, 선두 격차0.093. 77커밋과10 Terra 점검을 감사했고 전체1,595테스트가 통과했다. 상세87판정·72유지/제거 결정·116인용은 meta/evidence/astra-1110-021612-review.json에 보존했다. 신규 패치가 없고 산식은 일치한다. alert llm_cache: .062/이전6h .088은 유형별 진단 대상으로 두며 호출을 줄이지 않는다. 커밋·push·PR은 만들지 않았다.",
+  "strategy": {
+    "options": [
+      {
+        "direction": "현행 구성과 손실 SKU 한정 검증",
+        "expected_profit": "추가 ΔPlayers 기준0. G2 목표3→2가 실제 매입 한 개를 막을 때만 과거 평균 기준 약7,720원 손실 회피를 기대한다. 다음 book 문턱9.762M에는 못 미친다.",
+        "risk": "최근 두 창 G2 입고0으로 실제 구속과 직접 효과가 없을 수 있다.",
+        "test": "목표3→2만 시험.12시간·변경 후 숙성10건·실제구속1건으로 판단하고 미달 또는 양수회복이면 복원."
+      },
+      {
+        "direction": "60만+ 재고·협상 하한의 일괄 확대",
+        "expected_profit": "추가 book9.762M/매출494.301M을 움직이는 경쟁자보다 더 넘으면 조건부 +.00806/+.00484. 실현 기대값은 미식별. inextro12h942.68M 중822.61M이60만+지만 원가는 비공개다.",
+        "risk": "서지·환불·보관비. 총상한1B의 절단0/0이므로 상한 인상의 직접 효과는0이다.",
+        "test": "SKU 하나의 실제 목표구속·과반판매·숙성흑자와6h book 비하락부터 확인."
+      },
+      {
+        "direction": "구매 Saved·포럼 개선에 신규 작업 집중",
+        "expected_profit": "현재 Saved .3137→.3139는 조건부 +.00847, forum .895→.897은+.0006. 추가효과는 미식별. 경쟁자의3.5h/12.8h 속도를12h 연장한 선두 격차는 .07243/.11081이다.",
+        "risk": "거래수 감소, 겹친 사람 A/B, 게시량과 평점 효과의 불일치.",
+        "test": "상품 사다리 지급 A107/B131을 등급·버전별로 나누고 군별 숙성20건의 실제가치와 Saved 분모를 연결."
+      }
+    ],
+    "chosen": "현행을 이기는 추가 Players 인과 증거가 없어 현행 유지. 상품군·인증·72h 보증·재고와 카드 유입·원가 및 보증 하한 협상·Saved 중심 구매를 유지한다.",
+    "experiment": "Terra가 g2-loss-target-1110을 먼저 시작하고12시간 후 판단한다. 다음 concentration-probe-1110은 Gc2f7811b의3결제/구매자1명을 새 도구자료로 검증하는 읽기 전용 실험이다. 조사3건·결제10건/구매자3명·보증하한 초과후보1개가 성공선이다. 이번에는 두 실험의 큐를 준비했다."
+  },
+  "grades": [
+    {
+      "change": "b9c1ea57",
+      "reason": "지급37→36. 독립효과 결측이며 전후창만 측정했다. 군별 숙성20건·추가Players>0 공통 판정선을 적용한다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "d85a9e95",
+      "reason": "지급36→41. 등급 A/B 지급101/98을 측정했으나 사다리·버전 교란이 남는다. 교차군 숙성20건·추가Players>0으로 판단한다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "8ca80f55",
+      "reason": "지급35→46. 학습 오염 제거만의 Saved 효과는 결측이다. 교차군 숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "3a1a17f4",
+      "reason": "지급33→49. 등급·순위학습 수정의 개별효과는 미분리다. 교차군 숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "d4014ea9",
+      "reason": "지급42→53, 사다리 A/B107/131. 유망하지만 등급·버전 교란과 Saved 분모 효과가 결측이다. 교차군 숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "60012afe",
+      "reason": "상점결제117→100은 주변 운영 변화다. Astra 시간초과로 반려되어 지속효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "47e976e4",
+      "reason": "상점결제118→100. 실패한 Astra 변경을 복원했으며 새로운 수익효과를 주장하지 않는다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "80982949",
+      "reason": "상점결제118→100. 반려 기록으로 직접 운영효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "6e3fc0c7",
+      "reason": "상점결제95→138은 인과효과가 아니다. 최초3판단에서 총재고만을 이유로 축소0건으로 좁은 성공선을 통과했다. 이후 반복 회피는 재판정한다.",
+      "grade": "worked"
+    },
+    {
+      "change": "52c34b22",
+      "reason": "상점결제109→122. 메타 기록이며 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "6da6edae",
+      "reason": "지급50→50. 학습분리와 시간창 수정의 개별 Saved 효과 결측. 교차군 숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "bd93ff38",
+      "reason": "지급48→47. 테스트·문서 수정이며 직접 거래효과는 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "b63473b7",
+      "reason": "지급51→42. 등급처치와 버전 변경이 겹친다. 교차군 숙성20건의 실제가치·Saved 분모를 연결해 판단한다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "a9aa73f7",
+      "reason": "지급49→40. 비유한 시간창 차단의 거래효과는 결측이다. 군별 숙성20건·추가Players>0 공통선 적용.",
+      "grade": "unclear"
+    },
+    {
+      "change": "0eb0313e",
+      "reason": "지급46→38, 식품 A/B147/138. 숙성 식품97/87건의 사용기한 가치가 결측이다. 군별20건 실제가치 연결 후 판단.",
+      "grade": "unclear"
+    },
+    {
+      "change": "5afdaaf4",
+      "reason": "지급46→36. 식품 학습분리만의 효과와 실제가치가 결측이다. 군별20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "1d7d4150",
+      "reason": "상점결제114→102. no_change 기록으로 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "edab2aa7",
+      "reason": "지급38→42. 사다리·등급 학습분리의 개별 Saved 효과가 결측이다. 교차군 숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "77a7e99c",
+      "reason": "상점결제102→107. no_change 기록으로 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "803d21c7",
+      "reason": "상점결제116→87. 병합된 R1의 처리군별 노출·숙성효과가 결측이다. 군별숙성20건과 원래 중단조건으로 판단.",
+      "grade": "unclear"
+    },
+    {
+      "change": "83c0eaef",
+      "reason": "상점결제116→86. 고가 A 개시가격 처치와 재고간섭을 분리하지 못했다. 군별숙성20건·순기여/재고시간 개선 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "11422a7a",
+      "reason": "무보증 처리군7/18판매·4.99M 대 대조14/16·6.74M에 따른 중단조건을 실행했다. 이후 상점결제119→83은 복원 효과와 미분리다.",
+      "grade": "worked"
+    },
+    {
+      "change": "0a700a7a",
+      "reason": "상점결제113→92. no_change 기록으로 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "742a7885",
+      "reason": "상점결제114→91. 운영기록 병합으로 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "e5b66632",
+      "reason": "지급34→26이나 saved_floor 연구표본0이다. 활성 처리군 효과 결측; 군별숙성20건·추가Players>0 전에는 성공으로 세지 않는다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "0af5ea01",
+      "reason": "지급34→26. 스위치 감시의 운영 Saved 효과는 결측이다. 활성 연구표본과 군별숙성20건 판정이 필요하다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "9b04abfc",
+      "reason": "지급34→26, 연구표본0. 상품군별 Saved 효과 결측; 군별숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "a8af91a4",
+      "reason": "지급34→26, 연구표본0. 잘못된 설정 차단의 추가효과 결측; 활성 군별숙성20건 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "0b5899ed",
+      "reason": "지급34→26, 연구표본0. 시간창 거부의 운영효과 결측; 활성 군별숙성20건 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "ddad926b",
+      "reason": "지급34→26, 연구표본0. 밴드 제거·학습분리 효과 결측; 군별숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "20a5f1ed",
+      "reason": "지급34→26, 연구표본0. recent_asks 분리의 개별효과 결측; 군별숙성20건 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "a44c148e",
+      "reason": "지급34→26, 연구표본0. 출하 SKU별 Saved 효과 결측; 실제 출하가치와 군별숙성20건으로 판단.",
+      "grade": "unclear"
+    },
+    {
+      "change": "bf6de590",
+      "reason": "지급31→27, 연구표본0. 출하 확률 검증의 개별효과 결측; 군별숙성20건 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "094f49fb",
+      "reason": "지급28→26, 연구표본0. 계측 보강의 운영효과 결측; 활성 군별숙성20건 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "2056a2ef",
+      "reason": "상점결제103→86. 유한 시간창의 개별효과 결측; 처리군 숙성20건·순기여/재고시간과 원래 중단조건으로 판단.",
+      "grade": "unclear"
+    },
+    {
+      "change": "fa3f60d0",
+      "reason": "상점결제113→103. no_change 기록으로 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "765244e8",
+      "reason": "지급29→33, saved_floor 표본0. 병합 후 활성 효과 결측; 군별숙성20건 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "08b282dd",
+      "reason": "지급27→38이나 팩 이전 BW1 표본0이다. 처리군 숙성효과 결측; 군별20건·추가Players>0·영수증 위반0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "f69d5860",
+      "reason": "지급28→39. 원장 범위 수정의 개별 선택효과 결측; 버전별 군숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "0c81ca5c",
+      "reason": "지급30→40, BW1 표본0. 군별숙성20건·추가Players>0·영수증 위반0 판정 전에는 미확정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "211c9a4b",
+      "reason": "지급37→36. 원장 경계·보증판독 효과 미분리. 군별숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "0258f9fb",
+      "reason": "지급38→38, BW1 표본0. 보증판독의 숙성효과 결측; 군별20건·위반0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "3ba85bd4",
+      "reason": "상점결제92→71. 외부 스위치 변경에 따른 unsupported 기록이며 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "c1974cb1",
+      "reason": "지급36→30, BW1 표본0. 개별 판독효과 결측; 군별숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "144c15e1",
+      "reason": "지급36→30, BW1 표본0. 다른 등급 보증 배제의 운영효과 결측; 군별숙성20건·위반0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "ca7aef4a",
+      "reason": "지급36→30, BW1 표본0. 문장 변형 판독의 운영효과 결측; 군별숙성20건·위반0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "0d9c822c",
+      "reason": "상점결제64→105이나 양쪽 미숙성이다. 처리단위·재고시간·환불 연결이 결측; 군별숙성20건과 상점 무해조건으로 판단.",
+      "grade": "unclear"
+    },
+    {
+      "change": "b55c4f66",
+      "reason": "상점결제71→99, 미숙성이다. 하한 수리만의 순기여 결측; 군별숙성20건·순기여/재고시간 개선 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "40aa8553",
+      "reason": "상점결제99→73. no_change 기록으로 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "ffb0caf1",
+      "reason": "지급38→30. 게시처리군별 유효 stance 효과 결측; 군별게시20건·유효투표자3명에서 추가평점>0/허위주장0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "f33d70d2",
+      "reason": "지급38→28. 감시 추가의 평점효과 결측; 게시군20건·유효투표자3명 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "1c9526be",
+      "reason": "지급36→30. 게시 계측 수리의 개별평점 효과 결측; 게시군20건·추가평점>0/허위주장0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "3f8de34e",
+      "reason": "상점결제92→119, 미숙성이다. 식품 단위군 간섭과 실제순익 결측; 군별숙성20건·순기여/재고시간 개선 및 상점 무해 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "820b4fac",
+      "reason": "상점결제95→110, 미숙성이다. 군간간섭·할인처치 효과 결측; 군별숙성20건 및 상점 무해조건으로 판단.",
+      "grade": "unclear"
+    },
+    {
+      "change": "293120e6",
+      "reason": "상점결제99→104. 간섭 편향의 방향을 바로잡은 문서이며 직접효과는 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "d5b60bec",
+      "reason": "상점결제107→105. 테스트 실패로 목표3→2가 복원돼 운영 목표3→3, 지속효과0.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "e412db0e",
+      "reason": "상점결제107→105. 반려 설정을 복원했으며 축소 효과는 남지 않았다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "4f42ef98",
+      "reason": "상점결제107→105. 반려 기록으로 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "1586af85",
+      "reason": "지급34→34. 무보증 차단의 실제가치·기회손실은 결측이다. 군별숙성20건과 원래 중단조건으로 판단한다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "d59b75be",
+      "reason": "지급34→34. 보증 경계 수정의 개별효과 결측; 군별숙성20건·검증위반0·원래 중단조건 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "1fb2cf9c",
+      "reason": "지급33→39. 무보증 게이트 수정과 다른 판독이 겹친다. 군별숙성20건·실제가치 연결 후 판단.",
+      "grade": "unclear"
+    },
+    {
+      "change": "eda1eae1",
+      "reason": "지급34→35. 게이트 수리만의 효과 결측; 군별숙성20건·검증위반0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "77bdf3cf",
+      "reason": "상점결제97→110. 사람의 보호파일 주석 복원이며 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "1b96bb76",
+      "reason": "지급34→39. nkjunbc 판독의 추가 지급·Saved 귀속 결측; 해당 견적군 숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "48075ef9",
+      "reason": "지급37→36. 판독 범위를 설명한 문서로 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "d0916abb",
+      "reason": "상점결제97→129. 동일 seed 실패로 재반려되어 목표3→3, 지속효과0.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "c0da41b4",
+      "reason": "상점결제96→129. 반려된 목표축소를 복원했다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "ec36993f",
+      "reason": "상점결제96→129. 반려 기록으로 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "dc6e2cdc",
+      "reason": "지급21→30. 비유한 보증 차단의 개별효과 결측; 해당 입력 회귀와 군별숙성20건·위반0으로 판단.",
+      "grade": "unclear"
+    },
+    {
+      "change": "799247a2",
+      "reason": "지급19→34. 큰 정수 처리의 추가 운영효과 결측; 해당 입력 회귀와 군별숙성20건 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "20b32e6a",
+      "reason": "포럼부재 seed 실패1→0, 기존 전체1576테스트 통과. 실행 수리는 성공했다. 이번에 별도로 발견한 의미검사4실패는 추가 수리했다.",
+      "grade": "worked"
+    },
+    {
+      "change": "79f35ce1",
+      "reason": "상점결제113→130. 메타 기록으로 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "cfe7831a",
+      "reason": "지급38→32이나 이후 창이 잘렸다. 예외 차단의 개별효과 결측; 해당 회귀와 군별숙성20건 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "89b89d49",
+      "reason": "지급40→18은 잘린 이후 창이며 연구표본0이다. 텍스트 순위 추가효과 결측; 군별숙성20건·추가Players>0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "8b091cb3",
+      "reason": "지급36→16은 잘린 이후 창이다. 감시 추가의 효과 결측; 활성 연구표본과 군별숙성20건 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "8e007b6e",
+      "reason": "지급37→10은 잘린 이후 창이며 연구표본0이다. 늦은 견적 배제의 운영효과 결측; 군별숙성20건·선택뒤견적사용0 판정.",
+      "grade": "unclear"
+    },
+    {
+      "change": "3993cbeb",
+      "reason": "지급33→8은 잘린 이후 창이다. 문서·시험값 정리로 직접효과가 없다.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "terra-1109-141711 전략·규칙 점검",
+      "reason": "규칙 일치·무호출상한 유지. 지침의 장기효과 결측; 이번24판단을 감사했고 다음3건의 SKU 근거와 최종 공급으로 재판정한다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "terra-1109-153341 전략·규칙 점검",
+      "reason": "규칙 준수는 확인. 목표구속과 대안의 추가효과 결측; 이번 두창 가드·단위ID 측정에 확대 세 조건을 적용한다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "terra-1109-164637 전략·규칙 점검",
+      "reason": "최초3판단에서 총재고만축소0건을 확인했다. 좁은 지침 검사는 성공이며 영구적 전략개선으로 일반화하지 않는다.",
+      "grade": "worked"
+    },
+    {
+      "change": "terra-1109-175823 전략·규칙 점검",
+      "reason": "상한 미인상은 위반으로 단정할 수 없다. SKU목표구속 결측을 이번 측정으로 보완했으며 두창구속·과반판매·숙성흑자/book비하락이 판정선이다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "terra-1109-190948 전략·규칙 점검",
+      "reason": "유지 전략의 추가효과는 미식별. 이번 원장·공급창 측정 후 군별숙성20건·추가Players>0과 확대 세 조건으로 판단한다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "terra-1109-202132 전략·규칙 점검",
+      "reason": "외부 스위치 변경의 unsupported를 Terra 위반으로 단정하지 않는다. 전략효과 결측은 군별숙성20건·추가Players>0으로 판단한다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "terra-1109-213305 전략·규칙 점검",
+      "reason": "G6 두창판매 과반 미충족을 확인한 유지는 합리적이다. 대안효과는 결측이며 군별숙성20건·추가Players>0으로 재판정한다.",
+      "grade": "unclear"
+    },
+    {
+      "change": "terra-1109-224449 전략·규칙 점검",
+      "reason": "숙성손실에 따른 SKU별 축소 방향은 규칙에 맞지만 반려되어 목표3→3, 운영효과0.",
+      "grade": "no_effect"
+    },
+    {
+      "change": "terra-1110-000257 전략·규칙 점검",
+      "reason": "이미 알려진 seed 실패를 수리하지 않고 같은 설정 변경을 반복해 두 번째 반려를 만들었다. 운영목표3→3이며 수리 지연을 감점한다.",
+      "grade": "harmful"
+    },
+    {
+      "change": "terra-1110-011541 전략·규칙 점검",
+      "reason": "seed 실패1→0과1576테스트 통과로 실행 장애를 제거했다. 도구 내용 정확성 검사는 놓쳐 이번에 보강했다.",
+      "grade": "worked"
+    }
+  ],
+  "keep_or_drop": [
+    {
+      "item": "tools/auto_auto_market_brief",
+      "reason": "이번0호출, 누적70호출. 기존 의미검사를 갖춘 읽기 전용 도구로 유지하며 수익효과는 미확정.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/auto_market_research",
+      "reason": "이번0호출, 누적1079호출. 기존 SKU·결제 연결 기능 유지.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/auto_market_research_pack",
+      "reason": "이번0호출. 의미검사4실패→0으로 수리하고 제한된 결제표본의 집중도를 추가했다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/auto_market_scan",
+      "reason": "이번0호출, 누적690호출. 검증된 검색을 수리 도구에서도 재사용한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/break_rates",
+      "reason": "이번7호출·실패0. 고장위험 조사 기능 유지.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/catalog_search",
+      "reason": "이번0호출, 누적1262호출. SKU 확인 기능 유지.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/cohort_profit",
+      "reason": "이번1호출·실패0. SKU 숙성손익 판정에 필요.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/forum_read",
+      "reason": "이번60호출·실패0. 게시 주장은 정산 증거와 분리한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/ledger_search",
+      "reason": "이번44호출·실패0. 결제 증거 조회 유지.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/market_demand",
+      "reason": "이번14호출·실패0. 수요 조회 유지.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/market_opportunity",
+      "reason": "이번0호출. 후보 가격·가정 원가를 실제 마진과 구분하는 조사 기능 유지.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/my_customers",
+      "reason": "이번0호출. 읽기 전용 고객 조사 기능 유지, 효용은 미확정.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/my_decisions",
+      "reason": "이번11호출·실패0. 제안 결과와 최종 매입을 구분해 사용.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/my_memory",
+      "reason": "이번0호출. 기억 조회 유지, 효과는 미확정.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/my_purchases",
+      "reason": "이번1호출·실패0. 실제 구매기록 확인 유지.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/my_state",
+      "reason": "이번24호출·실패0. 보유재고 조회는 유지하되 총액만으로 축소하지 않는다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/supply_audit",
+      "reason": "이번 운영호출0. 이번 감사에서 모든 목표 SKU의 두창 단위ID를 조회했으며 확대 판정에 필요하다.",
+      "decision": "keep"
+    },
+    {
+      "item": "buyer_food_ladder.py, buyer_goods_grade.py, buyer_goods_ladder.py 및 관련 테스트",
+      "reason": "실제 A/B 지급을 측정했다. 학습분리·시간창 수리는 유지하고 동시처치·버전 교란을 분리하기 전 확대하지 않는다.",
+      "decision": "keep"
+    },
+    {
+      "item": "buyer_saved_floor.py 및 관련 테스트",
+      "reason": "이번 활성 표본0. 기본 비활성 상태와 검증 코드를 유지하며 다른 연구 중 임의 활성화하지 않는다.",
+      "decision": "keep"
+    },
+    {
+      "item": "buyer_our_ask.py, buyer_warranty_said.py 및 관련 테스트",
+      "reason": "팩 시각까지 연구 표본0. 원래 유한 시간창·영수증 검증을 유지하고 성과는 후속 숙성표본으로 판단한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "buyer_short_warranty.py, market_buyer.py 및 보증·판독 테스트",
+      "reason": "사람의 무보증 차단과 숫자·견적 판독 수리를 유지한다. 원래 undo 충족 근거 없이 복원하지 않는다.",
+      "decision": "keep"
+    },
+    {
+      "item": "buyer_post.py, buyer_post_market.py 및 관련 테스트",
+      "reason": "게시 A/B와 계측을 유지하되 게시량을 평점 효과로 세지 않는다.",
+      "decision": "keep"
+    },
+    {
+      "item": "buyer_rank_pg.py, buyer_shop_profile.py, rank-integrity.md 및 관련 테스트",
+      "reason": "처리군 학습오염 분리와 원장 경계 수리를 유지한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "seller.py, seller_a_open.py, seller_floor_margin.py, seller_food_margin.py, shelf_jev_skip.py 및 관련 테스트",
+      "reason": "원래 연구조건과 계측 유지. 미숙성·단위군 간섭 때문에 매출 전후값만으로 성공이나 원복을 결정하지 않는다.",
+      "decision": "keep"
+    },
+    {
+      "item": "seller_warranty_trial.json",
+      "reason": "C 무보증 처리의 중단조건에 따라 비활성화한 상태와72h 기본보증 복원을 유지한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "pricing.json",
+      "reason": "반려된 G2 목표축소는 이미3으로 복원됐다. 이번에는 설정을 바꾸지 않고 직렬 실험으로 등록했다.",
+      "decision": "keep"
+    },
+    {
+      "item": "hard_limits.py",
+      "reason": "사람의 보호파일을 수정하지 않았다. 파산·현금완충·상한 규칙을 유지한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "restock.py",
+      "reason": "재고원가가 book에 남는다는 지침 유지. 최초3건 통과를 영구 성공으로 일반화하지 않도록 Terra 판정선을 보강했다.",
+      "decision": "keep"
+    },
+    {
+      "item": "meta_harness.py, test_meta.py",
+      "reason": "실험스위치 감시와 실제 복사환경 테스트를 유지한다. 누락 포럼 스냅샷 회귀도 유지한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "meta/strategy.md, meta/terra.md, meta/REPORT-notes.md",
+      "reason": "현행 규칙·경쟁 속도·증거와 후속 판정선으로 갱신했다.",
+      "decision": "keep"
+    },
+    {
+      "item": "실패 시도의 기록·감사 파일 및 하네스 상태 파일",
+      "reason": "경로별72개 결정은 상세 review.json에 기록했다. 반려로 사라진 파일은 재도입하지 않고 기존 실패 이력과 현재 부재 상태를 보존한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "meta/experiments.json:carpet-G1465c678-one-unit",
+      "reason": "이미 done인 항목을 활성 큐에서 제거했다. 이전 큐와 종료기록은 보존했다.",
+      "decision": "drop"
+    },
+    {
+      "item": "meta/experiments.json:g6-a-ask-cap-343k",
+      "reason": "이미 drop인 항목을 활성 큐에서 제거했다. 재시작하지 않는다.",
+      "decision": "drop"
+    },
+    {
+      "item": "meta/experiments.json:supply-audit-context-113730",
+      "reason": "이미 종료된 항목을 활성 큐에서 제거했다. 이전 실패 이력은 보존했다.",
+      "decision": "drop"
+    },
+    {
+      "item": "meta/experiments.json:forum-demand-join-113730",
+      "reason": "이미 종료된 항목을 제거했다. 새 탐색은 같은 수요글 지침 재시도가 아니라 결제 구매자 집중도 검증이다.",
+      "decision": "drop"
+    }
+  ]
+}

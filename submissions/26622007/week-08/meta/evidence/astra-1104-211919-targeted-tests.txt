@@ -1,0 +1,13 @@
+....F..
+======================================================================
+FAIL: test_sandbox_tool_reads_fixture_and_cannot_claim_unpaid_profit (test_profit_cohorts.CohortsTest.test_sandbox_tool_reads_fixture_and_cannot_claim_unpaid_profit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/test_profit_cohorts.py", line 69, in test_sandbox_tool_reads_fixture_and_cannot_claim_unpaid_profit
+    self.assertNotIn('error', result)
+AssertionError: 'error' unexpectedly found in {'error': 'exit 1:   File "/Users/market/ai-agent-engineering-101/submissions/26622007/week-08/tools/cohort_profit/tool.py", line 15\n    if args.get(\'sku\'):\nIndentationError: unexpected indent\n'}
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.072s
+
+FAILED (failures=1)

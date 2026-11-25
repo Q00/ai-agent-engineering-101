@@ -1,0 +1,16 @@
+{
+  "provenance": "Anonymized from ax-paid-deals.py FIX_ORDERS/FIX_PAYMENTS/FIX_LEDGER, documented production cases 2026-11-08. IDs/items/buyer renamed; field types, price, seq and timestamps retained. Not a full ledger prefix or economic certification.",
+  "buyer": "fixture-buyer",
+  "orders": [
+    {"ts": 1794139296.7, "order": "o-refused-example", "state": "TASK_STATE_COMPLETED", "passed_to_kit": true, "price": 289799.0, "list_price": 599000, "short_warranty_buy": {"h": 3.0, "ok": true}},
+    {"ts": 1794143600.0, "order": "o-paid-example", "state": "TASK_STATE_COMPLETED", "passed_to_kit": true, "price": 13514.0}
+  ],
+  "payments": [
+    {"order": "o-refused-example", "item": "G-refused", "price": 289799, "paid": false, "reason": "grade refusal"},
+    {"order": "o-paid-example", "item": "G-paid", "price": 13514, "paid": true, "ledger": 4105936}
+  ],
+  "ledger": [
+    {"k": "result", "seq": 4085925, "ts": 1794139300.029, "buyer": "fixture-buyer", "order": "o-refused-example"},
+    {"k": "settle", "seq": 4105936, "ts": 1794143605.78, "buyer": "fixture-buyer", "order": "o-paid-example", "sku": "G-paid", "amount": 13514, "unit": "u-example"}
+  ]
+}

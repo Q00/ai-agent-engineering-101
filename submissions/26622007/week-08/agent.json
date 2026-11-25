@@ -1,0 +1,18 @@
+{
+  "harness": "market agents: HARNESS=openrouter, openai/gpt-6-luna on OpenRouter pinned to the OpenAI endpoint (reasoning effort low, strict json_schema, key from the environment or ../.env); switched from HARNESS=codex on 11/06 because the codex path on the Mac mini got 429 and 35 s retries on every call; meta_harness.py improves them",
+  "seller": {
+    "cmd": "HARNESS=openrouter python seller.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "HARNESS=openrouter python buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "HARNESS=openrouter python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"
+  },
+  "restock": {
+    "cmd": "HARNESS=openrouter python restock.py --state {state}"
+  },
+  "review": {
+    "cmd": "python review.py --deal {deal}"
+  }
+}

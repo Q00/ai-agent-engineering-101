@@ -1,0 +1,36 @@
+................................[20:09:02] buyer CODE the ask 8000 (metadata) -> offer 7200, no harness call
+[20:09:02] buyer shop price 8000 (metadata)
+[20:09:02] buyer CODE the ask 7600 (shop template) -> offer 7600, no harness call
+[20:09:02] buyer shop price 7600 (read by the harness)
+[20:09:02] buyer DEAL {"price": 7600, "item": "G1"}
+.[20:09:02] buyer GUARD harness read the price as 0, not a number in []; walking away
+[20:09:02] buyer stopping after turn 1; walking away
+[20:09:02] buyer -> CancelTask t-1
+[20:09:02] buyer <- TASK_STATE_CANCELED
+[20:09:02] buyer END TASK_STATE_CANCELED, no deal
+.[20:09:02] buyer CODE the ask 10000 (metadata) -> offer 9000, no harness call
+[20:09:02] buyer shop price 10000 (metadata)
+[20:09:02] buyer CODE the ask 9500 (metadata) -> offer 9500, no harness call
+[20:09:02] buyer shop price 9500 (metadata)
+[20:09:02] buyer DEAL {"price": 9500, "item": "G1"}
+.[20:09:02] buyer shop price 12000 (read by the harness)
+[20:09:02] buyer DEAL {"price": 11000, "item": "G1"}
+.[20:09:02] buyer CODE the ask 14000 (metadata) -> offer 10000, no harness call
+[20:09:02] buyer shop price 14000 (metadata)
+[20:09:02] buyer CODE the ask 13000 (metadata) -> walk_away , no harness call
+[20:09:02] buyer shop price 13000 (metadata)
+[20:09:02] buyer harness: walk away
+[20:09:02] buyer stopping after turn 2; walking away
+[20:09:02] buyer -> CancelTask t-1
+[20:09:02] buyer <- TASK_STATE_CANCELED
+[20:09:02] buyer END TASK_STATE_CANCELED, no deal
+.............[20:09:02] buyer END TASK_STATE_CANCELED, no deal
+.[20:09:02] buyer CODE the ask 10000 (metadata) -> offer 9000, no harness call
+[20:09:02] buyer shop price 10000 (metadata)
+[20:09:02] buyer shop price 9600 (read by the harness)
+[20:09:02] buyer DEAL {"price": 9600, "item": "G1"}
+.............................
+----------------------------------------------------------------------
+Ran 79 tests in 0.879s
+
+OK

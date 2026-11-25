@@ -1,0 +1,18 @@
+PASS
+1:31:13] seller PRICE G1 unit u-food cost 6000 list 10000: floor 6016 (b 0%), first ask 7080 (1 x 70.8% of list (no SKU median))
+[01:31:13] seller task 2263ccf8 -> INPUT_REQUIRED G1 ask 6868
+[01:31:13] buyer <- TASK_STATE_INPUT_REQUIRED | 포기김치 10kg G1 [G1], grade A, about 500 h of shelf life left. Every deal comes with a signed receipt and the market's certificate of the unit. My price: 6868.
+[01:31:13] buyer shop price 6868 (metadata)
+[01:31:13] buyer -> SendMessage '6868' taskId=2263ccf8
+[01:31:13] seller task 2263ccf8 <- '6868'
+[01:31:13] seller task 2263ccf8 FAST bare offer 6868 >= floor 6761: no harness call
+[01:31:13] seller task 2263ccf8 harness read the offer as 6868 from [6868]
+[01:31:13] seller task 2263ccf8 -> COMPLETED G1 at 6868
+[01:31:13] buyer <- TASK_STATE_COMPLETED | Deal: 포기김치 10kg G1 at 6868. Thank you!
+[01:31:13] buyer DEAL {"item": "G1", "claim": "A", "price": 6868.0, "task": "2263ccf8-a981-4737-90fe-18ef9f008e42", "shop": "Nocha Test", "unit": "u-food", "sig_seller": "Q/JVbcu14cq/EMxCQitLL1cIHd1qugIDQhEn7tYRa0aDoioM9kjl64DLCxmfYsFeaDnD9uruacijx+zhAsCpDA=="}
+.
+----------------------------------------------------------------------
+Ran 1576 tests in 191.466s
+
+OK
+

@@ -1,0 +1,578 @@
+{
+  "changed": true,
+  "hypothesis": "잘못된환불연결을고치면수익성있는G6의잘못된축소를되돌릴수있다. 실제두창잔류가확인된G1515만줄이면재고자금을줄이면서검증된판매를이어갈수있다. 경쟁수요에보증·서지하한을붙이면막연한고가진입watch를측정가능한판단으로바꾼다.",
+  "change_summary": "G1515 목표6→4, G6 1→2복원. 숙성손익을현재원장주문별로재계산하고cohort_profit에start필터추가. 읽기전용market_opportunity와점수표연결·테스트추가. 전략·Terra지침·보고서재료·전수평가갱신. 커밋/push/PR없음.",
+  "target_metric": "현금순이익·Players, SKU별6시간숙성순기여·동일unit두창잔류·품절분, 환불연결일치, 도구실패",
+  "expected": "G1515 두단위축소로약49만원재고사용감소여지, G6복원한단위는약25만원추가자금. 직접현금이익증가로단정하지않는다. 점수표환불은동일마감45건8,467,071로일치, 다음두Terra주기도구오류0과수요/하한인용. 12시간현금증가1,800만~2,600만은시장변동을포함한시나리오다.",
+  "evidence": [
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:1",
+      "excerpt": "{\"change\": \"eba7dd6\", \"paid_before\": 50, \"paid_after\": 63, \"known_net_before\": 786921, \"known_net_after\": 1179127, \"market_paid_before\": 966, \"market_paid_after\": 1007, \"missing_cost\": [1, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:51\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:2",
+      "excerpt": "{\"change\": \"9c01990\", \"paid_before\": 48, \"paid_after\": 61, \"known_net_before\": 676503, \"known_net_after\": 1119654, \"market_paid_before\": 939, \"market_paid_after\": 1090, \"missing_cost\": [1, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:52\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:3",
+      "excerpt": "{\"change\": \"fff7b7f\", \"paid_before\": 48, \"paid_after\": 61, \"known_net_before\": 676503, \"known_net_after\": 1119654, \"market_paid_before\": 937, \"market_paid_after\": 1088, \"missing_cost\": [1, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:53\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:4",
+      "excerpt": "{\"change\": \"b62d82a\", \"paid_before\": 65, \"paid_after\": 44, \"known_net_before\": 1080000, \"known_net_after\": 1015371, \"market_paid_before\": 1027, \"market_paid_after\": 1027, \"missing_cost\": [0, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:54\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:5",
+      "excerpt": "{\"change\": \"f0a8917\", \"paid_before\": 62, \"paid_after\": 55, \"known_net_before\": 1124652, \"known_net_after\": 649929, \"market_paid_before\": 1084, \"market_paid_after\": 1070, \"missing_cost\": [0, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:55\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:6",
+      "excerpt": "{\"change\": \"e4b317e\", \"paid_before\": 62, \"paid_after\": 55, \"known_net_before\": 1124652, \"known_net_after\": 649929, \"market_paid_before\": 1084, \"market_paid_after\": 1070, \"missing_cost\": [0, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:56\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:7",
+      "excerpt": "{\"change\": \"e875246\", \"paid_before\": 56, \"paid_after\": 38, \"known_net_before\": 979320, \"known_net_after\": 533389, \"market_paid_before\": 1386, \"market_paid_after\": 1396, \"missing_cost\": [0, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:57\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:8",
+      "excerpt": "{\"change\": \"8801c2b\", \"paid_before\": 56, \"paid_after\": 38, \"known_net_before\": 979320, \"known_net_after\": 533389, \"market_paid_before\": 1386, \"market_paid_after\": 1396, \"missing_cost\": [0, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:58\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:9",
+      "excerpt": "{\"change\": \"0d2ef6e\", \"paid_before\": 53, \"paid_after\": 46, \"known_net_before\": 825923, \"known_net_after\": 828204, \"market_paid_before\": 1375, \"market_paid_after\": 1427, \"missing_cost\": [0, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:59\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:10",
+      "excerpt": "{\"change\": \"d6e4441\", \"paid_before\": 36, \"paid_after\": 66, \"known_net_before\": 526926, \"known_net_after\": 1155370, \"market_paid_before\": 1359, \"market_paid_after\": 1472, \"missing_cost\": [0, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:60\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:11",
+      "excerpt": "{\"change\": \"f609ab0\", \"paid_before\": 36, \"paid_after\": 65, \"known_net_before\": 512134, \"known_net_after\": 1314621, \"market_paid_before\": 1387, \"market_paid_after\": 1469, \"missing_cost\": [0, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:61\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:12",
+      "excerpt": "{\"change\": \"b435c06\", \"paid_before\": 56, \"paid_after\": 48, \"known_net_before\": 979074, \"known_net_after\": 909468, \"market_paid_before\": 1447, \"market_paid_after\": 1503, \"missing_cost\": [0, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:62\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:13",
+      "excerpt": "{\"change\": \"dd0018e\", \"paid_before\": 53, \"paid_after\": 59, \"known_net_before\": 856511, \"known_net_after\": 568607, \"market_paid_before\": 1457, \"market_paid_after\": 1514, \"missing_cost\": [0, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:63\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:14",
+      "excerpt": "{\"change\": \"6fac5ef\", \"paid_before\": 62, \"paid_after\": 57, \"known_net_before\": 1177358, \"known_net_after\": 1137668, \"market_paid_before\": 1611, \"market_paid_after\": 1475, \"missing_cost\": [1, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:64\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:15",
+      "excerpt": "{\"change\": \"44cb4a6\", \"paid_before\": 49, \"paid_after\": 62, \"known_net_before\": 597669, \"known_net_after\": 1098780, \"market_paid_before\": 1568, \"market_paid_after\": 1485, \"missing_cost\": [0, 0], \"source\": \"meta/evidence/astra-1104-211919-audit-v2.jsonl:65\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:16",
+      "excerpt": "{\"change\": \"terra-1104-095319\", \"paid_before\": 683, \"paid_after\": 784, \"profit_before\": 9406642, \"profit_after\": 12664093, \"source\": \"meta/evidence/terra-1104-095319.json\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:17",
+      "excerpt": "{\"change\": \"terra-1104-110508\", \"paid_before\": 784, \"paid_after\": 914, \"profit_before\": 12664093, \"profit_after\": 13749124, \"source\": \"meta/evidence/terra-1104-110508.json\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:18",
+      "excerpt": "{\"change\": \"terra-1104-121030\", \"paid_before\": 914, \"paid_after\": 1032, \"profit_before\": 13749124, \"profit_after\": 16837145, \"source\": \"meta/evidence/terra-1104-121030.json\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:19",
+      "excerpt": "{\"change\": \"terra-1104-131030\", \"paid_before\": 1032, \"paid_after\": 1109, \"profit_before\": 16837145, \"profit_after\": 18393723, \"source\": \"meta/evidence/terra-1104-131030.json\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:20",
+      "excerpt": "{\"change\": \"terra-1104-141031\", \"paid_before\": 1109, \"paid_after\": 1223, \"profit_before\": 18393723, \"profit_after\": 20195114, \"source\": \"meta/evidence/terra-1104-141031.json\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:21",
+      "excerpt": "{\"change\": \"terra-1104-151031\", \"paid_before\": 1223, \"paid_after\": 1307, \"profit_before\": 20195114, \"profit_after\": 20119817, \"source\": \"meta/evidence/terra-1104-151031.json\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:22",
+      "excerpt": "{\"change\": \"terra-1104-161033\", \"paid_before\": 1307, \"paid_after\": 1416, \"profit_before\": 20119817, \"profit_after\": 22710951, \"source\": \"meta/evidence/terra-1104-161033.json\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:23",
+      "excerpt": "{\"change\": \"terra-1104-170508\", \"paid_before\": 1416, \"paid_after\": 1494, \"profit_before\": 22710951, \"profit_after\": 21652687, \"source\": \"meta/evidence/terra-1104-170508.json\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:24",
+      "excerpt": "{\"change\": \"terra-1104-181700\", \"paid_before\": 1494, \"paid_after\": 1626, \"profit_before\": 21652687, \"profit_after\": 24333741, \"source\": \"meta/evidence/terra-1104-181700.json\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:25",
+      "excerpt": "{\"change\": \"terra-1104-192904\", \"paid_before\": 1626, \"paid_after\": 1768, \"profit_before\": 24333741, \"profit_after\": 26144131, \"source\": \"meta/evidence/terra-1104-192904.json\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-metrics.jsonl:26",
+      "excerpt": "{\"change\": \"terra-1104-204039\", \"paid_before\": 1768, \"paid_after\": 1893, \"profit_before\": 26144131, \"profit_after\": 27987396, \"source\": \"meta/evidence/terra-1104-204039.json\"}",
+      "meaning": "변경별 전후 측정. 시장변동·동시수정·미숙성의 영향이 있어 인과효과로 단정하지 않는다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:66",
+      "excerpt": "{\"kind\": \"refund_reconciliation\", \"old\": {\"n\": 60, \"amount\": 12629649}, \"ledger_refunds\": 45, \"ledger_refund_amount\": 8467071, \"board_refunds\": 45}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:67",
+      "excerpt": "{\"kind\": \"cohort\", \"sku\": \"G1515d951\", \"cohort\": \"all\", \"paid\": 197, \"mature\": 132, \"known_net\": 8747042, \"missing\": 1, \"refunds\": 12, \"missing_cost_recovery\": [{\"seq\": 2175180, \"unit\": \"u-85a7899bd11d\", \"price_cost\": [300207, \"logs/kit-parts/market-kit-1104-092719-cb2d6c7a228b7be9.log.gz:14257\"]}]}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:70",
+      "excerpt": "{\"kind\": \"cohort\", \"sku\": \"G6b9db161\", \"cohort\": \"all\", \"paid\": 75, \"mature\": 61, \"known_net\": 3015246, \"missing\": 0, \"refunds\": 7, \"missing_cost_recovery\": []}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:72",
+      "excerpt": "{\"kind\": \"cohort\", \"sku\": \"G6b9db161\", \"cohort\": \"terra_reduction\", \"paid\": 14, \"mature\": 0, \"known_net\": 0, \"missing\": 0, \"refunds\": 0, \"missing_cost_recovery\": []}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:74",
+      "excerpt": "{\"kind\": \"cohort\", \"sku\": \"G75f11c19\", \"cohort\": \"astra_trial\", \"paid\": 56, \"mature\": 32, \"known_net\": 734039, \"missing\": 0, \"refunds\": 1, \"missing_cost_recovery\": []}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:81",
+      "excerpt": "{\"kind\": \"screen\", \"sku\": \"G03d0199f\", \"list_price\": 1611000, \"paid\": 114, \"buyers\": 26, \"price_min\": 840178, \"price_max\": 1408014, \"worst_cost_no_surge\": 1208250.0, \"worst_cost_max_surge\": 1812375.0, \"floor15\": 1481884, \"floor25\": 1679468, \"above_floor15\": 0}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:82",
+      "excerpt": "{\"kind\": \"screen\", \"sku\": \"G05277ffe\", \"list_price\": 600000, \"paid\": 50, \"buyers\": 23, \"price_min\": 330000, \"price_max\": 564340, \"worst_cost_no_surge\": 450000.0, \"worst_cost_max_surge\": 675000.0, \"floor15\": 551912, \"floor25\": 625500, \"above_floor15\": 1}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:101",
+      "excerpt": "{\"kind\": \"measure\", \"path\": \".market/measure/forum_followup.jsonl\", \"rows\": 20, \"first\": 1793782390.8, \"last\": 1793794758.2}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:102",
+      "excerpt": "{\"kind\": \"hour\", \"hour\": 18, \"paid\": 113, \"windows\": 3, \"paid_per_window\": 37.666666666666664}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:103",
+      "excerpt": "{\"kind\": \"hour\", \"hour\": 19, \"paid\": 119, \"windows\": 3, \"paid_per_window\": 39.666666666666664}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:104",
+      "excerpt": "{\"kind\": \"hour\", \"hour\": 20, \"paid\": 107, \"windows\": 3, \"paid_per_window\": 35.666666666666664}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:105",
+      "excerpt": "{\"kind\": \"stockout\", \"sku\": \"G75f11c19\", \"observed_from\": 1793781059.9, \"minutes\": 69.25, \"observed_minutes\": 228.32}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-audit-v2.jsonl:106",
+      "excerpt": "{\"kind\": \"stockout\", \"sku\": \"G1515d951\", \"observed_from\": 1793781059.9, \"minutes\": 4.21, \"observed_minutes\": 228.32}",
+      "meaning": "원장·기억·공급창에서 재현한 환불, 숙성, 수요 또는 품절 측정."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-retention-v2.jsonl:2",
+      "excerpt": "{\"sku\": \"G1515d951\", \"threshold\": 5, \"windows\": 11, \"persistent_extra\": [{\"first\": 1793791244, \"second\": 1793792454, \"same_units\": [\"u-71386d6fcc90\", \"u-a1d7b3279775\", \"u-a47bff3f2c5f\", \"u-a8cf9be3ee36\", \"u-bdf84a5002d9\"]}], \"note\": \"unit 입고 시각과 실제 원장 결제시각/관측 출고 중 빠른 시각으로 복원; 17:30 이전 잔류 미확인\"}",
+      "meaning": "사람이 정한 G1515 복원 조건이 동일 unit으로 충족됐다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-retention-v2.jsonl:1",
+      "excerpt": "{\"sku\": \"G75f11c19\", \"threshold\": 2, \"windows\": 11, \"persistent_extra\": [], \"note\": \"unit 입고 시각과 실제 원장 결제시각/관측 출고 중 빠른 시각으로 복원; 17:30 이전 잔류 미확인\"}",
+      "meaning": "G75의 관측 가능한 11창에서 동일 추가재고 잔류는 없다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-g6-recheck.jsonl:1",
+      "excerpt": "{\"at\": 1793772631.0, \"start\": 1793764514.352, \"legacy_net\": -296948, \"recomputed\": {\"paid\": 10, \"revenue\": 3327561, \"known_cost\": 2597301, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"unknown_warranty\": 0, \"known_net\": 730260, \"net\": 730260, \"net_per_sale\": 73026.0}}",
+      "meaning": "Terra의 G6 축소 근거가 잘못된 환불 연결에서 나왔음을 동일 시각에 재현했다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-buyer-sample.jsonl:1",
+      "excerpt": "{\"period\": \"before\", \"orders\": 100, \"paid\": 38, \"over400k\": 0, \"unmatured\": 38, \"first\": \"2026-11-04T15:58:18\", \"last\": \"2026-11-04T16:47:15\", \"note\": \"중복 주문 제거한 구매자 기억 100건; 전체 수신주문 누락 여부는 미검증. 최종 잉여는 식품가치와 보증숙성 필요\"}",
+      "meaning": "상한·견적 변경 전후100주문의 실제 결제를 조회했다. 보증 미숙성이다."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-buyer-sample.jsonl:2",
+      "excerpt": "{\"period\": \"after\", \"orders\": 100, \"paid\": 50, \"over400k\": 1, \"unmatured\": 50, \"first\": \"2026-11-04T16:47:38\", \"last\": \"2026-11-04T17:40:08\", \"note\": \"중복 주문 제거한 구매자 기억 100건; 전체 수신주문 누락 여부는 미검증. 최종 잉여는 식품가치와 보증숙성 필요\"}",
+      "meaning": "상한·견적 변경 전후100주문의 실제 결제를 조회했다. 보증 미숙성이다."
+    },
+    {
+      "ref": "logs/meta.log:85",
+      "excerpt": "11-04 11:07:31 [meta] terra cycle failed: RuntimeError: git add -A -- . :!logs :!memory: The following paths are ignored by one of your .gitignore files:",
+      "meaning": "stage 문제로 누락된 Terra 사이클의 실제 실패 기록."
+    },
+    {
+      "ref": "logs/meta.log:93",
+      "excerpt": "11-04 12:12:34 [meta] terra cycle failed: RuntimeError: git add -A -- . :!logs :!memory: The following paths are ignored by one of your .gitignore files:",
+      "meaning": "stage 문제로 누락된 Terra 사이클의 실제 실패 기록."
+    },
+    {
+      "ref": "logs/meta.log:100",
+      "excerpt": "11-04 13:12:37 [meta] terra cycle failed: RuntimeError: git add -A -- . :!logs :!memory: The following paths are ignored by one of your .gitignore files:",
+      "meaning": "stage 문제로 누락된 Terra 사이클의 실제 실패 기록."
+    },
+    {
+      "ref": "logs/meta.log:107",
+      "excerpt": "11-04 14:12:14 [meta] terra cycle failed: RuntimeError: git add -A -- . :!logs :!memory: The following paths are ignored by one of your .gitignore files:",
+      "meaning": "stage 문제로 누락된 Terra 사이클의 실제 실패 기록."
+    },
+    {
+      "ref": "logs/meta.log:114",
+      "excerpt": "11-04 15:12:30 [meta] terra cycle failed: RuntimeError: git add -A -- . :!logs :!memory: The following paths are ignored by one of your .gitignore files:",
+      "meaning": "stage 문제로 누락된 Terra 사이클의 실제 실패 기록."
+    },
+    {
+      "ref": "logs/meta.log:121",
+      "excerpt": "11-04 16:12:33 [meta] terra cycle failed: RuntimeError: git add -A -- . :!logs :!memory: The following paths are ignored by one of your .gitignore files:",
+      "meaning": "stage 문제로 누락된 Terra 사이클의 실제 실패 기록."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-tests-final-2.txt:535",
+      "excerpt": "Ran 312 tests in 16.791s",
+      "meaning": "요청한 절대 경로 명령으로 마지막 설정 복원 뒤 전체 테스트 통과."
+    },
+    {
+      "ref": "meta/evidence/astra-1104-211919-validation-v2.jsonl:1",
+      "excerpt": "\"bound_problems\": [], \"guard_problems\": [], \"evidence_problems\": []",
+      "meaning": "최종 변경 한도·보호 참조·전체 인용 검증에 문제가 없다."
+    }
+  ],
+  "evidence_gap": {
+    "missing": "두목표복원후추가판매·실현현금효과와6시간보증숙성, 구매상한/견적변경의독립잉여효과.",
+    "measurement": "이번사이클원장주문연결로45환불재계산, G6당시10판매+730,260, G1515동일5unit두창잔류확인. 전후100구매주문지불38→50측정. start필터와서지/보증하한도구를추가했다.",
+    "judge_line": "11/05 09:19 G1515 최소6창초과구매0·추가단위두창잔류0·숙성순기여≥0이면4유지. G6숙성≥10건순기여<0또는두창잔류면2→1. 구매자는11/05 00:00이후숙성잉여/주문비감소와지불율≥38%로판정."
+  },
+  "summary": "15커밋과누락된6회를포함한11Terra주기를평가했다. 과거환불오염으로잘못축소한G6를복원하고, 실제잔류조건이충족된G1515는축소했다. 고가진입은보증포함하한미달로보류했다. 최종312개테스트통과, 인용·한도검증통과. 전체평가는meta/evidence/astra-1104-211919-review.json에보존했다.",
+  "strategy": {
+    "options": [
+      {
+        "direction": "폭넓은 이익재고 + 검증매트리스/침구, 잘못된 축소와 잔류분 복원",
+        "expected_profit": "다음12시간 현금증가1,800만~2,600만 시나리오. 직전약12시간+1,972만과최근1.83시간+298만에근거. 두목표복원독립효과는미확정.",
+        "risk": "G1515 축소가품절을늘리고G6복원은약25만원자금을묶을수있다. 보증6시간·현금450만·재고400만상한유지.",
+        "test": "G1515 목표6→4와G6 1→2를각SKU코호트·동일unit두창잔류로분리판정."
+      },
+      {
+        "direction": "고가매트리스 G03d0199f 진입",
+        "expected_profit": "기존흐름+0~60만원은가정10만원×0~6판매의낙관시나리오. 최근2시간114거래·26구매자이나최고지급가1,408,014<무서지하한1,481,884.",
+        "risk": "한단위최악121만~181만원잠김. 경쟁원가미공개이며짧은보증모방불가.",
+        "test": "읽기전용screen으로두시간연속10판매·3구매자·25%하한이상3결제를확인하기전매입보류."
+      },
+      {
+        "direction": "중고가침구 G05277ffe 한단위",
+        "expected_profit": "기존흐름+0~18만원은가정3만원×0~6판매. 최근2시간50판매·23구매자이나15%하한이상1건,25%하한이상0건.",
+        "risk": "최악45만~67.5만원재고와환불. 기존G75보다유리한자체손익없음.",
+        "test": "새도구로서지포함하한과지급가를먼저비교;현재매입하지않음."
+      }
+    ],
+    "chosen": "다른방향이현재전략을보수적보증포함수익성에서앞선다는자료가없어현행구성을유지한다. G1515는실제잔류조건에따라4로, G6는오류에의한축소를취소해2로복원한다. 현행만으로선두추격이보장되지는않는다.",
+    "experiment": "11/05 09:19 판정: G1515 최소6창에서목표초과신규구매0·동일추가단위두창잔류0·첫6시간판매숙성기여≥0이면4유지. 두시간연속품절>20%·창당판매20%감소·최근숙성10건흑자면4→5. G6복원후숙성10건적자또는두창추가단위잔류면2→1. 작은실험은market_opportunity: 다음두Terra주기에수요/하한/서지인용과도구오류0, 직접추가매입0."
+  },
+  "grades": [
+    {
+      "change": "eba7dd6",
+      "grade": "worked",
+      "reason": "유료50→63, 환불후 원가확인 기여786,921→1,179,127(meta/evidence/astra-1104-211919-metrics.jsonl:1). G75는14→70누적, 확대후56판매·숙성32건+734,039로18건 목표를 넘었다. 시장 증가와 동시 변경 때문에 독립효과는 아니다. 숙성 도구의 과거 환불 오염과64MB운영기록 포함은 별도 결함으로 판정한다."
+    },
+    {
+      "change": "9c01990",
+      "grade": "worked",
+      "reason": "유료48→61, 환불후 원가확인 기여676,503→1,119,654(meta/evidence/astra-1104-211919-metrics.jsonl:2). 로그 회전을 거래중단으로 오판하던 경로를 수정했다. 이후 회전에도 사이클이 기록되고 회귀테스트가 통과한다. 판매 증가는 이 수정의 직접효과가 아니다."
+    },
+    {
+      "change": "fff7b7f",
+      "grade": "no_effect",
+      "reason": "유료48→61, 환불후 원가확인 기여676,503→1,119,654(meta/evidence/astra-1104-211919-metrics.jsonl:3). 첫 Astra 결과의 수동 기록으로 경제 동작 변화 없음. 손상된 이력을 숨기지 않고 보존한 기록이다."
+    },
+    {
+      "change": "b62d82a",
+      "grade": "no_effect",
+      "reason": "유료65→44, 환불후 원가확인 기여1,080,000→1,015,371(meta/evidence/astra-1104-211919-metrics.jsonl:4). 무변경 기록이며 판매 감소를 정책의 효과로 볼 수 없다. 전략 점검은 별도 평가한다."
+    },
+    {
+      "change": "f0a8917",
+      "grade": "harmful",
+      "reason": "유료62→55, 환불후 원가확인 기여1,124,652→649,929(meta/evidence/astra-1104-211919-metrics.jsonl:5). 로그·기억 제외 목적은 맞지만 stage가 이후6사이클 실패했다(logs/meta.log:85,93,100,107,114,121). d6e4441의 수정된 제외 방식을 유지한다."
+    },
+    {
+      "change": "e4b317e",
+      "grade": "worked",
+      "reason": "유료62→55, 환불후 원가확인 기여1,124,652→649,929(meta/evidence/astra-1104-211919-metrics.jsonl:6). 잘못된 review JSON을 이전 점수표로 선택하던 문제를 고쳤다. 이후 팩 비교가 생기고 배열 JSON 회귀테스트도 통과한다. 단기 손익 감소는 독립효과가 아니다."
+    },
+    {
+      "change": "e875246",
+      "grade": "unclear",
+      "reason": "유료56→38, 환불후 원가확인 기여979,320→533,389(meta/evidence/astra-1104-211919-metrics.jsonl:7). 주문별 파손 연결 수정은 재계산45환불·보드45와 일치한다. 견적 기대잉여 수식의 독립효과는 동시 상한 변경으로 분리되지 않는다. 이번100주문 지불38→50을 측정했고11/05 00:00 이후 숙성 잉여/주문 비감소로 판단한다."
+    },
+    {
+      "change": "8801c2b",
+      "grade": "unclear",
+      "reason": "유료56→38, 환불후 원가확인 기여979,320→533,389(meta/evidence/astra-1104-211919-metrics.jsonl:8). 구매100주문 지불38→50,40만원초과0→1은 기대 방향이나 견적수정과 혼재하고88결제 모두 미숙성이다. G1515 추가분은 두창 동일5개 잔류로복원조건충족,6→4폐기. 포럼10분의 투표효과는 미확정: 게시물별1시간 관측이5개 이상 모이면 중앙점수 비감소로 판단한다. round_end는후속커밋에서이미폐기됐다."
+    },
+    {
+      "change": "0d2ef6e",
+      "grade": "unclear",
+      "reason": "유료53→46, 환불후 원가확인 기여825,923→828,204(meta/evidence/astra-1104-211919-metrics.jsonl:9). 상한 안 호가 우선은 테스트 통과, 원가밑 마감판매는 실행시각전 제거됐다. 실제 지불38→50이 견적정렬 때문인지는 미확정. 이번100주문 측정 후11/05 00:00 숙성 잉여/주문 비감소와 지불율38%이상으로 유지 판단한다."
+    },
+    {
+      "change": "d6e4441",
+      "grade": "worked",
+      "reason": "유료36→66, 환불후 원가확인 기여526,926→1,155,370(meta/evidence/astra-1104-211919-metrics.jsonl:10). stage실패6회 이후18:19·19:30·20:42기록이 정상 복구됐다. 함께 커밋된 G6축소는별도평가하고이번에폐기한다."
+    },
+    {
+      "change": "f609ab0",
+      "grade": "no_effect",
+      "reason": "유료36→65, 환불후 원가확인 기여512,134→1,314,621(meta/evidence/astra-1104-211919-metrics.jsonl:11). 무변경 답변의 테스트행 인용이 실패해 no_change_unsupported였다. 실제 경제변경없음. 테스트통과와인용검증을구별해야한다."
+    },
+    {
+      "change": "b435c06",
+      "grade": "worked",
+      "reason": "유료56→48, 환불후 원가확인 기여979,074→909,468(meta/evidence/astra-1104-211919-metrics.jsonl:12). 측정 전0에서 주문503·재고466·공급창11·숙성판매1299·포럼추적20행이 생겼다. 원장결제시각과교차해두창잔류를판정했다. 기록기능성공이며직접수익효과는아니다."
+    },
+    {
+      "change": "dd0018e",
+      "grade": "no_effect",
+      "reason": "유료53→59, 환불후 원가확인 기여856,511→568,607(meta/evidence/astra-1104-211919-metrics.jsonl:13). 무변경 기록이다. 이후판매증가/기여감소는시장·환불·재고에의한관측이며기록의효과가아니다."
+    },
+    {
+      "change": "6fac5ef",
+      "grade": "no_effect",
+      "reason": "유료62→57, 환불후 원가확인 기여1,177,358→1,137,668(meta/evidence/astra-1104-211919-metrics.jsonl:14). 무변경 기록이다. 반복watch의측정누락은별도평가한다."
+    },
+    {
+      "change": "44cb4a6",
+      "grade": "no_effect",
+      "reason": "유료49→62, 환불후 원가확인 기여597,669→1,098,780(meta/evidence/astra-1104-211919-metrics.jsonl:15). 무변경 기록이다. 관측종료까지짧고미숙성이므로기여증가를watch의효과로보지않는다."
+    },
+    {
+      "change": "terra-1104-095319 전략점검/변경",
+      "grade": "worked",
+      "reason": "누적유료683→784, 보드이익9,406,642→12,664,093(meta/evidence/astra-1104-211919-metrics.jsonl:16). G75숙성 대기와현재전략유지는타당했다. 다만pack비교누락을손익효과로쓰지않은점만평가하며현금증가를무변경성과로보지않는다."
+    },
+    {
+      "change": "terra-1104-110508 전략점검/변경",
+      "grade": "worked",
+      "reason": "누적유료784→914, 보드이익12,664,093→13,749,124(meta/evidence/astra-1104-211919-metrics.jsonl:17). G1515숙성표본을15→22건으로확인한측정은진전이다. stage실패로공식grade가누락됐다. 과거환불수치는이번재계산으로대체한다."
+    },
+    {
+      "change": "terra-1104-121030 전략점검/변경",
+      "grade": "unclear",
+      "reason": "누적유료914→1032, 보드이익13,749,124→16,837,145(meta/evidence/astra-1104-211919-metrics.jsonl:18). G75누적26→31·관측기여620,221→785,256이나26건미숙성이었다. 이번확대후숙성32건+734,039를측정했다.11/05 03:20까지기존시험잔여보증이끝난후총순기여양수면유지한다."
+    },
+    {
+      "change": "terra-1104-131030 전략점검/변경",
+      "grade": "unclear",
+      "reason": "누적유료1032→1109, 보드이익16,837,145→18,393,723(meta/evidence/astra-1104-211919-metrics.jsonl:19). G75누적31→37·숙성기여119,996→190,335는방향일치하나확대전후가혼재했다. 이번start코호트32건+734,039측정.11/05 03:20잔여숙성후순기여양수면유지한다."
+    },
+    {
+      "change": "terra-1104-141031 전략점검/변경",
+      "grade": "unclear",
+      "reason": "누적유료1109→1223, 보드이익18,393,723→20,195,114(meta/evidence/astra-1104-211919-metrics.jsonl:20). G75숙성11건+271,121·G6숙성27건+2,187,308만으로추가재고효과는분리못했다. 이번unit잔류조회에서G75두창잔류0을확인;다음6창같은추가단위잔류0/숙성기여양수면유지한다."
+    },
+    {
+      "change": "terra-1104-151031 전략점검/변경",
+      "grade": "harmful",
+      "reason": "누적유료1223→1307, 보드이익20,195,114→20,119,817(meta/evidence/astra-1104-211919-metrics.jsonl:21). G6목표2→1의근거인최근10건-296,948이동일시각주문재연결시+730,260·환불0으로바뀐다. 이잘못된축소를이번에1→2로복원한다. 경제적기회손실액은통제군없어미확정이다."
+    },
+    {
+      "change": "terra-1104-161033 전략점검/변경",
+      "grade": "unclear",
+      "reason": "누적유료1307→1416, 보드이익20,119,817→22,710,951(meta/evidence/astra-1104-211919-metrics.jsonl:22). 최근10건추정-296,948→-626,071을축소후성과로단정하지않은것은옳다. 그러나그환불연결자체가잘못됐다. 이번원장재계산과start분리를완료;복원후숙성10건순기여양수·두창잔류0이면2유지한다."
+    },
+    {
+      "change": "terra-1104-170508 전략점검/변경",
+      "grade": "harmful",
+      "reason": "누적유료1416→1494, 보드이익22,710,951→21,652,687(meta/evidence/astra-1104-211919-metrics.jsonl:23). 경쟁고가상품watch는합리적이나확인가능한우리하한을계산하지않았고테스트행인용실패로점검이수락되지않았다. 이watch를shift선행조건으로세면안된다."
+    },
+    {
+      "change": "terra-1104-181700 전략점검/변경",
+      "grade": "unclear",
+      "reason": "누적유료1494→1626, 보드이익21,652,687→24,333,741(meta/evidence/astra-1104-211919-metrics.jsonl:24). G1515환불15/99로축소경고했지만원장재연결의소급적용이없었다. 이번전체숙성132건환불12건으로재계산했고unit두창잔류로6→4판정했다. 다음6창목표초과신규구매0으로수정판단을검증한다."
+    },
+    {
+      "change": "terra-1104-192904 전략점검/변경",
+      "grade": "harmful",
+      "reason": "누적유료1626→1768, 보드이익24,333,741→26,144,131(meta/evidence/astra-1104-211919-metrics.jsonl:25). 고가G03 13건·8명watch이후에도우리하한을미확인으로남겼다. 이번공개카탈로그계산으로하한1,481,884>최근최고1,408,014가확인되어값이없었던것이아니라계산누락이었다. 매입보류자체는옳다."
+    },
+    {
+      "change": "terra-1104-204039 전략점검/변경",
+      "grade": "harmful",
+      "reason": "누적유료1768→1893, 보드이익26,144,131→27,987,396(meta/evidence/astra-1104-211919-metrics.jsonl:26). G03 13→12건·8→5명만반복하고하한·창당판매를재차누락했다. 창당37.67→39.67→35.67은연속감소도아니다.20:20/20:40동일5단위잔류를이번에확인해G1515를복원했다. 실제shift는없었다."
+    },
+    {
+      "change": "eba7dd6 숙성도구/점수표",
+      "grade": "harmful",
+      "reason": "과거환불60건12,629,649를그대로읽어현재원장45건8,467,071과불일치했다. 최초기능은작동했으나판정오염을막지못했다. 이번주문연결재계산과회귀테스트로교체했다."
+    },
+    {
+      "change": "8801c2b G1515 4→6",
+      "grade": "harmful",
+      "reason": "확대근거인6시간45%품절은관측후4.21/228.32분으로줄었지만20:20/20:40동일5단위잔류가복원조건을충족했다. 판매증가효과와별개로추가재고유지실패로판정하고6→4복원했다."
+    }
+  ],
+  "keep_or_drop": [
+    {
+      "item": "tools/break_rates",
+      "reason": "이번구간12호출·실패0건. 실행오류는없으며도구의독립이익효과는미확정이다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/catalog_search",
+      "reason": "이번구간419호출·실패0건. 실행오류는없으며도구의독립이익효과는미확정이다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/cohort_profit",
+      "reason": "이번구간2호출·실패0건. 환불계산과start필터를이번에수정해유지한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/forum_read",
+      "reason": "이번구간47호출·실패0건. 실행오류는없으며도구의독립이익효과는미확정이다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/ledger_search",
+      "reason": "이번구간872호출·실패0건. 실행오류는없으며도구의독립이익효과는미확정이다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/market_demand",
+      "reason": "이번구간92호출·실패0건. 실행오류는없으며도구의독립이익효과는미확정이다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/market_opportunity",
+      "reason": "이번구간0호출·실패0건. 무호출은무용성의증거로보지않고읽기전용능력을유지한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/my_customers",
+      "reason": "이번구간0호출·실패0건. 무호출은무용성의증거로보지않고읽기전용능력을유지한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/my_decisions",
+      "reason": "이번구간7호출·실패0건. 실행오류는없으며도구의독립이익효과는미확정이다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/my_memory",
+      "reason": "이번구간0호출·실패0건. 무호출은무용성의증거로보지않고읽기전용능력을유지한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/my_purchases",
+      "reason": "이번구간232호출·실패0건. 실행오류는없으며도구의독립이익효과는미확정이다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/my_state",
+      "reason": "이번구간37호출·실패0건. 실행오류는없으며도구의독립이익효과는미확정이다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/auto_* 제거 상태",
+      "reason": "auto_market_lookup·auto_catalog_ledger_search는현재디렉터리에없다. 과거호출누계는재설치근거가아니므로제거상태를유지한다.",
+      "decision": "keep"
+    },
+    {
+      "item": "G75 목표2 / eba7dd6",
+      "reason": "확대후56유료·숙성순기여734,039,관측11창추가단위잔류0. 목표2유지.",
+      "decision": "keep"
+    },
+    {
+      "item": "G6 목표1 / Terra15:11·d6e4441",
+      "reason": "동일시각최근10건순기여-296,948가+730,260으로수정되어축소근거가무효. 이번목표2와테스트로복원했다.",
+      "decision": "drop"
+    },
+    {
+      "item": "G1515 목표6 / 8801c2b",
+      "reason": "사람의두창연속추가분잔류조건충족. 이번목표4와테스트로복원했다.",
+      "decision": "drop"
+    },
+    {
+      "item": "max_units_per_sku=6 / high_price_proven_max_units=6",
+      "reason": "전역천장은유지하며G1515합계목표4가먼저제한한다. 다른SKU천장의실패근거없음.",
+      "decision": "keep"
+    },
+    {
+      "item": "buyer.max_spend_per_deal=800000",
+      "reason": "100주문유료38→50·40만원초과0→1. 동시견적변경과미숙성으로최종잉여판정은11/05 00:00이후.",
+      "decision": "keep"
+    },
+    {
+      "item": "forum.every_minutes=10",
+      "reason": "포럼전송거절없음. 투표기여는별도측정하며빈도가투표증가라고주장하지않는다.",
+      "decision": "keep"
+    },
+    {
+      "item": "round_end 제외 / 0d2ef6e",
+      "reason": "후속수정이이미제거했다. 마감정리설계가없는상태에서재활성화하지않는다.",
+      "decision": "keep"
+    },
+    {
+      "item": "e875246 주문별파손연결·보증기대잉여 / 0d2ef6e 상한내호가우선",
+      "reason": "정확한주문연결과계약상보증환급수식은유지한다. 과거손실누계오염은이번점수표에서고친다.",
+      "decision": "keep"
+    },
+    {
+      "item": "9c01990 로그회전·복원 / e4b317e 이전팩선별 / d6e4441 stage",
+      "reason": "회귀테스트통과와후속기록복구. f0a8917의실패한stage호출은이미대체되어현재수정본유지.",
+      "decision": "keep"
+    },
+    {
+      "item": "f0a8917 로그·기억제외/.gitignore·프롬프트",
+      "reason": "운영기록64MB재포함방지목적유지. 키트로그/기억의원본은수정하지않는다.",
+      "decision": "keep"
+    },
+    {
+      "item": "b435c06 measure.py 및 harness/restock/buyer/review 계측",
+      "reason": "주문503·재고466·창11·숙성1299행. 잔류조건판정에실제사용했고기록예외가거래를멈추지않는테스트유지.",
+      "decision": "keep"
+    },
+    {
+      "item": "scorecard/profit_cohorts·cohort_profit 수정",
+      "reason": "현재원장환불재계산,과거추정차이와원가/보증결측을노출. 원본손실로그를편집하지않는다.",
+      "decision": "keep"
+    },
+    {
+      "item": "tools/market_opportunity 및 scorecard 데이터",
+      "reason": "실제수요와우리서지·보증하한을동시에제공하는작은읽기전용실험. 다음두Terra주기인용·오류0으로판정.",
+      "decision": "keep"
+    },
+    {
+      "item": "meta/strategy.md / meta/terra.md / REPORT-notes",
+      "reason": "현재운영수치·복원조건·잘못된환불누계금지·누락값당일계산을반영해유지한다.",
+      "decision": "keep"
+    }
+  ]
+}

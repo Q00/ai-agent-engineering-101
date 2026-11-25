@@ -1,0 +1,381 @@
+"""The shop's memory of its own negotiations and reviews, and the opening price it allows from them.
+
+Memory file: {"negotiations": [{"time", "task", "item", "reserve", "open", "asks", "offers",
+                                "result", "price"}]}
+- In the market (SHOP_MARKET_NAME set, e.g. nocha12) it is memory/seller_memory.json, and the
+  shop's reviews are read from the market's /api/shops every REVIEWS_TTL seconds.
+- In the market test (no SHOP_MARKET_NAME) it is memory/seller_test_memory.json, without reviews.
+- From Round 3 the market's shop keeps memory/seller_memory_r3.json: lamp talks say nothing about stock from a catalog.
+
+Opening price: the harness proposes an opening ask; the code caps it at reserve * (1 + markup).
+The markup comes from pricing.json tiers by review count and average stars, and steps down while
+the recent conversion (deals / finished negotiations) is low. The reserve never moves.
+"""
+import json
+import os
+import threading
+import time
+
+import httpx
+
+from shop_stock import load_inventory
+
+MARKET = os.environ.get("MARKET_URL", "https://market.ourolabs.ai")
+NAME = os.environ.get("SHOP_MARKET_NAME")
+MEMORY = os.environ.get("SHOP_MEMORY") or ("memory/seller_memory.json" if NAME else "memory/seller_test_memory.json")
+MEMORY_R3 = "memory/seller_memory_r3.json"
+PRICING = os.environ.get("SHOP_PRICING", "pricing.json")
+REVIEWS_TTL = 120
+RECENT = 10
+
+DEFAULT_PRICING = {
+    "tiers": [{"min_reviews": 0, "min_stars": 0, "markup": 0.10},
+              {"min_reviews": 40, "min_stars": 3.8, "markup": 0.20},
+              {"min_reviews": 80, "min_stars": 4.0, "markup": 0.30}],
+    "low_conversion": 0.6, "step_down": 0.05, "min_markup": 0.05,
+}
+
+_lock = threading.Lock()
+_reviews = {"at": 0.0, "count": None, "stars": None, "recent": [], "share": None}
+PROOF_MIN = 3          # five-star reviews among the latest ones needed before the shop says so
+
+
+def load_pricing():
+    """Read every time, so the tiers can change without restarting the shop."""
+    try:
+        with open(PRICING, encoding="utf-8") as f:
+            p = json.load(f)
+        return {**DEFAULT_PRICING, **p}
+    except (OSError, ValueError):
+        return dict(DEFAULT_PRICING)
+
+
+def path():
+    """The file for the round the market is in. inventory.json is what the kit keeps; without it, the earlier file."""
+    if NAME and not os.environ.get("SHOP_MEMORY") and load_inventory().get("round", 0) >= 3:
+        return MEMORY_R3
+    return MEMORY
+
+
+_DOC = {}       # path -> ((inode, size, mtime_ns), the file's document): load() and record() parse it once while it stays
+
+
+def _key(st):
+    return st.st_ino, st.st_size, st.st_mtime_ns
+
+
+def _stamp(target):
+    return _key(os.stat(target))
+
+
+def _load(target, locked=False):
+    """The memory file, parsed once while its size and mtime stay (record() keeps the parsed copy current). The shop's
+    file is 99 MB, 198 k talks (11/15), ~1 s a parse: record() parsed it for every remembered talk (~880 an hour) and
+    paid_prices, note and choose_opening on the event loop, which kept seller.py at 85-100% of a core and its memory
+    churning. Read-only for the callers: never change the document it returns (only record() adds to it). A reader
+    whose copy is old takes _lock and looks again, so it does not parse the file record() has just written."""
+    try:
+        key = _stamp(target)
+    except OSError:
+        return {"negotiations": []}
+    hit = _DOC.get(target)
+    if hit is not None and hit[0] == key:
+        return hit[1]
+    if not locked:
+        with _lock:
+            return _load(target, locked=True)
+    try:
+        with open(target, encoding="utf-8") as f:
+            m = json.load(f)
+    except (OSError, ValueError):
+        return {"negotiations": []}
+    if not isinstance(m, dict) or not isinstance(m.get("negotiations"), list):
+        return {"negotiations": []}
+    _DOC.clear()
+    _DOC[target] = (key, m)
+    return m
+
+
+def load():
+    return _load(path())
+
+
+def record(entry):
+    with _lock:
+        target = path()
+        m = _load(target, locked=True)
+        rows = m["negotiations"]
+        rows.append({"time": time.strftime("%Y-%m-%dT%H:%M:%S"), **entry})
+        try:
+            os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+            tmp = target + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                # one line, written at once: json.dump with indent=1 took 2.4 s for the 99 MB file on the shop's
+                # Python 3.12 (11/15), dumps 0.3 s; every reader parses it with json.load
+                f.write(json.dumps(m, ensure_ascii=False))
+                f.flush()
+                key = _key(os.fstat(f.fileno()))      # a rename keeps the inode, size and mtime
+            os.replace(tmp, target)
+            _DOC.clear()
+            _DOC[target] = (key, m)
+        except BaseException:
+            rows.pop()                  # the entry is not on disk: as before, it is not remembered
+            raise
+
+
+def reviews():
+    """(count, average stars) of this shop's reviews in the market, cached; (None, None) if unknown."""
+    if not NAME:
+        return None, None
+    if time.time() - _reviews["at"] > REVIEWS_TTL:
+        _reviews["at"] = time.time()   # also on failure, so a slow market is not asked on every turn
+        try:
+            shops = httpx.get(f"{MARKET}/api/shops", timeout=5).json()["shops"]
+            me = next((s for s in shops if s.get("name") == NAME), None)
+            if me is not None:
+                stars = [r["stars"] for r in me.get("reviews") or [] if isinstance(r.get("stars"), (int, float))]
+                _reviews["recent"] = stars
+                board = httpx.get(f"{MARKET}/api/board", timeout=5).json()
+                row = next((s for s in board.get("shops", []) if s.get("name") == NAME), {})
+                _reviews["count"] = row.get("reviews", len(stars))
+                _reviews["share"] = row.get("share")
+                _reviews["stars"] = row.get("stars") or (sum(stars) / len(stars) if stars else None)
+        except (httpx.HTTPError, ValueError, KeyError):
+            pass
+    return _reviews["count"], _reviews["stars"]
+
+
+def recent(item=None):
+    done = [n for n in load()["negotiations"] if n.get("result") in ("deal", "rejected", "canceled")]
+    last = done[-RECENT:]
+    deals = [n for n in last if n["result"] == "deal"]
+    same = [n["price"] for n in done if n["result"] == "deal" and n.get("item") == item][-5:] if item else []
+    return {"finished": len(last), "deals": len(deals),
+            "conversion": (len(deals) / len(last)) if last else None, "item_prices": same}
+
+
+def markup(item=None):
+    """(markup, why) for the opening cap of this item.
+
+    review tier (gradual) -> share discount (below the target share) -> conversion step-down
+    -> per-item ceiling. Never below min_markup; the reserve itself never moves."""
+    p = load_pricing()
+    count, stars = reviews()
+    tier = p["tiers"][0]
+    for t in p["tiers"]:
+        if (count or 0) >= t.get("min_reviews", 0) and (stars or 0) >= t.get("min_stars", 0):
+            tier = t
+    m = tier["markup"]
+    why = [f"tier {tier.get('min_reviews', 0)}+ reviews ({count} reviews, "
+           f"{stars if stars is None else round(stars, 2)} stars) {m:.0%}"]
+    share, sp = _reviews.get("share"), p.get("share", {})
+    if share is not None and sp:
+        target = sp.get("target", 0.10)
+        cut = sp.get("cut_far", 0.05) if share < target / 2 else sp.get("cut_near", 0.03) if share < target else 0.0
+        if cut:
+            m -= cut
+            why.append(f"share {share:.1%} < target {target:.0%} -> -{cut:.0%}")
+    r = recent()
+    if r["conversion"] is not None and r["finished"] >= 5 and r["conversion"] < p["low_conversion"]:
+        m -= p["step_down"]
+        why.append(f"conversion {r['deals']}/{r['finished']} low -> -{p['step_down']:.0%}")
+    ceiling = (p.get("item_max_markup") or {}).get(item)
+    if ceiling is not None and m > ceiling:
+        m = ceiling
+        why.append(f"{item} ceiling {ceiling:.0%}")
+    m = max(p["min_markup"], m)
+    return m, "; ".join(why)
+
+
+_READ = {}      # path -> ((size, mtime_ns), negotiations): restock.log_prices asks once per new unit
+
+
+def _negotiations_of(path):
+    """The negotiations in a memory file, read once while it is unchanged: a supply window brings 30-80 new units and the
+    shop's file is 14 MB (11/07), ~70 ms a read - 3-5 s of the run whose lines the open window is waiting for."""
+    try:
+        st = os.stat(path)
+        key = (st.st_size, st.st_mtime_ns)
+        if path in _READ and _READ[path][0] == key:
+            return _READ[path][1]
+        with open(path, encoding="utf-8") as f:
+            rows = json.load(f).get("negotiations") or []
+    except (OSError, ValueError, AttributeError):
+        return []
+    _READ.clear()
+    _READ[path] = (key, rows)
+    return rows
+
+
+def paid_prices(sku, last=5, memory=None):
+    """The prices buyers really paid this shop for this SKU (result "deal" is recorded at payment), newest last.
+    memory: a negotiations file to read instead of this process's own (restock.py reads the shop's)."""
+    if memory is not None:
+        rows = _negotiations_of(memory)
+    else:
+        rows = load()["negotiations"]
+    return [n["price"] for n in rows
+            if n.get("result") == "deal" and n.get("sku") == sku and n.get("price") is not None][-last:]
+
+
+def note(item):
+    """One line for the harness prompt: what this shop's own recent trades say."""
+    r = recent(item)
+    parts = []
+    if r["item_prices"]:
+        parts.append(f"your last {item} deals closed at {', '.join(str(round(p)) for p in r['item_prices'])}")
+    if r["conversion"] is not None:
+        parts.append(f"{r['deals']} of your last {r['finished']} negotiations ended in a deal")
+    return "; ".join(parts)
+
+
+def social_proof():
+    """A sentence without digits about real recent reviews, or "" when they do not back it up.
+
+    Digits are left out on purpose: other buyers read prices from the shop's text."""
+    reviews()
+    fives = sum(1 for x in _reviews["recent"] if x >= 5)
+    if fives >= PROOF_MIN:
+        return "Recent buyers gave us five stars for fair prices and receipts that match the agreed price."
+    return ""
+
+
+# --- adaptive opening price (discounted Thompson sampling over markup arms)
+#
+# Each finished negotiation records the arm (markup over the reserve) it opened with. A visit counts
+# as a success when it ended in a deal, with half credit if the buyer's public review gave it 3 stars
+# or fewer; visits where the buyer never offered the reserve are left out (the budget was too low,
+# no opening price would have helped). Older visits weigh less (GAMMA per newer visit of that item).
+# Score per arm = sampled success rate * opening price, minus a penalty for being above the market's
+# average deal price while the shop's share is under target. Reviews are read from the public
+# ledger by the shop's own task ids.
+
+import random
+
+_stats = {"at": 0.0, "means": {}}
+_ledger = {"seq": None, "stars": {}, "at": 0.0}
+
+
+def market_means():
+    """Average deal price per item in the current round, cached with the reviews."""
+    if time.time() - _stats["at"] > REVIEWS_TTL:
+        _stats["at"] = time.time()
+        try:
+            st = httpx.get(f"{MARKET}/api/stats", timeout=5).json()
+            items = st["rounds"][str(st["round"])]["items"]
+            _stats["means"] = {k: v["mean"] for k, v in items.items() if v.get("n", 0) >= 5}
+        except (httpx.HTTPError, ValueError, KeyError):
+            pass
+    return _stats["means"]
+
+
+def review_stars():
+    """{task id: stars} for this shop's deals, from the public ledger (incremental)."""
+    if not NAME or time.time() - _ledger["at"] < REVIEWS_TTL:
+        return _ledger["stars"]
+    _ledger["at"] = time.time()
+    mine = {n["task"] for n in load()["negotiations"] if n.get("result") == "deal"}
+    try:
+        after = _ledger["seq"]
+        if after is None:   # the newest entries, not the 1.6 million from the beginning
+            after = -500
+        for _ in range(20):
+            page = httpx.get(f"{MARKET}/api/ledger", params={"after": after}, timeout=10).json()
+            if not page:
+                break
+            for r in page:
+                d = r.get("data") or {}
+                rec = d.get("receipt") or {}
+                if r.get("kind") == "result" and rec.get("task") in mine and d.get("stars"):
+                    _ledger["stars"][rec["task"]] = d["stars"]
+            after = page[-1]["seq"]
+            if len(page) < 500:
+                break
+        _ledger["seq"] = after
+    except (httpx.HTTPError, ValueError, KeyError):
+        pass
+    return _ledger["stars"]
+
+
+def _schedule(v):
+    return v if isinstance(v, list) and v and all(isinstance(x, (int, float)) and not isinstance(x, bool)
+                                                  and 0 <= x <= 1 for x in v) else None
+
+
+def concession_floor(opened, reserve, rounds, kind=None):
+    """The lowest price the shop takes in this round of a talk that opened at `opened`.
+
+    pricing.json "concession" lists, per counter round, the share of the opening margin the shop keeps;
+    the last entry repeats. [0.0] (the default, weeks 6-7) goes to the reserve at once. Food uses
+    "concession_food" when it is a valid list (메인 11/07 01:25: round 1 gave 70% of the margin away)."""
+    p = load_pricing()
+    keep = (_schedule(p.get("concession_food")) if kind == "food" else None) or p.get("concession") or [0.0]
+    share = keep[min(max(rounds, 1), len(keep)) - 1]
+    return max(reserve, reserve + round((opened - reserve) * share))
+
+
+def choose_opening(item, reserve, list_price=None):
+    """(opening ask, arm, why). Never below the reserve.
+
+    Round 3 passes the SKU's list price: the arms are then shares of the list price ("list_arms"), because a
+    buyer's value is the list price and the reserve (the unit's cost) changes from unit to unit."""
+    reviews()                             # refreshes the share used below
+    p = load_pricing()
+    arms = p.get("list_arms", [0.7, 0.8, 0.9, 1.0]) if list_price else p.get("arms", [0.0, 0.03, 0.06, 0.10, 0.15])
+    price_of = lambda m: max(reserve, round(list_price * m if list_price else reserve * (1 + m)))
+    gamma = p.get("gamma", 0.97)
+    ceiling = (p.get("item_max_markup") or {}).get(item)
+    if ceiling is not None:
+        arms = [a for a in arms if a <= ceiling] or [min(arms)]
+    stars = review_stars()
+    profit = p.get("objective") == "profit"
+    a = {m: 1.0 for m in arms}
+    b = {m: 1.0 for m in arms}
+    # profit: discounted sum of the realized margin (deal price - reserve) / reserve, and of the weights, over
+    # deals per arm. One pseudo-deal at the arm's own markup is the prior, so an untried arm is not ruled out.
+    gain = {m: [(price_of(m) - reserve) / reserve if list_price else m, 1.0] for m in arms}
+    def arm_of(n):                        # older records have no arm: take the nearest one to their opening
+        if n.get("arm") in a:
+            return n["arm"]
+        if list_price or not n.get("open") or not n.get("reserve"):
+            return None
+        return min(arms, key=lambda m: abs(n["open"] - n["reserve"] * (1 + m)))
+
+    visits = [dict(n, arm=arm_of(n)) for n in load()["negotiations"] if n.get("item") == item
+              and n.get("result") in ("deal", "rejected", "canceled")]
+    visits = [n for n in visits if n["arm"] is not None]
+    weight = 1.0
+    for n in reversed(visits):
+        if n["result"] != "deal" and max(n.get("offers") or [0]) < n.get("reserve", reserve):
+            continue                      # the buyer never reached the reserve: not the price's fault
+        s = 0.0
+        if n["result"] == "deal":
+            s = 0.5 if stars.get(n["task"], 5) <= 3 else 1.0
+            if n.get("price") is not None and n.get("reserve"):
+                g = gain[n["arm"]]
+                g[0] += weight * max(0, n["price"] - n["reserve"]) / n["reserve"]
+                g[1] += weight
+        a[n["arm"]] += weight * s
+        b[n["arm"]] += weight * (1 - s)
+        weight *= gamma
+    share, mean = _reviews.get("share"), market_means().get(item)
+    sp = p.get("share", {})
+    low = share is not None and share < sp.get("target", 0.10)
+    lam = p.get("lambda_low_share", 2.0) if low else p.get("lambda", 0.3)
+    scores = {}
+    for m in arms:
+        price = price_of(m)
+        theta = random.betavariate(a[m], b[m])
+        over = max(0, price - mean) if mean else 0
+        if profit:                        # expected profit of one visit: P(deal) * margin the deals really closed at
+            scores[m] = theta * reserve * gain[m][0] / gain[m][1] - lam * over
+        else:                             # expected revenue of one visit (weeks 6-7)
+            scores[m] = theta * price - lam * over
+    best = max(scores, key=scores.get)
+    price = price_of(best)
+    why = (f"{'profit' if profit else 'revenue'} arm {'list x ' if list_price else '+'}{best:.0%} of {[f'{m:.0%}' for m in arms]}, posterior "
+           f"{a[best]:.1f}/{b[best]:.1f}"
+           + (f", realized margin {gain[best][0] / gain[best][1]:.1%}" if profit else "")
+           + f", market mean {mean and round(mean, 1)}, "
+           f"share {share if share is None else f'{share:.1%}'}{' (under target)' if low else ''}")
+    return price, best, why

@@ -1,0 +1,31 @@
+{
+ "name": "auto_market_scan",
+ "purpose": "Read-only catalog SKU/category join to deduplicated paid settle rows. Query and category intersect; shop filters seller, never buyer. Returns total match counts and recent rows.",
+ "args": {
+  "type": "object",
+  "properties": {
+   "category": {
+    "type": "string"
+   },
+   "query": {
+    "type": "string"
+   },
+   "limit": {
+    "type": "integer",
+    "minimum": 1,
+    "maximum": 100
+   },
+   "shop": {
+    "type": "string"
+   }
+  }
+ },
+ "selftest": {
+  "args": {
+   "category": "food",
+   "query": "apple",
+   "limit": 10
+  }
+ },
+ "evidence": "made by tool_forge.py: Repeated category-ledger and catalog-to-ledger searches are a strong fit for one combined read-only search. It returns matching catalog entries and recent relevant ledger rows, including deals for catalog SKUs; it does not claim to replace purchase-history calls."
+}

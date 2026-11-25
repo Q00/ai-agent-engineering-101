@@ -1,0 +1,6 @@
+{
+ "name": "supply_audit",
+ "purpose": "Read unit-ID sell-through across the last two completed supply windows for one SKU. Reports missing data explicitly. Never a buy signal: also require guard cuts binding the actual target, positive mature net and nonfalling book. Remaining units are not necessarily extra units.",
+ "args": {"type":"object","properties":{"sku":{"type":"string"}},"required":["sku"]},
+ "selftest": {"args":{"sku":"G8ec51935"}}
+}

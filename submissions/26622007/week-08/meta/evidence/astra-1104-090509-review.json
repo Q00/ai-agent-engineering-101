@@ -1,0 +1,1413 @@
+{
+  "changed": true,
+  "hypothesis": "G75f11c19 목표를 1→2로 올리면 검증된 침구의 공급창 사이 판매 기회가 늘어난다. 숙성 손익을 분리하면 미숙성 매트리스 수익을 근거로 과도하게 확대하는 판단을 줄일 수 있다.",
+  "change_summary": "G75f11c19 목표 2와 관련 테스트, 읽기 전용 cohort_profit 도구·테스트 및 scorecard의 숙성 손익을 추가했다. 실제 데이터에서 빈 검색과 미결제 result 행을 반환한 auto_catalog_ledger_search를 제거하고 원본을 증거로 보존했다. 전략과 첫 전수 평가·보고 노트를 작성했다.",
+  "target_metric": "12시간 G75 유료 판매·숙성 순기여, 현금 순이익 및 Players, 두 Terra 사이클의 숙성 손익 인용과 도구 오류",
+  "expected": "G75 판매 14건 기준 대비 4건 추가(총 18건 이상), 추가 기여 약 87,395. 최악 추가 재고 원가 92,175. 다음 두 Terra 평가에서 숙성/미숙성·누락을 구분하고 도구 오류 0건. 순위 상승은 미확정.",
+  "evidence": [
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:2",
+      "excerpt": "\"before\": {\"paid\": 0, \"revenue\": 0, \"known_net\": 0, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 53, \"supply\": 0, \"supply_refused\": 0, \"no_stock\": 0, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 0, \"buyer_not_paying\": 0, \"samples\": []}",
+      "meaning": "dad4e8b 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:2",
+      "excerpt": "\"after\": {\"paid\": 5, \"revenue\": 102062, \"known_net\": 41218, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 788, \"supply\": 16, \"supply_refused\": 0, \"no_stock\": 13, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 17, \"buyer_not_paying\": 8, \"samples\": [\"logs/market-kit.log:193\", \"logs/market-kit.log:1953\"]}",
+      "meaning": "dad4e8b 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:3",
+      "excerpt": "\"before\": {\"paid\": 0, \"revenue\": 0, \"known_net\": 0, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 53, \"supply\": 0, \"supply_refused\": 0, \"no_stock\": 0, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 0, \"buyer_not_paying\": 0, \"samples\": []}",
+      "meaning": "e3d7228 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:3",
+      "excerpt": "\"after\": {\"paid\": 5, \"revenue\": 102062, \"known_net\": 41218, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 788, \"supply\": 16, \"supply_refused\": 0, \"no_stock\": 13, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 17, \"buyer_not_paying\": 8, \"samples\": [\"logs/market-kit.log:193\", \"logs/market-kit.log:1953\"]}",
+      "meaning": "e3d7228 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:4",
+      "excerpt": "\"before\": {\"paid\": 0, \"revenue\": 0, \"known_net\": 0, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 53, \"supply\": 0, \"supply_refused\": 0, \"no_stock\": 0, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 0, \"buyer_not_paying\": 0, \"samples\": []}",
+      "meaning": "60d6b23 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:4",
+      "excerpt": "\"after\": {\"paid\": 5, \"revenue\": 102062, \"known_net\": 41218, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 788, \"supply\": 16, \"supply_refused\": 0, \"no_stock\": 13, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 17, \"buyer_not_paying\": 8, \"samples\": [\"logs/market-kit.log:193\", \"logs/market-kit.log:1953\"]}",
+      "meaning": "60d6b23 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:5",
+      "excerpt": "\"before\": {\"paid\": 7, \"revenue\": 171841, \"known_net\": 53691, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 723, \"supply\": 7, \"supply_refused\": 0, \"no_stock\": 14, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 12, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:2946\", \"logs/market-kit.log:4263\"]}",
+      "meaning": "9ec5da6 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:5",
+      "excerpt": "\"after\": {\"paid\": 9, \"revenue\": 147644, \"known_net\": 44940, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 796, \"supply\": 0, \"supply_refused\": 0, \"no_stock\": 8, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 12, \"buyer_not_paying\": 9, \"samples\": [\"logs/market-kit.log:4638\", \"logs/market-kit.log:6448\"]}",
+      "meaning": "9ec5da6 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:6",
+      "excerpt": "\"before\": {\"paid\": 7, \"revenue\": 171841, \"known_net\": 53691, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 723, \"supply\": 7, \"supply_refused\": 0, \"no_stock\": 14, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 12, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:2946\", \"logs/market-kit.log:4263\"]}",
+      "meaning": "1eed138 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:6",
+      "excerpt": "\"after\": {\"paid\": 9, \"revenue\": 147644, \"known_net\": 44940, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 796, \"supply\": 0, \"supply_refused\": 0, \"no_stock\": 8, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 12, \"buyer_not_paying\": 9, \"samples\": [\"logs/market-kit.log:4638\", \"logs/market-kit.log:6448\"]}",
+      "meaning": "1eed138 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:7",
+      "excerpt": "\"before\": {\"paid\": 7, \"revenue\": 171841, \"known_net\": 53691, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 723, \"supply\": 7, \"supply_refused\": 0, \"no_stock\": 14, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 12, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:2946\", \"logs/market-kit.log:4263\"]}",
+      "meaning": "376522e 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:7",
+      "excerpt": "\"after\": {\"paid\": 9, \"revenue\": 147644, \"known_net\": 44940, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 796, \"supply\": 0, \"supply_refused\": 0, \"no_stock\": 8, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 12, \"buyer_not_paying\": 9, \"samples\": [\"logs/market-kit.log:4638\", \"logs/market-kit.log:6448\"]}",
+      "meaning": "376522e 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:8",
+      "excerpt": "\"before\": {\"paid\": 8, \"revenue\": 154793, \"known_net\": 41777, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 710, \"supply\": 1, \"supply_refused\": 0, \"no_stock\": 8, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 13, \"buyer_not_paying\": 8, \"samples\": [\"logs/market-kit.log:3578\", \"logs/market-kit.log:5454\"]}",
+      "meaning": "032599f 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:8",
+      "excerpt": "\"after\": {\"paid\": 9, \"revenue\": 204448, \"known_net\": 60802, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 823, \"supply\": 8, \"supply_refused\": 1, \"no_stock\": 13, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 18, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:5668\", \"logs/market-kit.log:7844\"]}",
+      "meaning": "032599f 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:9",
+      "excerpt": "\"before\": {\"paid\": 10, \"revenue\": 178356, \"known_net\": 44214, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 779, \"supply\": 1, \"supply_refused\": 0, \"no_stock\": 5, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 13, \"buyer_not_paying\": 7, \"samples\": [\"logs/market-kit.log:4117\", \"logs/market-kit.log:6054\"]}",
+      "meaning": "ce5045e 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:9",
+      "excerpt": "\"after\": {\"paid\": 9, \"revenue\": 260893, \"known_net\": 86172, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 809, \"supply\": 8, \"supply_refused\": 1, \"no_stock\": 12, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 19, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:6448\", \"logs/market-kit.log:8591\"]}",
+      "meaning": "ce5045e 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:10",
+      "excerpt": "\"before\": {\"paid\": 10, \"revenue\": 178356, \"known_net\": 44214, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 793, \"supply\": 1, \"supply_refused\": 0, \"no_stock\": 4, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 14, \"buyer_not_paying\": 7, \"samples\": [\"logs/market-kit.log:4117\", \"logs/market-kit.log:6054\"]}",
+      "meaning": "729ad81 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:10",
+      "excerpt": "\"after\": {\"paid\": 9, \"revenue\": 260893, \"known_net\": 86172, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 797, \"supply\": 8, \"supply_refused\": 1, \"no_stock\": 12, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 19, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:6448\", \"logs/market-kit.log:8591\"]}",
+      "meaning": "729ad81 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:11",
+      "excerpt": "\"before\": {\"paid\": 10, \"revenue\": 178356, \"known_net\": 44214, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 799, \"supply\": 1, \"supply_refused\": 0, \"no_stock\": 4, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 13, \"buyer_not_paying\": 8, \"samples\": [\"logs/market-kit.log:4117\", \"logs/market-kit.log:6054\"]}",
+      "meaning": "f9d5cef 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:11",
+      "excerpt": "\"after\": {\"paid\": 9, \"revenue\": 260893, \"known_net\": 86172, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 791, \"supply\": 8, \"supply_refused\": 1, \"no_stock\": 12, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 20, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:6448\", \"logs/market-kit.log:8591\"]}",
+      "meaning": "f9d5cef 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:12",
+      "excerpt": "\"before\": {\"paid\": 9, \"revenue\": 147644, \"known_net\": 44940, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 822, \"supply\": 1, \"supply_refused\": 0, \"no_stock\": 8, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 12, \"buyer_not_paying\": 9, \"samples\": [\"logs/market-kit.log:4638\", \"logs/market-kit.log:6448\"]}",
+      "meaning": "311c235 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:12",
+      "excerpt": "\"after\": {\"paid\": 10, \"revenue\": 617648, \"known_net\": 154005, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 777, \"supply\": 9, \"supply_refused\": 1, \"no_stock\": 7, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 23, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:7084\", \"logs/market-kit.log:9183\"]}",
+      "meaning": "311c235 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:13",
+      "excerpt": "\"before\": {\"paid\": 9, \"revenue\": 204448, \"known_net\": 60802, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 800, \"supply\": 8, \"supply_refused\": 1, \"no_stock\": 13, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 15, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:5668\", \"logs/market-kit.log:7844\"]}",
+      "meaning": "91131b2 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:13",
+      "excerpt": "\"after\": {\"paid\": 9, \"revenue\": 576723, \"known_net\": 141350, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 886, \"supply\": 1, \"supply_refused\": 0, \"no_stock\": 2, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 24, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:8264\", \"logs/market-kit.log:10278\"]}",
+      "meaning": "91131b2 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:14",
+      "excerpt": "\"before\": {\"paid\": 8, \"revenue\": 194718, \"known_net\": 54934, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 829, \"supply\": 8, \"supply_refused\": 1, \"no_stock\": 12, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 18, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:5781\", \"logs/market-kit.log:7844\"]}",
+      "meaning": "b0d1bb9 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:14",
+      "excerpt": "\"after\": {\"paid\": 9, \"revenue\": 576723, \"known_net\": 141350, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 840, \"supply\": 1, \"supply_refused\": 0, \"no_stock\": 2, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 22, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:8264\", \"logs/market-kit.log:10278\"]}",
+      "meaning": "b0d1bb9 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:15",
+      "excerpt": "\"before\": {\"paid\": 9, \"revenue\": 271503, \"known_net\": 75867, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 831, \"supply\": 8, \"supply_refused\": 1, \"no_stock\": 12, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 20, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:5968\", \"logs/market-kit.log:8354\"]}",
+      "meaning": "79cced5 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:15",
+      "excerpt": "\"after\": {\"paid\": 7, \"revenue\": 489403, \"known_net\": 115713, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 827, \"supply\": 6, \"supply_refused\": 0, \"no_stock\": 4, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 19, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:8579\", \"logs/market-kit.log:10278\"]}",
+      "meaning": "79cced5 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:16",
+      "excerpt": "\"before\": {\"paid\": 6, \"revenue\": 1076729, \"known_net\": 345478, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 941, \"supply\": 1, \"supply_refused\": 4, \"no_stock\": 5, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 22, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:11192\", \"logs/market-kit.log:13183\"]}",
+      "meaning": "732584e 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:16",
+      "excerpt": "\"after\": {\"paid\": 3, \"revenue\": 763212, \"known_net\": 77383, \"missing_cost\": 1, \"linked_refunds\": 0, \"market_paid\": 898, \"supply\": 6, \"supply_refused\": 0, \"no_stock\": 16, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 14, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:14284\", \"logs/market-kit.log:15695\"]}",
+      "meaning": "732584e 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:17",
+      "excerpt": "\"before\": {\"paid\": 4, \"revenue\": 681819, \"known_net\": 211734, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 868, \"supply\": 4, \"supply_refused\": 4, \"no_stock\": 5, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 22, \"buyer_not_paying\": 6, \"samples\": [\"logs/market-kit.log:12152\", \"logs/market-kit.log:13183\"]}",
+      "meaning": "7560b38 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:17",
+      "excerpt": "\"after\": {\"paid\": 4, \"revenue\": 784412, \"known_net\": 83623, \"missing_cost\": 1, \"linked_refunds\": 0, \"market_paid\": 1000, \"supply\": 3, \"supply_refused\": 0, \"no_stock\": 32, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 11, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:14284\", \"logs/market-kit.log:15829\"]}",
+      "meaning": "7560b38 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:18",
+      "excerpt": "\"before\": {\"paid\": 4, \"revenue\": 681819, \"known_net\": 211734, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 891, \"supply\": 4, \"supply_refused\": 4, \"no_stock\": 5, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 19, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:12152\", \"logs/market-kit.log:13183\"]}",
+      "meaning": "a2fe5de 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:18",
+      "excerpt": "\"after\": {\"paid\": 7, \"revenue\": 1204667, \"known_net\": 174526, \"missing_cost\": 1, \"linked_refunds\": 0, \"market_paid\": 990, \"supply\": 3, \"supply_refused\": 0, \"no_stock\": 33, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 13, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:14284\", \"logs/market-kit.log:16649\"]}",
+      "meaning": "a2fe5de 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:19",
+      "excerpt": "\"before\": {\"paid\": 4, \"revenue\": 784412, \"known_net\": 83623, \"missing_cost\": 1, \"linked_refunds\": 0, \"market_paid\": 978, \"supply\": 6, \"supply_refused\": 0, \"no_stock\": 31, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 12, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:14284\", \"logs/market-kit.log:15829\"]}",
+      "meaning": "e7204c8 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:19",
+      "excerpt": "\"after\": {\"paid\": 23, \"revenue\": 2066477, \"known_net\": 572982, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 963, \"supply\": 17, \"supply_refused\": 5, \"no_stock\": 27, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 16, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:16562\", \"logs/market-kit.log:18970\"]}",
+      "meaning": "e7204c8 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:20",
+      "excerpt": "\"before\": {\"paid\": 22, \"revenue\": 2038370, \"known_net\": 568069, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 1036, \"supply\": 17, \"supply_refused\": 5, \"no_stock\": 40, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 15, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:15829\", \"logs/market-kit.log:18621\"]}",
+      "meaning": "1029ad1 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:20",
+      "excerpt": "\"after\": {\"paid\": 30, \"revenue\": 2291162, \"known_net\": 740142, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 919, \"supply\": 35, \"supply_refused\": 5, \"no_stock\": 4, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 21, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:18793\", \"logs/market-kit.log:21918\"]}",
+      "meaning": "1029ad1 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:21",
+      "excerpt": "\"before\": {\"paid\": 40, \"revenue\": 2093137, \"known_net\": 197759, \"missing_cost\": 0, \"linked_refunds\": 358000, \"market_paid\": 942, \"supply\": 18, \"supply_refused\": 8, \"no_stock\": 13, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 16, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:22231\", \"logs/market-kit.log:25653\"]}",
+      "meaning": "720dd7a 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:21",
+      "excerpt": "\"after\": {\"paid\": 40, \"revenue\": 2313220, \"known_net\": 235618, \"missing_cost\": 0, \"linked_refunds\": 355475, \"market_paid\": 913, \"supply\": 32, \"supply_refused\": 5, \"no_stock\": 16, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 14, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:25875\", \"logs/market-kit.log:29165\"]}",
+      "meaning": "720dd7a 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:22",
+      "excerpt": "\"before\": {\"paid\": 44, \"revenue\": 2595020, \"known_net\": 316535, \"missing_cost\": 0, \"linked_refunds\": 355475, \"market_paid\": 958, \"supply\": 36, \"supply_refused\": 7, \"no_stock\": 16, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 17, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:26156\", \"logs/market-kit.log:29656\"]}",
+      "meaning": "f3942f1 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:22",
+      "excerpt": "\"after\": {\"paid\": 40, \"revenue\": 2769306, \"known_net\": 379590, \"missing_cost\": 0, \"linked_refunds\": 330000, \"market_paid\": 884, \"supply\": 18, \"supply_refused\": 1, \"no_stock\": 12, \"cut_lines\": 6062, \"fallback\": 0, \"buyer_paid\": 21, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:29744\", \"logs/market-kit.log:39320\"]}",
+      "meaning": "f3942f1 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:23",
+      "excerpt": "\"before\": {\"paid\": 50, \"revenue\": 2193319, \"known_net\": 237561, \"missing_cost\": 0, \"linked_refunds\": 355475, \"market_paid\": 971, \"supply\": 21, \"supply_refused\": 8, \"no_stock\": 18, \"cut_lines\": 0, \"fallback\": 0, \"buyer_paid\": 18, \"buyer_not_paying\": 6, \"samples\": [\"logs/market-kit.log:26697\", \"logs/market-kit.log:30248\"]}",
+      "meaning": "5a8d075 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:23",
+      "excerpt": "\"after\": {\"paid\": 34, \"revenue\": 2830430, \"known_net\": 29225, \"missing_cost\": 0, \"linked_refunds\": 691302, \"market_paid\": 890, \"supply\": 35, \"supply_refused\": 0, \"no_stock\": 15, \"cut_lines\": 6837, \"fallback\": 0, \"buyer_paid\": 19, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:31066\", \"logs/market-kit.log:41014\"]}",
+      "meaning": "5a8d075 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:24",
+      "excerpt": "\"before\": {\"paid\": 42, \"revenue\": 3012780, \"known_net\": 449865, \"missing_cost\": 0, \"linked_refunds\": 330000, \"market_paid\": 926, \"supply\": 19, \"supply_refused\": 3, \"no_stock\": 10, \"cut_lines\": 5289, \"fallback\": 0, \"buyer_paid\": 22, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:29375\", \"logs/market-kit.log:37989\"]}",
+      "meaning": "ac3068c 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:24",
+      "excerpt": "\"after\": {\"paid\": 24, \"revenue\": 2576928, \"known_net\": 166849, \"missing_cost\": 0, \"linked_refunds\": 402938, \"market_paid\": 937, \"supply\": 31, \"supply_refused\": 3, \"no_stock\": 29, \"cut_lines\": 5871, \"fallback\": 0, \"buyer_paid\": 19, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:39259\", \"logs/market-kit.log:48242\"]}",
+      "meaning": "ac3068c 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:25",
+      "excerpt": "\"before\": {\"paid\": 29, \"revenue\": 3293383, \"known_net\": 326669, \"missing_cost\": 0, \"linked_refunds\": 402938, \"market_paid\": 995, \"supply\": 26, \"supply_refused\": 6, \"no_stock\": 33, \"cut_lines\": 5083, \"fallback\": 0, \"buyer_paid\": 21, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:40894\", \"logs/market-kit.log:49148\"]}",
+      "meaning": "a7ca54a 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:25",
+      "excerpt": "\"after\": {\"paid\": 42, \"revenue\": 2400066, \"known_net\": 782610, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 952, \"supply\": 27, \"supply_refused\": 2, \"no_stock\": 6, \"cut_lines\": 5894, \"fallback\": 0, \"buyer_paid\": 25, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:49873\", \"logs/market-kit.log:58806\"]}",
+      "meaning": "a7ca54a 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:26",
+      "excerpt": "\"before\": {\"paid\": 46, \"revenue\": 2589704, \"known_net\": 796019, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 966, \"supply\": 18, \"supply_refused\": 4, \"no_stock\": 8, \"cut_lines\": 5671, \"fallback\": 0, \"buyer_paid\": 27, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:48625\", \"logs/market-kit.log:58009\"]}",
+      "meaning": "2ad994e 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:26",
+      "excerpt": "\"after\": {\"paid\": 27, \"revenue\": 1950945, \"known_net\": 534805, \"missing_cost\": 0, \"linked_refunds\": 8126, \"market_paid\": 950, \"supply\": 34, \"supply_refused\": 2, \"no_stock\": 3, \"cut_lines\": 5785, \"fallback\": 0, \"buyer_paid\": 16, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:58806\", \"logs/market-kit.log:64810\"]}",
+      "meaning": "2ad994e 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:27",
+      "excerpt": "\"before\": {\"paid\": 46, \"revenue\": 2589704, \"known_net\": 796019, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 966, \"supply\": 18, \"supply_refused\": 4, \"no_stock\": 8, \"cut_lines\": 5671, \"fallback\": 0, \"buyer_paid\": 27, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:48625\", \"logs/market-kit.log:58009\"]}",
+      "meaning": "061dca4 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:27",
+      "excerpt": "\"after\": {\"paid\": 27, \"revenue\": 1950945, \"known_net\": 534805, \"missing_cost\": 0, \"linked_refunds\": 8126, \"market_paid\": 950, \"supply\": 34, \"supply_refused\": 2, \"no_stock\": 3, \"cut_lines\": 5785, \"fallback\": 0, \"buyer_paid\": 16, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:58806\", \"logs/market-kit.log:64810\"]}",
+      "meaning": "061dca4 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:28",
+      "excerpt": "\"before\": {\"paid\": 46, \"revenue\": 2589704, \"known_net\": 796019, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 966, \"supply\": 18, \"supply_refused\": 4, \"no_stock\": 8, \"cut_lines\": 5671, \"fallback\": 0, \"buyer_paid\": 27, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:48625\", \"logs/market-kit.log:58009\"]}",
+      "meaning": "97b01c3 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:28",
+      "excerpt": "\"after\": {\"paid\": 27, \"revenue\": 1950945, \"known_net\": 534805, \"missing_cost\": 0, \"linked_refunds\": 8126, \"market_paid\": 950, \"supply\": 34, \"supply_refused\": 2, \"no_stock\": 3, \"cut_lines\": 5785, \"fallback\": 0, \"buyer_paid\": 16, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:58806\", \"logs/market-kit.log:64810\"]}",
+      "meaning": "97b01c3 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:29",
+      "excerpt": "\"before\": {\"paid\": 25, \"revenue\": 1693493, \"known_net\": 453219, \"missing_cost\": 0, \"linked_refunds\": 8126, \"market_paid\": 919, \"supply\": 18, \"supply_refused\": 2, \"no_stock\": 2, \"cut_lines\": 5996, \"fallback\": 0, \"buyer_paid\": 14, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:59541\", \"logs/market-kit.log:64810\"]}",
+      "meaning": "42f6fcc 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:29",
+      "excerpt": "\"after\": {\"paid\": 34, \"revenue\": 4471996, \"known_net\": 1050230, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 910, \"supply\": 34, \"supply_refused\": 3, \"no_stock\": 10, \"cut_lines\": 5397, \"fallback\": 0, \"buyer_paid\": 13, \"buyer_not_paying\": 1, \"samples\": [\"logs/market-kit.log:70327\", \"logs/market-kit.log:78903\"]}",
+      "meaning": "42f6fcc 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:30",
+      "excerpt": "\"before\": {\"paid\": 16, \"revenue\": 2742557, \"known_net\": 621717, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 890, \"supply\": 34, \"supply_refused\": 1, \"no_stock\": 4, \"cut_lines\": 5888, \"fallback\": 0, \"buyer_paid\": 11, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:64378\", \"logs/market-kit.log:73949\"]}",
+      "meaning": "025165a 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:30",
+      "excerpt": "\"after\": {\"paid\": 43, \"revenue\": 3984371, \"known_net\": 1053321, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 940, \"supply\": 18, \"supply_refused\": 6, \"no_stock\": 10, \"cut_lines\": 4959, \"fallback\": 0, \"buyer_paid\": 18, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:74156\", \"logs/market-kit.log:83244\"]}",
+      "meaning": "025165a 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:31",
+      "excerpt": "\"before\": {\"paid\": 33, \"revenue\": 4091085, \"known_net\": 939475, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 880, \"supply\": 16, \"supply_refused\": 2, \"no_stock\": 9, \"cut_lines\": 5627, \"fallback\": 0, \"buyer_paid\": 12, \"buyer_not_paying\": 1, \"samples\": [\"logs/market-kit.log:70327\", \"logs/market-kit.log:78251\"]}",
+      "meaning": "7d9a554 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:31",
+      "excerpt": "\"after\": {\"paid\": 36, \"revenue\": 3545359, \"known_net\": 723699, \"missing_cost\": 0, \"linked_refunds\": 231000, \"market_paid\": 935, \"supply\": 36, \"supply_refused\": 5, \"no_stock\": 17, \"cut_lines\": 5237, \"fallback\": 0, \"buyer_paid\": 22, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:78903\", \"logs/market-kit.log:86403\"]}",
+      "meaning": "7d9a554 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:32",
+      "excerpt": "\"before\": {\"paid\": 41, \"revenue\": 5311272, \"known_net\": 1241168, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 930, \"supply\": 34, \"supply_refused\": 6, \"no_stock\": 12, \"cut_lines\": 4696, \"fallback\": 0, \"buyer_paid\": 13, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:71163\", \"logs/market-kit.log:79819\"]}",
+      "meaning": "db8eee0 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:32",
+      "excerpt": "\"after\": {\"paid\": 27, \"revenue\": 1990129, \"known_net\": 330752, \"missing_cost\": 0, \"linked_refunds\": 231000, \"market_paid\": 884, \"supply\": 18, \"supply_refused\": 1, \"no_stock\": 14, \"cut_lines\": 6287, \"fallback\": 0, \"buyer_paid\": 24, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:79848\", \"logs/market-kit.log:89920\"]}",
+      "meaning": "db8eee0 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:33",
+      "excerpt": "\"before\": {\"paid\": 36, \"revenue\": 3545359, \"known_net\": 723699, \"missing_cost\": 0, \"linked_refunds\": 231000, \"market_paid\": 935, \"supply\": 35, \"supply_refused\": 4, \"no_stock\": 16, \"cut_lines\": 5237, \"fallback\": 0, \"buyer_paid\": 22, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:78903\", \"logs/market-kit.log:86403\"]}",
+      "meaning": "b996e14 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:33",
+      "excerpt": "\"after\": {\"paid\": 27, \"revenue\": 1539164, \"known_net\": 436632, \"missing_cost\": 2, \"linked_refunds\": 7800, \"market_paid\": 860, \"supply\": 13, \"supply_refused\": 1, \"no_stock\": 19, \"cut_lines\": 5655, \"fallback\": 0, \"buyer_paid\": 24, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:89920\", \"logs/market-kit.log:98516\"]}",
+      "meaning": "b996e14 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:34",
+      "excerpt": "\"before\": {\"paid\": 35, \"revenue\": 3164448, \"known_net\": 612944, \"missing_cost\": 0, \"linked_refunds\": 231000, \"market_paid\": 933, \"supply\": 19, \"supply_refused\": 4, \"no_stock\": 16, \"cut_lines\": 5489, \"fallback\": 0, \"buyer_paid\": 23, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:79352\", \"logs/market-kit.log:86403\"]}",
+      "meaning": "1b791f1 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:34",
+      "excerpt": "\"after\": {\"paid\": 28, \"revenue\": 1551866, \"known_net\": 440551, \"missing_cost\": 2, \"linked_refunds\": 7800, \"market_paid\": 830, \"supply\": 13, \"supply_refused\": 1, \"no_stock\": 19, \"cut_lines\": 5522, \"fallback\": 0, \"buyer_paid\": 23, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:89920\", \"logs/market-kit.log:99657\"]}",
+      "meaning": "1b791f1 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:35",
+      "excerpt": "\"before\": {\"paid\": 27, \"revenue\": 1539164, \"known_net\": 436632, \"missing_cost\": 2, \"linked_refunds\": 7800, \"market_paid\": 859, \"supply\": 13, \"supply_refused\": 1, \"no_stock\": 19, \"cut_lines\": 5609, \"fallback\": 0, \"buyer_paid\": 23, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:89920\", \"logs/market-kit.log:98516\"]}",
+      "meaning": "4ed27fd 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:35",
+      "excerpt": "\"after\": {\"paid\": 28, \"revenue\": 2015352, \"known_net\": 580316, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 940, \"supply\": 35, \"supply_refused\": 2, \"no_stock\": 2, \"cut_lines\": 4878, \"fallback\": 0, \"buyer_paid\": 13, \"buyer_not_paying\": 6, \"samples\": [\"logs/market-kit.log:99657\", \"logs/market-kit.log:108753\"]}",
+      "meaning": "4ed27fd 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:36",
+      "excerpt": "\"before\": {\"paid\": 31, \"revenue\": 1749800, \"known_net\": 531502, \"missing_cost\": 2, \"linked_refunds\": 0, \"market_paid\": 867, \"supply\": 31, \"supply_refused\": 2, \"no_stock\": 20, \"cut_lines\": 5306, \"fallback\": 0, \"buyer_paid\": 24, \"buyer_not_paying\": 4, \"samples\": [\"logs/market-kit.log:91306\", \"logs/market-kit.log:102255\"]}",
+      "meaning": "b3324d9 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:36",
+      "excerpt": "\"after\": {\"paid\": 45, \"revenue\": 4013420, \"known_net\": 699467, \"missing_cost\": 0, \"linked_refunds\": 344500, \"market_paid\": 962, \"supply\": 17, \"supply_refused\": 1, \"no_stock\": 4, \"cut_lines\": 4734, \"fallback\": 0, \"buyer_paid\": 15, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:102580\", \"logs/market-kit.log:113243\"]}",
+      "meaning": "b3324d9 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:37",
+      "excerpt": "\"before\": {\"paid\": 28, \"revenue\": 2015352, \"known_net\": 580316, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 934, \"supply\": 35, \"supply_refused\": 2, \"no_stock\": 3, \"cut_lines\": 4744, \"fallback\": 0, \"buyer_paid\": 13, \"buyer_not_paying\": 5, \"samples\": [\"logs/market-kit.log:99657\", \"logs/market-kit.log:108753\"]}",
+      "meaning": "605acc7 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:37",
+      "excerpt": "\"after\": {\"paid\": 46, \"revenue\": 4052178, \"known_net\": 680235, \"missing_cost\": 0, \"linked_refunds\": 344500, \"market_paid\": 868, \"supply\": 17, \"supply_refused\": 2, \"no_stock\": 17, \"cut_lines\": 4218, \"fallback\": 0, \"buyer_paid\": 10, \"buyer_not_paying\": 3, \"samples\": [\"logs/market-kit.log:110831\", \"logs/market-kit.log:117777\"]}",
+      "meaning": "605acc7 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:38",
+      "excerpt": "\"before\": {\"paid\": 28, \"revenue\": 2015352, \"known_net\": 580316, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 944, \"supply\": 35, \"supply_refused\": 2, \"no_stock\": 2, \"cut_lines\": 4704, \"fallback\": 0, \"buyer_paid\": 12, \"buyer_not_paying\": 6, \"samples\": [\"logs/market-kit.log:99657\", \"logs/market-kit.log:108753\"]}",
+      "meaning": "773dedf 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:38",
+      "excerpt": "\"after\": {\"paid\": 46, \"revenue\": 4052178, \"known_net\": 680235, \"missing_cost\": 0, \"linked_refunds\": 344500, \"market_paid\": 858, \"supply\": 17, \"supply_refused\": 2, \"no_stock\": 17, \"cut_lines\": 4200, \"fallback\": 0, \"buyer_paid\": 11, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:110831\", \"logs/market-kit.log:117777\"]}",
+      "meaning": "773dedf 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:39",
+      "excerpt": "\"before\": {\"paid\": 46, \"revenue\": 4052178, \"known_net\": 680235, \"missing_cost\": 0, \"linked_refunds\": 344500, \"market_paid\": 849, \"supply\": 17, \"supply_refused\": 2, \"no_stock\": 18, \"cut_lines\": 4194, \"fallback\": 0, \"buyer_paid\": 10, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:110831\", \"logs/market-kit.log:117777\"]}",
+      "meaning": "8b24ef0 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:39",
+      "excerpt": "\"after\": {\"paid\": 0, \"revenue\": 0, \"known_net\": 0, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 933, \"supply\": 29, \"supply_refused\": 1, \"no_stock\": 0, \"cut_lines\": 4311, \"fallback\": 0, \"buyer_paid\": 22, \"buyer_not_paying\": 1, \"samples\": []}",
+      "meaning": "8b24ef0 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:40",
+      "excerpt": "\"before\": {\"paid\": 21, \"revenue\": 1791274, \"known_net\": 459597, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 855, \"supply\": 35, \"supply_refused\": 3, \"no_stock\": 11, \"cut_lines\": 3983, \"fallback\": 0, \"buyer_paid\": 6, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:114190\", \"logs/market-kit.log:117777\"]}",
+      "meaning": "d610718 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:40",
+      "excerpt": "\"after\": {\"paid\": 34, \"revenue\": 2708644, \"known_net\": 740663, \"missing_cost\": 0, \"linked_refunds\": 70317, \"market_paid\": 907, \"supply\": 11, \"supply_refused\": 0, \"no_stock\": 3, \"cut_lines\": 4444, \"fallback\": 0, \"buyer_paid\": 25, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:131456\", \"logs/market-kit.log:134373\"]}",
+      "meaning": "d610718 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:41",
+      "excerpt": "\"before\": {\"paid\": 19, \"revenue\": 1720997, \"known_net\": 439776, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 900, \"supply\": 31, \"supply_refused\": 3, \"no_stock\": 7, \"cut_lines\": 3799, \"fallback\": 0, \"buyer_paid\": 7, \"buyer_not_paying\": 2, \"samples\": [\"logs/market-kit.log:114775\", \"logs/market-kit.log:117777\"]}",
+      "meaning": "c8a63b1 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:41",
+      "excerpt": "\"after\": {\"paid\": 38, \"revenue\": 2874423, \"known_net\": 780357, \"missing_cost\": 0, \"linked_refunds\": 70317, \"market_paid\": 878, \"supply\": 11, \"supply_refused\": 0, \"no_stock\": 7, \"cut_lines\": 4600, \"fallback\": 0, \"buyer_paid\": 27, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:131456\", \"logs/market-kit.log:135215\"]}",
+      "meaning": "c8a63b1 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:42",
+      "excerpt": "\"before\": {\"paid\": 0, \"revenue\": 0, \"known_net\": 0, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 908, \"supply\": 29, \"supply_refused\": 1, \"no_stock\": 1, \"cut_lines\": 4360, \"fallback\": 0, \"buyer_paid\": 19, \"buyer_not_paying\": 1, \"samples\": []}",
+      "meaning": "58d091d 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:42",
+      "excerpt": "\"after\": {\"paid\": 80, \"revenue\": 5250032, \"known_net\": 1137847, \"missing_cost\": 0, \"linked_refunds\": 387478, \"market_paid\": 943, \"supply\": 18, \"supply_refused\": 1, \"no_stock\": 8, \"cut_lines\": 4117, \"fallback\": 110, \"buyer_paid\": 28, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:131456\", \"logs/market-kit.log:140667\"]}",
+      "meaning": "58d091d 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:43",
+      "excerpt": "\"before\": {\"paid\": 0, \"revenue\": 0, \"known_net\": 0, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 920, \"supply\": 29, \"supply_refused\": 1, \"no_stock\": 1, \"cut_lines\": 4184, \"fallback\": 0, \"buyer_paid\": 21, \"buyer_not_paying\": 1, \"samples\": []}",
+      "meaning": "6f76497 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:43",
+      "excerpt": "\"after\": {\"paid\": 81, \"revenue\": 5259342, \"known_net\": 1140272, \"missing_cost\": 0, \"linked_refunds\": 387478, \"market_paid\": 933, \"supply\": 18, \"supply_refused\": 1, \"no_stock\": 8, \"cut_lines\": 4118, \"fallback\": 120, \"buyer_paid\": 26, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:131456\", \"logs/market-kit.log:141187\"]}",
+      "meaning": "6f76497 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:44",
+      "excerpt": "\"before\": {\"paid\": 0, \"revenue\": 0, \"known_net\": 0, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 924, \"supply\": 29, \"supply_refused\": 1, \"no_stock\": 0, \"cut_lines\": 4153, \"fallback\": 0, \"buyer_paid\": 22, \"buyer_not_paying\": 1, \"samples\": []}",
+      "meaning": "0f8a56f 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:44",
+      "excerpt": "\"after\": {\"paid\": 88, \"revenue\": 5400654, \"known_net\": 1178411, \"missing_cost\": 0, \"linked_refunds\": 387478, \"market_paid\": 940, \"supply\": 18, \"supply_refused\": 1, \"no_stock\": 9, \"cut_lines\": 4121, \"fallback\": 183, \"buyer_paid\": 30, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:131456\", \"logs/market-kit.log:142434\"]}",
+      "meaning": "0f8a56f 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:45",
+      "excerpt": "\"before\": {\"paid\": 37, \"revenue\": 2863527, \"known_net\": 776504, \"missing_cost\": 0, \"linked_refunds\": 70317, \"market_paid\": 899, \"supply\": 11, \"supply_refused\": 0, \"no_stock\": 4, \"cut_lines\": 4442, \"fallback\": 0, \"buyer_paid\": 25, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:131456\", \"logs/market-kit.log:135140\"]}",
+      "meaning": "49e3ed6 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:45",
+      "excerpt": "\"after\": {\"paid\": 73, \"revenue\": 3928913, \"known_net\": 780980, \"missing_cost\": 0, \"linked_refunds\": 317161, \"market_paid\": 996, \"supply\": 33, \"supply_refused\": 3, \"no_stock\": 12, \"cut_lines\": 3624, \"fallback\": 315, \"buyer_paid\": 31, \"buyer_not_paying\": 1, \"samples\": [\"logs/market-kit.log:135215\", \"logs/market-kit.log:145971\"]}",
+      "meaning": "49e3ed6 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:46",
+      "excerpt": "\"before\": {\"paid\": 63, \"revenue\": 4796772, \"known_net\": 1002935, \"missing_cost\": 0, \"linked_refunds\": 387478, \"market_paid\": 936, \"supply\": 29, \"supply_refused\": 1, \"no_stock\": 7, \"cut_lines\": 4114, \"fallback\": 11, \"buyer_paid\": 26, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:131456\", \"logs/market-kit.log:138196\"]}",
+      "meaning": "2fb6eeb 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:46",
+      "excerpt": "\"after\": {\"paid\": 62, \"revenue\": 2905358, \"known_net\": 775598, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 975, \"supply\": 15, \"supply_refused\": 4, \"no_stock\": 24, \"cut_lines\": 3603, \"fallback\": 434, \"buyer_paid\": 28, \"buyer_not_paying\": 1, \"samples\": [\"logs/market-kit.log:138235\", \"logs/market-kit.log:148746\"]}",
+      "meaning": "2fb6eeb 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:47",
+      "excerpt": "\"before\": {\"paid\": 80, \"revenue\": 5250032, \"known_net\": 1137847, \"missing_cost\": 0, \"linked_refunds\": 387478, \"market_paid\": 943, \"supply\": 18, \"supply_refused\": 1, \"no_stock\": 8, \"cut_lines\": 4118, \"fallback\": 109, \"buyer_paid\": 28, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:131456\", \"logs/market-kit.log:140667\"]}",
+      "meaning": "aadde40 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:47",
+      "excerpt": "\"after\": {\"paid\": 59, \"revenue\": 2924627, \"known_net\": 736427, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 966, \"supply\": 32, \"supply_refused\": 5, \"no_stock\": 27, \"cut_lines\": 3583, \"fallback\": 420, \"buyer_paid\": 27, \"buyer_not_paying\": 1, \"samples\": [\"logs/market-kit.log:141187\", \"logs/market-kit.log:151098\"]}",
+      "meaning": "aadde40 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:48",
+      "excerpt": "\"before\": {\"paid\": 35, \"revenue\": 2245948, \"known_net\": 130812, \"missing_cost\": 0, \"linked_refunds\": 367633, \"market_paid\": 705, \"supply\": 17, \"supply_refused\": 1, \"no_stock\": 22, \"cut_lines\": 3236, \"fallback\": 181, \"buyer_paid\": 20, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:150268\", \"logs/market-kit.log:156710\"]}",
+      "meaning": "6b17b38 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:48",
+      "excerpt": "\"after\": {\"paid\": 29, \"revenue\": 3102346, \"known_net\": 472202, \"missing_cost\": 0, \"linked_refunds\": 332930, \"market_paid\": 677, \"supply\": 29, \"supply_refused\": 2, \"no_stock\": 11, \"cut_lines\": 2497, \"fallback\": 0, \"buyer_paid\": 23, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:158215\", \"logs/market-kit.log:164623\"]}",
+      "meaning": "6b17b38 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:49",
+      "excerpt": "\"before\": {\"paid\": 14, \"revenue\": 2456861, \"known_net\": 286094, \"missing_cost\": 0, \"linked_refunds\": 332930, \"market_paid\": 376, \"supply\": 16, \"supply_refused\": 2, \"no_stock\": 2, \"cut_lines\": 1406, \"fallback\": 0, \"buyer_paid\": 14, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:158215\", \"logs/market-kit.log:160492\"]}",
+      "meaning": "87325d8 적용 전 측정; samples에 실제 kit 경계행 포함"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:49",
+      "excerpt": "\"after\": {\"paid\": 15, \"revenue\": 645485, \"known_net\": 186108, \"missing_cost\": 0, \"linked_refunds\": 0, \"market_paid\": 352, \"supply\": 13, \"supply_refused\": 0, \"no_stock\": 9, \"cut_lines\": 1561, \"fallback\": 0, \"buyer_paid\": 11, \"buyer_not_paying\": 0, \"samples\": [\"logs/market-kit.log:160836\", \"logs/market-kit.log:164623\"]}",
+      "meaning": "87325d8 적용 후 측정; 원가 누락·시장 전체 거래수도 함께 제공"
+    },
+    {
+      "ref": "logs/market-kit.log:163486",
+      "excerpt": "guard: G75f11c19 4 -> 1 (units per SKU)",
+      "meaning": "공식 수량을 목표1이 제한했다."
+    },
+    {
+      "ref": "logs/market-kit.log:163813",
+      "excerpt": "1 x 프리미엄 앤 모달 차렵 이불패드세트 Q for 54030",
+      "meaning": "입고 원가와 시각"
+    },
+    {
+      "ref": "logs/market-kit.log:163908",
+      "excerpt": "at 82845, ledger #2317472",
+      "meaning": "27초 뒤 유료 결제"
+    },
+    {
+      "ref": "logs/market-kit.log:14176",
+      "excerpt": "unit u-85a7899bd11d cost 300207",
+      "meaning": "누락된 숙성 판매의 원가를 이번에 보완"
+    },
+    {
+      "ref": "logs/market-kit.log:14284",
+      "excerpt": "at 381909, ledger #2175180",
+      "meaning": "누락 기억을 유료 ledger와 연결"
+    },
+    {
+      "ref": "logs/astra-1104-090509-tool-audit.jsonl:1",
+      "excerpt": "\"result\": {\"catalog\": [], \"deals\": []}",
+      "meaning": "실제 SKU 검색 실패 재현"
+    },
+    {
+      "ref": "logs/astra-1104-090509-tool-audit.jsonl:2",
+      "excerpt": "\"k\": \"result\"",
+      "meaning": "deals에 미결제 result행이 혼입"
+    },
+    {
+      "ref": "logs/astra-1104-090509-tool-audit.jsonl:4",
+      "excerpt": "\"catalog_has_sku\": true",
+      "meaning": "실제 카탈로그에 해당 SKU가 존재"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:50",
+      "excerpt": "{\"kind\": \"cohort\", \"sku\": \"G1515d951\", \"all\": {\"paid\": 60, \"revenue\": 20977750, \"known_cost\": 15329070, \"missing_cost\": 1, \"refunds\": 2411526, \"refunded_sales\": 7, \"known_net\": 2855245, \"net\": null, \"net_per_sale\": null}, \"mature_6h\": {\"paid\": 13, \"revenue\": 4616896, \"known_cost\": 3298701, \"missing_cost\": 1, \"refunds\": 1049302, \"refunded_sales\": 3, \"known_net\": -113016, \"net\": null, \"net_per_sale\": null}, \"open_6h\": {\"paid\": 47, \"revenue\": 16360854, \"known_cost\": 12030369, \"missing_cost\": 0, \"refunds\": 1362224, \"refunded_sales\": 4, \"known_net\": 2968261, \"net\": 2968261, \"net_per_sale\": 63154.49}, \"by_grade\": {\"A\": {\"all\": {\"paid\": 45, \"revenue\": 16113279, \"known_cost\": 12204203, \"missing_cost\": 1, \"refunds\": 1419865, \"refunded_sales\": 4, \"known_net\": 2107302, \"net\": null, \"net_per_sale\": null}, \"mature_6h\": {\"paid\": 11, \"revenue\": 3951896, \"known_cost\": 2806014, \"missing_cost\": 1, \"refunds\": 719302, \"refunded_sales\": 2, \"known_net\": 44671, \"net\": null, \"net_per_sale\": null}}, \"B\": {\"all\": {\"paid\": 10, \"revenue\": 3323236, \"known_cost\": 2315129, \"missing_cost\": 0, \"refunds\": 991661, \"refunded_sales\": 3, \"known_net\": 16446, \"net\": 16446, \"net_per_sale\": 1644.6}, \"mature_6h\": {\"paid\": 2, \"revenue\": 665000, \"known_cost\": 492687, \"missing_cost\": 0, \"refunds\": 330000, \"refunded_sales\": 1, \"known_net\": -157687, \"net\": -157687, \"net_per_sale\": -78843.5}}, \"C\": {\"all\": {\"paid\": 5, \"revenue\": 1541235, \"known_cost\": 809738, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 731497, \"net\": 731497, \"net_per_sale\": 146299.4}, \"mature_6h\": {\"paid\": 0, \"revenue\": 0, \"known_cost\": 0, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 0, \"net\": null, \"net_per_sale\": null}}}}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:51",
+      "excerpt": "{\"kind\": \"cohort\", \"sku\": \"G6b9db161\", \"all\": {\"paid\": 29, \"revenue\": 9910356, \"known_cost\": 7165135, \"missing_cost\": 0, \"refunds\": 349000, \"refunded_sales\": 1, \"known_net\": 2396221, \"net\": 2396221, \"net_per_sale\": 82628.31}, \"mature_6h\": {\"paid\": 12, \"revenue\": 4164923, \"known_cost\": 2915361, \"missing_cost\": 0, \"refunds\": 349000, \"refunded_sales\": 1, \"known_net\": 900562, \"net\": 900562, \"net_per_sale\": 75046.83}, \"open_6h\": {\"paid\": 17, \"revenue\": 5745433, \"known_cost\": 4249774, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 1495659, \"net\": 1495659, \"net_per_sale\": 87979.94}, \"by_grade\": {\"A\": {\"all\": {\"paid\": 20, \"revenue\": 7107596, \"known_cost\": 5354050, \"missing_cost\": 0, \"refunds\": 349000, \"refunded_sales\": 1, \"known_net\": 1404546, \"net\": 1404546, \"net_per_sale\": 70227.3}, \"mature_6h\": {\"paid\": 8, \"revenue\": 2881522, \"known_cost\": 2089145, \"missing_cost\": 0, \"refunds\": 349000, \"refunded_sales\": 1, \"known_net\": 443377, \"net\": 443377, \"net_per_sale\": 55422.12}}, \"B\": {\"all\": {\"paid\": 7, \"revenue\": 2309523, \"known_cost\": 1533724, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 775799, \"net\": 775799, \"net_per_sale\": 110828.43}, \"mature_6h\": {\"paid\": 3, \"revenue\": 1004000, \"known_cost\": 680759, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 323241, \"net\": 323241, \"net_per_sale\": 107747.0}}, \"C\": {\"all\": {\"paid\": 2, \"revenue\": 493237, \"known_cost\": 277361, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 215876, \"net\": 215876, \"net_per_sale\": 107938.0}, \"mature_6h\": {\"paid\": 1, \"revenue\": 279401, \"known_cost\": 145457, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 133944, \"net\": 133944, \"net_per_sale\": 133944.0}}}}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:52",
+      "excerpt": "{\"kind\": \"cohort\", \"sku\": \"G0f415407\", \"all\": {\"paid\": 24, \"revenue\": 5444868, \"known_cost\": 3936695, \"missing_cost\": 0, \"refunds\": 231000, \"refunded_sales\": 1, \"known_net\": 1277173, \"net\": 1277173, \"net_per_sale\": 53215.54}, \"mature_6h\": {\"paid\": 9, \"revenue\": 2073275, \"known_cost\": 1437055, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 636220, \"net\": 636220, \"net_per_sale\": 70691.11}, \"open_6h\": {\"paid\": 15, \"revenue\": 3371593, \"known_cost\": 2499640, \"missing_cost\": 0, \"refunds\": 231000, \"refunded_sales\": 1, \"known_net\": 640953, \"net\": 640953, \"net_per_sale\": 42730.2}, \"by_grade\": {\"A\": {\"all\": {\"paid\": 18, \"revenue\": 4169737, \"known_cost\": 3073257, \"missing_cost\": 0, \"refunds\": 231000, \"refunded_sales\": 1, \"known_net\": 865480, \"net\": 865480, \"net_per_sale\": 48082.22}, \"mature_6h\": {\"paid\": 7, \"revenue\": 1631837, \"known_cost\": 1173848, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 457989, \"net\": 457989, \"net_per_sale\": 65427.0}}, \"B\": {\"all\": {\"paid\": 6, \"revenue\": 1275131, \"known_cost\": 863438, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 411693, \"net\": 411693, \"net_per_sale\": 68615.5}, \"mature_6h\": {\"paid\": 2, \"revenue\": 441438, \"known_cost\": 263207, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 178231, \"net\": 178231, \"net_per_sale\": 89115.5}}}}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:53",
+      "excerpt": "{\"kind\": \"cohort\", \"sku\": \"G9c02e68e\", \"all\": {\"paid\": 16, \"revenue\": 1609164, \"known_cost\": 1152603, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 456561, \"net\": 456561, \"net_per_sale\": 28535.06}, \"mature_6h\": {\"paid\": 7, \"revenue\": 721158, \"known_cost\": 515082, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 206076, \"net\": 206076, \"net_per_sale\": 29439.43}, \"open_6h\": {\"paid\": 9, \"revenue\": 888006, \"known_cost\": 637521, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 250485, \"net\": 250485, \"net_per_sale\": 27831.67}, \"by_grade\": {\"A\": {\"all\": {\"paid\": 12, \"revenue\": 1260175, \"known_cost\": 956146, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 304029, \"net\": 304029, \"net_per_sale\": 25335.75}, \"mature_6h\": {\"paid\": 6, \"revenue\": 631034, \"known_cost\": 471803, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 159231, \"net\": 159231, \"net_per_sale\": 26538.5}}, \"C\": {\"all\": {\"paid\": 3, \"revenue\": 237353, \"known_cost\": 124413, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 112940, \"net\": 112940, \"net_per_sale\": 37646.67}, \"mature_6h\": {\"paid\": 1, \"revenue\": 90124, \"known_cost\": 43279, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 46845, \"net\": 46845, \"net_per_sale\": 46845.0}}, \"B\": {\"all\": {\"paid\": 1, \"revenue\": 111636, \"known_cost\": 72044, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 39592, \"net\": 39592, \"net_per_sale\": 39592.0}, \"mature_6h\": {\"paid\": 0, \"revenue\": 0, \"known_cost\": 0, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 0, \"net\": null, \"net_per_sale\": null}}}}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:54",
+      "excerpt": "{\"kind\": \"cohort\", \"sku\": \"G75f11c19\", \"all\": {\"paid\": 14, \"revenue\": 1363801, \"known_cost\": 1024776, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 339025, \"net\": 339025, \"net_per_sale\": 24216.07}, \"mature_6h\": {\"paid\": 4, \"revenue\": 422616, \"known_cost\": 335221, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 87395, \"net\": 87395, \"net_per_sale\": 21848.75}, \"open_6h\": {\"paid\": 10, \"revenue\": 941185, \"known_cost\": 689555, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 251630, \"net\": 251630, \"net_per_sale\": 25163.0}, \"by_grade\": {\"A\": {\"all\": {\"paid\": 7, \"revenue\": 729537, \"known_cost\": 581361, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 148176, \"net\": 148176, \"net_per_sale\": 21168.0}, \"mature_6h\": {\"paid\": 4, \"revenue\": 422616, \"known_cost\": 335221, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 87395, \"net\": 87395, \"net_per_sale\": 21848.75}}, \"B\": {\"all\": {\"paid\": 7, \"revenue\": 634264, \"known_cost\": 443415, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 190849, \"net\": 190849, \"net_per_sale\": 27264.14}, \"mature_6h\": {\"paid\": 0, \"revenue\": 0, \"known_cost\": 0, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 0, \"net\": null, \"net_per_sale\": null}}}}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:55",
+      "excerpt": "{\"kind\": \"cohort\", \"sku\": \"G200e39a3\", \"all\": {\"paid\": 79, \"revenue\": 2043006, \"known_cost\": 1446044, \"missing_cost\": 2, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 569300, \"net\": null, \"net_per_sale\": null}, \"mature_6h\": {\"paid\": 37, \"revenue\": 969390, \"known_cost\": 700510, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 268880, \"net\": 268880, \"net_per_sale\": 7267.03}, \"open_6h\": {\"paid\": 42, \"revenue\": 1073616, \"known_cost\": 745534, \"missing_cost\": 2, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 300420, \"net\": null, \"net_per_sale\": null}, \"by_grade\": {\"A\": {\"all\": {\"paid\": 22, \"revenue\": 599599, \"known_cost\": 495188, \"missing_cost\": 1, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 90580, \"net\": null, \"net_per_sale\": null}, \"mature_6h\": {\"paid\": 9, \"revenue\": 247381, \"known_cost\": 205252, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 42129, \"net\": 42129, \"net_per_sale\": 4681.0}}, \"B\": {\"all\": {\"paid\": 37, \"revenue\": 952089, \"known_cost\": 677945, \"missing_cost\": 1, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 260313, \"net\": null, \"net_per_sale\": null}, \"mature_6h\": {\"paid\": 21, \"revenue\": 554865, \"known_cost\": 395522, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 159343, \"net\": 159343, \"net_per_sale\": 7587.76}}, \"C\": {\"all\": {\"paid\": 20, \"revenue\": 491318, \"known_cost\": 272911, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 218407, \"net\": 218407, \"net_per_sale\": 10920.35}, \"mature_6h\": {\"paid\": 7, \"revenue\": 167144, \"known_cost\": 99736, \"missing_cost\": 0, \"refunds\": 0, \"refunded_sales\": 0, \"known_net\": 67408, \"net\": 67408, \"net_per_sale\": 9629.71}}}}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:56",
+      "excerpt": "{\"kind\": \"rival\", \"name\": \"dae-yangkim\", \"paid\": 468, \"revenue\": 111934627, \"top\": [{\"sku\": \"G1515d951\", \"paid\": 122, \"revenue\": 43587907, \"list_price\": 423810, \"buyers\": [[\"shaun0927\", 29], [\"chaewoonee\", 19], [\"inextro\", 18]], \"ref\": \".market/ledger_rows.jsonl:267\"}, {\"sku\": \"G5cd4ffbc\", \"paid\": 90, \"revenue\": 14547255, \"list_price\": 199000, \"buyers\": [[\"buyer-01\", 20], [\"ggari0703\", 17], [\"buyer-03\", 17]], \"ref\": \".market/ledger_rows.jsonl:6535\"}, {\"sku\": \"G6b9db161\", \"paid\": 46, \"revenue\": 16719277, \"list_price\": 420000, \"buyers\": [[\"inextro\", 11], [\"jiseokkk\", 9], [\"chaewoonee\", 5]], \"ref\": \".market/ledger_rows.jsonl:6009\"}], \"limitation\": \"경쟁점 원가는 공개되지 않으므로 마진은 미확인; URL/영수증 이름 연결이며 카드 이름과 다를 수 있음\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:57",
+      "excerpt": "{\"kind\": \"rival\", \"name\": \"Inextro Market\", \"paid\": 1369, \"revenue\": 166081232, \"top\": [{\"sku\": \"G1515d951\", \"paid\": 211, \"revenue\": 68078869, \"list_price\": 423810, \"buyers\": [[\"chaewoonee\", 51], [\"myeonggi\", 40], [\"kimauve\", 33]], \"ref\": \".market/ledger_rows.jsonl:42723\"}, {\"sku\": \"Gef4d3036\", \"paid\": 122, \"revenue\": 2806077, \"list_price\": 28900, \"buyers\": [[\"psyoung82\", 103], [\"kimauve\", 9], [\"dae-yangkim\", 2]], \"ref\": \".market/ledger_rows.jsonl:29815\"}, {\"sku\": \"Ge62449c9\", \"paid\": 110, \"revenue\": 7492889, \"list_price\": 87900, \"buyers\": [[\"Kiro729\", 51], [\"buzllightyear\", 13], [\"dae-yangkim\", 11]], \"ref\": \".market/ledger_rows.jsonl:32545\"}], \"limitation\": \"경쟁점 원가는 공개되지 않으므로 마진은 미확인; URL/영수증 이름 연결이며 카드 이름과 다를 수 있음\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:58",
+      "excerpt": "{\"kind\": \"rival\", \"name\": \"dragonash\", \"paid\": 1012, \"revenue\": 119737839, \"top\": [{\"sku\": \"G1515d951\", \"paid\": 168, \"revenue\": 52105229, \"list_price\": 423810, \"buyers\": [[\"inextro\", 43], [\"shaun0927\", 42], [\"kcwarni\", 27]], \"ref\": \".market/ledger_rows.jsonl:29841\"}, {\"sku\": \"G3e2cdb81\", \"paid\": 97, \"revenue\": 662209, \"list_price\": 8700, \"buyers\": [[\"25512088\", 37], [\"shaun0927-labbuyer\", 16], [\"seochanit\", 11]], \"ref\": \".market/ledger_rows.jsonl:12915\"}, {\"sku\": \"Ge62449c9\", \"paid\": 90, \"revenue\": 5406185, \"list_price\": 87900, \"buyers\": [[\"shaun0927\", 25], [\"outseop-26510122\", 12], [\"YAHO1212\", 11]], \"ref\": \".market/ledger_rows.jsonl:352\"}], \"limitation\": \"경쟁점 원가는 공개되지 않으므로 마진은 미확인; URL/영수증 이름 연결이며 카드 이름과 다를 수 있음\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:59",
+      "excerpt": "{\"kind\": \"rival\", \"name\": \"Grand Furniture\", \"paid\": 15, \"revenue\": 1025675, \"top\": [{\"sku\": \"Gca5a6d50\", \"paid\": 2, \"revenue\": 51561, \"list_price\": 14700, \"buyers\": [[\"Jaehoonang\", 2]], \"ref\": \".market/ledger_rows.jsonl:11552\"}, {\"sku\": \"G68a4ed40\", \"paid\": 2, \"revenue\": 136562, \"list_price\": 53000, \"buyers\": [[\"ddolcom\", 1], [\"buyer-02\", 1]], \"ref\": \".market/ledger_rows.jsonl:27648\"}, {\"sku\": \"Gbc2ecc34\", \"paid\": 2, \"revenue\": 22159, \"list_price\": 8500, \"buyers\": [[\"buyer-01\", 1], [\"yeonsong2\", 1]], \"ref\": \".market/ledger_rows.jsonl:60965\"}], \"limitation\": \"경쟁점 원가는 공개되지 않으므로 마진은 미확인; URL/영수증 이름 연결이며 카드 이름과 다를 수 있음\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:60",
+      "excerpt": "{\"kind\": \"rival\", \"name\": \"Nocha Furniture\", \"paid\": 682, \"revenue\": 50994171, \"top\": [{\"sku\": \"G200e39a3\", \"paid\": 79, \"revenue\": 2043006, \"list_price\": 37900, \"buyers\": [[\"Kiro729\", 26], [\"q00\", 19], [\"lee-sungsoo\", 13]], \"ref\": \".market/ledger_rows.jsonl:4893\"}, {\"sku\": \"Gef4d3036\", \"paid\": 66, \"revenue\": 1266839, \"list_price\": 28900, \"buyers\": [[\"jiseokkk\", 16], [\"kimauve\", 13], [\"dae-yangkim\", 9]], \"ref\": \".market/ledger_rows.jsonl:25596\"}, {\"sku\": \"G1515d951\", \"paid\": 60, \"revenue\": 20977750, \"list_price\": 423810, \"buyers\": [[\"Kiro729\", 19], [\"jiseokkk\", 11], [\"shaun0927\", 6]], \"ref\": \".market/ledger_rows.jsonl:12646\"}], \"limitation\": \"경쟁점 원가는 공개되지 않으므로 마진은 미확인; URL/영수증 이름 연결이며 카드 이름과 다를 수 있음\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:61",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1103-210425\", \"status\": \"rejected\", \"action\": \"settings\", \"strategy_check\": null, \"ref\": \"meta/grades.jsonl:1\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:62",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1103-220510\", \"status\": \"rejected\", \"action\": \"settings\", \"strategy_check\": null, \"ref\": \"meta/grades.jsonl:2\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:63",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1103-225335\", \"status\": \"no_change\", \"action\": \"none\", \"strategy_check\": {\"current\": \"lean profit stock (GPT Pro profit review, review/W-20261103-2120/gpt-pro-answer1.md)\", \"gap_cause\": \"unclear\", \"keep_or_shift\": \"watch\", \"reason\": \"고가 가구를 더 많이 판매하는 방향을 관찰한다. 우리 상점은 27건·방문 61회·매출 621,008·이익 31,457인 반면 선두는 104건·252회·18,825,872·2,760,862이고 환불은 둘 다 0건이다. 선두의 원장에는 매트리스 G1515d951을 392,528에 YAHO1212에게 판매한 사례가 있고, 다른 선두 상점은 가구 전문을 표방한다. 우리는 김치 G200e39a3, 곡물 G80435d53, 침구 G0be9ed07 등을 판매하며 매트리스 구매도 계획했지만 공급이 429로 거절됐다. 카드는 정직한 등급과 짧은 보증을 내세우고 포럼 구매 요청에 재고와 6시간 보증을 안내했다. 최근 G998b9322는 원가 31,091, 최초가 43,815, 최저가 38,501이었고 양보 비율은 0.6·0.4·0.2다. 누적 26건의 상점 체결, 24시간 초과 재고 0개와 보관 손실 34만으로 시간당 회전이나 새 전략의 수익성을 판단하기는 이르다. 다음 시간에도 고가 SKU의 경쟁점 판매 우위와 우리 유료 거래 정체가 함께 지속되는지 확인한다.\"}, \"ref\": \"meta/grades.jsonl:3\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:64",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1103-235434\", \"status\": \"no_change\", \"action\": \"none\", \"strategy_check\": {\"current\": \"lean profit stock (GPT Pro profit review, review/W-20261103-2120/gpt-pro-answer1.md)\", \"gap_cause\": \"unclear\", \"keep_or_shift\": \"keep\", \"reason\": \"선두는 170거래·방문 524회·매출 30,274,128·이익 3,749,705·환불 1건이고 우리는 42거래·방문 81회·매출 2,609,283·이익 676,333·환불 0건이다. 선두 원장의 매트리스 G1515d951은 392,528에 판매됐고 다른 선두는 가구 전문을 표방한다. 우리는 김치 G200e39a3와 침구 G0be9ed07 등을 판매하고 고가 상품도 취급하며, 정직한 등급·인증과 짧은 보증을 카드에 내세우고 포럼 구매 요청에 답한다. G0f415407의 최초가 250,472·최저가 209,710이며 양보 비율은 0.6·0.4·0.2다. 지난 시간 우리 유료 체결이 15건 증가해 직전 관찰의 거래 정체 조건은 확인되지 않았다. 재고 6개, 24시간 초과 미판매 0개와 보관료 증가 20으로 현재 전략을 유지하되 SKU별 회전과 방문 경로를 더 관찰한다.\"}, \"ref\": \"meta/grades.jsonl:4\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:65",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1104-005515\", \"status\": \"no_change\", \"action\": \"none\", \"strategy_check\": {\"current\": \"lean profit stock (GPT Pro profit review, review/W-20261103-2120/gpt-pro-answer1.md)\", \"gap_cause\": \"unclear\", \"keep_or_shift\": \"keep\", \"reason\": \"선두 winun1127은 358거래·903방문·매출 32,943,432·이익 5,411,714·환불 4건이고 우리는 67거래·117방문·매출 5,410,865·이익 1,117,688·환불 0건이다. 선두는 가구 전문 카드로 소파패드 G0be9ed07을 buyer-01에게 34,337에 팔았고, 우리도 소파패드와 김치 및 고가 매트리스를 취급한다. 우리는 정직한 등급과 인증·6시간 보증을 알리고 포럼 구매 요청에 재고를 답한다. 매트리스 G1515d951의 최초가 387,420, 최저가 301,957이며 양보율은 0.6·0.4·0.2다. 지난 시간 유료 체결 25건으로 거래가 정체되지 않았고 24시간 초과 재고는 0개다. 방문과 거래 규모 차이는 크지만 반복 고객별 유입과 성숙한 보증 손익이 부족해 전략 차이나 가격 문제로 단정하기 어렵다.\"}, \"ref\": \"meta/grades.jsonl:5\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:66",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1104-015602\", \"status\": \"no_change\", \"action\": \"none\", \"strategy_check\": {\"current\": \"lean profit stock (GPT Pro profit review, review/W-20261103-2120/gpt-pro-answer1.md)\", \"gap_cause\": \"unclear\", \"keep_or_shift\": \"keep\", \"reason\": \"선두 winun1127은 가구 전문 카드로 458거래·1,112방문·매출 43,628,298·이익 8,242,766·환불 7건이고, 우리는 137거래·217방문·매출 9,785,900·이익 2,581,828·환불 0건으로 보드에 표시된다. 우리도 김치와 소파패드, 고가 매트리스를 취급하며 선두 원장에도 같은 소파패드의 buyer-01 대상 34,337 판매가 있다. 카드는 실제 재고와 정직한 인증을 내세우고 포럼의 구매 요청에 재고와 6시간 보증을 답한다. 반복 고객별 유입 비중은 확인되지 않았다. 매트리스 G1515d951의 최초가 387,420, 최저가 348,348이며 양보율은 0.6·0.4·0.2다. 지난 시간 유료 체결은 70건으로 직전 시간의 25건보다 늘었고 24시간 초과 재고는 0개다. 환불 358,000은 발생했지만 순이익도 1,464,140 증가했다. 두 SKU의 적격 반복 품절, 원가 회수율과 성숙한 보증 손익을 모두 입증하지 못해 한도 확대 조건은 충족됐다고 판단할 수 없다. 방문과 거래 규모 차이가 크지만 전략 자체의 차이인지 판단하기에는 부족하다.\"}, \"ref\": \"meta/grades.jsonl:6\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:67",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1104-025643\", \"status\": \"no_change\", \"action\": \"none\", \"strategy_check\": {\"current\": \"lean profit stock (GPT Pro profit review, review/W-20261103-2120/gpt-pro-answer1.md)\", \"gap_cause\": \"unclear\", \"keep_or_shift\": \"keep\", \"reason\": \"순이익 5위인 우리는 222거래·347방문·매출 15,129,102·이익 3,963,139·환불 2건이고, 선두 dae-yangkim은 284거래·1,219방문·매출 59,295,118·이익 10,391,086·환불 3건이다. 2위 winun1127은 가구 전문 카드로 547거래·1,278방문·이익 9,628,504·환불 12건이다. 선두 카드와 우리 카드는 정직한 인증과 보증을 내세우며, 우리는 김치·생활용품·매트리스를 취급하고 포럼 구매 요청에 재고를 답한다. 경쟁점 원장에도 우리가 취급하는 소파패드 G0be9ed07의 buyer-01 대상 34,337 판매가 있다. 반복 고객별 유입 비중은 확인되지 않았다. 매트리스 G1515d951의 최초가 358,000·최저가 309,041이고 양보율은 0.6·0.4·0.2다. 지난 시간 유료 체결 85건은 직전 70건보다 늘었고 24시간 초과 재고는 0개다. 환불 355,475에도 순이익은 1,381,311 증가했다. 방문과 매출 규모 차이는 크지만 다른 전략이 더 수익성이 높은지, 또는 확대 이후 보증 손익이 어떤지 아직 판단하기 어려워 유지한다.\"}, \"ref\": \"meta/grades.jsonl:7\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:68",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1104-035718\", \"status\": \"rejected\", \"action\": \"settings\", \"strategy_check\": {\"current\": \"lean profit stock (GPT Pro profit review, review/W-20261103-2120/gpt-pro-answer1.md)\", \"gap_cause\": \"unclear\", \"keep_or_shift\": \"keep\", \"reason\": \"우리는 293거래·470방문·매출 20,263,743·이익 5,023,066·환불 3건으로 이익 7위이고, 선두 dae-yangkim은 313거래·1,412방문·매출 67,046,268·이익 13,269,158·환불 3건이다. 2위 winun1127은 가구 전문 카드로 620거래·1,401방문·이익 11,452,037·환불 14건이다. 경쟁점도 우리가 취급하는 소파패드를 판매하며 우리는 김치·침구·매트리스를 취급한다. 카드는 정직한 등급과 인증·보증을 알리고 포럼 구매 요청에 재고를 답한다. 반복 고객별 유입 비중은 확인되지 않았다. G1515d951의 최초가 380,911·최저가 193,238이며 양보율은 0.6·0.4·0.2다. 지난 시간 유료 체결 71건은 직전 85건보다 줄었으나 24시간 초과 재고는 0개이고 순이익은 1,059,927 증가했다. 방문과 매출 격차가 크지만 다른 상품 전략의 우위를 입증하기는 부족하다. 다만 같은 매트리스 두 건이 한 시간 내 파손돼 현재 전략의 명시적 위험 축소 조건에 따라 검증 SKU에서 제외한다.\"}, \"ref\": \"meta/grades.jsonl:8\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:69",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1104-045914\", \"status\": \"no_change\", \"action\": \"none\", \"strategy_check\": {\"current\": \"lean profit stock (GPT Pro profit review, review/W-20261103-2120/gpt-pro-answer1.md)\", \"gap_cause\": \"unclear\", \"keep_or_shift\": \"keep\", \"reason\": \"우리는 355거래·623방문·매출 26,274,476·이익 5,061,325·환불 6건으로 이익 7위다. 선두 dae-yangkim은 349거래·1,651방문·매출 76,859,241·이익 15,384,438·환불 3건이며 정직한 등급과 인증을 카드에 내세운다. 2위 winun1127은 가구 전문 카드로 693거래·1,523방문·매출 66,121,932·이익 12,510,516·환불 15건이다. 경쟁점과 우리 모두 소파패드를 판매하며 우리는 식품·침구·매트리스도 취급한다. 우리 카드는 인증과 보증을 알리고 포럼 구매 요청에 재고를 답한다. 반복 고객별 유입 비중은 확인되지 않았다. G1515d951의 최근 최초가 380,911·최저가 315,431이며 양보율은 0.6·0.4·0.2다. 24시간 초과 재고는 0개지만 최근 한 시간 순이익 증가는 38,259에 그쳤다. 방문과 매출 격차는 크나 다른 상품 전략이 더 낫다는 반복 증거와 성숙한 보증 손익이 부족해 전략을 유지한다.\"}, \"ref\": \"meta/grades.jsonl:9\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:70",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1104-055948\", \"status\": \"no_change\", \"action\": \"none\", \"strategy_check\": {\"current\": \"lean profit stock (GPT Pro profit review, review/W-20261103-2120/gpt-pro-answer1.md)\", \"gap_cause\": \"unclear\", \"keep_or_shift\": \"keep\", \"reason\": \"우리는 418거래·804방문·매출 31,125,999·이익 5,221,749·환불 7건으로 이익 9위다. 선두 dae-yangkim은 376거래·1,884방문·매출 84,399,957·이익 17,781,539·환불 3건이며 인증과 정직한 등급을 카드에 내세운다. inextro는 790거래·1,453방문·매출 83,843,250·이익 14,140,871·환불 8건으로 폭넓은 상품을 홍보한다. 경쟁점과 우리 모두 소파패드를 팔고 우리는 식품·침구·매트리스도 취급한다. 우리 카드는 인증과 보증을 알리고 포럼 구매 요청에 재고를 답한다. 반복 고객 유입 비중은 확인되지 않았다. 최근 G1515d951 최초 호가는 380,911, 최저가는 239,502이고 양보율은 0.6·0.4·0.2다. 지난 시간 체결 63건, 24시간 초과 재고 0개, 순이익 증가 160,424이며 환불 손실은 231,000 늘었다. 경쟁점의 방문과 매출은 크지만 다른 상품 전략의 지속적인 우위는 아직 확정할 수 없어 유지한다.\"}, \"ref\": \"meta/grades.jsonl:10\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:71",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1104-070114\", \"status\": \"no_change\", \"action\": \"none\", \"strategy_check\": {\"current\": \"lean profit stock (GPT Pro profit review, review/W-20261103-2120/gpt-pro-answer1.md)\", \"gap_cause\": \"unclear\", \"keep_or_shift\": \"keep\", \"reason\": \"우리는 492거래·1,060방문·매출 37,193,529·이익 7,180,093·환불 7건으로 이익 7위다. 선두 dae-yangkim은 407거래·2,115방문·매출 91,954,715·이익 19,808,798·환불 3건이며 정직한 등급과 인증을 내세운다. dragonash는 862거래·2,019방문·매출 91,451,259·이익 13,709,276·환불 12건이다. 경쟁점과 우리 모두 소파패드를 판매하며 우리는 식품·침구·매트리스도 취급한다. 우리 카드는 인증과 보증을 알리고 포럼 구매 요청에 재고를 답한다. 반복 고객의 유입 비중은 확인되지 않았다. 최근 G1515d951 최초 호가는 380,911, 최저가는 322,153이고 양보율은 0.6·0.4·0.2다. 지난 시간 유료 체결은 63→74건, 24시간 초과 재고는 0개, 순이익 증가는 1,958,344이며 환불은 344,500 늘었다. 선두의 거래당 수익과 방문이 높지만 다른 상품 전략이 지속적으로 더 낫다는 증거는 아직 부족하다. 현 전략을 유지하되 반복 파손 SKU의 축소 조건을 적용할 수 있도록 검증 경로를 먼저 해결해야 한다.\"}, \"ref\": \"meta/grades.jsonl:11\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:72",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1104-072946\", \"status\": \"running\", \"action\": \"code\", \"strategy_check\": {\"current\": \"broad profit stock + proven mattresses\", \"gap_cause\": \"bug\", \"keep_or_shift\": \"keep\", \"reason\": \"식품·침구 등 폭넓은 재고와 검증된 매트리스를 취급하며 인증·정직한 등급과 최대 6시간 보증을 내세운다. 카드와 포럼 게시·구매 요청 답변으로 유입시키고 최초 호가와 최저가 사이를 0.6·0.4·0.2 일정으로 양보한다. 선두 dae-yangkim은 423거래·2,201방문·매출 97,057,092·이익 20,919,549·환불 3건이며 우리는 492거래·1,188방문·매출 37,186,229·이익 5,401,471이다. 선두도 인증과 정직한 등급을 홍보하며 경쟁 원장에는 우리도 취급하는 G0be9ed07 판매가 있다. 반복 고객 유입 비중은 확인되지 않았다. 24시간 초과 재고는 없지만 모델 호출 한도로 숫자 제안마저 처리하지 못한 실제 오류가 확인됐다. 현재 전략을 유지하며 협상 실행을 복구하고, 이후 유료 판매와 이익을 관찰한다.\"}, \"ref\": \"meta/grades.jsonl:12\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:73",
+      "excerpt": "{\"kind\": \"terra\", \"cycle\": \"terra-1104-084118\", \"status\": \"running\", \"action\": \"settings\", \"strategy_check\": {\"current\": \"broad profit stock + proven mattresses\", \"gap_cause\": \"dials\", \"keep_or_shift\": \"keep\", \"reason\": \"식품·침구 등 폭넓은 재고와 검증된 매트리스를 취급하며 인증·정직한 등급과 최대 6시간 보증을 내세운다. 카드와 포럼 게시·구매 요청 답변으로 유입시키고 최초가와 최저가 사이를 0.6·0.4·0.2로 양보한다. G1515d951 최초가는 380,911이다. 우리는 654거래·1,512방문·매출 46,579,388·이익 9,937,552·환불 11건으로 이익 7위다. 선두 dae-yangkim은 454거래·2,422방문·매출 107,192,588·이익 25,376,918·환불 3건이고 인증과 정직한 등급을 홍보한다. inextro는 1,275거래·2,197방문·매출 149,287,909·이익 19,450,809·환불 18건이며 폭넓은 상품과 인증·보증을 홍보한다. 경쟁 원장에도 우리가 취급하는 G6b9db161 판매가 있다. 반복 고객의 방문 비중은 확인되지 않았다. 24시간 초과 재고는 0개이고 구간 유료 판매는 162건, 환불 손실 증가는 755,111이다. 현재 전략 안에서 보충 보류 해제 조건이 충족된 매트리스를 다시 공급하며, 다른 전략으로 전환할 반복 근거는 아직 없다.\"}, \"ref\": \"meta/grades.jsonl:13\"}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:74",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"auto_catalog_ledger_search\", \"calls\": 0, \"failures\": 0, \"selftest\": true}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:75",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"break_rates\", \"calls\": 10, \"failures\": 0, \"selftest\": false}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:76",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"catalog_search\", \"calls\": 273, \"failures\": 0, \"selftest\": false}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:77",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"cohort_profit\", \"calls\": 0, \"failures\": 0, \"selftest\": true}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:78",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"forum_read\", \"calls\": 46, \"failures\": 0, \"selftest\": false}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:79",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"ledger_search\", \"calls\": 828, \"failures\": 0, \"selftest\": false}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:80",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"market_demand\", \"calls\": 52, \"failures\": 0, \"selftest\": false}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:81",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"my_customers\", \"calls\": 0, \"failures\": 0, \"selftest\": true}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:82",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"my_decisions\", \"calls\": 6, \"failures\": 0, \"selftest\": false}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:83",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"my_memory\", \"calls\": 0, \"failures\": 0, \"selftest\": true}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:84",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"my_purchases\", \"calls\": 193, \"failures\": 0, \"selftest\": false}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:85",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"my_state\", \"calls\": 35, \"failures\": 0, \"selftest\": false}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:86",
+      "excerpt": "{\"kind\": \"tool\", \"name\": \"auto_market_lookup\", \"calls\": 100, \"failures\": 0, \"present\": false}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-audit.jsonl:87",
+      "excerpt": "{\"kind\": \"forum\", \"demand\": [{\"id\": 3118, \"author\": \"buyer-02\", \"text\": \"소파/의자/스툴 구합니다. 예산은 203만 원대입니다. 파는 가게가 없어 게시글 올립니다.\", \"score\": null}, {\"id\": 3132, \"author\": \"buyer-01\", \"text\": \"침구 구합니다. 예산은 3,000원 안팎입니다. 주변에 파는 가게가 없어 글 올립니다. 가지고 계신 분은 가격과 상태를 알려 주세요.\", \"score\": null}, {\"id\": 3137, \"author\": \"buyer-02\", \"text\": \"소파/의자/스툴 구합니다. 예산은 534만 원대입니다. 파는 가게가 없어 장터에 글 올립니다. 판매하시는 분은 연락 부탁드립니다.\", \"score\": null}, {\"id\": 3174, \"author\": \"buyer-03\", \"text\": \"소파/의자/스툴 구합니다. 예산은 351만 원대입니다. 파는 가게가 없네요. 급히 찾습니다.\", \"score\": null}], \"top\": [{\"id\": 3082, \"author\": \"psyoung82\", \"text\": \"[구매 기록] 맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg (Gef4d3036) | 20,895원, 정가 28,900원 대비 28% 저렴 | 등급 B (주장 B, 정직) | 남은 유통기한 32시간 | 판매: nocha12 | ledger #2312853\", \"score\": 0.676}, {\"id\": 3112, \"author\": \"lee-sungsoo\", \"text\": \"[시세] 침대/매트리스: 최근 3시간 시장 정산 817건 (공개 원장 기준)\\n- 체결가/정가 중앙값 75% (하위 25% 70%, 상위 25% 81%)\\n- 가장 많이 팔린 상품: 지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸 (G1515d951) 343건, 체결가 중앙 321,131 / 정가 423,810\\n- 근거: refs의 원장 seq\", \"score\": 0.676}, {\"id\": 3088, \"author\": \"25620027\", \"text\": \"Settled purchases, verifiable on the ledger refs: 캐리어 클라윈드 20L 레트로 전자렌지 전자레인지 KMWT-020AWNW [G1d0467ae] grade B, claim honest, warranty 24h at 54400 (71% of list) from yms979; 지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸 [G1515d951] grade B, claim honest, warranty 6h at 294916 (69% of list) from mjforge; 누우리 편안한 토퍼 매트리스 5cm 퀸(Q) [G5a99ef4d] grade B, claim honest, warranty 6h at 54371 (75% of list) from nocha12; [샤이닝홈] 모달 소파패드 돌소파용 마인 요릭 85x200 3컬러 쇼파패 [G0be9ed07] grade B, claim honest, warranty 24h at 29136 (73% of list) from ddolcom. Market last hour: 1940 settles; busiest 침구 (332 settles, median 0.746 of list).\", \"score\": 0.646}]}",
+      "meaning": "이번 사이클의 원장/기억/도구/전략 원문 조회 결과"
+    },
+    {
+      "ref": "logs/astra-1104-090509-tests.log:491",
+      "excerpt": "Ran 290 tests in 13.677s",
+      "meaning": "지정 venv 전체 테스트 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-extra.jsonl:1",
+      "excerpt": "{\"name\": \"winun1127\", \"paid\": 963, \"revenue\": 82905112, \"top_skus\": [[\"G0be9ed07\", 173], [\"G1515d951\", 112], [\"Ge62449c9\", 101]], \"top_buyers\": [[\"buyer-01\", 305], [\"totato2203-r3\", 153], [\"buzllightyear\", 46]], \"sample_ref\": \".market/ledger_rows.jsonl:67\", \"limitation\": \"현재 shops URL 매핑; 과거 URL 누락 가능, 원가는 미공개\"}",
+      "meaning": "보완 조회와 최종 검증 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-extra.jsonl:2",
+      "excerpt": "{\"name\": \"chaewoonee\", \"paid\": 482, \"revenue\": 58960098, \"top_skus\": [[\"G1515d951\", 136], [\"G0be9ed07\", 77], [\"Ge62449c9\", 64]], \"top_buyers\": [[\"totato2203-r3\", 195], [\"myeonggi\", 64], [\"bjeon01\", 28]], \"sample_ref\": \".market/ledger_rows.jsonl:5970\", \"limitation\": \"현재 shops URL 매핑; 과거 URL 누락 가능, 원가는 미공개\"}",
+      "meaning": "보완 조회와 최종 검증 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-extra.jsonl:3",
+      "excerpt": "{\"sku\": \"G1515d951\", \"mature_paid\": 13, \"memory_missing_cost\": 1, \"recovered_cost\": 300207, \"recovered_price\": 381909, \"corrected_mature_net\": -31314, \"cost_ref\": \"logs/market-kit.log:14176\", \"settle_ref\": \"logs/market-kit.log:14284\", \"old_enough_1h_paid\": 47, \"old_enough_1h_refunded\": 5}",
+      "meaning": "보완 조회와 최종 검증 결과"
+    },
+    {
+      "ref": "meta/evidence/astra-1104-090509-extra.jsonl:4",
+      "excerpt": "{\"spec_path\": \"../../../weeks/week-08/README.md\", \"exists\": false, \"board_objective\": \"팩 buyer 0.5/0.3/0.2 유지; agent.md 거래0.1+게시물0.1과 차이 공개\"}",
+      "meaning": "보완 조회와 최종 검증 결과"
+    },
+    {
+      "ref": "logs/astra-1104-090509-tests-final.log:491",
+      "excerpt": "Ran 290 tests in 12.626s",
+      "meaning": "보완 조회와 최종 검증 결과"
+    }
+  ],
+  "evidence_gap": {
+    "missing": "G1515의 6시간 숙성 표본과 환불 연결 정확도, 동시 변경을 분리한 인과 효과가 부족하다. 경쟁점의 원가는 공개되지 않는다.",
+    "measurement": "이번 사이클에 모든 커밋 전후 최대 30분의 kit 유료 판매·원가·판매 seq 환불을 집계하고 시장 거래수를 함께 비교했다. 숙성 13건 중 원가 누락 1건을 kit 14176행의 300,207로 수동 보완하면 순기여 -31,314다. cohort_profit을 다음 점수표에 추가했다.",
+    "judge_line": "15:05 KST 이후 09:05까지 판매를 재집계한다. 숙성 ≥20건·환불 비율 >15% 또는 최근 숙성 10판매 순기여 <0이면 G1515 목표 4→3. 원가 누락은 먼저 unit PRICE 로그로 보완. G75는 21:05에 ≥18판매·첫6시간 코호트 순기여 >0이면 유지, 추가 단위가 2창 연속 미판매거나 숙성 시험 기여 <0이면 목표1 복원."
+  },
+  "summary": "09:05 팩의 Players 1.325, 순이익 6위(9,406,642), 선두 24,462,835. 14개 지정 커밋을 포함해 첫 기록 이후 48개 커밋과 Terra 13개 평가/전략 점검을 검토했다. 현 전략을 유지하고 침구 한 단위 시험과 숙성 손익 측정을 시작했다. 290개 테스트 통과. 커밋·push·PR·메시지 전송 없음.",
+  "strategy": {
+    "options": [
+      {
+        "direction": "현재의 폭넓은 이익 재고 + 검증 매트리스, 침구 한 단위 시험",
+        "expected_profit": "12시간 현금 순이익 +1,000만~1,800만, 시험 +0~87,395. 07:01→09:05 현금 718만→940만, 원가회수 가정 940만→1,223만의 시간당 증가율을 단순 환산한 시나리오다.",
+        "risk": "경쟁 수요 변화와 미숙성 환불. 추가 침구 원가 최악 92,175; 재고 400만·현금450만 한도 안에서 한 단위만 시험.",
+        "test": "G75 목표1→2, 다음12시간 판매18건 이상·첫6시간 숙성 순기여 양수, 2창 연속 잔류면1로 복원."
+      },
+      {
+        "direction": "검증 매트리스에 더 집중",
+        "expected_profit": "기존 시나리오 +0~45만: G6 숙성12판매 순기여900,562, 건당75,047 × 추가0~6판매 가정.",
+        "risk": "G6 보충 재개 후 아직1시간 미만. G1515 숙성13건 원가보완 순기여-31,314이며 소표본; 집중은 보증·묶인 자금 위험을 키운다.",
+        "test": "현재 G6 목표2를 먼저 한 시간 및 보증6시간 관찰. 연속2창 매진과 숙성 양수 뒤에만 추가1 검토."
+      },
+      {
+        "direction": "선두의 다른 고가 가구와 미충족 소파 수요 진입",
+        "expected_profit": "기존 시나리오 +0~50만은 0~10판매×가정5만 마진의 검증 전 범위. dae-yangkim G5cd4ffbc 90판매·매출14,547,255이나 원가는 미공개다.",
+        "risk": "구합니다 소파 예산168만~534만은 현행 한도와 자금 부담이 크고, 주문 전환·원가·보증 손익이 없다. 실패 시 매입 원가만큼 손실.",
+        "test": "먼저 공개 원장 구매자≥3명·시간당≥10거래·우리 보증하한 충족 여부를 두 사이클 비교; 지금 자동매입하지 않는다."
+      }
+    ],
+    "chosen": "현재 전략 유지. 경쟁점 확대 전략이 더 낫다는 자체 마진 자료가 없다. 카드·인증·6시간 보증·협상 규칙을 유지하고, 회전이 검증된 침구 한 단위로 먼저 시험한다.",
+    "experiment": "주 실험 G75 목표1→2: 21:05 KST에 유료18건 이상, 첫6시간 판매의 숙성 순기여 양수, 2창 연속 미판매 없음이면 유지. 실패하면1로 복원. 작은 실험은 cohort_profit 측정: 두 Terra 사이클에서 숙성/미숙성·원가누락 구분, 오류0; 15:05에 G1515 재평가. 마지막6시간 판매 최종 보증 판정은11/05 03:05."
+  },
+  "grades": [
+    {
+      "change": "dad4e8b",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 0→5건, 원가확인분 환불후 기여 0→41218 (meta/evidence/astra-1104-090509-audit.jsonl:2). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "e3d7228",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 0→5건, 원가확인분 환불후 기여 0→41218 (meta/evidence/astra-1104-090509-audit.jsonl:3). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "60d6b23",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 0→5건, 원가확인분 환불후 기여 0→41218 (meta/evidence/astra-1104-090509-audit.jsonl:4). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "9ec5da6",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 7→9건, 원가확인분 환불후 기여 53691→44940 (meta/evidence/astra-1104-090509-audit.jsonl:5). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "1eed138",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 7→9건, 원가확인분 환불후 기여 53691→44940 (meta/evidence/astra-1104-090509-audit.jsonl:6). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "376522e",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 7→9건, 원가확인분 환불후 기여 53691→44940 (meta/evidence/astra-1104-090509-audit.jsonl:7). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "032599f",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 8→9건, 원가확인분 환불후 기여 41777→60802 (meta/evidence/astra-1104-090509-audit.jsonl:8). 여러 운영 변경이 같은 구간에 겹쳤다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "ce5045e",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 10→9건, 원가확인분 환불후 기여 44214→86172 (meta/evidence/astra-1104-090509-audit.jsonl:9). 여러 운영 변경이 같은 구간에 겹쳤다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "729ad81",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 10→9건, 원가확인분 환불후 기여 44214→86172 (meta/evidence/astra-1104-090509-audit.jsonl:10). 여러 운영 변경이 같은 구간에 겹쳤다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "f9d5cef",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 10→9건, 원가확인분 환불후 기여 44214→86172 (meta/evidence/astra-1104-090509-audit.jsonl:11). 여러 운영 변경이 같은 구간에 겹쳤다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "311c235",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 9→10건, 원가확인분 환불후 기여 44940→154005 (meta/evidence/astra-1104-090509-audit.jsonl:12). 여러 운영 변경이 같은 구간에 겹쳤다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "91131b2",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 9→9건, 원가확인분 환불후 기여 60802→141350 (meta/evidence/astra-1104-090509-audit.jsonl:13). 여러 운영 변경이 같은 구간에 겹쳤다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "b0d1bb9",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 8→9건, 원가확인분 환불후 기여 54934→141350 (meta/evidence/astra-1104-090509-audit.jsonl:14). 여러 운영 변경이 같은 구간에 겹쳤다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "79cced5",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 9→7건, 원가확인분 환불후 기여 75867→115713 (meta/evidence/astra-1104-090509-audit.jsonl:15). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "732584e",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 6→3건, 원가확인분 환불후 기여 345478→77383 (meta/evidence/astra-1104-090509-audit.jsonl:16). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "7560b38",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 4→4건, 원가확인분 환불후 기여 211734→83623 (meta/evidence/astra-1104-090509-audit.jsonl:17). 폭 확대·영수증 품목명 수정은 함께 배포돼 기여 분리가 안 된다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "a2fe5de",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 4→7건, 원가확인분 환불후 기여 211734→174526 (meta/evidence/astra-1104-090509-audit.jsonl:18). guard 후 줄 자르기·공백 제거는 동시 변경이고 실제 절단 사유 로그는 아직 없었다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "e7204c8",
+      "grade": "worked",
+      "reason": "전후 각 최대30분 유료 4→23건, 원가확인분 환불후 기여 83623→572982 (meta/evidence/astra-1104-090509-audit.jsonl:19). 공식 보충 경로 이후 유료량 증가를 관측했다. 시장 증가와 앞선 폭 확대도 기여할 수 있다."
+    },
+    {
+      "change": "1029ad1",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 22→30건, 원가확인분 환불후 기여 568069→740142 (meta/evidence/astra-1104-090509-audit.jsonl:20). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "720dd7a",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 40→40건, 원가확인분 환불후 기여 197759→235618 (meta/evidence/astra-1104-090509-audit.jsonl:21). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "f3942f1",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 44→40건, 원가확인분 환불후 기여 316535→379590 (meta/evidence/astra-1104-090509-audit.jsonl:22). 전후 guard 절단 로그 0→6,062행은 관측 기능 추가의 효과이며 고유 주문 손실 6,062건을 뜻하지 않는다. 판매량 개선은 미확정. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "5a8d075",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 50→34건, 원가확인분 환불후 기여 237561→29225 (meta/evidence/astra-1104-090509-audit.jsonl:23). 문서·오류 사유 개선으로 경제 효과를 분리할 수 없으며 런타임 확대 실험이 아니다."
+    },
+    {
+      "change": "ac3068c",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 42→24건, 원가확인분 환불후 기여 449865→166849 (meta/evidence/astra-1104-090509-audit.jsonl:24). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "a7ca54a",
+      "grade": "worked",
+      "reason": "전후 각 최대30분 유료 29→42건, 원가확인분 환불후 기여 326669→782610 (meta/evidence/astra-1104-090509-audit.jsonl:25). 판매·관측 순기여는 예측 방향이나 매입량과 최초가를 함께 바꿔 각각의 효과는 분리하지 못한다."
+    },
+    {
+      "change": "2ad994e",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 46→27건, 원가확인분 환불후 기여 796019→534805 (meta/evidence/astra-1104-090509-audit.jsonl:26). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "061dca4",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 46→27건, 원가확인분 환불후 기여 796019→534805 (meta/evidence/astra-1104-090509-audit.jsonl:27). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "97b01c3",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 46→27건, 원가확인분 환불후 기여 796019→534805 (meta/evidence/astra-1104-090509-audit.jsonl:28). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "42f6fcc",
+      "grade": "worked",
+      "reason": "전후 각 최대30분 유료 25→34건, 원가확인분 환불후 기여 453219→1050230 (meta/evidence/astra-1104-090509-audit.jsonl:29). 배치 우선순위 수정 뒤 판매 증가, 반복 절단 로그 5,996→5,397. 공급창 변동도 설명 가능하다."
+    },
+    {
+      "change": "025165a",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 16→43건, 원가확인분 환불후 기여 621717→1053321 (meta/evidence/astra-1104-090509-audit.jsonl:30). 느린 세 번째 단위 축소는 원래 되돌림 규칙을 따랐다. 전체 판매 증가는 해당 SKU의 회전 효과를 뜻하지 않는다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "7d9a554",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 33→36건, 원가확인분 환불후 기여 939475→723699 (meta/evidence/astra-1104-090509-audit.jsonl:31). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "db8eee0",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 41→27건, 원가확인분 환불후 기여 1241168→330752 (meta/evidence/astra-1104-090509-audit.jsonl:32). plan 단계 우선순위 수정 후 짧은 구간 판매·기여가 줄어 단독 이익 개선을 입증하지 못한다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "b996e14",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 36→27건, 원가확인분 환불후 기여 723699→436632 (meta/evidence/astra-1104-090509-audit.jsonl:33). 목록 밖 고가 차단·느린 SKU 제외·목표·현금 버퍼를 함께 바꿨다. 짧은 구간 판매 감소는 수요/공급창과 혼재한다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "1b791f1",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 35→28건, 원가확인분 환불후 기여 612944→440551 (meta/evidence/astra-1104-090509-audit.jsonl:34). 보유+대기+신규 합계 상한을 명시한 주석이며 경제 동작은 같다."
+    },
+    {
+      "change": "4ed27fd",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 27→28건, 원가확인분 환불후 기여 436632→580316 (meta/evidence/astra-1104-090509-audit.jsonl:35). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "b3324d9",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 31→45건, 원가확인분 환불후 기여 531502→699467 (meta/evidence/astra-1104-090509-audit.jsonl:36). 50초 경계 수정 뒤 판매 증가가 보이나 공급 거절은 다른 창 마감·품절도 포함하므로 조기 전송 유실만의 감소는 미확정. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "605acc7",
+      "grade": "worked",
+      "reason": "전후 각 최대30분 유료 28→46건, 원가확인분 환불후 기여 580316→680235 (meta/evidence/astra-1104-090509-audit.jsonl:37). 호가 상한 뒤 G6의 보유2개가06:34/06:36 결제되어 막힌 재고 해소를 관측. 동시 공급창 변경의 영향도 있다."
+    },
+    {
+      "change": "773dedf",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 28→46건, 원가확인분 환불후 기여 580316→680235 (meta/evidence/astra-1104-090509-audit.jsonl:38). NaN·무한대 방어는 테스트로 검증하는 오류 예방이며 실거래에서 해당 입력 노출 증거는 없다."
+    },
+    {
+      "change": "8b24ef0",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 46→0건, 원가확인분 환불후 기여 680235→0 (meta/evidence/astra-1104-090509-audit.jsonl:39). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "d610718",
+      "grade": "worked",
+      "reason": "전후 각 최대30분 유료 21→34건, 원가확인분 환불후 기여 459597→740663 (meta/evidence/astra-1104-090509-audit.jsonl:40). 구매자 결제6→25건, 사전 유통기한·다음 견적 묶음·지출 상한 변경이 한 묶음이라 각 효과는 분리하지 못한다."
+    },
+    {
+      "change": "c8a63b1",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 19→38건, 원가확인분 환불후 기여 439776→780357 (meta/evidence/astra-1104-090509-audit.jsonl:41). 구매자 결제7→27건이지만 직전 수정과2분 차이여서100초 제한의 개별 이익은 미확정. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "58d091d",
+      "grade": "worked",
+      "reason": "전후 각 최대30분 유료 0→80건, 원가확인분 환불후 기여 0→1137847 (meta/evidence/astra-1104-090509-audit.jsonl:42). 실기억 오염 환경 제거 후 전체290테스트 통과. 판매 증가 자체는 서비스 복구·다른 수정과 혼재한다."
+    },
+    {
+      "change": "6f76497",
+      "grade": "worked",
+      "reason": "전후 각 최대30분 유료 0→81건, 원가확인분 환불후 기여 0→1140272 (meta/evidence/astra-1104-090509-audit.jsonl:43). SHOP_MEMORY·AGENT_MEMORY_DIR 격리를 유지하며290테스트 통과. 별도 경제 효과 주장은 하지 않는다."
+    },
+    {
+      "change": "0f8a56f",
+      "grade": "worked",
+      "reason": "전후 각 최대30분 유료 0→88건, 원가확인분 환불후 기여 0→1178411 (meta/evidence/astra-1104-090509-audit.jsonl:44). 숫자 제안 fallback 0→183회로 목표5회를 넘었다. 유료0→88건은 재시작/호출한도 회복도 포함하므로 전부 이 수정의 추가 판매가 아니다."
+    },
+    {
+      "change": "49e3ed6",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 37→73건, 원가확인분 환불후 기여 776504→780980 (meta/evidence/astra-1104-090509-audit.jsonl:45). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "2fb6eeb",
+      "grade": "worked",
+      "reason": "전후 각 최대30분 유료 63→62건, 원가확인분 환불후 기여 1002935→775598 (meta/evidence/astra-1104-090509-audit.jsonl:46). 첫 Astra가09:05 실행됐고 부족한 증거의 측정/판정선 검사 테스트 통과. 경제효과와 실행 복구를 구분한다."
+    },
+    {
+      "change": "aadde40",
+      "grade": "worked",
+      "reason": "전후 각 최대30분 유료 80→59건, 원가확인분 환불후 기여 1137847→736427 (meta/evidence/astra-1104-090509-audit.jsonl:47). 이번 curl 규칙 읽기 성공. 규칙 접근 복구는 관측됐지만 직접 이익 효과는 분리하지 않는다."
+    },
+    {
+      "change": "6b17b38",
+      "grade": "unclear",
+      "reason": "전후 각 최대30분 유료 35→29건, 원가확인분 환불후 기여 130812→472202 (meta/evidence/astra-1104-090509-audit.jsonl:48). 보충 보류 해제 뒤 G6가08:50에2개 유료 판매되어 목표 판매량은 도달; 한시간·6시간 보증이 지나지 않아 순이익 판정은 유보한다. 부족: 단독 효과/숙성 노출. 이번 전후 kit·시장 조회로 측정; 다음12시간 두 동기간 구간의 공급창당 판매와 숙성 순기여가 모두 증가하면 지지, 순기여 음수면 해당 되돌림 조건부터 적용."
+    },
+    {
+      "change": "87325d8",
+      "grade": "no_effect",
+      "reason": "전후 각 최대30분 유료 14→15건, 원가확인분 환불후 기여 286094→186108 (meta/evidence/astra-1104-090509-audit.jsonl:49). 배포·재시작·시장 수요와 겹친 구간이며 기록 전용/거부·복원 커밋은 별도 경제 처치가 아니다."
+    },
+    {
+      "change": "terra-1103-210425 평가·전략 점검",
+      "grade": "no_effect",
+      "reason": "거부되어 시장에 지속 적용되지 않았으며 검증 실패 이력을 보존한다. 근거 meta/grades.jsonl:1, 조회 meta/evidence/astra-1104-090509-audit.jsonl:61."
+    },
+    {
+      "change": "terra-1103-220510 평가·전략 점검",
+      "grade": "no_effect",
+      "reason": "거부되어 시장에 지속 적용되지 않았으며 검증 실패 이력을 보존한다. 근거 meta/grades.jsonl:2, 조회 meta/evidence/astra-1104-090509-audit.jsonl:62."
+    },
+    {
+      "change": "terra-1103-225335 평가·전략 점검",
+      "grade": "unclear",
+      "reason": "watch는 고가 경쟁점 관측에 부합하나 원가·전환율 측정이 빠졌다. 근거 meta/grades.jsonl:3, 조회 meta/evidence/astra-1104-090509-audit.jsonl:63. 부족: 실행/전략의 반사실. 이번 코호트 조회를 측정으로 남김; 다음 두 사이클에 숙성·미숙성·누락과 판정선을 모두 인용하면 절차 개선, 없으면 실패."
+    },
+    {
+      "change": "terra-1103-235434 평가·전략 점검",
+      "grade": "unclear",
+      "reason": "거래15건 증가로 정체 조건 미충족이므로 keep은 규칙에 맞는다. 근거 meta/grades.jsonl:4, 조회 meta/evidence/astra-1104-090509-audit.jsonl:64. 부족: 실행/전략의 반사실. 이번 코호트 조회를 측정으로 남김; 다음 두 사이클에 숙성·미숙성·누락과 판정선을 모두 인용하면 절차 개선, 없으면 실패."
+    },
+    {
+      "change": "terra-1104-005515 평가·전략 점검",
+      "grade": "unclear",
+      "reason": "품절58건을 SKU·guard 원인으로 나누지 않고 대기했다. 근거 meta/grades.jsonl:5, 조회 meta/evidence/astra-1104-090509-audit.jsonl:65. 부족: 실행/전략의 반사실. 이번 코호트 조회를 측정으로 남김; 다음 두 사이클에 숙성·미숙성·누락과 판정선을 모두 인용하면 절차 개선, 없으면 실패."
+    },
+    {
+      "change": "terra-1104-015602 평가·전략 점검",
+      "grade": "unclear",
+      "reason": "체결70건 증가를 기록했으나 반복 품절·재고 회전 측정을 남기지 않았다. 근거 meta/grades.jsonl:6, 조회 meta/evidence/astra-1104-090509-audit.jsonl:66. 부족: 실행/전략의 반사실. 이번 코호트 조회를 측정으로 남김; 다음 두 사이클에 숙성·미숙성·누락과 판정선을 모두 인용하면 절차 개선, 없으면 실패."
+    },
+    {
+      "change": "terra-1104-025643 평가·전략 점검",
+      "grade": "unclear",
+      "reason": "확대와 파손 선후는 git 시각·판매seq로 이번에도 조회할 수 있었다. 증거 부족을 해소하지 않은 판단이었다. 근거 meta/grades.jsonl:7, 조회 meta/evidence/astra-1104-090509-audit.jsonl:67. 부족: 실행/전략의 반사실. 이번 코호트 조회를 측정으로 남김; 다음 두 사이클에 숙성·미숙성·누락과 판정선을 모두 인용하면 절차 개선, 없으면 실패."
+    },
+    {
+      "change": "terra-1104-035718 평가·전략 점검",
+      "grade": "no_effect",
+      "reason": "축소는 테스트 환경 오류로 거부됨. 현재 1시간 경과47판매·5환불은15% 미만이며 당시 두파손만으로 현규칙을 소급 적용하지 않는다. 근거 meta/grades.jsonl:8, 조회 meta/evidence/astra-1104-090509-audit.jsonl:68."
+    },
+    {
+      "change": "terra-1104-045914 평가·전략 점검",
+      "grade": "unclear",
+      "reason": "2시간 since_last_cycle을 구분한 점은 맞지만 최신 사람 전략을 반영한 SKU별 검증이 부족했다. 근거 meta/grades.jsonl:9, 조회 meta/evidence/astra-1104-090509-audit.jsonl:69. 부족: 실행/전략의 반사실. 이번 코호트 조회를 측정으로 남김; 다음 두 사이클에 숙성·미숙성·누락과 판정선을 모두 인용하면 절차 개선, 없으면 실패."
+    },
+    {
+      "change": "terra-1104-055948 평가·전략 점검",
+      "grade": "unclear",
+      "reason": "HEAD의5개 실패를 확인했으나 실기억 환경원인을 해결하지 못해 행동을 미뤘다. 근거 meta/grades.jsonl:10, 조회 meta/evidence/astra-1104-090509-audit.jsonl:70. 부족: 실행/전략의 반사실. 이번 코호트 조회를 측정으로 남김; 다음 두 사이클에 숙성·미숙성·누락과 판정선을 모두 인용하면 절차 개선, 없으면 실패."
+    },
+    {
+      "change": "terra-1104-070114 평가·전략 점검",
+      "grade": "unclear",
+      "reason": "시스템 python의 httpx 누락을 경제적 변경 보류 근거로 삼았다. 지정venv로290개 통과를 이번에 확인했다. 근거 meta/grades.jsonl:11, 조회 meta/evidence/astra-1104-090509-audit.jsonl:71. 부족: 실행/전략의 반사실. 이번 코호트 조회를 측정으로 남김; 다음 두 사이클에 숙성·미숙성·누락과 판정선을 모두 인용하면 절차 개선, 없으면 실패."
+    },
+    {
+      "change": "terra-1104-072946 평가·전략 점검",
+      "grade": "worked",
+      "reason": "버그 진단·keep과 fallback 유지가 타당: 전후30분0→183회. 추가 유료 판매의 인과성은 미확정. 근거 meta/grades.jsonl:12, 조회 meta/evidence/astra-1104-090509-audit.jsonl:72."
+    },
+    {
+      "change": "terra-1104-084118 평가·전략 점검",
+      "grade": "unclear",
+      "reason": "G6 보유2개 판매 후 보류해제는 조건에 맞음. 재개후2판매이나6시간 미숙성. fallback635회를162판매 전체의 원인으로 주장하지 않은 점은 타당. 근거 meta/grades.jsonl:13, 조회 meta/evidence/astra-1104-090509-audit.jsonl:73. 부족: 실행/전략의 반사실. 이번 코호트 조회를 측정으로 남김; 다음 두 사이클에 숙성·미숙성·누락과 판정선을 모두 인용하면 절차 개선, 없으면 실패."
+    },
+    {
+      "change": "tool_forge auto_catalog_ledger_search",
+      "grade": "harmful",
+      "reason": "정상 SKU도 빈 검색, 미결제 result를 deals로 반환하는 의미 오류를 sandbox에서 재현했다. 실거래 호출0으로 손익 피해는 관측되지 않았다. logs/astra-1104-090509-tool-audit.jsonl:1-2. 삭제했다."
+    },
+    {
+      "change": "tool_forge auto_market_lookup",
+      "grade": "unclear",
+      "reason": "100호출·실패0 뒤03:59 복원에서 삭제. 빈 검색을 반복한 kit41015행이 있지만 순이익 효과는 분리 불가. 이번 도구·호출 집계로 측정했고 대체 검색도구는 다음12시간 실제 일치SKU 반환과 결정 인용≥1건을 충족해야 유용성을 인정한다."
+    }
+  ],
+  "keep_or_drop": [
+    {
+      "item": "dad4e8b의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "e3d7228의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "60d6b23의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "9ec5da6의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "1eed138의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "376522e의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "032599f의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 단독 유해 효과가 확인되지 않았으므로 원래 되돌림 조건을 적용한다."
+    },
+    {
+      "item": "ce5045e의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 단독 유해 효과가 확인되지 않았으므로 원래 되돌림 조건을 적용한다."
+    },
+    {
+      "item": "729ad81의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 단독 유해 효과가 확인되지 않았으므로 원래 되돌림 조건을 적용한다."
+    },
+    {
+      "item": "f9d5cef의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 단독 유해 효과가 확인되지 않았으므로 원래 되돌림 조건을 적용한다."
+    },
+    {
+      "item": "311c235의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 단독 유해 효과가 확인되지 않았으므로 원래 되돌림 조건을 적용한다."
+    },
+    {
+      "item": "91131b2의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 단독 유해 효과가 확인되지 않았으므로 원래 되돌림 조건을 적용한다."
+    },
+    {
+      "item": "b0d1bb9의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 단독 유해 효과가 확인되지 않았으므로 원래 되돌림 조건을 적용한다."
+    },
+    {
+      "item": "79cced5의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "732584e의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "7560b38의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 폭 확대·영수증 품목명 수정은 함께 배포돼 기여 분리가 안 된다."
+    },
+    {
+      "item": "a2fe5de의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. guard 후 줄 자르기·공백 제거는 동시 변경이고 실제 절단 사유 로그는 아직 없었다."
+    },
+    {
+      "item": "e7204c8의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 공식 보충 경로 이후 유료량 증가를 관측했다. 시장 증가와 앞선 폭 확대도 기여할 수 있다."
+    },
+    {
+      "item": "1029ad1의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "720dd7a의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "f3942f1의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 전후 guard 절단 로그 0→6,062행은 관측 기능 추가의 효과이며 고유 주문 손실 6,062건을 뜻하지 않는다. 판매량 개선은 미확정."
+    },
+    {
+      "item": "5a8d075의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "ac3068c의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "a7ca54a의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 판매·관측 순기여는 예측 방향이나 매입량과 최초가를 함께 바꿔 각각의 효과는 분리하지 못한다."
+    },
+    {
+      "item": "2ad994e의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "061dca4의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "97b01c3의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "42f6fcc의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 배치 우선순위 수정 뒤 판매 증가, 반복 절단 로그 5,996→5,397. 공급창 변동도 설명 가능하다."
+    },
+    {
+      "item": "025165a의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 느린 세 번째 단위 축소는 원래 되돌림 규칙을 따랐다. 전체 판매 증가는 해당 SKU의 회전 효과를 뜻하지 않는다."
+    },
+    {
+      "item": "7d9a554의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "db8eee0의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. plan 단계 우선순위 수정 후 짧은 구간 판매·기여가 줄어 단독 이익 개선을 입증하지 못한다."
+    },
+    {
+      "item": "b996e14의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 목록 밖 고가 차단·느린 SKU 제외·목표·현금 버퍼를 함께 바꿨다. 짧은 구간 판매 감소는 수요/공급창과 혼재한다."
+    },
+    {
+      "item": "1b791f1의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "4ed27fd의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "b3324d9의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 50초 경계 수정 뒤 판매 증가가 보이나 공급 거절은 다른 창 마감·품절도 포함하므로 조기 전송 유실만의 감소는 미확정."
+    },
+    {
+      "item": "605acc7의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 호가 상한 뒤 G6의 보유2개가06:34/06:36 결제되어 막힌 재고 해소를 관측. 동시 공급창 변경의 영향도 있다."
+    },
+    {
+      "item": "773dedf의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "8b24ef0의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "d610718의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 구매자 결제6→25건, 사전 유통기한·다음 견적 묶음·지출 상한 변경이 한 묶음이라 각 효과는 분리하지 못한다."
+    },
+    {
+      "item": "c8a63b1의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 구매자 결제7→27건이지만 직전 수정과2분 차이여서100초 제한의 개별 이익은 미확정."
+    },
+    {
+      "item": "58d091d의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 실기억 오염 환경 제거 후 전체290테스트 통과. 판매 증가 자체는 서비스 복구·다른 수정과 혼재한다."
+    },
+    {
+      "item": "6f76497의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. SHOP_MEMORY·AGENT_MEMORY_DIR 격리를 유지하며290테스트 통과. 별도 경제 효과 주장은 하지 않는다."
+    },
+    {
+      "item": "0f8a56f의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 숫자 제안 fallback 0→183회로 목표5회를 넘었다. 유료0→88건은 재시작/호출한도 회복도 포함하므로 전부 이 수정의 추가 판매가 아니다."
+    },
+    {
+      "item": "49e3ed6의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "2fb6eeb의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 첫 Astra가09:05 실행됐고 부족한 증거의 측정/판정선 검사 테스트 통과. 경제효과와 실행 복구를 구분한다."
+    },
+    {
+      "item": "aadde40의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 이번 curl 규칙 읽기 성공. 규칙 접근 복구는 관측됐지만 직접 이익 효과는 분리하지 않는다."
+    },
+    {
+      "item": "6b17b38의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "현재 후속 설정을 유지한다. 보충 보류 해제 뒤 G6가08:50에2개 유료 판매되어 목표 판매량은 도달; 한시간·6시간 보증이 지나지 않아 순이익 판정은 유보한다."
+    },
+    {
+      "item": "87325d8의 현재 남은 코드·프롬프트·설정·기록",
+      "decision": "keep",
+      "reason": "실패/되돌림/기록 이력은 보존하고 거부된 설정은 재적용하지 않는다."
+    },
+    {
+      "item": "tools/auto_catalog_ledger_search",
+      "decision": "drop",
+      "reason": "기록 호출 0회·실패 0회. 실제 SKU 검색이 빈 값, 무필터 검색은 result행까지 반환. 이번 사이클 도구와 manifest selftest를 삭제했고 별도 테스트 파일은 없었다."
+    },
+    {
+      "item": "tools/break_rates",
+      "decision": "keep",
+      "reason": "기록 호출 10회·실패 0회. 현재 읽기 전용 기능과 sandbox를 유지한다; 오류0만으로 이익 증가를 주장하지 않는다."
+    },
+    {
+      "item": "tools/catalog_search",
+      "decision": "keep",
+      "reason": "기록 호출 273회·실패 0회. 현재 읽기 전용 기능과 sandbox를 유지한다; 오류0만으로 이익 증가를 주장하지 않는다."
+    },
+    {
+      "item": "tools/cohort_profit",
+      "decision": "keep",
+      "reason": "기록 호출 0회·실패 0회. 등록을 유지한다. 호출0이면 효과 미검증이며 다음12시간 호출/오류/결정 인용으로 평가한다."
+    },
+    {
+      "item": "tools/forum_read",
+      "decision": "keep",
+      "reason": "기록 호출 46회·실패 0회. 현재 읽기 전용 기능과 sandbox를 유지한다; 오류0만으로 이익 증가를 주장하지 않는다."
+    },
+    {
+      "item": "tools/ledger_search",
+      "decision": "keep",
+      "reason": "기록 호출 828회·실패 0회. 현재 읽기 전용 기능과 sandbox를 유지한다; 오류0만으로 이익 증가를 주장하지 않는다."
+    },
+    {
+      "item": "tools/market_demand",
+      "decision": "keep",
+      "reason": "기록 호출 52회·실패 0회. 현재 읽기 전용 기능과 sandbox를 유지한다; 오류0만으로 이익 증가를 주장하지 않는다."
+    },
+    {
+      "item": "tools/my_customers",
+      "decision": "keep",
+      "reason": "기록 호출 0회·실패 0회. 등록을 유지한다. 호출0이면 효과 미검증이며 다음12시간 호출/오류/결정 인용으로 평가한다."
+    },
+    {
+      "item": "tools/my_decisions",
+      "decision": "keep",
+      "reason": "기록 호출 6회·실패 0회. 현재 읽기 전용 기능과 sandbox를 유지한다; 오류0만으로 이익 증가를 주장하지 않는다."
+    },
+    {
+      "item": "tools/my_memory",
+      "decision": "keep",
+      "reason": "기록 호출 0회·실패 0회. 등록을 유지한다. 호출0이면 효과 미검증이며 다음12시간 호출/오류/결정 인용으로 평가한다."
+    },
+    {
+      "item": "tools/my_purchases",
+      "decision": "keep",
+      "reason": "기록 호출 193회·실패 0회. 현재 읽기 전용 기능과 sandbox를 유지한다; 오류0만으로 이익 증가를 주장하지 않는다."
+    },
+    {
+      "item": "tools/my_state",
+      "decision": "keep",
+      "reason": "기록 호출 35회·실패 0회. 현재 읽기 전용 기능과 sandbox를 유지한다; 오류0만으로 이익 증가를 주장하지 않는다."
+    },
+    {
+      "item": "tools/auto_market_lookup",
+      "decision": "keep",
+      "reason": "기록 호출 100회·실패 0회. 03:59 실패 커밋 복원에서 이미 삭제된 상태를 유지한다;100회 오류0은 유용성 증거가 아니다."
+    },
+    {
+      "item": "현행 전략·숫자 fallback·G6 목표2·가격상한·G1515 목표4·총재고400만·현금450만·고가목록·느린SKU 제외·50초 공급창",
+      "decision": "keep",
+      "reason": "원래 되돌림 조건을 충족한 G6 보류해제를 유지한다. 이번 G75 목표만1→2. G1515의 숙성 위험은15:05 재판정하며 보증과 파산 guard를 유지한다."
+    },
+    {
+      "item": "cohort_profit 및 scorecard 숙성 손익",
+      "decision": "keep",
+      "reason": "유료 결제만 연결하고 누락은null로 보고한다. 3개 새 테스트 및 전체290개 통과; 두 Terra 사이클의 사용성과 오류0을 판정선으로 둔다."
+    }
+  ]
+}

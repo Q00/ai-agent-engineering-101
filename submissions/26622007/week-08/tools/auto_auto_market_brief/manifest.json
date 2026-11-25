@@ -1,0 +1,32 @@
+{
+ "name": "auto_auto_market_brief",
+ "purpose": "Read-only catalog SKU/category join to deduplicated paid settlements; shop filters seller only. Use my_purchases separately for personal history.",
+ "args": {
+  "type": "object",
+  "properties": {
+   "category": {
+    "type": "string"
+   },
+   "query": {
+    "type": "string"
+   },
+   "limit": {
+    "type": "integer",
+    "minimum": 1,
+    "maximum": 100
+   },
+   "shop": {
+    "type": "string"
+   }
+  }
+ },
+ "selftest": {
+  "args": {
+   "category": "food",
+   "query": "",
+   "limit": 5,
+   "shop": ""
+  }
+ },
+ "evidence": "Repaired generated tool: category and query intersect on catalog SKUs and ledger results include only deduplicated paid settlements."
+}

@@ -1,0 +1,33 @@
+{
+  "name": "auto_market_research_pack",
+  "purpose": "Join catalog SKU keys to unique paid settlements and inventory units; query/category filters intersect. Separate untrusted forum posts. Demand concentration describes only the returned, limit-truncated paid sample, never independent demand or rival margins. Missing forum is explicit.",
+  "args": {
+    "type": "object",
+    "properties": {
+      "category": {
+        "type": "string"
+      },
+      "query": {
+        "type": "string"
+      },
+      "include_purchases": {
+        "type": "boolean"
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100
+      }
+    },
+    "additionalProperties": false
+  },
+  "selftest": {
+    "args": {
+      "query": "bread",
+      "category": "food",
+      "limit": 5,
+      "include_purchases": true
+    }
+  },
+  "evidence": "made by tool_forge.py: A single call can bundle the most frequently repeated catalog/deal research with related forum context and matching stock, reducing the back-and-forth among research, forum, ledger, and state tools. It exposes source records rather than treating agent-written text as instructions; personal purchase "
+}

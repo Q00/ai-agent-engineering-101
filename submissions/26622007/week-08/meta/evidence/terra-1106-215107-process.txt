@@ -1,0 +1,17 @@
+23029 64287 Fri Nov  6 05:22:41 2026     python meta_harness.py run
+79df539 2026-11-06 09:17:22 +0900 feat(week-08): [terra-1106-091334] meta_harness.py에 점수표 갱신을 추가하고, 이전 surplus 산식이 메모리에 남은 상황을 재현하는 회귀 테스트를 추가했다. 전체 453개 테스트가 통과했다. 이미 실행 중인 하네스에는 이 코드가 적용되지 않으므로 다음 프로세스 시작이 필요하다.
+   680	def refresh_scorecard():
+   681	    """Pick up scorecard changes made while the long-running loop was alive."""
+   682	    importlib.invalidate_caches()
+   683	    return importlib.reload(scorecard)
+   684	
+   685	
+   686	def cycle(kind):
+   687	    cid = f"{kind}-{time.strftime('%m%d-%H%M%S')}"
+   688	    os.makedirs(os.path.join(ROOT, "meta", "evidence"), exist_ok=True)
+   689	    pack = os.path.join(ROOT, "meta", "evidence", f"{cid}.json")
+   690	    # The loop can survive code updates for many hours. Load the current score
+   691	    # formula before each pack rather than retaining the version from startup.
+   692	    card = refresh_scorecard().build(ROOT, record=True)
+   693	    card["since_last_cycle"] = since_last(card, kind)
+   694	    card["experiments"] = view = experiments()

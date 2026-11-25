@@ -1,0 +1,415 @@
+{
+  "buyer_choose": {"engine": "rule"},
+  "tiers": [
+    {
+      "min_reviews": 0,
+      "min_stars": 0,
+      "markup": 0.1
+    },
+    {
+      "min_reviews": 40,
+      "min_stars": 4.0,
+      "markup": 0.13
+    },
+    {
+      "min_reviews": 60,
+      "min_stars": 4.0,
+      "markup": 0.16
+    },
+    {
+      "min_reviews": 80,
+      "min_stars": 4.2,
+      "markup": 0.2
+    }
+  ],
+  "share": {
+    "target": 0.1,
+    "cut_near": 0.03,
+    "cut_far": 0.05
+  },
+  "objective": "profit",
+  "negotiate": {
+    "engine": "jevrule",
+    "formula": "share",
+    "counter_share": [0.75, 0.6, 0.5, 0.3],
+    "counter_share_source": "메인 11/07 03:22: 역제안 1,755건 재생(replay_formula.py) 1단계 기대 마진 share 지금 [0.62,0.53,0.46,0.25] 10,177 · Pro fitted_counter(negotiate_pro) 10,396 · [0.75,0.6,0.5,0.3] 11,285, 이탈 0.109로 같음. 운영 반영 뒤 30~60분 이탈·결제·마진이 나빠지면 counter_share를 지워 되돌림"
+  },
+  "concession_food": [0.7, 0.4, 0.15],
+  "concession_food_source": "메인 11/07 01:25(가게 협상 점검 2번): 1라운드에 마진 70%까지 받아 줌(Gb2392fa9 18,788에 15,000 즉시 수락; 첫 제안 즉시 수락 121건, 결제 78건 양보 2.07M/6h). 식품부터 [0.7,0.4,0.15]로 시험, 결제율·결렬률을 반영 전후로 비교; 효과 없으면 이 키를 지움",
+  "concession": [
+    0.3,
+    0.2,
+    0.1
+  ],
+  "low_conversion": 0.6,
+  "step_down": 0.05,
+  "min_markup": 0.03,
+  "arms": [
+    0.0,
+    0.03,
+    0.06,
+    0.1,
+    0.15,
+    0.2
+  ],
+  "gamma": 0.97,
+  "lambda": 0.0,
+  "lambda_low_share": 0.0,
+  "launch_reviews": 40,
+  "list_arms": [
+    0.7,
+    0.8,
+    0.9,
+    1.0
+  ],
+  "warranty_hours": 0,
+  "warranty": {
+    "on_request_hours": 4,
+    "max_hours": 72,
+    "prior_break": 0.15,
+    "max_break": 0.5
+  },
+  "restock": {
+    "keep_cash": 4500000,
+    "target_per_category": 1,
+    "min_shelf_hours": 720,
+    "goods_max_price": 45000,
+    "max_lines": 10,
+    "cover_hours": 6,
+    "max_units_per_sku": 20,
+    "max_sku_share": 0.2,
+    "explore_lines": 0,
+    "min_expected": 1.0,
+    "half_life_hours": 24,
+    "shrink": 1.0,
+    "min_settles": 200,
+    "captive_min_deals": 20,
+    "captive_share": 0.6,
+    "max_pages": 40,
+    "round_ends_at": 1794927540,
+    "no_explore_hours": 48,
+    "end_cover": 0.5,
+    "agent_every_minutes": 20,
+    "agent_max_lines": 30,
+    "max_stock_cost": 1000000000,
+    "food_explore_qty": 1,
+    "food_max_qty": 20,
+    "max_break": 0.15,
+    "food_max_price": 30000,
+    "band_low": 0.8,
+    "band_high": 1.2,
+    "prior_break": 0.15,
+    "high_price_goods": 100000,
+    "high_price_max_units": 20,
+    "high_price_proven_max_units": 20,
+    "high_price_proven_skus": [
+      "G1515d951",
+      "G6b9db161"
+    ],
+    "priority_skus": [
+      "Gef4d3036",
+      "Gb2392fa9",
+      "G200e39a3",
+      "G8ec51935",
+      "G24f5f979",
+      "Gbec2b68f",
+      "Gf6b70da8",
+      "Gb5d0dde7",
+      "G2698c6f8",
+      "G8095ddd6",
+      "G021aae64",
+      "G03d0199f",
+      "G05277ffe",
+      "G00327e80",
+      "G3e0d6c67",
+      "Gc1297f36",
+      "G429bd69e",
+      "G754bf0ca",
+      "G47788edd",
+      "G4a12722c",
+      "G445ada94",
+      "G2607d1f6",
+      "G9c9f8f94",
+      "G7a341425",
+      "G9718023b",
+      "G75f11c19",
+      "Ge5fe0d41",
+      "G19a70f63",
+      "G0667d440",
+      "G85a1a856",
+      "G9f7c7d1b",
+      "Gd289350f",
+      "G6b0fd5bc",
+      "G2c023a8c",
+      "G7978c65e",
+      "G9357d6c2",
+      "G66ded25b",
+      "G1465c678",
+      "G0e4deffc",
+      "G147ae4e7"
+    ],
+    "sku_target_units": {
+      "G1515d951": 12,
+      "G6b9db161": 2,
+      "G75f11c19": 8,
+      "G8ec51935": 12,
+      "G24f5f979": 8,
+      "Gbec2b68f": 4,
+      "Gf6b70da8": 5,
+      "Gb5d0dde7": 6,
+      "G2698c6f8": 3,
+      "G8095ddd6": 8,
+      "G021aae64": 11,
+      "G03d0199f": 6,
+      "G05277ffe": 7,
+      "G00327e80": 3,
+      "G3e0d6c67": 2,
+      "G8adbc159": 3,
+      "Gc1297f36": 4,
+      "G429bd69e": 4,
+      "G754bf0ca": 8,
+      "G47788edd": 2,
+      "G1465c678": 1,
+      "G4a12722c": 3,
+      "G6cd0e9d4": 2,
+      "G7a341425": 2,
+      "G445ada94": 3,
+      "G9c9f8f94": 4,
+      "G2607d1f6": 3,
+      "G9718023b": 2,
+      "Ge5fe0d41": 2,
+      "G19a70f63": 2,
+      "G0667d440": 6,
+      "G85a1a856": 4,
+      "G9f7c7d1b": 2,
+      "Gd289350f": 2,
+      "G6b0fd5bc": 3,
+      "G2c023a8c": 3,
+      "G7978c65e": 2,
+      "G9357d6c2": 3,
+      "G0e4deffc": 1,
+      "G147ae4e7": 3
+    },
+    "high_price_listed_only": true,
+    "food_max_stock_cost": 3000000,
+    "scale_source": "review/W-20261105-0953-AX패치3.3/scale-analysis.md (11/05 11:1x ledger): G05277ffe and Gb5d0dde7 are 60만+ goods 12-14 shops sell 39-49/h with 3.4-4.0% mature break (ledger guard rate 4.8-6.7%) and a 0.35-0.42 h median hold; one unit each, after the proven SKUs and food. G8ec51935 (worst cost 1.74M) waits for a larger cap: under 4M one held sofa cut G1515d951 refills 4 -> 2 (independent review replay). Food cap 45만->65만: food sells in 0.1 h, 0 spoiled, and its cap cut 416 of the last 2,000 guard lines; it is filled before the 60만+ lines. With the 15M cap (hard_limits): G05277ffe, Gb5d0dde7 and G8ec51935 at 2 units each, G03d0199f (13 shops, 33/h, 7.8% break, 0.87 h) and G00327e80 (13 shops, 21/h, 2.8%, 1.10 h) at 1, about 11.3M at worst cost with the proven SKUs and food, the rest for the formula. Scale 2 (a person's 15M hard_limits cap, 11/05 11:48): 60만+ goods to 3 units each (G03d0199f, G00327e80 2), high_price_max_units 2->3 and cover_hours 3->6 so the demand model asks for them (our share 0.35-0.76/h each, 11:50 model); at worst cost the targets come to ~19M, so the 15M cap binds and held cost (0.6 x list) sits near 12-15M (replay review/W-20261105-0953-AX패치3.3/scale2-result.md) Scale 3 (12:24-13:05 ledger and kit log, 15M cap): G8ec51935 sold 2 in 40 min (1,821,164 and 2,182,448 on 1.66M cost) and was refilled each window -> 4; Gb5d0dde7 held 3 units bought 12:27 unsold across the 12:41 and 13:01 windows (strategy rule: same extra units across two windows) -> 2. The 150M hard_limits bound is for the meta-harness to grow into (meta/terra.md three tests). Scale 4 (11/06 15:10, a person's call inside the 150M bound): 15M -> 30M. book and revenue percentiles sat at 0.755-0.759 / 0.722-0.741 for 25 h while the stock-cost guard still cut lines each window (966 of the last 3,000 guard cuts, 15:05 window included) with 10.8M held, 99.6M cash and the top ten holding 72M-525M (review/W-20261106-1457-AX순위정체/analysis.md). Scale 5 (11/06 15:30): in the 14:44 and 15:03 supply windows every cut on a priority / proven line was 'units per SKU' (41 and 56 lines), none 'stock cost' (those were on unlisted formula lines), so the cap was never what held the 60만+ lines; each listed SKU sold what it bought in 24 h with no break (G03d0199f 10 sales, net 315,578 each; G00327e80 10, 532,264; G6b9db161 19, 85,632; G75f11c19 49, 28,629) and sat at its target, so the cuts to 1 (Terra 11/05 18:36, 11/06 03:17; Astra 11/05 09:49) go back to 2 (review/W-20261106-1525-AX상한바이어/sku_sales.md). Scale 6 (11/06 17:2x, W-20261106-1650-AX1등작전, review/W-20261106-1650-AX1등작전/analysis.md): revenue, not demand, is held by our supply. Over the last 24 h our 30만+ goods units sold 170 of 173 (98%, median hold 0.99 h, net margin 0.213 of list) while the revenue top five bought 549-2,610 such units each (moss-and-oak 1,826: 98% sold, hold 0.51 h); 30만+ goods are 91% of the market's 770M/h. The 17 SKUs listed first are the 60만+ goods with the most expected net flow over the last 24 h (n/h x ((1 - break) x sale - cost) from ledger supply and settle rows, break 6-10%, net 4.4만-30만 a unit), so the listed-only rule stays and its list grows; max_stock_cost 30M -> 120M (bound 150M) (keep_cash stays 4.5M: 10M would leave a shop reset to 5M by a bankruptcy buying nothing, test_caution), high_price_max_units 4 -> 10. Scale 7 (11/06 19:1x, W-20261106-1900-AX자본투입): the cap never bound (no 'stock cost' cut on a listed line since 16:00; stock 53.1M, cash 64.3M); the demand model's rate x my_share x cover asked 1-5 units of goods the market sells 25-56/h, because our share was low where our first asks (1.05 x the whole-round median, 0.77-0.82 of list) lost to the last 2 h's 0.65-0.73 (10 of 52 30만+ quotes won 18:22-19:02). fill_listed asks each listed SKU up to its target; targets = max(old, ceil(market sold/h over 6 h x 0.10 x 2 h)) (2-12); 7 SKUs added (break 0-11%, 6-13 shops); unit caps 10 -> 20 (bounds 20/100). Expected cost of all targets ~105M (worst 133M) under the 120M cap. max_stock_cost 120M -> 150M (the hard_limits top): with book 115M the cash binds first; at a 0.25/h revenue turnover and 6.7% margin the book passes 160M in about 22 h, and the cap should not be what stops it then. Scale 8 (11/06 21:0x, a person 19:03: hard_limits open but no bankruptcy): max_stock_cost 150M -> 1B; what limits a buy now is hard_limits.cash_buffer (500k + 13% worst refunds still owed on 6 h of our warranted goods sales + a day of storage + the worst day's 2.5M book loss). Scale 9 (11/07 00:3x, W-20261106-2225-AX극단상향, main 23:25 '판매 대금이 바로 재고로 굴러가게'): after the cash buffer fell to 7.7M, 8-13% of book sat as cash over it (22:40-00:10) while the 00:01 window cut lines on units per SKU, the 650k food cap (125 of the last 300 guard cuts) and the listed-only rule, not on cash. Dear goods are not short of stock (since 17:18 at most 1 'not in stock' per dear SKU) but of quote requests, so the cash goes to breadth: 10 30만+ SKUs the market settled most by value over 6 h that we did not list (6-14 shops, break 3.4-10.6%, expected net 0.07-0.16 of list over the grade mix), 2-6 units each (~17M expected, ~23M worst); food (257 sold in 6 h, 0 expired, 25% gross, 76 'not in stock' on Gb2392fa9/Gef4d3036/G200e39a3) cap 650k -> 3M and 4 -> 10 units a line; G75f11c19 (23 sold / 6 h, held 0) 3 -> 8, G9c9f8f94 2 -> 4, G754bf0ca 5 -> 8, G8095ddd6 6 -> 8 (sold 2-4x their target in 6 h). The 10 go before the food lines (independent review: last in the list, 8 lines a run, they would seldom be reached). Scale 10 (11/07 05:4x, W-20261106-2225-AX극단상향, main 05:5x: cash 29M over the 21.7M buffer): the 30만+ goods the market settled most by value over 6 h and 24 h that we did not list, kept where median warranted paid x (1 - break) beat our cost (review/W-20261106-2225-AX극단상향/new_skus.py, independent review): G147ae4e7 (869k, 1.8 sold/h, 15 shops, 14 buyers, 0.76-0.78 of list without its top shop or buyer, net +0.02-0.05) 3 units; G0e4deffc (2.11M) 1 unit only: its 0.90 median is one buyer at one shop (19 of 63 in 24 h) and one shop's unwarranted sales, the rest ~0.75 (net ~0 at 8.1% measured break); G6398e431 (3 shops, 7 buyers, net -0.01 to +0.01 a 2.98M unit) left out. Every other top unlisted 30만+ SKU nets under 0 at our A cost 0.719, so the rest of the cash stays as cash. Last in the list: urgent_listed buys empty food first, then empty listed SKUs, then refills (243a8f7).",
+    "skip_skus": [
+      "G07ec17d5",
+      "G054ff120",
+      "Gf0293c0e",
+      "G9c1a6eee",
+      "Gbb0cbbff",
+      "G9c02e68e",
+      "G0f415407"
+    ],
+    "supply_order_source": "GPT Pro 11/05 우선순위 4, re-planned for the 15M cap (review/W-20261105-0953-AX패치3.3/scale2-result.md §8): in the 12:24 window the 60만+ lines came after five food lines, run 2 reached them at 12:27:07-12:27:20 and G03d0199f x2 was refused when the 180 s window closed (12:28:28 429). 60만+ goods now go right after the proven SKUs, by net per sale and hold (sofa 30.9만/0.26 h, mattress 12.1만/0.35 h, bed set 17.0만/0.87 h, goose 9.7만/0.42 h, leather sofa 26.3만/1.10 h); food refills fill the rest of run 1 and run 2 (food 0.1 h hold, lines cost under 11만); Terra's one-unit trial stays last",
+    "fill_listed": true,
+    "price_hours": 3
+  },
+  "markdown": {
+    "clear_hours": 24,
+    "min_floor_share": 0.1,
+    "stale_days": 3,
+    "stale_per_day": 0.1,
+    "end_hours": 48,
+    "below_cost": [
+      "food_expiry"
+    ]
+  },
+  "forum": {
+    "every_minutes": 10,
+    "max_votes": 5,
+    "max_chars": 600
+  },
+  "buyer": {
+    "max_price_share": 1.0,
+    "quote_shops": 10,
+    "oneshot": true
+  },
+  "memory": {
+    "long_term_chars": 4000,
+    "daily_keep_days": 3,
+    "select_chars": 2500,
+    "consolidate_hours": 6
+  },
+  "tools": {
+    "forge_every_hours": 6,
+    "disable_fail_share": 0.6,
+    "disable_min_calls": 5
+  },
+  "opening": {
+    "phases": [],
+    "source": "review/W-20261103-2025/gpt-pro-answer1.md §5.2",
+    "phase_gap_minutes": 15,
+    "judge_settles": 50,
+    "explore_budget_worst": 350000,
+    "explore_hours": 24,
+    "food_max_price": 30000,
+    "goods_max_price": 45000,
+    "band_low": 0.8,
+    "band_high": 1.2,
+    "min_shelf_hours": 720,
+    "retired_phases": {
+      "phases": [
+        [
+          "Gdf79cd07",
+          "G2108d9bc",
+          "G5f64d42a",
+          "G80435d53",
+          "G1831f2c0",
+          "Gea0b0c3f",
+          "G0be9ed07",
+          "G81ade83e",
+          "G6fb5422c",
+          "Gf7cda6c2"
+        ],
+        [
+          "G476cc094",
+          "G7ced7d9f",
+          "G28455a86",
+          "Gfbb10ae2",
+          "G0dfa250d",
+          "G35351812",
+          "Ge768ae9e",
+          "G618bd792",
+          "Gd315bfa2",
+          "G7f54d965"
+        ],
+        [
+          "G08eb3ca2",
+          "G8074a394",
+          "G247b3b0a",
+          "G20f14c21"
+        ]
+      ],
+      "why": "GPT Pro profit review 2026-11-03 22:10 (review/W-20261103-2120/gpt-pro-answer1.md 5): opening ended; all three phases were sent by 21:43, .market/opening_state.json keeps the record"
+    }
+  },
+  "price": {
+    "source": "review/W-20261103-2120/gpt-pro-answer1.md 2-b",
+    "min_profit": 1,
+    "min_profit_share": 0.0,
+    "storage_share": 0.0025,
+    "goods_break": 0.035,
+    "grade_break": {
+      "A": 0.03,
+      "B": 0.122,
+      "C": 0.344
+    },
+    "stress_break": 0.25,
+    "median_up": 1.0,
+    "paid_over_median": false,
+    "kind_ratio": {
+      "food": 0.708,
+      "goods": 0.755
+    },
+    "scarce_asks": {
+      "G1515d951": 380911
+    },
+    "scarce_source": "review/ax-overnight-20261103/0300/gpt-pro-answer.md B-2: both units of these SKUs sold within minutes of the 02:40 and 03:01 windows; each ask is 1.05 x the first ask the seller logged at 03:2x (G1515d951 1.05 x 362,772, G6b9db161 1.05 x 374,272, G0f415407 1.05 x 250,472, G9c02e68e 1.05 x 114,781), fixed so our own sales do not raise it further",
+    "ask_caps": {
+      "G6b9db161": {
+        "A": 350000,
+        "C": 279000
+      },
+      "G0f415407": {
+        "A": 225000,
+        "B": 215000
+      },
+      "Gbb0cbbff": {
+        "A": 80000
+      },
+      "Gf0293c0e": {
+        "A": 150000
+      },
+      "G9c02e68e": {
+        "A": 105000,
+        "C": 85000
+      },
+      "G9c1a6eee": {
+        "C": 150000
+      },
+      "G4de4eb5e": {
+        "A": 175000,
+        "C": 125000
+      },
+      "G57045dfb": {
+        "C": 160000
+      }
+    },
+    "ask_caps_source": "review/ax-overnight-20261103/0600/gpt-pro-answer.md B2-B3: slow goods held since 04:4x-05:26 sold 0 at 1.05 x median / our own paid price; G6b9db161 2 units unsold 05:23-06:01 at scarce ask 392,986. Caps are the review's per-grade asks; each unit's floor F (b 0.15) still bounds them",
+    "revenue_source": "GPT Pro 11/06 16:45 (review/W-20261106-1645-AXPro주기/gptpro-answer-1645.md §3.5-3, §3.2): first asks on 30만+ goods were our own best paid price (0.934 of list on average, 353 of 433, 11:02-17:18) and floors assumed b 0.15 for every grade, so the units scale 6 buys sold 42 of 445 quotes while the top five sold the same SKUs at 0.70-0.79. Now: the ledger median leads (paid_over_median false), b per unit = max(goods_break 0.08, its SKU x grade rate leaning on the grade's: A 3.0%, B 12.2%, C 34.4%), warranty.max_break 0.5 (hard_limits top) so C units are priced for their risk instead of refused (a C G754bf0ca unit at b 0.453, cost 0.305 of list, has floor 0.615 under the 0.714 median: worth selling), concession 0.6/0.4/0.2 -> 0.3/0.2/0.1.",
+    "high_median_up": {
+      "min_list": 300000,
+      "factor": 1.0
+    },
+    "high_median_source": "W-20261106-1900-AX자본투입: 30만+ goods open at 1.0 x the median of the last price_hours (3 h, restock.price_hours) instead of 1.05 x the whole-round median; floors (cost, b per unit, min profit 3% of list) unchanged",
+    "breakeven_source": "A person 11/06 22:22 (\"최대한 점수를 올려\", no bankruptcy, no sale under cost + expected warranty): floors at break-even. 11/06 20:30-22:30 76 of 96 lost 100만+ quotes opened at a floor over the SKU median (cost 0.684 of list, median 0.694; 85 of 96 buyers never offered), and over 17:18-22:30 30만+ quotes paid 42% at the median, 13% over 1.10 x. min_profit 1000/3% of list -> 1/0; goods_break 0.08 -> 0.035 (grade A's market 3.0% + 0.5 pt; B 12.2% and C 34.4% and any higher measured SKU x grade rate still win; our refunds were 5.6% of warranted goods sales, 33.1M/588.8M, over a mix of grades); median_up 1.05 -> 1.0 and 30만+ goods 1.0 -> 0.97 x the 3 h median. Book is 0.5 and revenue 0.3 of shop ALL: at 11/06 22:24 a book rank was ~31M and a revenue rank ~23-120M, so 1M of book ~ 2.7M of revenue; a break-even sale adds revenue at no book cost (review/W-20261106-2225-AX극단상향). 22:37-23:05 (after 5a1aaed): at 0.97 x median 34 of 44 30만+ quotes were agreed but 19 went unpaid: buyers that accept several shops pay the cheapest (G8ec51935: ours 1,580,386 = 0.97 x, paid elsewhere at 1,557,000 = 0.955 x), 0.94 x (23:11-23:41) paid 9 of 34 such quotes against 16 of 49 at 0.97 x, so it went back to 0.97 x; the medians are now per SKU x grade (market_model grade_ratio): B and C units were opened at the all-grade median.",
+    "high_price_trial": {
+      "factor": 0.97,
+      "share": 0.5,
+      "salt": "20261109-book-margin",
+      "source": "11/09 01:39 GPT Pro mw82gkom §2.4 (W-20261109-0139-AXPro주기): Book is 0.5 of shop ALL and our book pct is the weakest (45/58); sold-out batches kept 2.9% of sales (yms979 11.4%). high_median_up 0.97 -> 1.0 with this trial holding the SKU x grade hash half at the old 0.97 x median (control), the rest open at 1.0 x (floor, ask caps, scarce asks, warranty unchanged). 11/08 00:23-11/09 02:27 log replay: 388 of 1,520 30만+ quotes rise, ask sum +0.66%. Not in the comparison (both halves at 1.0 x, the trial needs a median and no scarce ask): 30만+ goods with no SKU median (0 of 1,522 30만+ quotes in that replay) and scarce_asks SKUs (G1515d951, 75 quotes); the control opens with ceil, up to 1 won over the old round. Judge per SKU x grade after 9-12 h + 6 h of breakage: contribution (sale - unit cost - refunds - storage) per quote and per hour, revenue, paid per quote; stop (high_median_up 0.97, share 0) if contribution and revenue both fall. Before: GPT Pro 11/06 23:40·메인 23:40: 30만+ goods만 SKU x 등급 해시 절반을 0.93 x 중간값으로 시험(나머지 0.97), 하한 F 아래로는 안 내림. 판매량 1.5배·book 기울기로 판정, 아니면 share 0. 11/07 02:20:32-03:21 결과: 시험군 20개 22.0M(판매/보유 0.33), 대조군 26개 21.8M(0.44), 시험 전 3h 1.48 vs 1.47 → 1.5배 조건 미달, 같은 매출에 마진만 낮음 → share 0으로 끔"
+    }
+  },
+  "next_window": {
+    "id": "carpet-G1465c678-one-unit",
+    "source": "One-unit carpet experiment; no replenishment until judged",
+    "expires_hours": 2,
+    "targets": {
+      "G1465c678": 1
+    },
+    "done_plans": [
+      {
+        "id": "pro-20261103-2213",
+        "targets": {
+          "G1515d951": 1,
+          "G998b9322": 1,
+          "Ge62449c9": 1,
+          "G0be9ed07": 2,
+          "G06f2c594": 1,
+          "G200e39a3": 2,
+          "G32bf9a8e": 1,
+          "G80435d53": 2,
+          "Gdf79cd07": 1,
+          "G5f64d42a": 1
+        },
+        "result": "22:44 window: 8 lines supplied; G1515d951 refused 429 (sent before the window opened)"
+      },
+      {
+        "id": "pro-20261103-2213b",
+        "targets": {
+          "G1515d951": 1
+        },
+        "result": "23:03 window: bought; see next_window_state record"
+      },
+      {
+        "id": "terra-1105-012757",
+        "targets": {
+          "Ge62449c9": 1
+        },
+        "result": "o-e4ddb664917c: paid 76183, cost 61963, matured refund 0; net 14220 at astra-1105-093817 cutoff"
+      },
+      {
+        "id": "astra-1105-093817",
+        "targets": {
+          "Ge62449c9": 1
+        },
+        "result": "09:43 supplied and sold; six-hour warranty judgment pending, see prior cycle evidence"
+      }
+    ],
+    "hold_after_done": true
+  },
+  "seller": {
+    "refuse_buyers": [
+      "totato2203-r3"
+    ],
+    "refuse_one_star_at": 0,
+    "refuse_exempt": [
+      "q00",
+      "shaun0927-labbuyer",
+      "gom31-certified-goods"
+    ],
+    "refuse_exempt_source": "W-20261106-2225-AX극단상향 (11/07 01:1x): refuse_one_star_at 3 refused shaun0927-labbuyer, who rated us 5 stars 272 times and 1 star 3 times (11/06 09:36 the last), on 157 ACP checkouts worth 180.5M (11/06-11/07 01:05, refused.jsonl, retries included), and gom31-certified-goods (38 of 41 at 4-5 stars) on 53 worth 3.2M. totato2203-r3 (mean 1.58) stays in refuse_buyers. 대표님 11/07 01:23: refuse_one_star_at 0 (the 1-star count rule is off); only refuse_buyers is refused."
+  }
+}

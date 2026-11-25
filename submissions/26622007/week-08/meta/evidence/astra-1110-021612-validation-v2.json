@@ -1,0 +1,34 @@
+{
+  "citations": 116,
+  "evidence_problems": [],
+  "protected_problems": [],
+  "queue_problems": [],
+  "strategy_problems": [],
+  "gap_problems": [],
+  "alert_problems": [],
+  "pricing_changed": false,
+  "tests": "1595 passed in197.587s, exact TEST_BOOT in harness test_copy",
+  "queue": {
+    "running": null,
+    "next": {
+      "id": "g2-loss-target-1110",
+      "change": "시작 시 숙성10건 이상 순기여≤0를 재확인하고 pricing.json restock.sku_target_units.G2c023a8c를3에서2로 한 단계 축소한다. 다른 SKU와 총상한 유지.",
+      "evidence": "meta/evidence/astra-1110-021612-findings.jsonl:6 숙성58건 순기여−447774원, 건당−7720.24원; meta/changes.jsonl:128-129 이전축소 반려",
+      "metric": "변경 후6h 숙성 G2 판매순기여와 목표 구속으로 줄어든 실제 매입수",
+      "direction": "below",
+      "threshold": "숙성 건당 순기여≤0이고 실제 목표 구속으로 매입≥1개 감소; 회피손실은 추정과 실제를 구분",
+      "min_sample": "변경 후6h 숙성결제10건, 완료 공급창2개, 실제 목표 구속1건",
+      "hours": 12,
+      "undo": "숙성순익>0 또는 실제 구속0 또는 표본미달이면2→3복원하고 효과미확정/불필요 종료. 사람의 동시 변경이 있으면 자동 덮어쓰기 대신 충돌과 현재값 보고"
+    },
+    "waiting": 2,
+    "closed": {
+      "carpet-G1465c678-one-unit": "done",
+      "g6-a-ask-cap-343k": "drop",
+      "supply-audit-context-113730": "drop",
+      "forum-demand-join-113730": "drop"
+    },
+    "skipped": []
+  },
+  "schema": "jsonschema unavailable; all required fields present"
+}

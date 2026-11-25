@@ -1,0 +1,19 @@
+### acp_local_check.py (kit acp_pay -> local seller.py :9311 -> market /api/settle)
+20:25:37 --- run 1: lamp at 100, mandate limit 120
+20:25:38 [acp] payment not completed: 402 {"error":"payment refused by the market","market":{"error":"join as a shop first, or name a registered shop as the payee"}}
+20:25:38 --- run 1: acp_pay returned None
+20:25:38 --- run 2: lamp at 100, mandate limit 90
+20:25:38 [acp] checkout total 100 is above the mandate's limit; not paying
+20:25:38 --- run 2: acp_pay returned None
+
+### seller.py stderr
+[20:25:36] seller Nocha Furniture: 12 items from catalog.json, listening on 127.0.0.1:9311, card url http://127.0.0.1:9311/, harness claude
+[20:25:37] seller [acp] checkout cs_becd50108395382b: lamp at 100, task local-check-1
+[20:25:38] seller [acp] settle refused for cs_becd50108395382b (lamp at 100): {'error': 'join as a shop first, or name a registered shop as the payee'}
+[20:25:38] seller [acp] checkout cs_dd36facb361c9ab0: lamp at 100, task local-check-2
+
+### /api/settle without a shop token: unregistered payee vs the registered Render shop (made-up order)
+payee http://127.0.0.1:9311 ->
+{"error":"join as a shop first, or name a registered shop as the payee"} (HTTP 401)
+payee https://nocha-furniture-a2a.onrender.com ->
+{"error":"no such order"} (HTTP 404)

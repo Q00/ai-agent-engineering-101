@@ -1,0 +1,22 @@
+{
+  "name": "cohort_profit",
+  "purpose": "Own paid-sale net by SKU/grade, mature/open 6h cohorts. Recomputed ledger order-linked warranty breaks; legacy loss estimates reported separately. Optional sku and start (Unix sale timestamp) isolate an experiment. Missing cost or warranty yields null net. Not cash profit.",
+  "args": {
+    "type": "object",
+    "properties": {
+      "sku": {
+        "type": "string"
+      },
+      "start": {
+        "type": "number",
+        "minimum": 0
+      }
+    }
+  },
+  "selftest": {
+    "args": {
+      "sku": "G1515d951"
+    }
+  },
+  "evidence": "astra-1104-090509: positive all-sale contribution can conceal negative or incomplete matured cohorts; see meta/evidence/astra-1104-090509-audit.jsonl"
+}

@@ -1,0 +1,1386 @@
+{
+  "cycle": "astra-1110-021612",
+  "cutoff": "2026-11-10T02:16:13+0900",
+  "previous_review": "astra-1109-133041 (rejected; review starts at its request time 13:30)",
+  "grades": [
+    {
+      "change": "b9c1ea57 fix(week-08): R1 최종 리뷰 반영 - 턴마다 상태 초기화, 이번 턴 HOLD 구분, config FIFO race 차단",
+      "grade": "unclear",
+      "reason": "상점결제 69→135, 구매결제 37→36, 숙성순기여 None→60029원 (숙성 69→135건); 결측: 이 변경만의 대조군과 버전별 숙성효과. 측정: 위 전후30분 결제/순익. 판정:11/10 14:16까지 군별 숙성20결제에서 추가 Players>0 및 원래 undo 미충족; 부족하면 미확정, 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:1"
+    },
+    {
+      "change": "d85a9e95 feat(week-08): goods 등급별 고장확률 A/B(goods-grade-b-1033) — B팔은 견적의 단일 등급 고장확률로 saved_cap 계산",
+      "grade": "unclear",
+      "reason": "상점결제 88→115, 구매결제 36→41, 숙성순기여 None→2034658원 (숙성 88→115건); 등급 A/B 주문379/374, 지급101/98, 숙성65/67 및 정규화잉여합17.288434/19.638007. 결측: 사다리·코드버전 교란을 분리한 Saved분모 효과.11/10 14:16까지 교차군별 숙성20건에서 추가 Players>0와 원래 중단조건을 판단; 부족하면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:2"
+    },
+    {
+      "change": "8ca80f55 fix(week-08): goods-grade 리뷰 I1 — B팔에서 낮아진 limit 행을 가게 프로필에서 제외, limit_a 기록",
+      "grade": "unclear",
+      "reason": "상점결제 99→113, 구매결제 35→46, 숙성순기여 None→1336607원 (숙성 99→113건); 등급 A/B 주문379/374, 지급101/98, 숙성65/67 및 정규화잉여합17.288434/19.638007. 결측: 사다리·코드버전 교란을 분리한 Saved분모 효과.11/10 14:16까지 교차군별 숙성20건에서 추가 Players>0와 원래 중단조건을 판단; 부족하면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:3"
+    },
+    {
+      "change": "3a1a17f4 fix(week-08): goods-grade 재리뷰 I1 — B팔 낮춘 행을 rank_pg 학습에서도 제외(lowered 공통화)",
+      "grade": "unclear",
+      "reason": "상점결제 111→113, 구매결제 33→49, 숙성순기여 None→566159원 (숙성 111→113건); 등급 A/B 주문379/374, 지급101/98, 숙성65/67 및 정규화잉여합17.288434/19.638007. 결측: 사다리·코드버전 교란을 분리한 Saved분모 효과.11/10 14:16까지 교차군별 숙성20건에서 추가 Players>0와 원래 중단조건을 판단; 부족하면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:4"
+    },
+    {
+      "change": "d4014ea9 feat(week-08): goods opening ladder A/B (buyer_goods_ladder, default off): arm B opens goods talks at 0.8 of the first ask and cli",
+      "grade": "unclear",
+      "reason": "상점결제 116→109, 구매결제 42→53, 숙성순기여 1882333→-261559원 (숙성 116→109건); 상품 사다리 A/B 주문367/386, 지급107/131, 숙성66/74 및 정규화잉여합18.895469/22.401718. 방향은 유망하나 등급·버전 교란과 Saved분모 결측.11/10 14:16 교차군별숙성20건·추가Players>0가 판정선; 미달이면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:5"
+    },
+    {
+      "change": "60012afe wip(week-08): [astra-1109-133041] 실패 - no answer within 2700 s / no answer within 2700 s",
+      "grade": "no_effect",
+      "reason": "상점결제 117→100, 구매결제 48→51, 숙성순기여 982630→-26935원 (숙성 117→100건); 시간초과/테스트 실패로 되돌려져 운영 지속효과 없음. 원본 시도와 실패는 보존한다. G2 목표는3이다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:6"
+    },
+    {
+      "change": "47e976e4 revert(week-08): 60012afe 되돌림 - astra-1109-133041 검증 실패: no answer within 2700 s",
+      "grade": "no_effect",
+      "reason": "상점결제 118→100, 구매결제 48→51, 숙성순기여 985493→-29305원 (숙성 118→100건); 시간초과/테스트 실패로 되돌려져 운영 지속효과 없음. 원본 시도와 실패는 보존한다. G2 목표는3이다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:7"
+    },
+    {
+      "change": "80982949 chore(week-08): 메타 하네스 기록 astra-1109-133041 - rejected",
+      "grade": "no_effect",
+      "reason": "상점결제 118→100, 구매결제 48→51, 숙성순기여 985493→-29305원 (숙성 118→100건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:8"
+    },
+    {
+      "change": "6e3fc0c7 feat(week-08): [terra-1109-141711] restock.py의 판단 지침에 재고 원가는 book에 남으며 보관·폐기 위험은 SKU별로 평가해야 한다는 두 문장을 추가했다. 재고 한도와 현금 보호 설정은 바꾸지 않",
+      "grade": "worked",
+      "reason": "상점결제 95→138, 구매결제 52→49, 숙성순기여 52078→-457667원 (숙성 95→138건); Terra 기록의 최초3판단에서 전체 재고만으로 축소0건으로 좁은 성공선을 통과했다. 이후24판단에서 회피 문구가 반복되어 영구개선/Players 효과는 미확정; 다음3건 제외SKU 근거와 최종 공급을 대조한다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:9"
+    },
+    {
+      "change": "52c34b22 chore(week-08): 메타 하네스 기록 terra-1109-141711 - running",
+      "grade": "no_effect",
+      "reason": "상점결제 109→122, 구매결제 54→48, 숙성순기여 -376683→-262239원 (숙성 109→122건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:10"
+    },
+    {
+      "change": "6da6edae fix(week-08): goods ladder window and trade arm (review 809 I1/I3): the switch is on only in [start, end) so arm B stops at the st",
+      "grade": "unclear",
+      "reason": "상점결제 102→121, 구매결제 50→50, 숙성순기여 -19884→-756672원 (숙성 102→121건); 상품 사다리 A/B 주문367/386, 지급107/131, 숙성66/74 및 정규화잉여합18.895469/22.401718. 방향은 유망하나 등급·버전 교란과 Saved분모 결측.11/10 14:16 교차군별숙성20건·추가Players>0가 판정선; 미달이면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:11"
+    },
+    {
+      "change": "bd93ff38 test(week-08): goods ladder fix review nits (N4 docstring, N6 gem assert that fails on the old reader, N7 file closed)",
+      "grade": "no_effect",
+      "reason": "상점결제 127→102, 구매결제 48→47, 숙성순기여 -500303→-769350원 (숙성 127→102건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:12"
+    },
+    {
+      "change": "b63473b7 fix(week-08): goods grade window and trade mark (main 11/09 14:58, the ladder's 809 I1/I3 on goods-grade-b-1033): the switch is on",
+      "grade": "unclear",
+      "reason": "상점결제 126→108, 구매결제 51→42, 숙성순기여 -260245→-123896원 (숙성 126→108건); 등급 A/B 주문379/374, 지급101/98, 숙성65/67 및 정규화잉여합17.288434/19.638007. 결측: 사다리·코드버전 교란을 분리한 Saved분모 효과.11/10 14:16까지 교차군별 숙성20건에서 추가 Players>0와 원래 중단조건을 판단; 부족하면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:13"
+    },
+    {
+      "change": "a9aa73f7 fix(week-08): goods ladder/grade window rejects Infinity and NaN (review b63473b N2: end Infinity would remove the stop)",
+      "grade": "unclear",
+      "reason": "상점결제 123→109, 구매결제 49→40, 숙성순기여 -361062→146501원 (숙성 123→109건); 상품 사다리 A/B 주문367/386, 지급107/131, 숙성66/74 및 정규화잉여합18.895469/22.401718. 방향은 유망하나 등급·버전 교란과 Saved분모 결측.11/10 14:16 교차군별숙성20건·추가Players>0가 판정선; 미달이면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:14"
+    },
+    {
+      "change": "0eb0313e fix(week-08): food ladder window and trade arm (goods-ladder 809 I1/I3 on food-ladder-1033, main 11/09 15:20): the switch is on on",
+      "grade": "unclear",
+      "reason": "상점결제 107→110, 구매결제 46→38, 숙성순기여 -982299→796230원 (숙성 107→110건); 상품 사다리 A/B 주문367/386, 지급107/131, 숙성66/74 및 정규화잉여합18.895469/22.401718. 방향은 유망하나 등급·버전 교란과 Saved분모 결측.11/10 14:16 교차군별숙성20건·추가Players>0가 판정선; 미달이면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:15"
+    },
+    {
+      "change": "5afdaaf4 fix(week-08): food ladder review 0eb0313 I2/N1: recent_asks (hopeless) leaves out food-ladder arm B's talk asks and deal price, ke",
+      "grade": "unclear",
+      "reason": "상점결제 99→113, 구매결제 46→36, 숙성순기여 -852651→482436원 (숙성 99→113건); 식품 사다리 A/B 주문160/154, 지급147/138. 숙성97/87건의 사용기한 실제가치가 결측이다. 측정:주문→정산을 연결.11/10 14:16 군별20건의 use_within/기한을 확인해 추가Players>0 판정; 미확정이면 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:16"
+    },
+    {
+      "change": "1d7d4150 chore(week-08): 메타 하네스 기록 terra-1109-153341 - no_change",
+      "grade": "no_effect",
+      "reason": "상점결제 114→102, 구매결제 40→48, 숙성순기여 217047→109051원 (숙성 114→102건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:17"
+    },
+    {
+      "change": "edab2aa7 fix(week-08): recent_asks (hopeless) leaves out goods-ladder arm B's and goods-grade arm B's lowered talk asks and deal price, as ",
+      "grade": "unclear",
+      "reason": "상점결제 112→115, 구매결제 38→42, 숙성순기여 706793→962519원 (숙성 112→115건); 등급 A/B 주문379/374, 지급101/98, 숙성65/67 및 정규화잉여합17.288434/19.638007. 결측: 사다리·코드버전 교란을 분리한 Saved분모 효과.11/10 14:16까지 교차군별 숙성20건에서 추가 Players>0와 원래 중단조건을 판단; 부족하면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:18"
+    },
+    {
+      "change": "77a7e99c chore(week-08): 메타 하네스 기록 terra-1109-164637 - no_change",
+      "grade": "no_effect",
+      "reason": "상점결제 102→107, 구매결제 25→38, 숙성순기여 1220818→1437883원 (숙성 102→107건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:19"
+    },
+    {
+      "change": "803d21c7 merge(week-08): R1 shelf Jev skip A/B (b9c1ea5, default off) into the 17:41 seller swap",
+      "grade": "unclear",
+      "reason": "상점결제 116→87, 구매결제 35→32, 숙성순기여 1808270→-1540923원 (숙성 116→87건); 결측: 이 변경만의 대조군과 버전별 숙성효과. 측정: 위 전후30분 결제/순익. 판정:11/10 14:16까지 군별 숙성20결제에서 추가 Players>0 및 원래 undo 미충족; 부족하면 미확정, 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:20"
+    },
+    {
+      "change": "83c0eaef merge(week-08): seller_a_open grade A dear goods opening A/B (910bd25, default off) into the 17:41 seller swap; SWITCHES keeps goo",
+      "grade": "unclear",
+      "reason": "상점결제 116→86, 구매결제 35→32, 숙성순기여 1808020→-1543457원 (숙성 116→86건); 결측:처리단위별 숙성매출·환불·재고노출과 군간간섭. 측정:전후30분 정산/순익.11/10 14:16 군별숙성20건에서 순기여/재고시간 B−A>0 및 상점 전체 무해 조건, 원래 연구 undo 우선; 표본미달 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:21"
+    },
+    {
+      "change": "11422a7a revert(week-08): grade-warranty-v1 C 0h arm off (enabled false, study/epoch kept) — 9h verdict 11/09 17:40: units sold 7/18 vs con",
+      "grade": "worked",
+      "reason": "상점결제 119→83, 구매결제 35→33, 숙성순기여 2302962→-2029474원 (숙성 119→83건); 중단조건 실행: C 무보증 처리군7/18판매·4.99M 대 대조14/16·6.74M(p=.005).72h 복원은 유지. 복원 자체의 순위효과는 동시변경과 미분리. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:22"
+    },
+    {
+      "change": "0a700a7a chore(week-08): 메타 하네스 기록 terra-1109-175823 - no_change",
+      "grade": "no_effect",
+      "reason": "상점결제 113→92, 구매결제 42→27, 숙성순기여 1771667→-1324713원 (숙성 113→92건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:23"
+    },
+    {
+      "change": "742a7885 merge(week-08): ops meta record terra-1109-175823 (0a700a7) under the 17:41 seller swap",
+      "grade": "no_effect",
+      "reason": "상점결제 114→91, 구매결제 41→27, 숙성순기여 1772187→-1324434원 (숙성 114→91건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:24"
+    },
+    {
+      "change": "e5b66632 feat(week-08): buyer_saved_floor — the limit keeps my board Saved instead of the fixed 0.30, accept band off under it (default off",
+      "grade": "unclear",
+      "reason": "상점결제 87→95, 구매결제 34→26, 숙성순기여 -2050523→-395041원 (숙성 87→95건); 이번 주문 감사의 saved_floor 표본0. 기본 OFF 코드의 도입을 Saved 개선으로 세지 않는다. 결측:켜진 군별 지급/실제가치.11/10 14:16 군별숙성20건 추가Players>0와 원래 undo를 판단하되 다른 연구 중에는 켜지 않는다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:25"
+    },
+    {
+      "change": "0af5ea01 fix(week-08): meta_harness SWITCHES watches .market/buyer_saved_floor.json (test_meta every study switch)",
+      "grade": "unclear",
+      "reason": "상점결제 87→95, 구매결제 34→26, 숙성순기여 -2050523→-395041원 (숙성 87→95건); 이번 주문 감사의 saved_floor 표본0. 기본 OFF 코드의 도입을 Saved 개선으로 세지 않는다. 결측:켜진 군별 지급/실제가치.11/10 14:16 군별숙성20건 추가Players>0와 원래 undo를 판단하되 다른 연구 중에는 켜지 않는다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:26"
+    },
+    {
+      "change": "9b04abfc feat(week-08): buyer_saved_floor kinds — the floor can start on food when food-ladder ends and on goods when the goods studies end",
+      "grade": "unclear",
+      "reason": "상점결제 87→95, 구매결제 34→26, 숙성순기여 -2050523→-395041원 (숙성 87→95건); 식품 사다리 A/B 주문160/154, 지급147/138. 숙성97/87건의 사용기한 실제가치가 결측이다. 측정:주문→정산을 연결.11/10 14:16 군별20건의 use_within/기한을 확인해 추가Players>0 판정; 미확정이면 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:27"
+    },
+    {
+      "change": "a8af91a4 fix(week-08): buyer_saved_floor review I1/I2/N6 — a malformed board or any bad setting is off and never raises into the buyer run;",
+      "grade": "unclear",
+      "reason": "상점결제 87→95, 구매결제 34→26, 숙성순기여 -2050523→-395041원 (숙성 87→95건); 이번 주문 감사의 saved_floor 표본0. 기본 OFF 코드의 도입을 Saved 개선으로 세지 않는다. 결측:켜진 군별 지급/실제가치.11/10 14:16 군별숙성20건 추가Players>0와 원래 undo를 판단하되 다른 연구 중에는 켜지 않는다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:28"
+    },
+    {
+      "change": "0b5899ed fix(week-08): buyer_saved_floor delta review N1 — start_at/stop_at are not enforced, so a file with them is refused (off)",
+      "grade": "unclear",
+      "reason": "상점결제 87→96, 구매결제 34→26, 숙성순기여 -2050523→-361980원 (숙성 87→96건); 이번 주문 감사의 saved_floor 표본0. 기본 OFF 코드의 도입을 Saved 개선으로 세지 않는다. 결측:켜진 군별 지급/실제가치.11/10 14:16 군별숙성20건 추가Players>0와 원래 undo를 판단하되 다른 연구 중에는 켜지 않는다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:29"
+    },
+    {
+      "change": "ddad926b feat(week-08): buyer_saved_floor after GPT Pro 1638 — floor:false keeps 0.30 and only turns the band off (the first A/B); arm B tr",
+      "grade": "unclear",
+      "reason": "상점결제 87→96, 구매결제 34→26, 숙성순기여 -2050523→-361980원 (숙성 87→96건); 이번 주문 감사의 saved_floor 표본0. 기본 OFF 코드의 도입을 Saved 개선으로 세지 않는다. 결측:켜진 군별 지급/실제가치.11/10 14:16 군별숙성20건 추가Players>0와 원래 undo를 판단하되 다른 연구 중에는 켜지 않는다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:30"
+    },
+    {
+      "change": "20a5f1ed fix(week-08): buyer_saved_floor review 4f28644 I1 — recent_asks (hopeless) leaves out saved-floor arm B's talk asks and deal price",
+      "grade": "unclear",
+      "reason": "상점결제 87→96, 구매결제 34→26, 숙성순기여 -2050523→-361980원 (숙성 87→96건); 이번 주문 감사의 saved_floor 표본0. 기본 OFF 코드의 도입을 Saved 개선으로 세지 않는다. 결측:켜진 군별 지급/실제가치.11/10 14:16 군별숙성20건 추가Players>0와 원래 undo를 판단하되 다른 연구 중에는 켜지 않는다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:31"
+    },
+    {
+      "change": "a44c148e feat(week-08): buyer_saved_floor sf-2 after GPT Pro 1638 P2 — records carry study/v/board_ts/floor (both arms, NO_SHOP_IN_STOCK to",
+      "grade": "unclear",
+      "reason": "상점결제 87→96, 구매결제 34→26, 숙성순기여 -2050523→-361980원 (숙성 87→96건); 이번 주문 감사의 saved_floor 표본0. 기본 OFF 코드의 도입을 Saved 개선으로 세지 않는다. 결측:켜진 군별 지급/실제가치.11/10 14:16 군별숙성20건 추가Players>0와 원래 undo를 판단하되 다른 연구 중에는 켜지 않는다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:32"
+    },
+    {
+      "change": "bf6de590 fix(week-08): buyer_saved_floor sf-2 review N1-N4 — a shipped-SKU chance of 1 or more caps at 1 (pays nothing), the orders row rec",
+      "grade": "unclear",
+      "reason": "상점결제 90→99, 구매결제 31→27, 숙성순기여 -2027119→-333990원 (숙성 90→99건); 이번 주문 감사의 saved_floor 표본0. 기본 OFF 코드의 도입을 Saved 개선으로 세지 않는다. 결측:켜진 군별 지급/실제가치.11/10 14:16 군별숙성20건 추가Players>0와 원래 undo를 판단하되 다른 연구 중에는 켜지 않는다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:33"
+    },
+    {
+      "change": "094f49fb fix(week-08): buyer_saved_floor sf-2 delta review N1 — the shipped record says whether over_limit could apply the chance (the ship",
+      "grade": "unclear",
+      "reason": "상점결제 91→105, 구매결제 28→26, 숙성순기여 -1548535→-333514원 (숙성 91→105건); 이번 주문 감사의 saved_floor 표본0. 기본 OFF 코드의 도입을 Saved 개선으로 세지 않는다. 결측:켜진 군별 지급/실제가치.11/10 14:16 군별숙성20건 추가Players>0와 원래 undo를 판단하되 다른 연구 중에는 켜지 않는다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:34"
+    },
+    {
+      "change": "2056a2ef seller_a_open: on only inside a finite [start_at, stop_at) window, switch_on writes it; meta watches shelf_jev_skip",
+      "grade": "unclear",
+      "reason": "상점결제 103→86, 구매결제 29→28, 숙성순기여 -1211797→-51050원 (숙성 103→86건); 결측:처리단위별 숙성매출·환불·재고노출과 군간간섭. 측정:전후30분 정산/순익.11/10 14:16 군별숙성20건에서 순기여/재고시간 B−A>0 및 상점 전체 무해 조건, 원래 연구 undo 우선; 표본미달 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:35"
+    },
+    {
+      "change": "fa3f60d0 chore(week-08): 메타 하네스 기록 terra-1109-190948 - no_change",
+      "grade": "no_effect",
+      "reason": "상점결제 113→103, 구매결제 30→27, 숙성순기여 -880438→2563147원 (숙성 113→103건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:36"
+    },
+    {
+      "change": "765244e8 merge(week-08): buyer_saved_floor sf-2 (094f49f, default OFF) onto 2056a2e/fa3f60d",
+      "grade": "unclear",
+      "reason": "상점결제 118→94, 구매결제 29→33, 숙성순기여 208603→1383180원 (숙성 118→94건); 이번 주문 감사의 saved_floor 표본0. 기본 OFF 코드의 도입을 Saved 개선으로 세지 않는다. 결측:켜진 군별 지급/실제가치.11/10 14:16 군별숙성20건 추가Players>0와 원래 undo를 판단하되 다른 연구 중에는 켜지 않는다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:37"
+    },
+    {
+      "change": "08b282dd feat(week-08): buyer_warranty_said B-W1 — with buyer_short_warranty on, arm B prices a goods quote that names only 6 h or more (\"g",
+      "grade": "unclear",
+      "reason": "상점결제 114→94, 구매결제 27→38, 숙성순기여 1227684→458429원 (숙성 114→94건); 팩 시각 전 BW1 주문표본0(운영 시작은 팩 뒤). 결측:군별 지급/숙성가치. 이번은 전후 결제만 측정했다.11/10 14:16 군별숙성20건 추가Players>0/영수증 검증위반0을 판단하고 원래 undo 우선. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:38"
+    },
+    {
+      "change": "f69d5860 buyer_rank_pg: ledger_cover switch key reads the ledger back to the window's oldest paid seq",
+      "grade": "unclear",
+      "reason": "상점결제 111→93, 구매결제 28→39, 숙성순기여 2055484→896708원 (숙성 111→82건); 결측: 이 변경만의 대조군과 버전별 숙성효과. 측정: 위 전후30분 결제/순익. 판정:11/10 14:16까지 군별 숙성20결제에서 추가 Players>0 및 원래 undo 미충족; 부족하면 미확정, 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:39"
+    },
+    {
+      "change": "0c81ca5c buyer_warranty_said bw1-2: independent review 08b282d I1-I4, M1-M6",
+      "grade": "unclear",
+      "reason": "상점결제 104→90, 구매결제 30→40, 숙성순기여 2009294→833305원 (숙성 104→69건); 팩 시각 전 BW1 주문표본0(운영 시작은 팩 뒤). 결측:군별 지급/숙성가치. 이번은 전후 결제만 측정했다.11/10 14:16 군별숙성20건 추가Players>0/영수증 검증위반0을 판단하고 원래 undo 우선. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:40"
+    },
+    {
+      "change": "211c9a4b rank_pg ledger_cover streams once and is a recorded common boundary; warranty_said bw1-3 (review 2 I-a..I-c, m1-m6)",
+      "grade": "unclear",
+      "reason": "상점결제 98→91, 구매결제 37→36, 숙성순기여 1529212→476567원 (숙성 98→43건); 팩 시각 전 BW1 주문표본0(운영 시작은 팩 뒤). 결측:군별 지급/숙성가치. 이번은 전후 결제만 측정했다.11/10 14:16 군별숙성20건 추가Players>0/영수증 검증위반0을 판단하고 원래 undo 우선. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:41"
+    },
+    {
+      "change": "0258f9fb warranty_said bw1-3 and rank_pg: review 3 minors (m-A..m-H)",
+      "grade": "unclear",
+      "reason": "상점결제 100→76, 구매결제 38→38, 숙성순기여 628244→152165원 (숙성 100→15건); 팩 시각 전 BW1 주문표본0(운영 시작은 팩 뒤). 결측:군별 지급/숙성가치. 이번은 전후 결제만 측정했다.11/10 14:16 군별숙성20건 추가Players>0/영수증 검증위반0을 판단하고 원래 undo 우선. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:42"
+    },
+    {
+      "change": "3ba85bd4 chore(week-08): 메타 하네스 기록 terra-1109-202132 - no_change_unsupported",
+      "grade": "no_effect",
+      "reason": "상점결제 92→71, 구매결제 37→38, 숙성순기여 871841→None원 (숙성 78→0건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:43"
+    },
+    {
+      "change": "c1974cb1 week-08 buyer: warranty-said review-4 minors (bw1-4)",
+      "grade": "unclear",
+      "reason": "상점결제 84→91, 구매결제 36→30, 숙성순기여 760460→None원 (숙성 31→0건); 팩 시각 전 BW1 주문표본0(운영 시작은 팩 뒤). 결측:군별 지급/숙성가치. 이번은 전후 결제만 측정했다.11/10 14:16 군별숙성20건 추가Players>0/영수증 검증위반0을 판단하고 원래 undo 우선. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:44"
+    },
+    {
+      "change": "144c15e1 week-08 buyer: warranty-said bw1-5 (review 5 minors, another grade's warranty)",
+      "grade": "unclear",
+      "reason": "상점결제 84→91, 구매결제 36→30, 숙성순기여 760460→None원 (숙성 31→0건); 팩 시각 전 BW1 주문표본0(운영 시작은 팩 뒤). 결측:군별 지급/숙성가치. 이번은 전후 결제만 측정했다.11/10 14:16 군별숙성20건 추가Players>0/영수증 검증위반0을 판단하고 원래 undo 우선. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:45"
+    },
+    {
+      "change": "ca7aef4a week-08 buyer: warranty-said bw1-6 (review 6 I1/I2: grade article, lists, plurals)",
+      "grade": "unclear",
+      "reason": "상점결제 84→91, 구매결제 36→30, 숙성순기여 760460→None원 (숙성 31→0건); 팩 시각 전 BW1 주문표본0(운영 시작은 팩 뒤). 결측:군별 지급/숙성가치. 이번은 전후 결제만 측정했다.11/10 14:16 군별숙성20건 추가Players>0/영수증 검증위반0을 판단하고 원래 undo 우선. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:46"
+    },
+    {
+      "change": "0d9c822c feat(week-08): seller_floor_margin — grade A goods reserve with a 5% of list margin, default OFF A/B (W-20261109-2040-AX셀러전략)",
+      "grade": "unclear",
+      "reason": "상점결제 64→105, 구매결제 38→29, 숙성순기여 None→None원 (숙성 0→0건); 결측:처리단위별 숙성매출·환불·재고노출과 군간간섭. 측정:전후30분 정산/순익.11/10 14:16 군별숙성20건에서 순기여/재고시간 B−A>0 및 상점 전체 무해 조건, 원래 연구 undo 우선; 표본미달 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:47"
+    },
+    {
+      "change": "b55c4f66 fix(week-08): seller_floor_margin review 0d9c822 I1 M1-M3 — chained a-open decide test (30만+ A talks stay a-open's in both arms, c",
+      "grade": "unclear",
+      "reason": "상점결제 71→99, 구매결제 39→32, 숙성순기여 None→None원 (숙성 0→0건); 결측:처리단위별 숙성매출·환불·재고노출과 군간간섭. 측정:전후30분 정산/순익.11/10 14:16 군별숙성20건에서 순기여/재고시간 B−A>0 및 상점 전체 무해 조건, 원래 연구 undo 우선; 표본미달 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:48"
+    },
+    {
+      "change": "40aa8553 chore(week-08): 메타 하네스 기록 terra-1109-213305 - no_change",
+      "grade": "no_effect",
+      "reason": "상점결제 99→73, 구매결제 41→32, 숙성순기여 None→None원 (숙성 0→0건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:49"
+    },
+    {
+      "change": "ffb0caf1 feat(week-08): buyer_post_market — arm B purchase records name the market median share of list (same SKU x grade x warranty, last ",
+      "grade": "unclear",
+      "reason": "상점결제 92→95, 구매결제 38→30, 숙성순기여 None→None원 (숙성 0→0건); 결측:게시처리군별 유효 stance와 Saved/평점 귀속. 이번 전후지급과 포럼 .895를 관측했다.11/10 14:16 군별게시20건·서로다른 유효투표자3명에서 추가forum rating>0 및 허위주장0 판정; 미달이면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:50"
+    },
+    {
+      "change": "f33d70d2 fix(week-08): meta_harness watches .market/buyer_post_market.json (test_meta every-study-switch, full TEST_BOOT at ffb0caf)",
+      "grade": "unclear",
+      "reason": "상점결제 92→94, 구매결제 38→28, 숙성순기여 None→None원 (숙성 0→0건); 결측:게시처리군별 유효 stance와 Saved/평점 귀속. 이번 전후지급과 포럼 .895를 관측했다.11/10 14:16 군별게시20건·서로다른 유효투표자3명에서 추가forum rating>0 및 허위주장0 판정; 미달이면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:51"
+    },
+    {
+      "change": "1c9526be fix(week-08): buyer_post_market review ffb0caf M1-M5,M7 — finite amounts only and the note built before the arm (both arms measure",
+      "grade": "unclear",
+      "reason": "상점결제 94→101, 구매결제 36→30, 숙성순기여 None→None원 (숙성 0→0건); 결측:게시처리군별 유효 stance와 Saved/평점 귀속. 이번 전후지급과 포럼 .895를 관측했다.11/10 14:16 군별게시20건·서로다른 유효투표자3명에서 추가forum rating>0 및 허위주장0 판정; 미달이면 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:52"
+    },
+    {
+      "change": "3f8de34e feat(week-08): seller_food_margin — food reserve at cost x (1 + share) in arm B (arms by unit, default OFF, finite window, recorde",
+      "grade": "unclear",
+      "reason": "상점결제 92→119, 구매결제 28→34, 숙성순기여 None→None원 (숙성 0→0건); 결측:처리단위별 숙성매출·환불·재고노출과 군간간섭. 측정:전후30분 정산/순익.11/10 14:16 군별숙성20건에서 순기여/재고시간 B−A>0 및 상점 전체 무해 조건, 원래 연구 undo 우선; 표본미달 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:53"
+    },
+    {
+      "change": "820b4fac fix(week-08): seller_food_margin review 3f8de34 I1-I2 M3 M5 — unit-arm interference and its conservative direction written down wi",
+      "grade": "unclear",
+      "reason": "상점결제 95→110, 구매결제 28→34, 숙성순기여 None→None원 (숙성 0→0건); 결측:처리단위별 숙성매출·환불·재고노출과 군간간섭. 측정:전후30분 정산/순익.11/10 14:16 군별숙성20건에서 순기여/재고시간 B−A>0 및 상점 전체 무해 조건, 원래 연구 undo 우선; 표본미달 미확정. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:54"
+    },
+    {
+      "change": "293120e6 docs(week-08): seller_food_margin review 820b4fa I1 — unit-arm bias has no fixed sign (scarce A stock and shared clearance favour ",
+      "grade": "no_effect",
+      "reason": "상점결제 99→104, 구매결제 27→32, 숙성순기여 None→None원 (숙성 0→0건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:55"
+    },
+    {
+      "change": "d5b60bec wip(week-08): [terra-1109-224449] 실패 - pricing.json에서 G2c023a8c의 목표 수량만 3개에서 2개로 낮췄다. 전체 재고 상한은 유지했다. 설정 관련 테스트 58개는 통과했다. 전체 테스트는",
+      "grade": "no_effect",
+      "reason": "상점결제 107→105, 구매결제 31→32, 숙성순기여 None→None원 (숙성 0→0건); 시간초과/테스트 실패로 되돌려져 운영 지속효과 없음. 원본 시도와 실패는 보존한다. G2 목표는3이다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:56"
+    },
+    {
+      "change": "e412db0e revert(week-08): d5b60bec 되돌림 - terra-1109-224449 검증 실패: tests failed: FAIL: test_seed_tools_run (test_meta.AgentLoopTest.test_see",
+      "grade": "no_effect",
+      "reason": "상점결제 107→105, 구매결제 31→32, 숙성순기여 None→None원 (숙성 0→0건); 시간초과/테스트 실패로 되돌려져 운영 지속효과 없음. 원본 시도와 실패는 보존한다. G2 목표는3이다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:57"
+    },
+    {
+      "change": "4f42ef98 chore(week-08): 메타 하네스 기록 terra-1109-224449 - rejected",
+      "grade": "no_effect",
+      "reason": "상점결제 107→105, 구매결제 31→32, 숙성순기여 None→None원 (숙성 0→0건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:58"
+    },
+    {
+      "change": "1586af85 fix(week-08): buyer_short_warranty never buys goods with no warranty — block_zero_nonfood (default on, JSON false = 11/08 behaviou",
+      "grade": "unclear",
+      "reason": "상점결제 110→100, 구매결제 34→34, 숙성순기여 None→None원 (숙성 0→0건); 결측: 이 변경만의 대조군과 버전별 숙성효과. 측정: 위 전후30분 결제/순익. 판정:11/10 14:16까지 군별 숙성20결제에서 추가 Players>0 및 원래 undo 미충족; 부족하면 미확정, 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:59"
+    },
+    {
+      "change": "d59b75be fix(week-08): no-warranty block review 36f2207 I1/I2/N1/N5 — under 1 h (the least the ledger ever named: 1,2,3,4,6,12,24,48,72 h i",
+      "grade": "unclear",
+      "reason": "상점결제 110→100, 구매결제 34→34, 숙성순기여 None→None원 (숙성 0→0건); 결측: 이 변경만의 대조군과 버전별 숙성효과. 측정: 위 전후30분 결제/순익. 판정:11/10 14:16까지 군별 숙성20결제에서 추가 Players>0 및 원래 undo 미충족; 부족하면 미확정, 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:60"
+    },
+    {
+      "change": "1fb2cf9c fix(week-08): no-warranty block — only none, gate before any price (parent 23:02/23:15)",
+      "grade": "unclear",
+      "reason": "상점결제 101→110, 구매결제 33→39, 숙성순기여 None→None원 (숙성 0→0건); 결측: 이 변경만의 대조군과 버전별 숙성효과. 측정: 위 전후30분 결제/순익. 판정:11/10 14:16까지 군별 숙성20결제에서 추가 Players>0 및 원래 undo 미충족; 부족하면 미확정, 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:61"
+    },
+    {
+      "change": "eda1eae1 fix(week-08): no-warranty gate — keep main's limit line as written (wiring tests read it); short talk cap test: a shop whose short",
+      "grade": "unclear",
+      "reason": "상점결제 104→107, 구매결제 34→35, 숙성순기여 None→None원 (숙성 0→0건); 결측: 이 변경만의 대조군과 버전별 숙성효과. 측정: 위 전후30분 결제/순익. 판정:11/10 14:16까지 군별 숙성20결제에서 추가 Players>0 및 원래 undo 미충족; 부족하면 미확정, 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:62"
+    },
+    {
+      "change": "77bdf3cf chore(week-08): hard_limits.py back to its text before the no-warranty block (a comment only; seller source hashes read this file)",
+      "grade": "no_effect",
+      "reason": "상점결제 97→110, 구매결제 38→33, 숙성순기여 None→None원 (숙성 0→0건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:63"
+    },
+    {
+      "change": "1b96bb76 fix(week-08): market_buyer reads nkjunbc's whole quote \"... (SKU), unit u-...: list price L, ask A. Grade G, H h of shelf life lef",
+      "grade": "unclear",
+      "reason": "상점결제 100→111, 구매결제 34→39, 숙성순기여 None→None원 (숙성 0→0건); 결측: 이 변경만의 대조군과 버전별 숙성효과. 측정: 위 전후30분 결제/순익. 판정:11/10 14:16까지 군별 숙성20결제에서 추가 Players>0 및 원래 undo 미충족; 부족하면 미확정, 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:64"
+    },
+    {
+      "change": "48075ef9 docs(week-08): text_ask_checked docstring — a text ask also ends an order over TALK_OVER_SHARE and counts in recent_asks (W-202611",
+      "grade": "no_effect",
+      "reason": "상점결제 108→109, 구매결제 37→36, 숙성순기여 None→None원 (숙성 0→0건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:65"
+    },
+    {
+      "change": "d0916abb wip(week-08): [terra-1110-000257] 실패 - pricing.json에서 G2c023a8c 목표 수량을 3개에서 2개로 낮췄다. 이전 동일 축소는 테스트 실패로 반려되어 실제 설정은 3개로 돌아가 있었다. 설정",
+      "grade": "no_effect",
+      "reason": "상점결제 97→129, 구매결제 35→38, 숙성순기여 None→None원 (숙성 0→0건); 시간초과/테스트 실패로 되돌려져 운영 지속효과 없음. 원본 시도와 실패는 보존한다. G2 목표는3이다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:66"
+    },
+    {
+      "change": "c0da41b4 revert(week-08): d0916abb 되돌림 - terra-1110-000257 검증 실패: tests failed: FAIL: test_seed_tools_run (test_meta.AgentLoopTest.test_see",
+      "grade": "no_effect",
+      "reason": "상점결제 96→129, 구매결제 35→38, 숙성순기여 None→None원 (숙성 0→0건); 시간초과/테스트 실패로 되돌려져 운영 지속효과 없음. 원본 시도와 실패는 보존한다. G2 목표는3이다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:67"
+    },
+    {
+      "change": "ec36993f chore(week-08): 메타 하네스 기록 terra-1110-000257 - rejected",
+      "grade": "no_effect",
+      "reason": "상점결제 96→129, 구매결제 35→38, 숙성순기여 None→None원 (숙성 0→0건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:68"
+    },
+    {
+      "change": "dc6e2cdc fix(week-08): 보증 시간이 유한수가 아니면(inf·nan) 0시간으로 본다 — inf 영수증 무보증 차단 우회 수정 [W-20261109-2225-AXPro주기]",
+      "grade": "unclear",
+      "reason": "상점결제 110→99, 구매결제 21→30, 숙성순기여 None→None원 (숙성 0→0건); 결측: 이 변경만의 대조군과 버전별 숙성효과. 측정: 위 전후30분 결제/순익. 판정:11/10 14:16까지 군별 숙성20결제에서 추가 Players>0 및 원래 undo 미충족; 부족하면 미확정, 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:69"
+    },
+    {
+      "change": "799247a2 fix(week-08): 보증 시간 int는 그대로 — float 범위 밖 int의 OverflowError 막기(리뷰 I1) [W-20261109-2225-AXPro주기]",
+      "grade": "unclear",
+      "reason": "상점결제 95→105, 구매결제 19→34, 숙성순기여 None→None원 (숙성 0→0건); 결측: 이 변경만의 대조군과 버전별 숙성효과. 측정: 위 전후30분 결제/순익. 판정:11/10 14:16까지 군별 숙성20결제에서 추가 Players>0 및 원래 undo 미충족; 부족하면 미확정, 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:70"
+    },
+    {
+      "change": "20b32e6a feat(week-08): [terra-1110-011541] auto_market_research_pack이 forum.json 부재를 처리하고 forum_snapshot_available로 자료 부재를 알리도록 수정했다. 부재와 ",
+      "grade": "worked",
+      "reason": "상점결제 98→141, 구매결제 35→36, 숙성순기여 None→None원 (숙성 0→0건); forum.json 부재 seed 실패1건→0건, 기록상 전체1576테스트 통과. 다만 의미검증4건은 이번에 모두 실패해 SKU/결제/재고를 추가수리했다. 실행성공과 내용정확성을 분리한다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:71"
+    },
+    {
+      "change": "79f35ce1 chore(week-08): 메타 하네스 기록 terra-1110-011541 - running",
+      "grade": "no_effect",
+      "reason": "상점결제 113→130, 구매결제 38→35, 숙성순기여 None→None원 (숙성 0→0건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:72"
+    },
+    {
+      "change": "cfe7831a fix(week-08): float 범위 밖 int 보증 시간은 숫자가 아니다 — no_warranty의 OverflowError로 주문이 죽던 것(-10**400) 막기, hard_limits.py는 그대로 [W-20261109-2",
+      "grade": "unclear",
+      "reason": "상점결제 123→114, 구매결제 38→32, 숙성순기여 None→None원 (숙성 0→0건); 결측: 이 변경만의 대조군과 버전별 숙성효과. 측정: 위 전후30분 결제/순익. 판정:11/10 14:16까지 군별 숙성20결제에서 추가 Players>0 및 원래 undo 미충족; 부족하면 미확정, 확대 금지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:73"
+    },
+    {
+      "change": "89b89d49 feat(week-08): buyer_our_ask 기본 OFF 주문 A/B — B군만 kimauve \"Our ask: A\"를 SKU·정가 확인 뒤 순위용(text_rank)으로 읽기 [W-20261109-2225-AXPro주기]",
+      "grade": "unclear",
+      "reason": "상점결제 127→60, 구매결제 40→18, 숙성순기여 None→None원 (숙성 0→0건); 해당 연구 주문표본0·기본 OFF. 결측:텍스트 순위의 추가지급과 Saved. 전후결제 및 전체 회귀를 측정했다.11/10 14:16 군별숙성20건 추가Players>0/선택뒤늦은견적사용0 판정, 표본미달이면 미확정 유지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:74"
+    },
+    {
+      "change": "8b091cb3 fix(week-08): meta_harness watches .market/buyer_our_ask.json (test_meta every-study-switch, full TEST_BOOT at 89b89d4) [W-2026110",
+      "grade": "unclear",
+      "reason": "상점결제 136→48, 구매결제 36→16, 숙성순기여 None→None원 (숙성 0→0건); 해당 연구 주문표본0·기본 OFF. 결측:텍스트 순위의 추가지급과 Saved. 전후결제 및 전체 회귀를 측정했다.11/10 14:16 군별숙성20건 추가Players>0/선택뒤늦은견적사용0 판정, 표본미달이면 미확정 유지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:75"
+    },
+    {
+      "change": "8e007b6e fix(week-08): buyer_our_ask 독립리뷰 Minor 반영 — 선택 뒤 늦은 견적 안 읽기·해시 키 분리(buyer_our_ask:)·숫자 아닌 시작시각 OFF·reason에 text_rank 표기·처치 범위 문서 [",
+      "grade": "unclear",
+      "reason": "상점결제 135→26, 구매결제 37→10, 숙성순기여 None→None원 (숙성 0→0건); 해당 연구 주문표본0·기본 OFF. 결측:텍스트 순위의 추가지급과 Saved. 전후결제 및 전체 회귀를 측정했다.11/10 14:16 군별숙성20건 추가Players>0/선택뒤늦은견적사용0 판정, 표본미달이면 미확정 유지. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:76"
+    },
+    {
+      "change": "3993cbeb docs(week-08): buyer_our_ask docstring 해시 키를 코드와 맞춤·시험 값 정리(동작 변경 없음, 후속 독립리뷰 C0 I0 M3) [W-20261109-2225-AXPro주기]",
+      "grade": "no_effect",
+      "reason": "상점결제 133→13, 구매결제 33→8, 숙성순기여 None→None원 (숙성 0→0건); 기록·문서·테스트 변경으로 직접 운영 지표 효과를 기대하지 않는다. 원장 변화는 같은 시간대 운영 변화다. 근거 meta/evidence/astra-1110-021612-comparisons.jsonl:77"
+    },
+    {
+      "change": "terra-1109-141711 전략·규칙 점검",
+      "grade": "unclear",
+      "reason": "규칙 산식 일치와 무호출상한을 유지했고 전체 재고축소/근거없는 총상한 확대는 없었다. 전략유지의 우월한 대안은 미식별. 결측은 실제 SKU목표 구속과 변경별 추가Players. 이번 두창 전체상한절단0/0,SKU절단23/21 및 단위ID를 측정했다.11/10 14:16 두창구속+과반판매+숙성순익>0/book비하락을 모두 확인하면 확대, 아니면 유지. 근거 meta/evidence/astra-1110-021612-cycles.jsonl:2"
+    },
+    {
+      "change": "terra-1109-153341 전략·규칙 점검",
+      "grade": "unclear",
+      "reason": "규칙 산식 일치와 무호출상한을 유지했고 전체 재고축소/근거없는 총상한 확대는 없었다. 전략유지의 우월한 대안은 미식별. 결측은 실제 SKU목표 구속과 변경별 추가Players. 이번 두창 전체상한절단0/0,SKU절단23/21 및 단위ID를 측정했다.11/10 14:16 두창구속+과반판매+숙성순익>0/book비하락을 모두 확인하면 확대, 아니면 유지. 근거 meta/evidence/astra-1110-021612-cycles.jsonl:3"
+    },
+    {
+      "change": "terra-1109-164637 전략·규칙 점검",
+      "grade": "worked",
+      "reason": "규칙 산식 일치와 무호출상한을 유지했고 전체 재고축소/근거없는 총상한 확대는 없었다. 전략유지의 우월한 대안은 미식별. 최초3판단/총재고만축소0으로 지침 검사를 수행했다. 이후24판단까지 성공을 일반화하지 않는다. 근거 meta/evidence/astra-1110-021612-cycles.jsonl:4"
+    },
+    {
+      "change": "terra-1109-175823 전략·규칙 점검",
+      "grade": "unclear",
+      "reason": "규칙 산식 일치와 무호출상한을 유지했고 전체 재고축소/근거없는 총상한 확대는 없었다. 전략유지의 우월한 대안은 미식별. 결측은 실제 SKU목표 구속과 변경별 추가Players. 이번 두창 전체상한절단0/0,SKU절단23/21 및 단위ID를 측정했다.11/10 14:16 두창구속+과반판매+숙성순익>0/book비하락을 모두 확인하면 확대, 아니면 유지. 근거 meta/evidence/astra-1110-021612-cycles.jsonl:5"
+    },
+    {
+      "change": "terra-1109-190948 전략·규칙 점검",
+      "grade": "unclear",
+      "reason": "규칙 산식 일치와 무호출상한을 유지했고 전체 재고축소/근거없는 총상한 확대는 없었다. 전략유지의 우월한 대안은 미식별. 결측은 실제 SKU목표 구속과 변경별 추가Players. 이번 두창 전체상한절단0/0,SKU절단23/21 및 단위ID를 측정했다.11/10 14:16 두창구속+과반판매+숙성순익>0/book비하락을 모두 확인하면 확대, 아니면 유지. 근거 meta/evidence/astra-1110-021612-cycles.jsonl:6"
+    },
+    {
+      "change": "terra-1109-202132 전략·규칙 점검",
+      "grade": "unclear",
+      "reason": "규칙 산식 일치와 무호출상한을 유지했고 전체 재고축소/근거없는 총상한 확대는 없었다. 전략유지의 우월한 대안은 미식별. 외부 실험스위치 변경으로 unsupported; Terra가 규칙을 위반했다고 단정하지 않는다. 결측은 실제 SKU목표 구속과 변경별 추가Players. 이번 두창 전체상한절단0/0,SKU절단23/21 및 단위ID를 측정했다.11/10 14:16 두창구속+과반판매+숙성순익>0/book비하락을 모두 확인하면 확대, 아니면 유지. 근거 meta/evidence/astra-1110-021612-cycles.jsonl:7"
+    },
+    {
+      "change": "terra-1109-213305 전략·규칙 점검",
+      "grade": "unclear",
+      "reason": "규칙 산식 일치와 무호출상한을 유지했고 전체 재고축소/근거없는 총상한 확대는 없었다. 전략유지의 우월한 대안은 미식별. 결측은 실제 SKU목표 구속과 변경별 추가Players. 이번 두창 전체상한절단0/0,SKU절단23/21 및 단위ID를 측정했다.11/10 14:16 두창구속+과반판매+숙성순익>0/book비하락을 모두 확인하면 확대, 아니면 유지. 근거 meta/evidence/astra-1110-021612-cycles.jsonl:8"
+    },
+    {
+      "change": "terra-1109-224449 전략·규칙 점검",
+      "grade": "no_effect",
+      "reason": "규칙 산식 일치와 무호출상한을 유지했고 전체 재고축소/근거없는 총상한 확대는 없었다. 전략유지의 우월한 대안은 미식별. 숙성55건 건당−12571.24원에 따른 SKU축소 방향은 규칙에 맞지만 반려돼목표3→3. 근거 meta/evidence/astra-1110-021612-cycles.jsonl:9"
+    },
+    {
+      "change": "terra-1110-000257 전략·규칙 점검",
+      "grade": "harmful",
+      "reason": "규칙 산식 일치와 무호출상한을 유지했고 전체 재고축소/근거없는 총상한 확대는 없었다. 전략유지의 우월한 대안은 미식별. 알고 있던 seed 실패를 수리하지 않고 같은 설정 변경을 재시도해 두 번째 반려.운영목표3→3, 수정효과0. 반복수리 지연을 감점한다. 근거 meta/evidence/astra-1110-021612-cycles.jsonl:10"
+    },
+    {
+      "change": "terra-1110-011541 전략·규칙 점검",
+      "grade": "worked",
+      "reason": "규칙 산식 일치와 무호출상한을 유지했고 전체 재고축소/근거없는 총상한 확대는 없었다. 전략유지의 우월한 대안은 미식별. seed 실패1→0/1576테스트 통과.수리는 성공했으나 도구 의미검사는 놓쳤다. 근거 meta/evidence/astra-1110-021612-cycles.jsonl:11"
+    }
+  ],
+  "keep_or_drop": [
+    {
+      "item": "tools/auto_auto_market_brief",
+      "decision": "keep",
+      "reason": "이번 0호출/0실패, 누적 70호출.이번 운영효과는 미확인이나 기존 의미회귀/읽기전용 역할을 유지.무사용을 수익으로 계산하지 않음. meta/evidence/astra-1110-021612-tools.jsonl:1"
+    },
+    {
+      "item": "tools/auto_market_research",
+      "decision": "keep",
+      "reason": "이번 0호출/0실패, 누적 1079호출.이번 운영효과는 미확인이나 기존 의미회귀/읽기전용 역할을 유지.무사용을 수익으로 계산하지 않음. meta/evidence/astra-1110-021612-tools.jsonl:2"
+    },
+    {
+      "item": "tools/auto_market_research_pack",
+      "decision": "keep",
+      "reason": "이번 0호출/0실패, 누적 0호출.의미회귀4실패→0으로 수리 유지; 집중도는 제한된 표본임을 명시. meta/evidence/astra-1110-021612-tools.jsonl:3"
+    },
+    {
+      "item": "tools/auto_market_scan",
+      "decision": "keep",
+      "reason": "이번 0호출/0실패, 누적 690호출.이번 운영효과는 미확인이나 기존 의미회귀/읽기전용 역할을 유지.무사용을 수익으로 계산하지 않음. meta/evidence/astra-1110-021612-tools.jsonl:4"
+    },
+    {
+      "item": "tools/break_rates",
+      "decision": "keep",
+      "reason": "이번 7호출/0실패, 누적 105호출.실행성은 확인.개별 Players효과는 미확정이며 읽기전용 기능 유지. meta/evidence/astra-1110-021612-tools.jsonl:5"
+    },
+    {
+      "item": "tools/catalog_search",
+      "decision": "keep",
+      "reason": "이번 0호출/0실패, 누적 1262호출.이번 운영효과는 미확인이나 기존 의미회귀/읽기전용 역할을 유지.무사용을 수익으로 계산하지 않음. meta/evidence/astra-1110-021612-tools.jsonl:6"
+    },
+    {
+      "item": "tools/cohort_profit",
+      "decision": "keep",
+      "reason": "이번 1호출/0실패, 누적 54호출.실행성은 확인.개별 Players효과는 미확정이며 읽기전용 기능 유지. meta/evidence/astra-1110-021612-tools.jsonl:7"
+    },
+    {
+      "item": "tools/forum_read",
+      "decision": "keep",
+      "reason": "이번 60호출/0실패, 누적 646호출.실행성은 확인.개별 Players효과는 미확정이며 읽기전용 기능 유지. meta/evidence/astra-1110-021612-tools.jsonl:8"
+    },
+    {
+      "item": "tools/ledger_search",
+      "decision": "keep",
+      "reason": "이번 44호출/0실패, 누적 2784호출.실행성은 확인.개별 Players효과는 미확정이며 읽기전용 기능 유지. meta/evidence/astra-1110-021612-tools.jsonl:9"
+    },
+    {
+      "item": "tools/market_demand",
+      "decision": "keep",
+      "reason": "이번 14호출/0실패, 누적 235호출.실행성은 확인.개별 Players효과는 미확정이며 읽기전용 기능 유지. meta/evidence/astra-1110-021612-tools.jsonl:10"
+    },
+    {
+      "item": "tools/market_opportunity",
+      "decision": "keep",
+      "reason": "이번 0호출/0실패, 누적 3호출.이번 운영효과는 미확인이나 기존 의미회귀/읽기전용 역할을 유지.무사용을 수익으로 계산하지 않음. meta/evidence/astra-1110-021612-tools.jsonl:11"
+    },
+    {
+      "item": "tools/my_customers",
+      "decision": "keep",
+      "reason": "이번 0호출/0실패, 누적 0호출.이번 운영효과는 미확인이나 기존 의미회귀/읽기전용 역할을 유지.무사용을 수익으로 계산하지 않음. meta/evidence/astra-1110-021612-tools.jsonl:12"
+    },
+    {
+      "item": "tools/my_decisions",
+      "decision": "keep",
+      "reason": "이번 11호출/0실패, 누적 62호출.실행성은 확인.개별 Players효과는 미확정이며 읽기전용 기능 유지. meta/evidence/astra-1110-021612-tools.jsonl:13"
+    },
+    {
+      "item": "tools/my_memory",
+      "decision": "keep",
+      "reason": "이번 0호출/0실패, 누적 2호출.이번 운영효과는 미확인이나 기존 의미회귀/읽기전용 역할을 유지.무사용을 수익으로 계산하지 않음. meta/evidence/astra-1110-021612-tools.jsonl:14"
+    },
+    {
+      "item": "tools/my_purchases",
+      "decision": "keep",
+      "reason": "이번 1호출/0실패, 누적 891호출.실행성은 확인.개별 Players효과는 미확정이며 읽기전용 기능 유지. meta/evidence/astra-1110-021612-tools.jsonl:15"
+    },
+    {
+      "item": "tools/my_state",
+      "decision": "keep",
+      "reason": "이번 24호출/0실패, 누적 375호출.실행성은 확인.개별 Players효과는 미확정이며 읽기전용 기능 유지. meta/evidence/astra-1110-021612-tools.jsonl:16"
+    },
+    {
+      "item": "tools/supply_audit",
+      "decision": "keep",
+      "reason": "이번 0호출/0실패, 누적 51호출.이번 운영효과는 미확인이나 기존 의미회귀/읽기전용 역할을 유지.무사용을 수익으로 계산하지 않음. meta/evidence/astra-1110-021612-tools.jsonl:17"
+    },
+    {
+      "item": "buyer_food_ladder.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "buyer_goods_grade.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "buyer_goods_ladder.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "buyer_our_ask.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "buyer_post.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "buyer_post_market.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "buyer_rank_pg.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "buyer_saved_floor.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "buyer_shop_profile.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "buyer_short_warranty.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "buyer_warranty_said.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "hard_limits.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "market_buyer.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "meta/REPORT-notes.md",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "meta/audit_astra_133041.py",
+      "decision": "keep",
+      "reason": "반려·원복 또는 하네스 정리로 현재 파일이 없다. 부재 상태를 유지하며 실패 시도의 파일을 재도입하지 않는다. 커밋 원문과 전후측정은 보존했다."
+    },
+    {
+      "item": "meta/build_astra_133041_review.py",
+      "decision": "keep",
+      "reason": "반려·원복 또는 하네스 정리로 현재 파일이 없다. 부재 상태를 유지하며 실패 시도의 파일을 재도입하지 않는다. 커밋 원문과 전후측정은 보존했다."
+    },
+    {
+      "item": "meta/changes.jsonl",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "meta/experiments.json",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "meta/grades.jsonl",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "meta/last-astra-answer.json",
+      "decision": "keep",
+      "reason": "반려·원복 또는 하네스 정리로 현재 파일이 없다. 부재 상태를 유지하며 실패 시도의 파일을 재도입하지 않는다. 커밋 원문과 전후측정은 보존했다."
+    },
+    {
+      "item": "meta/last-terra-answer.json",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "meta/probe_astra_133041.py",
+      "decision": "keep",
+      "reason": "반려·원복 또는 하네스 정리로 현재 파일이 없다. 부재 상태를 유지하며 실패 시도의 파일을 재도입하지 않는다. 커밋 원문과 전후측정은 보존했다."
+    },
+    {
+      "item": "meta/restock-sku-evidence.txt",
+      "decision": "keep",
+      "reason": "반려·원복 또는 하네스 정리로 현재 파일이 없다. 부재 상태를 유지하며 실패 시도의 파일을 재도입하지 않는다. 커밋 원문과 전후측정은 보존했다."
+    },
+    {
+      "item": "meta/run_astra_133041_tests.py",
+      "decision": "keep",
+      "reason": "반려·원복 또는 하네스 정리로 현재 파일이 없다. 부재 상태를 유지하며 실패 시도의 파일을 재도입하지 않는다. 커밋 원문과 전후측정은 보존했다."
+    },
+    {
+      "item": "meta/strategy.md",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "meta/terra.md",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "meta_harness.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "pricing.json",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "rank-integrity.md",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "restock.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "seller.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "seller_a_open.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "seller_floor_margin.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "seller_food_margin.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "seller_warranty_trial.json",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "shelf_jev_skip.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_buyer_food_ladder.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_buyer_goods_grade.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_buyer_goods_ladder.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_buyer_post_market.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_buyer_rank_pg_cover.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_buyer_saved_floor.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_buyer_short_warranty.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_buyer_warranty_said.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_buyer_zero_block.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_meta.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_seller_a_open.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_seller_floor_margin.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_seller_food_margin.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_shelf_jev_skip.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "test_short_talk_cap.py",
+      "decision": "keep",
+      "reason": "해당 경로 변경 커밋의 개별 판정은 grades에 기록.검증된 수정/원래 실험조건과 실패이력을 보존한다.사람의 중단조건 충족이 확인되지 않은 활성정책을 임의 복원하지 않는다.반려된 설정은 이미 복원된 현재값 유지."
+    },
+    {
+      "item": "meta/experiments.json:carpet-G1465c678-one-unit",
+      "decision": "drop",
+      "reason": "팩에서 이미 done/drop인 항목을 활성 큐에서 이번에 제거했다.이전큐 스냅샷과 experiments_log 종료기록은 보존.재시작하지 않는다."
+    },
+    {
+      "item": "meta/experiments.json:g6-a-ask-cap-343k",
+      "decision": "drop",
+      "reason": "팩에서 이미 done/drop인 항목을 활성 큐에서 이번에 제거했다.이전큐 스냅샷과 experiments_log 종료기록은 보존.재시작하지 않는다."
+    },
+    {
+      "item": "meta/experiments.json:supply-audit-context-113730",
+      "decision": "drop",
+      "reason": "팩에서 이미 done/drop인 항목을 활성 큐에서 이번에 제거했다.이전큐 스냅샷과 experiments_log 종료기록은 보존.재시작하지 않는다."
+    },
+    {
+      "item": "meta/experiments.json:forum-demand-join-113730",
+      "decision": "drop",
+      "reason": "팩에서 이미 done/drop인 항목을 활성 큐에서 이번에 제거했다.이전큐 스냅샷과 experiments_log 종료기록은 보존.재시작하지 않는다."
+    }
+  ],
+  "evidence": [
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:1",
+      "excerpt": "상점결제 69→135, 구매결제 37→36, 숙성순기여 None→60029원 (숙성 69→135건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:2",
+      "excerpt": "상점결제 88→115, 구매결제 36→41, 숙성순기여 None→2034658원 (숙성 88→115건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:3",
+      "excerpt": "상점결제 99→113, 구매결제 35→46, 숙성순기여 None→1336607원 (숙성 99→113건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:4",
+      "excerpt": "상점결제 111→113, 구매결제 33→49, 숙성순기여 None→566159원 (숙성 111→113건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:5",
+      "excerpt": "상점결제 116→109, 구매결제 42→53, 숙성순기여 1882333→-261559원 (숙성 116→109건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:6",
+      "excerpt": "상점결제 117→100, 구매결제 48→51, 숙성순기여 982630→-26935원 (숙성 117→100건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:7",
+      "excerpt": "상점결제 118→100, 구매결제 48→51, 숙성순기여 985493→-29305원 (숙성 118→100건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:8",
+      "excerpt": "상점결제 118→100, 구매결제 48→51, 숙성순기여 985493→-29305원 (숙성 118→100건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:9",
+      "excerpt": "상점결제 95→138, 구매결제 52→49, 숙성순기여 52078→-457667원 (숙성 95→138건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:10",
+      "excerpt": "상점결제 109→122, 구매결제 54→48, 숙성순기여 -376683→-262239원 (숙성 109→122건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:11",
+      "excerpt": "상점결제 102→121, 구매결제 50→50, 숙성순기여 -19884→-756672원 (숙성 102→121건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:12",
+      "excerpt": "상점결제 127→102, 구매결제 48→47, 숙성순기여 -500303→-769350원 (숙성 127→102건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:13",
+      "excerpt": "상점결제 126→108, 구매결제 51→42, 숙성순기여 -260245→-123896원 (숙성 126→108건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:14",
+      "excerpt": "상점결제 123→109, 구매결제 49→40, 숙성순기여 -361062→146501원 (숙성 123→109건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:15",
+      "excerpt": "상점결제 107→110, 구매결제 46→38, 숙성순기여 -982299→796230원 (숙성 107→110건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:16",
+      "excerpt": "상점결제 99→113, 구매결제 46→36, 숙성순기여 -852651→482436원 (숙성 99→113건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:17",
+      "excerpt": "상점결제 114→102, 구매결제 40→48, 숙성순기여 217047→109051원 (숙성 114→102건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:18",
+      "excerpt": "상점결제 112→115, 구매결제 38→42, 숙성순기여 706793→962519원 (숙성 112→115건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:19",
+      "excerpt": "상점결제 102→107, 구매결제 25→38, 숙성순기여 1220818→1437883원 (숙성 102→107건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:20",
+      "excerpt": "상점결제 116→87, 구매결제 35→32, 숙성순기여 1808270→-1540923원 (숙성 116→87건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:21",
+      "excerpt": "상점결제 116→86, 구매결제 35→32, 숙성순기여 1808020→-1543457원 (숙성 116→86건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:22",
+      "excerpt": "상점결제 119→83, 구매결제 35→33, 숙성순기여 2302962→-2029474원 (숙성 119→83건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:23",
+      "excerpt": "상점결제 113→92, 구매결제 42→27, 숙성순기여 1771667→-1324713원 (숙성 113→92건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:24",
+      "excerpt": "상점결제 114→91, 구매결제 41→27, 숙성순기여 1772187→-1324434원 (숙성 114→91건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:25",
+      "excerpt": "상점결제 87→95, 구매결제 34→26, 숙성순기여 -2050523→-395041원 (숙성 87→95건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:26",
+      "excerpt": "상점결제 87→95, 구매결제 34→26, 숙성순기여 -2050523→-395041원 (숙성 87→95건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:27",
+      "excerpt": "상점결제 87→95, 구매결제 34→26, 숙성순기여 -2050523→-395041원 (숙성 87→95건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:28",
+      "excerpt": "상점결제 87→95, 구매결제 34→26, 숙성순기여 -2050523→-395041원 (숙성 87→95건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:29",
+      "excerpt": "상점결제 87→96, 구매결제 34→26, 숙성순기여 -2050523→-361980원 (숙성 87→96건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:30",
+      "excerpt": "상점결제 87→96, 구매결제 34→26, 숙성순기여 -2050523→-361980원 (숙성 87→96건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:31",
+      "excerpt": "상점결제 87→96, 구매결제 34→26, 숙성순기여 -2050523→-361980원 (숙성 87→96건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:32",
+      "excerpt": "상점결제 87→96, 구매결제 34→26, 숙성순기여 -2050523→-361980원 (숙성 87→96건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:33",
+      "excerpt": "상점결제 90→99, 구매결제 31→27, 숙성순기여 -2027119→-333990원 (숙성 90→99건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:34",
+      "excerpt": "상점결제 91→105, 구매결제 28→26, 숙성순기여 -1548535→-333514원 (숙성 91→105건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:35",
+      "excerpt": "상점결제 103→86, 구매결제 29→28, 숙성순기여 -1211797→-51050원 (숙성 103→86건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:36",
+      "excerpt": "상점결제 113→103, 구매결제 30→27, 숙성순기여 -880438→2563147원 (숙성 113→103건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:37",
+      "excerpt": "상점결제 118→94, 구매결제 29→33, 숙성순기여 208603→1383180원 (숙성 118→94건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:38",
+      "excerpt": "상점결제 114→94, 구매결제 27→38, 숙성순기여 1227684→458429원 (숙성 114→94건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:39",
+      "excerpt": "상점결제 111→93, 구매결제 28→39, 숙성순기여 2055484→896708원 (숙성 111→82건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:40",
+      "excerpt": "상점결제 104→90, 구매결제 30→40, 숙성순기여 2009294→833305원 (숙성 104→69건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:41",
+      "excerpt": "상점결제 98→91, 구매결제 37→36, 숙성순기여 1529212→476567원 (숙성 98→43건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:42",
+      "excerpt": "상점결제 100→76, 구매결제 38→38, 숙성순기여 628244→152165원 (숙성 100→15건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:43",
+      "excerpt": "상점결제 92→71, 구매결제 37→38, 숙성순기여 871841→None원 (숙성 78→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:44",
+      "excerpt": "상점결제 84→91, 구매결제 36→30, 숙성순기여 760460→None원 (숙성 31→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:45",
+      "excerpt": "상점결제 84→91, 구매결제 36→30, 숙성순기여 760460→None원 (숙성 31→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:46",
+      "excerpt": "상점결제 84→91, 구매결제 36→30, 숙성순기여 760460→None원 (숙성 31→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:47",
+      "excerpt": "상점결제 64→105, 구매결제 38→29, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:48",
+      "excerpt": "상점결제 71→99, 구매결제 39→32, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:49",
+      "excerpt": "상점결제 99→73, 구매결제 41→32, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:50",
+      "excerpt": "상점결제 92→95, 구매결제 38→30, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:51",
+      "excerpt": "상점결제 92→94, 구매결제 38→28, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:52",
+      "excerpt": "상점결제 94→101, 구매결제 36→30, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:53",
+      "excerpt": "상점결제 92→119, 구매결제 28→34, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:54",
+      "excerpt": "상점결제 95→110, 구매결제 28→34, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:55",
+      "excerpt": "상점결제 99→104, 구매결제 27→32, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:56",
+      "excerpt": "상점결제 107→105, 구매결제 31→32, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:57",
+      "excerpt": "상점결제 107→105, 구매결제 31→32, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:58",
+      "excerpt": "상점결제 107→105, 구매결제 31→32, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:59",
+      "excerpt": "상점결제 110→100, 구매결제 34→34, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:60",
+      "excerpt": "상점결제 110→100, 구매결제 34→34, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:61",
+      "excerpt": "상점결제 101→110, 구매결제 33→39, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:62",
+      "excerpt": "상점결제 104→107, 구매결제 34→35, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:63",
+      "excerpt": "상점결제 97→110, 구매결제 38→33, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:64",
+      "excerpt": "상점결제 100→111, 구매결제 34→39, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:65",
+      "excerpt": "상점결제 108→109, 구매결제 37→36, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:66",
+      "excerpt": "상점결제 97→129, 구매결제 35→38, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:67",
+      "excerpt": "상점결제 96→129, 구매결제 35→38, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:68",
+      "excerpt": "상점결제 96→129, 구매결제 35→38, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:69",
+      "excerpt": "상점결제 110→99, 구매결제 21→30, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:70",
+      "excerpt": "상점결제 95→105, 구매결제 19→34, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:71",
+      "excerpt": "상점결제 98→141, 구매결제 35→36, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:72",
+      "excerpt": "상점결제 113→130, 구매결제 38→35, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:73",
+      "excerpt": "상점결제 123→114, 구매결제 38→32, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:74",
+      "excerpt": "상점결제 127→60, 구매결제 40→18, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:75",
+      "excerpt": "상점결제 136→48, 구매결제 36→16, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:76",
+      "excerpt": "상점결제 135→26, 구매결제 37→10, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-comparisons.jsonl:77",
+      "excerpt": "상점결제 133→13, 구매결제 33→8, 숙성순기여 None→None원 (숙성 0→0건)",
+      "meaning": "해당 커밋 전후30분 원장·판매원가·주문연결환불 측정. 미숙성 None은0원이 아니며 동시변경의 인과효과는 미분리."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-cycles.jsonl:2",
+      "excerpt": "terra-1109-141711",
+      "meaning": "해당 Terra의 원문 변경·전략·실험·반려 상태를 보존한 기록."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-cycles.jsonl:3",
+      "excerpt": "terra-1109-153341",
+      "meaning": "해당 Terra의 원문 변경·전략·실험·반려 상태를 보존한 기록."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-cycles.jsonl:4",
+      "excerpt": "terra-1109-164637",
+      "meaning": "해당 Terra의 원문 변경·전략·실험·반려 상태를 보존한 기록."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-cycles.jsonl:5",
+      "excerpt": "terra-1109-175823",
+      "meaning": "해당 Terra의 원문 변경·전략·실험·반려 상태를 보존한 기록."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-cycles.jsonl:6",
+      "excerpt": "terra-1109-190948",
+      "meaning": "해당 Terra의 원문 변경·전략·실험·반려 상태를 보존한 기록."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-cycles.jsonl:7",
+      "excerpt": "terra-1109-202132",
+      "meaning": "해당 Terra의 원문 변경·전략·실험·반려 상태를 보존한 기록."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-cycles.jsonl:8",
+      "excerpt": "terra-1109-213305",
+      "meaning": "해당 Terra의 원문 변경·전략·실험·반려 상태를 보존한 기록."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-cycles.jsonl:9",
+      "excerpt": "terra-1109-224449",
+      "meaning": "해당 Terra의 원문 변경·전략·실험·반려 상태를 보존한 기록."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-cycles.jsonl:10",
+      "excerpt": "terra-1110-000257",
+      "meaning": "해당 Terra의 원문 변경·전략·실험·반려 상태를 보존한 기록."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-cycles.jsonl:11",
+      "excerpt": "terra-1110-011541",
+      "meaning": "해당 Terra의 원문 변경·전략·실험·반려 상태를 보존한 기록."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:1",
+      "excerpt": "\"calls\": 0, \"failures\": 0",
+      "meaning": "auto_auto_market_brief의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:2",
+      "excerpt": "\"calls\": 0, \"failures\": 0",
+      "meaning": "auto_market_research의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:3",
+      "excerpt": "\"calls\": 0, \"failures\": 0",
+      "meaning": "auto_market_research_pack의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:4",
+      "excerpt": "\"calls\": 0, \"failures\": 0",
+      "meaning": "auto_market_scan의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:5",
+      "excerpt": "\"calls\": 7, \"failures\": 0",
+      "meaning": "break_rates의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:6",
+      "excerpt": "\"calls\": 0, \"failures\": 0",
+      "meaning": "catalog_search의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:7",
+      "excerpt": "\"calls\": 1, \"failures\": 0",
+      "meaning": "cohort_profit의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:8",
+      "excerpt": "\"calls\": 60, \"failures\": 0",
+      "meaning": "forum_read의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:9",
+      "excerpt": "\"calls\": 44, \"failures\": 0",
+      "meaning": "ledger_search의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:10",
+      "excerpt": "\"calls\": 14, \"failures\": 0",
+      "meaning": "market_demand의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:11",
+      "excerpt": "\"calls\": 0, \"failures\": 0",
+      "meaning": "market_opportunity의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:12",
+      "excerpt": "\"calls\": 0, \"failures\": 0",
+      "meaning": "my_customers의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:13",
+      "excerpt": "\"calls\": 11, \"failures\": 0",
+      "meaning": "my_decisions의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:14",
+      "excerpt": "\"calls\": 0, \"failures\": 0",
+      "meaning": "my_memory의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:15",
+      "excerpt": "\"calls\": 1, \"failures\": 0",
+      "meaning": "my_purchases의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:16",
+      "excerpt": "\"calls\": 24, \"failures\": 0",
+      "meaning": "my_state의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tools.jsonl:17",
+      "excerpt": "\"calls\": 0, \"failures\": 0",
+      "meaning": "supply_audit의 검토 구간 사용·실패 수."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-findings.jsonl:1",
+      "excerpt": "{\"sku\": \"Gc2f7811b\", \"paid\": 3, \"buyers\": 1, \"price_min\": 200000, \"price_median\": 380000, \"price_max\": 570000, \"list_price\": 259000, \"surge\": 1.0, \"worst_unit_cost\": 194250, \"floor15\": 229102, \"floor25\": 259649, \"clears_floor15\": 2, \"clears_floor25\": 2, \"stock_units\": 0}",
+      "meaning": "이번 주기에 원장·팩·공급창으로 측정한 수치."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-findings.jsonl:6",
+      "excerpt": "{\"sku\": \"G2c023a8c\", \"mature\": {\"paid\": 58, \"revenue\": 19499397, \"known_cost\": 17413221, \"missing_cost\": 0, \"refunds\": 2533950, \"refunded_sales\": 8, \"unknown_warranty\": 0, \"known_net\": -447774, \"net\": -447774, \"net_per_sale\": -7720.24}}",
+      "meaning": "이번 주기에 원장·팩·공급창으로 측정한 수치."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-guards.jsonl:1",
+      "excerpt": "{\"window\": [1794242687, 1794242867], \"scope\": \"open-120s through close; repeated simulations count as lines, not independent supply failures\", \"counts\": {\"all_guard_lines\": 1752, \"units per SKU\": 23}, \"examples\": [{\"ref\": \"logs/market-kit.log:78397\", \"excerpt\": \"01:43:41 [buyer] [restock] guard: G6b9db161 9 -> 0 (units per SKU)\"}, {\"ref\": \"logs/market-kit.log:78398\", \"excerpt\": \"01:43:41 [buyer] [restock] guard: G9c9f8f94 15 -> 0 (units per SKU)\"}, {\"ref\": \"logs/market-kit.log:78399\", \"excerpt\": \"01:43:41 [buyer] [restock] guard: G147ae4e7 4 -> 1 (units per SKU)\"}, {\"ref\": \"logs/market-kit.log:78400\", \"excerpt\": \"01:43:41 [buyer] [restock] guard: G021aae64 10 -> 1 (units per SKU)\"}, {\"ref\": \"logs/market-kit.log:78401\", \"excerpt\": \"01:43:41 [buyer] [restock] guard: G00327e80 4 -> 0 (units per SKU)\"}, {\"ref\": \"logs/market-kit.log:78402\", \"excerpt\": \"01:43:41 [buyer] [restock] guard: G0e4deffc 1 -> 0 (units per SKU)\"}], \"stock_at_open\": {\"G75f11c19\": 8, \"G0667d440\": 6, \"G2c023a8c\": 2}}",
+      "meaning": "이번 주기에 원장·팩·공급창으로 측정한 수치."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-guards.jsonl:2",
+      "excerpt": "{\"window\": [1794243645, 1794243825], \"scope\": \"open-120s through close; repeated simulations count as lines, not independent supply failures\", \"counts\": {\"all_guard_lines\": 1321, \"units per SKU\": 21}, \"examples\": [{\"ref\": \"logs/market-kit.log:90010\", \"excerpt\": \"01:59:09 [buyer] [restock] guard: G6b9db161 9 -> 0 (units per SKU)\"}, {\"ref\": \"logs/market-kit.log:90011\", \"excerpt\": \"01:59:09 [buyer] [restock] guard: G9c9f8f94 14 -> 0 (units per SKU)\"}, {\"ref\": \"logs/market-kit.log:90012\", \"excerpt\": \"01:59:09 [buyer] [restock] guard: G147ae4e7 3 -> 0 (units per SKU)\"}, {\"ref\": \"logs/market-kit.log:90013\", \"excerpt\": \"01:59:09 [buyer] [restock] guard: G1515d951 8 -> 0 (units per SKU)\"}, {\"ref\": \"logs/market-kit.log:90014\", \"excerpt\": \"01:59:09 [buyer] [restock] guard: G00327e80 4 -> 0 (units per SKU)\"}, {\"ref\": \"logs/market-kit.log:90015\", \"excerpt\": \"01:59:09 [buyer] [restock] guard: G7978c65e 1 -> 0 (units per SKU)\"}], \"stock_at_open\": {\"G75f11c19\": 7, \"G0667d440\": 6, \"G2c023a8c\": 2}}",
+      "meaning": "이번 주기에 원장·팩·공급창으로 측정한 수치."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-period.jsonl:1",
+      "excerpt": "{\"start\": 1794198641.0, \"end\": 1794244573.0, \"shop_paid\": 2694, \"shop_revenue\": 414715626, \"mature_paid\": 1461, \"missing_cost_or_warranty\": 0, \"mature_known_net\": 6343471, \"mature_net\": 6343471, \"linked_mature_refunds\": 19948801, \"buyer_paid\": 893, \"observed_hours\": 12.7589, \"sample_refs\": [\".market/ledger_rows.jsonl:1138345\", \".market/ledger_rows.jsonl:1138415\"]}",
+      "meaning": "이번 주기에 원장·팩·공급창으로 측정한 수치."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-study-arms.jsonl:3",
+      "excerpt": "{\"study\": \"goods_grade\", \"id\": \"goods-grade-b-1033\", \"arm\": \"A\", \"orders\": 379, \"paid\": 101, \"mature_paid\": 65, \"unknown_food_value\": 0, \"known_normalized_surplus\": 17.288434, \"first_ts\": 1794200108.9, \"last_ts\": 1794242955.9, \"note\": \"동시등급/사다리처치·수정버전이 겹침. 식품의 사용기한 실제가치는 결측. 이 합은 Saved분모를 포함한 인과효과가 아님.\"}",
+      "meaning": "이번 주기에 원장·팩·공급창으로 측정한 수치."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-study-arms.jsonl:4",
+      "excerpt": "{\"study\": \"goods_grade\", \"id\": \"goods-grade-b-1033\", \"arm\": \"B\", \"orders\": 374, \"paid\": 98, \"mature_paid\": 67, \"unknown_food_value\": 0, \"known_normalized_surplus\": 19.638007, \"first_ts\": 1794199974.4, \"last_ts\": 1794243105.9, \"note\": \"동시등급/사다리처치·수정버전이 겹침. 식품의 사용기한 실제가치는 결측. 이 합은 Saved분모를 포함한 인과효과가 아님.\"}",
+      "meaning": "이번 주기에 원장·팩·공급창으로 측정한 수치."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-study-arms.jsonl:5",
+      "excerpt": "{\"study\": \"goods_ladder\", \"id\": \"goods-ladder-1338\", \"arm\": \"A\", \"orders\": 367, \"paid\": 107, \"mature_paid\": 66, \"unknown_food_value\": 0, \"known_normalized_surplus\": 18.895469, \"first_ts\": 1794201420.9, \"last_ts\": 1794244533.2, \"note\": \"동시등급/사다리처치·수정버전이 겹침. 식품의 사용기한 실제가치는 결측. 이 합은 Saved분모를 포함한 인과효과가 아님.\"}",
+      "meaning": "이번 주기에 원장·팩·공급창으로 측정한 수치."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-study-arms.jsonl:6",
+      "excerpt": "{\"study\": \"goods_ladder\", \"id\": \"goods-ladder-1338\", \"arm\": \"B\", \"orders\": 386, \"paid\": 131, \"mature_paid\": 74, \"unknown_food_value\": 0, \"known_normalized_surplus\": 22.401718, \"first_ts\": 1794201371.0, \"last_ts\": 1794244447.6, \"note\": \"동시등급/사다리처치·수정버전이 겹침. 식품의 사용기한 실제가치는 결측. 이 합은 Saved분모를 포함한 인과효과가 아님.\"}",
+      "meaning": "이번 주기에 원장·팩·공급창으로 측정한 수치."
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-pack-before.txt:79",
+      "excerpt": "FAILED (failures=4)",
+      "meaning": "수리 전 의미회귀4건 모두실패"
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-pack-after.txt:7",
+      "excerpt": "Ran 4 tests in 0.572s",
+      "meaning": "수리 후 같은4건 통과"
+    },
+    {
+      "ref": "meta/evidence/astra-1110-021612-tests.txt:5421",
+      "excerpt": "Ran 1595 tests in 197.587s",
+      "meaning": "집중도 추가검사를 포함한 지정환경 전체1595테스트 통과"
+    }
+  ]
+}

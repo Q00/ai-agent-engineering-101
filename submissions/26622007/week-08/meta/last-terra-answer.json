@@ -1,0 +1,80 @@
+{
+  "changed": false,
+  "hypothesis": "현재 확인된 공급창과 숙성손익 자료만으로는 단일 운영 변경이 현행 정책보다 Players 점수를 높인다고 입증하기 어렵다.",
+  "change_summary": "운영 코드와 설정은 변경하지 않았다. 두 완료 공급창의 SKU별 단위 ID와 호출 유형별 캐시 사용률을 집계했다. 전체 회귀 검사는 실행 중이다.",
+  "target_metric": "Players 점수, 구매자 Saved, 상점 book",
+  "expected": "운영 정책을 유지하므로 이번 변경에 따른 추가 Players 효과는 0이다.",
+  "evidence": [
+    {
+      "ref": "meta/evidence/terra-1111-183339.json:46",
+      "excerpt": "\"objective_matches\": true,",
+      "meaning": "확인된 규칙과 scorecard의 목적식이 일치한다."
+    },
+    {
+      "ref": "meta/evidence/terra-1111-183339.json:111",
+      "excerpt": "\"rival_value\": 0.3292,",
+      "meaning": "Saved는 현재 0.3283이며 다음 경쟁자와 동률까지 0.0009가 필요하다."
+    },
+    {
+      "ref": "meta/evidence/terra-1111-183339.json:457",
+      "excerpt": "\"profit_if_stock_sells_at_cost\": 370978114,",
+      "meaning": "미판매 재고를 원가로 포함한 현재 book이다."
+    },
+    {
+      "ref": "meta/evidence/terra-1111-183339.json:31381",
+      "excerpt": "\"settled_as_shop\": 250,",
+      "meaning": "직전 팩 이후 상점 정산은 250건이다."
+    },
+    {
+      "ref": "meta/evidence/terra-1111-183339-cache-v2.jsonl:1",
+      "excerpt": "\"calls\": 17, \"prompt_tokens\": 86375, \"cached_tokens\": 10809, \"ratio\": 0.1251",
+      "meaning": "포럼 호출 캐시 비율은 직전 판정선 10%를 넘었다."
+    },
+    {
+      "ref": "meta/evidence/terra-1111-183339-cache-v2.jsonl:2",
+      "excerpt": "\"calls\": 87, \"prompt_tokens\": 394649, \"cached_tokens\": 131215, \"ratio\": 0.3325",
+      "meaning": "같은 유형의 직전 6시간 캐시 비율은 33.25%였다."
+    },
+    {
+      "ref": "meta/evidence/terra-1111-183339-supply.jsonl:3",
+      "excerpt": "\"bought_first_window\": 5, \"sold_by_second_close\": 2, \"sold_fraction\": 0.4",
+      "meaning": "G75는 첫 완료 공급창 관측 입고 5개 중 두 번째 창 종료까지 2개가 판매되어 과반 판매 조건을 충족하지 않았다."
+    },
+    {
+      "ref": "meta/evidence/terra-1111-183339.json:31596",
+      "excerpt": "\"running\": null,",
+      "meaning": "실행 중인 대기열 실험이 없다."
+    }
+  ],
+  "evidence_gap": {
+    "missing": "포럼 캐시 하락의 프롬프트 접두부 원인과 G1515 숙성 판매 1건의 원가가 확인되지 않았다. 전체 회귀 검사는 응답 시점에 아직 실행 중이다.",
+    "measurement": "이번 시간과 직전 6시간의 호출 유형별 입력·캐시 토큰을 meta/evidence/terra-1111-183339-cache-v2.jsonl에 집계하고, 두 완료 공급창의 단위 ID와 숙성손익을 meta/evidence/terra-1111-183339-supply.jsonl에 기록했다. 회귀 출력은 meta/evidence/terra-1111-183339-tests.txt에 저장 중이다.",
+    "judge_line": {
+      "metric": "forum-agent 시간당 캐시 입력 토큰 비율",
+      "direction": "above",
+      "threshold": "0.10",
+      "min_sample": "캐시 사용량이 기록된 포럼 호출 10건",
+      "expires": "2026-11-11 19:33 KST",
+      "undo": "이번 주기에 운영 변경이 없어 원복 대상은 없다. 미달이면 기록 가능한 접두부 차이를 확인한 뒤 수리 여부를 판단한다."
+    }
+  },
+  "previous_verdict": "none",
+  "previous_reason": "직전 Terra 주기에는 운영 변경이 없었다. 직전 포럼 캐시 판정선은 이번 17건의 12.51%로 충족했다. 이후 사람의 두 상품군 기본화와 결제 경합 수정은 각자의 판단을 존중하며 되돌리지 않았다. 반려됐던 시간 민감 테스트를 포함한 전체 회귀는 현재 HEAD에서 실행 중이어서 아직 통과 여부를 판정할 수 없다.",
+  "grade_summary": "Players는 1.664→1.666, 69명 중 7위이며 선두와 0.067 차이다. Shop ALL 0.851, Buyer ALL 0.815이고 양쪽 board_drift는 0이다. 새 패치는 없다. 직전 구간 상점 정산 250건, 구매 결제 96건, 품절 9건, 구매 결제 거절 2건, 체크아웃 거절 7건이다. 현재 로그 표본의 원가 미만 제안·보증 거절·포럼 게시 및 투표 거절은 각각 0건이고 누락 도구는 없다. Book은 368,554,755→370,978,114원이다. 24시간 초과 재고는 50개·43,328,986원에서 56개·50,938,268원으로 늘었다. 보관 손실 누계는 6,629,994→6,708,876원, 등급 하락 237건·0원, 폐기 1건·8,113원이다. 과거 연결 오류가 포함된 환불 추정 누계는 SKU 축소 근거로 사용하지 않았다. alert llm_cache: 전체 비율 0.069는 직전 6시간 0.154보다 낮다. 포럼 유형 재집계는 17건·0.1251로 이전 판정선 0.10을 넘었지만 이전 6시간 0.3325보다는 낮다. 다음 시간 동일 유형 10건 이상으로 다시 측정하며 호출을 줄이지 않는다.",
+  "weakest": [
+    "구매자 Saved",
+    "상점 book"
+  ],
+  "strategy_check": {
+    "current": "인증과 정직한 등급, 72시간 상품 보증을 내세운 폭넓은 식품·생활용품과 검증된 고가 가구·침구 판매 및 Saved 중심 구매",
+    "gap_cause": "unclear",
+    "keep_or_shift": "keep",
+    "reason": "최근 6시간 Players 변화는 우리 +0.005, 바로 위 +0.014, 선두 +0.002로 바로 위보다 0.009 뒤졌지만 12.2시간은 각각 +0.019, +0.002, −0.005다. 전략의 3시간과 12시간 동시 열세 조건은 충족하지 않는다. 선두는 거래 32,587건·방문 50,512회·매출 9.367B원·book 1.148B원이고 우리는 33,272건·52,024회·5.697B원·0.371B원이다. 선두 카드도 인증과 A/B 72시간 보증을 약속한다. Saved 다음 상대 0.3292까지 0.0009가 필요하며 통과 시 조건부 +0.00781점이다. Book 다음 상대 396,973,518원까지 26,262,684원이 필요하다. G1515는 첫 창 3개 중 2개가 팔렸으나 숙성 원가 1건이 결측이고, G75는 5개 중 2개가 팔렸다. 실제 목표 구속과 동일 추가분 여부가 확인되지 않아 확대를 보류한다. 경쟁자 상품별 정산과 유입·협상 원인의 충분한 대조는 미완료이므로 전략의 추가 효과는 미확정이다."
+  },
+  "action_kind": "none",
+  "experiment": {
+    "id": "",
+    "step": "none",
+    "result": "진행 중인 실험과 시작할 대기 실험은 각각 0개다. 두 대기열 항목은 이미 drop으로 기록돼 재시작하지 않는다."
+  }
+}
