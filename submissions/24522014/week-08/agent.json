@@ -1,0 +1,23 @@
+{
+  "profile": "codex",
+  "restock": {
+    "cmd": "python restock_policy.py --state {state}"
+  },
+  "harness": "R3 inventory seller: coded rules answer quotes and numeric offers, with staged clearance and condition disclosure; Codex gpt-6.1-terra only if seller_decision.json selects it. Certified A/B SKU buyer with food time margin: coded rules first, then within hourly limits agy gemini-4-argon-low, then Codex gpt-6.1-terra. Usage checks fall back to rules; bounded goods restock",
+  "seller": {
+    "harness": "codex",
+    "model": "gpt-6.1-terra",
+    "cmd": "python seller_r3.py --port {port}"
+  },
+  "buyer": {
+    "harness": "codex",
+    "model": "gpt-6.1-terra",
+    "cmd": "python buyer.py --mode codex --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python market_buyer.py --mode codex --shops {shops} --item {item} --budget {budget} --order {order}"
+  },
+  "review": {
+    "cmd": "python review_policy.py --deal {deal}"
+  }
+}

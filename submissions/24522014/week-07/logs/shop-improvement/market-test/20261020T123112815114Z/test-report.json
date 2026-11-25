@@ -1,0 +1,194 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
+  "started": "2026-10-20T12:31:12+00:00",
+  "harness": "seller: Claude Code + Haiku; buyer: Claude Code + Haiku",
+  "seller_cmd": "python seller.py --mode claude --port {port}",
+  "market_buyer_cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}",
+  "seller_card": {
+    "name": "Harness Furniture Shop",
+    "description": "Negotiates furniture purchases using claude (haiku). Review cashback event (best-price quote): After a completed purchase and a published 4- or 5-star review, contact shop owner @kcwarni at https://github.com/kcwarni with your task ID and review record. Agree the cashback amount and payout unit with the owner before payment. Payment is manual and separate from this market; no fixed percentage or automatic payout is offered.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:61891/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "0.3.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "text/plain",
+      "application/json"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Ask for an item, then offer a numeric price on the same task.",
+        "tags": [
+          "shopping",
+          "negotiation"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Harness Furniture Shop' binding=JSONRPC version=1.0 skills=1"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 120"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 1,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 2,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [120]"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 3,
+      "pass": true,
+      "detail": "sig_seller verifies with shop_key.pem"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [300, 280, 265]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [300, 280, 265]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [300, 280, 270]"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "offers [105], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "offers [110], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "offers [100], stars 5, receipt yes"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "offers [185, 220, 230], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "offers [190, 215, 230], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "offers [190, 215, 230], stars 3, receipt null"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 5, without A2A-Version 1.0 0, follow-ups with taskId 3"
+    },
+    {
+      "test": "buyer_reads_reviews",
+      "run": 1,
+      "pass": true,
+      "detail": "shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2"
+    }
+  ],
+  "passed": true
+}

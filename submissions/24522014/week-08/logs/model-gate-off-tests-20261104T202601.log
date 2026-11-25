@@ -1,0 +1,65 @@
+.........[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 가격 실험 중 · 다음 정기 진단 01-02 15:16 KST
+........................FF.......[harness] fixture
+[harness] deterministic acceptance of the disclosed quote
+.................................................................................................[알림 오류] OSError: notification unavailable
+...................................[모니터링] 관측 정상 · 자기 확정 정산 10건 · 종합 순위 10위 · 비교 표본 대기 · 다음 정기 진단 01-02 15:17 KST
+.........F........................................................F.........................Cannot load selection inputs: Food order requires a nonnegative use period
+...[harness] fixture
+.[harness] fixture
+[guard] inventory condition/price changed; disclose again and request confirmation
+.............................................20:26:03 [acp] settle refused: {'error': 'budget'}
+......................Dispatcher task is not running. Cannot wait for event dispatch.
+..............................[harness] fixture
+[harness] deterministic acceptance of the disclosed quote
+..................[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 기준선 수집 · 다음 정기 진단 01-02 13:16 KST
+[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 가격 실험 중 · 다음 정기 진단 01-02 15:16 KST
+[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 현금 보호 · 다음 정기 진단 01-02 15:18 KST
+..[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 정책 실험 중지 · 다음 정기 진단 01-02 13:16 KST
+.[모니터링] 자료 확인 대기(정상 실적으로 판단하지 않음) · 추가 대기 없음·다음 훅에서 재검토 · 다음 정기 진단 01-02 15:17 KST
+..............
+======================================================================
+FAIL: test_model_day_cap_survives_hour_reset (test_balanced_strategy.Files.test_model_day_cap_survives_hour_reset)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 153, in test_model_day_cap_survives_hour_reset
+    self.assertFalse(buyer_support.reserve_model(self.md, 'extra', base+13*3601))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_model_hour_cap_and_duplicate_order (test_balanced_strategy.Files.test_model_hour_cap_and_duplicate_order)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_balanced_strategy.py", line 142, in test_model_hour_cap_and_duplicate_order
+    self.assertFalse(buyer_support.reserve_model(self.md, 'a', self.now))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_a_real_reservation_is_not_consumed_by_a_counter (test_market_buyer.CounterOfferTrades.test_a_real_reservation_is_not_consumed_by_a_counter)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_market_buyer.py", line 594, in test_a_real_reservation_is_not_consumed_by_a_counter
+    self.assertEqual(buyer_support.model_reservation(md, "o-1", 1793750400.0), "reserved")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'gate_disabled' != 'reserved'
+- gate_disabled
++ reserved
+
+
+======================================================================
+FAIL: test_each_denial_has_its_own_code_and_reserve_model_stays_boolean (test_market_buyer.ReservationReasons.test_each_denial_has_its_own_code_and_reserve_model_stays_boolean)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_market_buyer.py", line 788, in test_each_denial_has_its_own_code_and_reserve_model_stays_boolean
+    self.assertEqual(buyer_support.model_reservation(md, "a", now), "reserved")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'gate_disabled' != 'reserved'
+- gate_disabled
++ reserved
+
+
+----------------------------------------------------------------------
+Ran 402 tests in 2.258s
+
+FAILED (failures=4)

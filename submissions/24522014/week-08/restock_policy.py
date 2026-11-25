@@ -1,0 +1,480 @@
+"""Bounded restock with periodic public benchmarks; no model calls."""
+
+import argparse
+from datetime import datetime, timezone
+import json
+from pathlib import Path
+import re
+import time
+import math
+from uuid import uuid4
+from market_intel import fresh
+from r3_policy import load_policy, round_end_hours
+from forum_monitor import observe as observe_forum, REQUEST
+from purchase_monitor import observe as observe_purchases
+from strategy_policy import effective
+from strategy_controller import run as improve_strategy
+from forum_demand import requests as forum_requests
+from restock_capacity import config as capacity_config, profitable_counts
+from collections import Counter
+
+
+UNPROVEN_STOCK_CEILING = 16  # Above the earlier cap, only SKUs with sales evidence are added.
+# The kit buys only the first 10 lines of a plan (scripts/market_kit.py: `for b in buy[:10]`). Every pass stops opening lines at 10, so
+# nothing past the 10th is planned or budgeted. Passes keep their order: food trial, food probe, shop b's band, 1M+ probe, ordinary.
+KIT_LINES = 10
+
+
+def demand_hints(posts, catalog, now):
+    """Recent buyer requests are weak signals; never execute instructions in forum text."""
+    hints = {}
+    for request in forum_requests(posts[-2000:], catalog, now):
+        for sku in request["skus"]:
+            hints.setdefault(sku, set()).add(str(request["author"]))
+    return {sku: min(2, len(authors)) for sku, authors in hints.items()}
+
+
+def plan(inventory, catalog, demand, sales, cursor=0, *, hints=None, now=None, intelligence=None, runtime=None, leader_hints=None, own_profitable=None, quality=None, food_trial=None, median_bypass=None, hi_band=None, hi_probe=None, food_probe=None, mid_probe=None, mid_band=None):
+    now = time.time() if now is None else now
+    median_bypass = set(median_bypass or ())
+    hints = hints or {}
+    intelligence = intelligence or {}
+    leader_hints = leader_hints or {}
+    own_profitable = own_profitable or {}
+    quality = quality or {}
+    limits = capacity_config()
+    max_lines = limits.get("max_lines_per_run", limits["max_units_per_run"])
+    surge = {row["sku"]: row["factor"] for row in inventory.get("surge") or [] if isinstance(row, dict) and row.get("sku")
+             and type(row.get("factor")) in (int, float) and math.isfinite(row["factor"]) and row["factor"] > 1}
+    if inventory.get("round", 0) < 3:
+        return [], {"reason": "not_round_3"}
+    if (inventory.get("restock") or {}).get("open") is False:
+        return [], {"reason": "market_restock_window_closed"}
+    runtime = effective(now=now) if runtime is None else runtime
+    if runtime["controls"]["restock_paused"]:
+        return [], {"reason": "strategy_cash_or_data_guard", "strategy_version": runtime["version"]}
+    units = [u for u in inventory.get("units", []) if u.get("grade") != "expired"]
+    balance = max(0, inventory.get("balance", 0))
+    selling = load_policy()["selling"]
+    end = datetime.fromisoformat(selling["round_end"]).timestamp()
+    # round_end_purchase_stop_hours (2 since the user's 11-16 choice; 24 before, and when the value is missing or bad).
+    if now >= end - round_end_hours(selling, "round_end_purchase_stop_hours") * 3600:
+        return [], {"reason": "round_end_purchase_stop"}
+    rate = inventory.get("storage_per_day", 0.01)
+    if type(rate) not in (int, float) or not 0 <= rate <= 1:
+        rate = 0.01
+    existing_storage = sum(max(0, u.get("cost", 0)) * rate * 7 for u in units if u.get("kind") == "goods")
+    # Our seller offers no warranties; retain any explicitly recorded future liability.
+    refund_reserve = max(0, inventory.get("local_refund_reserve", 0))
+    reserve = max(500000, inventory.get("start", 5000000) * 0.2) + existing_storage + refund_reserve
+    budget = max(0, min(balance * runtime["controls"]["restock_budget_rate"], balance - reserve))
+    # Shop b (hi_band.py): 1M+ goods with our own recent sales get up to `slots` places outside the total cap, the run's units and
+    # its lines. Off, or with no such SKU, every count below is today's.
+    hb = hi_band if isinstance(hi_band, dict) and hi_band.get("sales") else None
+    # With shop b on (a valid band, even with no qualifying SKU) its worst-cost cap also bounds 1M+ units from the ordinary pass.
+    band = hi_band if isinstance(hi_band, dict) and type(hi_band.get("min_list_price")) is int else None
+    def over_floor(sku):
+        product = catalog.get(sku) or {}
+        return bool(band) and product.get("kind") == "goods" and (product.get("list_price") or 0) >= band["min_list_price"]
+    def is_hi(sku):
+        product = catalog.get(sku) or {}
+        return bool(hb) and product.get("kind") == "goods" and (product.get("list_price") or 0) >= hb["min_list_price"]
+    # 1M+ probe (hi_probe.py): never-sold 1M+ SKUs get one place each next to shop b's, outside the total cap, inside its worst-cost
+    # cap and the run budget. It needs a valid band; off, every count below is today's.
+    probe = hi_probe if band and isinstance(hi_probe, dict) and hi_probe.get("skus") else None
+    probe_skus = [s for s in probe["skus"] if over_floor(s)] if probe else []
+    probe_held = min(sum(1 for u in units if u.get("sku") in probe_skus), probe["max_units"]) if probe else 0
+    probe_room = probe["max_units"] - probe_held if probe else 0
+    band_held = min(sum(1 for u in units if is_hi(u.get("sku")) and u.get("sku") not in probe_skus), hb["slots"]) if hb else 0
+    reserved_held = band_held + probe_held
+    hi_room = hb["slots"] - band_held if hb else 0
+    counted = len(units) - reserved_held
+    if (counted >= limits["max_total_units"] and hi_room <= 0 and probe_room <= 0) or not budget:
+        return [], {"reason": "stock_or_cash_limit", "budget": budget, "capacity": limits}
+    categories = {d["category"] for d in demand}
+    owned = Counter(u["sku"] for u in units)
+    stocked_categories = {u.get("category") for u in units}
+    def signal(sku):
+        return intelligence.get(sku, {})
+    def proven(sku):
+        s = signal(sku)
+        return bool(sales.get(sku, 0) or own_profitable.get(sku, 0)
+                    or (s.get("distinct_buyers", 0) >= 3 and s.get("settles_6h", 0) >= 3))
+    def bulk_proven(sku):
+        s = signal(sku)
+        return (own_profitable.get(sku, 0) >= limits["min_profitable_own_sales_6h"]
+                or (s.get("distinct_buyers_6h", 0) >= limits["min_public_buyers"]
+                    and s.get("settles_6h", 0) >= limits["min_public_sales_6h"]))
+    def sku_limit(sku):
+        if quality.get(sku, {}).get("weak"):
+            return 1
+        return limits["max_proven_units_per_sku"] if bulk_proven(sku) else 1
+    experimental = [u for u in units if not proven(u["sku"])]
+    stale = any(type(u.get("supplied_at")) in (int, float)
+                and now - u["supplied_at"] >= 86400 for u in units)
+    exploration_slots = 0 if stale else max(0, limits["max_unproven_units"] - len(experimental))
+    candidates = [(sku, value) for sku, value in sorted(catalog.items())
+                  if owned[sku] < sku_limit(sku) and value.get("category") in categories
+                  and type(value.get("list_price")) in (int, float) and math.isfinite(value["list_price"]) and value["list_price"] > 0]
+    if candidates:
+        offset = cursor % len(candidates)
+        candidates = candidates[offset:] + candidates[:offset]
+    # Stable sort preserves rotating exploration order among equal observed-sale counts.
+    def opportunity(pair):
+        sku, product = pair
+        s = signal(sku)
+        cost = product["list_price"] * 0.75
+        price = min(product["list_price"], s.get("median_price", product["list_price"]))
+        gap = s.get("observed_gap_hours")
+        hours = min(24, max(1, gap)) if type(gap) in (int, float) and math.isfinite(gap) else 24
+        margin = price - cost - cost * rate * hours / 24
+        factor = .9 if quality.get(sku, {}).get("weak") else 1.05 if quality.get(sku, {}).get("strong") else 1
+        # Range first: a new SKU, then a category we do not stock, matter more to being a candidate than a deeper shelf.
+        return (not proven(sku), owned[sku] > 0, product.get("category") in stocked_categories,
+                -margin / cost / hours * factor, -sales.get(sku, 0), -leader_hints.get(sku, 0), -hints.get(sku, 0))
+    candidates.sort(key=opportunity)
+    buys = []
+    estimated = 0
+    storage_reserve = 0
+    planned_units = 0
+    # One unit of each new SKU first, so one run spreads across the range before it deepens any shelf.
+    planned = Counter()
+    # The capped food trial goes first so goods cannot use up its places. Ordinary food stays out below.
+    run_room = min(limits["max_units_per_run"], limits["max_total_units"] - counted)
+    trial_skus = []
+    bypassed = []
+    for pick in food_trial or ():
+        carrying = 0  # Food pays no storage; the contract charges goods only.
+        if planned_units >= run_room or estimated + storage_reserve + pick["estimated_cost"] + carrying > budget or len(planned) >= KIT_LINES:
+            continue
+        planned[pick["sku"]] = 1
+        estimated += pick["estimated_cost"]
+        planned_units += 1
+        trial_skus.append(pick["sku"])
+    # The food probe (food_probe.py) follows the trial on the same terms: one unit per pick, in the run's units, the total cap and
+    # the ordinary lines.
+    probe_food = []
+    for pick in food_probe or ():
+        if planned_units >= run_room or estimated + storage_reserve + pick["estimated_cost"] > budget:
+            continue
+        if not planned[pick["sku"]] and (len([s for s in planned if s not in trial_skus]) >= max_lines or len(planned) >= KIT_LINES):
+            continue
+        planned[pick["sku"]] += 1
+        estimated += pick["estimated_cost"]
+        planned_units += 1
+        probe_food.append(pick["sku"])
+    # The mid-price goods probe (mid_probe.py) follows on the food probe's terms plus seven days of goods storage: one unit per pick,
+    # in the run's units, the total cap and the ordinary lines. Its SKUs are under 1M, so shop b's band never counts them.
+    probe_goods = []
+    for pick in mid_probe or ():
+        carrying = pick["estimated_cost"] * rate * 7
+        if planned_units >= run_room or estimated + storage_reserve + pick["estimated_cost"] + carrying > budget or over_floor(pick["sku"]):
+            continue
+        if not planned[pick["sku"]] and (len([s for s in planned if s not in trial_skus]) >= max_lines or len(planned) >= KIT_LINES):
+            continue
+        planned[pick["sku"]] += 1
+        estimated += pick["estimated_cost"]
+        storage_reserve += carrying
+        planned_units += 1
+        probe_goods.append(pick["sku"])
+    hi_planned, hi_taken = 0, []
+    probe_planned, probe_taken = 0, []
+    # Held plus planned 1M+ stock at worst cost stays within the cap (hi_band.py bounds it at 24M at most).
+    hi_worst = sum((catalog.get(u.get("sku")) or {}).get("list_price", 0) * 0.75 * surge.get(u.get("sku"), 1) for u in units if over_floor(u.get("sku"))) if band else 0
+    hi_cap = band.get("max_worst_cost_total", 12000000) if band else 0
+    band_order = sorted(hb["sales"], key=lambda s: (-hb["sales"][s], s)) if hb else []
+    # The probe plans after the whole band, unless hi_probe.json sets ahead_of_band_sales_below (the user's 11-11 choice in the
+    # Orchestrator session, about 14:1x KST: "판매 적은 품목보다 앞으로 (권장)"): band SKUs with at least that many of our sales in the
+    # band's window plan first, then the probe, then the other band SKUs. The probe had bought nothing in 167 runs over 30 h, last
+    # in line behind a cap held at 23.9M of 24M. Caps, units and every test are unchanged; only the order moves.
+    ahead = probe.get("ahead_of_band_sales_below") if probe else None
+    if type(ahead) is int:
+        steps = ([("band", s) for s in band_order if hb["sales"][s] >= ahead] + [("probe", s) for s in probe_skus]
+                 + [("band", s) for s in band_order if hb["sales"][s] < ahead])
+    else:
+        steps = [("band", s) for s in band_order] + [("probe", s) for s in probe_skus]
+    for kind, sku in steps:
+        value = catalog.get(sku) or {}
+        if kind == "probe":
+            # Once probe_room is spent no later probe SKU can plan, so skipping is the old loop's break.
+            if probe_room <= 0 or owned[sku] or planned[sku] or value.get("category") not in categories or len(planned) >= KIT_LINES:
+                continue
+            worst_cost = value["list_price"] * 0.75 * surge.get(sku, 1)
+            reference = signal(sku).get("median_price")
+            # No sale of ours stands in for the median here, so a surged probe SKU keeps the test and needs a sampled median to pass it.
+            if sku in surge and (reference is None or reference <= worst_cost * (1 + rate)):
+                continue
+            carrying_cost = worst_cost * rate * 7
+            if estimated + storage_reserve + worst_cost + carrying_cost > budget or hi_worst + worst_cost > hi_cap:
+                continue
+            planned[sku] += 1
+            estimated += worst_cost
+            storage_reserve += carrying_cost
+            hi_worst += worst_cost
+            probe_room -= 1
+            probe_planned += 1
+            probe_taken.append(sku)
+            continue
+        # Once hi_room is spent no later band SKU can plan, so skipping is the old loop's break.
+        if hi_room <= 0:
+            continue
+        if not is_hi(sku) or value.get("category") not in categories or (sku in surge and (owned[sku] or planned[sku])) or (not planned[sku] and len(planned) >= KIT_LINES):
+            continue
+        worst_cost = value["list_price"] * 0.75 * surge.get(sku, 1)
+        reference = signal(sku).get("median_price")
+        # Our own 24 h sales stand in for the median; a surged unit costs more than they did, so it keeps the test.
+        if sku in surge and reference is not None and reference <= worst_cost * (1 + rate):
+            continue
+        carrying_cost = worst_cost * rate * 7
+        qty = min(sku_limit(sku) - owned[sku] - planned[sku], hi_room, 1 if sku in surge else hi_room)
+        while qty > 0 and (estimated + storage_reserve + qty*(worst_cost+carrying_cost) > budget or hi_worst + qty*worst_cost > hi_cap):
+            qty -= 1
+        if qty <= 0:
+            continue
+        planned[sku] += qty
+        estimated += worst_cost * qty
+        storage_reserve += carrying_cost * qty
+        hi_worst += worst_cost * qty
+        hi_room -= qty
+        hi_planned += qty
+        hi_taken.append(sku)
+    # The mid-price demand band (mid_band.py) comes after the 1M+ probe and before the ordinary pass, so room that frees up goes to
+    # it first: one unit per pick, in the run's units, the total cap and the ordinary lines, at most its own line limit a run, with
+    # seven days of goods storage. Its SKUs are under 1M, so shop b's band never counts them.
+    band_goods = []
+    band_lines = mid_band.get("max_lines", 0) if isinstance(mid_band, dict) else 0
+    for pick in (mid_band.get("picks") or () if isinstance(mid_band, dict) else ()):
+        carrying = pick["estimated_cost"] * rate * 7
+        if planned_units >= run_room or estimated + storage_reserve + pick["estimated_cost"] + carrying > budget or over_floor(pick["sku"]):
+            continue
+        if not planned[pick["sku"]] and (len(set(band_goods)) >= band_lines
+                                         or len([s for s in planned if s not in hi_taken and s not in probe_taken]) >= max_lines or len(planned) >= KIT_LINES):
+            continue
+        planned[pick["sku"]] += 1
+        estimated += pick["estimated_cost"]
+        storage_reserve += carrying
+        planned_units += 1
+        band_goods.append(pick["sku"])
+    new_range = [pair for pair in candidates if owned[pair[0]] == 0 and proven(pair[0])]
+    for position, (sku, value) in enumerate(new_range + candidates):
+        # Supply draws the grade on arrival; shelf_hours is not a minimum remaining lifetime.
+        if value.get("kind") == "food" or sku in probe_skus or sku in probe_goods or sku in band_goods:
+            continue
+        if not proven(sku) and (exploration_slots <= 0 or counted + planned_units >= UNPROVEN_STOCK_CEILING):
+            continue
+        # Lines are kept for range; once they are used, only the SKUs already in the plan deepen.
+        if not planned[sku] and (len([s for s in planned if s not in hi_taken and s not in probe_taken]) >= max_lines or len(planned) >= KIT_LINES):
+            continue
+        # A surged SKU costs more with every unit the market buys, so we hold one at most and price it at the published factor.
+        if sku in surge and (owned[sku] or planned[sku]):
+            continue
+        worst_cost = value["list_price"] * 0.75 * surge.get(sku, 1)
+        reference = signal(sku).get("median_price")
+        if reference is not None and reference <= worst_cost * (1 + rate):
+            # Proposal 2: our own 24 h confirmed, profitable sales stand in for the sampled median. A surged SKU costs more than
+            # those sales did, so it keeps the test.
+            if sku not in median_bypass or sku in surge:
+                continue
+            blocked_by_median = True
+        else:
+            blocked_by_median = False
+        carrying_cost = worst_cost * rate * 7
+        qty = min(sku_limit(sku)-owned[sku]-planned[sku], limits["max_units_per_run"]-planned_units,
+                  limits["max_total_units"]-counted-planned_units)
+        if position < len(new_range):
+            qty = min(qty, 1)
+        # Shop b's cap counts both passes: a 1M+ unit here too keeps held plus planned 1M+ stock at worst cost within it.
+        while qty > 0 and (estimated + storage_reserve + qty*(worst_cost+carrying_cost) > budget or (over_floor(sku) and hi_worst + qty*worst_cost > hi_cap)):
+            qty -= 1
+        if qty <= 0:
+            continue
+        planned[sku] += qty
+        if over_floor(sku):
+            hi_worst += worst_cost * qty
+        if blocked_by_median and sku not in bypassed:
+            bypassed.append(sku)
+        estimated += worst_cost * qty
+        storage_reserve += carrying_cost * qty
+        planned_units += qty
+        if not proven(sku):
+            exploration_slots -= qty
+        if planned_units >= min(limits["max_units_per_run"], limits["max_total_units"] - counted):
+            break
+    buys = [{"sku": sku, "qty": qty} for sku, qty in planned.items()]
+    extra = {"hi_band": {"slots": hb["slots"], "held": band_held, "planned": hi_planned, "skus": hi_taken, "eligible": dict(hb["sales"]),
+                         "worst_cost_total": round(hi_worst), "worst_cost_cap": hi_cap}} if hb else {}
+    if probe:
+        extra["hi_probe"] = {"skus": probe_skus, "max_units": probe["max_units"], "held": probe_held, "planned": probe_planned, "taken": probe_taken,
+                             "worst_cost_total": round(hi_worst), "worst_cost_cap": hi_cap}
+        if type(ahead) is int:
+            extra["hi_probe"]["ahead_of_band_sales_below"] = ahead
+    planned_units += hi_planned + probe_planned
+    return buys, {"reason": "bounded_experiment", "budget": budget, **extra,
+                  "strategy_version": runtime["version"], "strategy_experiment": runtime.get("experiment"),
+                  "estimated_max_cost": estimated, "cash_reserve": reserve,
+                  "one_day_storage_reserve": storage_reserve/7,
+                  "new_stock_seven_day_storage": storage_reserve, "planned_units": planned_units,
+                  "capacity": limits, "own_profitable_sales_6h": own_profitable,
+                  "quality_evidence": quality,
+                  "unproven_stock": len(experimental), "stale_stock": stale,
+                  "existing_seven_day_storage": existing_storage, "refund_reserve": refund_reserve,
+                  "public_evidence_skus": len(intelligence),
+                  "forum_hints": hints,
+                  "leader_hints": leader_hints,
+                  "food_trial": trial_skus, "food_probe": probe_food, "mid_probe": probe_goods, "mid_band": band_goods,
+                  "kit_lines": {"total": len(planned), "food_trial": len(set(trial_skus)), "food_probe": len(set(probe_food)), "band": len(hi_taken),
+                                "probe": len(probe_taken), "goods_probe": len(set(probe_goods)), "goods_band": len(set(band_goods)),
+                                "ordinary": len(planned) - len(set(trial_skus) | set(probe_food) | set(hi_taken) | set(probe_taken) | set(probe_goods) | set(band_goods)),
+                                "limit": KIT_LINES},
+                  "median_bypass_skus": sorted(median_bypass),
+                  "median_bypass_used": bypassed,
+                  "food_supply": "deferred outside the capped trial: no guaranteed shelf life or supported sales-window estimate"}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--state", required=True, type=Path)
+    args = parser.parse_args()
+    md = args.state
+    read = lambda name: json.loads((md / name).read_text(encoding="utf-8"))
+    inv, catalog, demand = read("inventory.json"), read("catalog.json"), read("demand.json")
+    # A short-lived hook activates forum monitoring without restarting the live kit.
+    # The observer rate-limits itself to 30 minutes and performs no network/model calls.
+    if inv.get("round") == 3:
+        try:
+            observe_forum(md)
+            observe_purchases(md)
+            from buyer_support import observe as observe_buyer_support
+            observe_buyer_support(md)
+        except (OSError, ValueError, TypeError):
+            pass  # Forum observation must not stop inventory safety checks.
+        # Records and notifies only, at most every 5 minutes; it holds its own errors and time limit.
+        try:
+            from low_star_monitor import observe as observe_low_stars
+            observe_low_stars()
+        except Exception:
+            pass
+        # Copies the rotated kit log once per generation; it records its own failures.
+        try:
+            from log_archive import observe as archive_kit_log
+            archive_kit_log()
+        except Exception:
+            pass
+        try:
+            from leader_monitor import observe as observe_leaders
+            observe_leaders(md)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            print(f"[leaders] observation deferred: {type(error).__name__}: {error}", flush=True)
+        try:
+            from seller_quality import observe as observe_quality
+            observe_quality(md)
+            from warranty_trial import evaluate as evaluate_warranty
+            evaluate_warranty(md)
+        except (OSError, ValueError, KeyError, TypeError):
+            pass
+        try:
+            improve_strategy(md)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            print(f"[strategy] update deferred: {type(error).__name__}: {error}", flush=True)
+        try:
+            from forum_engagement import run as engage_forum
+            engage_forum(md)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            print(f"[forum] engagement deferred: {type(error).__name__}: {error}", flush=True)
+    memory_path = md / "r3-restock-memory.json"
+    memory = read("r3-restock-memory.json") if memory_path.exists() else {"round": 3, "cursor": 0, "last_sale_seq": 0, "sales": {}}
+    # The local kit log contains our own settled sales. Read a bounded tail, never infer sales from disappearing stock.
+    log = md.parent / "logs" / "market-kit.log"
+    observed = {}
+    if log.exists():
+        with log.open("rb") as stream:
+            stream.seek(0, 2)
+            stream.seek(max(0, stream.tell() - 1048576))
+            tail = stream.read().decode("utf-8", errors="replace")
+        names = {}
+        for sku, product in catalog.items():
+            names.setdefault(product.get("name"), []).append(sku)
+        for item, seq in re.findall(r"\[acp\] settled (.+) at \d+, ledger #(\d+)", tail):
+            sku = item if item in catalog else (names[item][0] if len(names.get(item, [])) == 1 else None)
+            if int(seq) > memory["last_sale_seq"] and sku:
+                observed[int(seq)] = sku
+    snapshot = fresh(md)
+    own = snapshot.get("competition", {}).get("own", {}).get("shops") or {}
+    own_url = (own.get("card") or {}).get("url")
+    for row in snapshot.get("rows", []):
+        data = row.get("data") or {}
+        if (row.get("round") == 3 and row.get("kind") == "settle" and own_url
+                and data.get("shop") == own_url and data.get("item") in catalog
+                and row["seq"] > memory["last_sale_seq"]):
+            observed[row["seq"]] = data["item"]
+    for sku in observed.values():
+        memory["sales"][sku] = memory["sales"].get(sku, 0) + 1
+    if observed:
+        memory["last_sale_seq"] = max(observed)
+    # Forum data is optional. A malformed snapshot must not broaden purchasing.
+    try:
+        buffer = read("forum-buffer.json") if (md / "forum-buffer.json").exists() else {}
+        posts = buffer.get("posts", []) if 0 <= time.time()-buffer.get("captured_at", 0) <= 1800 else []
+        posts = posts or (read("forum.json") if (md / "forum.json").exists() else [])
+        hints = demand_hints(posts, catalog, time.time()) if isinstance(posts, list) else {}
+    except (OSError, ValueError, TypeError, AttributeError):
+        hints = {}
+    # Signed offers with a warranty reserve their entire price until the coverage ends.
+    from warranty_trial import liability
+    liabilities = liability(md)
+    inv["local_refund_reserve"] = liabilities
+    try:
+        from leader_monitor import restock_hints
+        leader_hints = restock_hints(md)
+    except (OSError, ValueError, KeyError, TypeError):
+        leader_hints = {}
+    try:
+        own_profitable = profitable_counts(md)
+    except (OSError, ValueError, KeyError, TypeError):
+        own_profitable = {}
+    from seller_quality import fresh as fresh_quality
+    import food_trial
+    trial_id, trial_state, trial_picks, trial_waiting = food_trial.for_run(md, inv, catalog, snapshot.get("skus", {}), time.time())
+    import median_bypass
+    bypass = median_bypass.for_run(md, time.time())
+    import hi_band
+    band = hi_band.for_run(md, time.time(), catalog)
+    import hi_probe
+    probe = hi_probe.for_run(md, time.time(), catalog)
+    import food_probe
+    food_picks, food_waiting = food_probe.for_run(md, inv, catalog)
+    import mid_probe
+    mid_picks, mid_notes = mid_probe.for_run(md, inv, catalog, snapshot.get("skus", {}), time.time())
+    import mid_band
+    band_goods = mid_band.for_run(md, inv, catalog, snapshot.get("skus", {}), time.time())
+    buys, explanation = plan(inv, catalog, demand, memory["sales"], memory["cursor"], hints=hints,
+                             intelligence=snapshot.get("skus", {}), runtime=effective(md), leader_hints=leader_hints,
+                             own_profitable=own_profitable, quality=fresh_quality(md), food_trial=trial_picks, median_bypass=bypass, hi_band=band,
+                             hi_probe=probe, food_probe=food_picks, mid_probe=mid_picks, mid_band=band_goods)
+    explanation["mid_probe_notes"] = mid_notes
+    explanation["mid_band_notes"] = (band_goods or {}).get("notes")
+    if trial_state is not None:
+        chosen = set(explanation.get("food_trial") or ())
+        food_trial.record_plan(trial_state, trial_picks, chosen, time.time())
+        # A purchase is only sent once it is on record, so the cumulative cap cannot be passed by a lost update.
+        if not food_trial.save_state(md, trial_state, trial_id):
+            buys = [b for b in buys if b["sku"] not in chosen]
+            explanation["food_trial"] = []
+    explanation["food_trial_picks"] = trial_picks
+    explanation["food_trial_waiting_for"] = trial_waiting
+    explanation["food_probe_waiting_for"] = food_waiting
+    memory["cursor"] += 1
+    temporary = memory_path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(memory, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.replace(memory_path)
+    logs = md.parent / "logs" / "restock"
+    logs.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    (logs / (stamp + "-" + uuid4().hex[:8] + ".json")).write_text(
+        json.dumps({"buy": buys, "explanation": explanation, "new_settled_sales": len(observed),
+                    "sales_memory": memory["sales"]}, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps({"buy": buys}, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    main()

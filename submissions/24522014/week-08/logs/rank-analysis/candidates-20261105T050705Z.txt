@@ -1,0 +1,99 @@
+records 3215 from 20261104T100003 to 20261105T051050, 19.2 h, paid 302
+
+== rule counters: outcome by ask/cap, all checks passed
+  1.00-1.05: counters 96 paid 54 rate 0.56
+  1.05-1.10: counters 121 paid 28 rate 0.23
+  1.10-1.18: counters 130 paid 11 rate 0.08
+
+== last-step stops, per hour, and what is known of the ask
+  ('no_labeled_price', None): 228 (11.9/h) ask/cap median None surplus/list median None ask within order budget 0
+  ('over_budget', 'counter_ratio_exceeded'): 214 (11.2/h) ask/cap median 1.3072 surplus/list median 0.34545 ask within order budget 123
+  ('over_budget', 'counter_already_used'): 135 (7.0/h) ask/cap median 1.0741 surplus/list median 0.2739 ask within order budget 104
+  ('over_budget', None): 20 (1.0/h) ask/cap median None surplus/list median None ask within order budget 0
+  ('over_budget', 'counter_surplus_too_low'): 18 (0.9/h) ask/cap median 1.0526 surplus/list median 0.05 ask within order budget 12
+  ('over_budget', 'counter_disabled'): 5 (0.3/h) ask/cap median 1.3484 surplus/list median 0.3972 ask within order budget 4
+  ('conflicting_prices', None): 1 (0.1/h) ask/cap median None surplus/list median None ask within order budget 0
+  ('malformed_price', None): 1 (0.1/h) ask/cap median None surplus/list median None ask within order budget 0
+  ratio limit 1.25: over limit today but inside 67 (3.5/h), surplus at the full ask, median 13185, sum 5357150
+  ratio limit 1.3: over limit today but inside 103 (5.4/h), surplus at the full ask, median 21236, sum 7346280
+  ratio limit 1.4: over limit today but inside 151 (7.9/h), surplus at the full ask, median 21236, sum 11992511
+
+== no_labeled_price: are the replies priced at all? Counts only.
+  shapes [(('price_word_number', 'any_number_3plus'), 140), (('any_number_3plus',), 88)]
+  first credits figure against budget {}
+  shops 9 top share [85, 70, 22, 18, 10]
+
+== all last stops per hour since 20261104T100000
+    711   37.1/h selection_attempt_cooldown
+    622   32.4/h model_quota_hour
+    588   30.7/h seller_rejected
+    298   15.5/h quote_shelf_life_short
+    223   11.6/h rule_offer
+    216   11.3/h quote_grade_unacceptable
+    141    7.4/h model_quota_day
+    112    5.8/h rule_counter_offer
+     67    3.5/h selection_no_useful_research
+     55    2.9/h research_skipped
+     54    2.8/h agent_error
+     49    2.6/h no_deal
+     28    1.5/h model_walk_away
+     24    1.3/h model_offer
+     12    0.6/h transport_error
+      9    0.5/h turn_limit_exceeded
+
+== projection to 11-17 23:59 KST: every player keeps its pace from the 11-04 20:49 board to now
+  pace window 17.3 h, left 298 h. Long extrapolation: for size only.
+  projected at current pace: rank, total (25, 1.068) shop 0.56 buyer 0.508
+  projected totals at ranks 3 10 15 20: [1.645, 1.521, 1.346, 1.224]
+  buyer pace x1.5: rank (24, 1.135) buyer 0.575
+  buyer pace x2: rank (22, 1.191) buyer 0.631
+  buyer pace x3: rank (19, 1.235) buyer 0.675
+  buyer pace x4: rank (18, 1.268) buyer 0.708
+  buyer pace x5: rank (18, 1.297) buyer 0.738
+  buyer pace x7: rank (13, 1.408) buyer 0.848
+  buyer pace x10: rank (12, 1.428) buyer 0.869
+  shop pace x1.5: rank (24, 1.12) shop 0.612
+  shop pace x2: rank (23, 1.16) shop 0.652
+  shop pace x3: rank (21, 1.206) shop 0.698
+  shop pace x5: rank (19, 1.243) shop 0.735
+  shop pace x10: rank (17, 1.32) shop 0.812
+  both pace x2: rank (18, 1.283) shop 0.652 buyer 0.631
+  both pace x3: rank (14, 1.373) shop 0.698 buyer 0.675
+  both pace x5: rank (11, 1.472) shop 0.735 buyer 0.738
+  our buyer pace per hour {'surplus': 1430392.3, 'deals': 16.5, 'posts': 0.6, 'orders': 168.0}
+  our shop pace per hour {'book': 1952243.1, 'profit': 1057835.0, 'revenue': 5040517.5, 'deals': 38.2, 'visits': 63.0}
+
+== component tables with the formula that fits (book)
+  shop computed 0.5596 official 0.56 buyer computed 0.4625 official 0.463
+  shop book {'value': 33764586, 'percentile': 0.6538, 'weight': 0.5, 'points': 0.3269, 'points_left': 0.1731, 'rank': 19, 'of': 53}
+  shop revenue {'value': 136691052, 'percentile': 0.5962, 'weight': 0.3, 'points': 0.1788, 'points_left': 0.1212, 'rank': 22, 'of': 53}
+  shop stars_rank {'value': 4.35, 'percentile': 0.2692, 'weight': 0.2, 'points': 0.0538, 'points_left': 0.1462, 'rank': 39, 'of': 53}
+  buyer surplus {'value': 38185138, 'percentile': 0.2917, 'weight': 0.5, 'points': 0.1458, 'points_left': 0.3542, 'rank': 35, 'of': 49}
+  buyer forum {'value': 0.597, 'percentile': 0.875, 'weight': 0.3, 'points': 0.2625, 'points_left': 0.0375, 'rank': 7, 'of': 49}
+  buyer deals {'value': 823, 'percentile': 0.25, 'weight': 0.1, 'points': 0.025, 'points_left': 0.075, 'rank': 37, 'of': 49}
+  buyer posts {'value': 21, 'percentile': 0.2917, 'weight': 0.1, 'points': 0.0292, 'points_left': 0.0708, 'rank': 35, 'of': 49}
+  book for +.05: 62649313 revenue for +.05: 446065489 stars_rank for +.05: 4.56
+  buyer formula as written in the contract (.5 .3 .2): mean error 0.02141 against .5 .3 .1 .1: {'players': 49, 'mean_error': 0.00027, 'max_error': 0.0005}
+
+== buyer forum value against posts, saved snapshots from 11-05
+   11-04 10:09Z posts 8 forum 0.641
+   11-04 10:39Z posts 9 forum 0.641
+   11-04 11:57Z posts 10 forum 0.642
+   11-04 12:57Z posts 11 forum 0.642
+   11-04 13:58Z posts 12 forum 0.64
+   11-04 14:28Z posts 12 forum 0.642
+   11-04 14:58Z posts 13 forum 0.64
+   11-04 15:58Z posts 14 forum 0.638
+   11-04 16:58Z posts 15 forum 0.636
+   11-04 17:58Z posts 16 forum 0.624
+   11-04 18:29Z posts 16 forum 0.627
+   11-05 00:30Z posts 17 forum 0.621
+   11-05 01:24Z posts 18 forum 0.616
+   11-05 02:24Z posts 19 forum 0.609
+   11-05 03:25Z posts 20 forum 0.603
+   11-05 04:25Z posts 21 forum 0.597
+  field forum p50 p75 p90 0.569 0.588 0.619 ours 0.597 what if forum .57: -0.1
+  what if posts 40: +0.0010
+  what if posts 100: +0.0083
+  what if posts 200: +0.0208
+  what if posts 350: +0.0458

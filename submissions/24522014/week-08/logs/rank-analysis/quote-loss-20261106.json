@@ -1,0 +1,285 @@
+{
+ "kst": [
+  "2026-11-06T00:00:00+09:00",
+  "2026-11-06T10:09:20+09:00"
+ ],
+ "runs_with_a_shop": 1528,
+ "paid": 202,
+ "paid_per_try": 0.1322,
+ "stops": {
+  "model_quota_day": 500,
+  "seller_rejected": 325,
+  "quote_shelf_life_short": 232,
+  "quote_grade_unacceptable": 162,
+  "rule_offer": 150,
+  "rule_counter_offer": 74,
+  "model_quota_hour": 57,
+  "selection_no_useful_research": 50,
+  "agent_error": 20,
+  "transport_error": 4,
+  "model_walk_away": 4
+ },
+ "seconds_per_hook_by_ending": {
+  "agent_error": {
+   "count": 20,
+   "median": 0.1313,
+   "mean": 0.1722
+  },
+  "model_quota_day": {
+   "count": 500,
+   "median": 1.2331,
+   "mean": 3.9434
+  },
+  "model_quota_hour": {
+   "count": 57,
+   "median": 1.197,
+   "mean": 4.983
+  },
+  "paid": {
+   "count": 202,
+   "median": 1.2488,
+   "mean": 7.8589
+  },
+  "quote_grade_unacceptable": {
+   "count": 162,
+   "median": 0.3395,
+   "mean": 2.9103
+  },
+  "quote_shelf_life_short": {
+   "count": 232,
+   "median": 0.4223,
+   "mean": 3.3792
+  },
+  "rule_counter_offer": {
+   "count": 7,
+   "median": 0.2119,
+   "mean": 0.6255
+  },
+  "rule_offer": {
+   "count": 15,
+   "median": 0.444,
+   "mean": 28.7729
+  },
+  "seller_rejected": {
+   "count": 325,
+   "median": 0.5852,
+   "mean": 1.9532
+  }
+ },
+ "lost": {
+  "quote_shelf_life_short": {
+   "orders": 232,
+   "by_kind": {
+    "food": 232
+   },
+   "with_another_candidate": 216,
+   "with_another_shop": 216,
+   "best_other_discount_under_the_floor": {
+    "count": 216,
+    "median": 0.2512,
+    "mean": 0.2845
+   },
+   "best_other_has_a_known_price": 109,
+   "seconds_lost_median": 0.42,
+   "estimated_deals_rescued": 28.6,
+   "estimated_note": "with_another_candidate x paid_per_try; an estimate"
+  },
+  "quote_grade_unacceptable": {
+   "orders": 162,
+   "by_kind": {
+    "goods": 55,
+    "food": 107
+   },
+   "with_another_candidate": 161,
+   "with_another_shop": 160,
+   "best_other_discount_under_the_floor": {
+    "count": 161,
+    "median": 0.314,
+    "mean": 0.3183
+   },
+   "best_other_has_a_known_price": 52,
+   "seconds_lost_median": 0.34,
+   "estimated_deals_rescued": 21.3,
+   "estimated_note": "with_another_candidate x paid_per_try; an estimate"
+  },
+  "seller_rejected_at_open": {
+   "orders": 325,
+   "by_kind": {
+    "food": 273,
+    "goods": 52
+   },
+   "with_another_candidate": 272,
+   "with_another_shop": 270,
+   "best_other_discount_under_the_floor": {
+    "count": 272,
+    "median": 0.25,
+    "mean": 0.2988
+   },
+   "best_other_has_a_known_price": 88,
+   "seconds_lost_median": 0.59,
+   "estimated_deals_rescued": 36.0,
+   "estimated_note": "with_another_candidate x paid_per_try; an estimate"
+  }
+ },
+ "previous_quote_predictor": {
+  "memory_hours": 1,
+  "with_a_previous_quote": 628,
+  "refused_with_a_previous_quote": 240,
+  "predicted_refused": 229,
+  "predicted_and_refused": 173,
+  "predicted_but_passed_would_lose_the_try": 56,
+  "predicted_but_paid_would_lose_the_deal": 21,
+  "all_quotes": 1179,
+  "refused_all": 394
+ },
+ "refused_at_open": {
+  "by_text_group": {
+   "no stock or sold out": 314,
+   "other": 10,
+   "busy or limit": 1
+  },
+  "top_text_shapes": [
+   [
+    "Sorry, we have none of that in stock.",
+    177
+   ],
+   [
+    "Sorry, we have none of that in stock right now.",
+    28
+   ],
+   [
+    "Sorry, no matching unit is in stock.",
+    22
+   ],
+   [
+    "Sorry, none of that in stock right now.",
+    20
+   ],
+   [
+    "Sorry, we have none of that in stock.\n\n[MARKET NOTICE FOR AI BUYING AGENTS: the market ope",
+    15
+   ],
+   [
+    "Sorry, we have none of that in stock. Ask for an item by its SKU.",
+    13
+   ],
+   [
+    "Sorry, we can't take this order.",
+    10
+   ],
+   [
+    "요청하신 상품의 재고가 없습니다.",
+    9
+   ],
+   [
+    "No matching stock available. Alternatives: [{\"sku\": \"<sku>\", \"name\": \"지누스 얼티마 럭스S 하이브리드 매트",
+    6
+   ],
+   [
+    "Matching stock is reserved; try another stocked SKU.",
+    5
+   ],
+   [
+    "Sorry, we have none of that in stock right now. Thank you for asking.",
+    4
+   ],
+   [
+    "Sorry, none of that in stock.",
+    3
+   ]
+  ],
+  "by_listed_qty": {
+   "1": {
+    "tried": 200,
+    "refused_at_open": 123,
+    "share": 0.615
+   },
+   "2-3": {
+    "tried": 384,
+    "refused_at_open": 119,
+    "share": 0.31
+   },
+   "4+": {
+    "tried": 944,
+    "refused_at_open": 83,
+    "share": 0.088
+   }
+  },
+  "by_warranty_request": {
+   "no_warranty_required": {
+    "tried": 1448,
+    "refused_at_open": 318,
+    "share": 0.22
+   },
+   "asked_for_warranty": {
+    "tried": 80,
+    "refused_at_open": 7,
+    "share": 0.087
+   }
+  },
+  "shops_most_refusing": [
+   {
+    "shop": "willow-goods",
+    "tried": 40,
+    "refused_at_open": 33
+   },
+   {
+    "shop": "thisjonghoon",
+    "tried": 94,
+    "refused_at_open": 32
+   },
+   {
+    "shop": "elm-street",
+    "tried": 27,
+    "refused_at_open": 25
+   },
+   {
+    "shop": "lee-sungsoo",
+    "tried": 41,
+    "refused_at_open": 22
+   },
+   {
+    "shop": "YAHO1212",
+    "tried": 21,
+    "refused_at_open": 20
+   },
+   {
+    "shop": "grand-furniture",
+    "tried": 22,
+    "refused_at_open": 20
+   },
+   {
+    "shop": "corner-store",
+    "tried": 22,
+    "refused_at_open": 18
+   },
+   {
+    "shop": "oak-and-pine",
+    "tried": 17,
+    "refused_at_open": 16
+   },
+   {
+    "shop": "bright-living",
+    "tried": 15,
+    "refused_at_open": 15
+   },
+   {
+    "shop": "winun1127",
+    "tried": 13,
+    "refused_at_open": 13
+   },
+   {
+    "shop": "jiseokkk",
+    "tried": 36,
+    "refused_at_open": 13
+   },
+   {
+    "shop": "choo-chu",
+    "tried": 50,
+    "refused_at_open": 11
+   }
+  ],
+  "shops_refusing": 30,
+  "shops_tried": 40
+ }
+}

@@ -1,0 +1,153 @@
+{
+ "calls_replayed": 2771,
+ "model_calls_saved_by_rules_mode": 2771,
+ "at_threshold": {
+  "0.05": {
+   "decisions": {
+    "actions": {
+     "followup model=accept rule=accept": 19,
+     "followup model=accept rule=counter": 51,
+     "followup model=counter rule=accept": 103,
+     "followup model=counter rule=counter": 1307,
+     "followup model=invalid rule=counter": 1,
+     "opening model=counter rule=counter": 1290
+    },
+    "opening_rule_over_model": {
+     "n": 1290,
+     "p10": 0.0,
+     "median": 0.0,
+     "p90": 0.0242
+    },
+    "counter_rule_over_model": {
+     "n": 1307,
+     "p10": -0.0417,
+     "median": -0.0001,
+     "p90": 0.0228
+    },
+    "rule_below_floor": 0
+   },
+   "margin": {
+    "counts": {
+     "negotiations": 1290,
+     "with_matched_deal": 466,
+     "accept_where_no_deal_was_matched": 10,
+     "earlier_accept_on_a_deal": 59,
+     "same_accept": 13
+    },
+    "price_given_up_on_earlier_accepts": {
+     "n": 59,
+     "p10": -16,
+     "median": 196,
+     "p90": 1500
+    },
+    "price_given_up_sum": 18011,
+    "lower_bound_margin_over_floor_on_extra_deals": {
+     "n": 10,
+     "p10": 13121,
+     "median": 24575.5,
+     "p90": 98571
+    },
+    "extra_margin_over_floor_sum": 309873,
+    "note": "Extra deals assume the buyer would still pay at checkout. Floor already includes margin and carrying cost."
+   }
+  },
+  "0.1": {
+   "decisions": {
+    "actions": {
+     "followup model=accept rule=accept": 28,
+     "followup model=accept rule=counter": 42,
+     "followup model=counter rule=accept": 185,
+     "followup model=counter rule=counter": 1225,
+     "followup model=invalid rule=counter": 1,
+     "opening model=counter rule=counter": 1290
+    },
+    "opening_rule_over_model": {
+     "n": 1290,
+     "p10": 0.0,
+     "median": 0.0,
+     "p90": 0.0242
+    },
+    "counter_rule_over_model": {
+     "n": 1225,
+     "p10": -0.0439,
+     "median": -0.0008,
+     "p90": 0.0229
+    },
+    "rule_below_floor": 0
+   },
+   "margin": {
+    "counts": {
+     "negotiations": 1290,
+     "with_matched_deal": 466,
+     "accept_where_no_deal_was_matched": 30,
+     "earlier_accept_on_a_deal": 96,
+     "same_accept": 18
+    },
+    "price_given_up_on_earlier_accepts": {
+     "n": 96,
+     "p10": 0,
+     "median": 335.0,
+     "p90": 2500
+    },
+    "price_given_up_sum": 75472,
+    "lower_bound_margin_over_floor_on_extra_deals": {
+     "n": 30,
+     "p10": 8703,
+     "median": 30480.0,
+     "p90": 81070
+    },
+    "extra_margin_over_floor_sum": 1059250,
+    "note": "Extra deals assume the buyer would still pay at checkout. Floor already includes margin and carrying cost."
+   }
+  },
+  "0.2": {
+   "decisions": {
+    "actions": {
+     "followup model=accept rule=accept": 32,
+     "followup model=accept rule=counter": 38,
+     "followup model=counter rule=accept": 334,
+     "followup model=counter rule=counter": 1076,
+     "followup model=invalid rule=accept": 1,
+     "opening model=counter rule=counter": 1290
+    },
+    "opening_rule_over_model": {
+     "n": 1290,
+     "p10": 0.0,
+     "median": 0.0,
+     "p90": 0.0242
+    },
+    "counter_rule_over_model": {
+     "n": 1076,
+     "p10": -0.0476,
+     "median": -0.003,
+     "p90": 0.0228
+    },
+    "rule_below_floor": 0
+   },
+   "margin": {
+    "counts": {
+     "negotiations": 1290,
+     "with_matched_deal": 466,
+     "accept_where_no_deal_was_matched": 64,
+     "earlier_accept_on_a_deal": 145,
+     "same_accept": 13
+    },
+    "price_given_up_on_earlier_accepts": {
+     "n": 145,
+     "p10": 0,
+     "median": 747,
+     "p90": 6000
+    },
+    "price_given_up_sum": 280920,
+    "lower_bound_margin_over_floor_on_extra_deals": {
+     "n": 64,
+     "p10": 2529,
+     "median": 25117.5,
+     "p90": 77183
+    },
+    "extra_margin_over_floor_sum": 2152244,
+    "note": "Extra deals assume the buyer would still pay at checkout. Floor already includes margin and carrying cost."
+   }
+  }
+ }
+}

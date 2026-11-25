@@ -1,0 +1,312 @@
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\uvicorn\protocols\http\h11_impl.py", line 411, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 678, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 699, in app
+    await route.handle(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 284, in handle
+    await self.app(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 65, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 62, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\scripts\market_kit.py", line 212, in handle
+    r = await c.request(req.method, url, content=body, headers=headers)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_transports\default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 136, in handle_async_request
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_backends\anyio.py", line 35, in read
+    return await self._stream.receive(max_bytes=max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\anyio\streams\tls.py", line 254, in receive
+    data = await self._call_sslobject_method(self._ssl_object.read, max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\anyio\streams\tls.py", line 187, in _call_sslobject_method
+    result = func(*args)
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\ssl.py", line 868, in read
+    v = self._sslobj.read(len)
+ssl.SSLError: [SSL: RECORD_LAYER_FAILURE] record layer failure (_ssl.c:2713)
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\uvicorn\protocols\http\h11_impl.py", line 411, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 678, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 699, in app
+    await route.handle(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 284, in handle
+    await self.app(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 65, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 62, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\scripts\market_kit.py", line 212, in handle
+    r = await c.request(req.method, url, content=body, headers=headers)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_transports\default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 136, in handle_async_request
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_backends\anyio.py", line 35, in read
+    return await self._stream.receive(max_bytes=max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\anyio\streams\tls.py", line 254, in receive
+    data = await self._call_sslobject_method(self._ssl_object.read, max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\anyio\streams\tls.py", line 187, in _call_sslobject_method
+    result = func(*args)
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\ssl.py", line 868, in read
+    v = self._sslobj.read(len)
+ssl.SSLError: [SSL: RECORD_LAYER_FAILURE] record layer failure (_ssl.c:2713)
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\uvicorn\protocols\http\h11_impl.py", line 411, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\uvicorn\middleware\proxy_headers.py", line 63, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\applications.py", line 96, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\middleware\errors.py", line 186, in __call__
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 678, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 699, in app
+    await route.handle(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 284, in handle
+    await self.app(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 65, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\starlette\routing.py", line 62, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\scripts\market_kit.py", line 212, in handle
+    r = await c.request(req.method, url, content=body, headers=headers)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpx\_transports\default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 136, in handle_async_request
+    raise exc
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_async\http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\httpcore\_backends\anyio.py", line 35, in read
+    return await self._stream.receive(max_bytes=max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\anyio\streams\tls.py", line 254, in receive
+    data = await self._call_sslobject_method(self._ssl_object.read, max_bytes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-07\.venv\Lib\site-packages\anyio\streams\tls.py", line 187, in _call_sslobject_method
+    result = func(*args)
+  File "C:\Users\강철원\AppData\Local\Python\pythoncore-3.14-64\Lib\ssl.py", line 868, in read
+    v = self._sslobj.read(len)
+ssl.SSLError: [SSL: RECORD_LAYER_FAILURE] record layer failure (_ssl.c:2713)

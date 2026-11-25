@@ -1,0 +1,11 @@
+stopped 242
+turn Counter({1: 156, 2: 86})
+parser_reason [('over_budget', 164), ('no_labeled_price', 77), ('malformed_price', 1)]
+counter_check [('counter_ratio_exceeded', 96), ('None', 78), ('counter_already_used', 63), ('counter_surplus_too_low', 5)]
+counter keys ['ask', 'ask_per_cap', 'cap', 'list_price', 'offer', 'reason_code', 'surplus_per_list']
+trail length Counter({1: 156, 2: 86})
+earlier sources [(('model_gate',), 156), (('deterministic', 'model_gate'), 86)]
+ask/cap p10 p50 p90 [1.053, 1.204, 1.438] n 164 ask<=cap 0 ask<=1.18cap 68
+surplus/list p10 p50 p90 [0.023, 0.183, 0.268] positive 149 >=.10 125
+kind by accept Counter({'goods': 160, 'food': 82})
+example counter_check keys sample {"reason_code": "str", "ask": "int", "cap": "int", "list_price": "int", "offer": "NoneType", "ask_per_cap": "float", "surplus_per_list": "float"}

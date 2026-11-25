@@ -1,0 +1,121 @@
+{
+  "scope": "paid:true with ledger only",
+  "status": "estimate; official value only in official_* fields",
+  "window": {
+    "since": "20261104T135048000000Z",
+    "until": null,
+    "deals": 32
+  },
+  "by_path": {
+    "deterministic:rule_counter_offer": {
+      "deals": 14,
+      "broken": 0,
+      "surplus_sum": 571905,
+      "surplus_median": 11607.0,
+      "surplus_per_list_median": 0.2829,
+      "price_per_cap_median": 1.0,
+      "price_per_order_budget_median": 0.6921,
+      "price_per_first_ask_median": 0.9725,
+      "cap_per_list_median": 0.7171,
+      "with_cap": 14,
+      "with_labeled_first_ask": 14
+    },
+    "deterministic:rule_offer": {
+      "deals": 18,
+      "broken": 0,
+      "surplus_sum": 1131500,
+      "surplus_median": 8897.5,
+      "surplus_per_list_median": 0.2398,
+      "price_per_cap_median": 0.9804,
+      "price_per_order_budget_median": 0.6996,
+      "price_per_first_ask_median": 1.0,
+      "cap_per_list_median": 0.7962,
+      "with_cap": 18,
+      "with_labeled_first_ask": 18
+    }
+  },
+  "goods_still_within_break_window": {
+    "deals": 11,
+    "estimated_surplus_at_risk": 1525165,
+    "ledgers": [
+      2554155,
+      2562944,
+      2563487,
+      2564262,
+      2565132,
+      2566060,
+      2567940,
+      2570197,
+      2570265,
+      2575567,
+      2581520
+    ]
+  },
+  "official_same_window": {
+    "from_observed_at": 1793798906.8162463,
+    "to_observed_at": 1793807923.937629,
+    "official_surplus_delta": 1706890,
+    "official_deals_delta": 35,
+    "buyer_all_from": 0.474,
+    "buyer_all_to": 0.473,
+    "local_estimate_same_interval": 2109640,
+    "local_deals_same_interval": 35,
+    "note": "Side by side only; a before/after difference is not a causal effect."
+  },
+  "reconciliation": {
+    "official_surplus": 16720475,
+    "official_deals": 593,
+    "official_served": 587,
+    "official_observed_at": 1793807923.937629,
+    "estimated_surplus": 17237935,
+    "local_deals": 593,
+    "difference": 517460,
+    "broken_events_unmatched": [
+      {
+        "name": "[파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS",
+        "broke_at": 1793741996,
+        "candidates": 2,
+        "max_overstatement_if_covered": 20900
+      },
+      {
+        "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+        "broke_at": 1793767743,
+        "candidates": 10,
+        "max_overstatement_if_covered": 139456
+      },
+      {
+        "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+        "broke_at": 1793804728,
+        "candidates": 2,
+        "max_overstatement_if_covered": 483300
+      }
+    ]
+  },
+  "last_offer_per_first_ask": {
+    "0.85-0.90": {
+      "offers": 7,
+      "receipt": 0,
+      "paid": 0
+    },
+    "0.90-0.95": {
+      "offers": 13,
+      "receipt": 3,
+      "paid": 3
+    },
+    "0.95-1.00": {
+      "offers": 16,
+      "receipt": 11,
+      "paid": 11
+    },
+    "at_or_above_ask": {
+      "offers": 24,
+      "receipt": 24,
+      "paid": 18
+    },
+    "below_0.85": {
+      "offers": 1,
+      "receipt": 0,
+      "paid": 0
+    }
+  }
+}

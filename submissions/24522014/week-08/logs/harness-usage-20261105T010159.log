@@ -1,0 +1,75 @@
+{
+  "window": {
+    "since": "20261104T135048000000Z",
+    "until": null
+  },
+  "calls_by_provider": {
+    "agy": 10
+  },
+  "by_role_and_actual_model": {
+    "buyer|gemini-4-argon-low": {
+      "provider": "agy",
+      "calls": 10,
+      "failed": 0,
+      "failure_rate": 0.0,
+      "timeouts": 0,
+      "usage_limit_errors": 0,
+      "elapsed_median": 21.133499999999998,
+      "elapsed_p90": 38.474,
+      "elapsed_max": 38.474,
+      "tokens_sum": 114164,
+      "tokens_median": 12363.5,
+      "max_calls_in_one_utc_hour": 6,
+      "label_differs_from_actual": 0
+    }
+  },
+  "seller_failures": {
+    "harness_calls_failed": 0,
+    "kit_log_decision_failed": 0
+  },
+  "usage_limit_errors": 0,
+  "hooks": {
+    "hook_runs": 370,
+    "hook_runs_per_hour": 169.7,
+    "trades": 300,
+    "trade_seconds_median": 0.46,
+    "trade_seconds_p90": 7.73,
+    "trade_seconds_max": 92.24
+  },
+  "funnel": {
+    "orders": 370,
+    "selected": 300,
+    "quoted": 196,
+    "offered": 63,
+    "receipt": 39,
+    "paid": 32
+  },
+  "decision_paths": {
+    "model_gate:model_quota_hour": 91,
+    "quote_filter:quote_shelf_life_short": 38,
+    "deterministic:rule_counter_offer": 36,
+    "deterministic:rule_offer": 24,
+    "quote_filter:quote_grade_unacceptable": 22,
+    "model:model_offer": 9,
+    "turn_limit:turn_limit_exceeded": 2,
+    "model:model_walk_away": 1
+  },
+  "causes": {
+    "model_quota_hour": 91,
+    "seller_rejected_at_open": 91,
+    "selection:attempt_cooldown": 63,
+    "quote_shelf_life_short": 38,
+    "paid": 32,
+    "quote_grade_unacceptable": 22,
+    "agent_error": 10,
+    "selection:no_useful_research": 7,
+    "transport_error": 3,
+    "seller_rejected_after_offer": 3,
+    "payment_refused:shelf_life": 3,
+    "receipt_mismatch": 3,
+    "turn_limit_exceeded": 2,
+    "model_walk_away": 1,
+    "payment_refused:grade": 1
+  },
+  "rollback_signal": false
+}

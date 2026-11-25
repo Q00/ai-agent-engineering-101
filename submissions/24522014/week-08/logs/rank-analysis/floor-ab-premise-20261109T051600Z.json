@@ -1,0 +1,36 @@
+{
+ "what": "Read-only check of the floor A/B (F) premise: are our buyer deals bunched just above the .30 floor? Output of floor_dist_20261109.py run at 11-09 14:16 KST on .market/buyer-deals, plus the 14:12 KST board row and the floor derivation. Aggregates only.",
+ "decision": "F shelved (never installed): 23.7% of the last 24 h deals are in [.30,.32), against the 50% bar; new deals average .361, above Saved .294, so every new deal raises Saved and deal volume is the lever.",
+ "share_basis": "1 - price / value_at_purchase; a useless deal counts -1 and a refunded one 0. value_at_purchase equals the catalog list price for every deal, so both bases give the same figures.",
+ "deals_local": 2638,
+ "first_purchase_kst": "11-03 21:05",
+ "r3_all": {
+  "n": 2638, "mean": 0.3073, "sum_over_n_plus_100": 0.2961,
+  "quantiles": {"p5": 0.187, "p10": 0.2097, "p25": 0.2647, "p50": 0.3077, "p75": 0.3653, "p90": 0.408},
+  "bands_pct": {"useless": 0.3, "refund": 0.0, "<.30": 39.0, "[.30,.31)": 12.1, "[.31,.32)": 5.6, "[.32,.35)": 12.4, "[.35,.40)": 17.2, ">=.40": 13.5},
+  "bands_n": {"useless": 7, "refund": 1, "<.30": 1028, "[.30,.31)": 318, "[.31,.32)": 147, "[.32,.35)": 326, "[.35,.40)": 455, ">=.40": 356},
+  "in_.30_.32_pct": 17.6,
+  "by_kind": {"food": {"n": 1843, "mean": 0.3179, "in_.30_.32_pct": 18.9}, "goods": {"n": 795, "mean": 0.2828, "in_.30_.32_pct": 14.7}}
+ },
+ "last_24h": {
+  "n": 598, "mean": 0.3612,
+  "quantiles": {"p5": 0.3, "p10": 0.3, "p25": 0.3227, "p50": 0.3574, "p75": 0.4021, "p90": 0.4247},
+  "bands_pct": {"useless": 0.2, "refund": 0.0, "<.30": 0.0, "[.30,.31)": 19.9, "[.31,.32)": 3.8, "[.32,.35)": 18.1, "[.35,.40)": 29.6, ">=.40": 28.4},
+  "bands_n": {"useless": 1, "refund": 0, "<.30": 0, "[.30,.31)": 119, "[.31,.32)": 23, "[.32,.35)": 108, "[.35,.40)": 177, ">=.40": 170},
+  "in_.30_.32_pct": 23.7,
+  "by_kind": {"food": {"n": 485, "mean": 0.3637, "in_.30_.32_pct": 26.2}, "goods": {"n": 113, "mean": 0.3505, "in_.30_.32_pct": 13.3}}
+ },
+ "deals_per_hour_by_purchase_time": {"last_1h": 59.0, "last_3h": 49.0, "last_6h": 38.7, "last_24h": 24.9},
+ "board_vs_local_at_14_12_kst": {
+  "board": {"deals": 2640, "saved": 0.2942, "implied_sum": 806.1, "implied_mean": 0.3053},
+  "local_up_to_the_same_time": {"deals": 2636, "sum": 810.0, "saved": 0.296, "mean": 0.3073, "useless": 7},
+  "gap": "4 deals and 3.9 share points: about 3 breaks the board counts as -1 that local records had not matched yet, or deals not yet written locally (they are written in batches). Not settled without a ledger read."
+ },
+ "floor": {
+  "base": "buyer_support.json discount_floor.floor .30; discount_floor.py falls back to .25 only when the setting is missing or invalid. Fault rates: DEFAULT_RATES (logs/rank-analysis/fault-rates-20261106.json).",
+  "required_at_.30": {"food": 0.3, "food_C_with_penalty_.05": 0.3684, "goods_no_warranty": {"A": 0.3361, "B": 0.4412, "C": 0.9432}, "goods_warranty": {"A": 0.3077, "B": 0.3375, "C": 0.4115}},
+  "required_at_.33": {"food": 0.33, "food_C_with_penalty_.05": 0.4, "goods_no_warranty": {"A": 0.3669, "B": 0.4745, "C": 0.988}, "goods_warranty": {"A": 0.3385, "B": 0.3712, "C": 0.4527}},
+  "derived_uses": "An unstated grade counts as the worst allowed. deal_limit: each turn's limit is min(budget, floor(list x (1 - required))). The standing ask must be at most that ceiling. Counters' surplus check uses required_down. Selection (r3_selection.select) caps at ceiling(list, least_required), the best allowed grade. Shop ranking (expected_discount) uses only the fault rate and the food-C penalty, not the floor."
+ },
+ "projection": "With new deals at mean .361: Saved .296 after about 85 more deals and .309 after about 790 (16-20 h at 40-49 deals/h). The earlier '.33 at the deadline' figure is an end point: (806 + .35 x 6,246) / (2,740 + 6,246) = .333."
+}

@@ -1,0 +1,17 @@
+.F.....
+======================================================================
+FAIL: test_command_follows_models_rather_than_a_literal (test_model_config.ModelConfig.test_command_follows_models_rather_than_a_literal)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Submissions\ai_agent_engineering\submissions\24522014\week-08\test_model_config.py", line 43, in test_command_follows_models_rather_than_a_literal
+    self.assertEqual(command[command.index("--model") + 1], "fixture-model")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'gpt-6-luna' != 'fixture-model'
+- gpt-6-luna
++ fixture-model
+
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.005s
+
+FAILED (failures=1)
