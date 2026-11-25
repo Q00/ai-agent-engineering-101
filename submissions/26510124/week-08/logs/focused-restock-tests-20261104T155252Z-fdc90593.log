@@ -1,0 +1,17 @@
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_inventory.py:14: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+......................................F.......
+======================================================================
+FAIL: test_proven_depth_is_two_including_held_units_and_never_bypasses_money_cap (test_restock_focus.FocusTests.test_proven_depth_is_two_including_held_units_and_never_bypasses_money_cap)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_restock_focus.py", line 160, in test_proven_depth_is_two_including_held_units_and_never_bypasses_money_cap
+    self.assertEqual(self.plan()[0], {"buy": []})
+AssertionError: {'buy': [{'sku': 'G03d0199f', 'qty': 1}]} != {'buy': []}
+- {'buy': [{'qty': 1, 'sku': 'G03d0199f'}]}
++ {'buy': []}
+
+----------------------------------------------------------------------
+Ran 46 tests in 0.307s
+
+FAILED (failures=1)

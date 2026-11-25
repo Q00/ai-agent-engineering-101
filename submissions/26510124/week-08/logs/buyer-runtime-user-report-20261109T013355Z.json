@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "provenance": "User pasted server buyer_diagnostics.py --hours 1 --round 3 output. JSON formatting normalized; values preserved. Not independently collected by SSH.",
+  "diagnostics": {
+    "version": 1,
+    "generated_at": "2026-11-09T01:33:55.873085+00:00",
+    "round": 3,
+    "hours": 1,
+    "attempts": 128,
+    "distinct_orders": 128,
+    "terminal_reasons": {
+      "receipt_issued": 70,
+      "seller_rejected": 29,
+      "model_walk_away": 22,
+      "decision_limit": 4,
+      "protocol_or_network_error": 3
+    },
+    "stages": {
+      "receipt_validation": 70,
+      "seller_terminal": 29,
+      "buyer_cancel": 22,
+      "decision_limit": 4,
+      "discovery": 2,
+      "offer_request": 1
+    },
+    "seller_reported_unconfirmed": {
+      "price": 12,
+      "stock": 17
+    },
+    "settlement_status": {
+      "confirmed_settlement": 70,
+      "no_receipt_observed": 58
+    },
+    "confirmed_settlements": 70,
+    "receipts_observed": 70,
+    "selection_failures": 1,
+    "selection_failure_reasons": {
+      "unknown": 1
+    },
+    "decisions_total": 152,
+    "attempts_with_decision_count": 128,
+    "elapsed_seconds_total": 1757.804,
+    "attempts_with_elapsed": 128,
+    "excluded_rows": {
+      "outside_window": 1934
+    },
+    "sources": {
+      "memory": {
+        "status": "read",
+        "rows": 2062,
+        "malformed": 0,
+        "partial_tail": false,
+        "byte_truncated": true,
+        "row_truncated": false
+      },
+      "payments": {
+        "status": "read",
+        "rows": 4307,
+        "malformed": 0,
+        "partial_tail": false,
+        "byte_truncated": false,
+        "row_truncated": false
+      },
+      "settled_deals": {
+        "status": "read",
+        "rows": 3197,
+        "malformed": 0,
+        "partial_tail": false,
+        "byte_truncated": true,
+        "row_truncated": false
+      },
+      "selection_events": {
+        "status": "read",
+        "rows": 100,
+        "malformed": 0,
+        "partial_tail": false,
+        "byte_truncated": false,
+        "row_truncated": false
+      }
+    },
+    "limits": [
+      "Bounded local tails, not all market orders or lifetime history.",
+      "Window uses local negotiation record time; undated payment/review rows count only when correlated to current-round attempts.",
+      "Receipt issued or missing payment evidence is unconfirmed, not a failed payment.",
+      "Observed payment refusal may have another later outcome outside the bounded evidence.",
+      "Old records without structured diagnostics have unknown reasons; no text-based cause inference.",
+      "Seller stock/price reports are untrusted claims, separate from local terminal reason.",
+      "No network requests, model calls, raw budgets/signatures, or state writes."
+    ]
+  },
+  "previous_comparison": {
+    "generated_at": "2026-11-08T17:00:20.172158+00:00",
+    "source": "Earlier user-supplied buyer_diagnostics output in conversation.",
+    "attempts": 125,
+    "confirmed_settlements": 56,
+    "receipts_observed": 59,
+    "payment_refusal_observed": 3,
+    "model_walk_away": 42,
+    "seller_rejected": 19,
+    "decision_limit": 5,
+    "selection_failures": 5,
+    "decisions_total": 187,
+    "attempts_with_decision_count": 125
+  },
+  "analysis": {
+    "settlements_per_observed_attempt": 0.546875,
+    "previous_settlements_per_observed_attempt": 0.448,
+    "difference_percentage_points": 9.8875,
+    "settlement_increase": 14,
+    "receipt_with_settlement_ratio": 1,
+    "explicit_model_error_or_timeout_count": 0,
+    "unknown_selection_failure_count": 1,
+    "negotiation_decisions_per_attempt": 1.1875,
+    "previous_negotiation_decisions_per_attempt": 1.496,
+    "no_receipt_breakdown": {
+      "seller_rejected": 29,
+      "model_walk_away": 22,
+      "decision_limit": 4,
+      "protocol_or_network_error": 3
+    },
+    "seller_reject_and_walk_away_share_of_no_receipt": 0.8793103448275862,
+    "interpretation": [
+      "Trade execution is active: all 70 observed receipts match confirmed settlement evidence in this report.",
+      "Most no-receipt attempts end at seller rejection or model walk-away. Walk-away is a chosen action, not a model failure; it may be correct under budget/quality limits.",
+      "Seller stock/price tags are unverified seller claims and may overlap. They are not independent proof of inventory or price availability.",
+      "Explicit model errors/timeouts are absent in bounded classified records; one unknown selection failure prevents claiming all model calls were error-free.",
+      "Observed settlement ratio improved 9.8875 percentage points vs the earlier report, without proving a causal effect of Sol or representative overall market-order success.",
+      "Average negotiation decisions exclude selection and other model calls; this is not a token-usage measurement.",
+      "Only four decision-limit cases support prioritizing shop selection, comparable price references and safe alternatives over increasing negotiation turns.",
+      "Missing receipt evidence is not proof of permanent failed payment. The bounded snapshots may not cover all lifetime events.",
+      "These diagnostics do not measure Saved or post-purchase breakage/refunds. The prior score analysis remains a separate evidence source.",
+      "Host clock was previously observed ahead of market; generated_at is reported server time, not independently verified market time."
+    ]
+  },
+  "related_analysis": "buyer-score-analysis-20261109T010302Z-cb03117c/summary.json",
+  "recommended_next_step": "Discuss connecting comparable public price evidence and a preselected alternative after definite pre-receipt rejection; verify retry contract and share existing total decision/time budgets. No strategy implementation authorized by this diagnostic reply.",
+  "actions": "Read-only source audit and evidence recording. No network, model, purchase, forum, server or trading-policy changes."
+}

@@ -1,0 +1,24 @@
+Synthetic buyer forum tests; no public posts, votes or model calls.
+COMMAND: ['/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python', '-m', 'unittest', 'test_buyer_forum', '-v']
+test_auth_failure_and_server_error_never_fall_back_or_retry (test_buyer_forum.BuyerForumTests.test_auth_failure_and_server_error_never_fall_back_or_retry) ... ok
+test_dedup_capacity_fails_closed_instead_of_forgetting_old_ledger (test_buyer_forum.BuyerForumTests.test_dedup_capacity_fails_closed_instead_of_forgetting_old_ledger) ... ok
+test_durable_inflight_precedes_network_and_write_failure_prevents_send (test_buyer_forum.BuyerForumTests.test_durable_inflight_precedes_network_and_write_failure_prevents_send) ... ok
+test_empty_poll_does_not_create_spool_or_lock_files (test_buyer_forum.BuyerForumTests.test_empty_poll_does_not_create_spool_or_lock_files) ... ok
+test_exact_ledger_dedup_allows_out_of_order_completions (test_buyer_forum.BuyerForumTests.test_exact_ledger_dedup_allows_out_of_order_completions) ... ok
+test_existing_inflight_after_restart_is_not_sent_again (test_buyer_forum.BuyerForumTests.test_existing_inflight_after_restart_is_not_sent_again) ... ok
+test_fifteen_minute_cadence_and_no_repeated_identical_summary (test_buyer_forum.BuyerForumTests.test_fifteen_minute_cadence_and_no_repeated_identical_summary) ... ok
+test_invalid_spool_is_not_reset_and_symlinks_are_not_followed (test_buyer_forum.BuyerForumTests.test_invalid_spool_is_not_reset_and_symlinks_are_not_followed) ... ok
+test_matching_url_identities_and_disagreeing_urls (test_buyer_forum.BuyerForumTests.test_matching_url_identities_and_disagreeing_urls) ... ok
+test_no_old_backlog_after_six_hours_or_market_round_change (test_buyer_forum.BuyerForumTests.test_no_old_backlog_after_six_hours_or_market_round_change) ... ok
+test_pending_and_post_size_are_bounded_without_losing_dedup (test_buyer_forum.BuyerForumTests.test_pending_and_post_size_are_bounded_without_losing_dedup) ... ok
+test_queue_remains_available_during_send_and_concurrent_drainer_does_not_post (test_buyer_forum.BuyerForumTests.test_queue_remains_available_during_send_and_concurrent_drainer_does_not_post) ... ok
+test_rate_limit_retains_exact_batch_and_obeys_backoff (test_buyer_forum.BuyerForumTests.test_rate_limit_retains_exact_batch_and_obeys_backoff) ... ok
+test_reports_only_public_verified_terms_and_buyer_role (test_buyer_forum.BuyerForumTests.test_reports_only_public_verified_terms_and_buyer_role) ... ok
+test_shop_token_never_substitutes_for_missing_buyer_token (test_buyer_forum.BuyerForumTests.test_shop_token_never_substitutes_for_missing_buyer_token) ... ok
+test_transport_unknown_is_quarantined_and_never_replayed (test_buyer_forum.BuyerForumTests.test_transport_unknown_is_quarantined_and_never_replayed) ... ok
+test_unconfirmed_mismatched_or_stale_evidence_never_queues (test_buyer_forum.BuyerForumTests.test_unconfirmed_mismatched_or_stale_evidence_never_queues) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.167s
+
+OK

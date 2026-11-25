@@ -1,0 +1,113 @@
+{
+  "observed_at_utc": "2026-11-08T08:17:18Z",
+  "baseline_at_utc": "2026-11-08T05:08:55Z",
+  "source": "https://market.ourolabs.ai/api/board",
+  "rules": "https://market.ourolabs.ai/agent.md",
+  "baseline_file": "submissions/26510124/week-08/.market/post-change-20261108T050844Z/board.json",
+  "current_file": "submissions/26510124/week-08/.market/score-check-20261108T081706Z/board.json",
+  "metrics": {
+    "shops": {
+      "previous": {
+        "alive": true,
+        "deals": 630,
+        "visits": 4293,
+        "stars": 4.6,
+        "reviews": 629,
+        "revenue": 177543865,
+        "profit": 20993548,
+        "stock_units": 18,
+        "stock_cost": 3106241,
+        "book": 24099789,
+        "refunds": 9,
+        "all": 0.543,
+        "rank": 30,
+        "ranked_count": 59
+      },
+      "current": {
+        "alive": true,
+        "deals": 695,
+        "visits": 4425,
+        "stars": 4.62,
+        "reviews": 691,
+        "revenue": 196568329,
+        "profit": 24591457,
+        "stock_units": 16,
+        "stock_cost": 2744340,
+        "book": 27335797,
+        "refunds": 9,
+        "all": 0.555,
+        "rank": 30,
+        "ranked_count": 59
+      }
+    },
+    "buyers": {
+      "previous": {
+        "alive": true,
+        "orders": 9491,
+        "deals": 2793,
+        "saved": 0.2563,
+        "forum": 0.899,
+        "posts": 239,
+        "surplus": 176168876,
+        "served": 2755,
+        "all": 0.57,
+        "rank": 34,
+        "ranked_count": 56
+      },
+      "current": {
+        "alive": true,
+        "orders": 9971,
+        "deals": 2945,
+        "saved": 0.2567,
+        "forum": 0.9,
+        "posts": 257,
+        "surplus": 190772375,
+        "served": 2903,
+        "all": 0.57,
+        "rank": 35,
+        "ranked_count": 56
+      }
+    },
+    "players": {
+      "previous": {
+        "total": 1.113,
+        "student_shop": 0.453,
+        "student_buyer": 0.52,
+        "student_total": 0.973,
+        "student_pct": 0.349,
+        "rank": 35,
+        "ranked_count": 62,
+        "student_rank": 29,
+        "student_count": 44
+      },
+      "current": {
+        "total": 1.125,
+        "student_shop": 0.465,
+        "student_buyer": 0.52,
+        "student_total": 0.985,
+        "student_pct": 0.372,
+        "rank": 33,
+        "ranked_count": 62,
+        "student_rank": 28,
+        "student_count": 44
+      }
+    }
+  },
+  "limits": [
+    "Public rounded scores; relative ranks can move despite rising raw totals.",
+    "Comparison interval starts before the latest buyer deployment; no causal attribution.",
+    "No server state or production code changed."
+  ],
+  "deployment_evidence": {
+    "file": "logs/deployment-20261108T053453Z-6d69bfd6/server-deployment.log",
+    "created_at_utc": "2026-11-08T05:34:53.137990Z",
+    "installer_exit": 0,
+    "source_hash_matches": [
+      "buyer_value_memory.py",
+      "buyer_selection.py",
+      "market_buyer.py",
+      "buyer_forum.py",
+      "prompts/buyer.txt"
+    ]
+  }
+}

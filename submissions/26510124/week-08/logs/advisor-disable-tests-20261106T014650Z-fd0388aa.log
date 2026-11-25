@@ -1,0 +1,145 @@
+COMMAND: ['/Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12', '-m', 'unittest', '-v', 'test_model_backend', 'test_luna_advisor', 'test_runtime', 'test_sales_advisor', 'test_advisor_forum', 'test_seller_efficiency', 'test_seller_fast_close', 'test_opening_strategy', 'test_deploy']
+test_api_env_is_removed_without_repurposing_home_or_cli_auth (test_model_backend.ModelBackendTests.test_api_env_is_removed_without_repurposing_home_or_cli_auth) ... ok
+test_astra_command_is_readonly_ephemeral_low_and_uses_stdin (test_model_backend.ModelBackendTests.test_astra_command_is_readonly_ephemeral_low_and_uses_stdin) ... ok
+test_auth_requires_chatgpt_and_never_prints_or_changes_credentials (test_model_backend.ModelBackendTests.test_auth_requires_chatgpt_and_never_prints_or_changes_credentials) ... ok
+test_bad_profile_never_silently_falls_back (test_model_backend.ModelBackendTests.test_bad_profile_never_silently_falls_back) ... ok
+test_call_timeout_keeps_partial_diagnostics_without_retry (test_model_backend.ModelBackendTests.test_call_timeout_keeps_partial_diagnostics_without_retry) ... ok
+test_call_uses_same_timeout_and_logs_raw_stream_and_final (test_model_backend.ModelBackendTests.test_call_uses_same_timeout_and_logs_raw_stream_and_final) ... ok
+test_check_does_not_make_model_call_and_preflight_is_explicit (test_model_backend.ModelBackendTests.test_check_does_not_make_model_call_and_preflight_is_explicit) ... ok
+test_disabled_advisor_is_excluded_from_cli_auth_and_paid_preflight (test_model_backend.ModelBackendTests.test_disabled_advisor_is_excluded_from_cli_auth_and_paid_preflight) ... ok
+test_disabled_or_missing_advisor_cannot_reactivate_through_harness (test_model_backend.ModelBackendTests.test_disabled_or_missing_advisor_cannot_reactivate_through_harness) ... ok
+test_failed_preflight_prints_exact_details_path (test_model_backend.ModelBackendTests.test_failed_preflight_prints_exact_details_path) ... ok
+test_final_file_is_used_and_tools_fail_even_with_valid_json (test_model_backend.ModelBackendTests.test_final_file_is_used_and_tools_fail_even_with_valid_json) ... ok
+test_harness_auth_or_process_failure_never_retries_or_changes_model (test_model_backend.ModelBackendTests.test_harness_auth_or_process_failure_never_retries_or_changes_model) ... ok
+test_harness_retries_invalid_decision_only_and_keeps_advisor_haiku (test_model_backend.ModelBackendTests.test_harness_retries_invalid_decision_only_and_keeps_advisor_haiku) ... ok
+test_interruption_reaps_the_cli_children_without_starting_a_retry (test_model_backend.ModelBackendTests.test_interruption_reaps_the_cli_children_without_starting_a_retry) ... ok
+test_missing_oversized_and_incomplete_final_outputs_fail (test_model_backend.ModelBackendTests.test_missing_oversized_and_incomplete_final_outputs_fail) ... ok
+test_schema_preserves_selection_and_opening_contracts (test_model_backend.ModelBackendTests.test_schema_preserves_selection_and_opening_contracts) ... ok
+test_scope_and_reversible_local_profile_do_not_start_a_service (test_model_backend.ModelBackendTests.test_scope_and_reversible_local_profile_do_not_start_a_service) ... ok
+test_timeout_kills_process_group_and_preserves_output (test_model_backend.ModelBackendTests.test_timeout_kills_process_group_and_preserves_output) ... ok
+test_luna_advisor (unittest.loader._FailedTest.test_luna_advisor) ... ERROR
+test_runtime (unittest.loader._FailedTest.test_runtime) ... ERROR
+test_sales_advisor (unittest.loader._FailedTest.test_sales_advisor) ... ERROR
+test_advisor_forum (unittest.loader._FailedTest.test_advisor_forum) ... ERROR
+test_seller_efficiency (unittest.loader._FailedTest.test_seller_efficiency) ... ERROR
+test_seller_fast_close (unittest.loader._FailedTest.test_seller_fast_close) ... ERROR
+test_opening_strategy (unittest.loader._FailedTest.test_opening_strategy) ... ERROR
+test_acp_requires_matching_endpoint_and_checkout_tools (test_deploy.DeploymentTests.test_acp_requires_matching_endpoint_and_checkout_tools) ... ok
+test_archive_paths_links_and_private_files_are_rejected (test_deploy.DeploymentTests.test_archive_paths_links_and_private_files_are_rejected) ... ok
+test_archive_round_trip_excludes_keys_auth_memory_logs_and_venv (test_deploy.DeploymentTests.test_archive_round_trip_excludes_keys_auth_memory_logs_and_venv) ... ok
+test_concurrent_deployment_is_rejected (test_deploy.DeploymentTests.test_concurrent_deployment_is_rejected) ... ok
+test_configuration_failure_records_actual_fields_without_secret_args (test_deploy.DeploymentTests.test_configuration_failure_records_actual_fields_without_secret_args) ... ok
+test_confirmed_startup_keeps_release_and_records_success_evidence (test_deploy.DeploymentTests.test_confirmed_startup_keeps_release_and_records_success_evidence) ... ok
+test_destination_symlink_cannot_overwrite_private_file (test_deploy.DeploymentTests.test_destination_symlink_cannot_overwrite_private_file) ... ok
+test_dropin_uses_week08_but_keeps_existing_auth_and_interpreter (test_deploy.DeploymentTests.test_dropin_uses_week08_but_keeps_existing_auth_and_interpreter) ... ok
+test_failed_model_access_keeps_live_profile_source_inventory_and_service (test_deploy.DeploymentTests.test_failed_model_access_keeps_live_profile_source_inventory_and_service) ... ok
+test_failed_preflight_does_not_stop_or_modify_the_existing_service (test_deploy.DeploymentTests.test_failed_preflight_does_not_stop_or_modify_the_existing_service) ... ok
+test_failed_startup_automatically_restores_old_service_and_source (test_deploy.DeploymentTests.test_failed_startup_automatically_restores_old_service_and_source) ... ok
+test_file_hash_mismatch_is_rejected_even_with_valid_archive_hash (test_deploy.DeploymentTests.test_file_hash_mismatch_is_rejected_even_with_valid_archive_hash) ... ok
+test_install_then_rollback_restores_source_and_preserves_live_data (test_deploy.DeploymentTests.test_install_then_rollback_restores_source_and_preserves_live_data) ... ok
+test_model_failure_status_echoes_only_bounded_backend_lines_and_preserves_log (test_deploy.DeploymentTests.test_model_failure_status_echoes_only_bounded_backend_lines_and_preserves_log) ... ok
+test_model_failure_status_ignores_missing_or_symlinked_logs (test_deploy.DeploymentTests.test_model_failure_status_ignores_missing_or_symlinked_logs) ... ok
+test_only_new_logs_and_latest_start_can_prove_readiness (test_deploy.DeploymentTests.test_only_new_logs_and_latest_start_can_prove_readiness) ... ok
+test_rollback_restores_previous_dropin_and_leaves_stopped_service_stopped (test_deploy.DeploymentTests.test_rollback_restores_previous_dropin_and_leaves_stopped_service_stopped) ... ok
+test_tampered_transport_archive_is_rejected_before_extracting (test_deploy.DeploymentTests.test_tampered_transport_archive_is_rejected_before_extracting) ... ok
+test_working_directory_is_an_absolute_path_without_shell_quotes (test_deploy.DeploymentTests.test_working_directory_is_an_absolute_path_without_shell_quotes) ... ok
+
+======================================================================
+ERROR: test_luna_advisor (unittest.loader._FailedTest.test_luna_advisor)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_luna_advisor
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_luna_advisor.py", line 15, in <module>
+    import sales_advisor as advisor
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/sales_advisor.py", line 17, in <module>
+    import httpx
+ModuleNotFoundError: No module named 'httpx'
+
+
+======================================================================
+ERROR: test_runtime (unittest.loader._FailedTest.test_runtime)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_runtime
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_runtime.py", line 10, in <module>
+    from cryptography.hazmat.primitives import serialization
+ModuleNotFoundError: No module named 'cryptography'
+
+
+======================================================================
+ERROR: test_sales_advisor (unittest.loader._FailedTest.test_sales_advisor)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_sales_advisor
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_sales_advisor.py", line 12, in <module>
+    import httpx
+ModuleNotFoundError: No module named 'httpx'
+
+
+======================================================================
+ERROR: test_advisor_forum (unittest.loader._FailedTest.test_advisor_forum)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_advisor_forum
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_advisor_forum.py", line 13, in <module>
+    import httpx
+ModuleNotFoundError: No module named 'httpx'
+
+
+======================================================================
+ERROR: test_seller_efficiency (unittest.loader._FailedTest.test_seller_efficiency)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_seller_efficiency
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_seller_efficiency.py", line 10, in <module>
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+ModuleNotFoundError: No module named 'cryptography'
+
+
+======================================================================
+ERROR: test_seller_fast_close (unittest.loader._FailedTest.test_seller_fast_close)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_seller_fast_close
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_seller_fast_close.py", line 6, in <module>
+    from starlette.testclient import TestClient
+ModuleNotFoundError: No module named 'starlette'
+
+
+======================================================================
+ERROR: test_opening_strategy (unittest.loader._FailedTest.test_opening_strategy)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_opening_strategy
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_opening_strategy.py", line 10, in <module>
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+ModuleNotFoundError: No module named 'cryptography'
+
+
+----------------------------------------------------------------------
+Ran 44 tests in 0.299s
+
+FAILED (errors=7)
+
+EXIT: 1

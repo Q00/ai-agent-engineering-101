@@ -1,0 +1,16 @@
+[Unit]
+Description=Week 08 bounded public market feedback (no trades or LLM calls)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/agent-market-week07/repo/submissions/26510124/week-08
+ExecStart=%h/agent-market-week07/repo/submissions/26510124/week-07/.venv/bin/python collect_feedback.py
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=120
+UMask=0077
+
+[Install]
+WantedBy=default.target

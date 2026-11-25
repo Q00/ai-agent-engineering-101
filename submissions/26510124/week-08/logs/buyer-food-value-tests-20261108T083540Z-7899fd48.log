@@ -1,0 +1,119 @@
+COMMAND: ['/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python', '-m', 'unittest', '-v', 'test_buyer_food_value', 'test_buyer_value_memory', 'test_buyer_refusal_memory', 'test_buyer_fast_selection', 'test_balanced_buyer', 'test_strict_buyer', 'test_balanced_reviews']
+test_actual_grade_and_freshness_buckets_do_not_pool_and_only_two_groups_return (test_buyer_food_value.BuyerFoodValueTests.test_actual_grade_and_freshness_buckets_do_not_pool_and_only_two_groups_return) ... ok
+test_direct_market_timestamp_supported_and_preferred_over_later_review (test_buyer_food_value.BuyerFoodValueTests.test_direct_market_timestamp_supported_and_preferred_over_later_review) ... ok
+test_duplicate_review_clock_conflict_cannot_choose_convenient_freshness (test_buyer_food_value.BuyerFoodValueTests.test_duplicate_review_clock_conflict_cannot_choose_convenient_freshness) ... ok
+test_invalid_or_conflicting_direct_market_timestamps_do_not_fallback_to_clock (test_buyer_food_value.BuyerFoodValueTests.test_invalid_or_conflicting_direct_market_timestamps_do_not_fallback_to_clock) ... ok
+test_local_clock_ahead_or_behind_does_not_change_verified_historical_freshness (test_buyer_food_value.BuyerFoodValueTests.test_local_clock_ahead_or_behind_does_not_change_verified_historical_freshness) ... ok
+test_local_reviewed_at_grade_and_shelf_life_cannot_replace_missing_market_time_or_expiry (test_buyer_food_value.BuyerFoodValueTests.test_local_reviewed_at_grade_and_shelf_life_cannot_replace_missing_market_time_or_expiry) ... ok
+test_missing_quality_faults_refunds_and_receipt_mismatch_are_excluded (test_buyer_food_value.BuyerFoodValueTests.test_missing_quality_faults_refunds_and_receipt_mismatch_are_excluded) ... ok
+test_neutral_absent_claim_only_and_dishonesty_never_qualifies (test_buyer_food_value.BuyerFoodValueTests.test_neutral_absent_claim_only_and_dishonesty_never_qualifies) ... ok
+test_official_receipt_without_kind_or_timestamp_learns_using_captured_market_clock (test_buyer_food_value.BuyerFoodValueTests.test_official_receipt_without_kind_or_timestamp_learns_using_captured_market_clock) ... ok
+test_original_kind_catalog_and_current_acceptance_all_required (test_buyer_food_value.BuyerFoodValueTests.test_original_kind_catalog_and_current_acceptance_all_required) ... ok
+test_stale_future_round_duplicate_and_later_fault_limits_remain_active (test_buyer_food_value.BuyerFoodValueTests.test_stale_future_round_duplicate_and_later_fault_limits_remain_active) ... ok
+test_actual_correlated_quality_produces_bounded_compact_median_not_lowest_price (test_buyer_value_memory.BuyerValueMemoryTests.test_actual_correlated_quality_produces_bounded_compact_median_not_lowest_price) ... ok
+test_catalog_and_current_policy_filter_without_inventing_food_freshness (test_buyer_value_memory.BuyerValueMemoryTests.test_catalog_and_current_policy_filter_without_inventing_food_freshness) ... ok
+test_current_round_recent_timezone_and_two_thousand_record_limits (test_buyer_value_memory.BuyerValueMemoryTests.test_current_round_recent_timezone_and_two_thousand_record_limits) ... ok
+test_duplicate_ledger_or_order_never_increases_sample_count_and_conflicts_exclude (test_buyer_value_memory.BuyerValueMemoryTests.test_duplicate_ledger_or_order_never_increases_sample_count_and_conflicts_exclude) ... ok
+test_invalid_configuration_never_triggers_default_policy_disk_read (test_buyer_value_memory.BuyerValueMemoryTests.test_invalid_configuration_never_triggers_default_policy_disk_read) ... ok
+test_later_same_sku_refusal_or_fault_invalidates_old_prices_until_new_evidence (test_buyer_value_memory.BuyerValueMemoryTests.test_later_same_sku_refusal_or_fault_invalidates_old_prices_until_new_evidence) ... ok
+test_official_pending_receipts_reconcile_into_actual_same_quality_price_group (test_buyer_value_memory.BuyerValueMemoryTests.test_official_pending_receipts_reconcile_into_actual_same_quality_price_group) ... ok
+test_requested_accept_or_review_prose_cannot_supply_missing_actual_quality (test_buyer_value_memory.BuyerValueMemoryTests.test_requested_accept_or_review_prose_cannot_supply_missing_actual_quality) ... ok
+test_review_faults_or_missing_issue_assessment_do_not_inherit_stale_clean_marker (test_buyer_value_memory.BuyerValueMemoryTests.test_review_faults_or_missing_issue_assessment_do_not_inherit_stale_clean_marker) ... ok
+test_singletons_different_shops_grades_and_warranties_never_pool_as_same_quality (test_buyer_value_memory.BuyerValueMemoryTests.test_singletons_different_shops_grades_and_warranties_never_pool_as_same_quality) ... ok
+test_strict_proof_rejects_wrong_receipt_settlement_and_invalid_numeric_fields (test_buyer_value_memory.BuyerValueMemoryTests.test_strict_proof_rejects_wrong_receipt_settlement_and_invalid_numeric_fields) ... ok
+test_budget_and_unrelated_review_changes_do_not_erase_quality_evidence (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_budget_and_unrelated_review_changes_do_not_erase_quality_evidence) ... ok
+test_expiry_future_and_round_boundaries_do_not_create_permanent_blacklists (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_expiry_future_and_round_boundaries_do_not_create_permanent_blacklists) ... ok
+test_fast_review_verification_requires_same_ledger_and_shop (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_fast_review_verification_requires_same_ledger_and_shop) ... ok
+test_known_incompatible_never_returns_through_all_cooling_fallback (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_known_incompatible_never_returns_through_all_cooling_fallback) ... ok
+test_later_matching_success_clears_refusal_but_errors_and_other_terms_do_not (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_later_matching_success_clears_refusal_but_errors_and_other_terms_do_not) ... ok
+test_legacy_fingerprint_uses_original_budget_and_observable_stock_changes (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_legacy_fingerprint_uses_original_budget_and_observable_stock_changes) ... ok
+test_new_stock_or_changed_acceptance_policy_permits_retry (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_new_stock_or_changed_acceptance_policy_permits_retry) ... ok
+test_only_exact_kit_grade_and_warranty_refusals_are_typed (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_only_exact_kit_grade_and_warranty_refusals_are_typed) ... ok
+test_refusal_excludes_only_that_sku_at_that_shop (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_refusal_excludes_only_that_sku_at_that_shop) ... ok
+test_refusal_requires_matching_local_payment_identity_and_receipt_terms (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_refusal_requires_matching_local_payment_identity_and_receipt_terms) ... ok
+test_sources_and_purchase_limits_remain_unchanged (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_sources_and_purchase_limits_remain_unchanged) ... ok
+test_untyped_refusal_and_network_errors_never_become_quality_evidence (test_buyer_refusal_memory.BuyerRefusalMemoryTests.test_untyped_refusal_and_network_errors_never_become_quality_evidence) ... ok
+test_all_incompatible_offers_and_expired_deadline_never_call_model (test_buyer_fast_selection.FastSelectionTests.test_all_incompatible_offers_and_expired_deadline_never_call_model) ... ok
+test_cache_keeps_new_shop_comparison_opportunities_and_can_be_disabled (test_buyer_fast_selection.FastSelectionTests.test_cache_keeps_new_shop_comparison_opportunities_and_can_be_disabled) ... ok
+test_changed_checkout_policy_or_price_cap_cannot_reuse_past_acceptance (test_buyer_fast_selection.FastSelectionTests.test_changed_checkout_policy_or_price_cap_cannot_reuse_past_acceptance) ... ok
+test_changed_tunnel_does_not_drop_same_shop_selection_evidence (test_buyer_fast_selection.FastSelectionTests.test_changed_tunnel_does_not_drop_same_shop_selection_evidence) ... ok
+test_current_low_rating_or_own_receipt_mismatch_disables_shortcut (test_buyer_fast_selection.FastSelectionTests.test_current_low_rating_or_own_receipt_mismatch_disables_shortcut) ... ok
+test_integrated_cache_skips_model_and_preserves_live_shop_and_sku (test_buyer_fast_selection.FastSelectionTests.test_integrated_cache_skips_model_and_preserves_live_shop_and_sku) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1677, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "value_candidates": [], "exploration": ["new"]}
+SELECTION METHOD: {"method": "recent_settlement", "model_timeout_seconds": 15}
+SHOP SELECTION: {"name": "proven", "sku": "G00001", "reason": "Recent confirmed same-SKU settlement (ledger 17) met the same checkout minimums; negotiate and verify this unit anew."}
+ok
+test_invalid_model_outputs_and_auth_errors_do_not_trigger_fallback (test_buyer_fast_selection.FastSelectionTests.test_invalid_model_outputs_and_auth_errors_do_not_trigger_fallback) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1558, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "value_candidates": [], "exploration": ["new"]}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1558, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "value_candidates": [], "exploration": ["new"]}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1558, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "value_candidates": [], "exploration": ["new"]}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1558, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "value_candidates": [], "exploration": ["new"]}
+ok
+test_model_selected_invented_sku_is_rejected (test_buyer_fast_selection.FastSelectionTests.test_model_selected_invented_sku_is_rejected) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1558, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "value_candidates": [], "exploration": ["new"]}
+ok
+test_model_timeout_has_one_bounded_attempt_then_local_stock_selection (test_buyer_fast_selection.FastSelectionTests.test_model_timeout_has_one_bounded_attempt_then_local_stock_selection) ... SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1558, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "value_candidates": [], "exploration": ["new"]}
+SELECTION TIMEOUT: "Harness timed out; see fixture.log"
+SELECTION METHOD: {"method": "timeout_local_comparison", "model_timeout_seconds": 15}
+SHOP SELECTION: {"name": "proven", "reason": "Selection model timed out; locally compared confirmed settlements, contract faults and bounded public reviews; purchase checks remain unchanged.", "sku": "G00001"}
+SELECTION CONTEXT: {"eligible_shops": 2, "candidates": 2, "context_chars": 1558, "cooldown_skipped_offers": 0, "all_cooling_reconsidered": false, "incompatible_skipped_offers": 0, "incompatible_grade_offers": 0, "incompatible_warranty_offers": 0, "all_incompatible": false, "value_candidates": [], "exploration": ["new"]}
+SELECTION TIMEOUT: "Harness deadline expired; see fixture.log"
+SELECTION METHOD: {"method": "timeout_local_comparison", "model_timeout_seconds": 15}
+SHOP SELECTION: {"name": "proven", "reason": "Selection model timed out; locally compared confirmed settlements, contract faults and bounded public reviews; purchase checks remain unchanged.", "sku": "G00001"}
+ok
+test_newer_refusal_or_unknown_result_prevents_older_success_reuse (test_buyer_fast_selection.FastSelectionTests.test_newer_refusal_or_unknown_result_prevents_older_success_reuse) ... ok
+test_pending_unreviewed_wrong_ledger_and_bad_contract_are_never_cache_hits (test_buyer_fast_selection.FastSelectionTests.test_pending_unreviewed_wrong_ledger_and_bad_contract_are_never_cache_hits) ... ok
+test_recent_confirmed_tradeoff_reuses_selection_not_authorization (test_buyer_fast_selection.FastSelectionTests.test_recent_confirmed_tradeoff_reuses_selection_not_authorization) ... ok
+test_stale_future_unknown_timezone_and_other_round_never_cache (test_buyer_fast_selection.FastSelectionTests.test_stale_future_unknown_timezone_and_other_round_never_cache) ... ok
+test_timeout_fallback_uses_evidence_not_candidate_array_position (test_buyer_fast_selection.FastSelectionTests.test_timeout_fallback_uses_evidence_not_candidate_array_position) ... ok
+test_exact_acceptance_can_reach_limit_without_relaxing_counteroffer_or_receipt (test_balanced_buyer.BalancedBuyerTests.test_exact_acceptance_can_reach_limit_without_relaxing_counteroffer_or_receipt) ... ok
+test_food_required_use_and_original_buffer_are_still_required (test_balanced_buyer.BalancedBuyerTests.test_food_required_use_and_original_buffer_are_still_required) ... ok
+test_four_decisions_can_end_in_acceptance_at_limit (test_balanced_buyer.BalancedBuyerTests.test_four_decisions_can_end_in_acceptance_at_limit) ... NEGOTIATION CONTEXT: {"decision": 1, "context_chars": 171}
+BUYER DECISION: {"action": "offer", "price": 75000, "reason": "negotiate"}
+NEGOTIATION CONTEXT: {"decision": 2, "context_chars": 249}
+BUYER DECISION: {"action": "offer", "price": 77000, "reason": "negotiate"}
+NEGOTIATION CONTEXT: {"decision": 3, "context_chars": 329}
+BUYER DECISION: {"action": "offer", "price": 79000, "reason": "negotiate"}
+NEGOTIATION CONTEXT: {"decision": 4, "context_chars": 338}
+BUYER DECISION: {"action": "accept", "price": 85000, "reason": "acceptable minimums"}
+ok
+test_new_limits_preserve_separate_frozen_ideal_criteria (test_balanced_buyer.BalancedBuyerTests.test_new_limits_preserve_separate_frozen_ideal_criteria) ... ok
+test_preference_only_low_rating_is_not_remembered_as_contract_failure (test_balanced_buyer.BalancedBuyerTests.test_preference_only_low_rating_is_not_remembered_as_contract_failure) ... ok
+test_rating_preferences_do_not_enter_model_context (test_balanced_buyer.BalancedBuyerTests.test_rating_preferences_do_not_enter_model_context) ... ok
+test_signed_checkout_allows_b_three_hours_but_keeps_minimum_guards (test_balanced_buyer.BalancedBuyerTests.test_signed_checkout_allows_b_three_hours_but_keeps_minimum_guards) ... ok
+test_both_caps_apply_with_integer_flooring (test_strict_buyer.StrictBuyerTests.test_both_caps_apply_with_integer_flooring) ... ok
+test_concessions_are_small_and_receipt_guard_uses_same_limit (test_strict_buyer.StrictBuyerTests.test_concessions_are_small_and_receipt_guard_uses_same_limit) ... ok
+test_four_rounds_end_with_cancellation_and_no_forced_acceptance (test_strict_buyer.StrictBuyerTests.test_four_rounds_end_with_cancellation_and_no_forced_acceptance) ... NEGOTIATION CONTEXT: {"decision": 1, "context_chars": 144}
+BUYER DECISION: {"action": "offer", "price": 50000, "reason": "firm"}
+NEGOTIATION CONTEXT: {"decision": 2, "context_chars": 195}
+BUYER DECISION: {"action": "offer", "price": 50000, "reason": "firm"}
+NEGOTIATION CONTEXT: {"decision": 3, "context_chars": 204}
+BUYER DECISION: {"action": "offer", "price": 50000, "reason": "firm"}
+NEGOTIATION CONTEXT: {"decision": 4, "context_chars": 213}
+BUYER DECISION: {"action": "offer", "price": 50000, "reason": "firm"}
+POLICY WALK AWAY: "Negotiation ended at the owner's turn limit without a satisfactory agreement"
+ok
+test_missing_catalog_never_silently_drops_price_condition (test_strict_buyer.StrictBuyerTests.test_missing_catalog_never_silently_drops_price_condition) ... ok
+test_model_cannot_bid_above_limit_even_inside_full_budget (test_strict_buyer.StrictBuyerTests.test_model_cannot_bid_above_limit_even_inside_full_budget) ... ok
+test_v4_rejects_grade_b_or_short_warranty_and_accepts_grade_a_six_hours (test_strict_buyer.StrictBuyerTests.test_v4_rejects_grade_b_or_short_warranty_and_accepts_grade_a_six_hours) ... ok
+test_absent_context_never_invents_a_price_complaint (test_strict_buyer.StrictReviewTests.test_absent_context_never_invents_a_price_complaint) ... ok
+test_any_actual_shortcoming_caps_review_at_two (test_strict_buyer.StrictReviewTests.test_any_actual_shortcoming_caps_review_at_two) ... ok
+test_false_claim_or_zero_value_is_one_even_at_a_low_price (test_strict_buyer.StrictReviewTests.test_false_claim_or_zero_value_is_one_even_at_a_low_price) ... ok
+test_food_assessment_identifies_review_time_not_unproven_payment_condition (test_strict_buyer.StrictReviewTests.test_food_assessment_identifies_review_time_not_unproven_payment_condition) ... ok
+test_good_deal_is_four_and_only_exceptional_value_is_five (test_strict_buyer.StrictReviewTests.test_good_deal_is_four_and_only_exceptional_value_is_five) ... ok
+test_original_policy_is_matched_to_order_shop_receipt_and_task (test_strict_buyer.StrictReviewTests.test_original_policy_is_matched_to_order_shop_receipt_and_task) ... ok
+test_review_never_publishes_private_budget_target_or_limit (test_strict_buyer.StrictReviewTests.test_review_never_publishes_private_budget_target_or_limit) ... ok
+test_reviews_enter_memory_only_after_verified_payment (test_strict_buyer.StrictReviewTests.test_reviews_enter_memory_only_after_verified_payment) ... ok
+test_each_single_accepted_compromise_is_three_not_a_breach (test_balanced_reviews.BalancedReviewTests.test_each_single_accepted_compromise_is_three_not_a_breach) ... ok
+test_food_uses_frozen_margin_and_identifies_review_time (test_balanced_reviews.BalancedReviewTests.test_food_uses_frozen_margin_and_identifies_review_time) ... ok
+test_hard_quality_warranty_and_missing_fact_are_two (test_balanced_reviews.BalancedReviewTests.test_hard_quality_warranty_and_missing_fact_are_two) ... ok
+test_ideal_deal_is_four_exceptional_price_is_five (test_balanced_reviews.BalancedReviewTests.test_ideal_deal_is_four_exceptional_price_is_five) ... ok
+test_legacy_policy_retains_original_strict_assessment (test_balanced_reviews.BalancedReviewTests.test_legacy_policy_retains_original_strict_assessment) ... ok
+test_matching_original_preferences_survive_local_config_changes (test_balanced_reviews.BalancedReviewTests.test_matching_original_preferences_survive_local_config_changes) ... ok
+test_missing_original_terms_never_imports_current_minima (test_balanced_reviews.BalancedReviewTests.test_missing_original_terms_never_imports_current_minima) ... ok
+test_missing_preferred_price_does_not_invent_expensive_purchase (test_balanced_reviews.BalancedReviewTests.test_missing_preferred_price_does_not_invent_expensive_purchase) ... ok
+test_multiple_accepted_compromises_are_two_without_inventing_faults (test_balanced_reviews.BalancedReviewTests.test_multiple_accepted_compromises_are_two_without_inventing_faults) ... ok
+test_proven_false_claim_zero_value_and_hard_price_breach_are_one (test_balanced_reviews.BalancedReviewTests.test_proven_false_claim_zero_value_and_hard_price_breach_are_one) ... ok
+test_public_review_keeps_private_budget_and_targets_hidden (test_balanced_reviews.BalancedReviewTests.test_public_review_keeps_private_budget_and_targets_hidden) ... ok
+
+----------------------------------------------------------------------
+Ran 80 tests in 0.041s
+
+OK

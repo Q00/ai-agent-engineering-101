@@ -1,0 +1,68 @@
+{
+  "scope": "Synthetic fixtures only; no model or network calls. Character counts include application prompts, not CLI system context, tokenization, caching or subscription accounting. These do not measure real trade success.",
+  "baseline_git_ref": "d479004^",
+  "selection": [
+    {
+      "eligible_shops": 1,
+      "before": {
+        "decisions": 1,
+        "total_application_prompt_characters": 4485
+      },
+      "after": {
+        "decisions": 1,
+        "total_application_prompt_characters": 2183
+      }
+    },
+    {
+      "eligible_shops": 6,
+      "before": {
+        "decisions": 1,
+        "total_application_prompt_characters": 13395
+      },
+      "after": {
+        "decisions": 1,
+        "total_application_prompt_characters": 5383
+      }
+    },
+    {
+      "eligible_shops": 40,
+      "before": {
+        "decisions": 5,
+        "total_application_prompt_characters": 91956
+      },
+      "after": {
+        "decisions": 1,
+        "total_application_prompt_characters": 5388
+      }
+    },
+    {
+      "eligible_shops": 80,
+      "before": {
+        "decisions": 8,
+        "total_application_prompt_characters": 176734
+      },
+      "after": {
+        "decisions": 1,
+        "total_application_prompt_characters": 5389
+      }
+    }
+  ],
+  "negotiation": [
+    {
+      "scenario": "short messages",
+      "decisions": 4,
+      "application_prompt_characters": {
+        "before": 9534,
+        "after": 11118
+      }
+    },
+    {
+      "scenario": "long messages",
+      "decisions": 4,
+      "application_prompt_characters": {
+        "before": 16800,
+        "after": 16170
+      }
+    }
+  ]
+}

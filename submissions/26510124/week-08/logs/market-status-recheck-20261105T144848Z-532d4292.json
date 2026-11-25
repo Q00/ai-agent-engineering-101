@@ -1,0 +1,162 @@
+{
+  "kind": "read_only_public_market_recheck",
+  "observed_at_kst": "2026-11-05T23:49:13+09:00",
+  "name": "dyishappy",
+  "round": 3,
+  "previous": {
+    "observed_at_kst": "2026-11-05T10:53:14+09:00",
+    "round": 3,
+    "shops": {
+      "name": "dyishappy",
+      "alive": true,
+      "deals": 59,
+      "visits": 1850,
+      "stock_units": 13
+    },
+    "buyers": {
+      "name": "dyishappy",
+      "alive": true,
+      "deals": 554,
+      "orders": 1744
+    }
+  },
+  "current": {
+    "shops": {
+      "name": "dyishappy",
+      "alive": true,
+      "deals": 59,
+      "visits": 2447,
+      "stock_units": 13
+    },
+    "buyers": {
+      "name": "dyishappy",
+      "alive": true,
+      "deals": 758,
+      "orders": 2659
+    }
+  },
+  "sources": {
+    "board": "https://market.ourolabs.ai/api/board",
+    "ledger": "https://market.ourolabs.ai/api/ledger?after=2942317",
+    "shops": "https://market.ourolabs.ai/api/shops"
+  },
+  "sample": {
+    "entries": 1500,
+    "start_seq": 2942318,
+    "end_seq": 2943817,
+    "start_ts": 1793889778.653,
+    "end_ts": 1793890160.93,
+    "shop": {
+      "counts": {
+        "result": 3
+      },
+      "outcomes": [
+        {
+          "seq": 2943007,
+          "ts": 1793889941.412,
+          "kind": "result",
+          "verified": false,
+          "amount": null,
+          "review": "No deal for 침구 within budget 149870."
+        },
+        {
+          "seq": 2943147,
+          "ts": 1793889975.886,
+          "kind": "result",
+          "verified": false,
+          "amount": null,
+          "review": "No deal for 침구 within budget 591040."
+        },
+        {
+          "seq": 2943587,
+          "ts": 1793890089.93,
+          "kind": "result",
+          "verified": false,
+          "amount": null,
+          "review": "No deal for 침구 within budget 73920."
+        }
+      ]
+    },
+    "buyer": {
+      "counts": {
+        "result": 7,
+        "order": 7,
+        "settle": 1
+      },
+      "outcomes": [
+        {
+          "seq": 2942386,
+          "ts": 1793889792.587,
+          "kind": "result",
+          "verified": false,
+          "amount": null,
+          "review": "No deal for G07ec17d5; no completed purchase."
+        },
+        {
+          "seq": 2942734,
+          "ts": 1793889872.417,
+          "kind": "result",
+          "verified": false,
+          "amount": null,
+          "review": "Trade could not be completed: Harness acceptance price does not match the seller's ask"
+        },
+        {
+          "seq": 2942972,
+          "ts": 1793889931.955,
+          "kind": "settle",
+          "verified": null,
+          "amount": 11349,
+          "review": null
+        },
+        {
+          "seq": 2942977,
+          "ts": 1793889932.618,
+          "kind": "result",
+          "verified": true,
+          "amount": null,
+          "review": "Settled Gdf79cd07 at 11349; grade A. The accepted price was above my preferred value range. Ledger 2942972."
+        },
+        {
+          "seq": 2943156,
+          "ts": 1793889979.851,
+          "kind": "result",
+          "verified": false,
+          "amount": null,
+          "review": "No deal for G8b4f7884; no completed purchase."
+        },
+        {
+          "seq": 2943332,
+          "ts": 1793890021.018,
+          "kind": "result",
+          "verified": false,
+          "amount": null,
+          "review": "No deal for G1a7852ed; no completed purchase."
+        },
+        {
+          "seq": 2943545,
+          "ts": 1793890082.031,
+          "kind": "result",
+          "verified": false,
+          "amount": null,
+          "review": "No deal for G8095ddd6; no completed purchase."
+        },
+        {
+          "seq": 2943806,
+          "ts": 1793890156.35,
+          "kind": "result",
+          "verified": false,
+          "amount": null,
+          "review": "No deal for G1831f2c0; no completed purchase."
+        }
+      ]
+    }
+  },
+  "acp_status": "HTTP/2 200 ",
+  "conclusions": [
+    "Buyer increased 554 -> 758; current sample includes a settled purchase at 23:45:31 KST.",
+    "Shop stayed at 59 despite visits increasing 1850 -> 2447.",
+    "Both are online; ACP discovery returns HTTP 200.",
+    "Morning reservation refusals and persistent receipt holds in code remain a hypothesis for seller stagnation. Current hold counts, server logs and actual per-SKU availability are unverified.",
+    "No service, reservation, model or market state was changed."
+  ]
+}

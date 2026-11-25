@@ -1,0 +1,107 @@
+{
+  "baseline_market_time_kst": "2026-11-10T19:30:03+09:00",
+  "submission_board_http_date": "date: Mon, 23 Nov 2026 06:31:07 GMT",
+  "baseline": {
+    "class_rank_display": 25,
+    "class_size": 46,
+    "class_equal_score_count": 2,
+    "class_total": 1.136,
+    "class_percentile": 0.478,
+    "shop": {
+      "deals": 1305,
+      "all": 0.625,
+      "book": 44709950,
+      "revenue": 333167575,
+      "stars": 4.67,
+      "refunds": 25
+    },
+    "buyer": {
+      "deals": 5235,
+      "all": 0.635,
+      "saved": 0.2883,
+      "orders": 15328,
+      "posts": 555
+    }
+  },
+  "submission_board": {
+    "class_rank_display": 19,
+    "class_size": 46,
+    "class_equal_score_count": 1,
+    "class_total": 1.224,
+    "class_percentile": 0.6,
+    "shop": {
+      "deals": 2229,
+      "all": 0.553,
+      "book": 68819747,
+      "revenue": 507898131,
+      "stars": 4.63,
+      "refunds": 47
+    },
+    "buyer": {
+      "deals": 13950,
+      "all": 0.821,
+      "saved": 0.7982,
+      "orders": 36746,
+      "posts": 2131
+    }
+  },
+  "delta": {
+    "shop_deals": 924,
+    "buyer_deals": 8715,
+    "shop_book": 24109797,
+    "shop_revenue": 174730556
+  },
+  "runtime_fragment": {
+    "scope": "Saved log fragment, not full-round counts; clock date/offset not reconstructed.",
+    "bytes": 1943229,
+    "lines": 3899,
+    "round3_order_ids": 127,
+    "unique_acp_paid_ledger_ids": 37,
+    "counts": {
+      "market_result_lines": 127,
+      "market_no_deal_lines": 68,
+      "market_closed_order_polls": 223
+    },
+    "payment_policy_refusals": {
+      "warranty_below_policy": 16,
+      "shelf_life_below_policy": 5,
+      "grade_outside_policy": 1
+    },
+    "fast_accept_skip_decisions": {
+      "price_above_target": 187,
+      "structured_quote_missing_or_ambiguous": 36,
+      "certificate_missing_or_invalid": 42,
+      "invalid_quote_identity_or_price": 5,
+      "price_above_limit": 10
+    },
+    "quotes": {
+      "settlement": {
+        "line": 58,
+        "text": "23:18:27 [acp] paid 8892 through https://ax-week07.treasuresky.xyz/acp, settled at ledger #7880554: 풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송), grade A, 678.9 h of shelf life left"
+      },
+      "warranty_below_policy": {
+        "line": 287,
+        "text": "23:21:43 [acp] not paying: warranty 1.0 h, the policy asks for 3"
+      },
+      "shelf_life_below_policy": {
+        "line": 1016,
+        "text": "23:31:58 [acp] not paying: 51.45 h of shelf life left, the policy asks for 73.0"
+      },
+      "grade_outside_policy": {
+        "line": 3025,
+        "text": "00:02:37 [acp] not paying: grade C, the policy accepts ['A', 'B']"
+      },
+      "market_closed": {
+        "line": 3594,
+        "text": "00:13:09 [market] order failed: 503 {\"error\":\"Round 3 ended at 2026-11-17 23:59 KST. The market is paused until Round 4 opens on 2026-11-24 at 19:00 KST.\"}"
+      }
+    },
+    "note": "ACP settlement and later market review ledger lines are not two purchases. Closed-market polls are not trading failures."
+  },
+  "limitations": [
+    "Post-close queried board has no explicit freeze timestamp; exact closing snapshot not independently established.",
+    "Buyer Saved rule changed on November 12; before/after values do not isolate strategy performance.",
+    "Cumulative board totals and bounded diagnostic windows have different denominators.",
+    "Baseline Class displayed rank includes a tie; match original page order, not a new tie-breaking rule."
+  ]
+}

@@ -1,0 +1,8 @@
+Validation: first-quote source timing attribution
+Command: ../week-07/.venv/bin/python -m unittest test_shop_ops_evidence -v
+Result: Ran 14 tests in 0.092s; OK (exit 0).
+New test verifies unique task first quotes, unordered rows, duplicate quote
+rows, model/fresh-evidence/unit-reuse/capacity-fallback paths, missing first
+quote latency, and later cancellations. Later event duration/source is never
+borrowed to label first-quote latency. Cancellation is observational only.
+All previous thirteen evidence tests passed. No live/model/network actions.

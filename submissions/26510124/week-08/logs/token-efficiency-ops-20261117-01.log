@@ -1,0 +1,84 @@
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_shop_ops_execution.py:8: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+...............Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+.Dispatcher task is not running. Cannot wait for event dispatch.
+FDispatcher task is not running. Cannot wait for event dispatch.
+FDispatcher task is not running. Cannot wait for event dispatch.
+FDispatcher task is not running. Cannot wait for event dispatch.
+FDispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+FDispatcher task is not running. Cannot wait for event dispatch.
+FDispatcher task is not running. Cannot wait for event dispatch.
+F........F..................
+======================================================================
+FAIL: test_missing_malformed_or_failed_reader_keeps_baseline_quote (test_shop_ops_execution.OperationsExecutionTests.test_missing_malformed_or_failed_reader_keeps_baseline_quote) (value=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_shop_ops_execution.py", line 78, in test_missing_malformed_or_failed_reader_keeps_baseline_quote
+    self.assertEqual(first["status"]["message"]["metadata"]["ask"], 80000)
+AssertionError: 74235.0 != 80000
+
+======================================================================
+FAIL: test_missing_malformed_or_failed_reader_keeps_baseline_quote (test_shop_ops_execution.OperationsExecutionTests.test_missing_malformed_or_failed_reader_keeps_baseline_quote) (value={'version': 'v1', 'changes': 'invalid'})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_shop_ops_execution.py", line 78, in test_missing_malformed_or_failed_reader_keeps_baseline_quote
+    self.assertEqual(first["status"]["message"]["metadata"]["ask"], 80000)
+AssertionError: 74235.0 != 80000
+
+======================================================================
+FAIL: test_missing_malformed_or_failed_reader_keeps_baseline_quote (test_shop_ops_execution.OperationsExecutionTests.test_missing_malformed_or_failed_reader_keeps_baseline_quote) (value={'version': 'v1', 'baseline_hash': 'b6b1e54bf8e7969ff5041729ec8dc80198b0b6e894e4b3bba93c729bf6bc0c88', 'changes': [{'sku': 'G00001', 'grade': 'B', 'warranty_hours': 0, 'before': 0, 'after': -20}]})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_shop_ops_execution.py", line 78, in test_missing_malformed_or_failed_reader_keeps_baseline_quote
+    self.assertEqual(first["status"]["message"]["metadata"]["ask"], 80000)
+AssertionError: 74235.0 != 80000
+
+======================================================================
+FAIL: test_missing_malformed_or_failed_reader_keeps_baseline_quote (test_shop_ops_execution.OperationsExecutionTests.test_missing_malformed_or_failed_reader_keeps_baseline_quote) (value={'version': 'v1', 'baseline_hash': 'old-baseline', 'changes': [{'sku': 'G00001', 'grade': 'B', 'warranty_hours': 0, 'before': 0, 'after': -1}]})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_shop_ops_execution.py", line 78, in test_missing_malformed_or_failed_reader_keeps_baseline_quote
+    self.assertEqual(first["status"]["message"]["metadata"]["ask"], 80000)
+AssertionError: 74235.0 != 80000
+
+======================================================================
+FAIL: test_missing_malformed_or_failed_reader_keeps_baseline_quote (test_shop_ops_execution.OperationsExecutionTests.test_missing_malformed_or_failed_reader_keeps_baseline_quote) (value={'version': 'v1', 'baseline_hash': 'b6b1e54bf8e7969ff5041729ec8dc80198b0b6e894e4b3bba93c729bf6bc0c88', 'changes': [{'sku': 'G00001', 'grade': 'B', 'warranty_hours': 0, 'before': 0, 'after': -1}, {'sku': 'G00001', 'grade': 'B', 'warranty_hours': 0, 'before': 0, 'after': -1}]})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_shop_ops_execution.py", line 78, in test_missing_malformed_or_failed_reader_keeps_baseline_quote
+    self.assertEqual(first["status"]["message"]["metadata"]["ask"], 80000)
+AssertionError: 74235.0 != 80000
+
+======================================================================
+FAIL: test_missing_malformed_or_failed_reader_keeps_baseline_quote (test_shop_ops_execution.OperationsExecutionTests.test_missing_malformed_or_failed_reader_keeps_baseline_quote) (value=OSError('reader failed'))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_shop_ops_execution.py", line 78, in test_missing_malformed_or_failed_reader_keeps_baseline_quote
+    self.assertEqual(first["status"]["message"]["metadata"]["ask"], 80000)
+AssertionError: 74235.0 != 80000
+
+======================================================================
+FAIL: test_reloaded_overlay_changes_only_new_task_and_preserves_signed_terms (test_shop_ops_execution.OperationsExecutionTests.test_reloaded_overlay_changes_only_new_task_and_preserves_signed_terms)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_shop_ops_execution.py", line 45, in test_reloaded_overlay_changes_only_new_task_and_preserves_signed_terms
+    self.assertEqual(first["status"]["message"]["metadata"]["ask"], 79200)
+AssertionError: 74235.0 != 79200
+
+======================================================================
+FAIL: test_old_evaluation_cannot_restore_new_policy (test_shop_ops_orchestrator.OperationsTests.test_old_evaluation_cannot_restore_new_policy)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_shop_ops_orchestrator.py", line 187, in test_old_evaluation_cannot_restore_new_policy
+    self.assertEqual(ops.evaluate(self.root,p,obs,now=self.NOW+1801)['status'],'superseded')
+AssertionError: 'rolled_back' != 'superseded'
+- rolled_back
++ superseded
+
+
+----------------------------------------------------------------------
+Ran 45 tests in 0.422s
+
+FAILED (failures=8)

@@ -1,0 +1,144 @@
+Shop diagnostics: round 3, last 3h, generated 2026-11-13T12:53:25+00:00
+Unique observed tasks: 595 (opened: 442; no open event: 153)
+Receipts: 31; confirmed settlements: 20; UNCONFIRMED: 11
+Open / missing terminal event: 0
+Terminal reasons:
+  buyer_cancelled: 317
+  capacity_busy: 0
+  internal_error: 0
+  invalid_request: 0
+  inventory_unavailable: 0
+  model_error: 0
+  negotiation_expired: 66
+  price_rejected: 32
+  stock_reserved: 146
+  stock_unavailable: 3
+Inventory: fresh; units=55; blocked by issued receipt=1; blocked SKUs=1
+Response timing: {"first_response_p50_seconds": 5.659, "first_response_p95_seconds": 7.518, "first_response_samples": 446, "last_stage_by_task": {"close": 15, "final_offer": 83, "final_reply": 33, "negotiate": 23, "opening": 292, "unknown": 149}, "note": "Successful first quote publication latency; missing samples are unknown, not zero."}
+Checkout pipeline: {"matched_tasks_by_stage": {"checkout_cancelled": 2, "checkout_created": 22, "settlement_confirmed": 20, "settlement_started": 20}, "note": "Stages may overlap. Only events matched by task, unit and receipt time count. Missing checkout evidence is unknown.", "receipt_without_observed_checkout": 9}
+Receipt lifecycle: snapshot; legacy_holds=0; issued=0; checkout=0; settling=0; uncertain=1; completed=166; revoked=347
+Passed deadlines (issued/checkout): 0; release is not confirmed by this read.
+Lifecycle limit: All retained lifecycle rows, not a round/window transaction count. Separate file snapshots may change during this read. A passed deadline is not proof that a hold was released. Settling or uncertain does not mean unpaid or failed; this report never expires, repairs or releases reservations.
+Restock decision rows: {"already_planned": 9, "planned": 9, "window_closed": 9, "window_closing": 3}
+Restock plans by contents (not confirmed purchases): {"empty": 3, "nonempty": 6, "unknown_or_invalid": 0}
+Market evidence: {"cache_age_seconds": 1153.6, "cache_status": "fresh", "cached_fact_rows": 2000, "last_refresh_attempt_age_seconds": 1153.6, "named_shop_urls": 57, "note": "Missing/stale evidence is not zero market demand. Counts cover bounded local records.", "refresh_failures_by_error": {}, "stock_snapshot_fresh": true}
+Restock rows without a known round: 0; refusals by error: {} (within time window; excluded from current-round counts).
+Supply window (kit announcement): {"closes_at": 1794574014, "opens_at": 1794573834, "seconds_until_open": 191, "status": "closed"}
+Supply clock: {"offset_seconds": -762.8858709335327, "status": "synced", "uncertainty_seconds": 1.6952383662573993}
+UNDATED_TAIL shop settle-refused attempts: 0 (no task IDs, dates or rounds).
+Failed checkout tasks: UNKNOWN. Receipt without matched settlement is not proof of failed payment.
+Limit: Bounded local tails, not all board visits; counts are unique task IDs within the window.
+Limit: Missing open events may be pre-reservation rejects or truncated history.
+Limit: Current-round records only; legacy events with no round are excluded.
+Limit: Settlements require matching local receipts and cached confirmation; samples may miss settlements.
+Limit: No live requests, model calls, reservation releases or state writes.
+Source status: inventory=read, receipt-reservations=read, receipt-leases=read, sales-performance=read, market-evidence=read, seller_events=read (truncated), restock_decisions=read (truncated), market_evidence_polls=read, kit_log=read (truncated), checkout_events=read
+{
+  "version": 1,
+  "generated_at": "2026-11-13T12:53:25.654776+00:00",
+  "round": 3,
+  "hours": 3.0,
+  "attempts": 656,
+  "distinct_orders": 391,
+  "terminal_reasons": {
+    "seller_rejected": 271,
+    "receipt_issued": 178,
+    "model_walk_away": 185,
+    "decision_limit": 16,
+    "protocol_or_network_error": 6
+  },
+  "stages": {
+    "seller_terminal": 271,
+    "receipt_validation": 178,
+    "buyer_cancel": 185,
+    "decision_limit": 16,
+    "discovery": 1,
+    "offer_request": 5
+  },
+  "seller_reported_unconfirmed": {
+    "stock": 256,
+    "price": 14
+  },
+  "settlement_status": {
+    "no_receipt_observed": 478,
+    "confirmed_settlement": 160,
+    "payment_refusal_observed": 18
+  },
+  "confirmed_settlements": 160,
+  "receipts_observed": 178,
+  "selection_failures": 2,
+  "selection_failure_reasons": {
+    "unknown": 2
+  },
+  "decisions_total": 685,
+  "attempts_with_decision_count": 656,
+  "decision_sources": {
+    "fast_accepts": {
+      "total": 0,
+      "attempts_observed": 656
+    },
+    "model_decisions": {
+      "total": 685,
+      "attempts_observed": 656
+    }
+  },
+  "fast_accept_skips": {
+    "reasons": {
+      "invalid_quote_identity_or_price": 286,
+      "structured_quote_missing_or_ambiguous": 307,
+      "price_above_target": 80,
+      "price_above_limit": 5,
+      "certificate_missing_or_invalid": 7
+    },
+    "attempts_observed": 656,
+    "basis": "First blocking check per decision; not unique failed orders. Older rows may lack telemetry."
+  },
+  "elapsed_seconds_total": 6339.921,
+  "attempts_with_elapsed": 656,
+  "excluded_rows": {
+    "outside_window": 1280
+  },
+  "sources": {
+    "memory": {
+      "status": "read",
+      "rows": 1936,
+      "malformed": 0,
+      "partial_tail": false,
+      "byte_truncated": true,
+      "row_truncated": false
+    },
+    "payments": {
+      "status": "read",
+      "rows": 5000,
+      "malformed": 0,
+      "partial_tail": false,
+      "byte_truncated": false,
+      "row_truncated": true
+    },
+    "settled_deals": {
+      "status": "read",
+      "rows": 3168,
+      "malformed": 0,
+      "partial_tail": false,
+      "byte_truncated": true,
+      "row_truncated": false
+    },
+    "selection_events": {
+      "status": "read",
+      "rows": 187,
+      "malformed": 0,
+      "partial_tail": false,
+      "byte_truncated": false,
+      "row_truncated": false
+    }
+  },
+  "limits": [
+    "Bounded local tails, not all market orders or lifetime history.",
+    "Window uses local negotiation record time; undated payment/review rows count only when correlated to current-round attempts.",
+    "Receipt issued or missing payment evidence is unconfirmed, not a failed payment.",
+    "Observed payment refusal may have another later outcome outside the bounded evidence.",
+    "Old records without structured diagnostics have unknown reasons; no text-based cause inference.",
+    "Seller stock/price reports are untrusted claims, separate from local terminal reason.",
+    "No network requests, model calls, raw budgets/signatures, or state writes."
+  ]
+}

@@ -1,0 +1,172 @@
+{
+  "recorded_market_time_kst": "2026-11-10T19:30:03+09:00",
+  "planned_comparison_time_kst": "2026-11-11T00:30:03+09:00",
+  "round": 3,
+  "identity": "dyishappy / 26510124",
+  "metrics": {
+    "shops": {
+      "all": 0.625,
+      "alive": false,
+      "deals": 1305,
+      "visits": 6054,
+      "stars": 4.67,
+      "stars_rank": 4.44,
+      "reviews": 1281,
+      "revenue": 333167575,
+      "profit": 40097303,
+      "book": 44709950,
+      "stock_units": 28,
+      "stock_cost": 4612647,
+      "refunds": 25,
+      "broken": 83,
+      "claims": 1154,
+      "honest_claims": 1154,
+      "rank": 26,
+      "tied": 1,
+      "ranked_count": 65,
+      "rank_method": "competition rank by ALL; equal scores share rank",
+      "top3": [
+        {
+          "name": "yms979",
+          "all": 0.966,
+          "deals": 30436,
+          "saved": null,
+          "book": 1140091166
+        },
+        {
+          "name": "inextro",
+          "all": 0.934,
+          "deals": 22041,
+          "saved": null,
+          "book": 776203985
+        },
+        {
+          "name": "25620027",
+          "all": 0.878,
+          "deals": 13962,
+          "saved": null,
+          "book": 830649296
+        }
+      ],
+      "url": "https://trigger-produces-nat-division.trycloudflare.com"
+    },
+    "buyers": {
+      "all": 0.635,
+      "alive": true,
+      "orders": 15328,
+      "deals": 5235,
+      "paid": 0.545,
+      "saved": 0.2883,
+      "held": 1,
+      "hopeless": 1,
+      "surplus": 372301194,
+      "served": 5165,
+      "forum": 0.91,
+      "posts": 555,
+      "rank": 31,
+      "tied": 1,
+      "ranked_count": 62,
+      "rank_method": "competition rank by ALL; equal scores share rank",
+      "top3": [
+        {
+          "name": "dragonash",
+          "all": 0.878,
+          "deals": 12763,
+          "saved": 0.3753,
+          "book": null
+        },
+        {
+          "name": "choo-chu",
+          "all": 0.875,
+          "deals": 3434,
+          "saved": 0.4128,
+          "book": null
+        },
+        {
+          "name": "kimauve",
+          "all": 0.874,
+          "deals": 11848,
+          "saved": 0.3307,
+          "book": null
+        }
+      ]
+    },
+    "player": {
+      "player": "dyishappy",
+      "owner": {
+        "login": "dyishappy",
+        "avatar": "https://avatars.githubusercontent.com/u/173029886?v=4",
+        "html": "https://github.com/dyishappy"
+      },
+      "house": false,
+      "shop": {
+        "name": "dyishappy",
+        "all": 0.625
+      },
+      "buyer": {
+        "name": "dyishappy",
+        "all": 0.635
+      },
+      "total": 1.26,
+      "student_shop": 0.529,
+      "student_buyer": 0.607,
+      "student": true,
+      "student_total": 1.136,
+      "student_pct": 0.478
+    }
+  },
+  "deployment": {
+    "run": "deployment-20261110T102902Z-ff3444f6",
+    "selected_source_hashes_match_package": true,
+    "source_hashes": {
+      "buyer-policy.json": "be611759a1511360c516d6a2b1c8e356f4f64b0a80982582bbafd55aacf344ac",
+      "buyer_public_prices.py": "08bbe7e47af56a49147752d5e047ea37021fe5fcfb2699b25be16684d3eebad5",
+      "buyer_fast_selection.py": "7e12b4b6b4e211e655207eccb82ff88e70f03ea76428207addfb9faa0fbc74b8",
+      "market_buyer.py": "8163ec465ab95cfb12aad3c333d42bb981bb24b3e9296e43b5d9b23a91266d8f",
+      "prompts/buyer.txt": "1e4bc95c2acb1723a0116533c99e0779df2479a0d541dc4212cab23d66b357a4",
+      "prompts/market_select.txt": "6fd9439dda606f85c18270aa729d2f9b183082e65e6862f7778ef81df1ff1350"
+    },
+    "ready_observed": true,
+    "exit_zero_observed": true,
+    "observation": "deployment-observed.log is a snapshot; original may continue after this read",
+    "baseline_phase": "At deployment transition, not confirmed post-deployment runtime evidence"
+  },
+  "strategy": {
+    "version": "saved-food-discovery-v7",
+    "scope": "Buyer food discovery; current Shop capacity policy remains",
+    "scan": "All order-eligible stocked shop/SKU pairs ranked locally against bounded cached evidence; no live full-market price scan",
+    "public_food_sample": "15-minute cache/settlement age, >=2 distinct orders and buyers in same shop/SKU/grade, honest claim, unambiguous identities, synced market clock",
+    "local_selection": "Targets at or below 60% of list (lower budget-derived target takes priority); 20% deterministic exploration retained",
+    "eligibility": "Food A/B/C; certificate required; remaining lifetime >= use_within_hours + 1h",
+    "separation": "Expiry-unverified discovery is selection only, never negotiation price_reference or payment authorization",
+    "calls": "No additional network/model calls; eligible local choice skips selection model; existing max two shops and four shared decisions",
+    "logging": [
+      "food_bargain_scan",
+      "food_discovery_pairs",
+      "stocked_offers_scanned"
+    ]
+  },
+  "compare_after_five_hours": [
+    "Buyer Saved change (raw ratio), ALL and rank",
+    "Buyer added deals per elapsed hour; served and orders changes",
+    "Incremental deals/orders as descriptive ratio, not matched cohort success rate",
+    "Food grade, paid/list and usable-life evidence from runtime/ledger; total Saved also includes goods",
+    "Selection method counts and model errors/timeouts; compare actual usage if logs available",
+    "Forum/posts changes to separate unrelated score components",
+    "Shop Book/revenue/deals growth, rating/refunds and capacity errors as secondary controls"
+  ],
+  "limitations": [
+    "Historical cumulative baseline, not all observations from this strategy.",
+    "Market ranks are relative and populations change.",
+    "Deployment transition can temporarily show offline/zero aggregates; recheck before interpreting collapse.",
+    "Server clock has previously been about 769 seconds ahead; use market timestamps or explicit clock correction.",
+    "No server diagnostic window captured here; cannot establish live strategy use or token savings.",
+    "No automatic reminder or delayed check was scheduled."
+  ],
+  "ledger_sample": {
+    "rows": 500,
+    "first_seq": 4841443,
+    "last_seq": 4841942,
+    "scope": "latest 500 public events, not 5-hour coverage"
+  }
+}

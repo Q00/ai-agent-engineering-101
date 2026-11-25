@@ -1,0 +1,288 @@
+{
+  "scope": "Synthetic input-size comparison, no real models, network, settlement or cost measurement. Includes application prompt + JSON only; excludes CLI system context, cache effects, tokenization, retries and generated output. Stubbed decisions verify unchanged guards, not equivalent live model decisions.",
+  "baseline_commit": "42248de7138f21523579715e971a1f866e611c75",
+  "fixed_time": 1800000000,
+  "fixtures": {
+    "offers": [
+      null,
+      50000,
+      60000,
+      65000
+    ],
+    "quotes": [
+      90000,
+      82000,
+      79000,
+      77000
+    ],
+    "cost": 70000,
+    "list_price": 100000,
+    "grade": "A",
+    "age_hours": 1,
+    "food_hours_remaining": 3,
+    "advice": {
+      "version": "fixture",
+      "price_bias_percent": -3,
+      "pace": "quick",
+      "focus": "value"
+    }
+  },
+  "scenarios": [
+    {
+      "kind": "goods",
+      "request": "short",
+      "decisions_each": 4,
+      "steps": [
+        {
+          "stage": "opening",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1012,
+            "application_prompt_chars": 4057
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 971,
+            "application_prompt_chars": 2378
+          }
+        },
+        {
+          "stage": "negotiate",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1207,
+            "application_prompt_chars": 4252
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 821,
+            "application_prompt_chars": 2228
+          }
+        },
+        {
+          "stage": "close",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1503,
+            "application_prompt_chars": 4548
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 795,
+            "application_prompt_chars": 2202
+          }
+        },
+        {
+          "stage": "final_offer",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1808,
+            "application_prompt_chars": 4853
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 846,
+            "application_prompt_chars": 2253
+          }
+        }
+      ],
+      "application_prompt_chars": {
+        "before": 17710,
+        "after": 9061
+      },
+      "character_reduction_percent": 48.8
+    },
+    {
+      "kind": "goods",
+      "request": "long",
+      "decisions_each": 4,
+      "steps": [
+        {
+          "stage": "opening",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1398,
+            "application_prompt_chars": 4443
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 1196,
+            "application_prompt_chars": 2603
+          }
+        },
+        {
+          "stage": "negotiate",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1593,
+            "application_prompt_chars": 4638
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 1046,
+            "application_prompt_chars": 2453
+          }
+        },
+        {
+          "stage": "close",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1889,
+            "application_prompt_chars": 4934
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 1020,
+            "application_prompt_chars": 2427
+          }
+        },
+        {
+          "stage": "final_offer",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 2194,
+            "application_prompt_chars": 5239
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 1071,
+            "application_prompt_chars": 2478
+          }
+        }
+      ],
+      "application_prompt_chars": {
+        "before": 19254,
+        "after": 9961
+      },
+      "character_reduction_percent": 48.3
+    },
+    {
+      "kind": "food",
+      "request": "short",
+      "decisions_each": 4,
+      "steps": [
+        {
+          "stage": "opening",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1017,
+            "application_prompt_chars": 4062
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 994,
+            "application_prompt_chars": 2401
+          }
+        },
+        {
+          "stage": "negotiate",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1223,
+            "application_prompt_chars": 4268
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 844,
+            "application_prompt_chars": 2251
+          }
+        },
+        {
+          "stage": "close",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1530,
+            "application_prompt_chars": 4575
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 818,
+            "application_prompt_chars": 2225
+          }
+        },
+        {
+          "stage": "final_offer",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1846,
+            "application_prompt_chars": 4891
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 869,
+            "application_prompt_chars": 2276
+          }
+        }
+      ],
+      "application_prompt_chars": {
+        "before": 17796,
+        "after": 9153
+      },
+      "character_reduction_percent": 48.6
+    },
+    {
+      "kind": "food",
+      "request": "long",
+      "decisions_each": 4,
+      "steps": [
+        {
+          "stage": "opening",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1403,
+            "application_prompt_chars": 4448
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 1219,
+            "application_prompt_chars": 2626
+          }
+        },
+        {
+          "stage": "negotiate",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1609,
+            "application_prompt_chars": 4654
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 1069,
+            "application_prompt_chars": 2476
+          }
+        },
+        {
+          "stage": "close",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 1916,
+            "application_prompt_chars": 4961
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 1043,
+            "application_prompt_chars": 2450
+          }
+        },
+        {
+          "stage": "final_offer",
+          "before": {
+            "model_decisions": 1,
+            "context_chars": 2232,
+            "application_prompt_chars": 5277
+          },
+          "after": {
+            "model_decisions": 1,
+            "context_chars": 1094,
+            "application_prompt_chars": 2501
+          }
+        }
+      ],
+      "application_prompt_chars": {
+        "before": 19340,
+        "after": 10053
+      },
+      "character_reduction_percent": 48.0
+    }
+  ]
+}

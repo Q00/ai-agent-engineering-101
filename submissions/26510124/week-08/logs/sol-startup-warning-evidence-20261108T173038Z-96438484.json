@@ -1,0 +1,46 @@
+{
+  "recorded_at": "2026-11-08T17:30:38.136772+00:00",
+  "source": "User-provided original server model preflight output; selected verbatim events, not a local live model run",
+  "deployment": "20261108T172736Z-b7e21a2d",
+  "server_cli_version_reported": "0.166.0",
+  "model_requested": "gpt-6.1-sol",
+  "reasoning_effort": "low",
+  "exit_code_reported": 0,
+  "events": [
+    {
+      "type": "thread.started",
+      "thread_id": "01a1bc3f-7064-7783-9983-5a0eca97942d"
+    },
+    {
+      "type": "item.completed",
+      "item": {
+        "id": "item_0",
+        "type": "error",
+        "message": "Code Mode is unavailable because code-mode host is disabled. Code mode will fail closed; enable `features.code_mode_host` and install `codex-code-mode-host`."
+      }
+    },
+    {
+      "type": "turn.started"
+    },
+    {
+      "type": "item.completed",
+      "item": {
+        "id": "item_1",
+        "type": "agent_message",
+        "text": "{\"reason\":\"ok\",\"ready\":true}"
+      }
+    },
+    {
+      "type": "turn.completed",
+      "usage": {
+        "input_tokens": 9498,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 19,
+        "reasoning_output_tokens": 0
+      }
+    }
+  ],
+  "adapter_error": "ValueError: Codex attempted a tool instead of a model decision",
+  "limits": "Successful mock readiness response is not production deployment or market trade evidence. Original server log retained on server; local deployment failure log unchanged."
+}

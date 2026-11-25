@@ -1,0 +1,94 @@
+{
+  "incident": "2026-11-10 Shop 요청 혼잡과 오프라인 표시",
+  "source": "사용자가 대화에 제공한 서버 진단 및 판매 이벤트의 필드 발췌. 원본 로그 전체를 재현한 파일은 아님.",
+  "confirmed": [
+    "systemctl 서비스 상태는 active였다.",
+    "최근 1시간 진단: 요청 180건, 영수증 15건, 확인된 정산 9건, model_error 7건.",
+    "제공된 오류 7건 모두 Shop busy; model concurrency limit reached였다.",
+    "시장에는 Shop 오프라인 표시가 관측됐으나 판매자 단계 로그와 Buyer 활동이 존재했다."
+  ],
+  "cause_scope": "로컬 모델 슬롯 부족에 의한 개별 요청 실패는 확인. 프로세스 종료 또는 오프라인 표시의 직접 원인은 입증되지 않음.",
+  "clock_note": "서버 시계는 시장보다 약 769초 앞섰음. 로그의 로컬 시각을 시장 시각과 그대로 비교하지 말 것.",
+  "diagnostics_generated_at": "2026-11-10T10:19:50+00:00",
+  "events": [
+    {
+      "time": 1794302435.7928216,
+      "task": "540fa7c1-d71d-4ffc-8e27-4f271a35a1ce",
+      "stage": "opening",
+      "reason_code": "model_error",
+      "detail": "Shop busy; model concurrency limit reached",
+      "terminal": true
+    },
+    {
+      "time": 1794302477.8809724,
+      "task": "9aed1043-c717-4eeb-9b96-e0c34615d480",
+      "stage": "opening",
+      "reason_code": "model_error",
+      "detail": "Shop busy; model concurrency limit reached",
+      "terminal": true
+    },
+    {
+      "time": 1794302479.8867595,
+      "task": "9e96e431-076f-493d-88e4-17cc4904ca47",
+      "stage": "negotiate",
+      "reason_code": "model_error",
+      "detail": "Shop busy; model concurrency limit reached",
+      "terminal": true
+    },
+    {
+      "time": 1794302756.8082156,
+      "task": "0ea312e3-0ce3-43fe-bb95-af832576c4cb",
+      "stage": "opening",
+      "reason_code": "model_error",
+      "detail": "Shop busy; model concurrency limit reached",
+      "terminal": true
+    },
+    {
+      "time": 1794303474.2413213,
+      "task": "70d60523-0638-4fa2-98b3-745fdbe79781",
+      "stage": "opening",
+      "reason_code": "model_error",
+      "detail": "Shop busy; model concurrency limit reached",
+      "terminal": true
+    },
+    {
+      "time": 1794303564.8201704,
+      "task": "e1d45198-9df5-46e2-a5b6-c9d7ed8eb00e",
+      "stage": "close",
+      "reason_code": "model_error",
+      "detail": "Shop busy; model concurrency limit reached",
+      "terminal": true
+    },
+    {
+      "time": 1794303856.985725,
+      "task": "b99548a9-fccd-41ca-be6e-3f538d171f7f",
+      "stage": "opening",
+      "reason_code": "model_error",
+      "detail": "Shop busy; model concurrency limit reached",
+      "terminal": true
+    }
+  ],
+  "resolution": [
+    "Round 3 Shop 모델 동시 처리 2개에서 3개로 확대.",
+    "슬롯 획득 실패만 capacity_fallback으로 가격 응답. 추가 모델 호출 없음.",
+    "재고 재검사, 가격 하한, 영수증 서명 및 예약 처리 유지."
+  ],
+  "commits": [
+    "b6a7708",
+    "adfaad6",
+    "9284df2"
+  ],
+  "validation": {
+    "passed": 785,
+    "log": "offline-20261110T101235Z-7831daa9.log",
+    "preserved_failed_attempt": "offline-20261110T101149Z-a1d156f6.log"
+  },
+  "followup": "shop-score-drop-20261110T1020Z/comparison.json",
+  "followup_limits": "배포 후 점수 29.2→62.5 복구와 새 주소의 정산 관측은 별도 사건. 장기간 혼잡 오류 해소를 입증하지 않음.",
+  "monitor": [
+    "model_error 원인별 건수",
+    "capacity_fallback 응답 수",
+    "시간당 확인 정산",
+    "시장 온라인 상태 및 응답 지연"
+  ]
+}

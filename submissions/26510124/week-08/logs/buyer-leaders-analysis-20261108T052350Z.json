@@ -1,0 +1,1585 @@
+{
+  "generated_at_utc": "2026-11-08T05:23:50.805550+00:00",
+  "sources": {
+    "board": "submissions/26510124/week-08/.market/post-change-20261108T050844Z/board.json",
+    "board_http_date": "Sun, 08 Nov 2026 05:08:55 GMT",
+    "contract": "submissions/26510124/week-08/.market/post-change-20261108T050844Z/agent.md",
+    "public_snapshot": "submissions/26510124/week-08/.market/buyer-analysis-20261108T052022Z",
+    "requests": [
+      {
+        "file": "catalog.json",
+        "url": "https://market.ourolabs.ai/api/catalog",
+        "http_code": 200,
+        "exitcode": 0,
+        "http_date": "Sun, 08 Nov 2026 05:20:31 GMT",
+        "curl_seconds": 1.43868
+      },
+      {
+        "file": "ledger-0.json",
+        "url": "https://market.ourolabs.ai/api/ledger?after=-500",
+        "http_code": 200,
+        "exitcode": 0,
+        "http_date": "Sun, 08 Nov 2026 05:20:34 GMT",
+        "curl_seconds": 3.870217
+      },
+      {
+        "file": "ledger-1.json",
+        "url": "https://market.ourolabs.ai/api/ledger?after=3972466",
+        "http_code": 200,
+        "exitcode": 0,
+        "http_date": "Sun, 08 Nov 2026 05:20:48 GMT",
+        "curl_seconds": 1.030354
+      },
+      {
+        "file": "ledger-2.json",
+        "url": "https://market.ourolabs.ai/api/ledger?after=3971966",
+        "http_code": 200,
+        "exitcode": 0,
+        "http_date": "Sun, 08 Nov 2026 05:20:48 GMT",
+        "curl_seconds": 1.027649
+      },
+      {
+        "file": "ledger-3.json",
+        "url": "https://market.ourolabs.ai/api/ledger?after=3971466",
+        "http_code": 200,
+        "exitcode": 0,
+        "http_date": "Sun, 08 Nov 2026 05:20:48 GMT",
+        "curl_seconds": 1.080672
+      },
+      {
+        "file": "ledger-4.json",
+        "url": "https://market.ourolabs.ai/api/ledger?after=3970966",
+        "http_code": 200,
+        "exitcode": 0,
+        "http_date": "Sun, 08 Nov 2026 05:20:47 GMT",
+        "curl_seconds": 1.029754
+      },
+      {
+        "file": "ledger-5.json",
+        "url": "https://market.ourolabs.ai/api/ledger?after=3970466",
+        "http_code": 200,
+        "exitcode": 0,
+        "http_date": "Sun, 08 Nov 2026 05:20:48 GMT",
+        "curl_seconds": 1.02878
+      },
+      {
+        "file": "ledger-6.json",
+        "url": "https://market.ourolabs.ai/api/ledger?after=3969966",
+        "http_code": 200,
+        "exitcode": 0,
+        "http_date": "Sun, 08 Nov 2026 05:20:47 GMT",
+        "curl_seconds": 1.040842
+      },
+      {
+        "file": "ledger-7.json",
+        "url": "https://market.ourolabs.ai/api/ledger?after=3969466",
+        "http_code": 200,
+        "exitcode": 0,
+        "http_date": "Sun, 08 Nov 2026 05:20:50 GMT",
+        "curl_seconds": 1.03372
+      },
+      {
+        "file": "ledger-8.json",
+        "url": "https://market.ourolabs.ai/api/ledger?after=3968966",
+        "http_code": 200,
+        "exitcode": 0,
+        "http_date": "Sun, 08 Nov 2026 05:20:48 GMT",
+        "curl_seconds": 1.1698
+      },
+      {
+        "file": "ledger-9.json",
+        "url": "https://market.ourolabs.ai/api/ledger?after=3968466",
+        "http_code": 200,
+        "exitcode": 0,
+        "http_date": "Sun, 08 Nov 2026 05:20:47 GMT",
+        "curl_seconds": 0.98825
+      }
+    ]
+  },
+  "scope": {
+    "read_only": true,
+    "public_only": true,
+    "network_changes": false,
+    "model_calls": false
+  },
+  "ledger_window": {
+    "events": 5000,
+    "first_seq": 3968467,
+    "last_seq": 3973466,
+    "contiguous": true,
+    "first_timestamp_utc": "2026-11-08T05:02:19.233000+00:00",
+    "last_timestamp_utc": "2026-11-08T05:20:33.943000+00:00",
+    "duration_seconds": 1094.710000038147,
+    "event_kinds": {
+      "result": 2008,
+      "order": 1942,
+      "settle": 832,
+      "supply": 175,
+      "broken": 32,
+      "expire": 9,
+      "join": 2
+    }
+  },
+  "official_formula": {
+    "buyer_ALL": "0.5 * saved percentile + 0.3 * forum rating + 0.1 * deals percentile + 0.1 * posts percentile",
+    "percentile_population": "buyers with at least one deal",
+    "forum": "actual normalized rating, not percentile",
+    "posts": "visible posts written as buyer",
+    "saved": "sum((value - paid + refund) / list_price) / (deals + 100); unserved value is zero, subject to documented refund treatment",
+    "value": "list price when served; zero for food expiring before required use or broken goods",
+    "consequence": "Same percentage discount contributes equally for a cheap snack and expensive sofa, before service/refund outcomes."
+  },
+  "buyers": [
+    {
+      "name": "lee-sungsoo",
+      "buyer_all_rank": 1,
+      "board": {
+        "all": 0.893,
+        "saved": 0.3153,
+        "forum": 0.874,
+        "deals": 10030,
+        "posts": 1021,
+        "orders": 16389,
+        "paid": 0.623,
+        "served": 9939,
+        "surplus": 273426099,
+        "alive": true
+      },
+      "recent": {
+        "settlements": 46,
+        "unique_skus": 18,
+        "unique_shop_urls": 8,
+        "kinds": {
+          "food": 41,
+          "goods": 5
+        },
+        "categories": {
+          "식품>김치/반찬/즉석요리>김치": 21,
+          "식품>기타 가공식품>과자": 13,
+          "가구/침구>가구>침대/매트리스": 3,
+          "식품>음료>주스/코코아/생수": 2,
+          "식품>김치/반찬/즉석요리>찌개/탕류/장류": 2,
+          "식품>계란/유제품>우유/두유": 2,
+          "식품>시리얼/곡물/콩류>곡물": 1,
+          "가구/침구>가구>소파/의자/스툴": 1,
+          "의류>가운/잠옷>잠옷/슬립/내복/홈웨어": 1
+        },
+        "grade_and_recorded_warranty": {
+          "A|None": 17,
+          "B|None": 15,
+          "C|None": 9,
+          "A|72.0": 3,
+          "A|6.0": 2
+        },
+        "median_paid_to_list": 0.70037109375,
+        "mean_immediate_list_discount_not_official_saved": 0.30424564888943223,
+        "sku_breakdown": [
+          {
+            "sku": "G1831f2c0",
+            "name": "켈로그 프링글스 2+2+2+1 골라담기 GS단독",
+            "kind": "food",
+            "category": "식품>기타 가공식품>과자",
+            "list_price": 12900,
+            "settlements": 12,
+            "median_paid": 8493.5,
+            "grades": {
+              "C": 5,
+              "B": 4,
+              "A": 3
+            },
+            "recorded_warranty_hours": {
+              "None": 12
+            }
+          },
+          {
+            "sku": "G16dcdc73",
+            "name": "조선호텔 특제육수 포기김치 4kg + 총각김치 1.5kg",
+            "kind": "food",
+            "category": "식품>김치/반찬/즉석요리>김치",
+            "list_price": 76800,
+            "settlements": 9,
+            "median_paid": 56449,
+            "grades": {
+              "A": 7,
+              "B": 1,
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 9
+            }
+          },
+          {
+            "sku": "G66ded25b",
+            "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+            "kind": "food",
+            "category": "식품>김치/반찬/즉석요리>김치",
+            "list_price": 17900,
+            "settlements": 4,
+            "median_paid": 13875.0,
+            "grades": {
+              "B": 2,
+              "A": 2
+            },
+            "recorded_warranty_hours": {
+              "None": 4
+            }
+          },
+          {
+            "sku": "G4a998429",
+            "name": "[지정일배송]예소담 충북 괴산 절임배추 20kg",
+            "kind": "food",
+            "category": "식품>김치/반찬/즉석요리>김치",
+            "list_price": 48900,
+            "settlements": 4,
+            "median_paid": 34151.0,
+            "grades": {
+              "B": 3,
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 4
+            }
+          },
+          {
+            "sku": "G200e39a3",
+            "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+            "kind": "food",
+            "category": "식품>김치/반찬/즉석요리>김치",
+            "list_price": 37900,
+            "settlements": 3,
+            "median_paid": 29391,
+            "grades": {
+              "B": 2,
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 3
+            }
+          },
+          {
+            "sku": "G582603b2",
+            "name": "건국 무첨가두유 32팩",
+            "kind": "food",
+            "category": "식품>계란/유제품>우유/두유",
+            "list_price": 28900,
+            "settlements": 2,
+            "median_paid": 21939.0,
+            "grades": {
+              "A": 1,
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 2
+            }
+          },
+          {
+            "sku": "G7fa48eaa",
+            "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 5400,
+            "settlements": 1,
+            "median_paid": 4050,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Gd1f907d6",
+            "name": "순창문옥례 우리콩 재래식 된장 2kg 밀폐용기",
+            "kind": "food",
+            "category": "식품>김치/반찬/즉석요리>찌개/탕류/장류",
+            "list_price": 36900,
+            "settlements": 1,
+            "median_paid": 25161,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G80435d53",
+            "name": "2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종",
+            "kind": "food",
+            "category": "식품>시리얼/곡물/콩류>곡물",
+            "list_price": 26500,
+            "settlements": 1,
+            "median_paid": 18507,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G72c7387e",
+            "name": "[오가닉스토리] 고소한 현미뻥튀기 유기농 라이스와플 택1",
+            "kind": "food",
+            "category": "식품>기타 가공식품>과자",
+            "list_price": 3900,
+            "settlements": 1,
+            "median_paid": 2691,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G1515d951",
+            "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 423810,
+            "settlements": 1,
+            "median_paid": 274628,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "6.0": 1
+            }
+          },
+          {
+            "sku": "G195229da",
+            "name": "워너텍스 천연라텍스 매트리스 7.5cm 슈퍼싱글(SS) 방수속커버",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 211000,
+            "settlements": 1,
+            "median_paid": 148122,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "6.0": 1
+            }
+          },
+          {
+            "sku": "Gf7ca73a2",
+            "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 59900,
+            "settlements": 1,
+            "median_paid": 47674,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G2b54c83e",
+            "name": "집밥장인 참이맛 40년전통 감자탕 블랙 1.2kg X 3팩",
+            "kind": "food",
+            "category": "식품>김치/반찬/즉석요리>찌개/탕류/장류",
+            "list_price": 27900,
+            "settlements": 1,
+            "median_paid": 16890,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Gbec2b68f",
+            "name": "시몬스 D2178A. 뷰티레스트 자스민. 라지킹 침대",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 4045800,
+            "settlements": 1,
+            "median_paid": 2724716,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "72.0": 1
+            }
+          },
+          {
+            "sku": "G10693924",
+            "name": "웰퍼니쳐 코모도 패브릭 빅토리아 스윙 소파 4인",
+            "kind": "goods",
+            "category": "가구/침구>가구>소파/의자/스툴",
+            "list_price": 707000,
+            "settlements": 1,
+            "median_paid": 494900,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "72.0": 1
+            }
+          },
+          {
+            "sku": "G35b68cee",
+            "name": "오셀픽 스트라이프 극세사 파자마 여성 남성 잠옷 홈웨어, 번 레드",
+            "kind": "goods",
+            "category": "의류>가운/잠옷>잠옷/슬립/내복/홈웨어",
+            "list_price": 27900,
+            "settlements": 1,
+            "median_paid": 20228,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "72.0": 1
+            }
+          },
+          {
+            "sku": "G8202c6b5",
+            "name": "한국농협김치 전라도 순천 남도 총각김치 3kg",
+            "kind": "food",
+            "category": "식품>김치/반찬/즉석요리>김치",
+            "list_price": 33250,
+            "settlements": 1,
+            "median_paid": 20718,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "dragonash",
+      "buyer_all_rank": 2,
+      "board": {
+        "all": 0.877,
+        "saved": 0.3607,
+        "forum": 0.842,
+        "deals": 8552,
+        "posts": 731,
+        "orders": 16103,
+        "paid": 0.528,
+        "served": 8505,
+        "surplus": 226445465,
+        "alive": true
+      },
+      "recent": {
+        "settlements": 29,
+        "unique_skus": 13,
+        "unique_shop_urls": 12,
+        "kinds": {
+          "food": 27,
+          "goods": 2
+        },
+        "categories": {
+          "식품>음료>주스/코코아/생수": 21,
+          "식품>빵/제과>빵": 1,
+          "가구/침구>가구>수납/장식 가구": 1,
+          "식품>김치/반찬/즉석요리>찌개/탕류/장류": 1,
+          "가구/침구>가구>침대/매트리스": 1,
+          "식품>계란/유제품>계란": 1,
+          "식품>육류>가공/조리 육류": 1,
+          "식품>야채/과일>신선과일(부패주의)": 1,
+          "식품>식용류/지방유지류>오일": 1
+        },
+        "grade_and_recorded_warranty": {
+          "B|None": 13,
+          "C|None": 10,
+          "A|None": 4,
+          "B|72.0": 1,
+          "A|12.0": 1
+        },
+        "median_paid_to_list": 0.597037037037037,
+        "mean_immediate_list_discount_not_official_saved": 0.41383909809969915,
+        "sku_breakdown": [
+          {
+            "sku": "G7fa48eaa",
+            "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 5400,
+            "settlements": 9,
+            "median_paid": 3133,
+            "grades": {
+              "B": 6,
+              "A": 2,
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 9
+            }
+          },
+          {
+            "sku": "G3434758a",
+            "name": "제주 삼다수 무라벨 2L X 18병(유/무라벨 랜덤발송)",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 20400,
+            "settlements": 4,
+            "median_paid": 13293.5,
+            "grades": {
+              "B": 2,
+              "A": 1,
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 4
+            }
+          },
+          {
+            "sku": "G9a240832",
+            "name": "펩시콜라 엑스트라 피즈 245ml 15개(업소용)",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 10600,
+            "settlements": 3,
+            "median_paid": 6840,
+            "grades": {
+              "C": 1,
+              "B": 1,
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 3
+            }
+          },
+          {
+            "sku": "Gf7ca73a2",
+            "name": "보넬드 아이엠 당근 주스 즙 1L 7개",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 59900,
+            "settlements": 3,
+            "median_paid": 36309,
+            "grades": {
+              "C": 2,
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 3
+            }
+          },
+          {
+            "sku": "Gdf79cd07",
+            "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 15200,
+            "settlements": 2,
+            "median_paid": 8208.0,
+            "grades": {
+              "C": 1,
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 2
+            }
+          },
+          {
+            "sku": "G09ddb328",
+            "name": "널담 고단백 저당 크림 가득 쫀득빵 4종 혼합 10봉",
+            "kind": "food",
+            "category": "식품>빵/제과>빵",
+            "list_price": 12900,
+            "settlements": 1,
+            "median_paid": 5805,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G147ae4e7",
+            "name": "[더리체] 멜리사 양문장식장 세트",
+            "kind": "goods",
+            "category": "가구/침구>가구>수납/장식 가구",
+            "list_price": 869000,
+            "settlements": 1,
+            "median_paid": 503506,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "72.0": 1
+            }
+          },
+          {
+            "sku": "G476cc094",
+            "name": "외갓집 송탄 서정리 부대찌개 1kg x 2팩 (라면사리 2개)",
+            "kind": "food",
+            "category": "식품>김치/반찬/즉석요리>찌개/탕류/장류",
+            "list_price": 25800,
+            "settlements": 1,
+            "median_paid": 12804,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G53b150b5",
+            "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 838400,
+            "settlements": 1,
+            "median_paid": 612656,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "12.0": 1
+            }
+          },
+          {
+            "sku": "G76ba0184",
+            "name": "한계란 무항생제 동물복지 유정란 난각번호 2번 계란 40구",
+            "kind": "food",
+            "category": "식품>계란/유제품>계란",
+            "list_price": 19900,
+            "settlements": 1,
+            "median_paid": 12537,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G2560a8c9",
+            "name": "사세 직화K버팔로윙 1kg",
+            "kind": "food",
+            "category": "식품>육류>가공/조리 육류",
+            "list_price": 17900,
+            "settlements": 1,
+            "median_paid": 8055,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Gef4d3036",
+            "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+            "kind": "food",
+            "category": "식품>야채/과일>신선과일(부패주의)",
+            "list_price": 28900,
+            "settlements": 1,
+            "median_paid": 13718,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Gd3bcac4e",
+            "name": "[보라티알] 알리안자 아보카도 오일 500ml x 2병",
+            "kind": "food",
+            "category": "식품>식용류/지방유지류>오일",
+            "list_price": 26600,
+            "settlements": 1,
+            "median_paid": 17822,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "kimauve",
+      "buyer_all_rank": 3,
+      "board": {
+        "all": 0.871,
+        "saved": 0.3254,
+        "forum": 0.874,
+        "deals": 6759,
+        "posts": 1060,
+        "orders": 13537,
+        "paid": 0.562,
+        "served": 6547,
+        "surplus": 430335945,
+        "alive": true
+      },
+      "recent": {
+        "settlements": 33,
+        "unique_skus": 21,
+        "unique_shop_urls": 10,
+        "kinds": {
+          "food": 19,
+          "goods": 14
+        },
+        "categories": {
+          "가구/침구>가구>침대/매트리스": 12,
+          "식품>야채/과일>신선과일(부패주의)": 8,
+          "식품>음료>주스/코코아/생수": 8,
+          "가구/침구>가구>소파/의자/스툴": 1,
+          "식품>조리/가공 과일/야채/견과류>조리/가공 견과류": 1,
+          "식품>육류>신선육류": 1,
+          "식품>음료>커피/차": 1,
+          "가구/침구>인테리어소품>장식품": 1
+        },
+        "grade_and_recorded_warranty": {
+          "B|None": 10,
+          "C|None": 7,
+          "A|6.0": 6,
+          "A|None": 5,
+          "A|12.0": 3,
+          "B|6.0": 2
+        },
+        "median_paid_to_list": 0.67,
+        "mean_immediate_list_discount_not_official_saved": 0.3851448712338969,
+        "sku_breakdown": [
+          {
+            "sku": "Gef4d3036",
+            "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+            "kind": "food",
+            "category": "식품>야채/과일>신선과일(부패주의)",
+            "list_price": 28900,
+            "settlements": 4,
+            "median_paid": 19652.0,
+            "grades": {
+              "B": 2,
+              "C": 1,
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 4
+            }
+          },
+          {
+            "sku": "G3434758a",
+            "name": "제주 삼다수 무라벨 2L X 18병(유/무라벨 랜덤발송)",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 20400,
+            "settlements": 4,
+            "median_paid": 9613.5,
+            "grades": {
+              "C": 2,
+              "B": 2
+            },
+            "recorded_warranty_hours": {
+              "None": 4
+            }
+          },
+          {
+            "sku": "G8095ddd6",
+            "name": "[에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈)",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 851400,
+            "settlements": 3,
+            "median_paid": 500855,
+            "grades": {
+              "B": 2,
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "6.0": 2,
+              "None": 1
+            }
+          },
+          {
+            "sku": "G022ce883",
+            "name": "[양지촌농원] 26년산 보은건대추 1kg 26mm",
+            "kind": "food",
+            "category": "식품>야채/과일>신선과일(부패주의)",
+            "list_price": 19900,
+            "settlements": 3,
+            "median_paid": 6758,
+            "grades": {
+              "C": 2,
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 3
+            }
+          },
+          {
+            "sku": "G3323e2b7",
+            "name": "현대의료기 효도침대 슈퍼싱글 황토숯볼 흙침대",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 399630,
+            "settlements": 2,
+            "median_paid": 312863.0,
+            "grades": {
+              "A": 2
+            },
+            "recorded_warranty_hours": {
+              "6.0": 2
+            }
+          },
+          {
+            "sku": "G7fa48eaa",
+            "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 5400,
+            "settlements": 2,
+            "median_paid": 2875.5,
+            "grades": {
+              "B": 2
+            },
+            "recorded_warranty_hours": {
+              "None": 2
+            }
+          },
+          {
+            "sku": "G03d0199f",
+            "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 1611000,
+            "settlements": 1,
+            "median_paid": 1079370,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "6.0": 1
+            }
+          },
+          {
+            "sku": "G7f85e9f7",
+            "name": "로버츠베리에 빌베리&라즈베리 과채주스 2박스(100ml x 12팩)",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 78900,
+            "settlements": 1,
+            "median_paid": 58165,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G429bd69e",
+            "name": "[다우닝] 릴로 SO302 1인 전체 내추럴가죽 리클라이너",
+            "kind": "goods",
+            "category": "가구/침구>가구>소파/의자/스툴",
+            "list_price": 928000,
+            "settlements": 1,
+            "median_paid": 541952,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "6.0": 1
+            }
+          },
+          {
+            "sku": "G85a1a856",
+            "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 921600,
+            "settlements": 1,
+            "median_paid": 713847,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "12.0": 1
+            }
+          },
+          {
+            "sku": "Gdf79cd07",
+            "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 15200,
+            "settlements": 1,
+            "median_paid": 5448,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G010744b7",
+            "name": "[본사직영] 바프 먼투썬 하루견과 코코넛 50봉 (20g x 50EA)",
+            "kind": "food",
+            "category": "식품>조리/가공 과일/야채/견과류>조리/가공 견과류",
+            "list_price": 30900,
+            "settlements": 1,
+            "median_paid": 22186,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Gfb2c0249",
+            "name": "[장길영사과] 사과 중과 10kg(33~39과)",
+            "kind": "food",
+            "category": "식품>야채/과일>신선과일(부패주의)",
+            "list_price": 70900,
+            "settlements": 1,
+            "median_paid": 49516,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Ga4e6abc9",
+            "name": "지누스 얼티마 럭스S 하이브리드 매트리스 25cm LK 라지킹",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 679000,
+            "settlements": 1,
+            "median_paid": 508372,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "6.0": 1
+            }
+          },
+          {
+            "sku": "Gb39abe92",
+            "name": "[으뜸한돈] 국내산 한돈 뒷다리살 (불고기용) 300gX3팩 (냉동)",
+            "kind": "food",
+            "category": "식품>육류>신선육류",
+            "list_price": 12900,
+            "settlements": 1,
+            "median_paid": 9850,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G0c4045d3",
+            "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm SS 슈퍼싱글",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 358560,
+            "settlements": 1,
+            "median_paid": 231325,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "6.0": 1
+            }
+          },
+          {
+            "sku": "G0af5d5b9",
+            "name": "립톤 아이스티 770g x 12개 (맛 선택)",
+            "kind": "food",
+            "category": "식품>음료>커피/차",
+            "list_price": 20900,
+            "settlements": 1,
+            "median_paid": 14003,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Gb5f23ecf",
+            "name": "024홈 국민토퍼 3단 접이식 매트리스 푹신한 12cm 퀸",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 107410,
+            "settlements": 1,
+            "median_paid": 79660,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "12.0": 1
+            }
+          },
+          {
+            "sku": "Gb5d0dde7",
+            "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 1094400,
+            "settlements": 1,
+            "median_paid": 794780,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G618bd792",
+            "name": "[1개+1개]코코도르 벚꽃 디퓨저 200m X 2개 l 홈인테리어 & 선물추천",
+            "kind": "goods",
+            "category": "가구/침구>인테리어소품>장식품",
+            "list_price": 14100,
+            "settlements": 1,
+            "median_paid": 6392,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Gbec2b68f",
+            "name": "시몬스 D2178A. 뷰티레스트 자스민. 라지킹 침대",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 4045800,
+            "settlements": 1,
+            "median_paid": 3156628,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "12.0": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "11im",
+      "buyer_all_rank": 4,
+      "board": {
+        "all": 0.865,
+        "saved": 0.3607,
+        "forum": 0.909,
+        "deals": 3397,
+        "posts": 938,
+        "orders": 17388,
+        "paid": 0.607,
+        "served": 3327,
+        "surplus": 509538027,
+        "alive": true
+      },
+      "recent": {
+        "settlements": 14,
+        "unique_skus": 9,
+        "unique_shop_urls": 5,
+        "kinds": {
+          "food": 10,
+          "goods": 4
+        },
+        "categories": {
+          "식품>음료>주스/코코아/생수": 5,
+          "가구/침구>가구>침대/매트리스": 4,
+          "식품>육류>가공/조리 육류": 2,
+          "식품>야채/과일>신선야채(부패주의)": 1,
+          "식품>김치/반찬/즉석요리>김치": 1,
+          "식품>김치/반찬/즉석요리>반찬/젓갈": 1
+        },
+        "grade_and_recorded_warranty": {
+          "B|None": 5,
+          "C|None": 5,
+          "A|6.0": 2,
+          "B|6.0": 1,
+          "A|12.0": 1
+        },
+        "median_paid_to_list": 0.6366186826843414,
+        "mean_immediate_list_discount_not_official_saved": 0.3709665745344527,
+        "sku_breakdown": [
+          {
+            "sku": "G3434758a",
+            "name": "제주 삼다수 무라벨 2L X 18병(유/무라벨 랜덤발송)",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 20400,
+            "settlements": 4,
+            "median_paid": 12987.0,
+            "grades": {
+              "B": 3,
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 4
+            }
+          },
+          {
+            "sku": "G2560a8c9",
+            "name": "사세 직화K버팔로윙 1kg",
+            "kind": "food",
+            "category": "식품>육류>가공/조리 육류",
+            "list_price": 17900,
+            "settlements": 2,
+            "median_paid": 10729.5,
+            "grades": {
+              "B": 2
+            },
+            "recorded_warranty_hours": {
+              "None": 2
+            }
+          },
+          {
+            "sku": "G07ec17d5",
+            "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 279000,
+            "settlements": 2,
+            "median_paid": 179592.5,
+            "grades": {
+              "A": 2
+            },
+            "recorded_warranty_hours": {
+              "6.0": 2
+            }
+          },
+          {
+            "sku": "G8095ddd6",
+            "name": "[에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈)",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 851400,
+            "settlements": 1,
+            "median_paid": 542022,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "6.0": 1
+            }
+          },
+          {
+            "sku": "G1f2acd72",
+            "name": "2026년 햇 태양초 영양 고추가루 김치용(보통맛) 2kg",
+            "kind": "food",
+            "category": "식품>야채/과일>신선야채(부패주의)",
+            "list_price": 73900,
+            "settlements": 1,
+            "median_paid": 44715,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G32bf9a8e",
+            "name": "[호랑이김치] 국산100% 전라도 파김치 쪽파김치 2kg",
+            "kind": "food",
+            "category": "식품>김치/반찬/즉석요리>김치",
+            "list_price": 25560,
+            "settlements": 1,
+            "median_paid": 16272,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G0ec8941a",
+            "name": "[함양군]해올림푸드 양념단풍깻잎 장아찌 300g",
+            "kind": "food",
+            "category": "식품>김치/반찬/즉석요리>반찬/젓갈",
+            "list_price": 15900,
+            "settlements": 1,
+            "median_paid": 9850,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Gdf79cd07",
+            "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 15200,
+            "settlements": 1,
+            "median_paid": 9677,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Gbec2b68f",
+            "name": "시몬스 D2178A. 뷰티레스트 자스민. 라지킹 침대",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 4045800,
+            "settlements": 1,
+            "median_paid": 2580170,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "12.0": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "choo-chu",
+      "buyer_all_rank": 5,
+      "board": {
+        "all": 0.847,
+        "saved": 0.4021,
+        "forum": 0.908,
+        "deals": 1492,
+        "posts": 732,
+        "orders": 5298,
+        "paid": 0.467,
+        "served": 1464,
+        "surplus": 64201392,
+        "alive": true
+      },
+      "recent": {
+        "settlements": 5,
+        "unique_skus": 5,
+        "unique_shop_urls": 2,
+        "kinds": {
+          "food": 5
+        },
+        "categories": {
+          "식품>기타 가공식품>과자": 1,
+          "식품>김치/반찬/즉석요리>김치": 1,
+          "식품>야채/과일>신선야채(부패주의)": 1,
+          "식품>육류>가공/조리 육류": 1,
+          "식품>음료>커피/차": 1
+        },
+        "grade_and_recorded_warranty": {
+          "C|None": 3,
+          "B|None": 2
+        },
+        "median_paid_to_list": 0.44534883720930235,
+        "mean_immediate_list_discount_not_official_saved": 0.5238624594526007,
+        "sku_breakdown": [
+          {
+            "sku": "G1831f2c0",
+            "name": "켈로그 프링글스 2+2+2+1 골라담기 GS단독",
+            "kind": "food",
+            "category": "식품>기타 가공식품>과자",
+            "list_price": 12900,
+            "settlements": 1,
+            "median_paid": 5745,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G200e39a3",
+            "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+            "kind": "food",
+            "category": "식품>김치/반찬/즉석요리>김치",
+            "list_price": 37900,
+            "settlements": 1,
+            "median_paid": 25277,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Ga6b3f2a5",
+            "name": "남해군농협 2026년 햇 마늘 특등급 500g 국내산 김치용 요리용 남해 남도 통마늘 nnh",
+            "kind": "food",
+            "category": "식품>야채/과일>신선야채(부패주의)",
+            "list_price": 9400,
+            "settlements": 1,
+            "median_paid": 5000,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G2560a8c9",
+            "name": "사세 직화K버팔로윙 1kg",
+            "kind": "food",
+            "category": "식품>육류>가공/조리 육류",
+            "list_price": 17900,
+            "settlements": 1,
+            "median_paid": 5800,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G5f64d42a",
+            "name": "무설탕 생강진액 1L 1병 HACCP인증 제로슈가",
+            "kind": "food",
+            "category": "식품>음료>커피/차",
+            "list_price": 19900,
+            "settlements": 1,
+            "median_paid": 8208,
+            "grades": {
+              "C": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "dyishappy",
+      "buyer_all_rank": 34,
+      "board": {
+        "all": 0.57,
+        "saved": 0.2563,
+        "forum": 0.899,
+        "deals": 2793,
+        "posts": 239,
+        "orders": 9491,
+        "paid": 0.557,
+        "served": 2755,
+        "surplus": 176168876,
+        "alive": true
+      },
+      "recent": {
+        "settlements": 13,
+        "unique_skus": 8,
+        "unique_shop_urls": 4,
+        "kinds": {
+          "goods": 8,
+          "food": 5
+        },
+        "categories": {
+          "가구/침구>가구>침대/매트리스": 7,
+          "식품>기타 가공식품>과자": 2,
+          "가구/침구>가구>소파/의자/스툴": 1,
+          "식품>조리/가공 과일/야채/견과류>조리/가공 견과류": 1,
+          "식품>시리얼/곡물/콩류>곡물": 1,
+          "식품>음료>주스/코코아/생수": 1
+        },
+        "grade_and_recorded_warranty": {
+          "A|72.0": 5,
+          "A|None": 3,
+          "B|72.0": 2,
+          "B|None": 2,
+          "A|6.0": 1
+        },
+        "median_paid_to_list": 0.733370786516854,
+        "mean_immediate_list_discount_not_official_saved": 0.2678713991835972,
+        "sku_breakdown": [
+          {
+            "sku": "G1515d951",
+            "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 423810,
+            "settlements": 4,
+            "median_paid": 314678.5,
+            "grades": {
+              "A": 2,
+              "B": 2
+            },
+            "recorded_warranty_hours": {
+              "72.0": 4
+            }
+          },
+          {
+            "sku": "G114aefb6",
+            "name": "2팩(56봉) 데니쉬 스타일 쿠키 밀크향",
+            "kind": "food",
+            "category": "식품>기타 가공식품>과자",
+            "list_price": 8900,
+            "settlements": 2,
+            "median_paid": 6380.5,
+            "grades": {
+              "B": 1,
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 2
+            }
+          },
+          {
+            "sku": "Gb5d0dde7",
+            "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 1094400,
+            "settlements": 2,
+            "median_paid": 837216.0,
+            "grades": {
+              "A": 2
+            },
+            "recorded_warranty_hours": {
+              "72.0": 2
+            }
+          },
+          {
+            "sku": "G19a70f63",
+            "name": "[다우닝] 플라나 베이직 3인 전체 천연가죽 소파",
+            "kind": "goods",
+            "category": "가구/침구>가구>소파/의자/스툴",
+            "list_price": 1672800,
+            "settlements": 1,
+            "median_paid": 1250000,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "72.0": 1
+            }
+          },
+          {
+            "sku": "G07ec17d5",
+            "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+            "kind": "goods",
+            "category": "가구/침구>가구>침대/매트리스",
+            "list_price": 279000,
+            "settlements": 1,
+            "median_paid": 199800,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "6.0": 1
+            }
+          },
+          {
+            "sku": "G010744b7",
+            "name": "[본사직영] 바프 먼투썬 하루견과 코코넛 50봉 (20g x 50EA)",
+            "kind": "food",
+            "category": "식품>조리/가공 과일/야채/견과류>조리/가공 견과류",
+            "list_price": 30900,
+            "settlements": 1,
+            "median_paid": 23000,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "G80435d53",
+            "name": "2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종",
+            "kind": "food",
+            "category": "식품>시리얼/곡물/콩류>곡물",
+            "list_price": 26500,
+            "settlements": 1,
+            "median_paid": 18716,
+            "grades": {
+              "A": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          },
+          {
+            "sku": "Gdf79cd07",
+            "name": "풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송)",
+            "kind": "food",
+            "category": "식품>음료>주스/코코아/생수",
+            "list_price": 15200,
+            "settlements": 1,
+            "median_paid": 9867,
+            "grades": {
+              "B": 1
+            },
+            "recorded_warranty_hours": {
+              "None": 1
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "same_sku_grade_recorded_warranty_examples": [
+    {
+      "sku": "G010744b7",
+      "grade": "A",
+      "recorded_warranty_hours": null,
+      "ours": {
+        "ledger_seq": 3969309,
+        "paid": 23000
+      },
+      "leader": {
+        "buyer": "kimauve",
+        "ledger_seq": 3970804,
+        "paid": 22186
+      },
+      "limitation": "Same SKU/grade/recorded warranty only; seller, expiry, required use horizon and other conditions may differ."
+    },
+    {
+      "sku": "Gdf79cd07",
+      "grade": "B",
+      "recorded_warranty_hours": null,
+      "ours": {
+        "ledger_seq": 3970461,
+        "paid": 9867
+      },
+      "leader": {
+        "buyer": "dragonash",
+        "ledger_seq": 3973122,
+        "paid": 9576
+      },
+      "limitation": "Same SKU/grade/recorded warranty only; seller, expiry, required use horizon and other conditions may differ."
+    }
+  ],
+  "findings_ko": [
+    "우리 forum 0.899는 상위 세 명보다 높다. 현재 주요 차이는 saved와 누적 게시글 수이며, 거래 건수만 늘리는 것으로 점수가 결정되지 않는다.",
+    "상위 세 명은 표본에서 다양한 가게를 이용했고 우리보다 평균 할인율이 높았다. 서로 다른 주문·품목·등급 구성이라 내부 협상 성능을 직접 비교할 수는 없다.",
+    "우리의 최근 상품 8건은 모두 A/B 등급에 6시간 이상 보증이었다. 상위 구매자들은 식품 B/C도 구매했다. 식품의 사용기한 충족 여부를 확인하면서 허용 등급·실질 할인·구매 성사율을 같이 검토할 근거가 된다.",
+    "고가 상품 구매 자체는 saved에 별도 가산점이 없다. 주어진 주문 카테고리 안에서 할인율과 사용 성공 가능성을 비교하는 것이 공식 산식에 맞는다."
+  ],
+  "limitations": [
+    "Only 5000 contiguous public events, about 18 minutes; not the whole round.",
+    "Board cumulative snapshot precedes ledger sampling; totals should not be subtracted as synchronized snapshots.",
+    "Immediate list discount is not official saved: required food use horizon, later breakage and refunds may change value.",
+    "Order budgets and buyer preferences were not collected. Order category and budget distributions differ per buyer, so competitors SKU mixes cannot simply be copied.",
+    "Unique shop URLs can overcount a shop after a tunnel change; no unsupported alias inference.",
+    "Recorded null warranty remains unspecified, not automatically zero.",
+    "Same SKU/grade/warranty comparisons have tiny samples and food expiry/use requirements differ.",
+    "Cannot infer competitors model, prompts, internal tools, latency, selection or negotiation algorithms from these records."
+  ]
+}

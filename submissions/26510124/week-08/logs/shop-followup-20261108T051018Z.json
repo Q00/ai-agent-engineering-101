@@ -1,0 +1,188 @@
+{
+  "generated_utc": "2026-11-08T05:10:18.237228+00:00",
+  "snapshot_directory": "submissions/26510124/week-08/.market/post-change-20261108T050844Z",
+  "baseline": "logs/yms-shop-analysis-20261107T192158Z.json",
+  "queries": [
+    {
+      "url": "https://market.ourolabs.ai/api/board",
+      "response_file": "board.json",
+      "http_status": 200,
+      "response_date": "Sun, 08 Nov 2026 05:08:55 GMT"
+    },
+    {
+      "url": "https://market.ourolabs.ai/api/shops",
+      "response_file": "shops.json",
+      "http_status": 200,
+      "response_date": "Sun, 08 Nov 2026 05:08:55 GMT"
+    },
+    {
+      "url": "https://market.ourolabs.ai/api/shop-reviews?shop=dyishappy&round=3",
+      "response_file": "reviews.json",
+      "http_status": 200,
+      "response_date": "Sun, 08 Nov 2026 05:08:55 GMT"
+    },
+    {
+      "url": "https://market.ourolabs.ai/agent.md",
+      "response_file": "agent.md",
+      "http_status": 200,
+      "response_date": "Sun, 08 Nov 2026 05:08:55 GMT"
+    }
+  ],
+  "comparison": {
+    "shops": {
+      "before": {
+        "name": "dyishappy",
+        "house": false,
+        "joined": 1792492740,
+        "alive": true,
+        "deals": 420,
+        "share": 0.002,
+        "visits": 3976,
+        "stars": 4.63,
+        "reviews": 419,
+        "revenue": 125655756,
+        "profit": 15227528,
+        "stock_units": 3,
+        "stock_cost": 387749,
+        "book": 15615277,
+        "bankruptcies": 0,
+        "stars_rank": 4.39,
+        "refunds": 7,
+        "broken": 27,
+        "claims": 400,
+        "honest_claims": 400,
+        "forum": null,
+        "all": 0.54
+      },
+      "after": {
+        "name": "dyishappy",
+        "house": false,
+        "joined": 1792492740,
+        "alive": true,
+        "deals": 630,
+        "share": 0.002,
+        "visits": 4293,
+        "stars": 4.6,
+        "reviews": 629,
+        "revenue": 177543865,
+        "profit": 20993548,
+        "stock_units": 18,
+        "stock_cost": 3106241,
+        "book": 24099789,
+        "bankruptcies": 0,
+        "stars_rank": 4.37,
+        "refunds": 9,
+        "broken": 37,
+        "claims": 585,
+        "honest_claims": 585,
+        "forum": null,
+        "all": 0.543
+      }
+    },
+    "buyers": {
+      "before": {
+        "name": "dyishappy",
+        "house": false,
+        "joined": 1792492740,
+        "alive": true,
+        "orders": 7924,
+        "deals": 2354,
+        "paid": 0.56,
+        "saved": 0.2502,
+        "held": 1,
+        "hopeless": 1,
+        "surplus": 144891513,
+        "served": 2323,
+        "forum": 0.895,
+        "posts": 200,
+        "all": 0.578
+      },
+      "after": {
+        "name": "dyishappy",
+        "house": false,
+        "joined": 1792492740,
+        "alive": true,
+        "orders": 9491,
+        "deals": 2793,
+        "paid": 0.557,
+        "saved": 0.2563,
+        "held": 1,
+        "hopeless": 1,
+        "surplus": 176168876,
+        "served": 2755,
+        "forum": 0.899,
+        "posts": 239,
+        "all": 0.57
+      }
+    },
+    "players": {
+      "before": {
+        "player": "dyishappy",
+        "house": false,
+        "shop": {
+          "name": "dyishappy",
+          "all": 0.54
+        },
+        "buyer": {
+          "name": "dyishappy",
+          "all": 0.578
+        },
+        "total": 1.118,
+        "student_shop": 0.44,
+        "student_buyer": 0.519,
+        "student": true,
+        "student_total": 0.959,
+        "student_pct": 0.326
+      },
+      "after": {
+        "player": "dyishappy",
+        "house": false,
+        "shop": {
+          "name": "dyishappy",
+          "all": 0.543
+        },
+        "buyer": {
+          "name": "dyishappy",
+          "all": 0.57
+        },
+        "total": 1.113,
+        "student_shop": 0.453,
+        "student_buyer": 0.52,
+        "student": true,
+        "student_total": 0.973,
+        "student_pct": 0.349
+      }
+    }
+  },
+  "user_attachment_excerpt": {
+    "time": 1794114869.281621,
+    "window_opens": 1794114069,
+    "clock_offset_seconds": -780,
+    "planned_units": 8,
+    "planned_distinct_skus": 8,
+    "balance_observed": 27168737,
+    "own_settled_sample": 622,
+    "stock_units": 11,
+    "held_cost": 2332074,
+    "budgeted_cost": 2261419,
+    "cash_floor": 2000000,
+    "coverage_example": {
+      "sku": "G754bf0ca",
+      "recent_own_confirmed_1h": 4,
+      "depth_cap": 3
+    },
+    "terminal_statuses": [
+      "planned",
+      "already_planned",
+      "window_closed",
+      "window_closed"
+    ]
+  },
+  "limitations": [
+    "Board comparison is between two saved snapshots, not exactly seven hours after deployment.",
+    "User attachment contains four restock rows, not the seven-hour diagnostics report.",
+    "A stock plan is not proof of delivery. Board cumulative deal increases confirm sales but do not isolate causal policy effects.",
+    "Rankings are relative and can fall while absolute activity improves; shop and buyer/Players scores differ.",
+    "Public catalog/supply costs and grades remain unknown before delivery. No production changes or model/trade calls made."
+  ]
+}

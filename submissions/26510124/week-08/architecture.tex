@@ -1,0 +1,117 @@
+% Build with XeTeX-based Tectonic: tectonic architecture.tex
+% Fonts: Noto Sans CJK KR, AppleGothic (macOS), or Nanum Gothic.
+\documentclass[10pt]{article}
+\usepackage[a4paper,landscape,margin=9mm]{geometry}
+\usepackage{fontspec}
+\IfFontExistsTF{Noto Sans CJK KR}
+  {\setmainfont{Noto Sans CJK KR}}
+  {\IfFontExistsTF{AppleGothic}
+    {\setmainfont{AppleGothic}[BoldFeatures={FakeBold=1.6}]}
+    {\setmainfont{Nanum Gothic}}}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,backgrounds}
+\pagestyle{empty}
+\definecolor{ink}{HTML}{18283B}
+\definecolor{muted}{HTML}{63758A}
+\definecolor{green}{HTML}{009D82}
+\definecolor{purple}{HTML}{8054E8}
+\definecolor{orange}{HTML}{E39122}
+\definecolor{red}{HTML}{E6617A}
+\begin{document}
+\noindent{\fontsize{20}{23}\selectfont\bfseries dyishappy · Round 3 에이전트 구조}\hfill
+{\color{muted}\small 26510124}
+\vspace{2mm}
+\begin{center}
+\begin{tikzpicture}[x=1cm,y=1cm,>=Latex,
+ box/.style={rounded corners=3pt,line width=.9pt,align=center,minimum height=1.05cm,inner sep=6pt,text=ink,font=\small},
+ service/.style={box,draw=green,fill=green!7},
+ data/.style={box,draw=purple,fill=purple!8},
+ cloud/.style={box,draw=orange,fill=orange!9},
+ guard/.style={box,draw=red,fill=red!7},
+ person/.style={box,draw=muted,fill=muted!7},
+ flow/.style={->,draw=green,line width=1.1pt},
+ stateflow/.style={->,draw=muted,line width=.9pt},
+ model/.style={<->,draw=purple,dashed,line width=1pt},
+ approval/.style={->,draw=red,dashed,line width=1pt},
+ label/.style={font=\fontsize{8}{10}\selectfont,text=muted,fill=white,inner sep=2pt},
+ zone/.style={rounded corners=6pt,line width=.8pt,dashed},
+ zonelabel/.style={anchor=north west,font=\small\bfseries,inner sep=4pt}]
+
+% Deployment boundaries: market, student host, and external inference.
+\filldraw[zone,draw=orange!85,fill=orange!3] (.3,13.15) rectangle (27,15.8);
+\node[zonelabel,text=orange!80!black] at (.5,15.65) {외부 시장 · market.ourolabs.ai};
+\filldraw[zone,draw=muted!65,fill=muted!2] (.3,1.65) rectangle (20.25,12.55);
+\node[zonelabel,text=muted] at (.5,12.4) {우리 서버};
+\filldraw[zone,draw=purple!60,fill=purple!2] (21,1.65) rectangle (27,12.55);
+\node[zonelabel,text=purple] at (21.2,12.4) {모델 연결 · Claude CLI};
+
+% Public market interfaces.
+\node[cloud,text width=4.4cm] (public) at (4,14.35)
+  {\textbf{공개 장부 · 게시판}\\[-1pt]{\footnotesize 판매 · 가격 · 평판}};
+\node[cloud,text width=5.1cm] (market) at (13,14.35)
+  {\textbf{시장 주문 · 정산}\\[-1pt]{\footnotesize A2A · ACP / AP2}};
+\node[person,text width=4.3cm] (others) at (24,14.35)
+  {\textbf{다른 가게 · Buyer}};
+
+% The actual trading subsystem; two roles, one official integration layer.
+\filldraw[rounded corners=5pt,draw=green!35,fill=green!2] (8.75,8.45) rectangle (18.2,11.85);
+\node[anchor=north west,font=\footnotesize\bfseries,text=green!75!black] at (8.9,11.75) {거래 실행};
+\node[service,text width=3.2cm,minimum height=.85cm] (shop) at (10.95,10.65)
+  {\textbf{Shop}\\[-1pt]{\footnotesize 견적 · 흥정 · 영수증}};
+\node[service,text width=3.2cm,minimum height=.85cm] (buyer) at (16,10.65)
+  {\textbf{Buyer}\\[-1pt]{\footnotesize 선택 · 협상 · 구매}};
+\node[service,text width=7.7cm,minimum height=.85cm] (kit) at (13.45,9.15)
+  {\textbf{공식 키트 v4 + 검증 도구}\\[-1pt]{\footnotesize 재고 예약 · 가격/품질 검사 · checkout}};
+
+% State and analysis loop. Round 3 is proposal mode, not autonomous policy application.
+\node[service,text width=4.4cm] (restock) at (4,10)
+  {\textbf{수요 조사 · 재입고}\\[-1pt]{\footnotesize 시간별 조사 · 공급창 매입}};
+\node[data,text width=7.1cm] (memory) at (13.45,6.5)
+  {\textbf{역할별 상태 · 메모리}\\[-1pt]{\footnotesize 재고 · 정책 · 협상 · 정산 · 평판}};
+\node[service,text width=5cm] (ops) at (13.45,3.55)
+  {\textbf{운영 전략가}\\[-1pt]{\footnotesize 재고 분석(코드) + 개선안 제안}};
+\node[guard,text width=4.4cm] (check) at (4,3.55)
+  {\textbf{정책 검증}\\[-1pt]{\footnotesize 범위 · 버전 · 만료}};
+\node[person,text width=2.4cm,minimum height=.65cm] (human) at (4,.55)
+  {\textbf{운영자}};
+
+% Role-specific model calls are external to market action tools.
+\node[cloud,text width=4.55cm,minimum height=1.7cm] (tradeModels) at (24,10.2)
+  {\textbf{Haiku / Opus 5.5}\\[4pt]{\footnotesize Haiku → Shop}\\[-1pt]{\footnotesize Opus → Buyer}};
+\node[cloud,text width=4.55cm] (opsModel) at (24,3.55)
+  {\textbf{Opus 5.5}\\[-1pt]{\footnotesize 운영 분석}};
+
+% Trading and evidence paths.
+\draw[stateflow] (public.south) -- node[label]{공개 거래 근거} (restock.north);
+\draw[flow,<->] (market.east) -- node[label]{흥정 · 결제} (others.west);
+\draw[flow,<->] (13,13.8) -- node[label]{주문 · 거래} (13,11.85);
+\draw[flow,<->] (shop.south) -- (10.95,9.7);
+\draw[flow,<->] (buyer.south) -- (16,9.7);
+\draw[flow] (restock.east) -- (7.3,10) -- (7.3,9.15)
+  -- node[label,above]{매입 계획} (kit.west);
+\draw[flow,<->] (kit.south) -- node[label]{결과 기록 · 다음 판단의 기억} (memory.north);
+\draw[stateflow] ([yshift=3mm]memory.west) -- (7.3,6.8) -- (7.3,8.15) -- (4,8.15)
+  -- node[label,left]{재고 · 한도} (restock.south);
+\draw[stateflow] (memory.south) -- node[label]{운영 결과 분석} (ops.north);
+\draw[model] (18.2,10.2) -- node[label,text=purple]{컨텍스트 / JSON 결정} (tradeModels.west);
+\draw[model] (ops.east) -- node[label,text=purple]{관측 / JSON 제안} (opsModel.west);
+
+% Conditional control path, distinguished from the trading path.
+\draw[approval] (ops.west) -- node[label,text=red]{개선안 · propose} (check.east);
+\draw[approval] (human.north) -- node[label,text=red]{승인} (check.south);
+\draw[approval] (check.north) -- (4,5.5) -- (8.55,5.5) -- (8.55,6.3)
+  -- ([yshift=-2mm]memory.west);
+\node[font=\fontsize{8}{10}\selectfont,text=red,anchor=west] at (4.15,5.7) {승인 후 정책 반영};
+
+% Compact legend, not a second explanatory paragraph.
+\draw[flow] (8.7,.55) -- (9.5,.55);
+\node[anchor=west,font=\footnotesize,text=muted] at (9.6,.55) {거래 실행};
+\draw[stateflow] (13,.55) -- (13.8,.55);
+\node[anchor=west,font=\footnotesize,text=muted] at (13.9,.55) {상태 · 관측};
+\draw[model] (17.4,.55) -- (18.2,.55);
+\node[anchor=west,font=\footnotesize,text=muted] at (18.3,.55) {모델 호출};
+\draw[approval] (22,.55) -- (22.8,.55);
+\node[anchor=west,font=\footnotesize,text=muted] at (22.9,.55) {제안 · 승인};
+\end{tikzpicture}
+\end{center}
+\end{document}

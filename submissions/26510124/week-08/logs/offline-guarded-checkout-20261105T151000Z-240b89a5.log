@@ -1,0 +1,29 @@
+Synthetic guarded checkout tests; no market or model calls.
+COMMAND: ['/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-07/.venv/bin/python', '-m', 'unittest', 'test_guarded_checkout', '-v']
+/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/test_inventory.py:14: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+test_cancel_revokes_and_releases_but_old_receipt_stays_denied (test_guarded_checkout.GuardedCheckoutTests.test_cancel_revokes_and_releases_but_old_receipt_stays_denied) ... ok
+test_concurrent_create_only_publishes_one_session (test_guarded_checkout.GuardedCheckoutTests.test_concurrent_create_only_publishes_one_session) ... ok
+test_confirmed_payment_is_durable_idempotent_and_log_compatible (test_guarded_checkout.GuardedCheckoutTests.test_confirmed_payment_is_durable_idempotent_and_log_compatible) ... ok
+test_disconnect_during_payment_retains_uncertain_hold (test_guarded_checkout.GuardedCheckoutTests.test_disconnect_during_payment_retains_uncertain_hold) ... ok
+test_expired_checkout_releases_upstream_picker_hold_and_denies_completion (test_guarded_checkout.GuardedCheckoutTests.test_expired_checkout_releases_upstream_picker_hold_and_denies_completion) ... ok
+test_expiry_while_inventory_request_runs_never_publishes_session (test_guarded_checkout.GuardedCheckoutTests.test_expiry_while_inventory_request_runs_never_publishes_session) ... ok
+test_invalid_payload_and_get_cannot_cancel_a_receipt (test_guarded_checkout.GuardedCheckoutTests.test_invalid_payload_and_get_cannot_cancel_a_receipt) ... ok
+test_old_signed_receipt_cannot_rebind_unreserved_stock (test_guarded_checkout.GuardedCheckoutTests.test_old_signed_receipt_cannot_rebind_unreserved_stock) ... ok
+test_payment_cannot_start_when_durable_state_write_fails (test_guarded_checkout.GuardedCheckoutTests.test_payment_cannot_start_when_durable_state_write_fails) ... ok
+test_public_guard_card_reports_runtime_without_credentials (test_guarded_checkout.GuardedCheckoutTests.test_public_guard_card_reports_runtime_without_credentials) ... ok
+test_recorded_receipt_restores_unsigned_terms_after_restart (test_guarded_checkout.GuardedCheckoutTests.test_recorded_receipt_restores_unsigned_terms_after_restart) ... ok
+test_restart_does_not_create_second_session_for_same_receipt (test_guarded_checkout.GuardedCheckoutTests.test_restart_does_not_create_second_session_for_same_receipt) ... ok
+test_timeout_or_ambiguous_refusal_retains_hold_past_deadline (test_guarded_checkout.GuardedCheckoutTests.test_timeout_or_ambiguous_refusal_retains_hold_past_deadline) ... 00:10:01 [acp] payment result unknown: ReadTimeout; hold retained
+00:10:01 [acp] settlement not confirmed: HTTP 503; hold retained
+ok
+test_join_launches_guard_wrapper_instead_of_bare_vendor (test_guarded_checkout.GuardedLauncherTests.test_join_launches_guard_wrapper_instead_of_bare_vendor) ... /Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/traceback.py:241: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/ideog-yong/Library/Mobile Documents/com~apple~CloudDocs/Documents/석사 수업/AX이해와활용/ai-agent-engineering-101/submissions/26510124/week-08/.market/tmp1vqti4k9/.market/runtime.lock' mode='a' encoding='UTF-8'>
+  tb.tb_frame.clear()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_wrapper_installs_guard_before_opt_in_and_preserves_pinned_kit (test_guarded_checkout.GuardedLauncherTests.test_wrapper_installs_guard_before_opt_in_and_preserves_pinned_kit) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.142s
+
+OK

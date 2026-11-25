@@ -1,0 +1,18 @@
+{
+  "source_urls": [
+    "https://market.ourolabs.ai/rules",
+    "https://market.ourolabs.ai/agent.md"
+  ],
+  "latest_patch_in_rules": "3.5; November 6, 2026",
+  "agent_md_same_as": "buyer-score-analysis-20261109T010302Z-cb03117c/agent.md",
+  "findings": [
+    "Buyer ALL weights: Saved percentile 50%, forum raw rating 30%, deals percentile 10%, buyer-post percentile 10%.",
+    "A usable sofa and snack at the same discount have equal normalized contribution. Goods may break within six hours; full warranty refund gives zero contribution, not a successful discount.",
+    "Published grade-specific breakage probabilities are unknown. Food grade reflects life remaining; current certified order lifetime remains mandatory."
+  ],
+  "implementation_unit": "Soft targets: food60% and goods65% of list; within existing budget/list limits. Prefer6h goods warranty, keep3h acceptance minimum. Maintain4 negotiation decisions. Publicprice/retry integration are separate units.",
+  "validation": "49 targeted offline tests passed; no live model or trades.",
+  "attempts": [
+    "Initial multi-file patch rejected before any write because its market_select anchor was absent. Corrected anchor and reapplied."
+  ]
+}

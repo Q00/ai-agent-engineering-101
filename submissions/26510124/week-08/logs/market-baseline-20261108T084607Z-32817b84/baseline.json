@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "purpose": "Post-deployment comparison baseline requested by user; immutable observation, not a performance verdict.",
+  "identity": {
+    "student_id": "26510124",
+    "github": "dyishappy",
+    "shop": "dyishappy",
+    "buyer": "dyishappy"
+  },
+  "round": 3,
+  "observed_at_utc": "2026-11-08T08:47:06+00:00",
+  "observed_at_kst": "2026-11-08T17:47:06+09:00",
+  "recorded_at_utc": "2026-11-08T08:48:34.842349+00:00",
+  "sources": {
+    "board": "https://market.ourolabs.ai/board",
+    "data": "https://market.ourolabs.ai/api/board",
+    "rules": "https://market.ourolabs.ai/agent.md",
+    "chosen_response": "board-recheck.json"
+  },
+  "metrics": {
+    "shops": {
+      "alive": true,
+      "deals": 705,
+      "visits": 4439,
+      "stars": 4.62,
+      "stars_rank": 4.38,
+      "reviews": 701,
+      "revenue": 198672903,
+      "profit": 25063159,
+      "stock_units": 16,
+      "stock_cost": 2646552,
+      "book": 27709711,
+      "bankruptcies": 0,
+      "refunds": 9,
+      "broken": 40,
+      "claims": 646,
+      "honest_claims": 646,
+      "all": 0.555,
+      "rank": 30,
+      "table_rows": 84,
+      "ranked_count": 59,
+      "public_url": "https://museum-championship-professional-retirement.trycloudflare.com"
+    },
+    "buyers": {
+      "alive": true,
+      "orders": 10041,
+      "deals": 2979,
+      "paid": 0.555,
+      "saved": 0.2568,
+      "surplus": 193744799,
+      "served": 2936,
+      "forum": 0.9,
+      "posts": 260,
+      "held": 1,
+      "hopeless": 1,
+      "all": 0.57,
+      "rank": 35,
+      "table_rows": 125,
+      "ranked_count": 56,
+      "cumulative_deals_per_order": 0.2966835972512698,
+      "served_per_deal": 0.9855656260490098
+    },
+    "players": {
+      "total": 1.125,
+      "student_shop": 0.465,
+      "student_buyer": 0.52,
+      "student_total": 0.985,
+      "student_pct": 0.372,
+      "rank": 33,
+      "table_rows": 62,
+      "ranked_count": 62,
+      "student_rank": 28,
+      "student_count": 44
+    }
+  },
+  "leaders": {
+    "shops": [
+      {
+        "name": "yms979",
+        "all": 0.955,
+        "book": 939716173,
+        "revenue": 6634939294,
+        "deals": 21732,
+        "stars": 4.6,
+        "stars_rank": 4.39,
+        "reviews": 21533
+      },
+      {
+        "name": "inextro",
+        "all": 0.936,
+        "book": 794291232,
+        "revenue": 8768635649,
+        "deals": 16009,
+        "stars": 4.71,
+        "stars_rank": 4.38,
+        "reviews": 15854
+      },
+      {
+        "name": "dae-yangkim",
+        "all": 0.881,
+        "book": 530970211,
+        "revenue": 2391505010,
+        "deals": 3078,
+        "stars": 4.56,
+        "stars_rank": 4.41,
+        "reviews": 3039
+      }
+    ],
+    "buyers": [
+      {
+        "name": "lee-sungsoo",
+        "all": 0.884,
+        "saved": 0.3152,
+        "forum": 0.874,
+        "deals": 10550,
+        "posts": 1064
+      },
+      {
+        "name": "dragonash",
+        "all": 0.882,
+        "saved": 0.3619,
+        "forum": 0.843,
+        "deals": 8913,
+        "posts": 768
+      },
+      {
+        "name": "kimauve",
+        "all": 0.873,
+        "saved": 0.3254,
+        "forum": 0.875,
+        "deals": 7113,
+        "posts": 1098
+      }
+    ]
+  },
+  "previous_observation": {
+    "file": "logs/score-check-20261108T081718Z.json",
+    "observed_at_utc": "2026-11-08T08:17:18Z",
+    "delta": {
+      "shops": {
+        "deals": 10,
+        "visits": 14,
+        "stars": 0.0,
+        "reviews": 10,
+        "revenue": 2104574,
+        "profit": 471702,
+        "stock_units": 0,
+        "stock_cost": -97788,
+        "book": 373914,
+        "refunds": 0,
+        "all": 0.0,
+        "rank": 0,
+        "ranked_count": 0
+      },
+      "buyers": {
+        "orders": 70,
+        "deals": 34,
+        "saved": 0.0001,
+        "surplus": 2972424,
+        "served": 33,
+        "forum": 0.0,
+        "posts": 3,
+        "all": 0.0,
+        "rank": 0,
+        "ranked_count": 0
+      },
+      "players": {
+        "total": 0.0,
+        "student_shop": 0.0,
+        "student_buyer": 0.0,
+        "student_total": 0.0,
+        "student_pct": 0.0,
+        "rank": 0,
+        "ranked_count": 0,
+        "student_rank": 0,
+        "student_count": 0
+      }
+    },
+    "interpretation": "Mostly before newest deployment; deltas cannot establish its effect."
+  },
+  "deployment_evidence": {
+    "folder": "logs/deployment-20261108T084414Z-38cc8076",
+    "package_created_at_utc": "2026-11-08T08:44:14.204218+00:00",
+    "installer_exit": 0,
+    "ready_registered_and_acp_verified": true,
+    "source_hash_matches": {
+      "buyer-policy.json": true,
+      "buyer_policy.py": true,
+      "buyer_value_memory.py": true,
+      "payment_memory.py": true,
+      "market_buyer.py": true,
+      "buyer_diagnostics.py": true,
+      "review_settled.py": true,
+      "buyer_selection.py": true,
+      "buyer_forum.py": true,
+      "prompts/buyer.txt": true,
+      "prompts/market_select.txt": true,
+      "model-profile.json": true
+    },
+    "public_url_matches_successful_deployment": true,
+    "policy_version": "food-value-buy-v3",
+    "model_profile": {
+      "version": 1,
+      "trading": "opus5.5",
+      "advisor": "haiku"
+    },
+    "code_commits": [
+      "d7e8609",
+      "89ce3bc"
+    ],
+    "limit": "Manifest and successful installer log verified locally, not a fresh SSH process inspection; creation time is not exact activation time."
+  },
+  "response_anomaly": {
+    "first_response": "board.json",
+    "first_shop_metrics": {
+      "deals": 0,
+      "reviews": 0,
+      "revenue": 0,
+      "stars": null,
+      "stars_rank": 3.0,
+      "all": 0.262,
+      "profit": 24279799,
+      "book": 27612691
+    },
+    "recheck_restored_cumulative_counts": true,
+    "cause": "unknown; do not infer erased trades, refund losses or strategy failure from the transient zero response"
+  },
+  "definitions": {
+    "rank": "Same stable sorting as the captured board UI: shop ALL then Book; buyer ALL then Saved; Players Everyone server order; Class student_total. Ranked_count excludes missing ALL for shops/buyers, table_rows includes unscored registrations.",
+    "all": "Raw 0..1. UI multiplies by 100 and rounds to an integer. Player totals are 0..2.",
+    "stars": "Raw average review stars. UI Stars column displays stars_rank, a separate adjusted value.",
+    "profit": "UI Cash: balance minus starting capital and bankruptcy grants, not wallet balance.",
+    "book": "Cash + unsold inventory acquisition cost; not fully realized profit.",
+    "saved": "Cumulative surplus/list-price sum divided by deals+100, not plain mean discount or currency savings.",
+    "cumulative_deals_per_order": "Deals/orders; distinct from Paid, which is mean price/budget.",
+    "alive": "Public registry status only; not independent proof of process health."
+  },
+  "later_comparison": [
+    "Check same round and same identity. Recheck any sudden zero/partial response before interpreting.",
+    "Compare delta deals and delta orders over the same interval; compute per-hour trading and interval completion separately from cumulative rate.",
+    "Compare Saved, served/deals, forum/posts and ranks; composition, delayed breakage and competitors can change scores.",
+    "Use buyer_diagnostics --hours with matching elapsed hours for negotiation reasons and correlated actual payments.",
+    "Do not infer strategy causality from rank alone or an interval overlapping multiple deployments."
+  ],
+  "raw_sha256": {
+    "board.json": "3b73e6a17b9c4d2c4b44aa338e7ba37a26075692f388c75b9d28cb2093be6eab",
+    "board.headers": "fa1108eb870828eb34dbdcd171d383e50aa731710b5fff8441ae5932eb52adf9",
+    "board-recheck.json": "6c79109844d2a5293f5a31c52efaaabb865cad2ac10b0961d04b346fe8c6d7a1",
+    "board-recheck.headers": "acf6592bc3468f194bad9856ef3c6ada1335053eda13bd4f77cfcdb383660ea7",
+    "board.html": "c69e000a65358ad42f7ebccc1539b3778ab08e820a30e947b0b3c5ca5f183309",
+    "agent.md": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942"
+  }
+}
