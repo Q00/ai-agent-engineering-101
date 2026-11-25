@@ -1,0 +1,297 @@
+import unittest
+
+import buyer_policy
+import market_buyer
+
+
+class Round3BuyerContextTest(unittest.TestCase):
+    def setUp(self):
+        self.catalog = {
+            "cheap": {"list_price": 100, "kind": "goods"},
+            "valuable": {"list_price": 200, "kind": "goods"},
+            "too-high": {"list_price": 1000, "kind": "goods"},
+        }
+        self.order = {"acceptable": ["cheap", "valuable", "too-high"], "category": "home>bed", "kind": "goods"}
+
+    def test_guardian_filters_without_exposing_ceiling(self):
+        shops = [{"name": "s", "url": "u", "offers": [
+            {"sku": "cheap", "name": "c", "qty": 1},
+            {"sku": "too-high", "name": "h", "qty": 1},
+        ]}]
+        guardian = buyer_policy.MandateGuardian(150, 100)
+        prepared = market_buyer.prepare_round3_shops(shops, self.order, self.catalog, guardian)
+        self.assertEqual([offer["sku"] for offer in prepared[0]["_eligible_offers"]], ["cheap"])
+
+    def test_scout_prefers_high_value_affordable_sku(self):
+        shop = {"offers": [{"sku": "cheap", "qty": 4}, {"sku": "valuable", "qty": 1}]}
+        self.assertEqual(market_buyer.choose_request(shop, self.catalog)["sku"], "valuable")
+
+    def test_food_acceptance_requires_the_lifetime_not_a_certificate(self):
+        accept = market_buyer.accept_constraints({"acceptable": ["f"], "kind": "food", "use_within_hours": 2.2})
+        self.assertEqual(accept, {"min_hours_left": 3})
+
+    def test_dear_goods_prefer_shops_whose_goods_carry_a_warranty(self):
+        row = lambda shop, w: {"shop": shop, "item": "x", "outcome": "deal", "honest": True, "settled": True,
+                               "warranty_hours": w, "grade": "A", "list_price": 400_000, "price": 300_000, "value": 400_000}
+        memory = [row("bare", 0)] * 5 + [row("covered", 6)] * 5
+        self.assertEqual(0.0, buyer_policy.warranty_share(memory, "bare"))
+        self.assertEqual(1.0, buyer_policy.warranty_share(memory, "covered"))
+        self.assertIsNone(buyer_policy.warranty_share(memory, "unknown"))
+        shops = [{"name": "bare", "reviews": []}, {"name": "covered", "reviews": []}]
+        plain = buyer_policy.rank_shops(shops, memory, "x", 300_000)
+        dear = buyer_policy.rank_shops(shops, memory, "x", 300_000, prefer_warranty=True)
+        self.assertEqual("bare", plain[0][0]["name"])                       # alphabetical tie without the preference
+        self.assertEqual(("covered", 1.0), (dear[0][0]["name"], dear[0][1]["warranty"]))
+
+    def test_goods_acceptance_rejects_grade_c_but_needs_no_certificate(self):
+        accept = market_buyer.accept_constraints(self.order)
+        self.assertEqual(accept, {"grades": ["A", "B"]})
+
+    def test_request_skips_skus_the_shop_already_turned_down(self):
+        shop = {"offers": [{"sku": "cheap", "qty": 4}, {"sku": "valuable", "qty": 1}]}
+        self.assertEqual("cheap", market_buyer.choose_request(shop, self.catalog, exclude={"valuable"})["sku"])
+        self.assertIsNone(market_buyer.choose_request(shop, self.catalog, exclude={"valuable", "cheap"}))
+
+    def test_food_unit_grade_decides_before_negotiating(self):
+        self.assertTrue(market_buyer.food_unit_ok("A", 600, 360))     # 480 h at least
+        self.assertFalse(market_buyer.food_unit_ok("B", 600, 360))    # 270 h at least
+        self.assertFalse(market_buyer.food_unit_ok("C", 600, 200))    # 132 h typical: not for a 200 h order
+        self.assertTrue(market_buyer.food_unit_ok("C", 600, 100))     # but a 100 h order is worth a try (the kit checks)
+        self.assertTrue(market_buyer.food_unit_ok(None, 600, 360))    # unknown grade: let the kit's check decide
+        self.assertTrue(market_buyer.food_unit_ok("C", None, 360))
+        task = {"status": {"message": {"metadata": {"ask": 10}, "parts": [{"text": "kimchi (F1), certified grade B: asking 10."}]}}}
+        self.assertEqual("B", market_buyer.unit_grade(task))
+        task["status"]["message"]["metadata"]["grade"] = "A"
+        self.assertEqual("A", market_buyer.unit_grade(task))
+        task["status"]["message"]["parts"][0]["text"] = "apples [G1], grade B, about 34 h of shelf life left. Send a price."
+        self.assertEqual(34.0, market_buyer.unit_hours_left(task))
+        self.assertIsNone(market_buyer.unit_hours_left({"status": {"message": {"parts": [{"text": "asking 10"}]}}}))
+
+    def test_a_refused_payment_counts_against_the_shop(self):
+        shop = {"name": "s", "reviews": []}
+        fine = [{"shop": "s", "item": "x", "outcome": "deal", "price": 100, "honest": True}]
+        refused = fine + [{"shop": "s", "item": "x", "outcome": "unpaid", "price": 100, "unpaid_reason": "grade C"}]
+        self.assertGreater(buyer_policy.evidence(shop, fine, "x", 100)["integrity"],
+                           buyer_policy.evidence(shop, refused, "x", 100)["integrity"])
+
+    def test_sku_reference_follows_the_market_below_the_list_cap(self):
+        stats = {"skus": {"valuable": {"n": 5, "median": 150}}, "categories": {}}
+        self.assertEqual(138, market_buyer.sku_reference("valuable", self.catalog, 999, stats))   # 150 x 0.92
+        stats["skus"]["valuable"]["median"] = 200
+        self.assertEqual(180, market_buyer.sku_reference("valuable", self.catalog, 999, stats))   # capped at 0.9 x list
+
+    def test_catalog_reference_is_discounted_median(self):
+        self.assertEqual(market_buyer.category_reference(self.order, self.catalog), 180)
+
+    def test_guardian_never_pays_above_the_ask_or_the_value(self):
+        guardian = buyer_policy.MandateGuardian(40000, 26010, value_cap=28900)
+        self.assertEqual({"action": "offer", "decision": "capped_at_ask", "price": 26500},
+                         guardian.authorize(30500, 0, current_ask=26500))
+        self.assertEqual("reference_substitute", guardian.authorize(30000, 0)["decision"])   # 30000 is above the value
+        self.assertEqual(28900, guardian.authorize(35000, 2)["price"])                        # final ceiling: value, not budget
+        self.assertFalse(guardian.checkout_ok(28901))
+
+    def test_food_request_prefers_a_sku_whose_shelf_life_covers_the_order(self):
+        catalog = {"short": {"list_price": 300, "kind": "food", "shelf_hours": 300},
+                   "tight": {"list_price": 250, "kind": "food", "shelf_hours": 400},
+                   "long": {"list_price": 200, "kind": "food", "shelf_hours": 600}}
+        shop = {"offers": [{"sku": "short", "qty": 1}, {"sku": "tight", "qty": 1}, {"sku": "long", "qty": 1}]}
+        order = {"kind": "food", "use_within_hours": 360}
+        self.assertEqual("long", market_buyer.choose_request(shop, catalog, order)["sku"])   # 600 x 0.8 covers 360; 400 x 0.8 does not
+        order["use_within_hours"] = 500
+        self.assertEqual("long", market_buyer.choose_request(shop, catalog, order)["sku"])   # the only feasible one
+        self.assertEqual("short", market_buyer.choose_request(shop, catalog)["sku"])         # no order: list price wins
+
+    def test_the_opener_is_code_and_later_steps_are_capped(self):
+        self.assertEqual(80_000, market_buyer.opening_offer(100_000, 92_000, 0.20))      # 20% under the ask
+        self.assertEqual(70_000, market_buyer.opening_offer(100_000, 70_000, 0.20))      # never above my reference
+        self.assertIsNone(market_buyer.opening_offer(None, 70_000, 0.20))
+        self.assertEqual(84_800, market_buyer.capped_step(80_000, 95_000))              # 6% over my last offer
+        self.assertEqual(81_000, market_buyer.capped_step(80_000, 81_000))
+
+    def test_stated_floor_reads_the_shops_five_phrasings(self):
+        for text, floor in (("No deal at 80000; our lowest is 92,000", 92000), ("No deal below 92000", 92000),
+                            ("No deal. Lowest for this unit: 92000. receipt=Ed25519", 92000),
+                            ("Cannot sell below certified cost floor (92000). No deal at 80000.", 92000),
+                            ("No deal. Our last ask was 92000", 92000), ("Final price was 92000 No deal.", 92000),
+                            ("Counteroffer: 92000.", None), ("We cannot agree at that price.", None)):
+            self.assertEqual(floor, market_buyer.stated_floor(text), text)
+
+    def test_cheap_shops_on_the_ledger_rank_higher(self):
+        rows = [{"shop": "u-cheap", "sku": "valuable", "price": 110}] * 5 + [{"shop": "u-dear", "sku": "valuable", "price": 160}] * 5
+        levels = market_buyer.shop_price_levels(rows, self.catalog)
+        self.assertEqual({"u-cheap": 0.55, "u-dear": 0.80}, levels)
+        shops = [{"name": "dear", "url": "u-dear", "reviews": [], "_price_ratio": 0.80},
+                 {"name": "cheap", "url": "u-cheap", "reviews": [], "_price_ratio": 0.55}]
+        ranked = buyer_policy.rank_shops(shops, [], "valuable", 150)
+        self.assertEqual(["cheap", "dear"], [s["name"] for s, _ in ranked])
+        self.assertEqual(0.55, ranked[0][1]["price_ratio"])
+
+    def test_quick_offer_takes_a_good_ask_or_a_stated_floor_inside_the_limit(self):
+        self.assertEqual((186000, "the shop's stated lowest"), market_buyer.quick_offer(200000, 186000, 180000, 250000))
+        self.assertEqual((170000, "the ask"), market_buyer.quick_offer(170000, None, 180000, 250000))
+        self.assertEqual((None, None), market_buyer.quick_offer(200000, None, 180000, 250000))     # ask above reference: bargain
+        self.assertEqual((None, None), market_buyer.quick_offer(200000, 195000, 180000, 250000))   # floor > reference x 1.05
+        self.assertEqual((None, None), market_buyer.quick_offer(170000, None, 180000, 160000))     # above my limit
+        self.assertEqual(186000, market_buyer.stated_floor("No deal. Lowest for this unit: 186000. receipt=Ed1"))
+        self.assertEqual(1740309, market_buyer.stated_floor("lowest I can go is 1,740,309"))
+        self.assertIsNone(market_buyer.stated_floor("Counteroffer: 186413."))
+        self.assertEqual((200000, "the ask"), market_buyer.quick_offer(200000, None, 185000, 250000, slack=1.10))
+        self.assertTrue(market_buyer.regulars_prompt("REGULARS: bought here before? reply 'buyer: <your market name>' and VIP -3% comes off"))
+        self.assertFalse(market_buyer.regulars_prompt("lamp: asking 115. Send your offer as a number."))
+
+    def test_asks_with_thousands_separators_and_floors_named_before_the_word_are_read(self):
+        task = {"status": {"message": {"parts": [{"text": "Asking 12,530 credits. Send your offer as a number."}]}}}
+        self.assertEqual(12530, market_buyer.first_ask(task, 17900))
+        self.assertEqual(13438, market_buyer.stated_floor("13438 is our lowest: it is top grade (A), with its certificate"))
+        self.assertEqual(92000, market_buyer.stated_floor("No deal at 80000; our lowest is 92000"))
+
+    def test_the_ask_may_be_paid_at_the_ceiling_in_the_first_round(self):
+        guardian = buyer_policy.MandateGuardian(50000, 9660, 12530)
+        self.assertEqual({"action": "offer", "decision": "approved", "price": 12530}, guardian.authorize(12530, 1, 12530))
+        self.assertEqual("reference_substitute", guardian.authorize(12530, 1, 13438)["decision"])   # not the ask: still sealed
+
+    def test_a_warranty_shop_may_sell_me_a_grade_c_unit_with_the_warranty_required(self):
+        order = {"acceptable": ["g"], "kind": "goods"}
+        covered = [{"shop": "covered", "settled": True, "warranty_hours": 6, "grade": "A", "list_price": 100_000, "value": 100_000}] * 5
+        bare = [{"shop": "bare", "settled": True, "warranty_hours": 0, "grade": "A", "list_price": 100_000, "value": 100_000}] * 5
+        self.assertEqual({"grades": ["A", "B", "C"], "warranty_hours": 1}, market_buyer.accept_constraints(order, {"name": "covered"}, covered, "C"))
+        self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "covered"}, covered, "A"))   # an A unit: no demand
+        self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "bare"}, bare, "C"))
+        self.assertEqual({"grades": ["A", "B"]}, market_buyer.accept_constraints(order, {"name": "new"}, covered, "C"))   # no data: A/B
+
+    def test_a_shop_saying_warranty_zero_is_recognized(self):
+        self.assertTrue(market_buyer.NO_WARRANTY.search("grade C. Market certificate included; warranty 0 h. Asking price: 79672."))
+        self.assertTrue(market_buyer.NO_WARRANTY.search("grade C, 155.2 h shelf life left, no warranty; the"))
+        self.assertFalse(market_buyer.NO_WARRANTY.search("grade C, warranty 6 h, certificate attached"))
+
+    def test_a_shop_whose_payments_are_refused_ranks_below_one_whose_deals_are_paid(self):
+        base = {"reviews": [], "_kept_base": 0.73}
+        shops = [{**base, "name": "refused", "url": "u1", "_kept": 0.92, "_p_deal": 0.07, "_p_unpaid": 0.18},   # yeonsong2
+                 {**base, "name": "paid", "url": "u2", "_kept": 0.80, "_p_deal": 0.50, "_p_unpaid": 0.02}]
+        ranked = buyer_policy.rank_shops(shops, [], "valuable", 150)
+        self.assertEqual(["paid", "refused"], [s["name"] for s, _ in ranked])
+        self.assertEqual((0.5, 0.02), (ranked[0][1]["p_deal"], ranked[0][1]["p_unpaid"]))
+
+    def test_a_shop_whose_c_units_come_without_warranty_sells_me_no_c(self):
+        order = {"acceptable": ["g"], "kind": "goods"}
+        covered = [{"shop": "s", "settled": True, "warranty_hours": 6, "grade": "A", "list_price": 100_000, "value": 100_000}] * 5
+        self.assertEqual({"grades": ["A", "B", "C"], "warranty_hours": 1},
+                         market_buyer.accept_constraints(order, {"name": "s"}, covered, "C", {"s": {"warranty": 1.0}}))
+        self.assertEqual({"grades": ["A", "B"]},
+                         market_buyer.accept_constraints(order, {"name": "s"}, covered, "C", {"s": {"warranty": 1.0, "c_blocked": True}}))
+
+    def test_a_probe_is_a_stable_draw_per_order_and_shop_at_the_explore_rate(self):
+        draws = [market_buyer.probe_now(f"o-{i}", "shop", 0.15) for i in range(2000)]
+        self.assertEqual(draws, [market_buyer.probe_now(f"o-{i}", "shop", 0.15) for i in range(2000)])
+        self.assertTrue(0.11 < sum(draws) / len(draws) < 0.19)
+        self.assertFalse(any(market_buyer.probe_now(f"o-{i}", "shop", 0.0) for i in range(200)))
+
+    def test_price_limits_follow_the_grade_under_the_margin_rule(self):
+        targets = {"formula": "margin_share", "pay": 0.78, "quick": 0.85, "kind": "food"}
+        self.assertEqual((727, 702, 650), market_buyer.price_limits(1000, "A", targets))
+        self.assertEqual((493, 447, 350), market_buyer.price_limits(1000, "C", targets))
+        self.assertEqual((625, 592, 520), market_buyer.price_limits(1000, None, targets))     # unnamed food: the kind's average
+        self.assertEqual((None, None, None), market_buyer.price_limits(None, "A", targets))
+        self.assertEqual((220, 150, 650), market_buyer.price_limits(1000, "A", {**targets, "formula": "list_discount"}))
+
+    def test_goods_are_priced_for_the_chance_they_break(self):
+        self.assertAlmostEqual(0.78, market_buyer.required_score(0.78, 0.0, False))
+        self.assertAlmostEqual(0.848, market_buyer.required_score(0.78, 0.08, True), places=3)    # a refunded break scores 0
+        self.assertAlmostEqual(0.935, market_buyer.required_score(0.78, 0.08, False), places=3)   # an unrefunded one -1
+        targets = {"formula": "margin_share", "pay": 0.78, "quick": 0.85, "kind": "goods", "break_rate": {"A": 0.044, "B": 0.08, "C": 0.05}}
+        covered = market_buyer.price_limits(1000, "B", targets, warranty=True)
+        bare = market_buyer.price_limits(1000, "B", targets, warranty=False)
+        self.assertEqual((576, 532), (covered[0], bare[0]))            # the same grade B unit: 0.58 of list with a warranty, 0.53 without
+        self.assertEqual(bare, market_buyer.price_limits(1000, None, targets, warranty=False))   # no grade named: priced as B
+        self.assertTrue(market_buyer.unit_warranty("grade B, warranty 6 h, certificate attached"))
+        self.assertFalse(market_buyer.unit_warranty("grade B. Market certificate included; warranty 0 h."))
+        self.assertFalse(market_buyer.unit_warranty("grade A, certificate attached", shop_share=0.3))
+        self.assertTrue(market_buyer.unit_warranty("grade A, certificate attached", shop_share=0.95))
+
+    def test_the_opener_is_no_lower_than_the_shops_usual_settle(self):
+        self.assertEqual(51, market_buyer.opening_offer(72, 51, 0.25))                 # reference below ask x 0.75
+        self.assertEqual(55, market_buyer.opening_offer(72, 51, 0.25, at_least=55))    # the shop settles at 0.55 of list
+        self.assertEqual(60, market_buyer.opening_offer(60, 51, 0.25, at_least=65))    # never over the ask
+
+    def test_an_ask_under_the_quick_take_share_is_paid_without_bargaining(self):
+        self.assertEqual((170000, "the ask"), market_buyer.quick_offer(170000, None, 150000, 250000, quick_take=176000))
+        self.assertEqual((None, None), market_buyer.quick_offer(180000, None, 150000, 250000, quick_take=176000))
+        self.assertEqual((None, None), market_buyer.quick_offer(170000, None, 150000, 160000, quick_take=176000))   # over my limit
+
+    def test_an_order_moves_to_the_next_shop_after_a_close_until_three_refused(self):
+        go = market_buyer.order_goes_on
+        self.assertTrue(go("closed", False, 1, 1))
+        self.assertTrue(go("walked_away", False, 2, 2))
+        self.assertFalse(go("closed", False, 3, 3))
+        self.assertFalse(go("deal", False, 0, 1))
+        self.assertTrue(go("no_stock", True, 3, 4))
+        self.assertFalse(go("closed", False, 1, 6))
+
+    def test_price_levels_follow_a_shop_across_its_tunnels(self):
+        rows = [{"shop": "u-old/", "sku": "valuable", "price": 110}] * 3 + [{"shop": "u-new", "sku": "valuable", "price": 110}] * 3
+        self.assertEqual({}, market_buyer.shop_price_levels(rows, self.catalog))   # three each: under the five needed
+        self.assertEqual({"cheap": 0.55}, market_buyer.shop_price_levels(rows, self.catalog, {"u-old": "cheap", "u-new": "cheap"}))
+
+    def test_a_receipt_may_name_any_acceptable_sku_or_a_sku_of_the_asked_category(self):
+        catalog = {"G1": {"category": "home>bed"}, "G2": {"category": "home>bed"}, "K1": {"category": "food>kimchi"}}
+        self.assertTrue(market_buyer.receipt_names_the_order("G1", "G1"))
+        self.assertTrue(market_buyer.receipt_names_the_order("G2", "G1", acceptable={"G1", "G2"}))      # substituted SKU
+        self.assertTrue(market_buyer.receipt_names_the_order("G1", "home>bed", catalog=catalog))         # asked by category
+        self.assertTrue(market_buyer.receipt_names_the_order("G1", "bed", catalog=catalog))
+        self.assertFalse(market_buyer.receipt_names_the_order("K1", "home>bed", acceptable={"G1"}, catalog=catalog))
+        _, _, honest = market_buyer.review("home>bed", "deal", 100, {"item": "G1", "price": 100}, 90, catalog=catalog)
+        self.assertTrue(honest)
+
+    def test_one_mismatch_among_many_deals_does_not_blacklist_but_steering_does(self):
+        good = [{"shop": "big", "outcome": "deal", "honest": True}] * 50 + [{"shop": "big", "outcome": "deal", "honest": False}]
+        self.assertEqual(set(), buyer_policy.blacklisted_names(good))
+        twice = good + [{"shop": "big", "outcome": "deal", "honest": False}] * 5           # 6 of 56: over a tenth
+        self.assertEqual({"big"}, buyer_policy.blacklisted_names(twice))
+        small = [{"shop": "s", "outcome": "deal", "honest": False}] * 2 + [{"shop": "s", "outcome": "deal", "honest": True}] * 3
+        self.assertEqual({"s"}, buyer_policy.blacklisted_names(small))
+        self.assertEqual({"m"}, buyer_policy.blacklisted_names([{"shop": "m", "outcome": "walked_away", "manipulative": True}]))
+
+    def test_a_shop_that_answers_nothing_four_times_is_cooled_off(self):
+        mem = [{"shop": "x", "outcome": "no_stock"}] * 3 + [{"shop": "x", "outcome": "stale"}]
+        self.assertTrue(market_buyer.cooling_off(mem, "x"))
+        self.assertFalse(market_buyer.cooling_off(mem[:3], "x"))                              # not yet four
+        self.assertFalse(market_buyer.cooling_off(mem + [{"shop": "x", "outcome": "deal"}], "x"))   # answered again
+        import time as _time
+        dated = mem[:3] + [{"shop": "x", "outcome": "stale", "at": "2026-11-11 17:00"}]
+        t0 = _time.mktime(_time.strptime("2026-11-11 17:00", "%Y-%m-%d %H:%M"))
+        self.assertTrue(market_buyer.cooling_off(dated, "x", now=t0 + 10 * 60))      # ten minutes later: still cooled
+        self.assertFalse(market_buyer.cooling_off(dated, "x", now=t0 + 31 * 60))     # the cool-off expires
+        self.assertTrue(market_buyer.shop_moved(100, 96))
+        self.assertFalse(market_buyer.shop_moved(100, 98.5))
+
+    def test_closing_gap_pays_the_ask_when_my_offer_is_within_two_percent(self):
+        self.assertTrue(market_buyer.closing_gap(404800, 405000, 441000, 380000, 1.05))
+        self.assertFalse(market_buyer.closing_gap(385000, 405000, 441000, 380000, 1.05))     # 5% apart: keep bargaining
+        self.assertFalse(market_buyer.closing_gap(404800, 405000, 400000, 380000, 1.05))     # ask above my limit
+        self.assertFalse(market_buyer.closing_gap(404800, 405000, 441000, 300000, 1.05))     # ask far above the reference
+
+    def test_regime_follows_category_scarcity(self):
+        mem = [{"item": "c", "outcome": "no_stock"}] * 8 + [{"item": "c", "outcome": "deal"}] * 2
+        self.assertEqual(0.8, market_buyer.scarcity(mem, "c"))
+        self.assertIsNone(market_buyer.scarcity(mem[:5], "c"))
+        self.assertEqual((1.05, 0.10, "scarce"), market_buyer.regime(0.8, 0.15))
+        self.assertEqual((0.97, 0.20, "plentiful"), market_buyer.regime(0.1, 0.15))
+        self.assertEqual((1.00, 0.15, "normal"), market_buyer.regime(0.45, 0.15))
+        self.assertEqual((1.00, 0.15, "unknown"), market_buyer.regime(None, 0.15))
+
+    def test_listed_units_raise_a_shop_a_little(self):
+        memory = []
+        one = {"name": "one", "reviews": [], "offers": [{"sku": "s", "qty": 1}]}
+        five = {"name": "five", "reviews": [], "offers": [{"sku": "s", "qty": 5}]}
+        ranked = buyer_policy.rank_shops([one, five], memory, "x", 100)
+        self.assertEqual(["five", "one"], [shop["name"] for shop, _ in ranked])
+        self.assertEqual(5, ranked[0][1]["available"])
+
+    def test_sku_reference_is_90_percent_of_list_price(self):
+        self.assertEqual(180, market_buyer.sku_reference("valuable", self.catalog, 999))
+        self.assertEqual(999, market_buyer.sku_reference("unknown", self.catalog, 999))
+
+
+if __name__ == "__main__":
+    unittest.main()

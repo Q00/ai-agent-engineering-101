@@ -1,0 +1,98 @@
+import json
+import tempfile
+import time
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+import seller_r3
+
+
+class Round3InventorySellerTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.market_dir = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def write_inventory(self, units):
+        (self.market_dir / "inventory.json").write_text(json.dumps({"round": 3, "units": units}), encoding="utf-8")
+
+    def test_exact_sku_and_grade_a_are_selected(self):
+        units = [
+            {"unit": "u-b", "sku": "SKU-1", "name": "rice", "category": "food>rice", "list_price": 1000,
+             "kind": "goods", "cost": 500, "grade": "B", "supplied_at": 1, "expires_at": None},
+            {"unit": "u-a", "sku": "SKU-1", "name": "rice", "category": "food>rice", "list_price": 1000,
+             "kind": "goods", "cost": 700, "grade": "A", "supplied_at": 2, "expires_at": None},
+        ]
+        self.write_inventory(units)
+        with patch.object(seller_r3, "MARKET_DIR", self.market_dir):
+            picked = seller_r3.find_unit("I want rice (SKU-1)")
+        self.assertEqual(picked["unit"], "u-a")
+
+    def test_near_expiry_food_has_explicit_loss_cut(self):
+        now = time.time()
+        unit = {"sku": "FOOD-1", "kind": "food", "cost": 700, "list_price": 1000, "grade": "C",
+                "expires_at": now + 1800}
+        plan = seller_r3.price_plan(unit, "task", now)
+        self.assertLess(plan["floor"], unit["cost"])
+        self.assertLess(plan["ask"], unit["cost"])
+
+    def test_goods_do_not_have_automatic_loss_cut(self):
+        unit = {"sku": "GOOD-1", "kind": "goods", "cost": 700, "list_price": 1000, "grade": "A",
+                "expires_at": None}
+        plan = seller_r3.price_plan(unit, "task")
+        self.assertGreater(plan["floor"], unit["cost"])
+
+    def test_market_price_moves_the_ask_but_not_below_cost_or_above_the_cap(self):
+        unit = {"sku": "GOOD-1", "kind": "goods", "cost": 700, "list_price": 1000, "grade": "A", "expires_at": None}
+        plan = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"))
+        self.assertIn(plan["ask"], (900, 945))          # 1.00x on the volume arm, 1.05x on the margin arm
+        self.assertEqual((900, 5, "sku"), (plan["market"], plan["market_n"], plan["market_src"]))
+        self.assertEqual(721, seller_r3.price_plan(unit, "task", market=(500.0, 5, "sku"))["ask"])    # floor: cost x 1.03
+        self.assertEqual(990, seller_r3.price_plan(unit, "task", market=(2000.0, 5, "sku"))["ask"])   # cap: list x 0.99
+        self.assertIsNone(seller_r3.price_plan(unit, "task", market=(None, 0, "none"))["market"])
+
+    def test_category_pressure_moves_the_ask(self):
+        unit = {"sku": "GOOD-1", "kind": "goods", "cost": 700, "list_price": 1000, "grade": "A", "expires_at": None}
+        p = {"seller_volume_share": 1.0, "seller_markup": 1.0}
+        even = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p)
+        sought = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p, pressure={"opens": 30, "deals": 24, "opens_per_deal": 1.25, "close_rate": 0.8})
+        slow = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params=p, pressure={"opens": 30, "deals": 7, "opens_per_deal": 4.3, "close_rate": 0.23})
+        self.assertEqual((900, "even"), (even["ask"], even["regime"]))
+        self.assertEqual((945, "sought"), (sought["ask"], sought["regime"]))   # x 1.05
+        self.assertEqual((873, "slow"), (slow["ask"], slow["regime"]))         # x 0.97
+        self.assertEqual((864, 721), (even["floor"], slow["floor"]))           # 96% of the market holds unless slow
+
+    def test_an_underwater_unit_follows_the_market_after_six_hours(self):
+        now = time.time()
+        unit = {"sku": "SOFA", "kind": "goods", "cost": 1_740_000, "list_price": 2_320_000, "grade": "A", "expires_at": None,
+                "supplied_at": now - 8 * 3600}
+        p = {"seller_volume_share": 1.0, "seller_markup": 1.0}
+        plan = seller_r3.price_plan(unit, "t", now, params=p, market=(1_660_000.0, 50, "sku"))
+        self.assertEqual(("underwater", 1_740_000, 1_740_000), (plan["regime"], plan["ask"], plan["floor"]))   # ask 0.97x market but never under cost
+        fresh = seller_r3.price_plan(dict(unit, supplied_at=now - 1800), "t", now, params=p, market=(1_660_000.0, 50, "sku"))
+        self.assertEqual(1_792_200, fresh["floor"])                                   # half an hour old: cost x 1.03 still
+
+    def test_receipt_options_are_truthful_and_grade_sensitive(self):
+        options = seller_r3.receipt_options({"unit": "u1", "kind": "goods", "grade": "A"})
+        self.assertEqual(options, {"unit": "u1", "claim": "A", "cert": True, "warranty_hours": 6})
+
+    def test_policy_arm_is_stable(self):
+        unit = {"sku": "GOOD-1", "kind": "goods"}
+        self.assertEqual(seller_r3.policy_arm(unit, "task"), seller_r3.policy_arm(unit, "task"))
+
+    def test_tuner_knobs_move_the_arm_split_and_the_markup(self):
+        unit = {"sku": "GOOD-1", "kind": "goods", "cost": 700, "list_price": 1000, "grade": "A", "expires_at": None}
+        self.assertEqual("margin", seller_r3.policy_arm(unit, "task", volume_share=0.0))
+        self.assertEqual("volume", seller_r3.policy_arm(unit, "task", volume_share=1.0))
+        plain = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params={"seller_volume_share": 1.0, "seller_markup": 1.0})
+        marked = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params={"seller_volume_share": 1.0, "seller_markup": 1.10})
+        self.assertEqual((900, 990), (plain["ask"], marked["ask"]))        # 900 x 1.00, then x 1.10 = 990 (the cap too)
+        capped = seller_r3.price_plan(unit, "task", market=(900.0, 5, "sku"), params={"seller_volume_share": 0.0, "seller_markup": 1.15})
+        self.assertEqual(990, capped["ask"])                                # 900 x 1.05 x 1.15 = 1087 -> cap 0.99 x list
+
+
+if __name__ == "__main__":
+    unittest.main()
