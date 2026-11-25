@@ -1,0 +1,26 @@
+# keys and secrets: never commit
+*.pem
+.env
+.env.*
+# kit working files (exported to logs/ or memory/ when needed as evidence)
+.market/
+# derived state, rebuilt from events and the ledger
+memory/summary.json
+memory/cursor.json
+memory/plan.json
+memory/restock_planned.json
+memory/shop_asks.json
+memory/*.lock
+.venv/
+# default folders of compose.yaml when MARKET_DATA_DIR / MARKET_CLAUDE_DIR are not set
+/data/
+/claude-home/
+__pycache__/
+*.pyc
+memory/policy.lastgood.json
+# strategist side files next to the shared SKILL.md (its pause switch is a local choice)
+strategy/.strategist.lock
+strategy/.strategist-cooldown.json
+strategy/STRATEGIST_PAUSE
+# history copies of SKILL.md the strategist keeps next to it (strategist/skillfile.py)
+strategy/SKILL.md.*

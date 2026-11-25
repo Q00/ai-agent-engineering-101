@@ -1,0 +1,134 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Emulator.Dockerfile
+#1 transferring dockerfile: 1.28kB done
+#1 WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/amd64" (line 4)
+#1 WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/arm64" (line 5)
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/week08-agent:n36l
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/debian:bookworm-slim
+#3 ...
+
+#4 [auth] library/debian:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/debian:bookworm-slim
+#3 DONE 1.8s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [internal] load build context
+#6 transferring context: 3.19kB done
+#6 DONE 0.0s
+
+#7 [candidate 1/1] FROM docker.io/library/week08-agent:n36l@sha256:53bda93e1616e91496fe864daea04845d29280630b43d70fd1eff3091aa2bcc1
+#7 resolve docker.io/library/week08-agent:n36l@sha256:53bda93e1616e91496fe864daea04845d29280630b43d70fd1eff3091aa2bcc1 done
+#7 DONE 0.0s
+
+#8 [stage-1 1/6] FROM docker.io/library/debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3
+#8 resolve docker.io/library/debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3 done
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 0B / 28.14MB 0.2s
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 2.10MB / 28.14MB 0.5s
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 5.24MB / 28.14MB 0.8s
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 7.34MB / 28.14MB 0.9s
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 10.49MB / 28.14MB 1.2s
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 12.58MB / 28.14MB 1.4s
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 15.73MB / 28.14MB 1.7s
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 17.83MB / 28.14MB 1.8s
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 20.97MB / 28.14MB 2.1s
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 23.07MB / 28.14MB 2.3s
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 26.21MB / 28.14MB 2.6s
+#8 sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 28.14MB / 28.14MB 2.7s done
+#8 extracting sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4
+#8 extracting sha256:f791e47cf52abf7b364878f2141547e3781072e437f599f6632849d88fca8ca4 0.4s done
+#8 DONE 3.1s
+
+#9 [stage-1 2/6] RUN apt-get update     && apt-get install -y --no-install-recommends qemu-user     && rm -rf /var/lib/apt/lists/*
+#9 0.085 Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+#9 0.113 Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+#9 0.129 Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [34.8 kB]
+#9 0.141 Get:4 http://deb.debian.org/debian bookworm/main arm64 Packages [8689 kB]
+#9 0.904 Get:5 http://deb.debian.org/debian bookworm-updates/main arm64 Packages [6936 B]
+#9 0.905 Get:6 http://deb.debian.org/debian-security bookworm-security/main arm64 Packages [358 kB]
+#9 1.402 Fetched 9296 kB in 1s (6893 kB/s)
+#9 1.402 Reading package lists...
+#9 1.609 Reading package lists...
+#9 1.805 Building dependency tree...
+#9 1.853 Reading state information...
+#9 1.911 The following additional packages will be installed:
+#9 1.911   libcapstone4 libglib2.0-0 libnuma1 liburing2
+#9 1.911 Suggested packages:
+#9 1.911   low-memory-monitor
+#9 1.911 Recommended packages:
+#9 1.911   libglib2.0-data shared-mime-info xdg-user-dirs qemu-user-binfmt
+#9 1.932 The following NEW packages will be installed:
+#9 1.933   libcapstone4 libglib2.0-0 libnuma1 liburing2 qemu-user
+#9 1.959 0 upgraded, 5 newly installed, 0 to remove and 1 not upgraded.
+#9 1.959 Need to get 13.5 MB of archives.
+#9 1.959 After this operation, 116 MB of additional disk space will be used.
+#9 1.959 Get:1 http://deb.debian.org/debian bookworm/main arm64 libcapstone4 arm64 4.0.2-5 [533 kB]
+#9 2.020 Get:2 http://deb.debian.org/debian bookworm/main arm64 libglib2.0-0 arm64 2.74.6-2+deb12u9 [1316 kB]
+#9 2.151 Get:3 http://deb.debian.org/debian bookworm/main arm64 libnuma1 arm64 2.0.16-1 [20.3 kB]
+#9 2.155 Get:4 http://deb.debian.org/debian bookworm/main arm64 liburing2 arm64 2.3-3 [12.6 kB]
+#9 2.161 Get:5 http://deb.debian.org/debian bookworm/main arm64 qemu-user arm64 1:7.2+dfsg-7+deb12u18+b3 [11.7 MB]
+#9 3.242 debconf: delaying package configuration, since apt-utils is not installed
+#9 3.250 Fetched 13.5 MB in 1s (11.0 MB/s)
+#9 3.255 Selecting previously unselected package libcapstone4:arm64.
+#9 3.255 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6090 files and directories currently installed.)
+#9 3.257 Preparing to unpack .../libcapstone4_4.0.2-5_arm64.deb ...
+#9 3.258 Unpacking libcapstone4:arm64 (4.0.2-5) ...
+#9 3.299 Selecting previously unselected package libglib2.0-0:arm64.
+#9 3.299 Preparing to unpack .../libglib2.0-0_2.74.6-2+deb12u9_arm64.deb ...
+#9 3.300 Unpacking libglib2.0-0:arm64 (2.74.6-2+deb12u9) ...
+#9 3.352 Selecting previously unselected package libnuma1:arm64.
+#9 3.353 Preparing to unpack .../libnuma1_2.0.16-1_arm64.deb ...
+#9 3.353 Unpacking libnuma1:arm64 (2.0.16-1) ...
+#9 3.360 Selecting previously unselected package liburing2:arm64.
+#9 3.360 Preparing to unpack .../liburing2_2.3-3_arm64.deb ...
+#9 3.361 Unpacking liburing2:arm64 (2.3-3) ...
+#9 3.367 Selecting previously unselected package qemu-user.
+#9 3.368 Preparing to unpack .../qemu-user_1%3a7.2+dfsg-7+deb12u18+b3_arm64.deb ...
+#9 3.368 Unpacking qemu-user (1:7.2+dfsg-7+deb12u18+b3) ...
+#9 3.696 Setting up libglib2.0-0:arm64 (2.74.6-2+deb12u9) ...
+#9 3.699 No schema files found: doing nothing.
+#9 3.700 Setting up libnuma1:arm64 (2.0.16-1) ...
+#9 3.702 Setting up libcapstone4:arm64 (4.0.2-5) ...
+#9 3.704 Setting up liburing2:arm64 (2.3-3) ...
+#9 3.705 Setting up qemu-user (1:7.2+dfsg-7+deb12u18+b3) ...
+#9 3.707 Processing triggers for libc-bin (2.36-9+deb12u14) ...
+#9 DONE 3.8s
+
+#10 [stage-1 3/6] COPY --from=candidate / /target/
+#10 DONE 0.6s
+
+#11 [stage-1 4/6] RUN mkdir -p /phenom     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom -L /target -0 /phenom/python /target/usr/local/bin/python3.12 "$@"\n' > /phenom/python     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom -L /target "$@"\n' > /phenom/run     && chmod 755 /phenom/python /phenom/run     && mkdir -p /target/data     && cp -R /target/opt/agent/. /target/data/     && rm -rf /target/data/docker     && cp /target/opt/deploy/agent.container.json /target/data/agent.json
+#11 DONE 0.1s
+
+#12 [stage-1 5/6] COPY phenom_check.py /phenom/phenom_check.py
+#12 DONE 0.0s
+
+#13 [stage-1 6/6] WORKDIR /target/data
+#13 DONE 0.0s
+
+#14 exporting to image
+#14 exporting layers
+#14 exporting layers 4.1s done
+#14 exporting manifest sha256:4c5abd18d7e6db34864406a517d64476acfe8b52910568e0757f5b24a3015f6b done
+#14 exporting config sha256:4291002798263b2505eeb25b6b5309e451244e2944249300496edb64b60613b5 done
+#14 exporting attestation manifest sha256:992b4bb5b5bc431b1fc0de1ee1c1667e717176663b00d2ac3239da6cede39d2d done
+#14 exporting manifest list sha256:1273d7313d671f79291348235b17ecc32b3ec8508153b8b6b341fff6a13f5254 done
+#14 naming to docker.io/library/week08-agent:phenom-check done
+#14 unpacking to docker.io/library/week08-agent:phenom-check
+#14 unpacking to docker.io/library/week08-agent:phenom-check 1.6s done
+#14 DONE 5.6s
+
+ [33m2 warnings found (use docker --debug to expand):
+[0m - FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/amd64" (line 4)
+ - FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/arm64" (line 5)
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/oynei3bfv0xs23od1qpcuu5js

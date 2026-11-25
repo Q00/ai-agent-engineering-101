@@ -1,0 +1,1446 @@
+"""The last hour of raw market data and our own logs (seller, buyer, restock, forum, the kit's log),
+turned into a compact brief for the model.
+
+The model sees the brief, never the raw data, so the brief has to fit in a prompt (< 16 KB as JSON)
+and carry numbers a change can be argued from: our rank among real shops and buyers, what moved since
+the last run, prices against list price, why our deals fail. Text another agent wrote (shop pitches,
+forum posts, reviews) is kept apart under keys starting with "untrusted_", cut short and with angle
+brackets replaced, so decide.py can fence it off as data. Other shops' names and item names that are
+not catalog SKUs are untrusted too: leaders carry a neutral id (L1, L2, ...) and the name only under
+untrusted_name. Round 3 boards replace some Round 2 fields (ALL, surplus, forum, honest claims, refunds,
+the players table); both sets are read. Any source may be missing; the brief then just lacks that part.
+Our stock (inventory) and the focus SKUs (focus, chosen by strategist/focus.py) come from run.py.
+The ledger rows are the ones since the last run: rates over them divide by ledger_h, the hours they span.
+score splits our ALL into the market's weighted percentiles (weights parsed from its rules by
+strategist/facts.py), bands shows the last hour's settles by list price band (strategist/collect.py
+ledger_buckets), seller and buyer_log count our own decision logs of the window.
+From the SKU tables (collect.sku_tables, 6 h per SKU, 24 h per kind) and the trend scoring (strategist/trend.py):
+focus lists the candidates with their rates, our share, held units, market cover and gates, and price_check;
+economics has the line budget, turnover, unsold goods, spoilage, the big-ticket budget, the surge allowance
+left on our SKUs, p_clear against our floor per kind and the four expansion conditions; mix has the category
+leaves (market rate, our share, /api/stats deals since the last run) and what the top 3 shops' reviews name
+(counts only).
+"""
+import json
+import math
+import re
+import statistics
+from collections import Counter
+
+from strategist import collect
+
+ME = "psyoung82"
+LIMIT = 16000               # bytes of compact UTF-8 JSON
+# Round 2 fields, then Round 3 ones (board.html econShops/econBuyers); a missing field is None.
+SHOP_F = ("deals", "share", "visits", "stars", "reviews", "revenue", "profit",
+          "all", "stars_rank", "claims", "honest_claims", "broken", "refunds")
+BUYER_F = ("orders", "deals", "paid", "saved", "held", "hopeless", "all", "surplus", "forum", "served", "posts")
+INV_TOP = 8                 # SKUs listed by cost tied up
+FOOD_RISK_H = 24            # food with fewer hours left is at risk
+BIG_SETTLE = 100000         # a market settle of this amount or over is "big" in market_window.warranted_big
+FOCUS_TOP = 12
+LEAF_TOP = 8
+FREE_TOP = 8
+STOCKOUT_TOP = 6            # big-ticket SKUs that sell and are (nearly) sold out
+SLOW_TOP = 5                # big-ticket SKUs whose units sit
+SLOW_COVER_H = 48           # held / our daily rate above this many hours is a slow line
+HOLD_TOP = 6                # goods lines shown in economics.holding (the losing ones first, by cost)
+BRK_MIN_N = 5               # breakage rows with fewer sales are not rated (memory/query.BRK_MIN_N)
+BRK_TOP = 5
+C_FALLBACK = {"food": 0.51, "goods": 0.61}
+# plan 11-06 section 3(d): grow stock only while these hold
+EXPAND = {"turnover_day": 1.5, "unsold_goods_share": 0.20, "spoilage_share": 0.01, "balance": 10_000_000}
+TURN_MIN_H = 3              # hours of our 24 h sums before turnover per day is given
+SCORE_F = {"shop": ("book", "revenue", "stars"), "buyer": ("saved", "forum", "deals", "posts")}   # Patch 3.4: saved
+PEER_TOP = 5                # buyers listed in saved.peers (the best saved among those with PEER_MIN_DEALS deals)
+PEER_MIN_DEALS = 1000       # a peer must have closed this many deals: a kept share proven at volume
+SAVED_TARGETS = (0.40, 0.45)
+NEAR_MARKET_OFFER = 0.68      # big_ticket.floor_refusals: an offer at this share of list or more is at the market's price
+# SAVED_TARGETS: kept-per-deal values the saved projection is shown for, besides the current one
+NEAR_CAP = 0.10                 # a failed try whose last ask is within this of the cap
+BAND_NAMES = ("<20k", "20k-50k", "50k-100k", "100k-200k", "200k-500k", "500k-1M", ">=1M")
+STUCK_MIN_N = 3             # market settles of a SKU's grade in 6 h before its mean price is used for that SKU
+STUCK_TOP = 6               # SKUs listed in economics.stuck
+ARRIVE_TOP = 10             # focus/trend SKUs listed in economics.stuck.arrivals
+# market rules ("Supply: a unit's grade and cost are drawn when it arrives"): goods A 70%, B 20%, C 10%
+GOODS_DRAW = {"A": 0.70, "B": 0.20, "C": 0.10}
+# the class view the course grades (students only): the board fields behind student_shop and student_buyer
+CLASS_F = {"shop": ("book", "revenue", "stars_rank"), "buyer": ("saved", "deals", "posts", "forum")}
+
+
+# --- small helpers: every input may be missing or of the wrong type
+
+def _num(x):
+    return x if isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) else None
+
+
+def _dict(x):
+    return x if isinstance(x, dict) else {}
+
+
+def _rows(x):
+    return [r for r in x if isinstance(r, dict)] if isinstance(x, list) else []
+
+
+def _r(x, n=4):
+    return round(x, n) if isinstance(x, float) else x
+
+
+def _ratio(a, b):
+    a, b = _num(a), _num(b)
+    return round(a / b, 4) if a is not None and b else None
+
+
+def _median(xs):
+    return _r(statistics.median(xs), 3) if xs else None
+
+
+def _clip(s, n):
+    """Other agents' text: one line, no control characters or angle brackets, at most n characters."""
+    s = " ".join(re.sub(r"[\x00-\x1f\x7f]", " ", str(s if s is not None else "")).split())
+    s = s.replace("<", "‹").replace(">", "›")
+    return s if len(s) <= n else s[:n - 1] + "…"
+
+
+def _name(s, n=40):
+    return re.sub(r"[^\w.-]", "", str(s if s is not None else ""))[:n]
+
+
+def _login(row):
+    o = row.get("owner")
+    return o.get("login") if isinstance(o, dict) else o
+
+
+def _find(rows, me):
+    return next((r for r in rows if r.get("name") == me or r.get("player") == me or _login(r) == me), None)
+
+
+def our_url(board, me=ME):
+    """Our shop's card URL on the board ("" when not found)."""
+    return str(_dict(_dict(_find(_rows(_dict(board).get("shops")), me)).get("card")).get("url") or "").rstrip("/")
+
+
+def _ours(shop, me, our_url):
+    s = str(shop or "").rstrip("/")
+    return bool(s) and (s == me or s == our_url)
+
+
+# --- our standing
+
+def _rank(pool, mine, f, lower_better=False):
+    """rank 1 = best among rows that have f; pct 0..100, higher is better."""
+    v = _num(mine.get(f))
+    vals = [_num(r.get(f)) for r in pool if r is not mine]
+    vals = [x for x in vals if x is not None]
+    if v is None:
+        return {}
+    better = sum(1 for x in vals if (x < v if lower_better else x > v))
+    n = len(vals) + 1
+    return {f"{f}_rank": better + 1, f"{f}_pct": round(100 * (n - 1 - better) / (n - 1)) if n > 1 else 100}
+
+
+def _pool(rows, mine):
+    return [r for r in rows if r is not mine and not r.get("house") and (_num(r.get("deals")) or 0) > 0] + [mine]
+
+
+def _me(shops, buyers, players, me):
+    out = {}
+    s = _find(shops, me)
+    if s:
+        d = {f: _r(_num(s.get(f))) for f in SHOP_F}
+        d["conversion"] = _ratio(s.get("deals"), s.get("visits"))
+        pool = _pool(shops, s)
+        for f in ("all", "deals", "profit", "stars", "stars_rank"):
+            d.update(_rank(pool, s, f))
+        d["ranked"] = len(pool)
+        out["shop"] = d
+    b = _find(buyers, me)
+    if b:
+        d = {f: _r(_num(b.get(f))) for f in BUYER_F}
+        d["conversion"] = _ratio(b.get("deals"), b.get("orders"))
+        pool = _pool(buyers, b)
+        for f in ("all", "surplus", "deals"):
+            d.update(_rank(pool, b, f))
+        d.update(_rank(pool, b, "paid", lower_better=True))
+        d["ranked"] = len(pool)
+        out["buyer"] = d
+    p = _find(players, me)
+    if p:
+        out["player"] = _player(p, players)
+    return out
+
+
+def _flat(p):
+    """Numbers of a players row, nested ones flattened: {"total", "shop": {"all"}} -> total, shop_all."""
+    out = {}
+    for k, v in p.items():
+        if _num(v) is not None:
+            out[k] = _r(v)
+        elif isinstance(v, dict):
+            out.update({f"{k}_{kk}": _r(vv) for kk, vv in v.items() if _num(vv) is not None})
+    return out
+
+
+def _player(p, players):
+    d = dict(list(_flat(p).items())[:15])
+    if "total" in d:                                    # Round 3: rank by total among non-house players
+        pool = [_flat(r) for r in players if r is not p and not r.get("house")]
+        mine = {"total": d["total"]}
+        d.update(_rank(pool + [mine], mine, "total"))
+        d["ranked"] = len(pool) + 1
+    return d
+
+
+def _delta(me, prev, now):
+    pm = _dict(prev).get("me")
+    if not isinstance(pm, dict):
+        return None
+    pts = _num(_dict(prev).get("ts"))
+    out = {"hours": round((now - pts) / 3600, 2) if pts is not None else None}
+    for sec, d in me.items():
+        pd = _dict(pm.get(sec))
+        out[sec] = {k: (_r(v - pd[k]) if _num(pd.get(k)) is not None else None)
+                    for k, v in d.items() if _num(v) is not None}
+    return out
+
+
+def _leaders(shops, me):
+    """Top real shops by ALL (Round 3), deals and profit. A shop is "L<n>" in every list; its name and
+    pitch (other agents' text) appear once, in its first row, under untrusted_ keys."""
+    real = [s for s in shops if not s.get("house") and _find([s], me) is None]
+    ids = {}
+
+    def row(s):
+        first = id(s) not in ids
+        ids.setdefault(id(s), f"L{len(ids) + 1}")
+        r = {"id": ids[id(s)], **{f: _r(_num(s.get(f))) for f in ("all", "deals", "share", "stars", "profit", "revenue")},
+             "conversion": _ratio(s.get("deals"), s.get("visits"))}
+        if first:
+            r["untrusted_name"] = _clip(s.get("name"), 40)
+            r["untrusted_pitch"] = _clip(_dict(s.get("card")).get("description"), 160)
+        return r
+
+    top = lambda f: sorted((s for s in real if _num(s.get(f)) is not None), key=lambda s: -s[f])[:5]
+    out = {"by_all": [row(s) for s in top("all")]} if any(_num(s.get("all")) is not None for s in real) else {}
+    out["by_deals"] = [row(s) for s in top("deals")]
+    out["by_profit"] = [row(s) for s in top("profit")]
+    return out
+
+
+def _market(board, stats):
+    totals = {k: v for k, v in _dict(board.get("totals")).items() if _num(v) is not None}
+    st = _dict(stats)
+    return {"totals": totals, "round_stats": {k: st.get(k) for k in ("results", "deals", "walkaways")
+                                              if _num(st.get(k)) is not None}}
+
+
+# --- the window
+
+def _prices(trades, ledger, catalog, since, me, our_url):
+    """Deal prices per item: trades plus ledger results (the same deals share an id; counted once)."""
+    seen, obs = set(), {}
+
+    def add(did, item, price, ours):
+        price = _num(price)
+        if item is None or not price or price <= 0 or (did is not None and did in seen):
+            return
+        if did is not None:
+            seen.add(did)
+        key = item if isinstance(item, str) and item in catalog else _clip(item, 32)
+        obs.setdefault(key, []).append((price, ours))
+
+    for t in _rows(trades):
+        if (_num(t.get("ts")) or 0) >= since:
+            add(t.get("id"), t.get("item"), t.get("price"), _ours(t.get("shop"), me, our_url))
+    for r in ledger:
+        if r.get("kind") == "result":
+            d = _dict(r.get("data"))
+            rc = _dict(d.get("receipt"))
+            add(d.get("id"), rc.get("item"), rc.get("price"), _our_result(d, me, our_url))
+
+    out = []
+    for key, ps in sorted(obs.items(), key=lambda kv: (-len(kv[1]), kv[0]))[:15]:
+        c = catalog.get(key) if isinstance(catalog.get(key), list) and len(catalog[key]) >= 4 else None
+        lp = _num(c[2]) if c else None
+        ours = [p for p, o in ps if o]
+        # an item that is not a catalog SKU is a name another agent chose: data, not a key
+        row = {"key": key, "name": _clip(c[0], 40) if c else None} if c else {"key": None, "untrusted_item": key}
+        row |= {"n": len(ps),
+               "median": _median([p for p, _ in ps]), "list": lp,
+               "median_list": _median([round(p / lp, 4) for p, _ in ps]) if lp else None,
+               "ours_n": len(ours), "ours_median": _median(ours),
+               "ours_median_list": _median([round(p / lp, 4) for p in ours]) if lp and ours else None}
+        out.append(row)
+    return out
+
+
+def _our_result(d, me, our_url):
+    """Our shop's result: by the shop URL, or by the receipt's shop name (the URL of a quick tunnel
+    changes on every restart, so results from before a restart carry an older URL)."""
+    return _ours(d.get("shop"), me, our_url) or _ours(_dict(d.get("receipt")).get("shop"), me, our_url)
+
+
+def _window(ledger, me, our_url, gap, first):
+    """Counts over the ledger rows in the window. covered_s is the time they actually span: on a first
+    run (first) or after a gap it is far less than window_h, and partial says so."""
+    results = [_dict(r.get("data")) for r in ledger if r.get("kind") == "result"]
+    ts = [r["ts"] for r in ledger if _num(r.get("ts")) is not None]
+    kinds = Counter(_name(r.get("kind")) for r in ledger)
+    fails = Counter(_clip(k, 40) for d in results for k, ok in _dict(d.get("checks")).items() if ok is False)
+    side = lambda rows: {"results": len(rows), "verified": sum(1 for d in rows if d.get("verified") is True)}
+    big = [_dict(r.get("data")) for r in ledger if r.get("kind") == "settle"
+           and (_num(_dict(r.get("data")).get("amount")) or 0) >= BIG_SETTLE]
+    warranted = sum(1 for d in big if (_num(d.get("warranty_hours")) or 0) > 0)
+    return {"rows": len(ledger), "kinds": dict(kinds.most_common(10)), "orders": kinds.get("order", 0),
+            **side(results), "walkaways": sum(1 for d in results if not d.get("receipt")),
+            "failing_checks": dict(fails.most_common(8)),
+            "warranted_big": {"settles": len(big), "warranted": warranted, "share": _ratio(warranted, len(big))},
+            "our_shop": side([d for d in results if _our_result(d, me, our_url)]),
+            "our_buyer": side([d for d in results if d.get("buyer") == me]), "ledger_gap": bool(gap),
+            "covered_s": round(max(ts) - min(ts)) if ts else 0, "partial": bool(gap or first)}
+
+
+def _demand(summary):
+    """Our summary's demand vs supply by category (the market's /api/demand table counts SKUs, not demand, and
+    is no longer read); None without it."""
+    cats = _dict(_dict(summary).get("market_categories"))
+    rows = []
+    for k, v in cats.items():
+        dem, sup = _num(_dict(v).get("demand")), _num(_dict(v).get("supply"))
+        if dem is not None:
+            rows.append({"category": _clip(k, 40), "demand": _r(dem, 2), "supply": sup,
+                         "ratio": round((dem + 1) / ((sup or 0) + 1), 2)})
+    return {"source": "own summary", "top": sorted(rows, key=lambda r: -r["ratio"])[:10]} if rows else None
+
+
+def _choice_key(r):
+    c = r.get("choice")
+    k = str(r.get("kind"))
+    if isinstance(c, dict) and c.get("action"):
+        k += ":" + str(c["action"])
+    return _clip(k, 40)
+
+
+def _ops(own, posts, since, me):
+    dec = _dict(own.get("decisions"))
+    ms = lambda rows: _median([r["elapsed_ms"] for r in rows if _num(r.get("elapsed_ms")) is not None])
+    seller = _rows(dec.get("seller"))
+    orders = [r for r in _rows(dec.get("buyer")) if r.get("kind") == "order"]
+    no_deal = Counter(_clip(r.get("why"), 80) for r in orders if not isinstance(r.get("choice"), dict))
+    restock = [r for r in _rows(dec.get("restock")) if r.get("kind") == "restock"]
+    out = {"seller": {"n": len(seller), "by_choice": dict(Counter(map(_choice_key, seller)).most_common(10)),
+                      "median_ms": ms(seller)},
+           "buyer": {"orders": len(orders), "deals": sum(1 for r in orders if isinstance(r.get("choice"), dict)),
+                     "no_deal_why": dict(no_deal.most_common(5)), "median_ms": ms(orders)},
+           "reviews": len(_rows(dec.get("review"))),
+           "policy_errors": sum(1 for rows in dec.values() for r in _rows(rows) if r.get("kind") == "policy_error")}
+    if restock:
+        last = restock[-1]
+        inp, buy = _dict(last.get("inputs")), last.get("choice") if isinstance(last.get("choice"), list) else []
+        win, held = _dict(inp.get("window")), _dict(inp.get("stock"))
+        out["restock"] = {"runs": len(restock),
+                          # restock.py buys nothing while the supply window is closed (stock.window_lead_s)
+                          "window_closed_runs": sum(1 for r in restock if isinstance(r.get("rules"), list)
+                                                    and "stock.window_lead_s" in r["rules"]),
+                          "ts": last.get("ts"), "lines": len(buy),
+                          "buy": [{"sku": _name(_dict(b).get("sku")), "qty": _num(_dict(b).get("qty"))} for b in buy[:5]],
+                          "balance": _num(inp.get("balance")), "units": _num(inp.get("units")),
+                          "headroom": _num(inp.get("headroom")), "why": _clip(last.get("why"), 120),
+                          "window": {"open": win.get("open") if isinstance(win.get("open"), bool) else None,
+                                     "in_s": _num(win.get("in_s"))},
+                          "stock": {k: _num(held.get(k)) for k in ("skus", "units", "empty_picks", "overpriced")},
+                          # memory ingest per run: ran, skipped (window, locked, migration_pending) or error
+                          "ingest": dict(Counter(map(_ingest, restock)).most_common(5))}
+        planned = next((r for r in reversed(restock) if isinstance(_dict(r.get("inputs")).get("excluded"), dict)), None)
+        if planned:                                     # the last run that planned: why SKUs were left out
+            pin = _dict(planned.get("inputs"))
+            out["restock"]["excluded"] = {_name(k): _num(v) for k, v in list(pin["excluded"].items())[:12]}
+            out["restock"]["surge"] = _surge(pin.get("surge"))
+    acp = _rows(own.get("acp"))
+    # the kit logs the cause under "error" (refuse: the message; settle_refused: the failed checks)
+    refused = Counter(_clip(r.get("error") or r.get("reason"), 60)
+                      for r in acp if r.get("event") in ("refuse", "settle_refused"))
+    out["acp"] = {"events": dict(Counter(_name(r.get("event")) for r in acp)), "refusals": dict(refused.most_common(5))}
+    out["kit"] = _kit(_dict(own.get("kit")))
+    out["forum"] = _our_forum(posts, _rows(dec.get("forum")), since, me)
+    # logs whose window did not fit in what collect.read_own reads: their counts above are too low
+    out["truncated_logs"] = [_name(x) for x in own.get("truncated") or [] if isinstance(x, str)]
+    return out
+
+
+def _ingest(r):
+    ing = _dict(_dict(r.get("inputs")).get("ingest"))
+    return "error" if ing.get("error") else _clip(ing["skipped"], 20) if isinstance(ing.get("skipped"), str) else "ran"
+
+
+def _surge(v):
+    """The restock row's surge part ([{sku, factor, ...}] or {sku: factor}) as {sku: factor}, at most 8."""
+    if isinstance(v, dict):
+        pairs = list(v.items())
+    else:
+        pairs = [(_dict(x).get("sku"), _dict(x).get("factor")) for x in v] if isinstance(v, list) else []
+    return {_name(k): _num(f) for k, f in pairs[:8] if isinstance(k, str)}
+
+
+def _kit(k):
+    """collect._kit's counts; why our buyer did not pay quotes shops' answers, so it is untrusted."""
+    nums = {f: _num(k.get(f)) for f in ("lines", "starts", "orders", "errors", "tracebacks", "supply_bought",
+                                        "supply_units", "supply_cost", "paid", "paid_total", "pay_refused")}
+    refused = {_clip(f, 20): _num(n) for f, n in _dict(k.get("supply_refused")).items()}
+    why = sorted(((_num(n) or 0, w) for w, n in _dict(k.get("pay_refused_why")).items()), key=lambda x: -x[0])
+    return {**nums, "supply_refused": refused,
+            "untrusted_pay_refused_why": [{"n": n, "why": _clip(w, 80)} for n, w in why[:5]]}
+
+
+def _votes(p):
+    if _num(p.get("score")) is not None:
+        return p["score"]
+    if _num(p.get("likes")) is not None:
+        return p["likes"] - (_num(p.get("dislikes")) or 0)
+    return _num(p.get("votes")) or 0
+
+
+def _our_forum(posts, rows, since, me):
+    """Our buyer's posts on the public forum (each one counts toward buyer ALL, unless hidden) and the
+    forum hook's decisions: posted, or skipped and why. The forum API returns only the newest 100 posts:
+    sample_covered_s is the time they span, so posts_window is a lower bound when it is under the window."""
+    posts = _rows(posts)
+    ours = [p for p in posts if (p.get("author") == me or _login(p) == me) and p.get("role") == "buyer"]
+    recent = [p for p in ours if (_num(p.get("ts")) or 0) >= since]
+    skipped = Counter(_clip(r.get("why"), 40) for r in rows if _dict(r.get("choice")).get("posted") is False)
+    ts = [p["ts"] for p in posts if _num(p.get("ts")) is not None]
+    return {"sample_covered_s": int(max(ts) - min(ts)) if ts else None,
+            "posts": len(ours), "posts_window": len(recent),
+            "mean_score": round(sum(map(_votes, ours)) / len(ours), 2) if ours else None,
+            "likes": sum(_num(p.get("likes")) or 0 for p in ours),
+            "dislikes": sum(_num(p.get("dislikes")) or 0 for p in ours),
+            "posted": sum(1 for r in rows if _dict(r.get("choice")).get("posted") is True),
+            "skipped": dict(skipped.most_common(5))}
+
+
+def _forum(posts, since):
+    posts = _rows(posts)
+    top = sorted(posts, key=lambda p: -_votes(p))[:5]
+    return {"n": len(posts), "n_window": sum(1 for p in posts if (_num(p.get("ts")) or 0) >= since),
+            "untrusted_top": [{"author": _clip(p.get("author"), 40), "votes": _votes(p), "ts": _num(p.get("ts")),
+                               "text": _clip(p.get("text") or p.get("body") or p.get("title"), 200)} for p in top]}
+
+
+def _reviews(rows):
+    rows = sorted(_rows(rows), key=lambda r: -(_num(r.get("ts")) or 0))
+    stars = [r["stars"] for r in rows if _num(r.get("stars")) is not None]
+    hist = Counter(str(round(s)) for s in stars)
+    return {"n": len(rows), "mean": round(sum(stars) / len(stars), 2) if stars else None,
+            "stars_hist": {k: hist.get(k, 0) for k in ("1", "2", "3", "4", "5")},
+            "untrusted_last": [{"stars": _num(r.get("stars")), "ts": _num(r.get("ts")),
+                                "text": _clip(r.get("review"), 120)} for r in rows[:5]]}
+
+
+def _inventory(inv, ledger, our_url, me, pol, now, ledger_h, flows, known):
+    """Our stock from .market/inventory.json: cost against the D1 cap, the SKUs that tie up the most money (how
+    old, food hours left, our sales per hour over the ledger rows' ledger_h hours, hours of cover at that rate),
+    stale goods, food near expiry, expired units, and the units in / sold / gone unsold since the last run (None
+    on the first run). Our settles are those to our shop URL or of a unit we hold or held at the last run (known)."""
+    if "units" not in _dict(inv):
+        return None
+    units = _rows(inv["units"])
+    st, se = _dict(_dict(pol).get("stock")), _dict(_dict(pol).get("seller"))
+    live = [u for u in units if u.get("grade") != "expired"]
+    cost = lambda us: round(sum(_num(u.get("cost")) or 0 for u in us))
+    known = set(known) | {str(u.get("unit")) for u in units}
+    sold = Counter(d.get("sku") for d in (_dict(r.get("data")) for r in ledger if r.get("kind") == "settle")
+                   if _ours(d.get("shop"), me, our_url) or str(d.get("unit")) in known)
+    by = {}
+    for u in live:
+        by.setdefault(u.get("sku"), []).append(u)
+
+    def row(sku, us):
+        rate = sold[sku] / ledger_h
+        ages = [now - t for t in (_num(u.get("supplied_at")) for u in us) if t is not None]
+        left = [(t - now) / 3600 for t in (_num(u.get("expires_at")) for u in us if u.get("kind") == "food")
+                if t is not None]
+        return {"sku": _name(sku), "qty": len(us), "cost": cost(us),
+                "age_h": round(max(ages) / 3600, 1) if ages else None,
+                "food_left_h": round(min(left), 1) if left else None, "sales_per_h": _r(rate, 2),
+                "cover_h": round(len(us) / rate, 1) if rate else None}
+
+    stale_s = (_num(se.get("goods_stale_days")) or math.inf) * 86400
+    stale = [u for u in live if u.get("kind") == "goods" and now - (_num(u.get("supplied_at")) or now) > stale_s]
+    risk = [u for u in live if u.get("kind") == "food"
+            and (_num(u.get("expires_at")) or math.inf) - now < FOOD_RISK_H * 3600]
+    expired = [u for u in units if u.get("grade") == "expired"]
+    balance, inv_cost, share = _num(_dict(inv).get("balance")), cost(live), _num(st.get("inventory_cap_share"))
+    return {"balance": balance, "inv_cost": inv_cost,
+            "cap": round(share * (balance + inv_cost)) if balance is not None and share is not None else None,
+            "units": len(live), "skus": len(by),
+            "top": [row(k, us) for k, us in sorted(by.items(), key=lambda kv: -cost(kv[1]))[:INV_TOP]],
+            "stale_goods": {"n": len(stale), "cost": cost(stale)}, "food_at_risk": {"n": len(risk), "cost": cost(risk)},
+            "expired": {"n": len(expired), "cost": cost(expired)}, "since_last_run": flows}
+
+
+def _focus(f, inv):
+    """The focus and trend lists now and as this run chose them, the top candidates of strategist/trend.py (market
+    settles per hour over 6 h and 1 h, our share of them, units we hold, hours the market's shelves cover, the
+    surge factor and free units left, the margin, score and gates), price_check, and forum mentions per SKU (a
+    hint only: the choice never reads them)."""
+    held = Counter(u.get("sku") for u in _rows(_dict(inv).get("units")) if u.get("grade") != "expired")
+    nxt, tnxt = [_name(s) for s in f.get("next") or []], [_name(s) for s in f.get("trend_next") or []]
+    keys = ("rate6", "rate1", "share", "cover_h", "shops", "p_clear", "f_now", "free_left", "margin", "score")
+    return {"current": [_name(s) for s in f.get("current") or []], "next": nxt,
+            "trend_current": [_name(s) for s in f.get("trend_current") or []], "trend_next": tnxt,
+            "covered_h": _num(f.get("covered_h")),
+            "candidates": [{"sku": _name(r.get("sku")), "kind": _name(r.get("kind")),
+                            "list": "F" if r.get("sku") in nxt else "T" if r.get("sku") in tnxt else None,
+                            "held": held[r.get("sku")]} | {k: _num(r.get(k)) for k in keys}
+                           | {"gates": [_name(g) for g in r.get("gates") or []]}
+                           for r in _rows(f.get("candidates"))[:FOCUS_TOP]],
+            "price_check": [{"sku": _name(r.get("sku"))} | {k: _num(r.get(k)) for k in
+                                                            ("held", "s6", "p_clear", "our_floor_list")}
+                            | {"judged": r.get("judged") is True} for r in _rows(f.get("price_check"))[:6]],
+            "forum_mentions": {_name(k): _num(v) for k, v in _dict(f.get("forum_mentions")).items()}}
+
+
+# --- economics (plan 11-06 section 3(d)) and the market mix, from the SKU tables
+
+def _economics(tables, own, pol, market, catalog, now):
+    """Line budget (supply lines and units of the window from the kit log, SKUs held, refill_h = SKUs held / lines
+    per hour), turnover (24 h cost of goods sold / stock cost, per day; scaled to a day while the sums span
+    day_h < 24 hours, None under TURN_MIN_H), unsold goods (goods units held 24 h or more
+    of SKUs we sold none of in 24 h, as a share of stock cost), spoilage (24 h expired cost / cost of goods sold),
+    the big-ticket budget (goods listed above stock.big_ticket_list: held cost against stock.big_ticket_share x
+    inventory_cap_share x (cash + stock cost)), the free surge units left on our SKUs, p_clear per kind against our
+    floor/list, and the expansion conditions. None without tables.
+    capital: the D1 headroom as restock computes it, what is left of the big-ticket budget, the storage cost a day
+    (market fact storage_pct_day) and the carry (storage a day / 24 h margin at the goods p_clear): what one more
+    unit of stock costs against what it earns. stockouts: big-ticket SKUs we sold in 6 h (o6) and hold at most one
+    unit of (their ACP sessions in the window: created, completed), with the market's 6 h settles (s6); demand they
+    carried that our shelf cannot serve (sold_out_share: of the big-ticket SKUs we sold, the share sold out); and
+    slow lines (held cost whose cover at our 24 h rate is over SLOW_COVER_H hours, or that sold none).
+    holding: _holding, every goods line against the storage rule. refunds_24h: what our warranty refunds paid back
+    over the 24 h sums (a refund is the full price, and the unit is gone), as a share of paid revenue and of the
+    margin (revenue - cost of goods sold). stuck: _stuck, goods whose cost is above the market's price for their
+    grade, and the focus/trend SKUs whose new units would land there."""
+    t = _dict(tables)
+    if not t:
+        return None
+    inv, st, se = _dict(own.get("inventory")), _dict(_dict(pol).get("stock")), _dict(_dict(pol).get("seller"))
+    units = [u for u in _rows(inv.get("units")) if u.get("grade") != "expired"]
+    cost = lambda us: round(sum(_num(u.get("cost")) or 0 for u in us))
+    inv_cost, balance = cost(units), _num(inv.get("balance"))
+    kit, wh = _dict(own.get("kit")), _num(own.get("window_h")) or 1
+    lines, got = _num(kit.get("supply_bought")), _num(kit.get("supply_units"))
+    every = _num(_dict(_dict(market).get("facts")).get("supply_every_min")) or 20
+    skus = len({u.get("sku") for u in units})
+    lines_h = lines / wh if lines is not None else None
+    day = _dict(t.get("day"))
+    o24 = _dict(day.get("o"))
+    cogs = _num(day.get("cogs")) or 0
+    unsold = [u for u in units if u.get("kind") == "goods" and not o24.get(u.get("sku"))
+              and now - (_num(u.get("supplied_at")) or now) >= 86400]
+    bmax = _num(st.get("big_ticket_list"))
+    big = [u for u in units if u.get("kind") == "goods" and bmax is not None
+           and (_list_price(catalog, u.get("sku")) or 0) > bmax]
+    share = _num(st.get("big_ticket_share")) if "big_ticket_share" in st else 0.40
+    cap = _num(st.get("inventory_cap_share"))
+    budget = round(share * cap * (balance + inv_cost)) if None not in (share, cap, balance) else None
+    # per day: the 24 h sums scaled up while they span less (None under TURN_MIN_H: too few hours to say)
+    day_h = _num(day.get("h"))
+    turnover = round(cogs / inv_cost * 24 / day_h, 2) if inv_cost and day_h and day_h >= TURN_MIN_H else None
+    unsold_share = round(cost(unsold) / inv_cost, 3) if inv_cost else None
+    spoil = round((_num(day.get("exp")) or 0) / cogs, 4) if cogs else None
+    sp = _dict(_dict(market).get("supply_prices"))
+    free = _num(sp.get("free")) if _num(sp.get("free")) is not None else 50
+    su, rows = _dict(_dict(market).get("surge_units")), _dict(t.get("sku"))
+    u1h = {s: max(_num(_dict(rows.get(s)).get("u1")) or 0, _num(su.get(s)) or 0) for s in {u.get("sku") for u in units}}
+    left = sorted(((s, free - u) for s, u in u1h.items() if u > 0 and isinstance(s, str)), key=lambda x: x[1])
+    pc, ck = _dict(t.get("p_clear")), _dict(t.get("c_kind"))
+    fl, fcm = _num(se.get("floor_list")), _num(se.get("floor_cost_mult"))
+    kinds = {}
+    for k in ("food", "goods"):
+        c = _num(ck.get(k))
+        kinds[k] = {"p_clear_6h": _num(_dict(pc.get(k)).get("h6")), "p_clear_24h": _num(_dict(pc.get(k)).get("h24")),
+                    "n_24h": _num(_dict(pc.get(k)).get("n24")), "our_cost_list": c,
+                    "our_floor_list": round(max(fl, fcm * (c or C_FALLBACK[k])), 3) if fl is not None and fcm else None}
+    cond = {"turnover_day": turnover, "unsold_goods_share": unsold_share, "spoilage_share": spoil, "balance": balance}
+    capital = _capital(units, big, balance, inv_cost, budget, st, market, kinds, day_h, cogs, _num(day.get("rev")))
+    breakage = _breakage(own, units, catalog)
+    dem = _demand_model(own, st, now)
+    stockouts = _stockouts(big, rows, o24, day_h, _rows(own.get("acp")), catalog, bmax)
+    holding = _holding(units, o24, day_h, capital.get("storage_pct_day"), capital.get("margin_24h"),
+                       (_num(st.get("end_ts")) - now) / 3600 if _num(st.get("end_ts")) is not None else None)
+    ok = {k: (v >= EXPAND[k] if k in ("turnover_day", "balance") else v <= EXPAND[k] if k == "unsold_goods_share"
+              else v < EXPAND[k]) if v is not None else None for k, v in cond.items()}
+    rev, ref = _num(day.get("rev")) or 0, _num(day.get("ref")) or 0
+    refunds = {"refunded": round(ref), "of_rev": round(ref / rev, 4) if rev else None,
+               "of_margin": round(ref / (rev - cogs), 3) if rev > cogs else None}
+    stuck = _stuck(units, rows, st, catalog, now, capital.get("storage_pct_day"))
+    return {"covered_h": _num(t.get("covered_h")),
+            "lines": {"lines_h": _r(lines_h, 2), "lines_window": round(lines_h * every / 60, 1) if lines_h else None,
+                      "units_line": round(got / lines, 1) if lines and got is not None else None, "skus_held": skus,
+                      "refill_h": round(skus / lines_h, 2) if lines_h else None},
+            "stock_cost": inv_cost, "cogs_24h": round(cogs), "rev_24h": _num(day.get("rev")), "day_h": day_h,
+            "big_ticket": {"skus": len({u.get("sku") for u in big}), "held_cost": cost(big), "budget": budget,
+                           "of_budget": round(cost(big) / budget, 3) if budget else None, "share_key": share},
+            "surge_free_left": {_name(s): v for s, v in left[:FREE_TOP]},
+            "kinds": kinds, "expand": cond, "expand_ok": ok, "expand_all_ok": all(v is True for v in ok.values()),
+            "capital": capital, "stockouts": stockouts, "holding": holding, "breakage": breakage, "demand": dem,
+            "refunds_24h": refunds, "stuck": stuck}
+
+
+def _demand_model(own, st, now):
+    """The demand model's hour-of-day profile (market settles per hour of day), the factor for the coming cover
+    window and the peak hours; None without a profile."""
+    from memory import demand as dm
+    p = _dict(_dict(own.get("summary")).get("hour_profile"))
+    if not p and not own.get("forecast"):
+        return None
+    summary = {"market": {"hour_profile": p}}
+    peak = sorted(p.items(), key=lambda kv: -(_num(kv[1]) or 0))[:4]
+    fc = _dict(own.get("forecast"))
+    mult = dm.load_forecast(fc, now, {"stock": st})
+    analyst = {"fresh": bool(mult), "n": len(mult), "age_min": round((now - (_num(fc.get("ts")) or now)) / 60) if fc else None,
+               "top": [{"sku": _name(s), "mult": m, "why": _clip(_dict(fc.get("why")).get(s), 120)}
+                       for s, m in sorted(mult.items(), key=lambda kv: -abs(kv[1] - 1))[:5]],
+               "mult_max": _num(st.get("analyst_mult_max"))}
+    return {"factor_now": dm.hour_factor(summary, now, (_num(st.get("cover_min")) or 90) / 60),
+            "peak_hours": [h for h, _ in peak], "profile": {h: _num(v) for h, v in sorted(p.items())},
+            "on": bool(st.get("demand_model")), "share_max": _num(st.get("demand_share_max")), "analyst": analyst}
+
+
+def _breakage(own, units, catalog):
+    """The market's goods breakage per grade (memory: market.breakage, broken within 6 h / sold, joined by unit)
+    and the risk in our shelf: held goods units by SKU x grade with the table's upper bound (SKU row, else
+    category, else grade), the top BRK_TOP by held x upper, and the expected breaks of the shelf."""
+    b = _dict(_dict(own.get("summary")).get("market_breakage"))
+    cell = lambda v: {k: _num(_dict(v).get(k)) for k in ("n", "k", "q", "upper")}
+    grade = {g: cell(v) for g, v in _dict(b.get("grade")).items() if isinstance(v, dict)}
+
+    def look(sku, g):
+        c = catalog.get(sku) if isinstance(sku, str) else None
+        leaf = str(c[1]).split(">")[-1] if isinstance(c, list) and len(c) > 1 and c[1] else None
+        for level, key in (("sku", sku), ("cat", leaf), ("grade", None)):
+            t = _dict(b.get(level))
+            row = _dict(t.get(g)) if key is None else _dict(_dict(t.get(key)).get(g))
+            if (_num(row.get("n")) or 0) >= BRK_MIN_N and _num(row.get("upper")) is not None:
+                return row, level
+        return None, None
+
+    held = Counter((u.get("sku"), u.get("grade")) for u in units if u.get("kind") == "goods" and u.get("grade") in ("A", "B", "C"))
+    rows, expected = [], 0.0
+    for (sku, g), n in held.items():
+        row, level = look(sku, g)
+        if row is None:
+            continue
+        expected += n * (_num(row.get("q")) or 0)
+        rows.append({"sku": _name(sku), "grade": g, "held": n, "q": _num(row.get("q")), "upper": _num(row.get("upper")),
+                     "n": _num(row.get("n")), "level": level})
+    rows.sort(key=lambda r: -(r["held"] * (r["upper"] or 0)))
+    return {"grade": grade, "held_risk": rows[:BRK_TOP], "held_expected_breaks": round(expected, 1),
+            "held_goods_rated": sum(r["held"] for r in rows), "held_goods": sum(held.values())}
+
+
+def _capital(units, big, balance, inv_cost, budget, st, market, kinds, day_h, cogs, rev):
+    """See _economics. headroom = min(cap x (cash + stock) - stock, cash - cash_floor), as restock's D1; margin_24h =
+    (revenue - cost of goods sold) / cost of goods sold over the 24 h sums; carry_day = storage a day / stock cost;
+    hold_vs_margin = carry_day x 24 / (margin_24h / (day_h / 24)): above 1 a day of holding costs more than selling
+    earns, so clearing stale goods below cost pays (None without the numbers)."""
+    cap, floor_ = _num(st.get("inventory_cap_share")), _num(st.get("cash_floor"))
+    cost = lambda us: round(sum(_num(u.get("cost")) or 0 for u in us))
+    goods = cost([u for u in units if u.get("kind") == "goods"])
+    pct = _num(_dict(_dict(market).get("facts")).get("storage_pct_day"))
+    storage = round(goods * pct / 100) if pct is not None else None
+    headroom = (round(max(0, min(cap * (balance + inv_cost) - inv_cost, balance - (floor_ or 0))))
+                if None not in (cap, balance) else None)
+    margin = round((rev - cogs) / cogs, 3) if cogs and rev is not None else None
+    carry = round(storage / inv_cost, 4) if storage is not None and inv_cost else None
+    hold = (round(carry / (margin * 24 / day_h), 2) if carry is not None and margin and margin > 0 and day_h
+            else None)
+    return {"cash": balance, "stock_cost": inv_cost, "goods_cost": goods, "cash_floor": floor_, "headroom": headroom,
+            "big_ticket_free": round(budget - cost(big)) if budget is not None else None,
+            "storage_pct_day": pct, "storage_cost_day": storage, "margin_24h": margin, "carry_day": carry,
+            "hold_vs_margin": hold, "stock_at_cost": _dict(_dict(market).get("facts")).get("book_counts_stock_at_cost")}
+
+
+def _holding(units, o24, day_h, pct, margin, hours_left):
+    """See _economics. The hold test per goods line (SKU): cover_d = held / our 24 h rate in days (a line that
+    sold none is held to the end of the round), capped at the days left; hold_share = cover_d x storage_pct_day /
+    100, the storage the line pays before it is gone as a share of its cost; losing = hold_share above margin_turn,
+    the margin one turn of stock earns (capital.margin_24h). capital.hold_vs_margin is the same test on the whole
+    shelf, which a few slow lines pass while they lose: this is where a storage raise lands line by line. Lines:
+    the losing ones first, then by cost, HOLD_TOP of them. Without the storage fact nothing is judged."""
+    days_left = max(0.0, hours_left / 24) if hours_left is not None else None
+    held, cost = Counter(), Counter()
+    for u in units:
+        if u.get("kind") == "goods":
+            held[u.get("sku")] += 1
+            cost[u.get("sku")] += _num(u.get("cost")) or 0
+    lines = []
+    for s, n in held.items():
+        rd = (o24.get(s) or 0) / day_h * 24 if day_h else None
+        cover = n / rd if rd else days_left
+        if cover is not None and days_left is not None:
+            cover = min(cover, days_left)
+        share = round(cover * pct / 100, 4) if cover is not None and pct is not None else None
+        losing = (share > margin) if share is not None and margin is not None else None
+        lines.append({"sku": _name(s), "held": n, "cost": round(cost[s]), "sold_24h": o24.get(s) or 0,
+                      "cover_d": round(cover, 2) if cover is not None else None, "hold_share": share, "losing": losing})
+    lines.sort(key=lambda x: (not x["losing"], -x["cost"]))
+    losing = [x for x in lines if x["losing"]]
+    goods = sum(cost.values())
+    return {"storage_pct_day": pct, "margin_turn": margin, "days_left": round(days_left, 2) if days_left is not None else None,
+            "goods_lines": len(lines), "losing_lines": len(losing) if pct is not None else None,
+            "losing_cost": round(sum(x["cost"] for x in losing)) if pct is not None else None,
+            "losing_share": round(sum(x["cost"] for x in losing) / goods, 3) if pct is not None and goods else None,
+            "lines": lines[:HOLD_TOP]}
+
+
+def _over(p, grade):
+    """The share of a grade's supply draws whose cost/list lands above p, the costs spread evenly over the
+    grade's band (policy.COST_SHARE); None without p."""
+    import policy
+    lo, hi = policy.COST_SHARE.get(grade, (None, None))
+    if p is None or lo is None:
+        return None
+    return round(min(1.0, max(0.0, (hi - p) / (hi - lo))), 3)
+
+
+def _stuck(units, rows, st, catalog, now, pct):
+    """See _economics. Goods units whose cost/list is above what the market pays for their grade: our floor is the
+    cost, so they do not sell at it, while the cheaper units of the same draw do (we sell the cheap ones and keep
+    the dear ones). The market price is the mean paid/list of the SKU's settles of that grade over 6 h
+    (table_view pg6) with STUCK_MIN_N or more, else the goods-wide mean of the grade over the same 6 h; no_price:
+    units with neither. storage_day: what they pay in storage a day. arrivals: for the focus and trend SKUs, the
+    share of new goods units expected to land over the market (GOODS_DRAW x _over per grade): a SKU with a high
+    share adds stuck stock with every refill."""
+    goods = [u for u in units if u.get("kind") == "goods"]
+    wide = {}
+    for g in ("A", "B", "C"):
+        x = n = 0
+        for s, r in rows.items():
+            if _kind_of(catalog, s) == "goods":
+                p, k = (_dict(r).get("pg6") or {}).get(g) or (None, 0)
+                if _num(p) and _num(k):
+                    x, n = x + p * k, n + k
+        wide[g] = round(x / n, 3) if n else None
+
+    def price(sku, g):
+        p, k = (_dict(_dict(rows.get(sku)).get("pg6")).get(g)) or (None, 0)
+        return p if _num(p) and (_num(k) or 0) >= STUCK_MIN_N else wide.get(g)
+
+    stuck, no_price = [], []
+    for u in goods:
+        lp, c, g = _list_price(catalog, u.get("sku")) or _num(u.get("list_price")), _num(u.get("cost")), u.get("grade")
+        p = price(u.get("sku"), g)
+        if not lp or c is None:
+            continue
+        if p is None:
+            no_price.append(u)
+        elif c / lp > p:
+            stuck.append(u)
+    cost = lambda us: round(sum(_num(u.get("cost")) or 0 for u in us))
+    age = lambda u: (now - (_num(u.get("supplied_at")) or now)) / 3600
+    focus, trend = set(st.get("focus_skus") or ()), set(st.get("trend_skus") or ())
+    by = {}
+    for u in stuck:
+        by.setdefault(u.get("sku"), []).append(u)
+    held = Counter(u.get("sku") for u in goods)
+    skus = []
+    for s, us in sorted(by.items(), key=lambda kv: -cost(kv[1]))[:STUCK_TOP]:
+        lp = _list_price(catalog, s) or _num(us[0].get("list_price"))
+        skus.append({"sku": _name(s), "held": held[s], "stuck": len(us), "stuck_cost": cost(us),
+                     "cost_list": _r(_median([_num(u.get("cost")) / lp for u in us]), 3) if lp else None,
+                     "market_list": {g: price(s, g) for g in sorted({u.get("grade") for u in us})},
+                     "age_h": round(_median([age(u) for u in us]), 1), "focus": s in focus, "trend": s in trend})
+    arrivals = []
+    for s in focus | trend:
+        shares = {g: _over(price(s, g), g) for g in GOODS_DRAW}
+        if _kind_of(catalog, s) != "goods" or any(v is None for v in shares.values()):
+            continue
+        arrivals.append({"sku": _name(s), "over_market": round(sum(GOODS_DRAW[g] * v for g, v in shares.items()), 3),
+                         "A_list": price(s, "A"), "focus": s in focus})
+    arrivals.sort(key=lambda x: -x["over_market"])
+    gc = cost(goods)
+    return {"n": len(stuck), "cost": cost(stuck), "share_of_goods": round(cost(stuck) / gc, 3) if gc else None,
+            "storage_day": round(cost(stuck) * pct / 100) if pct is not None else None,
+            "by_grade": {g: {"n": sum(1 for u in stuck if u.get("grade") == g),
+                             "cost": cost([u for u in stuck if u.get("grade") == g])} for g in ("A", "B", "C")},
+            "held_over_24h": {"n": sum(1 for u in stuck if age(u) >= 24), "cost": cost([u for u in stuck if age(u) >= 24])},
+            "held_over_48h": {"n": sum(1 for u in stuck if age(u) >= 48), "cost": cost([u for u in stuck if age(u) >= 48])},
+            "no_price": {"n": len(no_price), "cost": cost(no_price)}, "market_wide": wide,
+            "skus": skus, "arrivals": arrivals[:ARRIVE_TOP]}
+
+
+def _stockouts(big, rows, o24, day_h, acp, catalog, bmax):
+    """See _economics. big: our big-ticket units; rows: table_view's sku table (s6 market settles, o6 ours); acp: the
+    window's ACP session rows (event create/complete per sku); bmax: stock.big_ticket_list, so a sold-out SKU we no
+    longer hold counts only when the catalog lists it as goods above that line."""
+    held = Counter(u.get("sku") for u in big)
+    cost = Counter()
+    for u in big:
+        cost[u.get("sku")] += _num(u.get("cost")) or 0
+    big_skus = set(held) | {s for s, r in rows.items() if (_num(_dict(r).get("o6")) or 0) > 0 and isinstance(s, str)
+                            and bmax is not None and (_list_price(catalog, s) or 0) > bmax
+                            and _kind_of(catalog, s) == "goods" and s not in held}
+    sess = {}
+    for r in acp:
+        s, ev = r.get("sku"), r.get("event")
+        if isinstance(s, str) and ev in ("create", "complete"):
+            sess.setdefault(s, Counter())[ev] += 1
+    sold = [s for s in big_skus if (_num(_dict(rows.get(s)).get("o6")) or 0) > 0]
+    out = []
+    for s in sold:
+        if held[s] > 1:
+            continue
+        r, lp = _dict(rows.get(s)), _list_price(catalog, s)
+        out.append({"sku": _name(s), "list": lp, "held": held[s], "o6": _num(r.get("o6")), "s6": _num(r.get("s6")),
+                    "sessions": {k: sess.get(s, Counter())[k] for k in ("create", "complete")}})
+    out.sort(key=lambda x: -((x["o6"] or 0) * (x["list"] or 0)))
+    rate_d = lambda s: (o24.get(s) or 0) / day_h * 24 if day_h else None
+    slow = []
+    for s, n in held.items():
+        if n < 2:
+            continue
+        rd = rate_d(s)
+        cover = round(n / rd * 24, 1) if rd else None
+        if cover is None or cover > SLOW_COVER_H:
+            slow.append({"sku": _name(s), "held": n, "cost": round(cost[s]), "sold_24h": o24.get(s) or 0, "cover_h": cover})
+    slow.sort(key=lambda x: -x["cost"])
+    return {"big_skus_sold_6h": len(sold), "sold_out": len(out),
+            "sold_out_share": round(len(out) / len(sold), 2) if sold else None,
+            "winners_sold_out": out[:STOCKOUT_TOP], "slow_lines": slow[:SLOW_TOP],
+            "slow_cost": round(sum(x["cost"] for x in slow))}
+
+
+def _list_price(catalog, sku):
+    c = catalog.get(sku) if isinstance(sku, str) else None
+    return _num(c[2]) if isinstance(c, list) and len(c) > 2 else None
+
+
+def _kind_of(catalog, sku):
+    c = catalog.get(sku) if isinstance(sku, str) else None
+    return c[3] if isinstance(c, list) and len(c) > 3 and isinstance(c[3], str) else None
+
+
+def _mix(tables, raw, catalog):
+    """The category leaves the market settles most over 6 h (per hour, our share, /api/stats deals per hour since
+    the last run) and the top 3 shops' review counts by SKU and leaf. None without either."""
+    t = _dict(tables)
+    rows, h6 = _dict(t.get("sku")), _num(t.get("h6")) or 6
+    leaves = {}
+    for sku, r in rows.items():
+        c = catalog.get(sku)
+        leaf = str(c[1] or "").split(">")[-1] if isinstance(c, list) and len(c) > 1 else None
+        if leaf and isinstance(r, dict):
+            x = leaves.setdefault(leaf, [0, 0])
+            x[0] += _num(r.get("s6")) or 0
+            x[1] += _num(r.get("o6")) or 0
+    ld = _dict(raw.get("leaf_deltas"))
+    dn, dh = _dict(ld.get("n")), _num(ld.get("h"))
+    top = sorted(leaves.items(), key=lambda kv: -kv[1][0])[:LEAF_TOP]
+    out = {"leaves": [{"leaf": _clip(k, 30), "rate6": round(v[0] / h6, 1), "share": _ratio(v[1], v[0]),
+                       "stats_deals_h": round(dn.get(k, 0) / dh, 1) if dh else None} for k, v in top]}
+    tr = _dict(raw.get("top_reviews"))
+    if tr:
+        out["top3_reviews"] = {"shops": _num(tr.get("shops")), "reviews": _num(tr.get("reviews")),
+                               "sku": {_name(k): _num(v) for k, v in list(_dict(tr.get("sku")).items())[:8]},
+                               "leaf": {_clip(k, 30): _num(v) for k, v in list(_dict(tr.get("leaf")).items())[:5]},
+                               "paid_list_median": _num(tr.get("paid_list_median"))}
+    return out if out["leaves"] or tr else None
+
+
+# --- score parts, list price bands, our seller and buyer logs
+
+def _ledger_h(raw, ledger, window_h):
+    """Hours the ledger rows span: since the last run's read (collect: ledger_h), at most window_h. A first read
+    holds only the newest rows: the time they span. Unknown: window_h."""
+    h = _num(raw.get("ledger_h"))
+    if h and h > 0:
+        return round(min(window_h, h), 4)
+    ts = [r["ts"] for r in ledger if _num(r.get("ts")) is not None]
+    if raw.get("ledger_first") and ts:
+        return round(min(window_h, max((max(ts) - min(ts)) / 3600, 1 / 60)), 4)
+    return window_h
+
+
+def _score(shops, buyers, me, weights):
+    """Per side, each ALL part: our value, pct (the share of the other ranked rows strictly below ours, approximate:
+    the market's pool may differ), and with the market's weights w and gain = w * (1 - pct), the most ALL a
+    part can still add, highest first. recon = sum(w * pct), shown next to the board's all."""
+    out = {}
+    for side, rows in (("shop", shops), ("buyer", buyers)):
+        mine = _find(rows, me)
+        if not mine:
+            continue
+        others = [r for r in _pool(rows, mine) if r is not mine]
+        w = _dict(weights.get(side))
+        parts = []
+        for f in (w or SCORE_F[side]):
+            v = _num(mine.get(f))
+            vals = [x for x in (_num(r.get(f)) for r in others) if x is not None]
+            pct = round(sum(1 for x in vals if v is not None and x < v) / len(vals), 4) if vals and v is not None else None
+            part = {"f": _name(f), "value": _r(v), "pct": pct}
+            if _num(w.get(f)) is not None:
+                part |= {"w": w[f], "gain": round(w[f] * (1 - pct), 4) if pct is not None else None}
+            parts.append(part)
+        if w:
+            parts.sort(key=lambda p: -(p["gain"] or 0))
+        d = {"parts": parts, "all": _r(_num(mine.get("all"))), "pool": len(others) + 1}
+        if w and all(p["pct"] is not None for p in parts):
+            d["recon"] = round(sum(p["w"] * p["pct"] for p in parts), 4)
+        out[side] = d
+    return out
+
+
+def _class(players, shops, buyers, me):
+    """The class view (students only, board players with student true), which the course grades: our place by
+    student_total, the total gap to the student above and below, and per ALL part (CLASS_F) our value, our place
+    among the students and how far the next student up and down is (value units). A part moves the class total only
+    when it passes a student, so a change inside both gaps leaves that part's class percentile where it is. None
+    without our player row."""
+    studs = [p for p in players if isinstance(p, dict) and p.get("student") is True and _num(p.get("student_total")) is not None]
+    mine = next((p for p in studs if p.get("player") == me), None)
+    if not mine:
+        return None
+    totals = sorted((p["student_total"] for p in studs), reverse=True)
+    t = mine["student_total"]
+    up, down = [x for x in totals if x > t], [x for x in totals if x < t]
+    out = {"rank": 1 + len(up), "of": len(studs), "total": t, "pct": _num(mine.get("student_pct")),
+           "gap_up": round(min(up) - t, 4) if up else None, "gap_down": round(t - max(down), 4) if down else None,
+           "parts": {}}
+    for side, rows in (("shop", shops), ("buyer", buyers)):
+        byname = {r.get("name"): r for r in rows if isinstance(r, dict)}
+        ours = byname.get(_dict(mine.get(side)).get("name"))
+        peers = [byname.get(_dict(p.get(side)).get("name")) for p in studs]
+        peers = [r for r in peers if r is not None and r is not ours]
+        if ours is None:
+            continue
+        for f in CLASS_F[side]:
+            v = _num(ours.get(f))
+            vals = [x for x in (_num(r.get(f)) for r in peers) if x is not None]
+            if v is None or not vals:
+                continue
+            hi, lo = [x for x in vals if x > v], [x for x in vals if x < v]
+            out["parts"][f"{side}.{f}"] = {"value": _r(v), "rank": 1 + len(hi), "up": _r(min(hi) - v) if hi else None,
+                                           "down": _r(v - max(lo)) if lo else None}
+    return out
+
+
+def _bands(buckets, now):
+    """Market and our settles of the last hour by list price band, from the 10-minute ledger buckets (None
+    without any). rev_share: the band's part of all market (or all our) settle revenue."""
+    tot = collect.bucket_total(_dict(buckets), now - 3600, now + collect.BUCKET_S)
+    if not tot:
+        return None
+    rev = sum(tot[f"rev.b{i}"] for i in range(len(BAND_NAMES))) or None
+    ours = sum(tot[f"ours_rev.b{i}"] for i in range(len(BAND_NAMES))) or None
+    rows = [{"band": name, "mkt_settles": tot[f"settle.b{i}"], "mkt_rev_share": _ratio(tot[f"rev.b{i}"], rev),
+             "our_settles": tot[f"ours.b{i}"], "our_rev_share": _ratio(tot[f"ours_rev.b{i}"], ours)}
+            for i, name in enumerate(BAND_NAMES)]
+    return {"h": 1, "settles": tot["settle"], "ours": tot["ours"],
+            "rows": [r for r in rows if r["mkt_settles"] or r["our_settles"]]}
+
+
+def _seller(rows, pol=None, warranted=None):
+    """Our seller's window: tasks answered, signed (and the rate), how the rest ended, warranty asked and sold,
+    the median price/list of signs and offer/list of the offers we rejected, and warranty (see _warranty)."""
+    act = lambda r: _dict(r.get("choice")).get("action")
+    why = lambda r: str(r.get("why") or "")
+    inp = lambda r: _dict(r.get("inputs"))
+    first = [r for r in rows if r.get("kind") == "quote" and why(r).startswith("first reply")]
+    signs = [r for r in rows if r.get("kind") == "sign"]
+    rejects = [r for r in rows if r.get("kind") == "reject" and act(r) == "reject"]
+    per_list = lambda xs, f: _median([round(p / lp, 4) for p, lp in ((f(r), _num(inp(r).get("list_price")))
+                                                                     for r in xs) if _num(p) and lp])
+    return {"first": len(first), "signed": len(signs), "sign_rate": _ratio(len(signs), len(first)),
+            "canceled": sum(1 for r in rows if act(r) == "canceled"),
+            "final": sum(1 for r in rows if act(r) == "final"), "rejected": len(rejects),
+            "no_price": sum(1 for r in rows if why(r) == "no price in the message"),
+            "no_stock": sum(1 for r in rows if why(r).startswith("no unit in stock")),
+            "llm_exception": sum(1 for r in rows if r.get("kind") == "llm_exception"),
+            "warranty_req": sum(1 for r in first if inp(r).get("warranty_req")),
+            "warranty_sold": sum(1 for r in signs if (_num(_dict(r.get("choice")).get("warranty_hours")) or 0) > 0),
+            "sign_price_list": per_list(signs, lambda r: _dict(r.get("choice")).get("price")),
+            "reject_offer_list": per_list(rejects, lambda r: inp(r).get("offer")),
+            "policy_ver": dict(Counter(str(r["policy_ver"]) for r in rows if r.get("policy_ver")).most_common(3)),
+            "off_policy": sum(1 for r in rows if _off_policy(r.get("policy_ver"))),
+            "warranty": _warranty(first, signs, pol, warranted)}
+
+
+def _big_ticket(rows, ledger, catalog, pol, me, our_url, shops):
+    """Big-ticket goods (list price at or over stock.big_ticket_list), ours and the market's, in the window.
+    by_grade: our first replies by the grade of the unit offered (grade_now), how many of those tasks the buyer
+    canceled, our signs by the grade claimed, how many of them a market settle paid (the unit in a settle of the
+    window: a sign at the window's end may pay after it), and the signs' median price/list.
+    floor_refusals: the big offers our seller refused under its floor after the final price (n), those at
+    NEAR_MARKET_OFFER of list or more (offer_at_market: the market's price, which a cheaper unit of the same
+    grade would have closed), and the median floor/list and offer/list of them. market: the window's
+    big settles, their grade share, median price/list by grade and the warranty hours they carried. sellers:
+    the shops with the most big settles (board name, else untrusted_shop: the URL clipped), with their median
+    price/list, usual warranty hours and A share."""
+    bmax = _num(_dict(_dict(pol).get("stock")).get("big_ticket_list")) or 200000
+    inp = lambda r: _dict(r.get("inputs"))
+    ch = lambda r: _dict(r.get("choice"))
+    lp = lambda r: _num(inp(r).get("list_price")) or _num(ch(r).get("list_price")) or 0
+    rows = _rows(rows)
+    first = {_dict(r.get("ref")).get("task"): r for r in rows
+             if r.get("kind") == "quote" and str(r.get("why") or "").startswith("first reply") and lp(r) >= bmax}
+    canceled = Counter(inp(first[_dict(r.get("ref")).get("task")]).get("grade_now") for r in rows
+                       if r.get("kind") == "reject" and ch(r).get("action") == "canceled"
+                       and _dict(r.get("ref")).get("task") in first)
+    offered = Counter(inp(r).get("grade_now") for r in first.values())
+    signs = [r for r in rows if r.get("kind") == "sign" and lp(r) >= bmax]
+    settles = [_dict(r.get("data")) for r in _rows(ledger) if r.get("kind") == "settle"]
+    paid_units = {str(d.get("unit")) for d in settles if d.get("unit")}
+    by = {}
+    for g in ("A", "B", "C"):
+        sg = [r for r in signs if ch(r).get("claim") == g]
+        paid = sum(1 for r in sg if str(ch(r).get("unit")) in paid_units)
+        by[g] = {"first": offered.get(g, 0), "canceled": canceled.get(g, 0),
+                 "cancel_rate": _ratio(canceled.get(g, 0), offered.get(g, 0)), "signed": len(sg), "paid": paid,
+                 "paid_rate": _ratio(paid, len(sg)),
+                 "sign_price_list": _median([round(p / l, 4) for p, l in ((_num(ch(r).get("price")), lp(r)) for r in sg) if p and l])}
+    cat_list = lambda d: _list_price(catalog, d.get("sku")) or 0      # collect.fetch_public: sku -> [name, category, list, kind, shelf]
+    rej = [r for r in rows if r.get("kind") == "reject" and str(r.get("why") or "").startswith("offer below the floor after")
+           and lp(r) >= bmax and _num(inp(r).get("offer"))]
+    near = [r for r in rej if _num(inp(r).get("offer")) / lp(r) >= NEAR_MARKET_OFFER]
+    refusals = {"n": len(rej), "offer_at_market": len(near),
+                "floor_list_median": _median([round(_num(inp(r).get("floor")) / lp(r), 4) for r in rej if _num(inp(r).get("floor"))]),
+                "offer_list_median": _median([round(_num(inp(r).get("offer")) / lp(r), 4) for r in rej])}
+    big = [d for d in settles if cat_list(d) >= bmax]
+    pl = lambda d: round((_num(d.get("amount")) or 0) / cat_list(d), 4)
+    market = {"settles": len(big), "ours": sum(1 for d in big if _ours(d.get("shop"), me, our_url)),
+              "grade_share": {g: _ratio(sum(1 for d in big if d.get("grade") == g), len(big)) for g in ("A", "B", "C")},
+              "price_list_by_grade": {g: _median([pl(d) for d in big if d.get("grade") == g]) for g in ("A", "B", "C")},
+              "warranty_h": dict(Counter(_num(d.get("warranty_hours")) or 0 for d in big).most_common(4))}
+    names = {str(_dict(r.get("card")).get("url") or "").rstrip("/"): r.get("name") for r in _rows(shops)}
+    per = {}
+    for d in big:
+        per.setdefault(str(d.get("shop") or "").rstrip("/"), []).append(d)
+    sellers = []
+    for u, ds in sorted(per.items(), key=lambda x: -len(x[1]))[:5]:
+        row = {"shop": names.get(u), "settles": len(ds), "price_list": _median([pl(d) for d in ds]),
+               "warranty_h": Counter(_num(d.get("warranty_hours")) or 0 for d in ds).most_common(1)[0][0],
+               "grade_A": _ratio(sum(1 for d in ds if d.get("grade") == "A"), len(ds))}
+        if row["shop"] is None:
+            row["untrusted_shop"] = _clip(u, 60)
+        sellers.append(row)
+    return {"list_from": bmax, "by_grade": by, "floor_refusals": refusals, "market": market, "sellers": sellers}
+
+
+def _off_policy(ver):
+    """True when a decision row's policy_ver says the process did not read SKILL.md: policy.load fell back to the
+    last good file ("<ver>+lastgood") or to DEFAULTS ("defaults")."""
+    return isinstance(ver, str) and (ver == "defaults" or ver.endswith("+lastgood"))
+
+
+def seller_alerts(b):
+    """Alerts for run.py from the brief's seller section: rows the seller decided on DEFAULTS or the last good
+    policy. The seller process validates SKILL.md with the policy.py it imported at its start, so a value
+    outside that file's RANGES (widened in a later policy.py the strategist and the hooks already run) makes
+    it fall back: on 11-11 a cap of 23M over the running seller's 20M range put it on DEFAULTS for 7 h (cap
+    500k, floor_list 0.6, first_ask_big_list 0.78, 32 keys off the live policy) while four cap raises went
+    through unnoticed."""
+    s = _dict(_dict(b).get("seller"))
+    off, vers = s.get("off_policy"), _dict(s.get("policy_ver"))
+    if not isinstance(off, int) or off <= 0:
+        return []
+    total = sum(v for v in vers.values() if isinstance(v, int)) or off
+    return [f"seller off policy: {off} of {total} seller rows in the window ran on "
+            f"{', '.join(k for k in vers if _off_policy(k)) or 'DEFAULTS'} (policy_ver {vers}): the seller process "
+            "rejected SKILL.md, so seller.* and stock.* changes do nothing for it. A value outside the RANGES of the "
+            "policy.py it loaded at its start (older than the strategist's: a widened bound needs a container "
+            "recreate) or a broken file; move the value back inside the old range or recreate the container."]
+
+
+def _warranty(first, signs, pol, warranted=None):
+    """The warranty (D5) in this window, from the seller log's first replies and signs (joined by task).
+    goods_asked: goods first replies where the buyer asked for a warranty; offered: those that got one; refused
+    names why the rest did not: grade (not in seller.warranty_grades), near_end (inside stock.no_warranty_h) and
+    cap_6h, the only cause left once the others are ruled out; warranted_6h (collect._warranted: the warranted
+    signs of the last 6 h, their list prices signed and paid, over_cap when the paid sum has reached
+    seller.warranty_cap_6h) is the number that confirms it. food_asked: food never carries a
+    warranty. sign_rate: goods signs / first replies by whether the buyer asked and whether we offered, so the
+    worth of a warranty to a sale is read off the two asked rows. break_q_upper: the median breakage upper
+    bound per grade among the goods asked. premium_mult: the median price multiplier of the offers. unit_ev: the
+    warranted signs split by what each is expected to keep, (price - cost) - break_q.upper x price (a broken unit
+    under warranty refunds the full price and is gone): neg, the ones whose own margin does not cover their break
+    risk (the premium is set per grade, the cost is the unit's), with the expected loss; pos, the rest."""
+    s, st = _dict(_dict(pol).get("seller")), _dict(_dict(pol).get("stock"))
+    grades, end_h = s.get("warranty_grades") or ("A", "B"), _num(st.get("no_warranty_h")) or 0
+    inp = lambda r: _dict(r.get("inputs"))
+    goods = [r for r in first if inp(r).get("kind") == "goods"]
+    asked = [r for r in goods if inp(r).get("warranty_req")]
+    offered = [r for r in asked if (_num(inp(r).get("warranty_hours")) or 0) > 0]
+    refused = Counter()
+    for r in asked:
+        i = inp(r)
+        if (_num(i.get("warranty_hours")) or 0) > 0:
+            continue
+        if i.get("grade_now") not in grades:
+            refused["grade"] += 1
+        elif _num(i.get("hours_to_end")) is not None and i["hours_to_end"] <= end_h:
+            refused["near_end"] += 1
+        else:
+            refused["cap_6h"] += 1
+    tasks = {_dict(r.get("ref")).get("task"): r for r in goods if _dict(r.get("ref")).get("task")}
+    signed = Counter()
+    for r in signs:
+        f = tasks.get(_dict(r.get("ref")).get("task"))
+        if f is not None:
+            i = inp(f)
+            signed[(bool(i.get("warranty_req")), (_num(i.get("warranty_hours")) or 0) > 0)] += 1
+    firsts = Counter((bool(inp(r).get("warranty_req")), (_num(inp(r).get("warranty_hours")) or 0) > 0) for r in goods)
+    rate = {f"asked_{'offered' if o else 'refused'}" if a else f"unasked_{'offered' if o else 'plain'}":
+            {"first": firsts[(a, o)], "signed": signed[(a, o)], "rate": _ratio(signed[(a, o)], firsts[(a, o)])}
+            for a in (True, False) for o in (True, False) if firsts[(a, o)]}
+    bq = {}
+    for g in ("A", "B", "C"):
+        ups = [_num(_dict(inp(r).get("break_q")).get("upper")) for r in asked if inp(r).get("grade_now") == g]
+        ups = [u for u in ups if u is not None]
+        if ups:
+            bq[g] = _r(_median(ups))
+    w6 = dict(_dict(warranted))
+    cap = _num(s.get("warranty_cap_6h"))
+    if w6 and cap is not None:
+        w6["cap"] = cap
+        w6["over_cap"] = (_num(w6.get("sum_list_paid")) or 0) >= cap
+    ev = {"neg": {"n": 0, "rev": 0, "exp": 0}, "pos": {"n": 0, "rev": 0, "exp": 0}}
+    for r in signs:
+        c, i = _dict(r.get("choice")), inp(r)
+        p, cost, q = _num(c.get("price")), _num(i.get("cost")), _num(_dict(i.get("break_q")).get("upper"))
+        if (_num(c.get("warranty_hours")) or 0) <= 0 or None in (p, cost, q):
+            continue
+        e = (p - cost) - q * p                  # kept if it holds, minus the refund (the full price) times the risk
+        side = ev["neg" if e < 0 else "pos"]
+        side["n"], side["rev"], side["exp"] = side["n"] + 1, side["rev"] + p, side["exp"] + e
+    ev = {k: {"n": v["n"], "rev": round(v["rev"]), "exp": round(v["exp"])} for k, v in ev.items()}
+    return {"goods_asked": len(asked), "offered": len(offered), "refused": dict(refused), "warranted_6h": w6,
+            "unit_ev": ev,
+            "food_asked": sum(1 for r in first if inp(r).get("kind") == "food" and inp(r).get("warranty_req")),
+            "sold": sum(1 for r in signs if (_num(_dict(r.get("choice")).get("warranty_hours")) or 0) > 0),
+            "sign_rate": rate, "break_q_upper": bq,
+            "premium_mult": _r(_median([_num(inp(r).get("warranty_mult")) for r in offered if _num(inp(r).get("warranty_mult"))])),
+            "policy": {k: s.get(k) for k in ("warranty_on_request", "warranty_grades", "warranty_cap_6h",
+                                              "warranty_premium", "warranty_premium_floor", "warranty_q_mult")}}
+
+
+def _buyer_log(rows):
+    """Our buyer's orders of the window by kind (food, goods): orders, deals, conversion, orders with no
+    candidate shop; and the shop tries whose receipt failed our check (receipt_problem). Its text names
+    shop-chosen items, so the classes (digits removed) are untrusted."""
+    orders = [r for r in rows if r.get("kind") == "order"]
+    out = {}
+    for k in ("food", "goods"):
+        rs = [r for r in orders if _dict(r.get("inputs")).get("kind") == k]
+        deals = sum(1 for r in rs if isinstance(r.get("choice"), dict))
+        out[k] = {"orders": len(rs), "deals": deals, "conv": _ratio(deals, len(rs)),
+                  "no_candidates": sum(1 for r in rs if not r.get("candidates"))}
+    problems = Counter(_clip(re.sub(r"\d+", "#", str(t["receipt_problem"])), 60) for r in orders
+                       for t in _rows(r.get("tried")) if t.get("receipt_problem"))
+    out["tries"] = sum(len(_rows(r.get("tried"))) for r in orders)
+    out["receipt_problems"] = sum(problems.values())
+    out["untrusted_receipt_problem_why"] = [{"n": n, "why": w} for w, n in problems.most_common(3)]
+    out["saved_check"] = _saved_check(orders)
+    return out
+
+
+def _saved_check(orders):
+    """The receipts the buyer refused because their claimed grade scored under buyer_policy.RECEIPT_MIN_SAVED
+    (D6 Saved check): refused, by claimed grade, and rescued, the orders with such a refusal that still closed
+    a deal at a later shop. Only the grade letter is read from the text."""
+    try:
+        from tools import buyer_policy as bp
+        min_saved, prefix = bp.RECEIPT_MIN_SAVED, bp.SAVED_CHECK
+    except Exception:                               # the strategist's tests run without tools/ on the path
+        min_saved, prefix = None, "Saved check"
+    pat = re.compile(re.escape(prefix) + r": claim ([ABC]) ")
+    by, rescued = Counter(), 0
+    for r in orders:
+        hits = [m.group(1) for t in _rows(r.get("tried")) for m in [pat.match(str(t.get("receipt_problem") or ""))] if m]
+        by.update(hits)
+        rescued += bool(hits) and isinstance(r.get("choice"), dict)
+    return {"min_saved": min_saved, "refused": sum(by.values()), "by_grade": dict(sorted(by.items())),
+            "rescued": rescued}
+
+
+def _by_grade(reviews):
+    """(by_grade, window_est): our window's paid deals by kind x grade (the review hook's rows carry the settled
+    grade, price and list): n, share, kept (mean 1 - price / list), est (the deal's Saved under Patch 3.6 at the
+    grade's middle cost, policy.margin_share), est_band [at its low cost, at its high cost], kept_for_1 (the kept
+    of list that scores 1 whatever the unit's cost). window_est: the mean est over all of them."""
+    import policy
+    groups = {}
+    for r in _rows(reviews):
+        i = _dict(r.get("inputs"))
+        p, lst, g = _num(i.get("price")), _num(i.get("value")), i.get("grade")
+        if not p or not lst or g not in policy.COST_SHARE:
+            continue
+        groups.setdefault(("food" if i.get("expires_at") else "goods", g), []).append(1 - p / lst)
+    n_all = sum(len(v) for v in groups.values())
+    out, est_sum = {}, 0.0
+    for (kind, g), ks in sorted(groups.items()):
+        ests = [policy.margin_share(k, g) for k in ks]
+        est_sum += sum(ests)
+        out[f"{kind}_{g}"] = {"n": len(ks), "share": _r(len(ks) / n_all), "kept": _r(statistics.mean(ks)),
+                              "est": _r(statistics.mean(ests)),
+                              "est_band": [_r(statistics.mean(policy.margin_share(k, g, 0) for k in ks)),
+                                           _r(statistics.mean(policy.margin_share(k, g, 1) for k in ks))],
+                              "kept_for_1": _r(1 - policy.COST_SHARE[g][0])}
+    return out, (_r(est_sum / n_all) if n_all else None)
+
+
+def _market_by_grade(ledger, catalog):
+    """The window's market settles by kind x grade: n, the median and lower-quartile price/list, and the Saved a
+    deal at each scores (policy.margin_share at the grade's middle cost): what a kept floor set at the market's
+    price buys, and how far under the median a deal has to close to score more."""
+    import policy
+    groups = {}
+    for r in _rows(ledger):
+        if r.get("kind") != "settle":
+            continue
+        d = _dict(r.get("data"))
+        lp, g, p = _list_price(catalog, d.get("sku")), d.get("grade"), _num(d.get("amount"))
+        if not lp or not p or g not in policy.COST_SHARE:
+            continue
+        groups.setdefault(f"{_kind_of(catalog, d.get('sku')) or 'goods'}_{g}", []).append(round(p / lp, 4))
+    out = {}
+    for k, xs in sorted(groups.items()):
+        xs.sort()
+        med, q25, g = xs[len(xs) // 2], xs[len(xs) // 4], k[-1]
+        out[k] = {"n": len(xs), "p_list_median": med, "p_list_q25": q25,
+                  "score_at_median": _r(policy.margin_share(1 - med, g)), "score_at_q25": _r(policy.margin_share(1 - q25, g))}
+    return out
+
+
+def _peer_window(ledger, catalog, name, window_h):
+    """A buyer's settles in the window's ledger: deals per hour, the mean Saved they score (middle cost), the food
+    share and the grade mix."""
+    import policy
+    ds = [_dict(r.get("data")) for r in _rows(ledger) if r.get("kind") == "settle" and _dict(r.get("data")).get("buyer") == name]
+    scored = [(policy.margin_share(1 - _num(d.get("amount")) / _list_price(catalog, d.get("sku")), d.get("grade")),
+               _kind_of(catalog, d.get("sku")), d.get("grade"))
+              for d in ds if _list_price(catalog, d.get("sku")) and _num(d.get("amount")) and d.get("grade") in policy.COST_SHARE]
+    if not scored:
+        return {}
+    return {"deals_h": _r(len(ds) / window_h, 1) if window_h else None, "est": _r(statistics.mean(s for s, _, _ in scored)),
+            "food": _ratio(sum(1 for _, k, _ in scored if k == "food"), len(scored)),
+            "grades": {g: _ratio(sum(1 for _, _, x in scored if x == g), len(scored)) for g in ("A", "B", "C")}}
+
+
+def _saved(buyers, me_row, me_b, rows, pol, hours_left, window_h, reviews=None, facts=None, ledger=None, catalog=None):
+    """The buyer's Saved, taken apart. rule: the market's Saved rule in force (facts: margin_share, Patch 3.6,
+    a deal scores (list - price) / (list - cost) at most 1; kept_of_list, Patch 3.4, surplus / list; None when
+    neither sentence is there), a deal that served nothing -1 or 0 when refunded, over deals + 100. by_grade and
+    window_est: _by_grade. unserved: the board's deals - served, each a -1, and the drag they
+    put on saved. kept_per_deal: 1 - the board's paid (our mean price / list). window: this window's deals, the
+    goods deals among them and how many carried the full 6 h warranty, the deal rate. projection: the deals
+    left at that rate, the weight of the history in the final saved, and the final saved if every deal left
+    scored the value named (as_now: the window's per-deal score, window_est under the margin rule, else the
+    current kept, with the current unserved share going on; the SAVED_TARGETS with breaks refunded).
+    peers: the PEER_TOP best saved among the other buyers with PEER_MIN_DEALS deals, with their paid.
+    policy: the buyer keys that set the share kept."""
+    deals, served, saved, paid = (_num(_dict(me_b).get(k)) for k in ("deals", "served", "saved", "paid"))
+    out = {"policy": {k: _dict(_dict(pol).get("buyer")).get(k) for k in ("min_kept", "min_kept_A", "min_kept_B", "min_kept_C",
+                                                                             "break_penalty", "step_list", "cap_goods_no_warranty")}}
+    f = _dict(facts)
+    out["rule"] = ("margin_share" if f.get("saved_is_margin_share_capped_1") else
+                   "kept_of_list" if f.get("saved_is_kept_share_over_deals_plus_100") else None)
+    out["by_grade"], out["window_est"] = _by_grade(reviews)
+    out["market_by_grade"] = _market_by_grade(ledger, _dict(catalog))
+    orders = [r for r in _rows(rows) if r.get("kind") == "order"]
+    won = [r for r in orders if isinstance(r.get("choice"), dict)]
+    out["closing"] = _closing(orders, won, pol)
+    if deals is None or saved is None:
+        return out
+    unserved = max(0, int(deals - served)) if served is not None else None
+    out["unserved"] = {"n": unserved, "share": _ratio(unserved, deals),
+                       "saved_drag": _r(unserved / (deals + 100)) if unserved is not None else None}
+    kept = round(1 - paid, 4) if paid is not None else None
+    out["kept_per_deal"] = kept
+    goods = [r for r in won if _dict(r.get("inputs")).get("kind") == "goods"]
+    warranted = sum(1 for r in goods if (_num(r["choice"].get("warranty_h")) or 0) >= 6)
+    rate = len(won) / window_h if window_h else None
+    out["window"] = {"deals": len(won), "goods_deals": len(goods), "goods_warranted": warranted,
+                     "deals_per_h": _r(rate, 1)}
+    if hours_left is not None and rate:
+        left = rate * hours_left
+        hist = deals + 100
+        proj = {"deals_left_est": int(left), "history_weight": _r(hist / (hist + left))}
+        ends = {}
+        if kept is not None and unserved is not None:
+            share = unserved / deals if deals else 0
+            per = out["window_est"] if out["rule"] == "margin_share" and out["window_est"] is not None else kept
+            proj["as_now_per_deal"] = per
+            ends["as_now"] = _r((saved * hist + left * (per * (1 - share) - share)) / (hist + left))
+        for k in SAVED_TARGETS:
+            ends[f"kept_{k}"] = _r((saved * hist + left * k) / (hist + left))
+        proj["saved_end"] = ends
+        # the history is fixed: only the deals still to come move saved, so volume x score decides the end.
+        # scenarios: the final saved at the window's deal rate and at twice it, when every deal left scores s
+        proj["scenarios"] = {f"rate_x{m}": {f"score_{s}": _r((saved * hist + left * m * s) / (hist + left * m))
+                                             for s in (0.8, 0.9, 1.0)} for m in (1, 2)}
+        # the deals of a grade whose estimate is under the end as_now pull the end down: the end without them
+        end = ends.get("as_now")
+        bg = {k: v for k, v in _dict(out["by_grade"]).items() if _num(_dict(v).get("est")) is not None and _num(v.get("share"))}
+        drags = sorted(k for k, v in bg.items() if end is not None and v["est"] < end)
+        keep = {k: v for k, v in bg.items() if k not in drags}
+        sh = sum(v["share"] for v in keep.values())
+        if drags and sh:
+            per_k = sum(v["share"] * v["est"] for v in keep.values()) / sh
+            proj["drop_under_end"] = {"grades": drags, "share_dropped": _r(1 - sh), "per_deal": _r(per_k),
+                                      "saved_end": _r((saved * hist + left * sh * per_k) / (hist + left * sh))}
+        out["projection"] = proj
+    peers = []
+    for r in _rows(buyers):
+        d = _num(r.get("deals")) or 0
+        if r is me_row or r.get("house") or d < PEER_MIN_DEALS or _num(r.get("saved")) is None:
+            continue
+        pd = _num(r.get("paid"))
+        peers.append({"saved": _r(r["saved"]), "paid": _r(pd), "kept": round(1 - pd, 4) if pd is not None else None,
+                      "deals": int(d), "conv": _ratio(d, _num(r.get("orders"))), "forum": _r(_num(r.get("forum"))),
+                      "window": _peer_window(ledger, _dict(catalog), r.get("name"), window_h)})
+    peers.sort(key=lambda x: -x["saved"])
+    out["peers"] = peers[:PEER_TOP]
+    me_d = _num(_dict(me_b).get("deals"))
+    out["ours"] = {"conv": _ratio(me_d, _num(_dict(me_b).get("orders"))),
+                   "window": _peer_window(ledger, _dict(catalog), _dict(me_row).get("name"), window_h)}
+    return out
+
+
+def _closing(orders, won, pol):
+    """How the window's deals closed against our cap and how the failed tries ended, the evidence for
+    buyer.step_list and buyer.min_kept. at_cap: deals paid at the cap (we never learned the shop's floor; a step
+    offer under the cap is the way to), under_cap: closed below it, price_over_cap: the median paid / cap, turns
+    and elapsed_s: the medians of the winning try, against buyer.target_s (the step costs one more turn).
+    failed_tries: tries that ended on an ask above the cap, near_cap those whose last ask was within
+    NEAR_CAP of the cap (deals a slightly lower min_kept would have closed)."""
+    b = _dict(_dict(pol).get("buyer"))
+    at = under = 0
+    ratios, turns, secs = [], [], []
+    for r in won:
+        ch, cap = r["choice"], _num(r["choice"].get("cap"))
+        price = _num(ch.get("price"))
+        if not cap or not price:
+            continue
+        at += price >= cap
+        under += price < cap
+        ratios.append(round(price / cap, 4))
+        for t in _rows(r.get("tried")):
+            if t.get("shop") == ch.get("shop"):
+                turns.append(_num(t.get("turns")))
+                secs.append(_num(t.get("elapsed")))
+    failed = near = 0
+    for r in orders:
+        for t in _rows(r.get("tried")):
+            cap, asks = _num(t.get("cap")), t.get("asks") if isinstance(t.get("asks"), list) else []
+            if not cap or "above the cap" not in str(t.get("why") or ""):
+                continue
+            failed += 1
+            last = asks[-1] if asks else None
+            last = _num(last.get("price")) if isinstance(last, dict) else _num(last)
+            near += bool(last and last <= cap * (1 + NEAR_CAP))
+    return {"at_cap": at, "under_cap": under, "at_cap_share": _ratio(at, at + under), "price_over_cap": _median(ratios),
+            "turns": _median([t for t in turns if t is not None]), "elapsed_s": _r(_median([x for x in secs if x is not None]), 1),
+            "target_s": b.get("target_s"), "step_list": b.get("step_list"),
+            "failed_tries": failed, "near_cap": near, "near_share": _ratio(near, failed)}
+
+
+# --- size
+
+def size(b):
+    return len(json.dumps(b, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
+
+
+def _fit(b):
+    """Drop the least useful detail first until the brief is under LIMIT; b["trimmed"] counts the steps."""
+    def pitches(n):
+        for r in [r for rows in b["leaders"].values() for r in rows]:
+            if "untrusted_pitch" in r:
+                r["untrusted_pitch"] = r["untrusted_pitch"][:n]
+                if not n:
+                    r.pop("untrusted_pitch")
+
+    def cut(path, n):
+        d = b
+        for k in path[:-1]:
+            d = _dict(d.get(k))
+        if isinstance(d.get(path[-1]), list):
+            d[path[-1]] = d[path[-1]][:n]
+
+    steps = [lambda: cut(("buyer_log", "untrusted_receipt_problem_why"), 1), lambda: b["ops"].get("restock") and
+             b["ops"]["restock"].pop("surge", None), lambda: b["bands"] and cut(("bands", "rows"), 4),
+             lambda: cut(("prices",), 10), lambda: pitches(80), lambda: cut(("forum", "untrusted_top"), 3),
+             lambda: cut(("ops", "kit", "untrusted_pay_refused_why"), 2), lambda: cut(("ops", "restock", "buy"), 2),
+             lambda: cut(("reviews_of_us", "untrusted_last"), 3), lambda: cut(("demand", "top"), 5),
+             lambda: cut(("prices",), 6), lambda: pitches(0),
+             lambda: [r.pop("name", None) for r in b["prices"]],
+             lambda: cut(("leaders", "by_profit"), 3), lambda: cut(("leaders", "by_deals"), 3),
+             lambda: b["leaders"].get("by_all") and cut(("leaders", "by_all"), 3),
+             lambda: cut(("forum", "untrusted_top"), 0), lambda: cut(("reviews_of_us", "untrusted_last"), 0),
+             lambda: cut(("ops", "kit", "untrusted_pay_refused_why"), 0), lambda: cut(("ops", "restock", "buy"), 0),
+             lambda: cut(("mix", "leaves"), 5), lambda: cut(("focus", "price_check"), 3),
+             lambda: b.get("mix") and b["mix"].pop("top3_reviews", None),
+             lambda: cut(("inventory", "top"), 5), lambda: cut(("focus", "candidates"), 6),
+             lambda: cut(("inventory", "top"), 3), lambda: cut(("focus", "candidates"), 3)]
+    b["trimmed"] = 0
+    for step in steps:
+        if size(b) < LIMIT:
+            break
+        step()
+        b["trimmed"] += 1
+    return b
+
+
+def brief(raw, own, prev, pol, now, me=ME, window_h=1, flows=None, known=(), focus=None, buckets=None,
+          weights=None, tables=None, market=None):
+    """The brief for this run. raw from collect.fetch_public, own from collect.read_own, prev the last brief
+    (or None), pol the policy dict on disk. From run.py: flows, the inventory moves since the last run; known,
+    the unit ids held at the last run; focus, {current, next, trend_current, trend_next, covered_h, candidates,
+    price_check, forum_mentions}; buckets, state["ledger_buckets"]; weights, {"shop": {field: w}, "buyer": {...}}
+    from the market's rules; tables, collect.table_view of state["sku_tables"]; market, facts.collect's dict.
+    JSON-serialisable, under LIMIT bytes."""
+    raw, own = _dict(raw), _dict(own)
+    board = _dict(raw.get("board"))
+    shops, buyers, players = _rows(board.get("shops")), _rows(board.get("buyers")), _rows(board.get("players"))
+    url = our_url(board, me)
+    since = now - window_h * 3600
+    ledger = [r for r in _rows(raw.get("ledger")) if (_num(r.get("ts")) or 0) >= since]
+    catalog = _dict(raw.get("catalog"))
+    end_ts = _num(_dict(_dict(pol).get("stock")).get("end_ts"))
+    ledger_h = _ledger_h(raw, ledger, window_h)
+    b = {"round": board.get("round", _dict(raw.get("stats")).get("round")), "ts": round(now, 3),
+         "window_h": window_h, "ledger_h": ledger_h,
+         "hours_left": round((end_ts - now) / 3600, 1) if end_ts is not None else None,
+         "me": _me(shops, buyers, players, me)}
+    b["delta"] = _delta(b["me"], prev, now)
+    b["score"] = _score(shops, buyers, me, _dict(weights))
+    cls = _class(players, shops, buyers, me)
+    if cls:
+        b["score"]["class"] = cls
+    b["leaders"] = _leaders(shops, me)
+    b["market"] = _market(board, raw.get("stats"))
+    b["prices"] = _prices(raw.get("trades"), ledger, catalog, since, me, url)
+    b["market_window"] = _window(ledger, me, url, raw.get("ledger_gap"), raw.get("ledger_first"))
+    b["bands"] = _bands(buckets, now)
+    b["demand"] = _demand(own.get("summary"))
+    b["ops"] = _ops(own, raw.get("forum"), since, me)
+    dec = _dict(own.get("decisions"))
+    b["seller"] = _seller(_rows(dec.get("seller")), pol, own.get("warranted_6h"))
+    b["big_ticket"] = _big_ticket(dec.get("seller"), ledger, catalog, pol, me, url, shops)
+    b["buyer_log"] = _buyer_log(_rows(dec.get("buyer")))
+    b["saved"] = _saved(buyers, _find(buyers, me), b["me"].get("buyer"), _rows(dec.get("buyer")), pol, b["hours_left"], window_h,
+                        _rows(dec.get("review")), _dict(_dict(market).get("facts")), ledger, catalog)
+    b["forum"] = _forum(raw.get("forum"), since)
+    b["reviews_of_us"] = _reviews(raw.get("shop_reviews"))
+    b["inventory"] = _inventory(own.get("inventory"), ledger, url, me, pol, now, ledger_h, flows, known)
+    if focus:
+        b["focus"] = _focus(focus, own.get("inventory"))
+    try:                                                # derived numbers: a strange input must not stop the brief
+        b["economics"] = _economics(tables, own, pol, market, catalog, now)
+        b["mix"] = _mix(tables, raw, catalog)
+    except Exception as e:
+        b["economics"] = b["mix"] = None
+        b["_errors"] = [f"economics: {type(e).__name__}: {str(e)[:120]}"]
+    errs = (raw["errors"] if isinstance(raw.get("errors"), list) else []) + b.pop("_errors", [])
+    b["errors"] = [_clip(e, 200) for e in errs if isinstance(e, str)][:20]
+    return _fit(b)

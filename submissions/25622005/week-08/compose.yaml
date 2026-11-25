@@ -1,0 +1,84 @@
+name: week08-market
+
+services:
+  market:
+    image: week08-agent:mac
+    platform: linux/arm64
+    build:
+      context: ../../..
+      dockerfile: submissions/25622005/week-08/Dockerfile
+      args:
+        CLOUDFLARED_VERSION: "2026.10.2"
+        CLAUDE_CODE_VERSION: "${CLAUDE_CODE_VERSION:-2.1.318}"
+    init: true
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Seoul
+      NAS_UID: "${NAS_UID:-1000}"
+      NAS_GID: "${NAS_GID:-1000}"
+      MARKET_URL: https://market.ourolabs.ai
+      # The shop port is published to the Mac's 127.0.0.1 (ports below) so a tunnel outside the container
+      # (docker/host_tunnel.py) can serve it: a container recreate then keeps the public URL.
+      # host_tunnel.py also watches the inbound path (seller log silent while the buyer hook runs, or the
+      # public card failing) and restarts cloudflared, the container and the strategist loop. ngrok's
+      # reserved domain (configure_ngrok.py) was tried on 11-12 and dropped: the free plan allows
+      # 20,000 HTTP requests a month and the shop takes about 30,000 a day.
+      KIT_BIND_HOST: 0.0.0.0
+      # Kit hooks: model call for a negotiation the rules do not cover (llm.exception_* in SKILL.md).
+      EXCEPTION_HARNESS_CMD: 'claude -p --model claude-sonnet-5-5 --tools "" --setting-sources "" --no-session-persistence'
+      # The strategist runs in this container, started by hand (no service of its own):
+      #   podman compose exec market as-agent claude                      log in once: run /login, then exit
+      #                                                                    (kept in /data/home, its cwd)
+      #   podman compose exec market as-agent python -m strategist --once one run now
+      #   podman compose exec -d market as-agent sh -c 'mkdir -p /data/strategist-home && exec python -m strategist >> /data/strategist-home/console.log 2>&1'
+      #                                                                    loop, a run every STRATEGIST_INTERVAL_S
+      #   podman compose exec market as-agent python -m strategist health
+      #                                                                    exit 0 if heartbeat.json (the loop, every 60 s)
+      #                                                                    or state.json (a run) is under 300 s old, else 1
+      #   podman compose exec -e STRATEGIST_HARNESS_CMD='claude -p --model ...' market as-agent python -m strategist --once
+      #                                                                    one run with another model
+      # exec runs as root, so as-agent drops to agent with HOME=/data/home, cwd /data, SHOP_HOME=/data
+      # and STRATEGIST_HOME=/data/strategist-home. The records are there: reports/latest.md (and
+      # reports/<run_id>.md), runs.jsonl, changes.jsonl, inventory.jsonl, and the loop's console.log.
+      # A loop started with exec -d stops when the container restarts (a new image, a reboot,
+      # restart: unless-stopped): start it again by hand, and check it with health.
+      STRATEGIST_HARNESS_CMD: 'claude -p --model claude-opus-5-5 --tools "" --setting-sources "" --no-session-persistence'
+      STRATEGIST_MODE: "${STRATEGIST_MODE:-apply}"
+      STRATEGIST_INTERVAL_S: "1800"
+      # End game (from 11-12 22:00): 5 keys a run, 30 min cooldown, x3 steps, the model asked during outcome
+      # waits (strategist/run.Config.sprint). docker/hot_update.sh sets it on the loop it starts as well.
+      STRATEGIST_SPRINT: "${STRATEGIST_SPRINT:-1}"
+      # After each run, push the records to this private repository; empty disables it. The deploy
+      # key goes in the data folder's home/.ssh/ (seen as /data/home/.ssh/), never in the image.
+      STRATEGIST_LOG_REPO: "${STRATEGIST_LOG_REPO:-}"
+      STRATEGIST_LOG_BRANCH: main
+      STRATEGIST_LOG_KEY: /data/home/.ssh/strategist_logs
+    # The live data (shop keys, memory, logs, Claude login in home/, the tuned strategy/SKILL.md) is the
+    # folder MARKET_DATA_DIR names: set it in the environment or in a .env next to this file (compose,
+    # docker/hot_update.sh and docker/host_tunnel.py all read it there; .env is not committed). Without
+    # it the folder is ./data next to this file. strategy/ lives inside it,
+    # so the repo's strategy/ is not mounted over the live, tuned SKILL.md.
+    ports:
+      - "127.0.0.1:8900:8900"
+    volumes:
+      - ${MARKET_DATA_DIR:-./data}:/data
+      - ${MARKET_CLAUDE_DIR:-./claude-home}:/home/node
+
+    # cloudflared reaches the kit on localhost:8900 inside this container.
+    # No host port or router port forwarding is required.
+    # Time for the shop (and any exec'd strategist) to finish before SIGKILL. Stop signals reach
+    # only the shop's processes: an exec'd strategist is killed when the shop exits, at worst
+    # mid-push (up to 60 s); publish.py clears the locks a killed git leaves on the next run.
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD", "python", "/opt/deploy/healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+

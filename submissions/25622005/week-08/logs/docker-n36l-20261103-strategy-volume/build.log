@@ -1,0 +1,70 @@
+--progress is a global compose flag, better use `docker compose --progress xx build ...
+ Image week08-agent:n36l Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 732B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.70kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12.11-slim-bookworm
+#3 DONE 0.0s
+
+#4 [auth] cloudflare/cloudflared:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#5 [internal] load metadata for docker.io/cloudflare/cloudflared:2026.10.2
+#5 DONE 1.0s
+
+#6 [tunnel 1/1] FROM docker.io/cloudflare/cloudflared:2026.10.2@sha256:0e56c13c7058fcef9c4f0e7d83372f82330548dbf8f8b366f3d8b506526d93b2
+#6 resolve docker.io/cloudflare/cloudflared:2026.10.2@sha256:0e56c13c7058fcef9c4f0e7d83372f82330548dbf8f8b366f3d8b506526d93b2 done
+#6 DONE 0.0s
+
+#7 [stage-1  1/10] FROM docker.io/library/python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7
+#7 resolve docker.io/library/python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7 done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 321.84kB 0.0s done
+#8 DONE 0.0s
+
+#9 [stage-1  2/10] RUN apt-get update     && apt-get install -y --no-install-recommends ca-certificates gosu tzdata     && rm -rf /var/lib/apt/lists/*     && useradd --create-home --uid 1000 --user-group agent
+#9 CACHED
+
+#10 [stage-1  4/10] RUN pip install --no-cache-dir --root-user-action=ignore --only-binary=:all:         -r /opt/deploy/requirements.txt
+#10 CACHED
+
+#11 [stage-1  3/10] COPY submissions/25622005/week-08/docker/requirements.txt /opt/deploy/requirements.txt
+#11 CACHED
+
+#12 [stage-1  5/10] COPY --from=tunnel /usr/local/bin/cloudflared /usr/local/bin/cloudflared
+#12 CACHED
+
+#13 [stage-1  6/10] COPY submissions/25622005/week-08/ /opt/agent/
+#13 DONE 0.0s
+
+#14 [stage-1  7/10] COPY submissions/25622005/week-08/docker/ /opt/deploy/
+#14 DONE 0.0s
+
+#15 [stage-1  8/10] RUN python /opt/agent/market_runtime.py --help > /dev/null     && python -c "import sys; sys.path.insert(0, '/opt/agent'); import policy; front, _ = policy.split_skill(open('/opt/agent/strategy/SKILL.md', encoding='utf-8').read()); errors = policy.validate(front.get('policy')); sys.exit('\n'.join(errors) if errors else 0)"
+#15 DONE 0.4s
+
+#16 [stage-1  9/10] RUN chmod 755 /opt/deploy/entrypoint.sh     && mkdir -p /data     && chown agent:agent /data
+#16 DONE 0.1s
+
+#17 [stage-1 10/10] WORKDIR /data
+#17 DONE 0.0s
+
+#18 exporting to image
+#18 exporting layers 0.0s done
+#18 exporting manifest sha256:890debb48a0ad0845176f8ee509f4d187d567e07862576052ecff83e06d8d0e3 done
+#18 exporting config sha256:2d238b8e44c1a4b02fd2e7e3a77fa3b8e4e31d575da19d8708324ba8ea5d96fa done
+#18 exporting attestation manifest sha256:64982c083432524c73691968e9d0c0d35ae6a7d14d7b7aeb5b14192076fbfe2d done
+#18 exporting manifest list sha256:57f9089266af017bcec84d9d5ec9f697d41f54c20821e7f35bb4d4f59d5775f8 done
+#18 naming to docker.io/library/week08-agent:n36l done
+#18 DONE 0.1s
+
+#19 resolving provenance for metadata file
+#19 DONE 0.0s
+ Image week08-agent:n36l Built 

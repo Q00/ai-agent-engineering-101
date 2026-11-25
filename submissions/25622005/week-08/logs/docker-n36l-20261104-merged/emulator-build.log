@@ -1,0 +1,74 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Emulator.Dockerfile
+#1 transferring dockerfile: 2.67kB done
+#1 WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/amd64" (line 6)
+#1 WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/arm64" (line 7)
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/week08-agent:n36l
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/debian:bookworm-slim
+#3 ...
+
+#4 [auth] library/debian:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/debian:bookworm-slim
+#3 DONE 1.5s
+
+#5 [internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [stage-1 1/8] FROM docker.io/library/debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3
+#6 resolve docker.io/library/debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3 done
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 4.87kB done
+#7 DONE 0.0s
+
+#8 [candidate 1/1] FROM docker.io/library/week08-agent:n36l@sha256:ad1630c056a16992e146aa4f68829f6ee0317f8474fea8aee6d527e2fe21a0c6
+#8 resolve docker.io/library/week08-agent:n36l@sha256:ad1630c056a16992e146aa4f68829f6ee0317f8474fea8aee6d527e2fe21a0c6 done
+#8 DONE 0.0s
+
+#9 [stage-1 2/8] RUN apt-get update     && apt-get install -y --no-install-recommends qemu-user     && rm -rf /var/lib/apt/lists/*
+#9 CACHED
+
+#10 [stage-1 3/8] COPY --from=candidate / /target/
+#10 DONE 1.1s
+
+#11 [stage-1 4/8] RUN cp --remove-destination /target/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /target/usr/lib64/ld-linux-x86-64.so.2
+#11 DONE 0.1s
+
+#12 [stage-1 5/8] RUN mkdir -p /phenom/bin     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom,-fxsr-opt -L /target -0 /phenom/python /target/usr/local/bin/python3.12 "$@"\n' > /phenom/python     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom,-fxsr-opt -L /target /target/usr/local/bin/node "$@"\n' > /phenom/node     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom,-fxsr-opt -L /target "$@"\n' > /phenom/run     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom,-fxsr-opt -L /target /target/usr/bin/git "$@"\n' > /phenom/bin/git     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom,-fxsr-opt -L /target /target/usr/bin/ssh "$@"\n' > /phenom/bin/ssh     && chmod 755 /phenom/python /phenom/node /phenom/run /phenom/bin/git /phenom/bin/ssh
+#12 DONE 0.1s
+
+#13 [stage-1 6/8] COPY phenom_check.py phenom_run.sh /phenom/
+#13 DONE 0.0s
+
+#14 [stage-1 7/8] WORKDIR /target/opt/agent
+#14 DONE 0.0s
+
+#15 [stage-1 8/8] RUN mkdir -p /phenom/git-core     && for f in /target/usr/lib/git-core/*; do          n=$(basename "$f");          if [ -f "$f" ] && head -c 4 "$f" | grep -q ELF; then            printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom,-fxsr-opt -L /target %s "$@"\n' "$f" > /phenom/git-core/$n;          else ln -s "$f" /phenom/git-core/$n; fi;        done     && chmod 755 /phenom/git-core/*
+#15 DONE 0.2s
+
+#16 exporting to image
+#16 exporting layers
+#16 exporting layers 9.2s done
+#16 exporting manifest sha256:6457527b46db6dd5bd2d33a5a8be2db17aad132bc30572ac3c534be120776db1 done
+#16 exporting config sha256:335c96b76380471cba9a43ee9f50245c9ebb3a39b57e8335d93377dfa33c0ff3 done
+#16 exporting attestation manifest sha256:cbca9cab46fa8cef7d6bdedbc1f83b5088f23c42b44ed29a816727e4978ecfca done
+#16 exporting manifest list sha256:eba8007d0a170457092fd1940c9c2417f5c7a0116664293dbfad68b56f4d9036 done
+#16 naming to docker.io/library/week08-phenom:merged done
+#16 unpacking to docker.io/library/week08-phenom:merged
+#16 unpacking to docker.io/library/week08-phenom:merged 1.9s done
+#16 DONE 11.2s
+
+ [33m2 warnings found (use docker --debug to expand):
+[0m - FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/amd64" (line 6)
+ - FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/arm64" (line 7)
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/ymxmml0snflt88f4u553z3y3e

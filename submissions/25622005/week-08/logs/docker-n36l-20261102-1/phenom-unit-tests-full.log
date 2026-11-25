@@ -1,0 +1,163 @@
+....................qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+Fqemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+Fqemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+F.............qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.........qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+...qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+..qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 41480)
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/local/lib/python3.12/socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/local/lib/python3.12/socketserver.py", line 766, in __init__
+    self.handle()
+  File "/usr/local/lib/python3.12/http/server.py", line 436, in handle
+    self.handle_one_request()
+  File "/usr/local/lib/python3.12/http/server.py", line 424, in handle_one_request
+    method()
+  File "/target/data/tests/test_negotiation.py", line 58, in do_POST
+    self._send({"jsonrpc": "2.0", "id": req["id"], "result": {"task": shop.handle(req)}})
+  File "/target/data/tests/test_negotiation.py", line 50, in _send
+    self.wfile.write(body)
+  File "/usr/local/lib/python3.12/socketserver.py", line 845, in write
+    self._sock.sendall(b)
+BrokenPipeError: [Errno 32] Broken pipe
+----------------------------------------
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+..qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+..........................qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+F.qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+Fqemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+Fqemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+Fqemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+F.....................qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+............................F..............
+======================================================================
+FAIL: test_binding_refuses_other_sku_and_cancels (test_e2e.EndToEnd.test_binding_refuses_other_sku_and_cancels)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_e2e.py", line 141, in stop_seller
+    self.assertEqual(out.decode(errors="replace"), "", "seller.py printed to stdout/stderr")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+- qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+ : seller.py printed to stdout/stderr
+
+======================================================================
+FAIL: test_food_deal_ships_named_unit (test_e2e.EndToEnd.test_food_deal_ships_named_unit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_e2e.py", line 141, in stop_seller
+    self.assertEqual(out.decode(errors="replace"), "", "seller.py printed to stdout/stderr")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+- qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+ : seller.py printed to stdout/stderr
+
+======================================================================
+FAIL: test_goods_deal_with_warranty_settles_and_is_reviewed (test_e2e.EndToEnd.test_goods_deal_with_warranty_settles_and_is_reviewed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_e2e.py", line 141, in stop_seller
+    self.assertEqual(out.decode(errors="replace"), "", "seller.py printed to stdout/stderr")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+- qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+ : seller.py printed to stdout/stderr
+
+======================================================================
+FAIL: test_bankrupt_line (test_restock.HookTest.test_bankrupt_line)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_restock.py", line 246, in test_bankrupt_line
+    self.assertEqual(self.run_hook("--state", str(self.state)), {"buy": [], "bankrupt": True})
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/target/data/tests/test_restock.py", line 225, in run_hook
+    self.assertEqual(p.stderr, "")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+- qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+
+
+======================================================================
+FAIL: test_invalid_policy_still_plans_and_records_it (test_restock.HookTest.test_invalid_policy_still_plans_and_records_it)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_restock.py", line 267, in test_invalid_policy_still_plans_and_records_it
+    self.assertTrue(self.run_hook("--state", str(self.state))["buy"])
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/target/data/tests/test_restock.py", line 225, in run_hook
+    self.assertEqual(p.stderr, "")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+- qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+
+
+======================================================================
+FAIL: test_missing_state_files (test_restock.HookTest.test_missing_state_files)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_restock.py", line 273, in test_missing_state_files
+    self.assertEqual(self.run_hook("--state", str(self.home / "nowhere")), {"buy": []})
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/target/data/tests/test_restock.py", line 225, in run_hook
+    self.assertEqual(p.stderr, "")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+- qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+
+
+======================================================================
+FAIL: test_one_line_on_errors (test_restock.HookTest.test_one_line_on_errors)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_restock.py", line 250, in test_one_line_on_errors
+    self.assertEqual(self.run_hook("--state", str(self.state)), {"buy": []})
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/target/data/tests/test_restock.py", line 225, in run_hook
+    self.assertEqual(p.stderr, "")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+- qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+
+
+======================================================================
+FAIL: test_plans_and_logs (test_restock.HookTest.test_plans_and_logs)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_restock.py", line 233, in test_plans_and_logs
+    out = self.run_hook("--state", str(self.state))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/target/data/tests/test_restock.py", line 225, in run_hook
+    self.assertEqual(p.stderr, "")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+- qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+
+
+======================================================================
+FAIL: test_real_server_prints_nothing (test_seller.RealServer.test_real_server_prints_nothing)
+The kit pumps the seller's stdout and stderr into market-kit.log: 20 requests under uvicorn, 0 lines.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/target/data/tests/test_seller.py", line 320, in test_real_server_prints_nothing
+    self.assertEqual(out.decode(errors="replace"), "")
+AssertionError: "qemu-x86_64: warning: TCG doesn't suppor[56 chars]5]\n" != ''
+- qemu-x86_64: warning: TCG doesn't support requested feature: CPUID.80000001H:EDX.fxsr-opt [bit 25]
+
+
+----------------------------------------------------------------------
+Ran 165 tests in 74.014s
+
+FAILED (failures=9)

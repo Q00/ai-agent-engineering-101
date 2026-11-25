@@ -1,0 +1,63 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Emulator.Dockerfile
+#1 transferring dockerfile: 1.50kB done
+#1 WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/amd64" (line 4)
+#1 WARN: FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/arm64" (line 5)
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/week08-agent:n36l
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/debian:bookworm-slim
+#3 DONE 0.8s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [stage-1 1/7] FROM docker.io/library/debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3
+#5 resolve docker.io/library/debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3 0.0s done
+#5 DONE 0.0s
+
+#6 [candidate 1/1] FROM docker.io/library/week08-agent:n36l@sha256:53bda93e1616e91496fe864daea04845d29280630b43d70fd1eff3091aa2bcc1
+#6 resolve docker.io/library/week08-agent:n36l@sha256:53bda93e1616e91496fe864daea04845d29280630b43d70fd1eff3091aa2bcc1 0.0s done
+#6 DONE 0.0s
+
+#7 [stage-1 2/7] RUN apt-get update     && apt-get install -y --no-install-recommends qemu-user     && rm -rf /var/lib/apt/lists/*
+#7 CACHED
+
+#8 [stage-1 3/7] COPY --from=candidate / /target/
+#8 CACHED
+
+#9 [internal] load build context
+#9 transferring context: 37B done
+#9 DONE 0.0s
+
+#10 [stage-1 4/7] RUN cp --remove-destination /target/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2 /target/usr/lib64/ld-linux-x86-64.so.2
+#10 DONE 0.1s
+
+#11 [stage-1 5/7] RUN mkdir -p /phenom     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom -L /target -0 /phenom/python /target/usr/local/bin/python3.12 "$@"\n' > /phenom/python     && printf '#!/bin/sh\nexec qemu-x86_64 -cpu phenom -L /target "$@"\n' > /phenom/run     && chmod 755 /phenom/python /phenom/run     && mkdir -p /target/data     && cp -R /target/opt/agent/. /target/data/     && rm -rf /target/data/docker     && cp /target/opt/deploy/agent.container.json /target/data/agent.json
+#11 DONE 0.1s
+
+#12 [stage-1 6/7] COPY phenom_check.py /phenom/phenom_check.py
+#12 DONE 0.0s
+
+#13 [stage-1 7/7] WORKDIR /target/data
+#13 DONE 0.0s
+
+#14 exporting to image
+#14 exporting layers 0.0s done
+#14 exporting manifest sha256:7d66e34647450f9ecb4716d8e2cd98af31c5fc3f68b797160e9cca6d85bec0f5 done
+#14 exporting config sha256:134c5d5118eacbbd37caee2df020241ea5dd020107923c7d38dd17ad7d05f0ef done
+#14 exporting attestation manifest sha256:776f4eae7463dd09034f88bdfaf76f4d190d69bfb81f48e28672f123cdad5460 done
+#14 exporting manifest list sha256:41c8fe9c7f5fc1be7014ee7c014925177417d54549e00754ea586f5dec0b966b done
+#14 naming to docker.io/library/week08-agent:phenom-check done
+#14 unpacking to docker.io/library/week08-agent:phenom-check 0.0s done
+#14 DONE 0.1s
+
+ [33m2 warnings found (use docker --debug to expand):
+[0m - FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/arm64" (line 5)
+ - FromPlatformFlagConstDisallowed: FROM --platform flag should not use constant value "linux/amd64" (line 4)
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/qf6opex1d92ufrx992ejt9bqw

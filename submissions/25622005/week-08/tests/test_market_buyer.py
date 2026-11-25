@@ -1,0 +1,201 @@
+"""market_buyer end to end: fixture .market files, a fake A2A shop on 127.0.0.1, the hook in a subprocess.
+The hook must print exactly one line on stdout whatever happens."""
+import fcntl
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+import unittest
+from pathlib import Path
+
+W = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from test_negotiation import FakeShop, WordsShop  # noqa: E402
+
+CATALOG = {"F1": {"sku": "F1", "name": "김치 A", "category": "식품>김치", "list_price": 30000, "kind": "food",
+                  "shelf_hours": 720},
+           "F2": {"sku": "F2", "name": "김치 B", "category": "식품>김치", "list_price": 40000, "kind": "food",
+                  "shelf_hours": 720}}
+ORDER = {"order": "o-77", "item": "김치", "category": "식품>김치", "budget": 41234, "acceptable": ["F1", "F2"],
+         "kind": "food", "use_within_hours": 10, "expires": 0, "round": 3, "market_pubkey": "x"}
+
+
+class MarketBuyerHookTests(unittest.TestCase):
+    def setUp(self):
+        self.home = Path(tempfile.mkdtemp(prefix="r3-mb-"))
+        self.addCleanup(shutil.rmtree, self.home, True)
+        (self.home / "strategy").mkdir()
+        shutil.copy(W / "strategy" / "SKILL.md", self.home / "strategy" / "SKILL.md")
+        self.md = self.home / ".market"
+        self.md.mkdir()
+        (self.md / "catalog.json").write_text(json.dumps(CATALOG, ensure_ascii=False), encoding="utf-8")
+
+    def write(self, order, shops):
+        (self.md / "order.json").write_text(json.dumps(order, ensure_ascii=False), encoding="utf-8")
+        (self.md / "shops.json").write_text(json.dumps(shops, ensure_ascii=False), encoding="utf-8")
+
+    def run_hook(self, *args, **env):
+        args = args or ("--shops", str(self.md / "shops.json"), "--item", "김치", "--budget", "41234",
+                        "--order", str(self.md / "order.json"))
+        env = dict(os.environ, R3_HOME=str(self.home), **env)
+        p = subprocess.run([sys.executable, "-B", str(W / "market_buyer.py"), *args], cwd=self.home, env=env,
+                           capture_output=True, text=True, timeout=90)
+        lines = p.stdout.splitlines()
+        self.assertEqual(len(lines), 1, p.stdout + p.stderr)
+        return json.loads(lines[0])
+
+    def rows(self, role="buyer"):
+        path = self.home / "logs" / "decisions" / f"{role}.jsonl"
+        return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines()] if path.exists() else []
+
+    def shop_entry(self, shop, *skus):
+        return {"name": "fake", "url": shop.url, "reviews": [],
+                "offers": [{"sku": s, "name": CATALOG[s]["name"], "qty": 1} for s in skus]}
+
+    def test_deal_line_with_accept_and_decision_row(self):
+        shop = FakeShop(sku="F2", first_ask=36000, floor=99999, unit="u-9", list_price=40000,
+                        data={"hours_left": 300.0})
+        self.addCleanup(shop.close)
+        self.write(ORDER, [self.shop_entry(shop, "F2")])
+        out = self.run_hook()
+        self.assertEqual(out["shop"], shop.url)
+        self.assertEqual(out["receipt"]["price"], 36000)
+        self.assertEqual(out["receipt"]["unit"], "u-9")
+        self.assertEqual(out["accept"], {"cert": True, "min_hours_left": 10.2,
+                                         "bind": {"max_price_list": 0.95, "sku": "F2", "unit": "u-9"}})
+        self.assertIn(out["stars"], range(1, 6))
+        self.assertNotIn("41234", json.dumps(shop.messages))
+        row = self.rows()[-1]
+        self.assertEqual((row["kind"], row["ref"]["order"], row["choice"]["price"]), ("order", "o-77", 36000))
+        self.assertIn(f"shop:{shop.url}", row["memory_refs"])
+        self.assertTrue(row["p_trace"][shop.url])
+        self.assertEqual(row["inputs"]["use_within_hours"], 10)
+        self.assertNotIn("+lastgood", row["policy_ver"])
+
+    def test_second_shop_after_the_first_refuses(self):
+        stubborn = FakeShop(sku="F2", first_ask=39000, floor=39000, list_price=40000)
+        good = FakeShop(sku="F1", first_ask=27000, floor=99999, list_price=30000)
+        for s in (stubborn, good):
+            self.addCleanup(s.close)
+        self.write(ORDER, [self.shop_entry(stubborn, "F2"), self.shop_entry(good, "F1")])
+        out = self.run_hook()
+        self.assertEqual(out["shop"], good.url)
+        self.assertEqual(stubborn.canceled, ["t1"])
+        tried = self.rows()[-1]["tried"]
+        self.assertEqual([t["shop"] for t in tried], [stubborn.url, good.url])
+
+    def test_cert_false_receipt_moves_to_next_shop(self):
+        elm = FakeShop(sku="F2", first_ask=36000, floor=99999, list_price=40000, receipt_extra={"cert": False})
+        good = FakeShop(sku="F1", first_ask=27000, floor=99999, list_price=30000)
+        for s in (elm, good):
+            self.addCleanup(s.close)
+        self.write(ORDER, [self.shop_entry(elm, "F2"), self.shop_entry(good, "F1")])
+        out = self.run_hook()
+        self.assertEqual(out["shop"], good.url)
+        tried = self.rows()[-1]["tried"]
+        self.assertEqual([t["shop"] for t in tried], [elm.url, good.url])
+        self.assertIn("cert: false", tried[0]["receipt_problem"])
+
+    def test_model_reads_a_quote_in_words(self):
+        """D9 through EXCEPTION_HARNESS_CMD: a fake model command reads the price the rules cannot."""
+        fake = self.home / "fake_model.py"
+        fake.write_text("import sys; sys.stdin.read(); "
+                        "print('Sure: {\"kind\": \"quote\", \"price\": 36000, \"sku\": \"F2\", \"unit\": null}')")
+        shop = WordsShop(words="Thirty-six thousand won for this one.", sku="F2", first_ask=36000, floor=99999,
+                         list_price=40000)
+        self.addCleanup(shop.close)
+        self.write(ORDER, [self.shop_entry(shop, "F2")])
+        out = self.run_hook(EXCEPTION_HARNESS_CMD=f"{sys.executable} {fake} --model fake-small")
+        self.assertEqual(out["receipt"]["price"], 36000)
+        *llms, order = self.rows()                  # the quote, then the answer to our open offer
+        self.assertEqual(len(llms), 2)
+        for llm in llms:
+            self.assertEqual((llm["kind"], llm["why"], llm["model"], llm["choice"]["price"]),
+                             ("llm_exception", "ok", "fake-small", 36000))
+            self.assertEqual(llm["policy_ver"], order["policy_ver"])
+            self.assertNotIn("41234", llm["inputs"]["text"] + json.dumps(llm["inputs"]))
+        self.assertEqual(order["tried"][0]["llm_reads"], 2)
+
+    def asks(self):
+        return json.loads((self.home / "memory" / "shop_asks.json").read_text(encoding="utf-8"))
+
+    def test_first_ask_recorded_after_each_try(self):
+        shop = FakeShop(sku="F2", first_ask=36000, floor=99999, list_price=40000, data={"hours_left": 300.0})
+        self.addCleanup(shop.close)
+        self.write(ORDER, [self.shop_entry(shop, "F2")])
+        (self.home / "memory").mkdir()
+        (self.home / "memory" / "shop_asks.json").write_text("{half", encoding="utf-8")   # broken: start empty
+        self.run_hook()
+        self.assertEqual({k: (e["n"], e["share"], e["w"]) for k, e in self.asks().items()},
+                         {f"{shop.url}|food": (1, 0.9, 0.0)})
+        self.run_hook()
+        self.assertEqual(self.asks()[f"{shop.url}|food"]["n"], 2)
+
+    def test_known_cheap_shop_is_tried_first(self):
+        shops = [FakeShop(sku="F2", floor=0, list_price=40000) for _ in range(2)]
+        for s in shops:
+            self.addCleanup(s.close)
+        dear, cheap = sorted(shops, key=lambda s: s.url)    # without a record the URL order would try dear first
+        dear.first_ask, cheap.first_ask = 38000, 32000
+        self.write(ORDER, [self.shop_entry(dear, "F2"), self.shop_entry(cheap, "F2")])
+        (self.home / "memory").mkdir()
+        (self.home / "memory" / "shop_asks.json").write_text(json.dumps(          # dear's cheap record is stale
+            {f"{cheap.url}|food": {"n": 3, "share": 0.8, "w": 0.0, "ts": int(time.time())},
+             f"{dear.url}|food": {"n": 3, "share": 0.5, "w": 0.0, "ts": int(time.time()) - 49 * 3600}}),
+            encoding="utf-8")
+        out = self.run_hook()
+        self.assertEqual(out["shop"], cheap.url)
+        row = self.rows()[-1]
+        self.assertEqual([c["shop"] for c in row["candidates"]], [cheap.url, dear.url])
+        self.assertEqual(row["candidates"][0]["ask_est"], 32000)
+
+    def test_a_recording_error_does_not_break_the_order(self):
+        shop = FakeShop(sku="F2", first_ask=36000, floor=99999, list_price=40000, data={"hours_left": 300.0})
+        self.addCleanup(shop.close)
+        self.write(ORDER, [self.shop_entry(shop, "F2")])
+        (self.home / "memory" / ".shop_asks.lock").mkdir(parents=True)                 # the lock cannot open
+        self.assertEqual(self.run_hook()["receipt"]["price"], 36000)
+        log = (self.home / "logs" / "hooks" / "market_buyer.log").read_text(encoding="utf-8")
+        self.assertIn("shop ask not recorded", log)
+        self.assertFalse((self.home / "memory" / "shop_asks.json").exists())
+
+    def test_a_busy_record_lock_does_not_hold_the_order(self):
+        shop = FakeShop(sku="F2", first_ask=36000, floor=99999, list_price=40000, data={"hours_left": 300.0})
+        self.addCleanup(shop.close)
+        self.write(ORDER, [self.shop_entry(shop, "F2")])
+        (self.home / "memory").mkdir()
+        with open(self.home / "memory" / ".shop_asks.lock", "a") as f:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)                               # another hook holds it
+            self.assertEqual(self.run_hook()["receipt"]["price"], 36000)
+        log = (self.home / "logs" / "hooks" / "market_buyer.log").read_text(encoding="utf-8")
+        self.assertIn("shop ask not recorded: TimeoutError", log)
+
+    def test_round_2_is_no_deal(self):
+        self.write(dict(ORDER, round=2), [])
+        self.assertEqual(self.run_hook(), {"shop": "", "receipt": None})
+        self.assertEqual(self.rows()[-1]["choice"], "no_deal")
+
+    def test_no_offers_is_no_deal(self):
+        self.write(ORDER, [{"name": "x", "url": "http://127.0.0.1:9", "reviews": [], "offers": []}])
+        self.assertEqual(self.run_hook(), {"shop": "", "receipt": None})
+
+    def test_unreachable_shop_is_no_deal(self):
+        self.write(ORDER, [{"name": "x", "url": "http://127.0.0.1:9", "reviews": [],
+                            "offers": [{"sku": "F1", "name": "김치 A", "qty": 1}]}])
+        out = self.run_hook()
+        self.assertEqual(out, {"shop": "", "receipt": None})
+        self.assertEqual(self.rows()[-1]["tried"][0]["state"], "error")
+
+    def test_broken_inputs_still_print_one_line(self):
+        self.assertEqual(self.run_hook("--shops", "nope.json", "--item", "x", "--budget", "1",
+                                       "--order", "nope.json"), {"shop": "", "receipt": None})
+        self.assertEqual(self.run_hook("--budget", "not-a-number"), {"shop": "", "receipt": None})
+        (self.md / "order.json").write_text("{half", encoding="utf-8")
+        self.assertEqual(self.run_hook(), {"shop": "", "receipt": None})
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,23 @@
+Verify run after the review fixes on the merged image (2026-11-04, macOS Docker Desktop, linux/amd64).
+
+Image: week08-agent:n36l sha256:ec7049f347f2b8d4593650dccfa02f9c3faefc17f02bfaee534c5cc8ea40a134
+       created 2026-11-03T15:38:06.867730259Z (UTC), built by `docker compose build market` (build.log).
+
+tests.log  host suites: shop Ran 218 OK, strategist Ran 148 OK.
+build.log  in-image suites: shop Ran 218 OK, strategist Ran 148 OK (skipped=1). The skip is
+           test_every_30_minutes_with_a_one_hour_cooldown's compose.yaml check: the image no longer
+           stages compose.yaml (ls /opt/agent/compose.yaml: No such file, in smoke.log).
+           The BrokenPipeError traceback in the shop suite is test-server noise, also in the
+           previous merged build.log.
+smoke.log  no keys (dummy ANTHROPIC_API_KEY, stub API on 127.0.0.1:8787), scratch /data bind mount,
+           NAS_UID/NAS_GID 1000 from docker compose config; script smoke.sh, probe probe-claude.sh
+           (mounted as /smoke/probe/claude: a script named claude that prints its cwd, then runs
+           the real claude). entrypoint.sh ran without its final exec. as-agent pwd -> /data,
+           as-agent claude --version runs in /data/home. Both harness commands logged
+           claude-opus-5-5 and claude-haiku-5-5 at the stub; the extra claude-haiku-4-5-20251001
+           requests are Claude Code's own background calls, not the harness commands.
+           The bind mount shows uid 0 in ls -n (Docker Desktop on macOS); the tmpfs supplement at the
+           end shows the entrypoint's chown giving /data and /data/home to 1000:1000.
+
+K10 (qemu -cpu phenom) emulation was not rerun: the fixes are pure Python and shell changes and add
+no native code; the last emulation result is in ../docker-n36l-20261104-merged/phenom-check.log.

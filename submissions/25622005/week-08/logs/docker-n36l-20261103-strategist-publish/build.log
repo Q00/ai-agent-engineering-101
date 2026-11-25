@@ -1,0 +1,416 @@
+--progress is a global compose flag, better use `docker compose --progress xx build ...
+ Image week08-strategist:n36l Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 692B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile.strategist
+#2 transferring dockerfile: 4.34kB done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/python:3.12.11-slim-bookworm
+#3 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/library/node:22-bookworm-slim
+#4 DONE 0.0s
+
+#5 [stage-1  1/16] FROM docker.io/library/python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7
+#5 resolve docker.io/library/python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7 done
+#5 CACHED
+
+#6 [internal] load build context
+#6 transferring context: 166.25kB done
+#6 DONE 0.0s
+
+#7 [node 1/1] FROM docker.io/library/node:22-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d
+#7 resolve docker.io/library/node:22-bookworm-slim@sha256:de170b39439eb0e5a3444ad7d60b015614a381e10fecae2e30ec9e735122f38d done
+#7 CACHED
+
+#8 [stage-1  2/16] RUN apt-get update     && apt-get install -y --no-install-recommends ca-certificates git gosu openssh-client tzdata     && rm -rf /var/lib/apt/lists/*     && useradd --create-home --uid 1000 --user-group agent
+#8 0.220 Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+#8 0.258 Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+#8 0.258 Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [34.8 kB]
+#8 0.569 Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]
+#8 1.380 Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]
+#8 1.382 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [360 kB]
+#8 2.082 Fetched 9398 kB in 2s (4912 kB/s)
+#8 2.082 Reading package lists...
+#8 2.471 Reading package lists...
+#8 2.791 Building dependency tree...
+#8 2.862 Reading state information...
+#8 2.939 The following additional packages will be installed:
+#8 2.939   git-man libbrotli1 libbsd0 libcbor0.8 libcurl3-gnutls libedit2 liberror-perl
+#8 2.939   libexpat1 libfido2-1 libgdbm-compat4 libldap-2.5-0 libnghttp2-14 libperl5.36
+#8 2.940   libpsl5 librtmp1 libsasl2-2 libsasl2-modules-db libssh2-1 libssl3 openssl
+#8 2.940   perl perl-base perl-modules-5.36
+#8 2.941 Suggested packages:
+#8 2.941   gettext-base git-daemon-run | git-daemon-sysvinit git-doc git-email git-gui
+#8 2.941   gitk gitweb git-cvs git-mediawiki git-svn sensible-utils keychain libpam-ssh
+#8 2.941   monkeysphere ssh-askpass perl-doc libterm-readline-gnu-perl
+#8 2.941   | libterm-readline-perl-perl make libtap-harness-archive-perl
+#8 2.941 Recommended packages:
+#8 2.941   patch less libldap-common publicsuffix libsasl2-modules xauth
+#8 3.026 The following NEW packages will be installed:
+#8 3.026   git git-man gosu libbrotli1 libbsd0 libcbor0.8 libcurl3-gnutls libedit2
+#8 3.026   liberror-perl libexpat1 libfido2-1 libgdbm-compat4 libldap-2.5-0
+#8 3.026   libnghttp2-14 libperl5.36 libpsl5 librtmp1 libsasl2-2 libsasl2-modules-db
+#8 3.026   libssh2-1 openssh-client perl perl-modules-5.36
+#8 3.027 The following packages will be upgraded:
+#8 3.027   ca-certificates libssl3 openssl perl-base tzdata
+#8 3.090 5 upgraded, 23 newly installed, 0 to remove and 24 not upgraded.
+#8 3.090 Need to get 25.7 MB of archives.
+#8 3.090 After this operation, 110 MB of additional disk space will be used.
+#8 3.090 Get:1 http://deb.debian.org/debian-security bookworm-security/main amd64 perl-base amd64 5.36.0-7+deb12u4 [1610 kB]
+#8 3.245 Get:2 http://deb.debian.org/debian-security bookworm-security/main amd64 perl-modules-5.36 all 5.36.0-7+deb12u4 [2817 kB]
+#8 3.499 Get:3 http://deb.debian.org/debian bookworm/main amd64 libgdbm-compat4 amd64 1.23-3 [48.2 kB]
+#8 3.502 Get:4 http://deb.debian.org/debian-security bookworm-security/main amd64 libperl5.36 amd64 5.36.0-7+deb12u4 [4208 kB]
+#8 3.879 Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 perl amd64 5.36.0-7+deb12u4 [239 kB]
+#8 3.907 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 tzdata all 2026f-0+deb12u1 [308 kB]
+#8 3.940 Get:7 http://deb.debian.org/debian-security bookworm-security/main amd64 libssl3 amd64 3.0.22-1~deb12u2 [2040 kB]
+#8 4.116 Get:8 http://deb.debian.org/debian-security bookworm-security/main amd64 openssl amd64 3.0.22-1~deb12u2 [1442 kB]
+#8 4.244 Get:9 http://deb.debian.org/debian-security bookworm-security/main amd64 ca-certificates all 20250419~deb12u2 [161 kB]
+#8 4.258 Get:10 http://deb.debian.org/debian bookworm/main amd64 libbsd0 amd64 0.11.7-2 [117 kB]
+#8 4.268 Get:11 http://deb.debian.org/debian bookworm/main amd64 libedit2 amd64 3.1-20221030-2 [93.0 kB]
+#8 4.276 Get:12 http://deb.debian.org/debian bookworm/main amd64 libcbor0.8 amd64 0.8.0-2+b1 [27.4 kB]
+#8 4.278 Get:13 http://deb.debian.org/debian bookworm/main amd64 libfido2-1 amd64 1.12.0-2+b1 [77.2 kB]
+#8 4.288 Get:14 http://deb.debian.org/debian bookworm/main amd64 openssh-client amd64 1:9.2p1-2+deb12u10 [994 kB]
+#8 4.377 Get:15 http://deb.debian.org/debian-security bookworm-security/main amd64 libbrotli1 amd64 1.0.9-2+deb12u1 [275 kB]
+#8 4.401 Get:16 http://deb.debian.org/debian-security bookworm-security/main amd64 libsasl2-modules-db amd64 2.1.28+dfsg-10+deb12u1 [20.5 kB]
+#8 4.403 Get:17 http://deb.debian.org/debian-security bookworm-security/main amd64 libsasl2-2 amd64 2.1.28+dfsg-10+deb12u1 [59.9 kB]
+#8 4.408 Get:18 http://deb.debian.org/debian bookworm/main amd64 libldap-2.5-0 amd64 2.5.13+dfsg-5 [183 kB]
+#8 4.423 Get:19 http://deb.debian.org/debian bookworm/main amd64 libnghttp2-14 amd64 1.52.0-1+deb12u3 [72.4 kB]
+#8 4.429 Get:20 http://deb.debian.org/debian bookworm/main amd64 libpsl5 amd64 0.21.2-1 [58.7 kB]
+#8 4.434 Get:21 http://deb.debian.org/debian bookworm/main amd64 librtmp1 amd64 2.4+20151223.gitfa8646d.1-2+b2 [60.8 kB]
+#8 4.439 Get:22 http://deb.debian.org/debian-security bookworm-security/main amd64 libssh2-1 amd64 1.10.0-3+deb12u1 [176 kB]
+#8 4.458 Get:23 http://deb.debian.org/debian bookworm/main amd64 libcurl3-gnutls amd64 7.88.1-10+deb12u15 [386 kB]
+#8 4.490 Get:24 http://deb.debian.org/debian-security bookworm-security/main amd64 libexpat1 amd64 2.5.0-1+deb12u5 [108 kB]
+#8 4.500 Get:25 http://deb.debian.org/debian bookworm/main amd64 liberror-perl all 0.17029-2 [29.0 kB]
+#8 4.509 Get:26 http://deb.debian.org/debian bookworm/main amd64 git-man all 1:2.39.5-0+deb12u3 [2053 kB]
+#8 4.691 Get:27 http://deb.debian.org/debian bookworm/main amd64 git amd64 1:2.39.5-0+deb12u3 [7264 kB]
+#8 5.330 Get:28 http://deb.debian.org/debian bookworm/main amd64 gosu amd64 1.14-1+b10 [766 kB]
+#8 5.586 debconf: delaying package configuration, since apt-utils is not installed
+#8 5.628 Fetched 25.7 MB in 2s (10.9 MB/s)
+#8 5.687 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6694 files and directories currently installed.)
+#8 5.691 Preparing to unpack .../perl-base_5.36.0-7+deb12u4_amd64.deb ...
+#8 5.780 Unpacking perl-base (5.36.0-7+deb12u4) over (5.36.0-7+deb12u3) ...
+#8 6.271 Setting up perl-base (5.36.0-7+deb12u4) ...
+#8 6.378 Selecting previously unselected package perl-modules-5.36.
+#8 6.379 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6695 files and directories currently installed.)
+#8 6.382 Preparing to unpack .../00-perl-modules-5.36_5.36.0-7+deb12u4_all.deb ...
+#8 6.384 Unpacking perl-modules-5.36 (5.36.0-7+deb12u4) ...
+#8 6.606 Selecting previously unselected package libgdbm-compat4:amd64.
+#8 6.607 Preparing to unpack .../01-libgdbm-compat4_1.23-3_amd64.deb ...
+#8 6.609 Unpacking libgdbm-compat4:amd64 (1.23-3) ...
+#8 6.679 Selecting previously unselected package libperl5.36:amd64.
+#8 6.679 Preparing to unpack .../02-libperl5.36_5.36.0-7+deb12u4_amd64.deb ...
+#8 6.680 Unpacking libperl5.36:amd64 (5.36.0-7+deb12u4) ...
+#8 6.952 Selecting previously unselected package perl.
+#8 6.953 Preparing to unpack .../03-perl_5.36.0-7+deb12u4_amd64.deb ...
+#8 6.996 Unpacking perl (5.36.0-7+deb12u4) ...
+#8 7.078 Preparing to unpack .../04-tzdata_2026f-0+deb12u1_all.deb ...
+#8 8.140 Unpacking tzdata (2026f-0+deb12u1) over (2025b-0+deb12u2) ...
+#8 9.181 Preparing to unpack .../05-libssl3_3.0.22-1~deb12u2_amd64.deb ...
+#8 9.183 Unpacking libssl3:amd64 (3.0.22-1~deb12u2) over (3.0.17-1~deb12u2) ...
+#8 9.339 Preparing to unpack .../06-openssl_3.0.22-1~deb12u2_amd64.deb ...
+#8 9.342 Unpacking openssl (3.0.22-1~deb12u2) over (3.0.17-1~deb12u2) ...
+#8 9.471 Preparing to unpack .../07-ca-certificates_20250419~deb12u2_all.deb ...
+#8 9.474 Unpacking ca-certificates (20250419~deb12u2) over (20230311+deb12u1) ...
+#8 9.621 Selecting previously unselected package libbsd0:amd64.
+#8 9.622 Preparing to unpack .../08-libbsd0_0.11.7-2_amd64.deb ...
+#8 9.623 Unpacking libbsd0:amd64 (0.11.7-2) ...
+#8 9.698 Selecting previously unselected package libedit2:amd64.
+#8 9.698 Preparing to unpack .../09-libedit2_3.1-20221030-2_amd64.deb ...
+#8 9.699 Unpacking libedit2:amd64 (3.1-20221030-2) ...
+#8 9.776 Selecting previously unselected package libcbor0.8:amd64.
+#8 9.776 Preparing to unpack .../10-libcbor0.8_0.8.0-2+b1_amd64.deb ...
+#8 9.777 Unpacking libcbor0.8:amd64 (0.8.0-2+b1) ...
+#8 9.849 Selecting previously unselected package libfido2-1:amd64.
+#8 9.850 Preparing to unpack .../11-libfido2-1_1.12.0-2+b1_amd64.deb ...
+#8 9.851 Unpacking libfido2-1:amd64 (1.12.0-2+b1) ...
+#8 9.924 Selecting previously unselected package openssh-client.
+#8 9.925 Preparing to unpack .../12-openssh-client_1%3a9.2p1-2+deb12u10_amd64.deb ...
+#8 9.970 Unpacking openssh-client (1:9.2p1-2+deb12u10) ...
+#8 10.09 Selecting previously unselected package libbrotli1:amd64.
+#8 10.09 Preparing to unpack .../13-libbrotli1_1.0.9-2+deb12u1_amd64.deb ...
+#8 10.09 Unpacking libbrotli1:amd64 (1.0.9-2+deb12u1) ...
+#8 10.17 Selecting previously unselected package libsasl2-modules-db:amd64.
+#8 10.17 Preparing to unpack .../14-libsasl2-modules-db_2.1.28+dfsg-10+deb12u1_amd64.deb ...
+#8 10.17 Unpacking libsasl2-modules-db:amd64 (2.1.28+dfsg-10+deb12u1) ...
+#8 10.24 Selecting previously unselected package libsasl2-2:amd64.
+#8 10.24 Preparing to unpack .../15-libsasl2-2_2.1.28+dfsg-10+deb12u1_amd64.deb ...
+#8 10.24 Unpacking libsasl2-2:amd64 (2.1.28+dfsg-10+deb12u1) ...
+#8 10.32 Selecting previously unselected package libldap-2.5-0:amd64.
+#8 10.32 Preparing to unpack .../16-libldap-2.5-0_2.5.13+dfsg-5_amd64.deb ...
+#8 10.32 Unpacking libldap-2.5-0:amd64 (2.5.13+dfsg-5) ...
+#8 10.40 Selecting previously unselected package libnghttp2-14:amd64.
+#8 10.40 Preparing to unpack .../17-libnghttp2-14_1.52.0-1+deb12u3_amd64.deb ...
+#8 10.40 Unpacking libnghttp2-14:amd64 (1.52.0-1+deb12u3) ...
+#8 10.47 Selecting previously unselected package libpsl5:amd64.
+#8 10.47 Preparing to unpack .../18-libpsl5_0.21.2-1_amd64.deb ...
+#8 10.47 Unpacking libpsl5:amd64 (0.21.2-1) ...
+#8 10.54 Selecting previously unselected package librtmp1:amd64.
+#8 10.55 Preparing to unpack .../19-librtmp1_2.4+20151223.gitfa8646d.1-2+b2_amd64.deb ...
+#8 10.55 Unpacking librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b2) ...
+#8 10.62 Selecting previously unselected package libssh2-1:amd64.
+#8 10.62 Preparing to unpack .../20-libssh2-1_1.10.0-3+deb12u1_amd64.deb ...
+#8 10.62 Unpacking libssh2-1:amd64 (1.10.0-3+deb12u1) ...
+#8 10.70 Selecting previously unselected package libcurl3-gnutls:amd64.
+#8 10.70 Preparing to unpack .../21-libcurl3-gnutls_7.88.1-10+deb12u15_amd64.deb ...
+#8 10.70 Unpacking libcurl3-gnutls:amd64 (7.88.1-10+deb12u15) ...
+#8 10.78 Selecting previously unselected package libexpat1:amd64.
+#8 10.78 Preparing to unpack .../22-libexpat1_2.5.0-1+deb12u5_amd64.deb ...
+#8 10.79 Unpacking libexpat1:amd64 (2.5.0-1+deb12u5) ...
+#8 10.86 Selecting previously unselected package liberror-perl.
+#8 10.86 Preparing to unpack .../23-liberror-perl_0.17029-2_all.deb ...
+#8 10.86 Unpacking liberror-perl (0.17029-2) ...
+#8 10.93 Selecting previously unselected package git-man.
+#8 10.93 Preparing to unpack .../24-git-man_1%3a2.39.5-0+deb12u3_all.deb ...
+#8 10.93 Unpacking git-man (1:2.39.5-0+deb12u3) ...
+#8 11.05 Selecting previously unselected package git.
+#8 11.05 Preparing to unpack .../25-git_1%3a2.39.5-0+deb12u3_amd64.deb ...
+#8 11.10 Unpacking git (1:2.39.5-0+deb12u3) ...
+#8 11.37 Selecting previously unselected package gosu.
+#8 11.37 Preparing to unpack .../26-gosu_1.14-1+b10_amd64.deb ...
+#8 11.37 Unpacking gosu (1.14-1+b10) ...
+#8 11.46 Setting up libexpat1:amd64 (2.5.0-1+deb12u5) ...
+#8 11.47 Setting up libpsl5:amd64 (0.21.2-1) ...
+#8 11.47 Setting up libcbor0.8:amd64 (0.8.0-2+b1) ...
+#8 11.47 Setting up libbrotli1:amd64 (1.0.9-2+deb12u1) ...
+#8 11.47 Setting up libssl3:amd64 (3.0.22-1~deb12u2) ...
+#8 11.48 Setting up libnghttp2-14:amd64 (1.52.0-1+deb12u3) ...
+#8 11.48 Setting up libsasl2-modules-db:amd64 (2.1.28+dfsg-10+deb12u1) ...
+#8 11.48 Setting up tzdata (2026f-0+deb12u1) ...
+#8 11.63 debconf: unable to initialize frontend: Dialog
+#8 11.63 debconf: (TERM is not set, so the dialog frontend is not usable.)
+#8 11.63 debconf: falling back to frontend: Readline
+#8 11.67 debconf: unable to initialize frontend: Readline
+#8 11.67 debconf: (This frontend requires a controlling tty.)
+#8 11.67 debconf: falling back to frontend: Teletype
+#8 11.79 
+#8 11.79 Current default time zone: 'Etc/UTC'
+#8 11.81 Local time is now:      Mon Nov  2 17:15:15 UTC 2026.
+#8 11.81 Universal Time is now:  Mon Nov  2 17:15:15 UTC 2026.
+#8 11.81 Run 'dpkg-reconfigure tzdata' if you wish to change it.
+#8 11.81 
+#8 12.31 Setting up perl-modules-5.36 (5.36.0-7+deb12u4) ...
+#8 12.31 Setting up librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b2) ...
+#8 12.31 Setting up gosu (1.14-1+b10) ...
+#8 12.31 Setting up libgdbm-compat4:amd64 (1.23-3) ...
+#8 12.31 Setting up libsasl2-2:amd64 (2.1.28+dfsg-10+deb12u1) ...
+#8 12.32 Setting up git-man (1:2.39.5-0+deb12u3) ...
+#8 12.32 Setting up libssh2-1:amd64 (1.10.0-3+deb12u1) ...
+#8 12.32 Setting up libfido2-1:amd64 (1.12.0-2+b1) ...
+#8 12.32 Setting up openssl (3.0.22-1~deb12u2) ...
+#8 12.34 Setting up libbsd0:amd64 (0.11.7-2) ...
+#8 12.34 Setting up libperl5.36:amd64 (5.36.0-7+deb12u4) ...
+#8 12.34 Setting up libedit2:amd64 (3.1-20221030-2) ...
+#8 12.34 Setting up libldap-2.5-0:amd64 (2.5.13+dfsg-5) ...
+#8 12.34 Setting up ca-certificates (20250419~deb12u2) ...
+#8 12.56 debconf: unable to initialize frontend: Dialog
+#8 12.56 debconf: (TERM is not set, so the dialog frontend is not usable.)
+#8 12.56 debconf: falling back to frontend: Readline
+#8 12.61 debconf: unable to initialize frontend: Readline
+#8 12.61 debconf: (This frontend requires a controlling tty.)
+#8 12.61 debconf: falling back to frontend: Teletype
+#8 27.89 Updating certificates in /etc/ssl/certs...
+#8 36.58 rehash: warning: skipping ca-certificates.crt,it does not contain exactly one certificate or CRL
+#8 36.60 21 added, 15 removed; done.
+#8 36.65 Setting up perl (5.36.0-7+deb12u4) ...
+#8 36.72 Setting up openssh-client (1:9.2p1-2+deb12u10) ...
+#8 36.95 Setting up libcurl3-gnutls:amd64 (7.88.1-10+deb12u15) ...
+#8 36.95 Setting up liberror-perl (0.17029-2) ...
+#8 36.96 Setting up git (1:2.39.5-0+deb12u3) ...
+#8 37.00 Processing triggers for libc-bin (2.36-9+deb12u13) ...
+#8 37.04 Processing triggers for ca-certificates (20250419~deb12u2) ...
+#8 37.08 Updating certificates in /etc/ssl/certs...
+#8 42.83 0 added, 0 removed; done.
+#8 42.83 Running hooks in /etc/ca-certificates/update.d...
+#8 42.84 done.
+#8 DONE 43.0s
+
+#9 [stage-1  3/16] COPY submissions/25622005/week-08/docker/requirements.txt /opt/deploy/requirements.txt
+#9 DONE 0.0s
+
+#10 [stage-1  4/16] RUN pip install --no-cache-dir --root-user-action=ignore --only-binary=:all:         -r /opt/deploy/requirements.txt
+#10 1.109 Collecting a2a-sdk==1.2.2 (from a2a-sdk[http-server]==1.2.2->-r /opt/deploy/requirements.txt (line 3))
+#10 1.170   Downloading a2a_sdk-1.2.2-py3-none-any.whl.metadata (9.6 kB)
+#10 1.204 Collecting uvicorn==0.54.0 (from -r /opt/deploy/requirements.txt (line 4))
+#10 1.214   Downloading uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+#10 1.233 Collecting httpx==0.28.1 (from -r /opt/deploy/requirements.txt (line 5))
+#10 1.243   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+#10 1.401 Collecting cryptography==50.0.1 (from -r /opt/deploy/requirements.txt (line 6))
+#10 1.411   Downloading cryptography-50.0.1-cp311-abi3-manylinux_2_34_x86_64.whl.metadata (4.3 kB)
+#10 1.427 Collecting anyio==4.15.1 (from -r /opt/deploy/requirements.txt (line 7))
+#10 1.437   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+#10 1.456 Collecting certifi==2026.7.22 (from -r /opt/deploy/requirements.txt (line 8))
+#10 1.466   Downloading certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+#10 1.544 Collecting cffi==2.1.1 (from -r /opt/deploy/requirements.txt (line 9))
+#10 1.560   Downloading cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.5 kB)
+#10 1.654 Collecting charset-normalizer==3.5.2 (from -r /opt/deploy/requirements.txt (line 10))
+#10 1.663   Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (46 kB)
+#10 1.688 Collecting click==8.5.0 (from -r /opt/deploy/requirements.txt (line 11))
+#10 1.697   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+#10 1.708 Collecting culsans==0.11.0 (from -r /opt/deploy/requirements.txt (line 12))
+#10 1.718   Downloading culsans-0.11.0-py3-none-any.whl.metadata (13 kB)
+#10 1.746 Collecting google-api-core==2.42.0 (from -r /opt/deploy/requirements.txt (line 13))
+#10 1.755   Downloading google_api_core-2.42.0-py3-none-any.whl.metadata (3.2 kB)
+#10 1.786 Collecting google-auth==2.62.0 (from -r /opt/deploy/requirements.txt (line 14))
+#10 1.795   Downloading google_auth-2.62.0-py3-none-any.whl.metadata (6.0 kB)
+#10 1.819 Collecting googleapis-common-protos==1.75.5 (from -r /opt/deploy/requirements.txt (line 15))
+#10 1.828   Downloading googleapis_common_protos-1.75.5-py3-none-any.whl.metadata (8.5 kB)
+#10 1.840 Collecting h11==0.16.0 (from -r /opt/deploy/requirements.txt (line 16))
+#10 1.848   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+#10 1.869 Collecting httpcore==1.0.9 (from -r /opt/deploy/requirements.txt (line 17))
+#10 1.878   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+#10 1.897 Collecting idna==3.19 (from -r /opt/deploy/requirements.txt (line 18))
+#10 1.906   Downloading idna-3.19-py3-none-any.whl.metadata (9.2 kB)
+#10 1.923 Collecting json-rpc==1.15.0 (from -r /opt/deploy/requirements.txt (line 19))
+#10 1.934   Downloading json_rpc-1.15.0-py2.py3-none-any.whl.metadata (7.2 kB)
+#10 1.956 Collecting opentelemetry-api==1.45.0 (from -r /opt/deploy/requirements.txt (line 20))
+#10 1.966   Downloading opentelemetry_api-1.45.0-py3-none-any.whl.metadata (1.4 kB)
+#10 1.981 Collecting packaging==26.3 (from -r /opt/deploy/requirements.txt (line 21))
+#10 1.991   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+#10 2.008 Collecting proto-plus==1.29.0 (from -r /opt/deploy/requirements.txt (line 22))
+#10 2.017   Downloading proto_plus-1.29.0-py3-none-any.whl.metadata (2.2 kB)
+#10 2.225 Collecting protobuf==7.36.2 (from -r /opt/deploy/requirements.txt (line 23))
+#10 2.234   Downloading protobuf-7.36.2-cp310-abi3-manylinux2014_x86_64.whl.metadata (595 bytes)
+#10 2.255 Collecting pyasn1==0.6.4 (from -r /opt/deploy/requirements.txt (line 24))
+#10 2.263   Downloading pyasn1-0.6.4-py3-none-any.whl.metadata (8.4 kB)
+#10 2.284 Collecting pyasn1_modules==0.4.2 (from -r /opt/deploy/requirements.txt (line 25))
+#10 2.293   Downloading pyasn1_modules-0.4.2-py3-none-any.whl.metadata (3.5 kB)
+#10 2.305 Collecting pycparser==3.0 (from -r /opt/deploy/requirements.txt (line 26))
+#10 2.315   Downloading pycparser-3.0-py3-none-any.whl.metadata (8.2 kB)
+#10 2.402 Collecting pydantic==2.13.5 (from -r /opt/deploy/requirements.txt (line 27))
+#10 2.416   Downloading pydantic-2.13.5-py3-none-any.whl.metadata (110 kB)
+#10 2.956 Collecting pydantic_core==2.46.5 (from -r /opt/deploy/requirements.txt (line 28))
+#10 2.966   Downloading pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+#10 2.987 Collecting requests==2.34.2 (from -r /opt/deploy/requirements.txt (line 29))
+#10 2.996   Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+#10 3.007 Collecting sniffio==1.3.1 (from -r /opt/deploy/requirements.txt (line 30))
+#10 3.015   Downloading sniffio-1.3.1-py3-none-any.whl.metadata (3.9 kB)
+#10 3.031 Collecting sse-starlette==3.5.0 (from -r /opt/deploy/requirements.txt (line 31))
+#10 3.039   Downloading sse_starlette-3.5.0-py3-none-any.whl.metadata (15 kB)
+#10 3.065 Collecting starlette==1.7.0 (from -r /opt/deploy/requirements.txt (line 32))
+#10 3.074   Downloading starlette-1.7.0-py3-none-any.whl.metadata (6.6 kB)
+#10 3.086 Collecting typing-inspection==0.4.4 (from -r /opt/deploy/requirements.txt (line 33))
+#10 3.095   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+#10 3.111 Collecting typing_extensions==4.16.0 (from -r /opt/deploy/requirements.txt (line 34))
+#10 3.122   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+#10 3.142 Collecting urllib3==2.8.0 (from -r /opt/deploy/requirements.txt (line 35))
+#10 3.151   Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+#10 3.428 Collecting wrapt==2.5.0 (from -r /opt/deploy/requirements.txt (line 36))
+#10 3.438   Downloading wrapt-2.5.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (7.6 kB)
+#10 3.480 Collecting aiologic<0.18.0,>=0.16.0 (from culsans==0.11.0->-r /opt/deploy/requirements.txt (line 12))
+#10 3.489   Downloading aiologic-0.17.1-py3-none-any.whl.metadata (10 kB)
+#10 3.537 Collecting annotated-types>=0.6.0 (from pydantic==2.13.5->-r /opt/deploy/requirements.txt (line 27))
+#10 3.545   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+#10 3.583 Downloading a2a_sdk-1.2.2-py3-none-any.whl (275 kB)
+#10 3.617 Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+#10 3.634 Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+#10 3.648 Downloading cryptography-50.0.1-cp311-abi3-manylinux_2_34_x86_64.whl (4.7 MB)
+#10 4.071    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.7/4.7 MB 11.4 MB/s eta 0:00:00
+#10 4.085 Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+#10 4.108 Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+#10 4.132 Downloading cffi-2.1.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (221 kB)
+#10 4.163 Downloading charset_normalizer-3.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (257 kB)
+#10 4.195 Downloading click-8.5.0-py3-none-any.whl (125 kB)
+#10 4.221 Downloading culsans-0.11.0-py3-none-any.whl (21 kB)
+#10 4.236 Downloading google_api_core-2.42.0-py3-none-any.whl (221 kB)
+#10 4.266 Downloading google_auth-2.62.0-py3-none-any.whl (267 kB)
+#10 4.299 Downloading googleapis_common_protos-1.75.5-py3-none-any.whl (307 kB)
+#10 4.338 Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+#10 4.353 Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+#10 4.372 Downloading idna-3.19-py3-none-any.whl (68 kB)
+#10 4.387 Downloading json_rpc-1.15.0-py2.py3-none-any.whl (39 kB)
+#10 4.400 Downloading opentelemetry_api-1.45.0-py3-none-any.whl (60 kB)
+#10 4.417 Downloading packaging-26.3-py3-none-any.whl (129 kB)
+#10 4.437 Downloading proto_plus-1.29.0-py3-none-any.whl (50 kB)
+#10 4.454 Downloading protobuf-7.36.2-cp310-abi3-manylinux2014_x86_64.whl (343 kB)
+#10 4.497 Downloading pyasn1-0.6.4-py3-none-any.whl (84 kB)
+#10 4.512 Downloading pyasn1_modules-0.4.2-py3-none-any.whl (181 kB)
+#10 4.542 Downloading pycparser-3.0-py3-none-any.whl (48 kB)
+#10 4.556 Downloading pydantic-2.13.5-py3-none-any.whl (472 kB)
+#10 4.610 Downloading pydantic_core-2.46.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+#10 4.801    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 11.1 MB/s eta 0:00:00
+#10 4.815 Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+#10 4.837 Downloading sniffio-1.3.1-py3-none-any.whl (10 kB)
+#10 4.851 Downloading sse_starlette-3.5.0-py3-none-any.whl (17 kB)
+#10 4.865 Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
+#10 4.883 Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+#10 4.896 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+#10 4.915 Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+#10 4.934 Downloading wrapt-2.5.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (250 kB)
+#10 4.971 Downloading aiologic-0.17.1-py3-none-any.whl (161 kB)
+#10 4.999 Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+#10 5.105 Installing collected packages: json-rpc, wrapt, urllib3, typing_extensions, sniffio, pycparser, pyasn1, protobuf, packaging, idna, h11, click, charset-normalizer, certifi, annotated-types, uvicorn, typing-inspection, requests, pydantic_core, pyasn1_modules, proto-plus, opentelemetry-api, httpcore, googleapis-common-protos, cffi, anyio, aiologic, starlette, pydantic, httpx, culsans, cryptography, sse-starlette, google-auth, google-api-core, a2a-sdk
+#10 6.598 Successfully installed a2a-sdk-1.2.2 aiologic-0.17.1 annotated-types-0.8.0 anyio-4.15.1 certifi-2026.7.22 cffi-2.1.1 charset-normalizer-3.5.2 click-8.5.0 cryptography-50.0.1 culsans-0.11.0 google-api-core-2.42.0 google-auth-2.62.0 googleapis-common-protos-1.75.5 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.19 json-rpc-1.15.0 opentelemetry-api-1.45.0 packaging-26.3 proto-plus-1.29.0 protobuf-7.36.2 pyasn1-0.6.4 pyasn1_modules-0.4.2 pycparser-3.0 pydantic-2.13.5 pydantic_core-2.46.5 requests-2.34.2 sniffio-1.3.1 sse-starlette-3.5.0 starlette-1.7.0 typing-inspection-0.4.4 typing_extensions-4.16.0 urllib3-2.8.0 uvicorn-0.54.0 wrapt-2.5.0
+#10 DONE 6.7s
+
+#11 [stage-1  5/16] COPY --from=node /usr/local/bin/node /usr/local/bin/node
+#11 DONE 0.1s
+
+#12 [stage-1  6/16] COPY --from=node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
+#12 DONE 0.2s
+
+#13 [stage-1  7/16] RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm     && node --version     && npm --version
+#13 0.107 v22.23.4
+#13 0.409 10.9.9
+#13 DONE 0.4s
+
+#14 [stage-1  8/16] RUN npm install --global --omit=optional "@anthropic-ai/claude-code@2.1.112"     && test -f /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js     && ln -sf /usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js /usr/local/bin/claude     && claude --version     && npm cache clean --force
+#14 3.469 
+#14 3.469 added 3 packages in 3s
+#14 3.469 
+#14 3.469 2 packages are looking for funding
+#14 3.469   run `npm fund` for details
+#14 3.472 npm notice
+#14 3.472 npm notice New major version of npm available! 10.9.9 -> 12.2.1
+#14 3.472 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+#14 3.472 npm notice To update run: npm install -g npm@12.2.1
+#14 3.472 npm notice
+#14 4.019 2.1.112 (Claude Code)
+#14 4.336 npm warn using --force Recommended protections disabled.
+#14 DONE 4.5s
+
+#15 [stage-1  9/16] COPY submissions/25622005/week-08/policy.py /opt/strategist/policy.py
+#15 DONE 0.0s
+
+#16 [stage-1 10/16] COPY submissions/25622005/week-08/model/ /opt/strategist/model/
+#16 DONE 0.0s
+
+#17 [stage-1 11/16] COPY submissions/25622005/week-08/memory/ /opt/strategist/memory/
+#17 DONE 0.0s
+
+#18 [stage-1 12/16] COPY submissions/25622005/week-08/strategist/ /opt/strategist/strategist/
+#18 DONE 0.0s
+
+#19 [stage-1 13/16] COPY submissions/25622005/week-08/docker/strategist-entrypoint.sh /opt/deploy/strategist-entrypoint.sh
+#19 DONE 0.0s
+
+#20 [stage-1 14/16] WORKDIR /opt/strategist
+#20 DONE 0.0s
+
+#21 [stage-1 15/16] RUN python -m strategist --help > /dev/null     && python -m unittest discover -s strategist/tests -t /opt/strategist
+#21 0.944 .......................................................................................................
+#21 12.63 ----------------------------------------------------------------------
+#21 12.63 Ran 103 tests in 11.689s
+#21 12.63 
+#21 12.63 OK
+#21 DONE 12.7s
+
+#22 [stage-1 16/16] RUN chmod 755 /opt/deploy/strategist-entrypoint.sh     && mkdir -p /data /home/agent     && chown agent:agent /data /home/agent
+#22 DONE 0.1s
+
+#23 exporting to image
+#23 exporting layers
+#23 exporting layers 2.7s done
+#23 exporting manifest sha256:38a2c4565d219f293ae6e4f69c771a6fb2f8be5677a533341ee238f41a9a1b21 done
+#23 exporting config sha256:224815191361ffe9fd20d458e5435cc834f3c5be8b11a75f3c3303bb86b7fe27 done
+#23 exporting attestation manifest sha256:02c1ce9ad3e197a62ec2840b9aaa6b0c4d09e7ddbe4d24ccf58a1f0419e9e96b done
+#23 exporting manifest list sha256:91191c524f31d3e1a287ecd95db24da69cacd7d11eadb0d82ee309707579c59c done
+#23 naming to docker.io/library/week08-strategist:n36l done
+#23 DONE 2.7s
+
+#24 resolving provenance for metadata file
+#24 DONE 0.0s
+ Image week08-strategist:n36l Built 

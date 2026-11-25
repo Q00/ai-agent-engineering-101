@@ -1,0 +1,122 @@
+# docker run --rm --platform linux/amd64 --entrypoint sh -v <scratch>/data:/data week08-agent:n36l /smoke/smoke.sh (2026-11-04, no keys: dummy ANTHROPIC_API_KEY, stub API, no kit; harness commands and NAS_UID/NAS_GID from docker compose config)
+image sha256:ec7049f347f2b8d4593650dccfa02f9c3faefc17f02bfaee534c5cc8ea40a134 created 2026-11-03T15:38:06.867730259Z
+$ uname -m
+x86_64
+[exit 0]
+$ python --version
+Python 3.12.11
+[exit 0]
+$ node --version
+v22.23.4
+[exit 0]
+$ claude --version
+2.1.112 (Claude Code)
+[exit 0]
+$ command -v claude
+/usr/local/bin/claude
+[exit 0]
+$ git --version
+git version 2.39.5
+[exit 0]
+$ ssh -V
+OpenSSH_9.2p1 Debian-2+deb12u10, OpenSSL 3.0.22 25 Aug 2026
+[exit 0]
+$ ls -l /usr/local/bin/as-agent
+-rwxr-xr-x 1 root root 983 Nov  3 15:38 /usr/local/bin/as-agent
+[exit 0]
+$ ls -l /opt/agent/compose.yaml
+ls: cannot access '/opt/agent/compose.yaml': No such file or directory
+[exit 2]
+$ ls /opt/agent/strategist /opt/agent/strategist/tests
+/opt/agent/strategist:
+__init__.py
+__main__.py
+analyze.py
+collect.py
+decide.py
+focus.py
+guard.py
+publish.py
+run.py
+skillfile.py
+tests
+
+/opt/agent/strategist/tests:
+__init__.py
+fixture_SKILL.md
+test_analyze.py
+test_collect.py
+test_decide.py
+test_focus.py
+test_guard.py
+test_publish.py
+test_run.py
+test_skillfile.py
+[exit 0]
+$ cd /opt/agent && python -m strategist --help | head -5
+usage: python -m strategist [-h] [--once] [--mode {apply,propose}]
+                            [--shop SHOP] [--home HOME] [--interval INTERVAL]
+                            [{health}]
+
+python -m strategist [--once] [--mode apply|propose] [--shop PATH] [--home PATH] [--interval S]
+[exit 0]
+$ ssh-keygen -lf /etc/ssh/ssh_known_hosts
+256 SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU github.com (ED25519)
+256 SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM github.com (ECDSA)
+3072 SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s github.com (RSA)
+[exit 0]
+
+== entrypoint user setup (entrypoint.sh without its final exec), NAS_UID=1000 NAS_GID=1000
+$ ls -ld /data
+drwxr-xr-x 2 root root 64 Nov  3 15:38 /data
+[exit 0]
+$ sh /tmp/setup.sh
+[exit 0]
+$ ls -ldn /data /data/home
+drwxr-xr-x 3 0 0 96 Nov  3 15:38 /data
+drwx------ 2 0 0 64 Nov  3 15:38 /data/home
+[exit 0]
+$ getent passwd agent
+agent:x:1000:1000::/data/home:/bin/sh
+[exit 0]
+$ gosu agent sh -c "echo HOME=\$HOME; id"
+HOME=/data/home
+uid=1000(agent) gid=1000(agent) groups=1000(agent)
+[exit 0]
+
+== as-agent cwd
+$ as-agent pwd
+/data
+[exit 0]
+$ as-agent sh -c "echo HOME=\$HOME PYTHONPATH=\$PYTHONPATH SHOP_HOME=\$SHOP_HOME STRATEGIST_HOME=\$STRATEGIST_HOME; id"
+HOME=/data/home PYTHONPATH=/data SHOP_HOME=/data STRATEGIST_HOME=/data/strategist-home
+uid=1000(agent) gid=1000(agent) groups=1000(agent)
+[exit 0]
+$ as-agent claude --version
+2.1.112 (Claude Code)
+[exit 0]
+$ as-agent /smoke/probe/claude --version
+probe: pwd=/data/home HOME=/data/home user=agent
+2.1.112 (Claude Code)
+[exit 0]
+
+== harness commands against the stub API (ANTHROPIC_BASE_URL=http://127.0.0.1:8787)
+$ as-agent harness.ask with $STRATEGIST_HARNESS_CMD = claude -p --model claude-opus-5-5 --tools "" --setting-sources "" --no-session-persistence
+answer: STUB_OK
+[exit 0]
+$ as-agent harness.ask with $EXCEPTION_HARNESS_CMD = claude -p --model claude-haiku-5-5 --tools "" --setting-sources "" --no-session-persistence
+answer: STUB_OK
+[exit 0]
+== new lines in /stub/requests.log
+POST /v1/messages?beta=true model=claude-haiku-4-5-20251001 stream=True
+POST /v1/messages?beta=true model=claude-opus-5-5 stream=True
+POST /v1/messages?beta=true model=claude-haiku-4-5-20251001 stream=True
+POST /v1/messages?beta=true model=claude-haiku-5-5 stream=True
+[docker exit 0]
+
+# supplement: the bind mount above keeps uid 0 in ls -n on this macOS Docker Desktop host; same setup on a tmpfs /data (NAS_UID/NAS_GID default)
+drwxr-xr-x 3 1000 1000 60 Nov  3 15:39 /data
+drwx------ 2 1000 1000 40 Nov  3 15:39 /data/home
+/data
+-rw------- 1 1000 1000 0 Nov  3 15:39 /data/home/x
+[docker exit 0]
