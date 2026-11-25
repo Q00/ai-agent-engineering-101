@@ -1,0 +1,29 @@
+
+== nvidia/nemotron-3-super-120b-a12b: json 15/15, sensible 12/15, avg 0.8s, cost $0.00040 ($0.027 per 1000 calls), tokens in/out avg 247/15
+   miss repeat offer 20000 x3 (expect accept): '{"action": "counter", "price": 21000}'
+   miss repeat offer 20000 x3 (expect accept): '{"action": "counter", "price": 21000}'
+   miss repeat offer 20000 x3 (expect accept): '{"action": "counter", "price": 21000}'
+
+== qwen/qwen3.7-flash: json 15/15, sensible 15/15, avg 1.0s, cost $0.00015 ($0.010 per 1000 calls), tokens in/out avg 249/15
+
+== mistralai/mistral-nemo: json 15/15, sensible 11/15, avg 0.8s, cost $0.00005 ($0.003 per 1000 calls), tokens in/out avg 234/15
+   miss offer 24000 > floor, rising (expect accept/counter≤25000): '{"action": "counter", "price": 26000}'
+   miss repeat offer 20000 x3 (expect accept): '{"action": "counter", "price": 23000}'
+   miss repeat offer 20000 x3 (expect accept): '{"action": "counter", "price": 23000}'
+   miss repeat offer 20000 x3 (expect accept): '{"action": "counter", "price": 23000}'
+
+== z-ai/glm-5.3-flash: json 0/15, sensible 0/15, avg 0.0s, cost $0.00000 ($0.000 per 1000 calls), tokens in/out avg 0/0
+   miss open A goods (list 29900, floor 15698): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"
+   miss open A goods (list 29900, floor 15698): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"
+   miss open A goods (list 29900, floor 15698): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"
+   miss open C food 49h (list 56900, floor 8535): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"
+   miss open C food 49h (list 56900, floor 8535): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"
+   miss open C food 49h (list 56900, floor 8535): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"
+
+== openai/gpt-oss-120b: json 0/15, sensible 0/15, avg 0.0s, cost $0.00000 ($0.000 per 1000 calls), tokens in/out avg 0/0
+   miss open A goods (list 29900, floor 15698): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"
+   miss open A goods (list 29900, floor 15698): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"
+   miss open A goods (list 29900, floor 15698): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"
+   miss open C food 49h (list 56900, floor 8535): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"
+   miss open C food 49h (list 56900, floor 8535): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"
+   miss open C food 49h (list 56900, floor 8535): "ERR Error code: 400 - {'error': {'message': 'Reasoning is mandatory fo"

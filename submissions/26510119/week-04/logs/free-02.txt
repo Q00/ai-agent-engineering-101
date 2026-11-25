@@ -1,0 +1,112 @@
+provider=openrouter model=nvidia/nemotron-3-super-120b-a12b:free temperature=0.7 max_turns=8
+
+--- scenario 1 (a used bicycle), reserve=80, budget=120 ---
+[buyer] I'd like to offer $80 for the bicycle—does that work for you?
+  [reader] perf=propose price=80 ok=True reader_calls=1
+[seller] I'm looking for a bit more than that—how about $100?
+  [reader] perf=propose price=100 ok=True reader_calls=1
+[buyer] $100 is still a bit high for me—I can go up to $90, but no higher. Can we meet there?
+  [reader] perf=propose price=90 ok=True reader_calls=1
+[seller] I can do $90—let's call it a deal.
+  [reader] perf=accept-proposal price=90 ok=True reader_calls=1
+[result] outcome=deal price=90 correct=1 violation=0 turns=4 format_errors=0 reader_calls=4
+
+--- scenario 2 (a desk lamp), reserve=30, budget=45 ---
+[buyer] I’d like to propose a price of $30 for the desk lamp—does that work for you?
+  [reader] perf=propose price=30 ok=True reader_calls=1
+[seller] I appreciate your offer of $30, but I was hoping for something slightly higher given the lamp’s quality and condition. Would you consider $35 instead?
+  [reader] perf=propose price=35 ok=True reader_calls=1
+[buyer] I can meet you at $33—would that be acceptable? If not, I’m willing to go to $35, but I’d prefer to stay under that if possible.
+  [reader] perf=propose price=33 ok=True reader_calls=1
+[seller] $33 works perfectly—I accept your offer. The lamp is yours for $33. Thank you for the smooth negotiation!
+  [reader] perf=accept-proposal price=33 ok=True reader_calls=1
+[result] outcome=deal price=33 correct=1 violation=0 turns=4 format_errors=0 reader_calls=6
+
+--- scenario 3 (a mechanical keyboard), reserve=90, budget=70 ---
+[buyer] I'd like to offer $50 for the keyboard. Is that acceptable to you?
+  [reader] perf=propose price=50 ok=True reader_calls=1
+[seller] I’m looking for something closer to $110. Would you consider meeting around that range?
+  [reader] perf=propose price=110 ok=True reader_calls=1
+[buyer] I can't go above $70, so $110 is too high for me. Would you consider lowering your price to something within my budget, like $65?
+  [reader] perf=propose price=65 ok=True reader_calls=1
+[seller] I understand your budget, but $65 is still below what I can accept—my lowest is $90. Would you be able to go up to $85? I’m flexible, but I can’t go below that.
+  [reader] perf=propose price=85 ok=True reader_calls=1
+[buyer] I appreciate your flexibility, but $85 is still above my maximum of $70. If you can come down to $70 or below, I’d be ready to accept—otherwise, I’ll have to walk away. Is $70 possible for you?
+  [reader] perf=propose price=70 ok=True reader_calls=1
+[seller] I’m sorry, but $70 is below my minimum—I can’t accept anything under $90. If you’re unable to meet that, I’ll have to decline and wish you the best in your search. Thank you for understanding.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=1
+[buyer] I understand your position, and since we can’t reach an agreement within my budget, I’ll have to decline as well. Thank you for your time, and I wish you the best in finding a buyer.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=1
+[seller] Thank you for your understanding—I appreciate the conversation and wish you the best too. Take care.
+  [reader] perf=refuse price=None ok=True reader_calls=1
+[result] outcome=no_deal price= correct=1 violation=0 turns=8 format_errors=0 reader_calls=11
+
+--- scenario 4 (a second-hand textbook), reserve=25, budget=20 ---
+[buyer] I’d like to offer 10 for the textbook—does that work for you?
+  [reader] perf=propose price=10 ok=True reader_calls=1
+[seller] I’m sorry, but 10 is too low—I can’t accept anything below 25. Would you consider increasing your offer to at least 25?
+  [reader] perf=reject-proposal price=None ok=True reader_calls=1
+[buyer] I’m sorry, but I can’t go above 20—my maximum is firm. Would you be willing to meet me at 20?
+  [reader] perf=propose price=20 ok=True reader_calls=1
+[seller] I understand your position, but I can’t accept anything below 25—my minimum is firm. If you’re unable to meet that, I’ll have to decline and look elsewhere. Thank you for your interest.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=1
+[buyer] I appreciate your time, but since we can’t agree on a price within my limit, I’ll have to pass. Thank you for the offer.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=1
+[seller] Thank you for your time and understanding—I wish you the best in finding what you’re looking for. Have a great day.
+  [reader] perf=refuse price=None ok=True reader_calls=1
+[result] outcome=no_deal price= correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+rror code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077020000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [reader] perf=propose price=65 ok=True reader_calls=1
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077020000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+[seller] I understand your budget, but $65 is still below what I can accept—my lowest is $90. Would you be able to go up to $85? I’m flexible, but I can’t go below that.
+  [empty] retrying in 1s...
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077020000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 2s...
+  [reader] perf=propose price=85 ok=True reader_calls=1
+[buyer] I appreciate your flexibility, but $85 is still above my maximum of $70. If you can come down to $70 or below, I’d be ready to accept—otherwise, I’ll have to walk away. Is $70 possible for you?
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077020000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [reader] perf=propose price=70 ok=True reader_calls=1
+[seller] I’m sorry, but $70 is below my minimum—I can’t accept anything under $90. If you’re unable to meet that, I’ll have to decline and wish you the best in your search. Thank you for understanding.
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077020000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [empty] retrying in 2s...
+  [reader] perf=reject-proposal price=None ok=True reader_calls=1
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077080000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+[buyer] I understand your position, and since we can’t reach an agreement within my budget, I’ll have to decline as well. Thank you for your time, and I wish you the best in finding a buyer.
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077080000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [empty] retrying in 2s...
+  [reader] perf=reject-proposal price=None ok=True reader_calls=1
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077080000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+[seller] Thank you for your understanding—I appreciate the conversation and wish you the best too. Take care.
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077080000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [reader] perf=refuse price=None ok=True reader_calls=1
+[result] outcome=no_deal price= correct=1 violation=0 turns=8 format_errors=0 reader_calls=11
+
+--- scenario 4 (a second-hand textbook), reserve=25, budget=20 ---
+[buyer] I’d like to offer 10 for the textbook—does that work for you?
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077080000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [reader] perf=propose price=10 ok=True reader_calls=1
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077080000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [empty] retrying in 2s...
+[seller] I’m sorry, but 10 is too low—I can’t accept anything below 25. Would you consider increasing your offer to at least 25?
+  [reader] perf=reject-proposal price=None ok=True reader_calls=1
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077080000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [empty] retrying in 2s...
+[buyer] I’m sorry, but I can’t go above 20—my maximum is firm. Would you be willing to meet me at 20?
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077080000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [reader] perf=propose price=20 ok=True reader_calls=1
+  [empty] retrying in 1s...
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077080000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 2s...
+  [empty] retrying in 4s...
+[seller] I understand your position, but I can’t accept anything below 25—my minimum is firm. If you’re unable to meet that, I’ll have to decline and look elsewhere. Thank you for your interest.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=1
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077080000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [empty] retrying in 2s...
+  [empty] retrying in 4s...
+[buyer] I appreciate your time, but since we can’t agree on a price within my limit, I’ll have to pass. Thank you for the offer.
+  [reader] perf=reject-proposal price=None ok=True reader_calls=1
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077140000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+[seller] Thank you for your time and understanding—I wish you the best in finding what you’re looking for. Have a great day.
+  [retry] Error code: 429 - {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1790077140000'}, 'limit_source': 'openrouter_free_tier_per_minute', 'remedy_hint': 'Slow down requests to free models, or retry after the per-minute window resets.', 'provider_name': None}}, 'user_id': 'user_3Iit2tAezDajSFFO6eLERphGOdU'} — waiting 1s...
+  [reader] perf=refuse price=None ok=True reader_calls=1
+[result] outcome=no_deal price= correct=1 violation=0 turns=6 format_errors=0 reader_calls=6
+
+log saved to /work/ai-agent-engineering-101/submissions/26510119/week-04/logs/free-02.txt

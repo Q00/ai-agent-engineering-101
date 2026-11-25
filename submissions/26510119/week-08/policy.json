@@ -1,0 +1,73 @@
+{
+ "version": 1,
+ "note": "Every number the agents may tune. Agents read this file on each decision; tuner.py (the meta loop) is the only writer besides a human. 2026-11-03: restock runs every 20 min (was 1 min, announced in class), so each run buys more. 2026-11-03 12:10 UTC, after the first 46 Round 3 settles: hold less stock, aim higher as seller, open higher as buyer. 2026-11-04 04:50 UTC: 66% of shop visits found no stock; profit +1.15M; stock more of what sells; buyer posts every 6 min with evidence.",
+ "shop": {
+  "margin": 0.05,
+  "salvage_hours": 12,
+  "salvage_share": 0.15,
+  "salvage_floor": 0.3,
+  "grade_c_floor": 0.85,
+  "warranty_hours": {
+   "A": 6
+  },
+  "first_accept_share": 0.85,
+  "target_share": 0.85,
+  "target_min_deals": 5,
+  "short_life_target_factor": 0.7,
+  "target_scale": 1.05
+ },
+ "restock": {
+  "cash_reserve": 1500000,
+  "max_spend_share": 0.15,
+  "target_units": 155,
+  "categories_per_run": 10,
+  "max_units_per_sku": 8,
+  "max_units_per_category": 16,
+  "food_min_shelf_hours": 168,
+  "max_list_price": 60000,
+  "min_list_price": 3000,
+  "cost_estimate": 0.75,
+  "window_hours": 6,
+  "min_settles_for_evidence": 20,
+  "min_category_sales": 3
+ },
+ "buyer": {
+  "max_pay_share_of_list": 0.98,
+  "hours_margin": 1,
+  "goods_grades": [
+   "A",
+   "B"
+  ],
+  "first_offer_share": 0.8,
+  "walk_memory_hours": 3,
+  "shops_to_try": 6
+ },
+ "forum": {
+  "buyer_post_minutes": 6,
+  "shop_post_minutes": 60,
+  "min_new_settles": 5,
+  "window_hours": 6
+ },
+ "experiments": [
+  {
+   "id": "e695",
+   "section": "buyer",
+   "key": "first_offer_share",
+   "arms": {
+    "a": 0.8,
+    "b": 0.85
+   },
+   "started": 1795089076.3490481
+  },
+  {
+   "id": "e696",
+   "section": "shop",
+   "key": "first_accept_share",
+   "arms": {
+    "a": 0.85,
+    "b": 0.9
+   },
+   "started": 1795090999.7607067
+  }
+ ]
+}

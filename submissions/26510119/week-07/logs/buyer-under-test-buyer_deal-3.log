@@ -1,0 +1,13 @@
+market buyer: lamp, budget 120, 1 shops, 496 past trades in memory
+[choose] showing 1 of 1 shops: ['Kit Shop']
+  [harness 3.2s] '{\n  "shop": "Kit Shop",\n  "reason": "Kit Shop has no warnings, your past purchases there averaged 114 (within your 120 budget), and it has a proven reliable history."\n}'
+[choose] Kit Shop http://127.0.0.1:47637: Kit Shop has no warnings, your past purchases there averaged 114 (within your 120 budget), and it has a proven reliable history.
+card: 'Kit Shop', JSONRPC at http://127.0.0.1:47637/
+  -> 'I want to buy a lamp'
+  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+  [harness 0.9s] '{"action": "offer", "price": 120}'
+  -> '120' (taskId a7e8390b)
+  <- TASK_STATE_COMPLETED | Deal: lamp at 120.
+  [harness 1.2s] '{"stars": 5, "review": "Great deal — got the lamp exactly at my budget of 120 with clear communication and a smooth transaction."}'
+result: TASK_STATE_COMPLETED, 5s
+{"shop": "http://127.0.0.1:47637", "receipt": {"item": "lamp", "sig_seller": "h4lasKNaRV4qnq9veHCwsUkozXlXPXGMSXRyk7uFry1dTjWpabuhL6pe8KkITueFDjJsISXSQBymvpqvog0WCg==", "task": "a7e8390b-16eb-48b0-b1ce-463f0f719cd8", "shop": "Kit Shop", "price": 120.0}, "stars": 5, "review": "Great deal — got the lamp exactly at my budget of 120 with clear communication and a smooth transaction."}
