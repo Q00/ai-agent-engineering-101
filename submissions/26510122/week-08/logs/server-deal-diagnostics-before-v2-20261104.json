@@ -1,0 +1,202 @@
+{
+  "at": 1793778784.7544322,
+  "since": 1793775184.7544322,
+  "maturation_seconds": 600,
+  "window_minutes": 60.0,
+  "seller": {
+    "events": {
+      "buyer_message": 195,
+      "negotiation_expired": 13,
+      "request_seen": 84,
+      "buyer_link": 54,
+      "buyer_identity_observed": 75,
+      "model_choice": 182,
+      "promotion_applied": 72,
+      "opening": 72,
+      "quality_disclosed": 72,
+      "seller_message": 195,
+      "inventory_snapshot": 54,
+      "offer": 107,
+      "counter": 54,
+      "receipt_signed": 50,
+      "cancelled": 6,
+      "settled": 31,
+      "requirements_unmet": 3,
+      "exploration_arrival_observed": 26,
+      "promotion_accept_guard": 10,
+      "portfolio_intent_reconciled": 29,
+      "portfolio_window_choice": 3,
+      "portfolio_exploration_intent": 3,
+      "no_stock": 6,
+      "stale_inventory": 3,
+      "rejected": 3
+    },
+    "mature_request_cohort": {
+      "requests": 63,
+      "no_stock": 5,
+      "requirements_unmet": 3,
+      "opening": 52,
+      "offer": 39,
+      "receipt_signed": 35,
+      "cancelled": 6,
+      "rejected": 3,
+      "stale_inventory": 3,
+      "quote_without_offer": 13,
+      "receipt_payment_unconfirmed": 14,
+      "receipt_exact_paid": 21,
+      "offers_without_receipt": 4
+    },
+    "opening_latency_seconds": {
+      "n": 52,
+      "median": 13.0,
+      "p90": 17.0
+    },
+    "receipt_grade_counts": {
+      "C": 16,
+      "B": 6,
+      "A": 13
+    },
+    "exact_paid_grade_counts": {
+      "C": 5,
+      "A": 13,
+      "B": 3
+    },
+    "negotiations_all_offers_below_cost": 3,
+    "settled_units": 31,
+    "sold_by_sku": {
+      "G2108d9bc": 3,
+      "G0be9ed07": 13,
+      "G200e39a3": 7,
+      "Gee8c9d75": 1,
+      "G61d07195": 2,
+      "G56b7eae7": 2,
+      "Gbf98024f": 1,
+      "G243fd1a2": 1,
+      "G831b99a0": 1
+    },
+    "inventory": {
+      "cash": 5687763,
+      "units": 59,
+      "variety": 38,
+      "cost": 2433155
+    },
+    "pending": [
+      {
+        "sku": "G1831f2c0",
+        "requested": 9,
+        "observed": 8,
+        "unresolved": 1,
+        "at": 1793768661.324987,
+        "reserved_cost": 9675
+      }
+    ],
+    "novel_exploration_gross_reserved_24h": 5999511
+  },
+  "buyer": {
+    "events": {
+      "dialogue_message": 730,
+      "negotiation": 197,
+      "settled": 28,
+      "buyer_release_loaded": 122,
+      "payment": 38,
+      "forum_memory_used": 113,
+      "selection_opportunities": 113,
+      "buyer_policy_selection": 113,
+      "broken": 1,
+      "shop_identity": 10,
+      "no_candidate": 8
+    },
+    "mature_order_cohort": {
+      "orders": 105,
+      "no_candidate": 6,
+      "selected": 99,
+      "receipt_pending_orders": 34,
+      "paid": 25,
+      "payment_refused": 9,
+      "no_recorded_payment_or_no_candidate": 65
+    },
+    "negotiation_outcomes": {
+      "no_receipt": 135,
+      "receipt_pending": 34,
+      "shop_error": 2
+    },
+    "no_receipt_reasons": {
+      "no receipt": 135,
+      "ValueError": 2
+    },
+    "no_receipt_offer_counts": {
+      "1": 5,
+      "0": 95,
+      "3": 16,
+      "2": 19
+    },
+    "no_receipt_last_offer_at_cap": 14,
+    "no_receipt_final_parseable_ask": 19,
+    "no_receipt_final_ask_within_cap": 2,
+    "no_receipt_final_ask_above_cap": 17,
+    "checkout_failure_classes": {
+      "shelf_life": 7,
+      "certificate": 1,
+      "grade": 1
+    },
+    "repeated_failed_shop_skus": {
+      "jiseokkk:Gf998cd13": 4,
+      "olstjr:G010744b7": 1,
+      "ggari-shop:G35351812": 1,
+      "q00:Gc1c1ac72": 1,
+      "elm-street:G4e94208d": 1,
+      "yms979:G59e3e5ff": 1
+    },
+    "seconds_to_payment": {
+      "n": 34,
+      "median": 28.5,
+      "p90": 49.0
+    }
+  },
+  "market_sample": {
+    "entries": 6000,
+    "oldest_ts": 1793777510.729,
+    "latest_ts": 1793778785.933,
+    "settled_units": 962,
+    "shops_with_settlement": 37,
+    "own_settled_units": 11,
+    "settlement_rank": 24,
+    "top_shops": [
+      [
+        "Kiro Everyday: Groceries & Goods",
+        89
+      ],
+      [
+        "Inextro Market",
+        87
+      ],
+      [
+        "dragonash",
+        69
+      ],
+      [
+        "psyoung82",
+        67
+      ],
+      [
+        "YMS's Market",
+        54
+      ],
+      [
+        "Sungjin Shop",
+        54
+      ]
+    ],
+    "own_submitted_receipts": 16,
+    "own_result_failed_checks": {
+      "settled": 5
+    }
+  },
+  "limitations": [
+    "This is an observational pre-change snapshot, not a causal experiment.",
+    "Mature cohorts exclude arrivals in the last 10 minutes; each cohort is matched by task/order.",
+    "Exact seller payment links use unique unit/price or market-verified results. Unconfirmed is not necessarily failed.",
+    "The ledger sample ranks only shops with settlements in its time window, including house shops; URL rotation may split unknown aliases.",
+    "Negotiated receipts are not paid purchases; budget/private order payloads and credentials are not exported."
+  ]
+}

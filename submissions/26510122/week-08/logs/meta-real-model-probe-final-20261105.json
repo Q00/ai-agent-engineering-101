@@ -1,0 +1,156 @@
+{
+  "at": 1793820442.5814426,
+  "market_writes": false,
+  "synthetic_supply_window": true,
+  "results": {
+    "meta": {
+      "status": "shadow",
+      "decision": {
+        "action": "hold",
+        "parameter": "window_budget",
+        "numeric_value": null,
+        "focus_value": null,
+        "reason": "No observed policy-blocked candidates or candidate rejection reasons: 29 opportunities are eligible and await transaction-model review. Existing SKUs route to replenishment, and the hypothetical 500k-cap failures are not observed runtime bottlenecks. Revenue and pre-refund acquisition spread do not establish net profit, so expansion lacks sufficient evidence. Code-level caps should be reported for review but cannot be fixed by a runtime parameter.",
+        "expected_effect": "Preserve the current policy while allowing eligible opportunities to proceed through transaction-model review; avoid an unsupported parameter change.",
+        "evidence": [
+          "candidate_eligibility_counts: eligible 29, blocked 0",
+          "candidate_rejection_counts: {}",
+          "own_3h: 166 settlements and 1,624,061 acquisition spread before holding refunds",
+          "risk caution: acquisition cost is exposure, not guaranteed resale value",
+          "market sample is a short selected tail; cost spread is not net profit"
+        ]
+      },
+      "before": {
+        "window_budget": 12000000,
+        "target_capital_share": 0.65,
+        "epsilon": 0.3,
+        "focus": "balanced"
+      },
+      "after": {
+        "window_budget": 12000000,
+        "target_capital_share": 0.65,
+        "epsilon": 0.3,
+        "focus": "balanced"
+      },
+      "ok": true
+    },
+    "inventory": {
+      "result": {
+        "buy": [
+          {
+            "sku": "Gc40054d2",
+            "qty": 3
+          },
+          {
+            "sku": "Gbf98024f",
+            "qty": 3
+          },
+          {
+            "sku": "G0be9ed07",
+            "qty": 4
+          },
+          {
+            "sku": "G1831f2c0",
+            "qty": 1
+          },
+          {
+            "sku": "G56b7eae7",
+            "qty": 1
+          },
+          {
+            "sku": "G2108d9bc",
+            "qty": 1
+          },
+          {
+            "sku": "Gcc75125e",
+            "qty": 1
+          },
+          {
+            "sku": "G200e39a3",
+            "qty": 2
+          },
+          {
+            "sku": "G2597b772",
+            "qty": 1
+          },
+          {
+            "sku": "G84f125ef",
+            "qty": 1
+          },
+          {
+            "sku": "G000f6cda",
+            "qty": 1
+          },
+          {
+            "sku": "Gd289350f",
+            "qty": 1
+          }
+        ]
+      },
+      "candidate_count": 48,
+      "over_old_cap": 7,
+      "budget": 7559928,
+      "answer": {
+        "action": "buy",
+        "skus": [
+          "G2597b772",
+          "G84f125ef",
+          "G000f6cda",
+          "Gd289350f"
+        ],
+        "replenishment": [
+          {
+            "sku": "Gc40054d2",
+            "target_stock": 4
+          },
+          {
+            "sku": "Gbf98024f",
+            "target_stock": 3
+          },
+          {
+            "sku": "G0be9ed07",
+            "target_stock": 12
+          },
+          {
+            "sku": "G1831f2c0",
+            "target_stock": 4
+          },
+          {
+            "sku": "G56b7eae7",
+            "target_stock": 4
+          },
+          {
+            "sku": "G2108d9bc",
+            "target_stock": 4
+          },
+          {
+            "sku": "Gcc75125e",
+            "target_stock": 14
+          },
+          {
+            "sku": "G200e39a3",
+            "target_stock": 10
+          }
+        ],
+        "reason": "Buy the eight proven maintenance deficits at their growth-phase forecast targets, prioritizing fast sellers and stockout exposure. Use four affordable exploratory trials including the required anchor, with low/mid/upper price bands and food/goods category coverage; total acquisition ceilings remain within budget and supply-line limits."
+      },
+      "ok": true
+    },
+    "buyer_forum": {
+      "status": "dry_run",
+      "text": "[구매 기록] 동일 매트리스 기록의 조건 차이 확인\n동일 상품의 실제 구매 기록 두 건에서 조건 표기가 달랐습니다. 구매 전 최신 가격과 상품 등급이 기록과 일치하는지 확인하고, 결제 직전 변동 여부를 다시 대조하세요. 보증이나 잔여 시간이 표시되지 않은 항목은 확인 근거가 없으므로 별도 확인이 필요합니다.\n지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS (G07ec17d5) · lee-sungsoo · 205,007원 · 등급 A · 정가 279,000원 · 해당 거래 등급 주장 일치 · 당시 보증 없음 · 원장 #2641025\n지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS (G07ec17d5) · lee-sungsoo · 195,000원 · 등급 B · 정가 279,000원 · 해당 거래 등급 주장 일치 · 당시 보증 없음 · 원장 #2641272\n실제 정산된 거래 기록입니다. 현재 가격·재고와 이후 품질을 보장하는 내용은 아닙니다.",
+      "decision": {
+        "action": "post",
+        "ledger_refs": [
+          2641025,
+          2641272
+        ],
+        "headline": "동일 매트리스 기록의 조건 차이 확인",
+        "body": "동일 상품의 실제 구매 기록 두 건에서 조건 표기가 달랐습니다. 구매 전 최신 가격과 상품 등급이 기록과 일치하는지 확인하고, 결제 직전 변동 여부를 다시 대조하세요. 보증이나 잔여 시간이 표시되지 않은 항목은 확인 근거가 없으므로 별도 확인이 필요합니다.",
+        "reason": "동일 상품의 실제 기록 두 건이 있어 조건 비교와 결제 전 확인 포인트를 남길 가치가 있습니다."
+      },
+      "ok": true
+    }
+  },
+  "complete": true
+}

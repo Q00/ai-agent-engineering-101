@@ -1,0 +1,299 @@
+{
+  "selection": {
+    "gpt-5.6-luna": {
+      "cases": 12,
+      "by_variant": {
+        "minimal": 1,
+        "token_saving": 6,
+        "quick_trade": 2,
+        "baseline": 1,
+        "clear_terms": 2
+      },
+      "by_position": {
+        "1": 5,
+        "2": 5,
+        "4": 1,
+        "6": 1
+      },
+      "by_kind": {
+        "goods": {
+          "minimal": 1,
+          "token_saving": 4,
+          "clear_terms": 1
+        },
+        "food": {
+          "token_saving": 2,
+          "quick_trade": 2,
+          "baseline": 1,
+          "clear_terms": 1
+        }
+      }
+    },
+    "gpt-6-luna": {
+      "cases": 12,
+      "by_variant": {
+        "minimal": 1,
+        "clear_steps": 2,
+        "quick_trade": 1,
+        "token_saving": 4,
+        "clear_terms": 4
+      },
+      "by_position": {
+        "1": 3,
+        "2": 7,
+        "3": 1,
+        "6": 1
+      },
+      "by_kind": {
+        "goods": {
+          "minimal": 1,
+          "clear_terms": 2,
+          "clear_steps": 1,
+          "token_saving": 2
+        },
+        "food": {
+          "clear_steps": 1,
+          "quick_trade": 1,
+          "token_saving": 2,
+          "clear_terms": 2
+        }
+      }
+    },
+    "sonnet": {
+      "cases": 12,
+      "by_variant": {
+        "minimal": 2,
+        "quick_trade": 2,
+        "clear_steps": 3,
+        "clear_terms": 4,
+        "baseline": 1
+      },
+      "by_position": {
+        "1": 8,
+        "3": 1,
+        "5": 1,
+        "2": 2
+      },
+      "by_kind": {
+        "goods": {
+          "minimal": 1,
+          "clear_terms": 3,
+          "clear_steps": 2
+        },
+        "food": {
+          "quick_trade": 2,
+          "clear_steps": 1,
+          "minimal": 1,
+          "baseline": 1,
+          "clear_terms": 1
+        }
+      }
+    }
+  },
+  "negotiation": [
+    {
+      "model": "gpt-5.6-luna",
+      "variant": "quick_trade",
+      "cases": 2,
+      "mock_receipts": 1,
+      "requests_per_case": [
+        4,
+        4
+      ],
+      "offers_per_case": [
+        [
+          650,
+          700,
+          750
+        ],
+        [
+          650,
+          700,
+          800
+        ]
+      ],
+      "model_calls_per_case": [
+        2,
+        2
+      ],
+      "mean_model_prompt_bytes": 552,
+      "mean_cli_input_tokens_including_system_overhead": 13377.5,
+      "mean_cli_output_tokens_including_reasoning": 152.25,
+      "mean_cli_cached_input_tokens": 0
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "variant": "token_saving",
+      "cases": 2,
+      "mock_receipts": 0,
+      "requests_per_case": [
+        4,
+        4
+      ],
+      "offers_per_case": [
+        [
+          650,
+          700,
+          750
+        ],
+        [
+          650,
+          700,
+          750
+        ]
+      ],
+      "model_calls_per_case": [
+        2,
+        2
+      ],
+      "mean_model_prompt_bytes": 549,
+      "mean_cli_input_tokens_including_system_overhead": 12527.5,
+      "mean_cli_output_tokens_including_reasoning": 126.25,
+      "mean_cli_cached_input_tokens": 2592
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "variant": "baseline",
+      "cases": 2,
+      "mock_receipts": 1,
+      "requests_per_case": [
+        4,
+        4
+      ],
+      "offers_per_case": [
+        [
+          650,
+          750,
+          800
+        ],
+        [
+          650,
+          700,
+          750
+        ]
+      ],
+      "model_calls_per_case": [
+        2,
+        2
+      ],
+      "mean_model_prompt_bytes": 542.5,
+      "mean_cli_input_tokens_including_system_overhead": 13376.5,
+      "mean_cli_output_tokens_including_reasoning": 131,
+      "mean_cli_cached_input_tokens": 0
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "variant": "clear_steps",
+      "cases": 2,
+      "mock_receipts": 2,
+      "requests_per_case": [
+        4,
+        4
+      ],
+      "offers_per_case": [
+        [
+          650,
+          750,
+          800
+        ],
+        [
+          650,
+          750,
+          800
+        ]
+      ],
+      "model_calls_per_case": [
+        2,
+        2
+      ],
+      "mean_model_prompt_bytes": 557,
+      "mean_cli_input_tokens_including_system_overhead": 12953.5,
+      "mean_cli_output_tokens_including_reasoning": 156,
+      "mean_cli_cached_input_tokens": 5184
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "variant": "clear_terms",
+      "cases": 2,
+      "mock_receipts": 1,
+      "requests_per_case": [
+        4,
+        4
+      ],
+      "offers_per_case": [
+        [
+          650,
+          700,
+          800
+        ],
+        [
+          650,
+          700,
+          750
+        ]
+      ],
+      "model_calls_per_case": [
+        2,
+        2
+      ],
+      "mean_model_prompt_bytes": 556.5,
+      "mean_cli_input_tokens_including_system_overhead": 12952.5,
+      "mean_cli_output_tokens_including_reasoning": 121.75,
+      "mean_cli_cached_input_tokens": 2592
+    },
+    {
+      "model": "gpt-5.6-luna",
+      "variant": "minimal",
+      "cases": 2,
+      "mock_receipts": 0,
+      "requests_per_case": [
+        4,
+        4
+      ],
+      "offers_per_case": [
+        [
+          650,
+          700,
+          750
+        ],
+        [
+          650,
+          700,
+          750
+        ]
+      ],
+      "model_calls_per_case": [
+        2,
+        2
+      ],
+      "mean_model_prompt_bytes": 534,
+      "mean_cli_input_tokens_including_system_overhead": 13373,
+      "mean_cli_output_tokens_including_reasoning": 128,
+      "mean_cli_cached_input_tokens": 5184
+    }
+  ],
+  "successful_cases": 48,
+  "model_call_attempts": 62,
+  "model_calls_with_usage": 60,
+  "preserved_failures": [
+    {
+      "run": "logs/seller-copy-probe-gpt6-luna-2026-11-03",
+      "model": "gpt-6-luna",
+      "case": "selection:goods:0",
+      "error": "TimeoutExpired: ceipt on agreement.\",\"sku\":\"G1\",\"kind\":\"goods\",\"stock\":2,\"list_price\":1000,\"quoted_price\":700,\"certified_grade\":\"A\",\"certificate\":true,\"hours_left\":null,\"warranty_hours\":6,\"review_count\":10,\"average_stars\":4.5,\"prior_first_hand_outcomes\":\"none\"},{\"candidate_id\":\"R64\",\"description\":\"Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.\",\"sku\":\"G1\",\"kind\":\"goods\",\"stock\":2,\"list_price\":1000,\"quoted_price\":700,\"certified_grade\":\"A\",\"certificate\":true,\"hours_left\":null,\"warranty_hours\":6,\"review_count\":10,\"average_stars\":4.5,\"prior_first_hand_outcomes\":\"none\"},{\"candidate_id\":\"V51\",\"description\":\"Stocked products. Brief quotes. Numeric offers. Signed receipts on agreement.\",\"sku\":\"G1\",\"kind\":\"goods\",\"stock\":2,\"list_price\":1000,\"quoted_price\":700,\"certified_grade\":\"A\",\"certificate\":true,\"hours_left\":null,\"warranty_hours\":6,\"review_count\":10,\"average_stars\":4.5,\"prior_first_hand_outcomes\":\"none\"}]}']' timed out after 60 seconds"
+    },
+    {
+      "run": "logs/seller-copy-claude-smoke-2026-11-03",
+      "model": "sonnet",
+      "case": "selection:goods:0",
+      "error": "RuntimeError: Failed to authenticate: OAuth session expired and could not be refreshed"
+    }
+  ],
+  "interpretation_limits": [
+    "Selection is hypothetical visibility, not our production buyer-selection flow.",
+    "Mock receipts are not signed real receipts or settled trades.",
+    "Two negotiation repetitions per copy do not establish reliable success-rate differences.",
+    "CLI token usage includes variable system overhead, caching and reasoning; it is not a direct copy-only cost effect.",
+    "Model-reported reasons are explanations, not established causal effects."
+  ]
+}

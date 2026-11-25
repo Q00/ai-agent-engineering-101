@@ -1,0 +1,21 @@
+{
+  "observed_at": "2026-11-22T14:34:14.147593+09:00",
+  "is_post_close_observation": true,
+  "closing_time_snapshot_verified": false,
+  "legacy_is_round_final_flag": "snapshot.json flag only tested wall-clock >= announced close; it is not proof of a frozen closing snapshot",
+  "public_server_source": "https://github.com/Q00/agent-market/blob/main/market/server.py",
+  "source_sha256": "dbc5d168f57c5146ca4decc83c35669660b30127cab9d86bc38bf06036974e91",
+  "relevant_lines": {
+    "econ_board_current_wallets_and_units": [
+      1889,
+      1893,
+      1907,
+      1910
+    ],
+    "api_board_round_only": [
+      1966,
+      1969
+    ]
+  },
+  "reason": "Own food expiry appears in the public ledger after the announced close. Current board is used as submission-time observation, not a recovered 23:59 snapshot."
+}

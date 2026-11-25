@@ -1,0 +1,54 @@
+usage: seller_kit.py [-h] {join,starter} ...
+
+Week-07 market kit. Puts your week-06 shop and buyer into the class market.
+
+    python scripts/market_kit.py join --dir submissions/<student-id>/week-07 --market <MARKET_URL> --name <nickname> --tunnel
+
+No working week-06 shop or buyer yet? Copy the starter (an unsigned week-06 shop and buyer) first:
+    python scripts/market_kit.py starter --dir submissions/<student-id>/week-07
+
+--dir is your submission directory (where agent.json is; default: the current directory). The kit:
+  - creates shop_key.pem and buyer_key.pem (Ed25519) and adds *.pem to .gitignore,
+  - starts your seller with the "seller" command and registers its card URL,
+  - asks the market for orders and runs your buyer for each one,
+  - sends the result (receipt, stars, review) to the market and signs it for you,
+  - from Round 3: serves an ACP checkout for your shop (/.well-known/acp.json, /acp/checkout_sessions) and pays
+    for your buyer's deals with AP2-shaped mandates; only settled deals count.
+  - from Round 3 (kit v4): keeps <dir>/.market/ fresh for your agents (inventory.json, catalog.json, demand.json,
+    forum.json; the seller gets the path as MARKET_DIR), buys stock for your shop (your "restock" command, or a
+    simple default), ships a unit from stock at checkout, checks the unit against your buyer's "accept" policy
+    before paying, and posts what your agents write to .market/outbox.jsonl on the forum. Rules: ROUND3 in /agent.md.
+
+Your seller and buyer never talk to the market. agent.json:
+    {
+      "seller": {"cmd": "python seller.py --port {port}"},
+      "buyer":  {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"},
+      "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"}
+    }
+"buyer" is the week-06 buyer, used in Round 0 (and later if there is no market_buyer).
+"market_buyer" is LAB 1: it reads the shop list in {shops}, picks a shop, trades over A2A,
+and prints one JSON line last:
+    {"shop": "<card URL>", "receipt": {...} or null, "stars": 1-5, "review": "one sentence"}
+From Round 3 the line may also carry "accept" (what the checkout must show before the kit pays):
+    "accept": {"cert": true, "min_hours_left": 3, "grades": ["A", "B"], "warranty_hours": 6}
+{order} in a command is the path of the order (category, acceptable SKUs, use_within_hours, budget).
+Optional: "restock": {"cmd": "... {state}"} prints {"buy": [{"sku": ..., "qty": ...}]} (and "bankrupt": true to file);
+"review": {"cmd": "... {deal}"} runs after a settled deal and prints {"stars": 1-5, "review": "..."}.
+
+Options:
+  --tunnel             expose your shop with a cloudflared quick tunnel (others can reach it)
+  --public-url URL     your own tunnel forwards URL to the kit's shop port (fix it with --port)
+  --port N             the kit's shop port (default: a free port)
+  --deployed URL       your shop is already deployed (e.g. Workers); the kit only registers it
+  --buyer-only / --shop-only
+  --owner CODE         claim code from the market's join page (or MARKET_OWNER); shows your GitHub on the board
+
+Needs: pip install "a2a-sdk[http-server]" uvicorn httpx cryptography
+Logs: logs/market-kit.log in your submission directory.
+
+positional arguments:
+  {join,starter}
+    starter       write an unsigned week-06 shop and buyer into --dir
+
+options:
+  -h, --help      show this help message and exit

@@ -1,0 +1,112 @@
+test_large_history_is_bounded_and_not_rewritten (test_buyer_context.BuyerContextTests.test_large_history_is_bounded_and_not_rewritten) ... ok
+test_name_survives_url_changes_and_known_legacy_aliases (test_buyer_context.BuyerContextTests.test_name_survives_url_changes_and_known_legacy_aliases) ... ok
+test_original_message_is_retained_even_when_next_network_call_fails (test_buyer_context.BuyerContextTests.test_original_message_is_retained_even_when_next_network_call_fails) ... {"event": "buyer_offer", "sku": "F1", "shop": "https://shop", "offer": 600, "turn": 0}
+ok
+test_payment_import_uses_order_identity_when_url_is_ambiguous (test_buyer_context.BuyerContextTests.test_payment_import_uses_order_identity_when_url_is_ambiguous) ... ok
+test_refused_then_paid_is_one_confirmed_purchase (test_buyer_context.BuyerContextTests.test_refused_then_paid_is_one_confirmed_purchase) ... ok
+test_reused_url_does_not_merge_different_shops (test_buyer_context.BuyerContextTests.test_reused_url_does_not_merge_different_shops) ... ok
+test_selector_sees_reputation_evidence_within_input_budget (test_buyer_context.BuyerContextTests.test_selector_sees_reputation_evidence_within_input_budget) ... {"event": "buyer_context_compacted", "candidate_count": 16, "prompt_bytes": 12447, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "shop-0", "proposed": 600, "opening": 600, "reason": "evidence"}
+ok
+test_expired_order_logs_no_attempt_instead_of_a_failed_exploration (test_buyer_exploration.BuyerExplorationTests.test_expired_order_logs_no_attempt_instead_of_a_failed_exploration) ... {"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1418, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "17", "sku": "F1", "shop": "shop-17", "proposed": 700, "opening": 700, "reason": "explore"}
+ok
+test_exploration_uses_the_existing_eligibility_filters (test_buyer_exploration.BuyerExplorationTests.test_exploration_uses_the_existing_eligibility_filters) ... ok
+test_fallback_payment_is_not_attributed_to_exploration_target (test_buyer_exploration.BuyerExplorationTests.test_fallback_payment_is_not_attributed_to_exploration_target) ... {"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1418, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "17", "sku": "F1", "shop": "shop-17", "proposed": 700, "opening": 700, "reason": "explore"}
+ok
+test_full_pool_preserves_new_shops_and_deduplicates_offers (test_buyer_exploration.BuyerExplorationTests.test_full_pool_preserves_new_shops_and_deduplicates_offers) ... ok
+test_model_failure_still_uses_forced_candidate (test_buyer_exploration.BuyerExplorationTests.test_model_failure_still_uses_forced_candidate) ... {"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1418, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection_fallback", "error": "RuntimeError", "candidate_id": "17", "opening": 680}
+ok
+test_random_target_cannot_be_replaced_by_model_and_price_is_capped (test_buyer_exploration.BuyerExplorationTests.test_random_target_cannot_be_replaced_by_model_and_price_is_capped) ... {"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1418, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_exploration_guard", "proposed": "0", "effective": "17"}
+{"event": "buyer_selection", "candidate_id": "17", "sku": "F1", "shop": "shop-17", "proposed": 9999, "opening": 722, "reason": "prefer familiar first shop"}
+ok
+test_zero_epsilon_keeps_model_selection_and_the_normal_shortlist (test_buyer_exploration.BuyerExplorationTests.test_zero_epsilon_keeps_model_selection_and_the_normal_shortlist) ... {"event": "buyer_context_compacted", "candidate_count": 16, "prompt_bytes": 9622, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "shop-00", "proposed": 700, "opening": 700, "reason": "firsthand evidence"}
+ok
+test_probability_and_branch_boundaries (test_buyer_exploration.ExplorationPlanTests.test_probability_and_branch_boundaries) ... ok
+test_single_candidate_has_no_artificial_exploration (test_buyer_exploration.ExplorationPlanTests.test_single_candidate_has_no_artificial_exploration) ... ok
+test_outgoing_buyer_signs_exact_message_without_budget (test_buyer_pricing.IdentityTests.test_outgoing_buyer_signs_exact_message_without_budget) ... ok
+test_signed_request_must_match_market_linked_key (test_buyer_pricing.IdentityTests.test_signed_request_must_match_market_linked_key) ... ok
+test_tampering_replay_context_and_expiry_fail (test_buyer_pricing.IdentityTests.test_tampering_replay_context_and_expiry_fail) ... ok
+test_cached_public_result_reconciles_late_receipt_even_when_network_fails (test_buyer_pricing.ProfileTests.test_cached_public_result_reconciles_late_receipt_even_when_network_fails) ... ok
+test_comparison_preserves_grade_age_buyer_and_food_expiry (test_buyer_pricing.ProfileTests.test_comparison_preserves_grade_age_buyer_and_food_expiry) ... ok
+test_failed_unresolved_and_discounted_probes_stop_repeated_uplifts (test_buyer_pricing.ProfileTests.test_failed_unresolved_and_discounted_probes_stop_repeated_uplifts) ... ok
+test_one_vs_repeated_calm_high_payments_give_small_optional_probes (test_buyer_pricing.ProfileTests.test_one_vs_repeated_calm_high_payments_give_small_optional_probes) ... ok
+test_other_buyers_form_baseline_and_counterexamples_remain_visible (test_buyer_pricing.ProfileTests.test_other_buyers_form_baseline_and_counterexamples_remain_visible) ... ok
+test_pending_haggled_low_and_unverified_are_not_high_payment_evidence (test_buyer_pricing.ProfileTests.test_pending_haggled_low_and_unverified_are_not_high_payment_evidence) ... ok
+test_verified_public_receipt_link_does_not_count_as_payment (test_buyer_pricing.ProfileTests.test_verified_public_receipt_link_does_not_count_as_payment) ... ok
+test_actual_a2a_metadata_reaches_model_and_anonymous_falls_back (test_buyer_pricing.SellerIdentityIntegrationTests.test_actual_a2a_metadata_reaches_model_and_anonymous_falls_back) ... {"event": "seller_open", "task_id": "900d6b2e-c788-4cc3-8e27-1250337851f3", "sku": "G1", "unit": "u1", "grade": "A", "cost": 70, "ask": 126}
+{"event": "seller_open", "task_id": "1b59a943-df24-4871-8c4b-e7526ddc94c7", "sku": "G1", "unit": "u2", "grade": "A", "cost": 70, "ask": 100}
+{"event": "seller_open", "task_id": "1c5a16c8-26ba-4b3a-b2d4-57a27f9c639f", "sku": "G1", "unit": "u3", "grade": "A", "cost": 70, "ask": 100}
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_ambiguous_no_stock_does_not_inflate_every_sku (test_inventory_observation.ObservationTests.test_ambiguous_no_stock_does_not_inflate_every_sku) ... ok
+test_missing_data_is_unknown_not_zero_demand (test_inventory_observation.ObservationTests.test_missing_data_is_unknown_not_zero_demand) ... ok
+test_only_specific_sku_or_unique_full_name_is_attributed (test_inventory_observation.ObservationTests.test_only_specific_sku_or_unique_full_name_is_attributed) ... ok
+test_requests_deduplicate_and_only_covered_visits_enter_rate (test_inventory_observation.ObservationTests.test_requests_deduplicate_and_only_covered_visits_enter_rate) ... ok
+test_snapshot_gaps_do_not_become_exposure (test_inventory_observation.ObservationTests.test_snapshot_gaps_do_not_become_exposure) ... ok
+test_stale_snapshot_is_not_recorded_as_new_evidence (test_inventory_observation.ObservationTests.test_stale_snapshot_is_not_recorded_as_new_evidence) ... ok
+test_cash_reserve_and_sparse_approval_are_hard_limits (test_replenishment_plan.PlanTests.test_cash_reserve_and_sparse_approval_are_hard_limits) ... ok
+test_changes_invalidate_instead_of_changing_model_target (test_replenishment_plan.PlanTests.test_changes_invalidate_instead_of_changing_model_target) ... ok
+test_corrupt_cache_fails_closed (test_replenishment_plan.PlanTests.test_corrupt_cache_fails_closed) ... ok
+test_exact_unstocked_requests_enter_replenishment_candidates_once (test_replenishment_plan.PlanTests.test_exact_unstocked_requests_enter_replenishment_candidates_once) ... ok
+test_existing_grade_change_invalidates_approval (test_replenishment_plan.PlanTests.test_existing_grade_change_invalidates_approval) ... ok
+test_grade_change_of_newly_arrived_unit_is_also_detected (test_replenishment_plan.PlanTests.test_grade_change_of_newly_arrived_unit_is_also_detected) ... ok
+test_replan_request_never_executes_old_scenario (test_replenishment_plan.PlanTests.test_replan_request_never_executes_old_scenario) ... ok
+test_restocker_reuses_approved_plan_without_model_or_ledger_call (test_replenishment_plan.PlanTests.test_restocker_reuses_approved_plan_without_model_or_ledger_call) ... {"event": "newsvendor_calculation", "sku": "F1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+ok
+test_reuse_obeys_total_budget_and_waits_for_new_snapshot (test_replenishment_plan.PlanTests.test_reuse_obeys_total_budget_and_waits_for_new_snapshot) ... ok
+test_stable_scenario_renewal_needs_only_one_model_approval (test_replenishment_plan.PlanTests.test_stable_scenario_renewal_needs_only_one_model_approval) ... {"event": "newsvendor_calculation", "sku": "F1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+{"event": "restock_scenario_reused", "sku": "F1", "age_seconds": 180}
+{"event": "newsvendor_calculation", "sku": "F1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+ok
+test_stockout_window_rolloff_cannot_hide_new_stockouts (test_replenishment_plan.PlanTests.test_stockout_window_rolloff_cannot_hide_new_stockouts) ... ok
+test_unavailable_approver_does_not_emit_tool_chosen_purchase (test_replenishment_plan.PlanTests.test_unavailable_approver_does_not_emit_tool_chosen_purchase) ... ok
+test_large_negotiation_preserves_conditions_and_price_chain (test_seller_context.SellerContextTests.test_large_negotiation_preserves_conditions_and_price_chain) ... ok
+test_same_sku_grade_memory_is_not_repeated_for_every_unit (test_seller_context.SellerContextTests.test_same_sku_grade_memory_is_not_repeated_for_every_unit) ... {"event": "seller_open", "task_id": "5ae92fc4-8357-491a-990e-fd579ec7c595", "sku": "F1", "unit": "u0", "grade": "A", "cost": 600, "ask": 1000}
+Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_settlement_grade_drives_comparison_not_obsolete_opening_grade (test_seller_context.SellerContextTests.test_settlement_grade_drives_comparison_not_obsolete_opening_grade) ... ok
+test_snapshot_noise_cannot_hide_relevant_settlement (test_seller_context.SellerContextTests.test_snapshot_noise_cannot_hide_relevant_settlement) ... ok
+test_auth_failure_never_becomes_a_choice (test_seller_copy_cli.ClaudeCopyResponseTests.test_auth_failure_never_becomes_a_choice) ... ok
+test_schema_less_result_cannot_be_promoted_to_preference (test_seller_copy_cli.ClaudeCopyResponseTests.test_schema_less_result_cannot_be_promoted_to_preference) ... ok
+test_structured_choice_retains_raw_usage_and_resolved_model (test_seller_copy_cli.ClaudeCopyResponseTests.test_structured_choice_retains_raw_usage_and_resolved_model) ... ok
+test_a2a_request_names_sku_without_revealing_budget (test_strategy.BuyerPolicyTests.test_a2a_request_names_sku_without_revealing_budget) ... {"event": "buyer_offer", "sku": "F1", "shop": "https://shop", "offer": 600, "turn": 0}
+ok
+test_buyer_retries_other_shop_after_mismatched_receipt (test_strategy.BuyerPolicyTests.test_buyer_retries_other_shop_after_mismatched_receipt) ... {"event": "buyer_context_compacted", "candidate_count": 2, "prompt_bytes": 1948, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "first", "proposed": 700, "opening": 700, "reason": "test"}
+ok
+test_buyer_selects_stocked_external_shop_and_guards_receipt (test_strategy.BuyerPolicyTests.test_buyer_selects_stocked_external_shop_and_guards_receipt) ... {"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1413, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "external", "proposed": 700, "opening": 700, "reason": "in stock"}
+ok
+test_food_requires_use_window_and_caps_private_budget (test_strategy.BuyerPolicyTests.test_food_requires_use_window_and_caps_private_budget) ... ok
+test_goods_grade_policy_and_receipt_guard (test_strategy.BuyerPolicyTests.test_goods_grade_policy_and_receipt_guard) ... ok
+test_model_cannot_open_at_the_full_payment_cap (test_strategy.BuyerPolicyTests.test_model_cannot_open_at_the_full_payment_cap) ... {"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1346, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "other", "proposed": 850, "opening": 722, "reason": "test"}
+ok
+test_review_records_settlement_and_bounded_forum_post (test_strategy.BuyerPolicyTests.test_review_records_settlement_and_bounded_forum_post) ... ok
+test_a2a_model_choice_is_emitted_and_unit_is_held_after_receipt (test_strategy.IntegrationTests.test_a2a_model_choice_is_emitted_and_unit_is_held_after_receipt) ... {"event": "seller_open", "task_id": "71407d5b-7bff-4b2f-b63a-b94c46add246", "sku": "A1", "unit": "u1", "grade": "A", "cost": 70, "ask": 120}
+{"event": "seller_receipt", "task_id": "71407d5b-7bff-4b2f-b63a-b94c46add246", "unit": "u1", "price": 110, "status": "pending settlement"}
+ok
+test_public_ledger_reader_ignores_orders_and_old_rounds (test_strategy.IntegrationTests.test_public_ledger_reader_ignores_orders_and_old_rounds) ... ok
+test_public_settlements_enter_candidates_as_labeled_sales (test_strategy.IntegrationTests.test_public_settlements_enter_candidates_as_labeled_sales) ... ok
+test_restock_hook_uses_model_scenario_and_quantity_tool (test_strategy.IntegrationTests.test_restock_hook_uses_model_scenario_and_quantity_tool) ... {"event": "newsvendor_calculation", "sku": "food-1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+ok
+test_seller_does_not_offer_taken_or_expired_units (test_strategy.IntegrationTests.test_seller_does_not_offer_taken_or_expired_units) ... ok
+test_seller_rejects_grade_change_while_model_decides (test_strategy.IntegrationTests.test_seller_rejects_grade_change_while_model_decides) ... {"event": "seller_open", "task_id": "2be90641-e407-4a33-95b9-9dd111af755b", "sku": "A1", "unit": "u1", "grade": "A", "cost": 70, "ask": 100}
+ok
+test_broken_goods_news_is_product_evidence_not_shop_blame (test_strategy.MemoryTests.test_broken_goods_news_is_product_evidence_not_shop_blame) ... ok
+test_buyer_memory_waits_for_kit_payment (test_strategy.MemoryTests.test_buyer_memory_waits_for_kit_payment) ... ok
+test_receipt_does_not_count_until_kit_settles (test_strategy.MemoryTests.test_receipt_does_not_count_until_kit_settles) ... ok
+test_lecture_discrete_example_selects_thirteen (test_strategy.NewsvendorTests.test_lecture_discrete_example_selects_thirteen) ... ok
+test_quote_shows_grade_and_expiry_without_cost_floor (test_strategy.NewsvendorTests.test_quote_shows_grade_and_expiry_without_cost_floor) ... ok
+
+----------------------------------------------------------------------
+Ran 70 tests in 0.236s
+
+OK

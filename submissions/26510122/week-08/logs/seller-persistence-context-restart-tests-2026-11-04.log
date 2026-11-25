@@ -1,0 +1,69 @@
+test_database_leases_are_atomic_and_old_receipt_logs_migrate (test_seller_persistence.PersistenceTests.test_database_leases_are_atomic_and_old_receipt_logs_migrate) ... ok
+test_expiry_is_checked_again_after_slow_model_decision (test_seller_persistence.PersistenceTests.test_expiry_is_checked_again_after_slow_model_decision) ... {"event": "seller_open", "task_id": "4789fd8d-df83-4b35-b556-066473fd2313", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+ok
+test_mixed_message_updates_requirement_and_preserves_exact_price (test_seller_persistence.PersistenceTests.test_mixed_message_updates_requirement_and_preserves_exact_price) ... {"event": "seller_open", "task_id": "ab13ef32-0938-430a-b8ad-9feaf89cb78d", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "ab13ef32-0938-430a-b8ad-9feaf89cb78d", "unit": "u1", "price": 800, "status": "pending settlement"}
+ok
+test_protocol_and_requirements_resume_after_rebuilding_the_server (test_seller_persistence.PersistenceTests.test_protocol_and_requirements_resume_after_rebuilding_the_server) ... {"event": "seller_open", "task_id": "c31d2b43-609a-4f53-8c7b-2cede2d5efcb", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "c31d2b43-609a-4f53-8c7b-2cede2d5efcb", "unit": "u1", "price": 800, "status": "pending settlement"}
+Consumer[c31d2b43-609a-4f53-8c7b-2cede2d5efcb]: Failed
+Traceback (most recent call last):
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/.venv/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 136, in run
+    await self._process_event(event)
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/.venv/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 179, in _process_event
+    await self._process_event_inner(event)
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/.venv/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 231, in _process_event_inner
+    updated_task = await self._handle_task_event(event)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/.venv/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 266, in _handle_task_event
+    await self._handle_task_modification_event(event)
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/.venv/lib/python3.13/site-packages/a2a/server/agent_execution/active_task.py", line 318, in _handle_task_modification_event
+    await self.active_task._task_manager.save_task_event(
+        updated_task
+    )
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/.venv/lib/python3.13/site-packages/a2a/server/tasks/task_manager.py", line 236, in save_task_event
+    raise InvalidParamsError(
+        message=f"Context in event doesn't match TaskManager {self.context_id} : {event.context_id}"
+    )
+a2a.utils.errors.InvalidParamsError: Context in event doesn't match TaskManager 08825399-9d91-48f0-87b7-b2d5cd366e52 : 5bea7f6c-8b9a-40bb-afc6-b5c493a3034f
+Dispatcher task was cancelled or finished. Events may be lost.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+FAIL
+test_protocol_task_store_preserves_owner_and_sdk_list_behavior (test_seller_persistence.PersistenceTests.test_protocol_task_store_preserves_owner_and_sdk_list_behavior) ... ok
+test_signed_unit_remains_locked_across_restart_and_is_persisted_before_artifact (test_seller_persistence.PersistenceTests.test_signed_unit_remains_locked_across_restart_and_is_persisted_before_artifact) ... {"event": "seller_open", "task_id": "86286dc9-1e6a-448b-980f-54eed73c4415", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "86286dc9-1e6a-448b-980f-54eed73c4415", "unit": "u1", "price": 800, "status": "pending settlement"}
+ok
+test_wrong_expiry_is_filtered_before_model_and_cannot_receive_a_receipt (test_seller_persistence.PersistenceTests.test_wrong_expiry_is_filtered_before_model_and_cannot_receive_a_receipt) ... ok
+test_explicit_terms_survive_numeric_turn_and_can_be_changed (test_seller_persistence.RequirementTests.test_explicit_terms_survive_numeric_turn_and_can_be_changed) ... ok
+test_mixed_offer_does_not_confuse_hours_with_money (test_seller_persistence.RequirementTests.test_mixed_offer_does_not_confuse_hours_with_money) ... ok
+test_warranty_is_not_food_expiry_and_context_is_bounded (test_seller_persistence.RequirementTests.test_warranty_is_not_food_expiry_and_context_is_bounded) ... ok
+
+======================================================================
+FAIL: test_protocol_and_requirements_resume_after_rebuilding_the_server (test_seller_persistence.PersistenceTests.test_protocol_and_requirements_resume_after_rebuilding_the_server)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_seller_persistence.py", line 102, in test_protocol_and_requirements_resume_after_rebuilding_the_server
+    asyncio.run(flow())
+    ~~~~~~~~~~~^^^^^^^^
+  File "/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/runners.py", line 196, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/runners.py", line 119, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_seller_persistence.py", line 97, in flow
+    last = await self.send(c, '800', first['id'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_seller_persistence.py", line 86, in send
+    self.assertNotIn('error', body)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+AssertionError: 'error' unexpectedly found in {'error': {'code': -32602, 'message': "Context in event doesn't match TaskManager 08825399-9d91-48f0-87b7-b2d5cd366e52 : 5bea7f6c-8b9a-40bb-afc6-b5c493a3034f", 'data': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'INVALID_PARAMS', 'domain': 'a2a-protocol.org', 'metadata': {}}]}, 'id': '1', 'jsonrpc': '2.0'}
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.328s
+
+FAILED (failures=1)

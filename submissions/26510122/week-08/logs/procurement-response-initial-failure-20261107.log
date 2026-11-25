@@ -1,0 +1,4 @@
+Initial validation: test_prepared_procurement.py, 12 tests, 1 failure.
+test_future_inventory_arrival_reduces_replenishment_target compared the entire protocol dict.
+The buy list was correct; new _procurement correlation metadata made that exact dict comparison fail.
+Updated the assertion to verify the buy list and require its decision ID. The 12-test rerun passed.

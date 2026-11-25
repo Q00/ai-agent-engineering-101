@@ -1,0 +1,117 @@
+{
+  "stage": "confirmation",
+  "model_groups": {
+    "codex:gpt-5.6-luna": {
+      "cases": 12,
+      "wins": {
+        "combo_111": 8,
+        "token_saving": 3,
+        "clear_terms": 1
+      },
+      "exposures": {
+        "combo_111": 8,
+        "clear_terms": 8,
+        "token_saving": 8
+      },
+      "strength": {
+        "weak": 6,
+        "equivalent": 6
+      },
+      "positions": {
+        "1": 7,
+        "2": 5
+      },
+      "pairwise": {
+        "clear_terms:combo_111": {
+          "combo_111": 4
+        },
+        "combo_111:token_saving": {
+          "combo_111": 4
+        },
+        "clear_terms:token_saving": {
+          "token_saving": 3,
+          "clear_terms": 1
+        }
+      }
+    },
+    "codex:gpt-6-luna": {
+      "cases": 12,
+      "wins": {
+        "combo_111": 5,
+        "clear_terms": 3,
+        "token_saving": 4
+      },
+      "exposures": {
+        "combo_111": 8,
+        "clear_terms": 8,
+        "token_saving": 8
+      },
+      "strength": {
+        "weak": 6,
+        "equivalent": 6
+      },
+      "positions": {
+        "1": 10,
+        "2": 2
+      },
+      "pairwise": {
+        "clear_terms:combo_111": {
+          "combo_111": 2,
+          "clear_terms": 2
+        },
+        "combo_111:token_saving": {
+          "combo_111": 3,
+          "token_saving": 1
+        },
+        "clear_terms:token_saving": {
+          "token_saving": 3,
+          "clear_terms": 1
+        }
+      }
+    },
+    "claude:sonnet": {
+      "cases": 12,
+      "wins": {
+        "combo_111": 6,
+        "clear_terms": 3,
+        "token_saving": 3
+      },
+      "exposures": {
+        "combo_111": 8,
+        "clear_terms": 8,
+        "token_saving": 8
+      },
+      "strength": {
+        "equivalent": 6,
+        "weak": 6
+      },
+      "positions": {
+        "1": 10,
+        "2": 2
+      },
+      "pairwise": {
+        "clear_terms:combo_111": {
+          "combo_111": 3,
+          "clear_terms": 1
+        },
+        "combo_111:token_saving": {
+          "combo_111": 3,
+          "token_saving": 1
+        },
+        "clear_terms:token_saving": {
+          "token_saving": 2,
+          "clear_terms": 2
+        }
+      }
+    }
+  },
+  "preserved_failures": [],
+  "primary_metric": "Selected for first contact, before a binding quote, when descriptions are visible.",
+  "limitations": [
+    "36 synthetic paired choices; not real marketplace traffic or conversion.",
+    "Screening and confirmation use different products/budgets and must be reported separately.",
+    "Descriptions vary in length and emphasis; factor effects are not causally isolated.",
+    "Self-reported preference strength and reasons are not proof of causal motivation.",
+    "The production buyer does not currently expose Agent Card descriptions in selection."
+  ]
+}

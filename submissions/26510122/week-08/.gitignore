@@ -1,0 +1,38 @@
+.venv/
+__pycache__/
+*.pyc
+*.log.tmp
+*.pem
+.market/
+state/
+
+# Personal flow review assets
+/flow/
+/logs/flow-ui-check-*.log
+
+# Private credentials / runtime database / transfer bundles
+.env.*
+*.sqlite
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.handoff.tar.gz
+
+# Growing live logs: immutable handoff snapshots are committed instead
+/logs/market-kit.log
+/logs/market-kit.log.[0-9]*
+/logs/seller-forum-console.log
+/logs/seller-forum-events.jsonl
+/logs/seller-r3-kit-console.log
+/logs/seller-r3-supervisor.err
+/logs/seller-r3-supervisor.log
+/logs/seller-r3-tunnel.log
+/logs/shop-events.jsonl
+
+# Slow meta worker output (structured verification snapshots are committed)
+/logs/seller-meta-console.log
+/logs/seller-meta-events.jsonl
+/logs/procurement-console.log
+
+# Required Week 08 submission: this branch keeps a frozen deployed log here.
+!/logs/market-kit.log

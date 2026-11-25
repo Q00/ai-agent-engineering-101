@@ -1,0 +1,43 @@
+test_ambiguous_no_stock_does_not_inflate_every_sku (test_inventory_observation.ObservationTests.test_ambiguous_no_stock_does_not_inflate_every_sku) ... ok
+test_missing_data_is_unknown_not_zero_demand (test_inventory_observation.ObservationTests.test_missing_data_is_unknown_not_zero_demand) ... ok
+test_only_specific_sku_or_unique_full_name_is_attributed (test_inventory_observation.ObservationTests.test_only_specific_sku_or_unique_full_name_is_attributed) ... ok
+test_requests_deduplicate_and_only_covered_visits_enter_rate (test_inventory_observation.ObservationTests.test_requests_deduplicate_and_only_covered_visits_enter_rate) ... ok
+test_snapshot_gaps_do_not_become_exposure (test_inventory_observation.ObservationTests.test_snapshot_gaps_do_not_become_exposure) ... ok
+test_stale_snapshot_is_not_recorded_as_new_evidence (test_inventory_observation.ObservationTests.test_stale_snapshot_is_not_recorded_as_new_evidence) ... ok
+test_cash_reserve_and_sparse_approval_are_hard_limits (test_replenishment_plan.PlanTests.test_cash_reserve_and_sparse_approval_are_hard_limits) ... ok
+test_changes_invalidate_instead_of_changing_model_target (test_replenishment_plan.PlanTests.test_changes_invalidate_instead_of_changing_model_target) ... ok
+test_restocker_reuses_approved_plan_without_model_or_ledger_call (test_replenishment_plan.PlanTests.test_restocker_reuses_approved_plan_without_model_or_ledger_call) ... {"event": "newsvendor_calculation", "sku": "F1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+ok
+test_reuse_obeys_total_budget_and_waits_for_new_snapshot (test_replenishment_plan.PlanTests.test_reuse_obeys_total_budget_and_waits_for_new_snapshot) ... ok
+test_unavailable_approver_does_not_emit_tool_chosen_purchase (test_replenishment_plan.PlanTests.test_unavailable_approver_does_not_emit_tool_chosen_purchase) ... ok
+test_a2a_request_names_sku_without_revealing_budget (test_strategy.BuyerPolicyTests.test_a2a_request_names_sku_without_revealing_budget) ... {"event": "buyer_offer", "sku": "F1", "shop": "https://shop", "offer": 600, "turn": 0}
+ok
+test_buyer_retries_other_shop_after_mismatched_receipt (test_strategy.BuyerPolicyTests.test_buyer_retries_other_shop_after_mismatched_receipt) ... {"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "first", "proposed": 700, "opening": 700, "reason": "test"}
+ok
+test_buyer_selects_stocked_external_shop_and_guards_receipt (test_strategy.BuyerPolicyTests.test_buyer_selects_stocked_external_shop_and_guards_receipt) ... {"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "external", "proposed": 700, "opening": 700, "reason": "in stock"}
+ok
+test_food_requires_use_window_and_caps_private_budget (test_strategy.BuyerPolicyTests.test_food_requires_use_window_and_caps_private_budget) ... ok
+test_goods_grade_policy_and_receipt_guard (test_strategy.BuyerPolicyTests.test_goods_grade_policy_and_receipt_guard) ... ok
+test_model_cannot_open_at_the_full_payment_cap (test_strategy.BuyerPolicyTests.test_model_cannot_open_at_the_full_payment_cap) ... {"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "other", "proposed": 850, "opening": 722, "reason": "test"}
+ok
+test_review_records_settlement_and_bounded_forum_post (test_strategy.BuyerPolicyTests.test_review_records_settlement_and_bounded_forum_post) ... ok
+test_a2a_model_choice_is_emitted_and_unit_is_held_after_receipt (test_strategy.IntegrationTests.test_a2a_model_choice_is_emitted_and_unit_is_held_after_receipt) ... {"event": "seller_open", "task_id": "faab9602-adff-47c7-9ade-3a3be896d54d", "sku": "A1", "unit": "u1", "grade": "A", "cost": 70, "ask": 120}
+{"event": "seller_receipt", "task_id": "faab9602-adff-47c7-9ade-3a3be896d54d", "unit": "u1", "price": 110, "status": "pending settlement"}
+ok
+test_public_ledger_reader_ignores_orders_and_old_rounds (test_strategy.IntegrationTests.test_public_ledger_reader_ignores_orders_and_old_rounds) ... ok
+test_public_settlements_enter_candidates_as_labeled_sales (test_strategy.IntegrationTests.test_public_settlements_enter_candidates_as_labeled_sales) ... ok
+test_restock_hook_uses_model_scenario_and_quantity_tool (test_strategy.IntegrationTests.test_restock_hook_uses_model_scenario_and_quantity_tool) ... {"event": "newsvendor_calculation", "sku": "food-1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+ok
+test_seller_does_not_offer_taken_or_expired_units (test_strategy.IntegrationTests.test_seller_does_not_offer_taken_or_expired_units) ... ok
+test_seller_rejects_grade_change_while_model_decides (test_strategy.IntegrationTests.test_seller_rejects_grade_change_while_model_decides) ... {"event": "seller_open", "task_id": "2255587e-abb4-45ac-9b6c-7d5e02f4059d", "sku": "A1", "unit": "u1", "grade": "A", "cost": 70, "ask": 100}
+ok
+test_broken_goods_news_is_product_evidence_not_shop_blame (test_strategy.MemoryTests.test_broken_goods_news_is_product_evidence_not_shop_blame) ... ok
+test_buyer_memory_waits_for_kit_payment (test_strategy.MemoryTests.test_buyer_memory_waits_for_kit_payment) ... ok
+test_receipt_does_not_count_until_kit_settles (test_strategy.MemoryTests.test_receipt_does_not_count_until_kit_settles) ... ok
+test_lecture_discrete_example_selects_thirteen (test_strategy.NewsvendorTests.test_lecture_discrete_example_selects_thirteen) ... ok
+test_quote_shows_grade_and_expiry_without_cost_floor (test_strategy.NewsvendorTests.test_quote_shows_grade_and_expiry_without_cost_floor) ... ok
+
+----------------------------------------------------------------------
+Ran 29 tests in 0.070s
+
+OK

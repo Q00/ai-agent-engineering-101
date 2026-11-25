@@ -1,0 +1,1195 @@
+{
+  "resident_count": 1,
+  "world_count": 1,
+  "resident": "윤서진",
+  "persona": {
+    "name": "윤서진",
+    "backstory": "서진은 도시의 더위와 불평등을 데이터로 추적하는 박사과정 학생이다. 연구가 복잡해질수록 집에서는 화면에서 눈을 떼고 손으로 간단한 음식을 준비하는 시간을 중요하게 여긴다. 주거 공간은 넓지 않지만, 연구와 회복의 경계가 보이는 배치를 만들고 싶어 한다.",
+    "reason": "환경 데이터 과학 박사과정 학생의 화면 중심 연구와 간단한 집밥 습관을 반영해, 곡물·우유·주스·해산물 중심의 조리 선택과 작업 후 회복을 지원하는 분리된 방 구성을 만들었다.",
+    "student_role": {
+      "kind": "graduate_student",
+      "program": "doctoral",
+      "research_area": "도시 열섬과 기후적응을 위한 환경 데이터 과학",
+      "stage": "박사과정 3년차, 논문 초안과 학회 발표 준비를 병행하는 시기",
+      "living_arrangement": "대학가의 작은 투룸에서 반려묘와 혼자 생활",
+      "current_pressure": "분석 결과를 논문 초안의 명확한 이야기로 정리하고 지도교수 피드백을 반영해야 한다",
+      "small_goal": "작업 후 바로 식사와 휴식으로 전환할 수 있는 작은 회복 구역을 집 안에 만든다",
+      "goal_success_condition": "작업 겸 휴식실에 테이블/책상과 소파를 모두 배치해 가상 방 점유 상태로 확인한다",
+      "personal_tradeoff": "작업 집중도를 높이는 정돈된 공간을 원하지만, 비싼 가구 하나보다 식재료와 유연한 수납에 예산을 나누고 싶어 한다",
+      "routine": [
+        "오전에는 집에서 기후자료 전처리를 하고 오후에는 연구실에 출근한다",
+        "주중 저녁에는 간단한 곡물·주스 중심 식사를 준비한다",
+        "주말마다 방 하나를 정리해 독서와 지도 시각화 작업 공간으로 바꾼다"
+      ]
+    },
+    "traits": [
+      "분석적",
+      "차분함",
+      "작은 변화를 꾸준히 기록함",
+      "공간 활용에 실용적임",
+      "새로운 맛을 과감하게 시험함"
+    ],
+    "food_preferences": [
+      "귀리와 우유를 활용한 담백한 아침 식사",
+      "토마토 주스처럼 준비가 간단한 음료",
+      "매콤한 해산물 요리",
+      "강한 단맛은 가끔 간식으로 즐김"
+    ],
+    "decor_preferences": [
+      "자연광을 살리는 밝은 커튼",
+      "작업과 휴식을 구분하는 소형 테이블 배치",
+      "과하지 않은 향의 디퓨저",
+      "수납이 드러나지 않는 깔끔한 공간"
+    ],
+    "hunger_per_hour": 7.5,
+    "meal_relief": 32,
+    "rooms": [
+      {
+        "id": "room_work_rest",
+        "name": "작업 겸 휴식실",
+        "width": 6,
+        "height": 5
+      },
+      {
+        "id": "room_kitchen",
+        "name": "간이주방",
+        "width": 4,
+        "height": 4
+      },
+      {
+        "id": "room_entry",
+        "name": "현관 수납공간",
+        "width": 4,
+        "height": 4
+      }
+    ],
+    "recipes": [
+      {
+        "id": "recipe_oat_milk_bowl",
+        "name": "귀리 우유 아침볼",
+        "ingredients": [
+          "2026년 햇곡 국산 귀리 2kg (1kgx2봉)",
+          "소화가잘되는우유 오리지널 190ML 24팩",
+          "크라운 땅콩카라멜 324g / 맛있는 간식 캬라멜 캐러멜"
+        ]
+      },
+      {
+        "id": "recipe_spicy_jjukkumi",
+        "name": "간단 매콤 쭈꾸미 한끼",
+        "ingredients": [
+          "지예찬 쭈꾸미볶음 400gX5팩 소비기한 27.02.19 / GS단독 브랜드",
+          "2026년 햇곡 국산 귀리 2kg (1kgx2봉)",
+          "[파미고] 유기농 냉압착 엑스트라버진 올리브오일 500ml 1병"
+        ]
+      },
+      {
+        "id": "recipe_tomato_coffee_break",
+        "name": "토마토 주스와 코나커피 휴식 세트",
+        "ingredients": [
+          "보넬드 아이엠 토마토 주스 즙 1L 7개",
+          "UCC 하와이 코나 커피 337ml 12개입",
+          "영광 냉동 모시송편(통동부) 25개입 1.3kg"
+        ]
+      }
+    ],
+    "home_goals": [
+      {
+        "id": "goal_recovery_zone",
+        "query": "작업 겸 휴식실에 테이블/책상과 소파를 함께 배치",
+        "room": "room_work_rest"
+      }
+    ]
+  },
+  "seed_recipe": "귀리 우유 아침볼",
+  "synthetic_starting_inventory": [
+    {
+      "unit": "sim-unit-0",
+      "sku": "G006670f7",
+      "name": "2026년 햇곡 국산 귀리 2kg (1kgx2봉)",
+      "kind": "food",
+      "source": "synthetic settlement fixture, not purchased"
+    },
+    {
+      "unit": "sim-unit-1",
+      "sku": "G0011e806",
+      "name": "소화가잘되는우유 오리지널 190ML 24팩",
+      "kind": "food",
+      "source": "synthetic settlement fixture, not purchased"
+    },
+    {
+      "unit": "sim-unit-2",
+      "sku": "G00a44d3b",
+      "name": "크라운 땅콩카라멜 324g / 맛있는 간식 캬라멜 캐러멜",
+      "kind": "food",
+      "source": "synthetic settlement fixture, not purchased"
+    },
+    {
+      "unit": "sim-unit-3",
+      "sku": "G02a83f63",
+      "name": "[키모] KM-5216 컴퓨터 입식 테이블 책상 600",
+      "kind": "goods",
+      "source": "synthetic settlement fixture, not purchased"
+    },
+    {
+      "unit": "sim-unit-4",
+      "sku": "G00327e80",
+      "name": "[다우닝] 플라나 베이직 4인 전체 천연가죽 소파",
+      "kind": "goods",
+      "source": "synthetic settlement fixture, not purchased"
+    },
+    {
+      "unit": "sim-unit-5",
+      "sku": "G0525dd90",
+      "name": "[GS비밀] 나무뜰 엘라 스툴 부끌레 타원형 패브릭 화장대 의자 CNM241C (착불)",
+      "kind": "goods",
+      "source": "synthetic settlement fixture, not purchased"
+    }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "simulated_minutes": 0.0,
+      "situation": {
+        "title": "발표 순서 변경",
+        "facts": [
+          "내일 랩미팅이 있다.",
+          "발표 순서가 변경되어 내 발표가 첫 번째가 되었다."
+        ],
+        "duration_seconds": 1800
+      },
+      "resident": "윤서진",
+      "decision": {
+        "plan": {
+          "scene_id": "e7ad8991e7e74fd0a891663a7ef5df46",
+          "previous_plan_id": null,
+          "update": "start",
+          "interpretation": "내일 발표가 첫 순서로 바뀌어 작업 후 빠르게 회복할 수 있는 공간과 식사가 중요해졌다. 현재 허기가 높고 귀리·우유 아침볼을 바로 준비할 수 있으므로 먼저 먹고, 작업 겸 휴식실의 전환 동선을 완성한다.",
+          "intention": "발표 준비 전 허기를 낮추고 작업과 휴식이 이어지는 작은 구역을 만든다.",
+          "next_steps": [
+            "소유한 귀리와 우유로 아침볼을 조리한다.",
+            "작업 겸 휴식실에 책상을 배치한다.",
+            "같은 방에 소파를 배치해 회복 구역을 만든다."
+          ],
+          "action_indexes": [
+            0,
+            1,
+            2
+          ],
+          "reason": "현재 조리 가능한 식사가 있고, 학생 역할의 목표 성공 조건인 책상과 소파의 가상 배치를 아직 충족하지 못했다."
+        },
+        "actions": [
+          {
+            "kind": "cook",
+            "recipe_id": "recipe_oat_milk_bowl"
+          },
+          {
+            "kind": "place",
+            "unit_id": "sim-unit-3",
+            "room": "room_work_rest",
+            "x": 1,
+            "y": 0,
+            "width": 2,
+            "height": 1
+          },
+          {
+            "kind": "place",
+            "unit_id": "sim-unit-4",
+            "room": "room_work_rest",
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 2
+          }
+        ],
+        "preferences": null,
+        "reason": "허기 60.002에서 즉시 조리 가능한 귀리 우유 아침볼을 선택하고, 보유한 책상과 소파를 작업 겸 휴식실에 함께 배치해 발표 준비와 회복의 경계를 만든다."
+      },
+      "plan_after": {
+        "id": "6ea1cb2c5edb42828ae570e17a5ec6cc",
+        "previous_plan_id": null,
+        "scene_id": "e7ad8991e7e74fd0a891663a7ef5df46",
+        "update": "start",
+        "status": "active",
+        "interpretation": "내일 발표가 첫 순서로 바뀌어 작업 후 빠르게 회복할 수 있는 공간과 식사가 중요해졌다. 현재 허기가 높고 귀리·우유 아침볼을 바로 준비할 수 있으므로 먼저 먹고, 작업 겸 휴식실의 전환 동선을 완성한다.",
+        "intention": "발표 준비 전 허기를 낮추고 작업과 휴식이 이어지는 작은 구역을 만든다.",
+        "next_steps": [
+          "소유한 귀리와 우유로 아침볼을 조리한다.",
+          "작업 겸 휴식실에 책상을 배치한다.",
+          "같은 방에 소파를 배치해 회복 구역을 만든다."
+        ],
+        "action_indexes": [
+          0,
+          1,
+          2
+        ],
+        "reason": "현재 조리 가능한 식사가 있고, 학생 역할의 목표 성공 조건인 책상과 소파의 가상 배치를 아직 충족하지 못했다.",
+        "recorded_at": 1793723291.306646,
+        "outcomes": [
+          {
+            "kind": "cook",
+            "status": "accepted",
+            "reason": "tool validation passed"
+          },
+          {
+            "kind": "place",
+            "status": "accepted",
+            "reason": "tool validation passed"
+          },
+          {
+            "kind": "place",
+            "status": "accepted",
+            "reason": "tool validation passed"
+          }
+        ]
+      },
+      "hunger_before": 60.0,
+      "hunger_after": 28.002,
+      "cooking_options_before": [
+        {
+          "recipe_id": "recipe_oat_milk_bowl",
+          "name": "귀리 우유 아침볼",
+          "ready": true,
+          "unit_ids": [
+            "sim-unit-0",
+            "sim-unit-1",
+            "sim-unit-2"
+          ],
+          "missing": []
+        },
+        {
+          "recipe_id": "recipe_spicy_jjukkumi",
+          "name": "간단 매콤 쭈꾸미 한끼",
+          "ready": false,
+          "unit_ids": [
+            "sim-unit-0"
+          ],
+          "missing": [
+            "지예찬 쭈꾸미볶음 400gX5팩 소비기한 27.02.19 / GS단독 브랜드",
+            "[파미고] 유기농 냉압착 엑스트라버진 올리브오일 500ml 1병"
+          ]
+        },
+        {
+          "recipe_id": "recipe_tomato_coffee_break",
+          "name": "토마토 주스와 코나커피 휴식 세트",
+          "ready": false,
+          "unit_ids": [],
+          "missing": [
+            "보넬드 아이엠 토마토 주스 즙 1L 7개",
+            "UCC 하와이 코나 커피 337ml 12개입",
+            "영광 냉동 모시송편(통동부) 25개입 1.3kg"
+          ]
+        }
+      ],
+      "proposed_actions": [
+        {
+          "kind": "cook",
+          "recipe_id": "recipe_oat_milk_bowl"
+        },
+        {
+          "kind": "place",
+          "unit_id": "sim-unit-3",
+          "room": "room_work_rest",
+          "x": 1,
+          "y": 0,
+          "width": 2,
+          "height": 1
+        },
+        {
+          "kind": "place",
+          "unit_id": "sim-unit-4",
+          "room": "room_work_rest",
+          "x": 3,
+          "y": 0,
+          "width": 3,
+          "height": 2
+        }
+      ],
+      "applied_events": [
+        {
+          "at": "2026-11-03T16:28:18+00:00",
+          "event": "cooked",
+          "id": "9bfa4a1b9673406ba13912770f603fe8",
+          "kind": "cooked",
+          "summary": "Roleplay meal: 귀리 우유 아침볼; hunger 60.002 -> 28.002.",
+          "epoch": 1793723291.306646,
+          "refs": [
+            910000000,
+            910000001,
+            910000002
+          ],
+          "ingredients": [
+            "sim-unit-0",
+            "sim-unit-1",
+            "sim-unit-2"
+          ]
+        },
+        {
+          "at": "2026-11-03T16:28:18+00:00",
+          "event": "placed",
+          "id": "0d99539e9a154848bc6aa9ff034ac1bd",
+          "kind": "placed",
+          "summary": "Roleplay layout: [키모] KM-5216 컴퓨터 입식 테이블 책상 600 in 작업 겸 휴식실 at (1,0), footprint 2x1 cells.",
+          "epoch": 1793723291.306646,
+          "refs": [
+            910000003
+          ],
+          "unit_id": "sim-unit-3"
+        },
+        {
+          "at": "2026-11-03T16:28:18+00:00",
+          "event": "placed",
+          "id": "c957829aa8f9414a8478eed73aa64516",
+          "kind": "placed",
+          "summary": "Roleplay layout: [다우닝] 플라나 베이직 4인 전체 천연가죽 소파 in 작업 겸 휴식실 at (3,0), footprint 3x2 cells.",
+          "epoch": 1793723291.306646,
+          "refs": [
+            910000004
+          ],
+          "unit_id": "sim-unit-4"
+        },
+        {
+          "at": "2026-11-03T16:28:18+00:00",
+          "event": "life_plan_updated",
+          "id": "ee23df3a838e4bd1936495d95bc10e1d",
+          "kind": "life_plan_updated",
+          "summary": "발표 준비 전 허기를 낮추고 작업과 휴식이 이어지는 작은 구역을 만든다.",
+          "epoch": 1793723291.306646,
+          "refs": [],
+          "plan": {
+            "id": "6ea1cb2c5edb42828ae570e17a5ec6cc",
+            "previous_plan_id": null,
+            "scene_id": "e7ad8991e7e74fd0a891663a7ef5df46",
+            "update": "start",
+            "status": "active",
+            "interpretation": "내일 발표가 첫 순서로 바뀌어 작업 후 빠르게 회복할 수 있는 공간과 식사가 중요해졌다. 현재 허기가 높고 귀리·우유 아침볼을 바로 준비할 수 있으므로 먼저 먹고, 작업 겸 휴식실의 전환 동선을 완성한다.",
+            "intention": "발표 준비 전 허기를 낮추고 작업과 휴식이 이어지는 작은 구역을 만든다.",
+            "next_steps": [
+              "소유한 귀리와 우유로 아침볼을 조리한다.",
+              "작업 겸 휴식실에 책상을 배치한다.",
+              "같은 방에 소파를 배치해 회복 구역을 만든다."
+            ],
+            "action_indexes": [
+              0,
+              1,
+              2
+            ],
+            "reason": "현재 조리 가능한 식사가 있고, 학생 역할의 목표 성공 조건인 책상과 소파의 가상 배치를 아직 충족하지 못했다.",
+            "recorded_at": 1793723291.306646,
+            "outcomes": [
+              {
+                "kind": "cook",
+                "status": "accepted",
+                "reason": "tool validation passed"
+              },
+              {
+                "kind": "place",
+                "status": "accepted",
+                "reason": "tool validation passed"
+              },
+              {
+                "kind": "place",
+                "status": "accepted",
+                "reason": "tool validation passed"
+              }
+            ]
+          },
+          "note": "Resident-authored provisional interpretation/plan, not an external fact or a permanent rule."
+        }
+      ],
+      "rejected_actions": [],
+      "placements_after": {
+        "sim-unit-3": {
+          "room": "room_work_rest",
+          "x": 1,
+          "y": 0,
+          "width": 2,
+          "height": 1
+        },
+        "sim-unit-4": {
+          "room": "room_work_rest",
+          "x": 3,
+          "y": 0,
+          "width": 3,
+          "height": 2
+        }
+      },
+      "context_bytes": 7383,
+      "same_identity": true,
+      "no_market_outbox": true
+    },
+    {
+      "step": 2,
+      "simulated_minutes": 30.02,
+      "situation": {
+        "title": "랩미팅 취소",
+        "facts": [
+          "내일 예정됐던 랩미팅이 취소됐다.",
+          "다음 랩미팅 일정은 아직 정해지지 않았다."
+        ],
+        "duration_seconds": 1800
+      },
+      "resident": "윤서진",
+      "decision": {
+        "plan": {
+          "scene_id": "dc6e558dc0f24598890c686b5bafec17",
+          "previous_plan_id": "6ea1cb2c5edb42828ae570e17a5ec6cc",
+          "update": "revise",
+          "interpretation": "랩미팅 취소로 내일의 즉각적인 발표 압박은 줄었다. 작업실에는 책상과 소파가 이미 배치되어 회복 구역 목표를 달성했으므로 추가 구매나 배치는 서두르지 않는다.",
+          "intention": "현재 정돈된 작업·휴식 경계를 유지하며 다음 일정이 정해질 때까지 자원과 체력을 아낀다.",
+          "next_steps": [
+            "새 랩미팅 일정과 식재료 확보 여부가 생길 때까지 기다린다."
+          ],
+          "action_indexes": [
+            0
+          ],
+          "reason": "허기는 중간 수준이지만 조리 가능한 소유 식재료가 없고, 가구 배치 목표는 이미 충족되었다."
+        },
+        "actions": [
+          {
+            "kind": "wait"
+          }
+        ],
+        "preferences": null,
+        "reason": "새 일정이 없고 즉시 실행할 수 있는 조리·구매·배치 행동이 없어 기다리는 것이 현재 상황에 맞다."
+      },
+      "plan_after": {
+        "id": "aa0d2b99cb604bcc828dbd1c9134a3b1",
+        "previous_plan_id": "6ea1cb2c5edb42828ae570e17a5ec6cc",
+        "scene_id": "dc6e558dc0f24598890c686b5bafec17",
+        "update": "revise",
+        "status": "active",
+        "interpretation": "랩미팅 취소로 내일의 즉각적인 발표 압박은 줄었다. 작업실에는 책상과 소파가 이미 배치되어 회복 구역 목표를 달성했으므로 추가 구매나 배치는 서두르지 않는다.",
+        "intention": "현재 정돈된 작업·휴식 경계를 유지하며 다음 일정이 정해질 때까지 자원과 체력을 아낀다.",
+        "next_steps": [
+          "새 랩미팅 일정과 식재료 확보 여부가 생길 때까지 기다린다."
+        ],
+        "action_indexes": [
+          0
+        ],
+        "reason": "허기는 중간 수준이지만 조리 가능한 소유 식재료가 없고, 가구 배치 목표는 이미 충족되었다.",
+        "recorded_at": 1793725092.306646,
+        "outcomes": [
+          {
+            "kind": "wait",
+            "status": "accepted",
+            "reason": "tool validation passed"
+          }
+        ]
+      },
+      "hunger_before": 31.752,
+      "hunger_after": 31.754,
+      "cooking_options_before": [
+        {
+          "recipe_id": "recipe_oat_milk_bowl",
+          "name": "귀리 우유 아침볼",
+          "ready": false,
+          "unit_ids": [],
+          "missing": [
+            "2026년 햇곡 국산 귀리 2kg (1kgx2봉)",
+            "소화가잘되는우유 오리지널 190ML 24팩",
+            "크라운 땅콩카라멜 324g / 맛있는 간식 캬라멜 캐러멜"
+          ]
+        },
+        {
+          "recipe_id": "recipe_spicy_jjukkumi",
+          "name": "간단 매콤 쭈꾸미 한끼",
+          "ready": false,
+          "unit_ids": [],
+          "missing": [
+            "지예찬 쭈꾸미볶음 400gX5팩 소비기한 27.02.19 / GS단독 브랜드",
+            "2026년 햇곡 국산 귀리 2kg (1kgx2봉)",
+            "[파미고] 유기농 냉압착 엑스트라버진 올리브오일 500ml 1병"
+          ]
+        },
+        {
+          "recipe_id": "recipe_tomato_coffee_break",
+          "name": "토마토 주스와 코나커피 휴식 세트",
+          "ready": false,
+          "unit_ids": [],
+          "missing": [
+            "보넬드 아이엠 토마토 주스 즙 1L 7개",
+            "UCC 하와이 코나 커피 337ml 12개입",
+            "영광 냉동 모시송편(통동부) 25개입 1.3kg"
+          ]
+        }
+      ],
+      "proposed_actions": [
+        {
+          "kind": "wait"
+        }
+      ],
+      "applied_events": [
+        {
+          "at": "2026-11-03T16:28:28+00:00",
+          "event": "life_plan_updated",
+          "id": "ff985a5641c7487095f50a0c37787ea2",
+          "kind": "life_plan_updated",
+          "summary": "현재 정돈된 작업·휴식 경계를 유지하며 다음 일정이 정해질 때까지 자원과 체력을 아낀다.",
+          "epoch": 1793725092.306646,
+          "refs": [],
+          "plan": {
+            "id": "aa0d2b99cb604bcc828dbd1c9134a3b1",
+            "previous_plan_id": "6ea1cb2c5edb42828ae570e17a5ec6cc",
+            "scene_id": "dc6e558dc0f24598890c686b5bafec17",
+            "update": "revise",
+            "status": "active",
+            "interpretation": "랩미팅 취소로 내일의 즉각적인 발표 압박은 줄었다. 작업실에는 책상과 소파가 이미 배치되어 회복 구역 목표를 달성했으므로 추가 구매나 배치는 서두르지 않는다.",
+            "intention": "현재 정돈된 작업·휴식 경계를 유지하며 다음 일정이 정해질 때까지 자원과 체력을 아낀다.",
+            "next_steps": [
+              "새 랩미팅 일정과 식재료 확보 여부가 생길 때까지 기다린다."
+            ],
+            "action_indexes": [
+              0
+            ],
+            "reason": "허기는 중간 수준이지만 조리 가능한 소유 식재료가 없고, 가구 배치 목표는 이미 충족되었다.",
+            "recorded_at": 1793725092.306646,
+            "outcomes": [
+              {
+                "kind": "wait",
+                "status": "accepted",
+                "reason": "tool validation passed"
+              }
+            ]
+          },
+          "note": "Resident-authored provisional interpretation/plan, not an external fact or a permanent rule."
+        }
+      ],
+      "rejected_actions": [],
+      "placements_after": {
+        "sim-unit-3": {
+          "room": "room_work_rest",
+          "x": 1,
+          "y": 0,
+          "width": 2,
+          "height": 1
+        },
+        "sim-unit-4": {
+          "room": "room_work_rest",
+          "x": 3,
+          "y": 0,
+          "width": 3,
+          "height": 2
+        }
+      },
+      "context_bytes": 7500,
+      "same_identity": true,
+      "no_market_outbox": true
+    },
+    {
+      "step": 3,
+      "simulated_minutes": 60.03,
+      "situation": {
+        "title": "동기 방문",
+        "facts": [
+          "동기 두 명이 금요일 저녁 7시에 집에 방문하기로 했다."
+        ],
+        "duration_seconds": 1800
+      },
+      "resident": "윤서진",
+      "decision": {
+        "plan": {
+          "scene_id": "11d644160b0e4854af00c2557323ea26",
+          "previous_plan_id": "aa0d2b99cb604bcc828dbd1c9134a3b1",
+          "update": "revise",
+          "interpretation": "동기 두 명의 방문 일정이 생겼지만 작업실의 책상과 소파 배치는 이미 목표를 충족한다. 방문과 회복에 유연하게 쓸 수 있도록 남는 공간에 보유 스툴을 추가한다.",
+          "intention": "정돈된 작업·휴식 경계를 유지하면서 금요일 방문에 대응할 수 있는 작은 좌석을 마련한다.",
+          "next_steps": [
+            "작업 겸 휴식실의 열린 구역에 스툴을 배치한다.",
+            "추가 식재료나 조리 가능한 음식이 없으므로 현재는 기다린다."
+          ],
+          "action_indexes": [
+            0,
+            1
+          ],
+          "reason": "보유 가구만 활용하며, 새 식재료 구매나 조리는 이 틱에서 가능하지 않다."
+        },
+        "actions": [
+          {
+            "kind": "place",
+            "unit_id": "sim-unit-5",
+            "room": "room_work_rest",
+            "x": 1,
+            "y": 2,
+            "width": 1,
+            "height": 1
+          },
+          {
+            "kind": "wait"
+          }
+        ],
+        "preferences": null,
+        "reason": "방문 일정에 맞춰 보유 스툴을 배치했고, 현재 조리 가능한 음식이나 요청할 필요가 없어 대기한다."
+      },
+      "plan_after": {
+        "id": "f21e916d7f3442fd8177e411f6e8f9df",
+        "previous_plan_id": "aa0d2b99cb604bcc828dbd1c9134a3b1",
+        "scene_id": "11d644160b0e4854af00c2557323ea26",
+        "update": "revise",
+        "status": "active",
+        "interpretation": "동기 두 명의 방문 일정이 생겼지만 작업실의 책상과 소파 배치는 이미 목표를 충족한다. 방문과 회복에 유연하게 쓸 수 있도록 남는 공간에 보유 스툴을 추가한다.",
+        "intention": "정돈된 작업·휴식 경계를 유지하면서 금요일 방문에 대응할 수 있는 작은 좌석을 마련한다.",
+        "next_steps": [
+          "작업 겸 휴식실의 열린 구역에 스툴을 배치한다.",
+          "추가 식재료나 조리 가능한 음식이 없으므로 현재는 기다린다."
+        ],
+        "action_indexes": [
+          0,
+          1
+        ],
+        "reason": "보유 가구만 활용하며, 새 식재료 구매나 조리는 이 틱에서 가능하지 않다.",
+        "recorded_at": 1793726893.306646,
+        "outcomes": [
+          {
+            "kind": "place",
+            "status": "accepted",
+            "reason": "tool validation passed"
+          },
+          {
+            "kind": "wait",
+            "status": "accepted",
+            "reason": "tool validation passed"
+          }
+        ]
+      },
+      "hunger_before": 35.504,
+      "hunger_after": 35.506,
+      "cooking_options_before": [
+        {
+          "recipe_id": "recipe_oat_milk_bowl",
+          "name": "귀리 우유 아침볼",
+          "ready": false,
+          "unit_ids": [],
+          "missing": [
+            "2026년 햇곡 국산 귀리 2kg (1kgx2봉)",
+            "소화가잘되는우유 오리지널 190ML 24팩",
+            "크라운 땅콩카라멜 324g / 맛있는 간식 캬라멜 캐러멜"
+          ]
+        },
+        {
+          "recipe_id": "recipe_spicy_jjukkumi",
+          "name": "간단 매콤 쭈꾸미 한끼",
+          "ready": false,
+          "unit_ids": [],
+          "missing": [
+            "지예찬 쭈꾸미볶음 400gX5팩 소비기한 27.02.19 / GS단독 브랜드",
+            "2026년 햇곡 국산 귀리 2kg (1kgx2봉)",
+            "[파미고] 유기농 냉압착 엑스트라버진 올리브오일 500ml 1병"
+          ]
+        },
+        {
+          "recipe_id": "recipe_tomato_coffee_break",
+          "name": "토마토 주스와 코나커피 휴식 세트",
+          "ready": false,
+          "unit_ids": [],
+          "missing": [
+            "보넬드 아이엠 토마토 주스 즙 1L 7개",
+            "UCC 하와이 코나 커피 337ml 12개입",
+            "영광 냉동 모시송편(통동부) 25개입 1.3kg"
+          ]
+        }
+      ],
+      "proposed_actions": [
+        {
+          "kind": "place",
+          "unit_id": "sim-unit-5",
+          "room": "room_work_rest",
+          "x": 1,
+          "y": 2,
+          "width": 1,
+          "height": 1
+        },
+        {
+          "kind": "wait"
+        }
+      ],
+      "applied_events": [
+        {
+          "at": "2026-11-03T16:28:40+00:00",
+          "event": "placed",
+          "id": "caf99097b33b48de810d074c6349b558",
+          "kind": "placed",
+          "summary": "Roleplay layout: [GS비밀] 나무뜰 엘라 스툴 부끌레 타원형 패브릭 화장대 의자 CNM241C (착불) in 작업 겸 휴식실 at (1,2), footprint 1x1 cells.",
+          "epoch": 1793726893.306646,
+          "refs": [
+            910000005
+          ],
+          "unit_id": "sim-unit-5"
+        },
+        {
+          "at": "2026-11-03T16:28:40+00:00",
+          "event": "life_plan_updated",
+          "id": "647c5fe8bd514f06b7b2d1f4f4fba036",
+          "kind": "life_plan_updated",
+          "summary": "정돈된 작업·휴식 경계를 유지하면서 금요일 방문에 대응할 수 있는 작은 좌석을 마련한다.",
+          "epoch": 1793726893.306646,
+          "refs": [],
+          "plan": {
+            "id": "f21e916d7f3442fd8177e411f6e8f9df",
+            "previous_plan_id": "aa0d2b99cb604bcc828dbd1c9134a3b1",
+            "scene_id": "11d644160b0e4854af00c2557323ea26",
+            "update": "revise",
+            "status": "active",
+            "interpretation": "동기 두 명의 방문 일정이 생겼지만 작업실의 책상과 소파 배치는 이미 목표를 충족한다. 방문과 회복에 유연하게 쓸 수 있도록 남는 공간에 보유 스툴을 추가한다.",
+            "intention": "정돈된 작업·휴식 경계를 유지하면서 금요일 방문에 대응할 수 있는 작은 좌석을 마련한다.",
+            "next_steps": [
+              "작업 겸 휴식실의 열린 구역에 스툴을 배치한다.",
+              "추가 식재료나 조리 가능한 음식이 없으므로 현재는 기다린다."
+            ],
+            "action_indexes": [
+              0,
+              1
+            ],
+            "reason": "보유 가구만 활용하며, 새 식재료 구매나 조리는 이 틱에서 가능하지 않다.",
+            "recorded_at": 1793726893.306646,
+            "outcomes": [
+              {
+                "kind": "place",
+                "status": "accepted",
+                "reason": "tool validation passed"
+              },
+              {
+                "kind": "wait",
+                "status": "accepted",
+                "reason": "tool validation passed"
+              }
+            ]
+          },
+          "note": "Resident-authored provisional interpretation/plan, not an external fact or a permanent rule."
+        }
+      ],
+      "rejected_actions": [],
+      "placements_after": {
+        "sim-unit-3": {
+          "room": "room_work_rest",
+          "x": 1,
+          "y": 0,
+          "width": 2,
+          "height": 1
+        },
+        "sim-unit-4": {
+          "room": "room_work_rest",
+          "x": 3,
+          "y": 0,
+          "width": 3,
+          "height": 2
+        },
+        "sim-unit-5": {
+          "room": "room_work_rest",
+          "x": 1,
+          "y": 2,
+          "width": 1,
+          "height": 1
+        }
+      },
+      "context_bytes": 7276,
+      "same_identity": true,
+      "no_market_outbox": true
+    }
+  ],
+  "final_state": {
+    "version": 1,
+    "persona": {
+      "name": "윤서진",
+      "backstory": "서진은 도시의 더위와 불평등을 데이터로 추적하는 박사과정 학생이다. 연구가 복잡해질수록 집에서는 화면에서 눈을 떼고 손으로 간단한 음식을 준비하는 시간을 중요하게 여긴다. 주거 공간은 넓지 않지만, 연구와 회복의 경계가 보이는 배치를 만들고 싶어 한다.",
+      "reason": "환경 데이터 과학 박사과정 학생의 화면 중심 연구와 간단한 집밥 습관을 반영해, 곡물·우유·주스·해산물 중심의 조리 선택과 작업 후 회복을 지원하는 분리된 방 구성을 만들었다.",
+      "student_role": {
+        "kind": "graduate_student",
+        "program": "doctoral",
+        "research_area": "도시 열섬과 기후적응을 위한 환경 데이터 과학",
+        "stage": "박사과정 3년차, 논문 초안과 학회 발표 준비를 병행하는 시기",
+        "living_arrangement": "대학가의 작은 투룸에서 반려묘와 혼자 생활",
+        "current_pressure": "분석 결과를 논문 초안의 명확한 이야기로 정리하고 지도교수 피드백을 반영해야 한다",
+        "small_goal": "작업 후 바로 식사와 휴식으로 전환할 수 있는 작은 회복 구역을 집 안에 만든다",
+        "goal_success_condition": "작업 겸 휴식실에 테이블/책상과 소파를 모두 배치해 가상 방 점유 상태로 확인한다",
+        "personal_tradeoff": "작업 집중도를 높이는 정돈된 공간을 원하지만, 비싼 가구 하나보다 식재료와 유연한 수납에 예산을 나누고 싶어 한다",
+        "routine": [
+          "오전에는 집에서 기후자료 전처리를 하고 오후에는 연구실에 출근한다",
+          "주중 저녁에는 간단한 곡물·주스 중심 식사를 준비한다",
+          "주말마다 방 하나를 정리해 독서와 지도 시각화 작업 공간으로 바꾼다"
+        ]
+      },
+      "traits": [
+        "분석적",
+        "차분함",
+        "작은 변화를 꾸준히 기록함",
+        "공간 활용에 실용적임",
+        "새로운 맛을 과감하게 시험함"
+      ],
+      "food_preferences": [
+        "귀리와 우유를 활용한 담백한 아침 식사",
+        "토마토 주스처럼 준비가 간단한 음료",
+        "매콤한 해산물 요리",
+        "강한 단맛은 가끔 간식으로 즐김"
+      ],
+      "decor_preferences": [
+        "자연광을 살리는 밝은 커튼",
+        "작업과 휴식을 구분하는 소형 테이블 배치",
+        "과하지 않은 향의 디퓨저",
+        "수납이 드러나지 않는 깔끔한 공간"
+      ],
+      "hunger_per_hour": 7.5,
+      "meal_relief": 32,
+      "rooms": [
+        {
+          "id": "room_work_rest",
+          "name": "작업 겸 휴식실",
+          "width": 6,
+          "height": 5
+        },
+        {
+          "id": "room_kitchen",
+          "name": "간이주방",
+          "width": 4,
+          "height": 4
+        },
+        {
+          "id": "room_entry",
+          "name": "현관 수납공간",
+          "width": 4,
+          "height": 4
+        }
+      ],
+      "recipes": [
+        {
+          "id": "recipe_oat_milk_bowl",
+          "name": "귀리 우유 아침볼",
+          "ingredients": [
+            "2026년 햇곡 국산 귀리 2kg (1kgx2봉)",
+            "소화가잘되는우유 오리지널 190ML 24팩",
+            "크라운 땅콩카라멜 324g / 맛있는 간식 캬라멜 캐러멜"
+          ]
+        },
+        {
+          "id": "recipe_spicy_jjukkumi",
+          "name": "간단 매콤 쭈꾸미 한끼",
+          "ingredients": [
+            "지예찬 쭈꾸미볶음 400gX5팩 소비기한 27.02.19 / GS단독 브랜드",
+            "2026년 햇곡 국산 귀리 2kg (1kgx2봉)",
+            "[파미고] 유기농 냉압착 엑스트라버진 올리브오일 500ml 1병"
+          ]
+        },
+        {
+          "id": "recipe_tomato_coffee_break",
+          "name": "토마토 주스와 코나커피 휴식 세트",
+          "ingredients": [
+            "보넬드 아이엠 토마토 주스 즙 1L 7개",
+            "UCC 하와이 코나 커피 337ml 12개입",
+            "영광 냉동 모시송편(통동부) 25개입 1.3kg"
+          ]
+        }
+      ],
+      "home_goals": [
+        {
+          "id": "goal_recovery_zone",
+          "query": "작업 겸 휴식실에 테이블/책상과 소파를 함께 배치",
+          "room": "room_work_rest"
+        }
+      ]
+    },
+    "hunger": 35.506,
+    "last_clock": 1793726893.306646,
+    "owned": {
+      "sim-unit-0": {
+        "sku": "G006670f7",
+        "name": "2026년 햇곡 국산 귀리 2kg (1kgx2봉)",
+        "category": "식품>시리얼/곡물/콩류>곡물",
+        "kind": "food",
+        "ledger": 910000000,
+        "price": 7280,
+        "grade": "A",
+        "expires_at": 1793809690.306646,
+        "acquired_at": 1793723290.306646,
+        "status": "consumed"
+      },
+      "sim-unit-1": {
+        "sku": "G0011e806",
+        "name": "소화가잘되는우유 오리지널 190ML 24팩",
+        "category": "식품>계란/유제품>우유/두유",
+        "kind": "food",
+        "ledger": 910000001,
+        "price": 16261,
+        "grade": "A",
+        "expires_at": 1793809690.306646,
+        "acquired_at": 1793723290.306646,
+        "status": "consumed"
+      },
+      "sim-unit-2": {
+        "sku": "G00a44d3b",
+        "name": "크라운 땅콩카라멜 324g / 맛있는 간식 캬라멜 캐러멜",
+        "category": "식품>초콜릿/캔디/시럽>초콜릿/캔디/젤리",
+        "kind": "food",
+        "ledger": 910000002,
+        "price": 3570,
+        "grade": "A",
+        "expires_at": 1793809690.306646,
+        "acquired_at": 1793723290.306646,
+        "status": "consumed"
+      },
+      "sim-unit-3": {
+        "sku": "G02a83f63",
+        "name": "[키모] KM-5216 컴퓨터 입식 테이블 책상 600",
+        "category": "가구/침구>가구>테이블/책상/식탁",
+        "kind": "goods",
+        "ledger": 910000003,
+        "price": 26082,
+        "grade": "A",
+        "expires_at": null,
+        "acquired_at": 1793723290.306646,
+        "status": "available"
+      },
+      "sim-unit-4": {
+        "sku": "G00327e80",
+        "name": "[다우닝] 플라나 베이직 4인 전체 천연가죽 소파",
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "kind": "goods",
+        "ledger": 910000004,
+        "price": 1572760,
+        "grade": "A",
+        "expires_at": null,
+        "acquired_at": 1793723290.306646,
+        "status": "available"
+      },
+      "sim-unit-5": {
+        "sku": "G0525dd90",
+        "name": "[GS비밀] 나무뜰 엘라 스툴 부끌레 타원형 패브릭 화장대 의자 CNM241C (착불)",
+        "category": "가구/침구>가구>소파/의자/스툴",
+        "kind": "goods",
+        "ledger": 910000005,
+        "price": 32130,
+        "grade": "A",
+        "expires_at": null,
+        "acquired_at": 1793723290.306646,
+        "status": "available"
+      }
+    },
+    "seen_ledgers": [
+      910000000,
+      910000001,
+      910000002,
+      910000003,
+      910000004,
+      910000005
+    ],
+    "placements": {
+      "sim-unit-3": {
+        "room": "room_work_rest",
+        "x": 1,
+        "y": 0,
+        "width": 2,
+        "height": 1
+      },
+      "sim-unit-4": {
+        "room": "room_work_rest",
+        "x": 3,
+        "y": 0,
+        "width": 3,
+        "height": 2
+      },
+      "sim-unit-5": {
+        "room": "room_work_rest",
+        "x": 1,
+        "y": 2,
+        "width": 1,
+        "height": 1
+      }
+    },
+    "recent": [
+      {
+        "id": "4613889eef9f485ca1072fa45a543efa",
+        "kind": "scene_started",
+        "summary": "내일 랩미팅이 있다. / 발표 순서가 변경되어 내 발표가 첫 번째가 되었다.",
+        "epoch": 1793723290.306646,
+        "refs": []
+      },
+      {
+        "id": "9bfa4a1b9673406ba13912770f603fe8",
+        "kind": "cooked",
+        "summary": "Roleplay meal: 귀리 우유 아침볼; hunger 60.002 -> 28.002.",
+        "epoch": 1793723291.306646,
+        "refs": [
+          910000000,
+          910000001,
+          910000002
+        ]
+      },
+      {
+        "id": "0d99539e9a154848bc6aa9ff034ac1bd",
+        "kind": "placed",
+        "summary": "Roleplay layout: [키모] KM-5216 컴퓨터 입식 테이블 책상 600 in 작업 겸 휴식실 at (1,0), footprint 2x1 cells.",
+        "epoch": 1793723291.306646,
+        "refs": [
+          910000003
+        ]
+      },
+      {
+        "id": "c957829aa8f9414a8478eed73aa64516",
+        "kind": "placed",
+        "summary": "Roleplay layout: [다우닝] 플라나 베이직 4인 전체 천연가죽 소파 in 작업 겸 휴식실 at (3,0), footprint 3x2 cells.",
+        "epoch": 1793723291.306646,
+        "refs": [
+          910000004
+        ]
+      },
+      {
+        "id": "ee23df3a838e4bd1936495d95bc10e1d",
+        "kind": "life_plan_updated",
+        "summary": "발표 준비 전 허기를 낮추고 작업과 휴식이 이어지는 작은 구역을 만든다.",
+        "epoch": 1793723291.306646,
+        "refs": []
+      },
+      {
+        "id": "695a1eadc1044a90bcce690013ae4417",
+        "kind": "scene_expired",
+        "summary": "발표 순서 변경",
+        "epoch": 1793725091.306646,
+        "refs": []
+      },
+      {
+        "id": "17a01e394fe847c2b61a6abbd55bb240",
+        "kind": "scene_started",
+        "summary": "내일 예정됐던 랩미팅이 취소됐다. / 다음 랩미팅 일정은 아직 정해지지 않았다.",
+        "epoch": 1793725091.306646,
+        "refs": []
+      },
+      {
+        "id": "ff985a5641c7487095f50a0c37787ea2",
+        "kind": "life_plan_updated",
+        "summary": "현재 정돈된 작업·휴식 경계를 유지하며 다음 일정이 정해질 때까지 자원과 체력을 아낀다.",
+        "epoch": 1793725092.306646,
+        "refs": []
+      },
+      {
+        "id": "5d0c8d6f93024a1fbb99d2719e5b20dd",
+        "kind": "scene_expired",
+        "summary": "랩미팅 취소",
+        "epoch": 1793726892.306646,
+        "refs": []
+      },
+      {
+        "id": "b32932bb1266454d8091f8c4e2053327",
+        "kind": "scene_started",
+        "summary": "동기 두 명이 금요일 저녁 7시에 집에 방문하기로 했다.",
+        "epoch": 1793726892.306646,
+        "refs": []
+      },
+      {
+        "id": "caf99097b33b48de810d074c6349b558",
+        "kind": "placed",
+        "summary": "Roleplay layout: [GS비밀] 나무뜰 엘라 스툴 부끌레 타원형 패브릭 화장대 의자 CNM241C (착불) in 작업 겸 휴식실 at (1,2), footprint 1x1 cells.",
+        "epoch": 1793726893.306646,
+        "refs": [
+          910000005
+        ]
+      },
+      {
+        "id": "647c5fe8bd514f06b7b2d1f4f4fba036",
+        "kind": "life_plan_updated",
+        "summary": "정돈된 작업·휴식 경계를 유지하면서 금요일 방문에 대응할 수 있는 작은 좌석을 마련한다.",
+        "epoch": 1793726893.306646,
+        "refs": []
+      }
+    ],
+    "last_preferences_at": 1793723290.306646,
+    "preference_revision": 0,
+    "last_thought_at": 1793726893.306646,
+    "last_thought_revision": 19,
+    "revision": 19,
+    "scene_lease": "f51e04db2c0d443ca612b699c2102227",
+    "scene_thinking_until": 0,
+    "scene": {
+      "title": "동기 방문",
+      "facts": [
+        "동기 두 명이 금요일 저녁 7시에 집에 방문하기로 했다."
+      ],
+      "duration_seconds": 1800,
+      "id": "11d644160b0e4854af00c2557323ea26",
+      "created_at": 1793726892.306646,
+      "ends_at": 1793728692.306646
+    },
+    "thinking_until": 0,
+    "last_action_results": [
+      {
+        "kind": "place",
+        "status": "accepted",
+        "reason": "tool validation passed"
+      },
+      {
+        "kind": "wait",
+        "status": "accepted",
+        "reason": "tool validation passed"
+      }
+    ],
+    "life_plan": {
+      "id": "f21e916d7f3442fd8177e411f6e8f9df",
+      "previous_plan_id": "aa0d2b99cb604bcc828dbd1c9134a3b1",
+      "scene_id": "11d644160b0e4854af00c2557323ea26",
+      "update": "revise",
+      "status": "active",
+      "interpretation": "동기 두 명의 방문 일정이 생겼지만 작업실의 책상과 소파 배치는 이미 목표를 충족한다. 방문과 회복에 유연하게 쓸 수 있도록 남는 공간에 보유 스툴을 추가한다.",
+      "intention": "정돈된 작업·휴식 경계를 유지하면서 금요일 방문에 대응할 수 있는 작은 좌석을 마련한다.",
+      "next_steps": [
+        "작업 겸 휴식실의 열린 구역에 스툴을 배치한다.",
+        "추가 식재료나 조리 가능한 음식이 없으므로 현재는 기다린다."
+      ],
+      "action_indexes": [
+        0,
+        1
+      ],
+      "reason": "보유 가구만 활용하며, 새 식재료 구매나 조리는 이 틱에서 가능하지 않다.",
+      "recorded_at": 1793726893.306646,
+      "outcomes": [
+        {
+          "kind": "place",
+          "status": "accepted",
+          "reason": "tool validation passed"
+        },
+        {
+          "kind": "wait",
+          "status": "accepted",
+          "reason": "tool validation passed"
+        }
+      ]
+    },
+    "scene_history": [
+      {
+        "title": "발표 순서 변경",
+        "facts": [
+          "내일 랩미팅이 있다.",
+          "발표 순서가 변경되어 내 발표가 첫 번째가 되었다."
+        ],
+        "duration_seconds": 1800,
+        "id": "e7ad8991e7e74fd0a891663a7ef5df46",
+        "created_at": 1793723290.306646,
+        "ends_at": 1793725090.306646,
+        "status": "expired"
+      },
+      {
+        "title": "랩미팅 취소",
+        "facts": [
+          "내일 예정됐던 랩미팅이 취소됐다.",
+          "다음 랩미팅 일정은 아직 정해지지 않았다."
+        ],
+        "duration_seconds": 1800,
+        "id": "dc6e558dc0f24598890c686b5bafec17",
+        "created_at": 1793725091.306646,
+        "ends_at": 1793726891.306646,
+        "status": "expired"
+      }
+    ]
+  },
+  "internal_drafts": [],
+  "model_calls": 3,
+  "market_api_calls": 0,
+  "real_purchases": 0,
+  "public_posts": 0,
+  "buyer_activated": false,
+  "protected_live_files_unchanged": true,
+  "elapsed_seconds": 29.89,
+  "limitations": [
+    "One trajectory, no causal or performance benchmark.",
+    "Situations are scripted external facts; responses are real model decisions.",
+    "Starting possessions and settlement IDs are synthetic, using real catalog names.",
+    "Hunger and item footprints are virtual game units; time is advanced for simulation.",
+    "Proposed actions and tool-accepted actions are reported separately."
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "at": 1793824598.023608,
+  "source_commit": "a357bd46c13a39fa95ae9c7810cd1ed68c13f916",
+  "rollout_complete": true,
+  "meta_success_after_rollout": true,
+  "meta_review_count": 2,
+  "meta_review_state": {
+    "last_attempt": 1793824532.3416846,
+    "last_review": {
+      "at": 1793824555.4438298,
+      "status": "held",
+      "decision": {
+        "action": "hold",
+        "parameter": "window_budget",
+        "numeric_value": 12000000,
+        "focus_value": null,
+        "reason": "Hold: the prior review was only 3,808 seconds ago, below the required two-hour cooldown, despite sufficient paid sales. Two food candidates now have an actual food_trial_shelf_policy rejection, but this is a code-level bottleneck that no tunable parameter is shown to fix. Eligible candidates remain available, while capital support has weakened and the mature pre/post evaluation shows lower after-window settlements and acquisition spread; it is observational and spread is not net profit.",
+        "expected_effect": "Preserves the current policy while avoiding an unsupported expansion or parameter change until the cooldown passes and the food shelf-policy bottleneck can be evaluated separately.",
+        "evidence": [
+          "30 candidates are eligible; 2 are blocked by the observed food_trial_shelf_policy rejection.",
+          "Seconds since prior change: 3,808, below the required 7,200 seconds.",
+          "Available to invest is 4,967,853 versus the 12,000,000 window budget, so the budget is already capital-constrained.",
+          "Mature equal windows show 54 versus 36 settlements and acquisition spread of 541,182 versus 398,415; attribution is explicitly non-causal and excludes holding/refunds.",
+          "Reported category, stock-ceiling, threshold, trial-window, buyer-guard, and forum limits remain unmeasured unless tied to actual rejection reasons."
+        ]
+      },
+      "version": "c55de9792c9249e995f9d5bd83d16519"
+    },
+    "next_review_at": 1793826355.4438298,
+    "last_success": 1793824555.4438298
+  },
+  "new_meta_errors": [],
+  "new_buyer_forum_errors": 0,
+  "new_buyer_copy_fallbacks": 0,
+  "buyer_published_posts": [
+    {
+      "at": 1793821196.6649184,
+      "post_id": 9837,
+      "status": "published",
+      "refs": [
+        2639455,
+        2637115
+      ],
+      "http_status": 200
+    },
+    {
+      "at": 1793823988.4789426,
+      "post_id": 10115,
+      "status": "published",
+      "refs": [
+        2655977,
+        2655656
+      ],
+      "http_status": 200
+    }
+  ],
+  "buyer_next_attempt_not_before": 1793825788.4789426,
+  "all_workers_alive": true,
+  "buyer_kit_pid": 176269,
+  "buyer_kit_preserved": true,
+  "running_versions_match": true,
+  "inventory_age_seconds": 5.839726448059082
+}

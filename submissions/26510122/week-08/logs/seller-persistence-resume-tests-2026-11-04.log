@@ -1,0 +1,23 @@
+test_database_leases_are_atomic_and_old_receipt_logs_migrate (test_seller_persistence.PersistenceTests.test_database_leases_are_atomic_and_old_receipt_logs_migrate) ... ok
+test_expiry_is_checked_again_after_slow_model_decision (test_seller_persistence.PersistenceTests.test_expiry_is_checked_again_after_slow_model_decision) ... {"event": "seller_open", "task_id": "f0da4c4b-f75a-4651-9dea-dabcc13177ba", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+ok
+test_mixed_message_updates_requirement_and_preserves_exact_price (test_seller_persistence.PersistenceTests.test_mixed_message_updates_requirement_and_preserves_exact_price) ... {"event": "seller_open", "task_id": "4f104be3-b821-4a99-b732-61440e040a46", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "4f104be3-b821-4a99-b732-61440e040a46", "unit": "u1", "price": 800, "status": "pending settlement"}
+ok
+test_protocol_and_requirements_resume_after_rebuilding_the_server (test_seller_persistence.PersistenceTests.test_protocol_and_requirements_resume_after_rebuilding_the_server) ... {"event": "seller_open", "task_id": "b2fdd98c-9519-41ed-84d8-c891d7b6feb7", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "b2fdd98c-9519-41ed-84d8-c891d7b6feb7", "unit": "u1", "price": 800, "status": "pending settlement"}
+Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+test_protocol_task_store_preserves_owner_and_sdk_list_behavior (test_seller_persistence.PersistenceTests.test_protocol_task_store_preserves_owner_and_sdk_list_behavior) ... ok
+test_signed_unit_remains_locked_across_restart_and_is_persisted_before_artifact (test_seller_persistence.PersistenceTests.test_signed_unit_remains_locked_across_restart_and_is_persisted_before_artifact) ... {"event": "seller_open", "task_id": "2f40c93d-182a-45c8-b67a-046c3849efbe", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "2f40c93d-182a-45c8-b67a-046c3849efbe", "unit": "u1", "price": 800, "status": "pending settlement"}
+ok
+test_wrong_expiry_is_filtered_before_model_and_cannot_receive_a_receipt (test_seller_persistence.PersistenceTests.test_wrong_expiry_is_filtered_before_model_and_cannot_receive_a_receipt) ... ok
+test_explicit_terms_survive_numeric_turn_and_can_be_changed (test_seller_persistence.RequirementTests.test_explicit_terms_survive_numeric_turn_and_can_be_changed) ... ok
+test_mixed_offer_does_not_confuse_hours_with_money (test_seller_persistence.RequirementTests.test_mixed_offer_does_not_confuse_hours_with_money) ... ok
+test_warranty_is_not_food_expiry_and_context_is_bounded (test_seller_persistence.RequirementTests.test_warranty_is_not_food_expiry_and_context_is_bounded) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.323s
+
+OK

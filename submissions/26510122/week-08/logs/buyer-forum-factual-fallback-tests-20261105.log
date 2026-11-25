@@ -1,0 +1,372 @@
+...................{"event": "buyer_offer", "sku": "F1", "shop": "https://shop", "offer": 600, "turn": 0}
+....{"event": "buyer_context_compacted", "candidate_count": 16, "prompt_bytes": 12955, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "shop-0", "proposed": 600, "opening": 600, "reason": "evidence"}
+.{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1566, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "17", "sku": "F1", "shop": "shop-17", "proposed": 700, "opening": 700, "reason": "explore"}
+..{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1566, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "17", "sku": "F1", "shop": "shop-17", "proposed": 700, "opening": 700, "reason": "explore"}
+..{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1566, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection_fallback", "error": "RuntimeError", "candidate_id": "17", "opening": 680}
+.{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1566, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_exploration_guard", "proposed": "0", "effective": "17"}
+{"event": "buyer_selection", "candidate_id": "17", "sku": "F1", "shop": "shop-17", "proposed": 9999, "opening": 722, "reason": "prefer familiar first shop"}
+.{"event": "buyer_context_compacted", "candidate_count": 16, "prompt_bytes": 10130, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "shop-00", "proposed": 700, "opening": 700, "reason": "firsthand evidence"}
+...............{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 2759, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "G1", "shop": "shop", "proposed": 1000000, "opening": 637, "reason": "public text"}
+.........{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1544, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "market order"}
+{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1544, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "market order"}
+......{"event": "buyer_context_compacted", "candidate_count": 2, "prompt_bytes": 2102, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "fulfil order"}
+./Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/context_compaction.py:79: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1067e27a0>
+  view = {**view, **{key: list(view.get(key, [])) for key in case_fields}}
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/context_compaction.py:79: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10839ce50>
+  view = {**view, **{key: list(view.get(key, [])) for key in case_fields}}
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1548, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "G1", "shop": "0", "proposed": 650, "opening": 637, "reason": "fulfil goods order"}
+.......{"event": "buyer_context_compacted", "candidate_count": 2, "prompt_bytes": 2102, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "order"}
+{"event": "buyer_context_compacted", "candidate_count": 2, "prompt_bytes": 2102, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "order"}
+........{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 2255, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection_fallback", "error": "ValueError", "candidate_id": "0", "opening": 680}
+......{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1544, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "order"}
+....................{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1544, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "order"}
+.................../Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/futures.py:402: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10839ce50>
+  destination.add_done_callback(_call_check_cancel)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/futures.py:402: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10839c400>
+  destination.add_done_callback(_call_check_cancel)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/futures.py:402: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10839cd60>
+  destination.add_done_callback(_call_check_cancel)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/futures.py:402: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10839ca90>
+  destination.add_done_callback(_call_check_cancel)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/futures.py:402: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1067e2c50>
+  destination.add_done_callback(_call_check_cancel)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"event": "seller_open", "task_id": "e3a09b96-ebed-499b-8193-a61b06d5eb3b", "sku": "G1", "unit": "u1", "grade": "A", "cost": 70, "ask": 126}
+{"event": "seller_open", "task_id": "13d110d3-4c7e-4a2e-8e95-1f42a2420e80", "sku": "G1", "unit": "u2", "grade": "A", "cost": 70, "ask": 100}
+{"event": "seller_open", "task_id": "fe0a4fc8-f9f8-418d-9fc8-e15d83804aa7", "sku": "G1", "unit": "u3", "grade": "A", "cost": 70, "ask": 100}
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+....................................................../Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1067e3c40>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10839ce50>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10839cd60>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10839c400>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f6a0>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f4c0>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868cc70>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f2e0>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10839cb80>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f1f0>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f100>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868c310>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b2110>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b2020>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b1f30>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b1e40>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868d4e0>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b06d0>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b05e0>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b04f0>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_inventory_portfolio.py:26: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b25c0>
+  'units': [{'unit': f'u{i}', 'sku': f's{i}', 'category': f'category{i}',
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.Private handoff archive ready: /private/var/folders/6r/jqkj90011lx703gz5qs802d40000gn/T/tmpk5ynj6wa/mac/state/migration/private.handoff.tar.gz (mode 0600; never add to Git)
+Restored existing identities, DBs, raw logs, policy state and frozen releases. No services started.
+Linux user units rendered in /var/folders/6r/jqkj90011lx703gz5qs802d40000gn/T/tmpk5ynj6wa/linux/state/systemd; not installed or started.
+Private handoff archive ready: /private/var/folders/6r/jqkj90011lx703gz5qs802d40000gn/T/tmp6h7iivly/mac/state/migration/wal.handoff.tar.gz (mode 0600; never add to Git)
+Restored existing identities, DBs, raw logs, policy state and frozen releases. No services started.
+Private handoff archive ready: /private/var/folders/6r/jqkj90011lx703gz5qs802d40000gn/T/tmp6h7iivly/mac/state/migration/bad.handoff.tar.gz (mode 0600; never add to Git)
+{"event": "newsvendor_calculation", "sku": "s0", "quantity": 1, "buy_now": 1, "critical_ratio": 0.35641, "forecast_mean": 1.2, "horizon_hours": 24.0}
+..........................<frozen importlib._bootstrap_external>:781: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f2e0>
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<frozen importlib._bootstrap_external>:781: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f4c0>
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<frozen importlib._bootstrap_external>:781: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868cc70>
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<frozen importlib._bootstrap_external>:781: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f6a0>
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+<frozen importlib._bootstrap_external>:781: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f790>
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.............{"event": "newsvendor_calculation", "sku": "F1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+..{"event": "newsvendor_calculation", "sku": "F1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+{"event": "restock_scenario_reused", "sku": "F1", "age_seconds": 180}
+{"event": "newsvendor_calculation", "sku": "F1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+.......{"event": "seller_open", "task_id": "aa16f663-1820-40ef-967f-1b0d5c1beb2e", "sku": "F1", "unit": "u0", "grade": "A", "cost": 600, "ask": 1000}
+Dispatcher task is not running. Cannot wait for event dispatch.
+..................................{"event": "seller_open", "task_id": "c2c0ce0a-0d6e-414c-a126-94421f13c595", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+./Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10839ce50>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1067e2c50>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1067e3b50>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1067e3c40>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1082d7010>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1082d73d0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1082d54e0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1082d6890>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1082d6a70>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868fe20>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868fd30>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f5b0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868dc60>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868db70>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868da80>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868d7b0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868d6c0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f2e0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f4c0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f6a0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f790>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868dd50>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868d990>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868cc70>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868ca90>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f880>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868fc40>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868f970>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868ff10>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868fa60>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1082d76a0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x10868fb50>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1082d7790>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b0f40>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b0d60>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b1f30>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b1030>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b25c0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b04f0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b06d0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b2110>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b1c60>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b05e0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b1b70>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b1a80>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b1990>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b18a0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b17b0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b16c0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b15d0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b14e0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b0400>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b0310>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b0220>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b0130>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b0040>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b23e0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b27a0>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b2890>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b3100>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b3010>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b2f20>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/song-inseop/.local/share/uv/python/cpython-3.13.14-macos-aarch64-none/lib/python3.13/asyncio/locks.py:75: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x1086b2d40>
+  def __init__(self):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+{"event": "seller_open", "task_id": "16985d64-b3a7-43bb-8100-f5c21258dee7", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "16985d64-b3a7-43bb-8100-f5c21258dee7", "unit": "u1", "price": 800, "status": "pending settlement"}
+.{"event": "seller_open", "task_id": "bdf8d34e-4db8-489a-9d5a-28367b72686d", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 873}
+{"event": "seller_counter", "task_id": "bdf8d34e-4db8-489a-9d5a-28367b72686d", "sku": "F1", "offer": 900, "ask": 873}
+{"event": "seller_counter", "task_id": "bdf8d34e-4db8-489a-9d5a-28367b72686d", "sku": "F1", "offer": 400, "ask": 501}
+{"event": "seller_receipt", "task_id": "bdf8d34e-4db8-489a-9d5a-28367b72686d", "unit": "u1", "price": 501, "status": "pending settlement"}
+.{"event": "seller_open", "task_id": "7ae12932-95ad-4d73-ad2d-622d23ca323f", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 873}
+{"event": "seller_receipt", "task_id": "7ae12932-95ad-4d73-ad2d-622d23ca323f", "unit": "u1", "price": 873, "status": "pending settlement"}
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+.{"event": "seller_open", "task_id": "b3ab313d-22ea-4aea-9c16-3306e4a9968d", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "b3ab313d-22ea-4aea-9c16-3306e4a9968d", "unit": "u1", "price": 800, "status": "pending settlement"}
+Dispatcher task is not running. Cannot wait for event dispatch.
+..{"event": "seller_open", "task_id": "b3fb9aa2-22d8-4caa-8ae7-ed42ab497946", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "b3fb9aa2-22d8-4caa-8ae7-ed42ab497946", "unit": "u1", "price": 800, "status": "pending settlement"}
+.{"event": "seller_open", "task_id": "1d4aa987-3ebe-43aa-bc09-3ebd6ede1515", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+Dispatcher task is not running. Cannot wait for event dispatch.
+.{"event": "seller_open", "task_id": "4e6fef1c-8dcb-4947-bbe7-e02af92c981f", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "4e6fef1c-8dcb-4947-bbe7-e02af92c981f", "unit": "u1", "price": 800, "status": "pending settlement"}
+.............{"event": "buyer_offer", "sku": "F1", "shop": "https://shop", "offer": 600, "turn": 0}
+.{"event": "buyer_context_compacted", "candidate_count": 2, "prompt_bytes": 2120, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "first", "proposed": 700, "opening": 700, "reason": "test"}
+.{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1561, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "external", "proposed": 700, "opening": 700, "reason": "in stock"}
+...{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1494, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "other", "proposed": 850, "opening": 722, "reason": "test"}
+..{"event": "seller_open", "task_id": "317850cb-7e89-4b19-9b2f-fcbf35c53e36", "sku": "A1", "unit": "u1", "grade": "A", "cost": 70, "ask": 120}
+{"event": "seller_receipt", "task_id": "317850cb-7e89-4b19-9b2f-fcbf35c53e36", "unit": "u1", "price": 110, "status": "pending settlement"}
+...{"event": "newsvendor_calculation", "sku": "food-1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+..{"event": "seller_open", "task_id": "1bb6c67f-92ed-468e-ae9f-a7fc8fb65c75", "sku": "A1", "unit": "u1", "grade": "A", "cost": 70, "ask": 100}
+..........
+----------------------------------------------------------------------
+Ran 302 tests in 1.598s
+
+OK

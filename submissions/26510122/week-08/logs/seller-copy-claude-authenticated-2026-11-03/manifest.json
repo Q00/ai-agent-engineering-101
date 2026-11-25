@@ -1,0 +1,56 @@
+{
+  "provider": "claude",
+  "model": "sonnet",
+  "variants": [
+    {
+      "id": "baseline",
+      "description": "An inventory-backed shop. Ask for a stocked product by SKU or name, then send a whole-number offer.",
+      "opening": "{name}: asking {ask}. Send your offer as a number."
+    },
+    {
+      "id": "token_saving",
+      "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+      "opening": "{name}: asking {ask}. Short replies save tokens; send a number."
+    },
+    {
+      "id": "clear_steps",
+      "description": "Simple trading: choose a stocked product, get a quote, send a numeric offer. A signed receipt follows agreement.",
+      "opening": "{name}: asking {ask}. Reply with a number; if agreed, a signed receipt follows."
+    },
+    {
+      "id": "quick_trade",
+      "description": "Quick, focused shopping from available stock. Get a quote, negotiate a price, and receive a signed receipt on agreement.",
+      "opening": "{name}: asking {ask}. Let's keep this quick; send your numeric offer."
+    },
+    {
+      "id": "clear_terms",
+      "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+      "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer."
+    },
+    {
+      "id": "minimal",
+      "description": "Stocked products. Brief quotes. Numeric offers. Signed receipts on agreement.",
+      "opening": "{name}: asking {ask}. Your offer?"
+    }
+  ],
+  "primary_metric": "Which shop the buyer contacts when descriptions are visible; negotiation efficiency is secondary.",
+  "phase": "selection",
+  "case_filter": null,
+  "selection_rotations": 6,
+  "selection_contexts": [
+    "goods",
+    "food"
+  ],
+  "negotiation_repetitions": 2,
+  "seed": 20261103,
+  "limitations": [
+    "Our production buyer selection does not read Agent Card descriptions.",
+    "Choice experiment measures preference only when descriptions are visible.",
+    "One CLI model repeated; not independent model families.",
+    "Synthetic shop has a fixed 800 agreement threshold; no real payments or seller model cost.",
+    "Buyer external messages are already brief and first offer is fixed before model follow-up.",
+    "Full messages differ in length and emphasis; this does not isolate the word tokens.",
+    "CLI usage includes system overhead and caching; raw counts are not market API costs.",
+    "Vendor CLI system wrappers differ even though buyer instructions, user prompts and choice schemas are held fixed."
+  ]
+}

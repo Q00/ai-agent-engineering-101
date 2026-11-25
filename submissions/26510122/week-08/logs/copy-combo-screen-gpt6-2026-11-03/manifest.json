@@ -1,0 +1,2066 @@
+{
+  "stage": "screen",
+  "provider": "codex",
+  "model": "gpt-6-luna",
+  "seed": 20261104,
+  "primary_metric": "First-contact shop choice before a binding quote; no negotiation-round optimization.",
+  "variants": [
+    {
+      "id": "combo_000",
+      "factors": {
+        "T": false,
+        "N": false,
+        "C": false
+      },
+      "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+      "reference": false
+    },
+    {
+      "id": "combo_001",
+      "factors": {
+        "T": false,
+        "N": false,
+        "C": true
+      },
+      "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+      "reference": false
+    },
+    {
+      "id": "combo_010",
+      "factors": {
+        "T": false,
+        "N": true,
+        "C": false
+      },
+      "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+      "reference": false
+    },
+    {
+      "id": "combo_011",
+      "factors": {
+        "T": false,
+        "N": true,
+        "C": true
+      },
+      "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+      "reference": false
+    },
+    {
+      "id": "combo_100",
+      "factors": {
+        "T": true,
+        "N": false,
+        "C": false
+      },
+      "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+      "reference": false
+    },
+    {
+      "id": "combo_101",
+      "factors": {
+        "T": true,
+        "N": false,
+        "C": true
+      },
+      "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+      "reference": false
+    },
+    {
+      "id": "combo_110",
+      "factors": {
+        "T": true,
+        "N": true,
+        "C": false
+      },
+      "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+      "reference": false
+    },
+    {
+      "id": "combo_111",
+      "factors": {
+        "T": true,
+        "N": true,
+        "C": true
+      },
+      "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+      "reference": false
+    },
+    {
+      "id": "token_saving",
+      "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+      "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+      "reference": true
+    },
+    {
+      "id": "clear_terms",
+      "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+      "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+      "reference": true
+    }
+  ],
+  "trials": [
+    {
+      "case": "screen:goods:00",
+      "kind": "goods",
+      "ordered": [
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:goods:01",
+      "kind": "goods",
+      "ordered": [
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:goods:02",
+      "kind": "goods",
+      "ordered": [
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        }
+      ]
+    },
+    {
+      "case": "screen:goods:03",
+      "kind": "goods",
+      "ordered": [
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:goods:04",
+      "kind": "goods",
+      "ordered": [
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:goods:05",
+      "kind": "goods",
+      "ordered": [
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:goods:06",
+      "kind": "goods",
+      "ordered": [
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:goods:07",
+      "kind": "goods",
+      "ordered": [
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:goods:08",
+      "kind": "goods",
+      "ordered": [
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        }
+      ]
+    },
+    {
+      "case": "screen:goods:09",
+      "kind": "goods",
+      "ordered": [
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:food:00",
+      "kind": "food",
+      "ordered": [
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:food:01",
+      "kind": "food",
+      "ordered": [
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:food:02",
+      "kind": "food",
+      "ordered": [
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        }
+      ]
+    },
+    {
+      "case": "screen:food:03",
+      "kind": "food",
+      "ordered": [
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:food:04",
+      "kind": "food",
+      "ordered": [
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:food:05",
+      "kind": "food",
+      "ordered": [
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:food:06",
+      "kind": "food",
+      "ordered": [
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:food:07",
+      "kind": "food",
+      "ordered": [
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    },
+    {
+      "case": "screen:food:08",
+      "kind": "food",
+      "ordered": [
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        }
+      ]
+    },
+    {
+      "case": "screen:food:09",
+      "kind": "food",
+      "ordered": [
+        {
+          "id": "combo_110",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_011",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": true
+          },
+          "description": "Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "clear_terms",
+          "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+          "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+          "reference": true
+        },
+        {
+          "id": "combo_100",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": false
+          },
+          "description": "Brief quotes help save tokens. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_001",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": true
+          },
+          "description": "Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_101",
+          "factors": {
+            "T": true,
+            "N": false,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_111",
+          "factors": {
+            "T": true,
+            "N": true,
+            "C": true
+          },
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "combo_010",
+          "factors": {
+            "T": false,
+            "N": true,
+            "C": false
+          },
+          "description": "Negotiable prices; counteroffers welcome. Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        },
+        {
+          "id": "token_saving",
+          "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+          "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+          "reference": true
+        },
+        {
+          "id": "combo_000",
+          "factors": {
+            "T": false,
+            "N": false,
+            "C": false
+          },
+          "description": "Stocked products. Numeric offers; signed receipts on agreement.",
+          "reference": false
+        }
+      ]
+    }
+  ],
+  "screen_selection_rule": "Equal model weight, breadth, shorter text, lexical ID.",
+  "confirmation_plan": "Best new combo plus both existing controls; all three pairs, both orders, food and goods.",
+  "model_wrapper_note": "Same buyer instructions and user prompts; vendor CLI wrappers differ."
+}

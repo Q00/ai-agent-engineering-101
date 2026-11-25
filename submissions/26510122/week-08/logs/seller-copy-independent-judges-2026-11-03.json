@@ -1,0 +1,25 @@
+{
+  "method": "Two independent, no-history buyer-role sub-agents, no tools or market contact.",
+  "model_provenance": "Inherited sub-agent model was not separately reported by the delegation tool. These are two judges, not two additional confirmed model families.",
+  "conditions": "Identical G1 A-grade usable value 1000, quote 700, stock 2, certificate, six-hour warranty, 4.5 stars from 10 reviews, budget 850, no firsthand history. All shops support the same brief quotes, numeric offers and signed receipts. normal=ordinary buying goal; constrained=explicitly minimize conversational overhead.",
+  "judges": [
+    {
+      "task": "/root/buyer_copy_judge_a",
+      "mapping": {"H42":"clear_steps","K17":"baseline","N83":"minimal","P29":"quick_trade","R64":"token_saving","V51":"clear_terms"},
+      "raw_response": {
+        "normal":{"chosen_id":"H42","ranking":["H42","N83","P29","V51","K17","R64"],"reason":"All shops tie on known economic and settlement facts. H42 wins a weak presentation tiebreak for clearly stating the purchase sequence and signed receipt."},
+        "constrained":{"chosen_id":"N83","ranking":["N83","R64","H42","K17","P29","V51"],"reason":"N83 presents the essential steps most compactly. R64 also emphasizes brevity, but its claim of fewer tokens does not establish lower actual conversational overhead."},
+        "uncertainty":"High uncertainty about any meaningful difference between shops. These forced rankings reflect presentation preferences, not evidence of different prices, reliability, capabilities, or realized surplus."
+      }
+    },
+    {
+      "task": "/root/buyer_copy_judge_b",
+      "mapping": {"R10":"clear_terms","C55":"token_saving","B12":"quick_trade","U88":"minimal","L32":"baseline","A74":"clear_steps"},
+      "raw_response": {
+        "normal":{"chosen_id":"R10","ranking":["R10","C55","B12","U88","L32","A74"],"reason":"All shops have identical stated economics, settlement safeguards, and capabilities. Use shown order solely to break the tie."},
+        "constrained":{"chosen_id":"R10","ranking":["R10","C55","B12","U88","L32","A74"],"reason":"Every shop supports brief quotes and numeric offers. C55's emphasis on fewer tokens does not establish lower actual conversational overhead, so retain the same tie-break."},
+        "uncertainty":"No evidence distinguishes expected surplus, settlement probability, or actual overhead. The rankings represent arbitrary tie-breaking among equivalent options."
+      }
+    }
+  ]
+}

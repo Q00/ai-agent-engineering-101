@@ -1,0 +1,89 @@
+{
+  "stage": "shortlist",
+  "seed": 20261104,
+  "selected_new_combo": "combo_111",
+  "selection_rule": "Equal model weight; ties: more models selecting, fewer words, lexical ID.",
+  "variants": [
+    {
+      "id": "combo_111",
+      "factors": {
+        "T": true,
+        "N": true,
+        "C": true
+      },
+      "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. Numeric offers; signed receipts on agreement.",
+      "reference": false
+    },
+    {
+      "id": "token_saving",
+      "description": "Short chats, fewer tokens: brief quotes, numeric offers, and signed receipts on agreement. Shop from available stock.",
+      "opening": "{name}: asking {ask}. Short replies save tokens; send a number.",
+      "reference": true
+    },
+    {
+      "id": "clear_terms",
+      "description": "Clear prices and checkout certificates for stocked products. Send a numeric offer; a signed receipt follows agreement.",
+      "opening": "{name}: asking {ask}. Certificate available at checkout. Send a numeric offer.",
+      "reference": true
+    }
+  ],
+  "screen_counts": {
+    "combo_000": {
+      "codex:gpt-5.6-luna": 0,
+      "codex:gpt-6-luna": 1,
+      "claude:sonnet": 0
+    },
+    "combo_001": {
+      "codex:gpt-5.6-luna": 0,
+      "codex:gpt-6-luna": 0,
+      "claude:sonnet": 0
+    },
+    "combo_010": {
+      "codex:gpt-5.6-luna": 1,
+      "codex:gpt-6-luna": 0,
+      "claude:sonnet": 0
+    },
+    "combo_011": {
+      "codex:gpt-5.6-luna": 1,
+      "codex:gpt-6-luna": 2,
+      "claude:sonnet": 4
+    },
+    "combo_100": {
+      "codex:gpt-5.6-luna": 0,
+      "codex:gpt-6-luna": 2,
+      "claude:sonnet": 0
+    },
+    "combo_101": {
+      "codex:gpt-5.6-luna": 0,
+      "codex:gpt-6-luna": 0,
+      "claude:sonnet": 0
+    },
+    "combo_110": {
+      "codex:gpt-5.6-luna": 1,
+      "codex:gpt-6-luna": 0,
+      "claude:sonnet": 0
+    },
+    "combo_111": {
+      "codex:gpt-5.6-luna": 16,
+      "codex:gpt-6-luna": 15,
+      "claude:sonnet": 16
+    },
+    "token_saving": {
+      "codex:gpt-5.6-luna": 0,
+      "codex:gpt-6-luna": 0,
+      "claude:sonnet": 0
+    },
+    "clear_terms": {
+      "codex:gpt-5.6-luna": 1,
+      "codex:gpt-6-luna": 0,
+      "claude:sonnet": 0
+    }
+  },
+  "screen_model_cases": {
+    "codex:gpt-5.6-luna": 20,
+    "codex:gpt-6-luna": 20,
+    "claude:sonnet": 20
+  },
+  "failures": [],
+  "note": "Adaptive screening only. Confirm on fresh calls and new product situations; never pool stages as a validation win rate."
+}

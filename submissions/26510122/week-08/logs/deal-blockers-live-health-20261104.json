@@ -1,0 +1,283 @@
+{
+  "at": 1793780122.63822,
+  "since_rollout": 1793779821.8488455,
+  "services": {
+    "seller": "active",
+    "buyer": "active",
+    "buyer-logdb": "active"
+  },
+  "seller": {
+    "events": {
+      "inventory_snapshot": 5,
+      "settled": 5,
+      "exploration_arrival_observed": 3,
+      "buyer_message": 27,
+      "request_seen": 14,
+      "buyer_link": 7,
+      "buyer_identity_observed": 13,
+      "model_choice": 26,
+      "promotion_applied": 13,
+      "opening": 13,
+      "quality_disclosed": 13,
+      "seller_message": 27,
+      "offer": 13,
+      "receipt_signed": 7,
+      "counter": 6,
+      "promotion_accept_guard": 1,
+      "cancelled": 2,
+      "portfolio_intent_reconciled": 4,
+      "requirements_unmet": 1,
+      "checkout_unpaid": 2
+    },
+    "examples": [
+      {
+        "at": "2026-11-04T08:12:40+00:00",
+        "event": "receipt_signed",
+        "sku": "G200e39a3",
+        "source_commit": null,
+        "claim": "C",
+        "allowed": null,
+        "held": null,
+        "probe": null,
+        "constraint": null,
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:12:45+00:00",
+        "event": "receipt_signed",
+        "sku": "G56b7eae7",
+        "source_commit": null,
+        "claim": "A",
+        "allowed": null,
+        "held": null,
+        "probe": null,
+        "constraint": null,
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:13:14+00:00",
+        "event": "receipt_signed",
+        "sku": "G0be9ed07",
+        "source_commit": null,
+        "claim": "A",
+        "allowed": null,
+        "held": null,
+        "probe": null,
+        "constraint": null,
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:13:23+00:00",
+        "event": "receipt_signed",
+        "sku": "G200e39a3",
+        "source_commit": null,
+        "claim": "A",
+        "allowed": null,
+        "held": null,
+        "probe": null,
+        "constraint": null,
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:13:35+00:00",
+        "event": "checkout_unpaid",
+        "sku": "G1831f2c0",
+        "source_commit": null,
+        "claim": null,
+        "allowed": null,
+        "held": null,
+        "probe": null,
+        "constraint": null,
+        "source_seq": 2394591
+      },
+      {
+        "at": "2026-11-04T08:14:02+00:00",
+        "event": "receipt_signed",
+        "sku": "Gc9ae1d63",
+        "source_commit": null,
+        "claim": "B",
+        "allowed": null,
+        "held": null,
+        "probe": null,
+        "constraint": null,
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:14:39+00:00",
+        "event": "checkout_unpaid",
+        "sku": "G1831f2c0",
+        "source_commit": null,
+        "claim": null,
+        "allowed": null,
+        "held": null,
+        "probe": null,
+        "constraint": null,
+        "source_seq": 2395316
+      },
+      {
+        "at": "2026-11-04T08:14:42+00:00",
+        "event": "receipt_signed",
+        "sku": "G200e39a3",
+        "source_commit": null,
+        "claim": "C",
+        "allowed": null,
+        "held": null,
+        "probe": null,
+        "constraint": null,
+        "source_seq": null
+      }
+    ],
+    "old_partial": [
+      {
+        "qty": 9,
+        "observed": 8,
+        "status": "issued_unknown"
+      }
+    ],
+    "inventory_age_seconds": 0.330066442489624
+  },
+  "buyer": {
+    "events": {
+      "dialogue_message": 61,
+      "negotiation": 14,
+      "settled": 3,
+      "buyer_release_loaded": 9,
+      "shop_identity": 2,
+      "payment": 3,
+      "checkout_cache_summary": 9,
+      "forum_memory_used": 8,
+      "selection_opportunities": 8,
+      "buyer_policy_selection": 8,
+      "checkout_candidate_held": 6,
+      "no_candidate": 1
+    },
+    "examples": [
+      {
+        "at": "2026-11-04T08:13:37+00:00",
+        "event": "checkout_cache_summary",
+        "sku": null,
+        "source_commit": null,
+        "claim": null,
+        "allowed": 9,
+        "held": 0,
+        "probe": null,
+        "constraint": null,
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:13:54+00:00",
+        "event": "buyer_release_loaded",
+        "sku": null,
+        "source_commit": "68a2bcbdaac1165a796aefa2a4ea48d7b2dcd546",
+        "claim": null,
+        "allowed": null,
+        "held": null,
+        "probe": null,
+        "constraint": null,
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:13:58+00:00",
+        "event": "checkout_cache_summary",
+        "sku": null,
+        "source_commit": null,
+        "claim": null,
+        "allowed": 30,
+        "held": 1,
+        "probe": null,
+        "constraint": null,
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:13:58+00:00",
+        "event": "checkout_candidate_held",
+        "sku": "Gb5d0dde7",
+        "source_commit": null,
+        "claim": null,
+        "allowed": null,
+        "held": null,
+        "probe": false,
+        "constraint": {
+          "kind": "reported_out_of_stock",
+          "observed_at": 1793779893.0,
+          "expires_at": 1793780073.0,
+          "source_order": "o-3e4fe5b0b8a6",
+          "reason": "no receipt; seller state TASK_STATE_REJECTED"
+        },
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:14:57+00:00",
+        "event": "buyer_release_loaded",
+        "sku": null,
+        "source_commit": "68a2bcbdaac1165a796aefa2a4ea48d7b2dcd546",
+        "claim": null,
+        "allowed": null,
+        "held": null,
+        "probe": null,
+        "constraint": null,
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:15:02+00:00",
+        "event": "checkout_cache_summary",
+        "sku": null,
+        "source_commit": null,
+        "claim": null,
+        "allowed": 51,
+        "held": 2,
+        "probe": null,
+        "constraint": null,
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:15:02+00:00",
+        "event": "checkout_candidate_held",
+        "sku": "Ge62449c9",
+        "source_commit": null,
+        "claim": null,
+        "allowed": null,
+        "held": null,
+        "probe": false,
+        "constraint": {
+          "kind": "reported_out_of_stock",
+          "observed_at": 1793779976.0,
+          "expires_at": 1793780156.0,
+          "source_order": "o-fe5d904cf78a",
+          "reason": "no receipt; seller state TASK_STATE_REJECTED"
+        },
+        "source_seq": null
+      },
+      {
+        "at": "2026-11-04T08:15:02+00:00",
+        "event": "checkout_candidate_held",
+        "sku": "Ge62449c9",
+        "source_commit": null,
+        "claim": null,
+        "allowed": null,
+        "held": null,
+        "probe": false,
+        "constraint": {
+          "kind": "reported_out_of_stock",
+          "observed_at": 1793780012.0,
+          "expires_at": 1793780192.0,
+          "source_order": "o-ca4a3e6d059b",
+          "reason": "no receipt; seller state TASK_STATE_REJECTED"
+        },
+        "source_seq": null
+      }
+    ],
+    "indexer": {
+      "at": 1793780121.4087846,
+      "pid": 176267,
+      "indexed_lines": 0,
+      "events": 39994,
+      "confirmed_purchases": 548,
+      "parse_errors": 0,
+      "forum": {
+        "posts": 0,
+        "refs": 0
+      }
+    }
+  }
+}

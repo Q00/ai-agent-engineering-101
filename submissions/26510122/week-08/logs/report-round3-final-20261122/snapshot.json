@@ -1,0 +1,1926 @@
+{
+  "schema": "round3-report-evidence-v1",
+  "started_at": "2026-11-22T14:34:13.230702+09:00",
+  "completed_at": "2026-11-22T14:34:31.066458+09:00",
+  "is_round_final": true,
+  "official": {
+    "url": "https://market.ourolabs.ai/api/board?round=3",
+    "observed_at": "2026-11-22T14:34:14.147593+09:00",
+    "round": 3,
+    "player": {
+      "player": "outSeop",
+      "owner": {
+        "login": "outSeop",
+        "avatar": "https://avatars.githubusercontent.com/u/53344972?v=4",
+        "html": "https://github.com/outSeop"
+      },
+      "house": false,
+      "shop": {
+        "name": "outseop-26510122",
+        "all": 0.672
+      },
+      "buyer": {
+        "name": "outseop-26510122",
+        "all": 0.626
+      },
+      "total": 1.298,
+      "student_shop": 0.576,
+      "student_buyer": 0.574,
+      "student": true,
+      "student_total": 1.15,
+      "student_pct": 0.533
+    },
+    "players_class_rank": 22,
+    "players_class_count": 46,
+    "players_class_tied": 1,
+    "rank_method": "1 + count of student_total strictly greater; ties share a rank",
+    "players_overall_rank": 26,
+    "shops": {
+      "row": {
+        "name": "outseop-26510122",
+        "owner": {
+          "login": "outSeop",
+          "avatar": "https://avatars.githubusercontent.com/u/53344972?v=4",
+          "html": "https://github.com/outSeop"
+        },
+        "house": false,
+        "joined": 1792492692,
+        "card": {
+          "name": "outseop-26510122",
+          "description": "Brief quotes help save tokens. Negotiable prices; counteroffers welcome. Clear prices and checkout certificates. Stocked products. New goods quotes include a 6 h market warranty in the total price. Numeric offers; signed receipts on agreement.",
+          "version": "1.0.0",
+          "provider": "",
+          "skills": [
+            {
+              "name": "Negotiate a stocked purchase",
+              "description": "Ask for a stocked product by SKU or name, then send a numeric offer. We keep replies brief."
+            }
+          ],
+          "url": "https://eswhp-203-246-85-147.free.pinggy.net"
+        },
+        "alive": false,
+        "deals": 20704,
+        "share": 0.021,
+        "visits": 37041,
+        "stars": 4.75,
+        "reviews": 20557,
+        "revenue": 791188944,
+        "profit": 95363444,
+        "stock_units": 338,
+        "stock_cost": 10873326,
+        "book": 106236770,
+        "bankruptcies": 0,
+        "stars_rank": 4.44,
+        "refunds": 311,
+        "broken": 351,
+        "claims": 19972,
+        "honest_claims": 19972,
+        "forum": 0.792,
+        "all": 0.672
+      },
+      "rank": 21,
+      "count": 93
+    },
+    "buyers": {
+      "row": {
+        "name": "outseop-26510122",
+        "owner": {
+          "login": "outSeop",
+          "avatar": "https://avatars.githubusercontent.com/u/53344972?v=4",
+          "html": "https://github.com/outSeop"
+        },
+        "house": false,
+        "joined": 1792492692,
+        "alive": false,
+        "orders": 22515,
+        "deals": 14219,
+        "paid": 0.541,
+        "saved": 0.7357,
+        "held": 0,
+        "hopeless": 0,
+        "surplus": 1040253843,
+        "served": 13745,
+        "forum": 0.936,
+        "posts": 1277,
+        "all": 0.626
+      },
+      "rank": 35,
+      "count": 139
+    }
+  },
+  "buyer_current_generation": {
+    "source": "state/buyer-runtime/logs/buyer-events.jsonl",
+    "generation": "4e23a3f746784675a9530d93fea51ff2",
+    "indexed_prefix_bytes": 2620029194,
+    "captured_source_bytes": 2620029194,
+    "prefix_boundary_verified": true,
+    "current_generation_only": true,
+    "event_counts": {
+      "buyer_policy_selection": 22118,
+      "negotiation": 31531,
+      "settled": 14215,
+      "no_candidate": 385,
+      "checkout_candidate_held": 1945,
+      "negotiation_skipped": 307,
+      "buyer_forum_ack": 1411
+    },
+    "negotiation_outcomes": {
+      "no_receipt": 15598,
+      "receipt_pending": 15264,
+      "shop_error": 343,
+      "invalid_receipt": 326
+    },
+    "unsuccessful_attempt_reasons": {
+      "no receipt; seller state TASK_STATE_REJECTED": 5916,
+      "no receipt; seller state TASK_STATE_INPUT_REQUIRED": 4391,
+      "walked away or order deadline reached": 2526,
+      "no receipt": 1906,
+      "risk-adjusted price/warranty terms unavailable": 414,
+      "receipt names a refused unit, unacceptable grade claim or no certificate": 292,
+      "receipt price differs from the final offer or price cap": 190,
+      "HTTPStatusError": 135,
+      "receipt SKU differs from the selected acceptable SKU": 133,
+      "ReadTimeout": 103,
+      "ValueError": 101,
+      "seller explicitly quoted grade C; A/B required": 90,
+      "no receipt; seller state TASK_STATE_COMPLETED": 48,
+      "seller explicitly reports no required warranty": 12,
+      "ConnectError": 4,
+      "receipt violates risk-adjusted price/warranty terms": 3,
+      "receipt lacks required risk protection warranty": 2,
+      "seller explicitly reports insufficient required warranty": 1
+    },
+    "unique_settled_ledgers": 14215,
+    "first_settled_at": "2026-11-03T19:17:28+00:00",
+    "last_settled_at": "2026-11-17T14:57:09+00:00",
+    "examples": [
+      {
+        "source": "state/buyer-runtime/logs/buyer-events.jsonl",
+        "byte_offset": 2619369696,
+        "event": {
+          "at": "2026-11-17T14:56:24+00:00",
+          "event": "settled",
+          "order": "o-e6a4266f6e58",
+          "sku": "G416971dc",
+          "shop_name": "moss-and-oak",
+          "price": 82581,
+          "ledger": 7895539,
+          "policy_version": "buyer-saved-v8",
+          "source_commit": "f6729ada89cadeb1ede1a6706e9616820b7b9527",
+          "model": "gpt-5.6-luna"
+        }
+      },
+      {
+        "source": "state/buyer-runtime/logs/buyer-events.jsonl",
+        "byte_offset": 2619427519,
+        "event": {
+          "at": "2026-11-17T14:57:09+00:00",
+          "event": "settled",
+          "order": "o-6b7075ef4c2c",
+          "sku": "G2560a8c9",
+          "shop_name": "ovotnwjd-maker",
+          "price": 11198,
+          "ledger": 7895747,
+          "policy_version": "buyer-saved-v8",
+          "source_commit": "f6729ada89cadeb1ede1a6706e9616820b7b9527",
+          "model": "gpt-5.6-luna"
+        }
+      },
+      {
+        "source": "state/buyer-runtime/logs/buyer-events.jsonl",
+        "byte_offset": 2595898209,
+        "event": {
+          "at": "2026-11-17T13:39:59+00:00",
+          "event": "no_candidate",
+          "order": "o-ef0f31d14beb",
+          "source_commit": "f6729ada89cadeb1ede1a6706e9616820b7b9527",
+          "model": "gpt-5.6-luna"
+        }
+      },
+      {
+        "source": "state/buyer-runtime/logs/buyer-events.jsonl",
+        "byte_offset": 2610888032,
+        "event": {
+          "at": "2026-11-17T14:26:27+00:00",
+          "event": "no_candidate",
+          "order": "o-ffa2bf8fdd3a",
+          "source_commit": "f6729ada89cadeb1ede1a6706e9616820b7b9527",
+          "model": "gpt-5.6-luna"
+        }
+      },
+      {
+        "source": "state/buyer-runtime/logs/buyer-events.jsonl",
+        "byte_offset": 527604512,
+        "event": {
+          "at": "2026-11-12T17:47:01+00:00",
+          "event": "negotiation_skipped",
+          "order": "o-6356b7a386e0",
+          "shop_name": "nocha12",
+          "sku": "G021aae64",
+          "policy_version": "buyer-saved-v2",
+          "source_commit": "f5cf6fcbba0a42eb10fb5336b1f72577da9ea083",
+          "model": "gpt-5.6-luna",
+          "reason": "insufficient time before order deadline"
+        }
+      },
+      {
+        "source": "state/buyer-runtime/logs/buyer-events.jsonl",
+        "byte_offset": 529561967,
+        "event": {
+          "at": "2026-11-12T18:14:56+00:00",
+          "event": "negotiation_skipped",
+          "order": "o-0d571e360c62",
+          "shop_name": "choo-chu",
+          "sku": "G25fe9221",
+          "policy_version": "buyer-saved-v2",
+          "source_commit": "f5cf6fcbba0a42eb10fb5336b1f72577da9ea083",
+          "model": "gpt-5.6-luna",
+          "reason": "insufficient time before order deadline"
+        }
+      },
+      {
+        "source": "state/buyer-runtime/logs/buyer-events.jsonl",
+        "byte_offset": 2619635934,
+        "event": {
+          "at": "2026-11-17T14:58:29+00:00",
+          "event": "negotiation",
+          "order": "o-f2c73eaeda59",
+          "shop_name": "seochanit",
+          "sku": "G8ec51935",
+          "policy_version": "buyer-saved-v8",
+          "source_commit": "f6729ada89cadeb1ede1a6706e9616820b7b9527",
+          "model": "gpt-5.6-luna",
+          "result": "no_receipt",
+          "reason": "no receipt; seller state TASK_STATE_REJECTED",
+          "receipt_problem": "no receipt",
+          "terminal_reason": "no receipt; seller state TASK_STATE_REJECTED"
+        }
+      },
+      {
+        "source": "state/buyer-runtime/logs/buyer-events.jsonl",
+        "byte_offset": 2619651867,
+        "event": {
+          "at": "2026-11-17T14:58:57+00:00",
+          "event": "negotiation",
+          "order": "o-f2c73eaeda59",
+          "shop_name": "25512088",
+          "sku": "G8ec51935",
+          "policy_version": "buyer-saved-v8",
+          "source_commit": "f6729ada89cadeb1ede1a6706e9616820b7b9527",
+          "model": "gpt-5.6-luna",
+          "result": "no_receipt",
+          "reason": "no receipt; seller state TASK_STATE_INPUT_REQUIRED",
+          "receipt_problem": "no receipt",
+          "terminal_reason": "no receipt; seller state TASK_STATE_INPUT_REQUIRED"
+        }
+      }
+    ],
+    "scope": "Current verified file generation plus complete captured raw tail. Attempts are not unique failed orders; local callbacks may lag the board."
+  },
+  "retained_kit_logs": {
+    "counts": {
+      "buyer:buyer_paid": 251,
+      "buyer:grade_refusal": 1,
+      "buyer:payment_failed": 3,
+      "buyer:result_refused": 3,
+      "buyer:shelf_life_refusal": 13,
+      "buyer:order_failed": 18537,
+      "seller:seller_settled": 215
+    },
+    "files": [
+      {
+        "source": "state/buyer-runtime/logs/market-kit.log.1",
+        "device": 2096,
+        "inode": 1551,
+        "snapshot_size": 20010557,
+        "complete_line_prefix_bytes": 20010557,
+        "complete_line_prefix_sha256": "53f302ce666a11cdbf6ee5b11cc3eba0f75ab87870f6786c6b70923505acb653",
+        "lines": 6959
+      },
+      {
+        "source": "state/buyer-runtime/logs/market-kit.log",
+        "device": 2096,
+        "inode": 1889,
+        "snapshot_size": 12369953,
+        "complete_line_prefix_bytes": 12369953,
+        "complete_line_prefix_sha256": "4ed14bffee1f2925770acb9f2b09f4f2a1ad0728de836547df9347a3ddb35de2",
+        "lines": 29384
+      },
+      {
+        "source": "state/seller-runtime/logs/market-kit.log.1",
+        "device": 2096,
+        "inode": 784,
+        "snapshot_size": 20008539,
+        "complete_line_prefix_bytes": 20008539,
+        "complete_line_prefix_sha256": "78453fd7710ba95acf51e5d00800aecf8a9fb3f264b05090eba55c034c1d35ae",
+        "lines": 3313
+      },
+      {
+        "source": "state/seller-runtime/logs/market-kit.log",
+        "device": 2096,
+        "inode": 1874,
+        "snapshot_size": 16032778,
+        "complete_line_prefix_bytes": 16032778,
+        "complete_line_prefix_sha256": "d072add1564a1eb3f74c328ca18de911badd9b6126d3b8318ff317c7d4e84ed6",
+        "lines": 7269
+      }
+    ],
+    "examples": [
+      {
+        "role": "buyer",
+        "category": "buyer_paid",
+        "source": "state/buyer-runtime/logs/market-kit.log.1",
+        "source_line": 23,
+        "text": "17:44:50 [acp] paid 615230 through https://add-respectively-schema-touch.trycloudflare.com/acp, settled at ledger #7783703: 시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스, grade A",
+        "excerpt_line": 5
+      },
+      {
+        "role": "buyer",
+        "category": "buyer_paid",
+        "source": "state/buyer-runtime/logs/market-kit.log.1",
+        "source_line": 51,
+        "text": "17:45:47 [acp] paid 15900 through https://docs-quotes-solutions-recipes.trycloudflare.com/acp, settled at ledger #7784061: 바리스타룰스 디카페인 라떼 325ml 10개, grade C, 109.6 h of shelf life left",
+        "excerpt_line": 7
+      },
+      {
+        "role": "buyer",
+        "category": "grade_refusal",
+        "source": "state/buyer-runtime/logs/market-kit.log.1",
+        "source_line": 942,
+        "text": "18:19:39 [acp] not paying: grade C, the policy accepts ['A', 'B']",
+        "excerpt_line": 9
+      },
+      {
+        "role": "buyer",
+        "category": "payment_failed",
+        "source": "state/buyer-runtime/logs/market-kit.log.1",
+        "source_line": 1259,
+        "text": "18:30:51 [acp] payment not completed: 402 {\"error\":\"payment refused by the market\",\"market\":{\"error\":\"Internal Server Error\"}}",
+        "excerpt_line": 11
+      },
+      {
+        "role": "buyer",
+        "category": "result_refused",
+        "source": "state/buyer-runtime/logs/market-kit.log.1",
+        "source_line": 1260,
+        "text": "18:30:52 [market] result refused: 500 Internal Server Error",
+        "excerpt_line": 13
+      },
+      {
+        "role": "buyer",
+        "category": "shelf_life_refusal",
+        "source": "state/buyer-runtime/logs/market-kit.log.1",
+        "source_line": 2719,
+        "text": "19:26:30 [acp] not paying: 518.41 h of shelf life left, the policy asks for 540.0",
+        "excerpt_line": 15
+      },
+      {
+        "role": "buyer",
+        "category": "shelf_life_refusal",
+        "source": "state/buyer-runtime/logs/market-kit.log.1",
+        "source_line": 2913,
+        "text": "19:33:39 [acp] not paying: 319.88 h of shelf life left, the policy asks for 540.0",
+        "excerpt_line": 17
+      },
+      {
+        "role": "buyer",
+        "category": "buyer_paid",
+        "source": "state/buyer-runtime/logs/market-kit.log",
+        "source_line": 59,
+        "text": "22:02:17 [acp] paid 26691 through https://badge-paintball-designed-higher.trycloudflare.com/acp, settled at ledger #7860581: [마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증), grade B, 99.1 h of shelf life left",
+        "excerpt_line": 19
+      },
+      {
+        "role": "buyer",
+        "category": "buyer_paid",
+        "source": "state/buyer-runtime/logs/market-kit.log",
+        "source_line": 73,
+        "text": "22:02:40 [acp] paid 9000 through https://interesting-dollars-architecture-cams.trycloudflare.com/acp, settled at ledger #7860691: [산해직송] 해남 포슬포슬 수미감자 특 5kg (130~180g 내외), grade C, 18.6 h of shelf life left",
+        "excerpt_line": 21
+      },
+      {
+        "role": "buyer",
+        "category": "result_refused",
+        "source": "state/buyer-runtime/logs/market-kit.log",
+        "source_line": 296,
+        "text": "22:11:14 [market] result refused: 500 Internal Server Error",
+        "excerpt_line": 23
+      },
+      {
+        "role": "buyer",
+        "category": "result_refused",
+        "source": "state/buyer-runtime/logs/market-kit.log",
+        "source_line": 3155,
+        "text": "00:00:38 [market] result refused: 503 {\"error\":\"Round 3 ended at 2026-11-17 23:59 KST. The market is paused until Round 4 opens on 2026-11-24 at 19:00 KST.\"}",
+        "excerpt_line": 25
+      },
+      {
+        "role": "buyer",
+        "category": "shelf_life_refusal",
+        "source": "state/buyer-runtime/logs/market-kit.log",
+        "source_line": 511,
+        "text": "22:20:58 [acp] not paying: 235.67 h of shelf life left, the policy asks for 360.0",
+        "excerpt_line": 27
+      },
+      {
+        "role": "buyer",
+        "category": "shelf_life_refusal",
+        "source": "state/buyer-runtime/logs/market-kit.log",
+        "source_line": 965,
+        "text": "22:38:49 [acp] not paying: 337.93 h of shelf life left, the policy asks for 540.0",
+        "excerpt_line": 29
+      },
+      {
+        "role": "buyer",
+        "category": "payment_failed",
+        "source": "state/buyer-runtime/logs/market-kit.log",
+        "source_line": 2644,
+        "text": "23:41:03 [acp] payment not completed: 500 Internal Server Error",
+        "excerpt_line": 31
+      },
+      {
+        "role": "buyer",
+        "category": "payment_failed",
+        "source": "state/buyer-runtime/logs/market-kit.log",
+        "source_line": 3148,
+        "text": "23:59:21 [acp] payment not completed: 402 {\"error\":\"payment refused by the market\",\"market\":{\"error\":\"Round 3 ended at 2026-11-17 23:59 KST. The market is paused until Round 4 opens on 2026-11-24 at 19:00 KST.\"}}",
+        "excerpt_line": 33
+      },
+      {
+        "role": "buyer",
+        "category": "order_failed",
+        "source": "state/buyer-runtime/logs/market-kit.log",
+        "source_line": 3156,
+        "text": "00:00:39 [market] order failed: 503 {\"error\":\"Round 3 ended at 2026-11-17 23:59 KST. The market is paused until Round 4 opens on 2026-11-24 at 19:00 KST.\"}",
+        "excerpt_line": 35
+      },
+      {
+        "role": "buyer",
+        "category": "order_failed",
+        "source": "state/buyer-runtime/logs/market-kit.log",
+        "source_line": 3157,
+        "text": "00:00:49 [market] order failed: 503 {\"error\":\"Round 3 ended at 2026-11-17 23:59 KST. The market is paused until Round 4 opens on 2026-11-24 at 19:00 KST.\"}",
+        "excerpt_line": 37
+      },
+      {
+        "role": "seller",
+        "category": "seller_settled",
+        "source": "state/seller-runtime/logs/market-kit.log.1",
+        "source_line": 20,
+        "text": "21:04:16 [acp] settled 천하일미 홍석천 이원일 떡갈비 160g 전통15팩+매콤15팩(총60장) at 36000, ledger #7842940, unit u-a697fa39610c grade B",
+        "excerpt_line": 39
+      },
+      {
+        "role": "seller",
+        "category": "seller_settled",
+        "source": "state/seller-runtime/logs/market-kit.log.1",
+        "source_line": 33,
+        "text": "21:04:32 [acp] settled 홍진경 더김치 포기김치 5kg at 26856, ledger #7843039, unit u-f61adcc65707 grade A",
+        "excerpt_line": 41
+      },
+      {
+        "role": "seller",
+        "category": "seller_settled",
+        "source": "state/seller-runtime/logs/market-kit.log",
+        "source_line": 85,
+        "text": "22:42:15 [acp] settled 집밥장인 참이맛 40년전통 감자탕 블랙 1.2kg X 2팩 at 7000, ledger #7872843, unit u-b1a1dc0f4d2c grade C",
+        "excerpt_line": 43
+      },
+      {
+        "role": "seller",
+        "category": "seller_settled",
+        "source": "state/seller-runtime/logs/market-kit.log",
+        "source_line": 97,
+        "text": "22:42:31 [acp] settled 홍진경 더김치 포기김치 5kg at 20537, ledger #7872898, unit u-8fe8c6010f9c grade B",
+        "excerpt_line": 45
+      }
+    ],
+    "scope": "Retained .log/.log.1 complete-line prefixes only, not cumulative round refusal counts. Multiple lines may describe one failed payment."
+  },
+  "seller_captured_prefix": {
+    "source": "state/seller-runtime/logs/shop-events.jsonl",
+    "snapshot_size": 986789652,
+    "complete_line_prefix_bytes": 986789652,
+    "complete_line_prefix_sha256": "1a7defbaa97de18f77749e1cf90471668646ccbec65ae24a9c5e09e44f554cd7",
+    "first_event_at": "2026-11-03T12:09:18+00:00",
+    "last_event_at": "2026-11-17T15:11:24+00:00",
+    "event_counts": {
+      "request_seen": 90065,
+      "no_stock": 5560,
+      "opening": 74067,
+      "receipt_signed": 25663,
+      "rejected": 3125,
+      "settled": 20697,
+      "negotiation_expired": 27835,
+      "stale_inventory": 2137,
+      "requirements_unmet": 6890,
+      "checkout_unpaid": 3143,
+      "settled_unit_blocked": 38,
+      "selling_price_guard": 22
+    },
+    "unique_settled_ledgers": 20697,
+    "examples": [
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 2779,
+        "event": {
+          "at": "2026-11-03T12:12:24+00:00",
+          "event": "request_seen",
+          "task_id": "a750b437-000d-40d5-a0d8-66d3159d920e"
+        }
+      },
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 2906,
+        "event": {
+          "at": "2026-11-03T12:12:24+00:00",
+          "event": "no_stock",
+          "task_id": "a750b437-000d-40d5-a0d8-66d3159d920e"
+        }
+      },
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 18448,
+        "event": {
+          "at": "2026-11-03T12:46:18+00:00",
+          "event": "opening",
+          "task_id": "9a41c464-9bdb-4bd3-9c21-e0209ab42727",
+          "sku": "G200e39a3",
+          "unit": "u-efed8b890138",
+          "cost": 16888
+        }
+      },
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 28064,
+        "event": {
+          "at": "2026-11-03T13:25:38+00:00",
+          "event": "receipt_signed",
+          "task_id": "9c50dec9-f946-4de1-86ee-34a68e490f3a",
+          "sku": "G200e39a3",
+          "unit": "u-efed8b890138",
+          "price": 22740,
+          "cost": 16888
+        }
+      },
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 40570,
+        "event": {
+          "at": "2026-11-03T13:36:09+00:00",
+          "event": "rejected",
+          "task_id": "df45a994-5c51-44be-96a1-fc1f343706dd",
+          "reason": "The only available G200e39a3 unit has 44.29 hours remaining, so it cannot meet the buyer's requirement of at least 84.0 hours after payment."
+        }
+      },
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 69245,
+        "event": {
+          "at": "2026-11-03T13:49:11+00:00",
+          "event": "settled",
+          "ledger": 2155554,
+          "unit": "u-efed8b890138",
+          "price": 22740,
+          "sku": "G200e39a3",
+          "task_id": "fb1622d8-f37d-45ce-b151-1872ee059bf4"
+        }
+      },
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 90241,
+        "event": {
+          "at": "2026-11-03T14:10:35+00:00",
+          "event": "negotiation_expired",
+          "task_id": "e6cc5ebb-0d86-46e9-8969-a932293ffe92",
+          "sku": "G0be9ed07",
+          "unit": "u-cc3de91e3f23",
+          "reason": "negotiation reservation timed out; payment outcome unknown"
+        }
+      },
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 260193,
+        "event": {
+          "at": "2026-11-03T15:53:45+00:00",
+          "event": "stale_inventory",
+          "task_id": "7b314e67-db19-418a-8a91-06da0e85875d",
+          "unit": "u-9659c4835a73"
+        }
+      },
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 588088,
+        "event": {
+          "at": "2026-11-03T18:30:19+00:00",
+          "event": "requirements_unmet",
+          "task_id": "c8e73ec6-3158-43b3-999c-4cb514b03352"
+        }
+      },
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 5882112,
+        "event": {
+          "at": "2026-11-04T08:13:35+00:00",
+          "event": "checkout_unpaid",
+          "task_id": "03c06336-91a5-46d2-98d6-fb735dfb5cb6",
+          "sku": "G1831f2c0",
+          "unit": "u-85bb0c836cfa",
+          "price": 7508,
+          "reason": "Signed receipt submitted but not settled; buyer rejection reason unknown."
+        }
+      },
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 284327857,
+        "event": {
+          "at": "2026-11-10T07:54:30+00:00",
+          "event": "settled_unit_blocked",
+          "task_id": "6b654316-15be-4e3b-8c80-1addd02e3180",
+          "source_commit": "58720e109fe1eda70769731ee80f6a30d7dd2501",
+          "sku": "G75f11c19",
+          "unit": "u-85db4901a24b"
+        }
+      },
+      {
+        "source": "state/seller-runtime/logs/shop-events.jsonl",
+        "byte_offset": 804678477,
+        "event": {
+          "at": "2026-11-15T18:52:21+00:00",
+          "event": "selling_price_guard",
+          "task_id": "3d4d00fb-3479-4f05-9738-1ddaef6d6ec3",
+          "source_commit": "76ef7a0a42b2ae4b4cac391a247945dd6d8715ca",
+          "unit": "u-6aeb28e5bbc5",
+          "sku": "G73603890",
+          "price_floor": 512313,
+          "near_expiry_loss_allowed": false,
+          "reason": "protect_acquisition_cost_and_accrued_holding"
+        }
+      }
+    ],
+    "scope": "Complete captured append-only shop-events prefix. Event occurrences can overlap for one task; not disjoint rejected orders."
+  },
+  "week10_baselines": {
+    "buyer_week10": {
+      "source": "state/buyer-runtime/state/growth-baseline-BUYERSAVED20261110A.json",
+      "sha256": "675afbdc8628b3dd230676169b2ab2139d97829a3fc72bf60bbe5c9b753c797e",
+      "data": {
+        "started_at": 1794299326,
+        "old_commit": "df64dd4942ecf8470e5aec946df3559256b5ca1a",
+        "new_commit": "1245f7a008fb0263de45f2b212b47227b0e028cb",
+        "before_board": {
+          "saved": 0.2733,
+          "all": 0.581,
+          "deals": 4413,
+          "orders": 9468,
+          "served": 4300,
+          "forum": 0.925,
+          "posts": 394,
+          "rank": 36,
+          "buyers": 62,
+          "observed_at": 1794299308.5552561
+        },
+        "services": {
+          "outseop-r3-buyer.service": {
+            "Id": "outseop-r3-buyer.service",
+            "ActiveState": "active",
+            "MainPID": "311",
+            "NRestarts": "0"
+          },
+          "outseop-r3-buyer-logdb.service": {
+            "Id": "outseop-r3-buyer-logdb.service",
+            "ActiveState": "active",
+            "MainPID": "310",
+            "NRestarts": "0"
+          },
+          "outseop-r3-seller.service": {
+            "Id": "outseop-r3-seller.service",
+            "ActiveState": "active",
+            "MainPID": "99647",
+            "NRestarts": "0"
+          }
+        },
+        "kit_pid": 321
+      }
+    },
+    "buyer_week10_hour": {
+      "source": "state/buyer-runtime/state/growth-result-BUYERSAVED20261110A.json",
+      "sha256": "f73538bb05c2b353f47da29b5bc9d03abaf5adfeb461a862269bf9b8e0da4c4d",
+      "data": {
+        "start": "2026-11-10T17:28:46+09:00",
+        "end": "2026-11-10T18:28:46+09:00",
+        "seconds": 3600,
+        "comparison_start": "2026-11-10T16:28:46+09:00",
+        "legacy_window": {
+          "orders": 33,
+          "order_versions": {
+            "f17e6e5": 16,
+            "df64dd4": 17
+          },
+          "settled": 21,
+          "settled_versions": {
+            "f17e6e5": 12,
+            "df64dd4": 9
+          },
+          "average_discount": 0.3181572263831022,
+          "discount_count": 21,
+          "spend": 3913450,
+          "settled_list": 6371550,
+          "policy_selections": 34,
+          "market_reference": 12,
+          "saved_reference": 0,
+          "both_references": 0,
+          "saved_reference_matched_settlements": 0,
+          "settled_at_saved_reference": 0,
+          "no_candidate": 0,
+          "negotiation_outcomes": {
+            "receipt_pending": 23,
+            "no_receipt": 25,
+            "shop_error": 1,
+            "invalid_receipt": 1
+          },
+          "zero_value_at_payment": 0,
+          "settled_bands": {
+            "under_100k": {
+              "settled": 14,
+              "average_discount": 0.29354032197431507
+            },
+            "100k_to_300k": {
+              "settled": 1,
+              "average_discount": 0.3222375915378356
+            },
+            "over_300k": {
+              "settled": 6,
+              "average_discount": 0.3749166091444832
+            }
+          },
+          "settled_kinds": {
+            "food": {
+              "settled": 8,
+              "average_discount": 0.303324272337164
+            },
+            "goods": {
+              "settled": 13,
+              "average_discount": 0.3272851981036795
+            }
+          },
+          "last_negotiation_outcome": {
+            "no_receipt": 11,
+            "receipt_pending": 23
+          },
+          "last_unsuccessful_reasons": {
+            "walked away or order deadline reached": 8,
+            "no receipt; seller state TASK_STATE_REJECTED": 3
+          }
+        },
+        "new_window": {
+          "orders": 39,
+          "order_versions": {
+            "1245f7a": 39
+          },
+          "settled": 13,
+          "settled_versions": {
+            "1245f7a": 13
+          },
+          "average_discount": 0.29384173180900863,
+          "discount_count": 13,
+          "spend": 1669116,
+          "settled_list": 2680450,
+          "policy_selections": 37,
+          "market_reference": 30,
+          "saved_reference": 37,
+          "both_references": 30,
+          "saved_reference_matched_settlements": 9,
+          "settled_at_saved_reference": 7,
+          "no_candidate": 1,
+          "negotiation_outcomes": {
+            "receipt_pending": 20,
+            "no_receipt": 33,
+            "invalid_receipt": 3
+          },
+          "zero_value_at_payment": 0,
+          "settled_bands": {
+            "under_100k": {
+              "settled": 11,
+              "average_discount": 0.27612916726082537
+            },
+            "over_300k": {
+              "settled": 2,
+              "average_discount": 0.3912608368240166
+            }
+          },
+          "settled_kinds": {
+            "food": {
+              "settled": 5,
+              "average_discount": 0.2655839245219838
+            },
+            "goods": {
+              "settled": 8,
+              "average_discount": 0.31150286136339916
+            }
+          },
+          "last_negotiation_outcome": {
+            "no_receipt": 14,
+            "receipt_pending": 20,
+            "invalid_receipt": 2
+          },
+          "last_unsuccessful_reasons": {
+            "no receipt; seller state TASK_STATE_INPUT_REQUIRED": 4,
+            "no receipt; seller state TASK_STATE_REJECTED": 4,
+            "walked away or order deadline reached": 6,
+            "receipt received": 2
+          }
+        },
+        "before_board": {
+          "saved": 0.2733,
+          "all": 0.581,
+          "deals": 4413,
+          "orders": 9468,
+          "served": 4300,
+          "forum": 0.925,
+          "posts": 394,
+          "rank": 36,
+          "buyers": 62,
+          "observed_at": 1794299308.5552561
+        },
+        "after_board": {
+          "saved": 0.2733,
+          "all": 0.581,
+          "deals": 4426,
+          "orders": 9507,
+          "served": 4313,
+          "forum": 0.925,
+          "posts": 400,
+          "rank": 36,
+          "buyers": 62,
+          "observed_at": 1794302938.6233046
+        },
+        "same_old_version_comparison": {
+          "seconds": 1821,
+          "start": "2026-11-10T16:58:25+09:00",
+          "old_window": {
+            "orders": 17,
+            "order_versions": {
+              "df64dd4": 17
+            },
+            "settled": 9,
+            "settled_versions": {
+              "df64dd4": 9
+            },
+            "average_discount": 0.3422107685741901,
+            "discount_count": 9,
+            "spend": 2307667,
+            "settled_list": 3997530,
+            "policy_selections": 17,
+            "market_reference": 12,
+            "saved_reference": 0,
+            "both_references": 0,
+            "saved_reference_matched_settlements": 0,
+            "settled_at_saved_reference": 0,
+            "no_candidate": 0,
+            "negotiation_outcomes": {
+              "receipt_pending": 11,
+              "no_receipt": 11,
+              "invalid_receipt": 1
+            },
+            "zero_value_at_payment": 0,
+            "settled_bands": {
+              "under_100k": {
+                "settled": 7,
+                "average_discount": 0.31539143208236975
+              },
+              "over_300k": {
+                "settled": 2,
+                "average_discount": 0.4360784462955613
+              }
+            },
+            "settled_kinds": {
+              "food": {
+                "settled": 5,
+                "average_discount": 0.32422102617674226
+              },
+              "goods": {
+                "settled": 4,
+                "average_discount": 0.3646979465709999
+              }
+            },
+            "last_negotiation_outcome": {
+              "receipt_pending": 11,
+              "no_receipt": 6
+            },
+            "last_unsuccessful_reasons": {
+              "walked away or order deadline reached": 6
+            }
+          },
+          "new_window_first": {
+            "orders": 21,
+            "order_versions": {
+              "1245f7a": 21
+            },
+            "settled": 6,
+            "settled_versions": {
+              "1245f7a": 6
+            },
+            "average_discount": 0.2731327476795526,
+            "discount_count": 6,
+            "spend": 119355,
+            "settled_list": 165210,
+            "policy_selections": 19,
+            "market_reference": 15,
+            "saved_reference": 19,
+            "both_references": 15,
+            "saved_reference_matched_settlements": 5,
+            "settled_at_saved_reference": 3,
+            "no_candidate": 1,
+            "negotiation_outcomes": {
+              "receipt_pending": 8,
+              "no_receipt": 20,
+              "invalid_receipt": 2
+            },
+            "zero_value_at_payment": 0,
+            "settled_bands": {
+              "under_100k": {
+                "settled": 6,
+                "average_discount": 0.2731327476795526
+              }
+            },
+            "settled_kinds": {
+              "food": {
+                "settled": 2,
+                "average_discount": 0.2774121943273378
+              },
+              "goods": {
+                "settled": 4,
+                "average_discount": 0.27099302435566
+              }
+            },
+            "last_negotiation_outcome": {
+              "no_receipt": 9,
+              "receipt_pending": 8,
+              "invalid_receipt": 2
+            },
+            "last_unsuccessful_reasons": {
+              "no receipt; seller state TASK_STATE_INPUT_REQUIRED": 2,
+              "no receipt; seller state TASK_STATE_REJECTED": 3,
+              "receipt received": 2,
+              "walked away or order deadline reached": 4
+            }
+          }
+        },
+        "running": {
+          "supervisor_pid": 311,
+          "kit_pid": 321,
+          "source_commit": "1245f7a008fb0263de45f2b212b47227b0e028cb",
+          "buyer_release_seen_at": 1794299330.8082812
+        },
+        "services_same": true,
+        "saved_cache": {
+          "name": "outseop-26510122",
+          "checked_at": 1794302573.8451016,
+          "saved": 0.2734,
+          "observed_at": 1794302573.8451016
+        }
+      }
+    },
+    "seller_week10": {
+      "source": "state/seller-runtime/state/growth-baseline-FIRSTBUYER20261110A.json",
+      "sha256": "5f155704caa7db4f4d4947928eae17942258580f92e77bc7c0c95487e7650fee",
+      "data": {
+        "tag": "FIRSTBUYER20261110A",
+        "source_commit": "0f84fa3a8b0873c923b4220823670aa176e23c7d",
+        "before_stop": 1794240483.073114,
+        "started_at": 1794240487.95002,
+        "before_board": {
+          "own": {
+            "rank": 24,
+            "name": "outseop-26510122",
+            "all": 0.64,
+            "stars_rank": 4.39,
+            "book": 57745546,
+            "revenue": 370131876,
+            "deals": 6258,
+            "reviews": 6237
+          },
+          "rank20": {
+            "name": "jiseokkk",
+            "all": 0.671,
+            "stars_rank": 4.43,
+            "book": 56160066,
+            "revenue": 405443773,
+            "deals": 5904,
+            "reviews": 5641
+          }
+        },
+        "public_verified": true,
+        "buyer_and_db_preserved": true
+      }
+    }
+  },
+  "fixed_hour_experiment": {
+    "windows": {
+      "before": [
+        1794890732.9224062,
+        1794894332.9224062
+      ],
+      "adjacent": [
+        1794893449.4113295,
+        1794897049.4113295
+      ],
+      "after": [
+        1794897049.4113295,
+        1794900649.4113295
+      ]
+    },
+    "duration_seconds": 3600,
+    "fixed_roster_count": 52,
+    "saved": {
+      "before_reference_change": 0.0003,
+      "before_start_offset_seconds": 28.179507732391357,
+      "before_reference_start": {
+        "at": 1794890761.101914,
+        "saved": 0.7352,
+        "source_event_at": "2026-11-17T04:51:14+00:00",
+        "source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775"
+      },
+      "before_reference_end": {
+        "at": 1794894332.9224062,
+        "saved": 0.7355,
+        "source_event_at": "2026-11-17T05:50:19+00:00",
+        "source_commit": "f6729ada89cadeb1ede1a6706e9616820b7b9527"
+      },
+      "adjacent_reference_change": 0.0002,
+      "after_change": 0.0,
+      "after_start": {
+        "at": 1794897049.4113295,
+        "buyer": {
+          "deals": 13852,
+          "saved": 0.7357,
+          "posts": 1190,
+          "forum": 0.935,
+          "all": 0.619
+        },
+        "rank": 35
+      },
+      "after_end": {
+        "at": 1794900650.5640955,
+        "buyer": {
+          "deals": 13911,
+          "saved": 0.7357,
+          "posts": 1200,
+          "forum": 0.935,
+          "all": 0.621
+        },
+        "rank": 35
+      },
+      "after_endpoint_offset_seconds": 1.1527659893035889
+    },
+    "changes_vs_clean_before": {
+      "total_paid": -2,
+      "fixed_roster_paid": 7,
+      "saved_reference_difference": -0.0003
+    },
+    "per_combo": [
+      {
+        "shop": "yms979",
+        "sku": "Gf27f8931",
+        "name": "[비밀]지누스 얼티마 에어 하이브리드 스프링 매트리스 25cm Q",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 8,
+        "after_minus_before": 8
+      },
+      {
+        "shop": "inextro",
+        "sku": "G53b150b5",
+        "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 7,
+        "after_minus_before": 7
+      },
+      {
+        "shop": "11im",
+        "sku": "Ge62449c9",
+        "name": "[파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS",
+        "hours": null,
+        "before": 0,
+        "adjacent": 6,
+        "after": 3,
+        "after_minus_before": 3
+      },
+      {
+        "shop": "25620027",
+        "sku": "G00c60e91",
+        "name": "UCC 하와이 코나 커피 337ml 12개입",
+        "hours": 180.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 2,
+        "after_minus_before": 2
+      },
+      {
+        "shop": "inextro",
+        "sku": "G2111d113",
+        "name": "[파르페by알레르망] 볼드 60수 고밀도 밍크극세사 차렵이불 S/SS",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 2,
+        "after_minus_before": 2
+      },
+      {
+        "shop": "25620027",
+        "sku": "G0be9ed07",
+        "name": "[샤이닝홈] 모달 소파패드 돌소파용 마인 요릭 85x200 3컬러 쇼파패드",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 1,
+        "after_minus_before": 1
+      },
+      {
+        "shop": "Kiro729",
+        "sku": "G772009ce",
+        "name": "바리스타룰스 디카페인 라떼 325ml 10개",
+        "hours": 360.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 1,
+        "after_minus_before": 1
+      },
+      {
+        "shop": "dragonash",
+        "sku": "G8bca90eb",
+        "name": "천하일미 홍석천 이원일 떡갈비 160g 전통15팩+매콤15팩(총60장)",
+        "hours": 180.0,
+        "before": 1,
+        "adjacent": 1,
+        "after": 1,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "dragonash",
+        "sku": "Gc40054d2",
+        "name": "스타벅스 돌체구스토 캡슐커피 12캡슐 5+5 10박스 골라담기",
+        "hours": 360.0,
+        "before": 1,
+        "adjacent": 1,
+        "after": 1,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "sergiobuilds",
+        "sku": "G6cd0e9d4",
+        "name": "[자코모] 굿뮤즈 스윙 3.5인 기능성 슈렁큰 천연면피 소가죽 소파+스툴",
+        "hours": null,
+        "before": 1,
+        "adjacent": 0,
+        "after": 1,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "11im",
+        "sku": "G0be9ed07",
+        "name": "[샤이닝홈] 모달 소파패드 돌소파용 마인 요릭 85x200 3컬러 쇼파패드",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "25620027",
+        "sku": "G00c60e91",
+        "name": "UCC 하와이 코나 커피 337ml 12개입",
+        "hours": 72.0,
+        "before": 0,
+        "adjacent": 1,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "25620027",
+        "sku": "G0f415407",
+        "name": "택배발송ㅣ휴도 아늑한 제주 35cm 허리 라텍스 싱글 포켓 매트리스 SS",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "25620027",
+        "sku": "G2108d9bc",
+        "name": "시티델리 풍미가득 볶음밥 5종 10봉 택",
+        "hours": 360.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "25620027",
+        "sku": "G754bf0ca",
+        "name": "지누스 클라우드 럭스S 하이브리드 매트리스 30cm Q 퀸",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "Kiro729",
+        "sku": "G575cddb8",
+        "name": "바숨 알러지케어 먼지없는 누빔 매트리스커버 슈퍼싱글 SS",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "Kiro729",
+        "sku": "G772009ce",
+        "name": "바리스타룰스 디카페인 라떼 325ml 10개",
+        "hours": 180.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "buzllightyear",
+        "sku": "G74e686be",
+        "name": "제주 달콤 노지감귤 9kg 대과(L/2L)",
+        "hours": 5.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "cheapest-in-town",
+        "sku": "G0be9ed07",
+        "name": "[샤이닝홈] 모달 소파패드 돌소파용 마인 요릭 85x200 3컬러 쇼파패드",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "choo-chu",
+        "sku": "G2560a8c9",
+        "name": "사세 직화K버팔로윙 1kg",
+        "hours": 180.0,
+        "before": 0,
+        "adjacent": 3,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "choo-chu",
+        "sku": "G772009ce",
+        "name": "바리스타룰스 디카페인 라떼 325ml 10개",
+        "hours": 180.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "choo-chu",
+        "sku": "G772009ce",
+        "name": "바리스타룰스 디카페인 라떼 325ml 10개",
+        "hours": 360.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "choo-chu",
+        "sku": "G772009ce",
+        "name": "바리스타룰스 디카페인 라떼 325ml 10개",
+        "hours": 72.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "choo-chu",
+        "sku": "G80435d53",
+        "name": "2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종",
+        "hours": 360.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "choo-chu",
+        "sku": "Ga0aa1835",
+        "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 S/SS",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "ddolcom",
+        "sku": "G85a1a856",
+        "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "dragonash",
+        "sku": "G83b76977",
+        "name": "품애복 5무無 훈제오리 바비큐슬라이스 200g*12팩",
+        "hours": 180.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "dragonash",
+        "sku": "G83b76977",
+        "name": "품애복 5무無 훈제오리 바비큐슬라이스 200g*12팩",
+        "hours": 72.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "gom31-certified-goods",
+        "sku": "G2560a8c9",
+        "name": "사세 직화K버팔로윙 1kg",
+        "hours": 360.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "inextro",
+        "sku": "G72907399",
+        "name": "뷰하우스 베이직 3중직 아일렛 암막커튼 대형+3단 커튼봉세트",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "inextro",
+        "sku": "G8ec51935",
+        "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "inextro",
+        "sku": "G9c9f8f94",
+        "name": "삼성전자 LED 4K UHD 125.7cm(50인치) 비즈니스TV LH50BEHHLGFXKR 스탠드형 에너지효율 1등급",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "inextro",
+        "sku": "Ga0aa1835",
+        "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 S/SS",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "inextro",
+        "sku": "Ge760727a",
+        "name": "[한빛카페트]술탄 로얄 페르시안 카페트 러그 100x150cm",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "olstjr",
+        "sku": "G38519afd",
+        "name": "[동원xGS] 양반 수라 왕갈비탕 460g x4개",
+        "hours": 72.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "ovotnwjd-maker",
+        "sku": "G2560a8c9",
+        "name": "사세 직화K버팔로윙 1kg",
+        "hours": 72.0,
+        "before": 0,
+        "adjacent": 1,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "sergiobuilds",
+        "sku": "G54b5e30b",
+        "name": "무뼈 매콤 양념 닭발 300gX1팩 냉동 (국내산닭발 캠핑메뉴 혼술)",
+        "hours": 360.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "sergiobuilds",
+        "sku": "G54b5e30b",
+        "name": "무뼈 매콤 양념 닭발 300gX1팩 냉동 (국내산닭발 캠핑메뉴 혼술)",
+        "hours": 540.0,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "sergiobuilds",
+        "sku": "G85a1a856",
+        "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "totato2203-r3",
+        "sku": "G6969f82d",
+        "name": "삼익가구 앤더슨 LED 4단 수납 원목 침대 (7존 독립스프링 매트리스-슈퍼싱글)",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "yeonsong2",
+        "sku": "G2111d113",
+        "name": "[파르페by알레르망] 볼드 60수 고밀도 밍크극세사 차렵이불 S/SS",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "yms979",
+        "sku": "G0be9ed07",
+        "name": "[샤이닝홈] 모달 소파패드 돌소파용 마인 요릭 85x200 3컬러 쇼파패드",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "yms979",
+        "sku": "G117d7562",
+        "name": "2+2 간편교체 항균 누빔 밴딩 베개커버 40x60 50x70 5종",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "yms979",
+        "sku": "G575cddb8",
+        "name": "바숨 알러지케어 먼지없는 누빔 매트리스커버 슈퍼싱글 SS",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "yms979",
+        "sku": "Ge62449c9",
+        "name": "[파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS",
+        "hours": null,
+        "before": 0,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": 0
+      },
+      {
+        "shop": "Kiro729",
+        "sku": "G772009ce",
+        "name": "바리스타룰스 디카페인 라떼 325ml 10개",
+        "hours": 72.0,
+        "before": 3,
+        "adjacent": 1,
+        "after": 2,
+        "after_minus_before": -1
+      },
+      {
+        "shop": "yms979",
+        "sku": "Ga0aa1835",
+        "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 S/SS",
+        "hours": null,
+        "before": 3,
+        "adjacent": 0,
+        "after": 2,
+        "after_minus_before": -1
+      },
+      {
+        "shop": "sergiobuilds",
+        "sku": "Gb5d0dde7",
+        "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+        "hours": null,
+        "before": 2,
+        "adjacent": 5,
+        "after": 1,
+        "after_minus_before": -1
+      },
+      {
+        "shop": "25620027",
+        "sku": "G00c60e91",
+        "name": "UCC 하와이 코나 커피 337ml 12개입",
+        "hours": 540.0,
+        "before": 1,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": -1
+      },
+      {
+        "shop": "choo-chu",
+        "sku": "G2560a8c9",
+        "name": "사세 직화K버팔로윙 1kg",
+        "hours": 72.0,
+        "before": 2,
+        "adjacent": 0,
+        "after": 0,
+        "after_minus_before": -2
+      },
+      {
+        "shop": "11im",
+        "sku": "G75f11c19",
+        "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+        "hours": null,
+        "before": 5,
+        "adjacent": 2,
+        "after": 0,
+        "after_minus_before": -5
+      },
+      {
+        "shop": "choo-chu",
+        "sku": "G2560a8c9",
+        "name": "사세 직화K버팔로윙 1kg",
+        "hours": 360.0,
+        "before": 7,
+        "adjacent": 1,
+        "after": 1,
+        "after_minus_before": -6
+      }
+    ],
+    "breakage_notices": {
+      "before": {
+        "verified_notices": 2,
+        "unrefunded": 1,
+        "refunded": 1,
+        "rows": [
+          {
+            "notice_ledger": 7709709,
+            "notice_at": 1794890887.918,
+            "order": "o-fc5052f795c7",
+            "sku": "G75f11c19",
+            "refunded": 0,
+            "purchase_at": "2026-11-17T02:07:40+00:00",
+            "purchase_source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775",
+            "purchase_policy_version": "buyer-saved-v7",
+            "purchase_before_window": true
+          },
+          {
+            "notice_ledger": 7726005,
+            "notice_at": 1794894123.912,
+            "order": "o-6aa10e515e70",
+            "sku": "Gfe4f052a",
+            "refunded": 268300,
+            "purchase_at": "2026-11-17T00:43:13+00:00",
+            "purchase_source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775",
+            "purchase_policy_version": "buyer-saved-v7",
+            "purchase_before_window": true
+          }
+        ],
+        "note": "Notice-time count, not a mature failure rate of purchases in this hour."
+      },
+      "adjacent": {
+        "verified_notices": 3,
+        "unrefunded": 0,
+        "refunded": 3,
+        "rows": [
+          {
+            "notice_ledger": 7726005,
+            "notice_at": 1794894123.912,
+            "order": "o-6aa10e515e70",
+            "sku": "Gfe4f052a",
+            "refunded": 268300,
+            "purchase_at": "2026-11-17T00:43:13+00:00",
+            "purchase_source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775",
+            "purchase_policy_version": "buyer-saved-v7",
+            "purchase_before_window": true
+          },
+          {
+            "notice_ledger": 7733103,
+            "notice_at": 1794895447.352,
+            "order": "o-ec4a13bec8b7",
+            "sku": "Gfe4f052a",
+            "refunded": 312221,
+            "purchase_at": "2026-11-17T03:40:15+00:00",
+            "purchase_source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775",
+            "purchase_policy_version": "buyer-saved-v7",
+            "purchase_before_window": true
+          },
+          {
+            "notice_ledger": 7736161,
+            "notice_at": 1794896031.826,
+            "order": "o-0433f6fe695b",
+            "sku": "Gfe4f052a",
+            "refunded": 300362,
+            "purchase_at": "2026-11-17T00:50:31+00:00",
+            "purchase_source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775",
+            "purchase_policy_version": "buyer-saved-v7",
+            "purchase_before_window": true
+          }
+        ],
+        "note": "Notice-time count, not a mature failure rate of purchases in this hour."
+      },
+      "after": {
+        "verified_notices": 6,
+        "unrefunded": 2,
+        "refunded": 4,
+        "rows": [
+          {
+            "notice_ledger": 7745679,
+            "notice_at": 1794897820.21,
+            "order": "o-bab64376cf5c",
+            "sku": "Gfe4f052a",
+            "refunded": 298459,
+            "purchase_at": "2026-11-17T01:40:23+00:00",
+            "purchase_source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775",
+            "purchase_policy_version": "buyer-saved-v7",
+            "purchase_before_window": true
+          },
+          {
+            "notice_ledger": 7748156,
+            "notice_at": 1794898253.753,
+            "order": "o-d7fa754a7ff6",
+            "sku": "G0be9ed07",
+            "refunded": 0,
+            "purchase_at": "2026-11-17T03:22:18+00:00",
+            "purchase_source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775",
+            "purchase_policy_version": "buyer-saved-v7",
+            "purchase_before_window": true
+          },
+          {
+            "notice_ledger": 7749078,
+            "notice_at": 1794898438.037,
+            "order": "o-745c64d7d42e",
+            "sku": "G117d7562",
+            "refunded": 8030,
+            "purchase_at": "2026-11-17T01:41:00+00:00",
+            "purchase_source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775",
+            "purchase_policy_version": "buyer-saved-v7",
+            "purchase_before_window": true
+          },
+          {
+            "notice_ledger": 7751922,
+            "notice_at": 1794898966.542,
+            "order": "o-752868659726",
+            "sku": "G9c9f8f94",
+            "refunded": 0,
+            "purchase_at": "2026-11-17T01:04:11+00:00",
+            "purchase_source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775",
+            "purchase_policy_version": "buyer-saved-v7",
+            "purchase_before_window": true
+          },
+          {
+            "notice_ledger": 7754846,
+            "notice_at": 1794899583.548,
+            "order": "o-f8c175b688ca",
+            "sku": "Gfe4f052a",
+            "refunded": 291443,
+            "purchase_at": "2026-11-17T03:47:43+00:00",
+            "purchase_source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775",
+            "purchase_policy_version": "buyer-saved-v7",
+            "purchase_before_window": true
+          },
+          {
+            "notice_ledger": 7755570,
+            "notice_at": 1794899738.27,
+            "order": "o-84b2ec83338b",
+            "sku": "Gfe4f052a",
+            "refunded": 294800,
+            "purchase_at": "2026-11-17T02:30:22+00:00",
+            "purchase_source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775",
+            "purchase_policy_version": "buyer-saved-v7",
+            "purchase_before_window": true
+          }
+        ],
+        "note": "Notice-time count, not a mature failure rate of purchases in this hour."
+      }
+    },
+    "method": {
+      "duration_seconds": 3600,
+      "primary_before_window": [
+        1794890732.9224062,
+        1794894332.9224062
+      ],
+      "primary_saved_start_nearest_observation": {
+        "at": 1794890761.101914,
+        "saved": 0.7352,
+        "source_event_at": "2026-11-17T04:51:14+00:00",
+        "source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775"
+      },
+      "primary_saved_start_bracketing_observations": [
+        {
+          "at": 1794890458.2177722,
+          "saved": 0.7352,
+          "source_event_at": "2026-11-17T04:45:32+00:00",
+          "source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775"
+        },
+        {
+          "at": 1794890761.101914,
+          "saved": 0.7352,
+          "source_event_at": "2026-11-17T04:51:14+00:00",
+          "source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775"
+        }
+      ],
+      "primary_saved_start_offset_seconds": 28.179507732391357,
+      "primary_saved_end_observation": {
+        "at": 1794894332.9224062,
+        "saved": 0.7355,
+        "source_event_at": "2026-11-17T05:50:19+00:00",
+        "source_commit": "f6729ada89cadeb1ede1a6706e9616820b7b9527"
+      },
+      "primary_saved_change_reference": 0.0003,
+      "adjacent_before_window": [
+        1794893449.4113295,
+        1794897049.4113295
+      ],
+      "adjacent_saved_start_bracketing_observations": [
+        {
+          "at": 1794893315.8231418,
+          "saved": 0.7355,
+          "source_event_at": "2026-11-17T05:33:38+00:00",
+          "source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775"
+        },
+        {
+          "at": 1794893662.5996127,
+          "saved": 0.7355,
+          "source_event_at": "2026-11-17T05:39:26+00:00",
+          "source_commit": "9f890cdc090c87741417785c8bcdf7ba47bab775"
+        }
+      ],
+      "adjacent_saved_end_observation": {
+        "at": 1794897049.4113295,
+        "buyer": {
+          "deals": 13852,
+          "saved": 0.7357,
+          "posts": 1190,
+          "forum": 0.935,
+          "all": 0.619
+        },
+        "rank": 35
+      },
+      "adjacent_saved_change_reference": 0.0002,
+      "deployment_actual_buyer_load_at": 1794894464.6086164,
+      "roster_definition": "Frozen at added-hour start. Apply identical shop/SKU/exact food horizon roster to every window; do not count pre-feature missing flags as zero. Training purchases predate comparison windows; cohort roster is observational, not randomized.",
+      "baseline_selection_rule": "Latest official Saved reference observation before actual cohort-policy buyer load; one hour before that time. Pick nearest official cached start observation and retain both neighboring points. Selection independent of subsequent observed performance.",
+      "limitations": [
+        "Primary payment windows are exactly3600s; primary starting Saved is a cached official observation with a documented time offset, not an exact requested-boundary measurement.",
+        "Adjacent baseline includes code transition; report separately and never call it an entirely old-policy window.",
+        "Actual in-first-four positive model choices and payment are measured separately from fixed-roster payments.",
+        "Frozen roster is classified at the added-hour start, after the historical comparison windows. Its training purchases precede those windows, but some failure observations arrived later; this is retrospective descriptive attribution, not a causal backtest."
+      ]
+    },
+    "metrics": {
+      "before": {
+        "matched_paid": 62,
+        "fixed_roster_paid": 26,
+        "fixed_roster_unknown": 0,
+        "positive_primary_choice_paid": null,
+        "promoted_primary_choice_paid": null,
+        "source_counts": {
+          "9f890cdc090c87741417785c8bcdf7ba47bab775": 62
+        },
+        "unmatched_public_ledgers": [],
+        "orders_with_frozen_roster_available": 72,
+        "started_orders": 96,
+        "actual_mature_visible_orders": null,
+        "actual_promoted_positive_choices": null,
+        "model_fallbacks": 0,
+        "feature_attribution_available": false,
+        "actual_public_settled": 62,
+        "public_coverage_complete": true,
+        "fixed_roster_paid_range": [
+          26,
+          26
+        ]
+      },
+      "adjacent": {
+        "matched_paid": 48,
+        "fixed_roster_paid": 22,
+        "fixed_roster_unknown": 0,
+        "positive_primary_choice_paid": 13,
+        "promoted_primary_choice_paid": 12,
+        "source_counts": {
+          "9f890cdc090c87741417785c8bcdf7ba47bab775": 11,
+          "f6729ada89cadeb1ede1a6706e9616820b7b9527": 37
+        },
+        "unmatched_public_ledgers": [],
+        "orders_with_frozen_roster_available": 66,
+        "started_orders": 88,
+        "actual_mature_visible_orders": 57,
+        "actual_promoted_positive_choices": 25,
+        "model_fallbacks": 0,
+        "feature_attribution_available": true,
+        "actual_public_settled": 48,
+        "public_coverage_complete": true,
+        "fixed_roster_paid_range": [
+          22,
+          22
+        ]
+      },
+      "after": {
+        "matched_paid": 60,
+        "fixed_roster_paid": 33,
+        "fixed_roster_unknown": 0,
+        "positive_primary_choice_paid": 27,
+        "promoted_primary_choice_paid": 26,
+        "source_counts": {
+          "f6729ada89cadeb1ede1a6706e9616820b7b9527": 60
+        },
+        "unmatched_public_ledgers": [],
+        "orders_with_frozen_roster_available": 59,
+        "started_orders": 87,
+        "actual_mature_visible_orders": 78,
+        "actual_promoted_positive_choices": 42,
+        "model_fallbacks": 0,
+        "feature_attribution_available": true,
+        "actual_public_settled": 60,
+        "public_coverage_complete": true,
+        "fixed_roster_paid_range": [
+          33,
+          33
+        ]
+      }
+    },
+    "all_preservation_checks_passed": true,
+    "source_sha256": "ad4674f451afa2fb309749b0723db83726d3db9bf5ccef45d6d34dade3777f45"
+  },
+  "runtime": {
+    "buyer": {
+      "supervisor_pid": 311,
+      "kit_pid": 321,
+      "source_commit": "f6729ada89cadeb1ede1a6706e9616820b7b9527",
+      "started_at": 1794291727.5783236
+    },
+    "seller": {
+      "supervisor_pid": 65756,
+      "kit_pid": 1034419,
+      "tunnel_pid": 1034418,
+      "forum_pid": 1034420,
+      "url": "https://pltki-203-246-85-147.free.pinggy.net",
+      "source_commit": "f6729ada89cadeb1ede1a6706e9616820b7b9527",
+      "started_at": 1795325604.9014027,
+      "meta_pid": 1034421,
+      "procurement_pid": 1034422,
+      "buyer_forum_pid": 1034423,
+      "buyer_cohort_pid": 1034424
+    }
+  },
+  "limits": [
+    "Observed after the published Round3 close; use round3 board values.",
+    "Official cumulative board numbers and local captured log counts have different update times.",
+    "Week10 Saved predates retroactive patch3.6; do not interpret its difference as a policy gain."
+  ]
+}

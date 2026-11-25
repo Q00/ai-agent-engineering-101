@@ -1,0 +1,53 @@
+{
+  "checked_at": "2026-11-04T00:19:07.326280+09:00",
+  "deployment": "internal_only",
+  "default_life_policy": "observe_settled_purchases_without_changing_commercial_input",
+  "advisory_taste_policy": "experimental_function_argument_only; not enabled by CLI or agent.json",
+  "unit_tests": {
+    "passed": 116,
+    "log": "buyer-life-observer-final-tests-2026-11-04.log"
+  },
+  "paired_real_model_probe": {
+    "cases": 4,
+    "variants": 8,
+    "calls_per_selection": 1,
+    "all_sku_and_budget_checks_passed": true,
+    "same_candidate_pairs": 4,
+    "advisory_opening_offer_deltas": [
+      -500,
+      -300,
+      500,
+      0
+    ],
+    "advisory_additional_prompt_bytes": [
+      830,
+      830,
+      830,
+      830
+    ],
+    "limitation": "One pair per case; model randomness and advice effects are not causally separated. No actual payments or signature validation."
+  },
+  "model_life_simulation": {
+    "cooked": true,
+    "placed": true,
+    "hunger_before": 90,
+    "hunger_after": 59.051,
+    "context_bytes": 5012,
+    "advice_bytes": 385,
+    "no_market_outbox": true
+  },
+  "draft_count": 1,
+  "protected_live_files_unchanged_during_probe": true,
+  "current_frozen_source_commit": "ef5b83755636387deff5a15aeb0072ae73c000d5",
+  "current_frozen_hashes_verified": true,
+  "live_buyer_enabled": false,
+  "default_config_life_enabled": false,
+  "external_publication": false,
+  "git_push_performed": false,
+  "remaining_limits": [
+    "Real-market surplus/conversion impact unknown.",
+    "Exact token billing not measured.",
+    "Advisory tastes may affect opening offers and remain experimental.",
+    "Cooking quantities and placement dimensions are fictional game units."
+  ]
+}

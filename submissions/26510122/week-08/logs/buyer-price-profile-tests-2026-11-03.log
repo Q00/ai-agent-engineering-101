@@ -1,0 +1,30 @@
+test_outgoing_buyer_signs_exact_message_without_budget (test_buyer_pricing.IdentityTests.test_outgoing_buyer_signs_exact_message_without_budget) ... ERROR
+test_signed_request_must_match_market_linked_key (test_buyer_pricing.IdentityTests.test_signed_request_must_match_market_linked_key) ... ok
+test_tampering_replay_context_and_expiry_fail (test_buyer_pricing.IdentityTests.test_tampering_replay_context_and_expiry_fail) ... ok
+test_comparison_preserves_grade_age_buyer_and_food_expiry (test_buyer_pricing.ProfileTests.test_comparison_preserves_grade_age_buyer_and_food_expiry) ... ok
+test_failed_unresolved_and_discounted_probes_stop_repeated_uplifts (test_buyer_pricing.ProfileTests.test_failed_unresolved_and_discounted_probes_stop_repeated_uplifts) ... ok
+test_one_vs_repeated_calm_high_payments_give_small_optional_probes (test_buyer_pricing.ProfileTests.test_one_vs_repeated_calm_high_payments_give_small_optional_probes) ... ok
+test_other_buyers_form_baseline_and_counterexamples_remain_visible (test_buyer_pricing.ProfileTests.test_other_buyers_form_baseline_and_counterexamples_remain_visible) ... ok
+test_pending_haggled_low_and_unverified_are_not_high_payment_evidence (test_buyer_pricing.ProfileTests.test_pending_haggled_low_and_unverified_are_not_high_payment_evidence) ... ok
+test_verified_public_receipt_link_does_not_count_as_payment (test_buyer_pricing.ProfileTests.test_verified_public_receipt_link_does_not_count_as_payment) ... ok
+test_actual_a2a_metadata_reaches_model_and_anonymous_falls_back (test_buyer_pricing.SellerIdentityIntegrationTests.test_actual_a2a_metadata_reaches_model_and_anonymous_falls_back) ... {"event": "seller_open", "task_id": "15358520-410c-474f-8f6b-249be67dab87", "sku": "G1", "unit": "u1", "grade": "A", "cost": 70, "ask": 126}
+{"event": "seller_open", "task_id": "fa2a4e14-07b9-4771-aa8a-61d9f3f913e4", "sku": "G1", "unit": "u2", "grade": "A", "cost": 70, "ask": 100}
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+ok
+
+======================================================================
+ERROR: test_outgoing_buyer_signs_exact_message_without_budget (test_buyer_pricing.IdentityTests.test_outgoing_buyer_signs_exact_message_without_budget)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_buyer_pricing.py", line 95, in test_outgoing_buyer_signs_exact_message_without_budget
+    buyer_r3.send(client,'https://shop','I want G1',identity={
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        'key':self.key,'name':'alice','recipient':'shop'})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: send() missing 1 required positional argument: 'deadline'
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.020s
+
+FAILED (errors=1)

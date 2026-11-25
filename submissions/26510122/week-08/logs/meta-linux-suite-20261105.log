@@ -1,0 +1,88 @@
+...................{"event": "buyer_offer", "sku": "F1", "shop": "https://shop", "offer": 600, "turn": 0}
+....{"event": "buyer_context_compacted", "candidate_count": 16, "prompt_bytes": 12955, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "shop-0", "proposed": 600, "opening": 600, "reason": "evidence"}
+.{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1566, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "17", "sku": "F1", "shop": "shop-17", "proposed": 700, "opening": 700, "reason": "explore"}
+..{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1566, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "17", "sku": "F1", "shop": "shop-17", "proposed": 700, "opening": 700, "reason": "explore"}
+..{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1566, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection_fallback", "error": "RuntimeError", "candidate_id": "17", "opening": 680}
+.{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1566, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_exploration_guard", "proposed": "0", "effective": "17"}
+{"event": "buyer_selection", "candidate_id": "17", "sku": "F1", "shop": "shop-17", "proposed": 9999, "opening": 722, "reason": "prefer familiar first shop"}
+.{"event": "buyer_context_compacted", "candidate_count": 16, "prompt_bytes": 10130, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "shop-00", "proposed": 700, "opening": 700, "reason": "firsthand evidence"}
+.............{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 2762, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "G1", "shop": "shop", "proposed": 1000000, "opening": 637, "reason": "public text"}
+.........{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1544, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "market order"}
+{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1544, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "market order"}
+......{"event": "buyer_context_compacted", "candidate_count": 2, "prompt_bytes": 2102, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "fulfil order"}
+..{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1548, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "G1", "shop": "0", "proposed": 650, "opening": 637, "reason": "fulfil goods order"}
+.......{"event": "buyer_context_compacted", "candidate_count": 2, "prompt_bytes": 2102, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "order"}
+{"event": "buyer_context_compacted", "candidate_count": 2, "prompt_bytes": 2102, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "order"}
+........{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 2255, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection_fallback", "error": "ValueError", "candidate_id": "0", "opening": 680}
+......{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1544, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "order"}
+....................{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1544, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "0", "proposed": 650, "opening": 650, "reason": "order"}
+...................{"event": "seller_open", "task_id": "594e78b9-13fa-4529-8c03-ddefbdac998b", "sku": "G1", "unit": "u1", "grade": "A", "cost": 70, "ask": 126}
+{"event": "seller_open", "task_id": "645f2093-3cf0-4ee2-b718-909c444aa6c9", "sku": "G1", "unit": "u2", "grade": "A", "cost": 70, "ask": 100}
+{"event": "seller_open", "task_id": "4ed7445f-0c74-4d8b-a707-0ce5b4d30a72", "sku": "G1", "unit": "u3", "grade": "A", "cost": 70, "ask": 100}
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+Dispatcher task is not running. Cannot wait for event dispatch.
+.......................................................Private handoff archive ready: /tmp/tmp89s23rzq/mac/state/migration/private.handoff.tar.gz (mode 0600; never add to Git)
+Restored existing identities, DBs, raw logs, policy state and frozen releases. No services started.
+Linux user units rendered in /tmp/tmp89s23rzq/linux/state/systemd; not installed or started.
+Private handoff archive ready: /tmp/tmpr4wc1m53/mac/state/migration/wal.handoff.tar.gz (mode 0600; never add to Git)
+Restored existing identities, DBs, raw logs, policy state and frozen releases. No services started.
+Private handoff archive ready: /tmp/tmpr4wc1m53/mac/state/migration/bad.handoff.tar.gz (mode 0600; never add to Git)
+{"event": "newsvendor_calculation", "sku": "s0", "quantity": 1, "buy_now": 1, "critical_ratio": 0.35641, "forecast_mean": 1.2, "horizon_hours": 24.0}
+...................................{"event": "newsvendor_calculation", "sku": "F1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+..{"event": "newsvendor_calculation", "sku": "F1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+{"event": "restock_scenario_reused", "sku": "F1", "age_seconds": 180}
+{"event": "newsvendor_calculation", "sku": "F1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+.......{"event": "seller_open", "task_id": "a08f9be1-5e1f-4de8-94a9-cee92585995d", "sku": "F1", "unit": "u0", "grade": "A", "cost": 600, "ask": 1000}
+Dispatcher task is not running. Cannot wait for event dispatch.
+.................................{"event": "seller_open", "task_id": "2e5df360-e6e8-4384-a563-98544be7d2e1", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+.{"event": "seller_open", "task_id": "7ffeff7c-772e-4860-b655-33a6fab9c8f1", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "7ffeff7c-772e-4860-b655-33a6fab9c8f1", "unit": "u1", "price": 800, "status": "pending settlement"}
+.{"event": "seller_open", "task_id": "ee271824-060f-4a07-a92b-e6a8cd60b379", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 873}
+{"event": "seller_counter", "task_id": "ee271824-060f-4a07-a92b-e6a8cd60b379", "sku": "F1", "offer": 900, "ask": 873}
+{"event": "seller_counter", "task_id": "ee271824-060f-4a07-a92b-e6a8cd60b379", "sku": "F1", "offer": 400, "ask": 501}
+{"event": "seller_receipt", "task_id": "ee271824-060f-4a07-a92b-e6a8cd60b379", "unit": "u1", "price": 501, "status": "pending settlement"}
+.{"event": "seller_open", "task_id": "62f60b16-509a-4330-836f-81c7caa3f1ac", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 873}
+{"event": "seller_receipt", "task_id": "62f60b16-509a-4330-836f-81c7caa3f1ac", "unit": "u1", "price": 873, "status": "pending settlement"}
+Dispatcher task is not running. Cannot wait for event dispatch.
+.{"event": "seller_open", "task_id": "749df805-fde8-4d3b-952f-347bdd296d0c", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "749df805-fde8-4d3b-952f-347bdd296d0c", "unit": "u1", "price": 800, "status": "pending settlement"}
+Dispatcher task is not running. Cannot wait for event dispatch.
+..{"event": "seller_open", "task_id": "33f70094-0eaf-4dff-a0e0-e44a3f700e7b", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "33f70094-0eaf-4dff-a0e0-e44a3f700e7b", "unit": "u1", "price": 800, "status": "pending settlement"}
+.{"event": "seller_open", "task_id": "5235eeb1-5060-4ec2-8a71-542ac92429c0", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+Dispatcher task is not running. Cannot wait for event dispatch.
+.{"event": "seller_open", "task_id": "9a09943d-2a73-4f0f-9ac1-5482da24e8e8", "sku": "F1", "unit": "u1", "grade": "B", "cost": 500, "ask": 900}
+{"event": "seller_receipt", "task_id": "9a09943d-2a73-4f0f-9ac1-5482da24e8e8", "unit": "u1", "price": 800, "status": "pending settlement"}
+.............{"event": "buyer_offer", "sku": "F1", "shop": "https://shop", "offer": 600, "turn": 0}
+.{"event": "buyer_context_compacted", "candidate_count": 2, "prompt_bytes": 2120, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "first", "proposed": 700, "opening": 700, "reason": "test"}
+.{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1561, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "external", "proposed": 700, "opening": 700, "reason": "in stock"}
+...{"event": "buyer_context_compacted", "candidate_count": 1, "prompt_bytes": 1494, "memory_source": "name-keyed facts and bounded cases"}
+{"event": "buyer_selection", "candidate_id": "0", "sku": "F1", "shop": "other", "proposed": 850, "opening": 722, "reason": "test"}
+..{"event": "seller_open", "task_id": "6fdc06b6-8d72-44c2-88d2-fc823aba5753", "sku": "A1", "unit": "u1", "grade": "A", "cost": 70, "ask": 120}
+{"event": "seller_receipt", "task_id": "6fdc06b6-8d72-44c2-88d2-fc823aba5753", "unit": "u1", "price": 110, "status": "pending settlement"}
+...{"event": "newsvendor_calculation", "sku": "food-1", "quantity": 1, "buy_now": 1, "critical_ratio": 0.375, "forecast_mean": 1.2, "horizon_hours": 18.0}
+..{"event": "seller_open", "task_id": "96ea41c0-5e01-4621-91d0-c0b6e61fefe7", "sku": "A1", "unit": "u1", "grade": "A", "cost": 70, "ask": 100}
+..........
+----------------------------------------------------------------------
+Ran 295 tests in 108.814s
+
+OK

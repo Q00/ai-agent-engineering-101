@@ -1,0 +1,149 @@
+{
+  "resident_count": 1,
+  "primary_simulated_hours": 33.5,
+  "full_replays": 2,
+  "final_metrics": {
+    "orders": 9,
+    "signed_receipts": 9,
+    "paid": 7,
+    "refused": 2,
+    "gross_spend": 223382,
+    "refunds": 145800,
+    "net_spend": 77582,
+    "simulated_surplus": 35848
+  },
+  "total_real_model_calls": 52,
+  "final_model_roles": {
+    "buyer shop selector": 9,
+    "buyer negotiator": 7,
+    "fictional buyer life planner": 9
+  },
+  "final_life_events": {
+    "persona_created": 1,
+    "acquired": 7,
+    "scene_started": 9,
+    "forum_drafted": 1,
+    "life_plan_updated": 9,
+    "life_model_choice": 9,
+    "scene_expired": 8,
+    "cooked": 1,
+    "placed": 3,
+    "furniture_broken": 1,
+    "meal_planned": 1
+  },
+  "final_owned_statuses": {
+    "consumed": 3,
+    "available": 3,
+    "broken": 1
+  },
+  "control_actions": [
+    {
+      "condition": "original_fact",
+      "facts": [
+        "오늘 공동장비 예약 시간이 오후 1시로 변경됐다."
+      ],
+      "decision": {
+        "plan": {
+          "scene_id": "5a14300602f84a3d95d60c3ca8fcb804",
+          "previous_plan_id": "134bfd51a5fa402d8851e1f9845716f3",
+          "update": "revise",
+          "interpretation": "공동장비 예약 변경은 오후 연구 일정에 영향을 주지만, 현재는 식재료가 없어 즉시 조리할 수 없다. 보유 테이블을 먼저 배치해 작업 후 회복 구역을 만들고, 아침볼 재료 확보를 위한 요청 초안을 남긴다.",
+          "intention": "작업 겸 휴식실에 보유 테이블을 배치하고 부족한 식재료 확보를 준비한다.",
+          "next_steps": [
+            "보유 접이식 테이블을 작업 겸 휴식실에 배치한다.",
+            "귀리 우유 아침볼에 필요한 우유 확보 요청을 초안으로 남긴다."
+          ],
+          "action_indexes": [
+            0,
+            1
+          ],
+          "reason": "이전 조리는 이미 처리되었지만 현재 보유 식재료가 없어 재조리할 수 없으며, 식사보다 먼저 가능한 공간 배치와 식재료 요청을 진행한다."
+        },
+        "actions": [
+          {
+            "kind": "place",
+            "unit_id": "sim-ab12fd8948cc412ca2a383e93060e974",
+            "room": "room_work_rest",
+            "x": 1,
+            "y": 1,
+            "width": 2,
+            "height": 1
+          },
+          {
+            "kind": "request",
+            "need_id": "meal:recipe_oat_milk_bowl:4770514e",
+            "thread": null
+          }
+        ],
+        "preferences": null,
+        "reason": "현재 허기가 높지만 조리 가능한 소유 식재료가 없다. 가능한 실제 행동으로 테이블을 배치하고, 중복되지 않은 우유 재료 요청 초안을 남긴다."
+      }
+    },
+    {
+      "condition": "neutral_fact",
+      "facts": [
+        "학과 홈페이지 공지 목록의 정렬 방식이 바뀌었다."
+      ],
+      "decision": {
+        "plan": {
+          "scene_id": "5a14300602f84a3d95d60c3ca8fcb804",
+          "previous_plan_id": "134bfd51a5fa402d8851e1f9845716f3",
+          "update": "revise",
+          "interpretation": "공지 정렬 변경은 생활 우선순위를 바꾸지 않는다. 현재 허기가 높지만 보유 식재료가 없어 조리는 불가능하고, 확보된 접이식 테이블로 작업과 회복의 경계를 먼저 만든다.",
+          "intention": "작업 겸 휴식실에 테이블을 배치하고 귀리 우유 아침볼 재료를 다시 마련할 기반을 만든다.",
+          "next_steps": [
+            "접이식 테이블을 작업 겸 휴식실에 배치한다.",
+            "귀리 우유 아침볼용 귀리 구매 요청 초안을 저장한다."
+          ],
+          "action_indexes": [
+            0,
+            1
+          ],
+          "reason": "테이블은 이미 소유 중이며 주거 목표에 직접 기여한다. 식사는 현재 missing 재료 때문에 실행할 수 없으므로 필요한 재료 중 귀리부터 요청한다."
+        },
+        "actions": [
+          {
+            "kind": "place",
+            "unit_id": "sim-ab12fd8948cc412ca2a383e93060e974",
+            "room": "room_work_rest",
+            "x": 1,
+            "y": 1,
+            "width": 2,
+            "height": 1
+          },
+          {
+            "kind": "request",
+            "need_id": "meal:recipe_oat_milk_bowl:25fe999c",
+            "thread": null
+          }
+        ],
+        "preferences": null,
+        "reason": "높은 허기를 인지했지만 현재 cookable한 식재료가 없으므로 소비를 재시도하지 않는다. 소유 가구 배치와 단일 식재료 요청으로 생활 기반을 정비한다."
+      }
+    }
+  ],
+  "assessment": [
+    "The purchase-use-breakage-refund-substitute sequence is observable and potentially interesting.",
+    "Table placement occurred in both original and neutral fact replays; classify it as standing-goal/ownership behavior, not proven scene responsiveness.",
+    "The visitor arrival produced waiting; owned juice remained unused. Food/interaction behavior remains narrow.",
+    "Items/quotes/faults were scripted; the buyer chose shop/offer within issued mandates. Purchases were not driven by roleplay needs.",
+    "The local draft feedback originally looked like external request acceptance. Feedback now explicitly reports internal_draft_only."
+  ],
+  "tests_passed": 145,
+  "market_http_requests": 0,
+  "real_purchases": 0,
+  "public_posts": 0,
+  "deployed": false,
+  "git_push": false,
+  "protected_files_unchanged": true,
+  "artifacts": {
+    "timeline": "flow/simulation/buyer-life-rollout.html",
+    "transactions": "logs/buyer-life-rollout-corrected-2026-11-04.csv",
+    "raw": "logs/buyer-life-rollout-corrected-2026-11-04.json"
+  },
+  "limitations": [
+    "Two stochastic replays plus one control pair are not a causal benchmark.",
+    "Surplus and money are synthetic; no live performance or token-billing claim.",
+    "Signed local receipts and kit quality checks do not exercise live A2A/AP2 settlement."
+  ]
+}

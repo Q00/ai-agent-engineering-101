@@ -1,0 +1,10 @@
+Harness review: deterministic reproductions; no live model or market calls
+abandoned_24h_reservation {'available_units': 0, 'reservation_still_open': True}
+bounded_context {'recent_transactions': 1, 'offers_in_one_transaction': 2000, 'serialized_bytes': 11428}
+expired_order {'selection_called': True, 'receipt': None}
+{"event": "buyer_counter_choice", "sku": "A1", "proposed": 80, "effective": 80, "reason": "test"}
+deadline_propagation {'model_call_kwargs': {}, 'harness_timeout_seconds': 60, 'seconds_left_after_worst_case_model': 10.1}
+{"event": "decision_guard", "phase": "opening", "proposed_price": 1, "effective_price": 1, "proposed_unit": "not-in-inventory", "effective_unit": "u1"}
+{"event": "seller_open", "task_id": "8704b86e-f100-43ba-802f-14846a023edf", "sku": "A1", "unit": "u1", "grade": "A", "cost": 70, "ask": 1}
+Dispatcher task is not running. Cannot wait for event dispatch.
+invalid_unit_selection {'state': 'TASK_STATE_INPUT_REQUIRED', 'seller_text': 'Food: asking 1. Send your offer as a number.'}

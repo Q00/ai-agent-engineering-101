@@ -1,0 +1,152 @@
+{
+  "at": 1793820006.7625673,
+  "market_writes": false,
+  "synthetic_supply_window": true,
+  "results": {
+    "meta": {
+      "status": "shadow",
+      "decision": {
+        "action": "hold",
+        "parameter": "focus",
+        "numeric_value": null,
+        "focus_value": null,
+        "reason": "Paid demand is present, but the evidence does not establish net profit: acquisition spread excludes holding/refund effects, and the sample is a selected tail without causal conversion data. Capital is constrained to 7,788,335 available to invest, while 36 opportunities are blocked by the model-review eligibility gate rather than a tunable policy setting. Code-level bottlenecks include category limit 24, proven-stock ceiling 20, two-profitable-sales threshold, food trial shelf policy, and buyer guards; these cannot be fixed by changing one runtime parameter.",
+        "expected_effect": "Preserve the current balanced policy while avoiding unsupported expansion or concentration. Reassess after stronger net-margin evidence and resolution of eligibility-gate bottlenecks.",
+        "evidence": [
+          "Own settlements: 164 in the last 3 hours, with revenue 9,397,795 and acquisition spread 1,558,433 before holding/refunds.",
+          "Available to invest is 7,788,335 versus a 12,000,000 window budget; cash support exists but does not prove resale profitability.",
+          "Market sample has 302 settles, but it is explicitly a short selected tail and provides no conversion or causal attribution.",
+          "36 candidates are eligible for model review, indicating a code/model gate rather than a parameter-level block.",
+          "Current policy already permits new SKUs and replenishment; target capital share is 0.65 against a 0.75 hard exposure limit."
+        ]
+      },
+      "before": {
+        "window_budget": 12000000,
+        "target_capital_share": 0.65,
+        "epsilon": 0.3,
+        "focus": "balanced"
+      },
+      "after": {
+        "window_budget": 12000000,
+        "target_capital_share": 0.65,
+        "epsilon": 0.3,
+        "focus": "balanced"
+      },
+      "ok": true
+    },
+    "inventory": {
+      "result": {
+        "buy": [
+          {
+            "sku": "G200e39a3",
+            "qty": 10
+          },
+          {
+            "sku": "Gbf98024f",
+            "qty": 4
+          },
+          {
+            "sku": "G0be9ed07",
+            "qty": 10
+          },
+          {
+            "sku": "G1831f2c0",
+            "qty": 2
+          },
+          {
+            "sku": "Ge837035f",
+            "qty": 1
+          },
+          {
+            "sku": "Gcc75125e",
+            "qty": 3
+          },
+          {
+            "sku": "Gc40054d2",
+            "qty": 1
+          },
+          {
+            "sku": "G281176ec",
+            "qty": 1
+          },
+          {
+            "sku": "G336923c3",
+            "qty": 1
+          },
+          {
+            "sku": "G010744b7",
+            "qty": 1
+          },
+          {
+            "sku": "G8095ddd6",
+            "qty": 1
+          }
+        ]
+      },
+      "candidate_count": 48,
+      "over_old_cap": 2,
+      "budget": 7788335,
+      "answer": {
+        "action": "buy",
+        "skus": [
+          "G336923c3",
+          "G010744b7",
+          "G5cd4ffbc",
+          "G8095ddd6"
+        ],
+        "replenishment": [
+          {
+            "sku": "G200e39a3",
+            "target_stock": 11
+          },
+          {
+            "sku": "Gbf98024f",
+            "target_stock": 4
+          },
+          {
+            "sku": "G0be9ed07",
+            "target_stock": 13
+          },
+          {
+            "sku": "G1831f2c0",
+            "target_stock": 4
+          },
+          {
+            "sku": "Ge837035f",
+            "target_stock": 1
+          },
+          {
+            "sku": "Gcc75125e",
+            "target_stock": 14
+          },
+          {
+            "sku": "Gc40054d2",
+            "target_stock": 4
+          },
+          {
+            "sku": "G281176ec",
+            "target_stock": 1
+          }
+        ],
+        "reason": "Buy the required exploration anchor plus three diversified, affordable trials across food and upper-band goods. Replenish proven fast sellers to high forecast targets during growth, include the eligible second trial, and remain within cash, unit, supply-line, and exploration budgets."
+      },
+      "ok": true
+    },
+    "buyer_forum": {
+      "status": "dry_run",
+      "text": "[구매 기록] 침구 커버와 쌀 구매 기록\n침구 커버는 침대 규격과 봉제 상태, 오염·손상 여부, 세탁 안내를 확인하세요. 쌀은 수확 연도와 원산지, 포장 밀봉 상태, 배송 중 파손 여부를 확인하면 좋습니다.\n바숨 알러지케어 먼지없는 누빔 매트리스커버 슈퍼싱글 SS (G575cddb8) · Kiro729 · 20,561원 · 등급 A · 정가 27,900원 · 해당 거래 등급 주장 일치 · 당시 보증 6시간 · 원장 #2637382\n[이쌀이다] 26년산 햅쌀 김포 고시히카리 20kg (G93d34e0c) · seochanit · 60,000원 · 등급 A · 정가 91,900원 · 해당 거래 등급 주장 일치 · 당시 보증 없음 · 기록 시점 잔여 706.0시간 · 원장 #2635914\n실제 정산된 거래 기록입니다. 현재 가격·재고와 이후 품질을 보장하는 내용은 아닙니다.",
+      "decision": {
+        "action": "post",
+        "ledger_refs": [
+          2637382,
+          2635914
+        ],
+        "headline": "침구 커버와 쌀 구매 기록",
+        "body": "침구 커버는 침대 규격과 봉제 상태, 오염·손상 여부, 세탁 안내를 확인하세요. 쌀은 수확 연도와 원산지, 포장 밀봉 상태, 배송 중 파손 여부를 확인하면 좋습니다.",
+        "reason": "서로 다른 품목의 실제 정산 사례를 골랐고, 각 상품에 맞는 조건 확인 포인트를 간결하게 남겼습니다."
+      },
+      "ok": true
+    }
+  },
+  "complete": true
+}

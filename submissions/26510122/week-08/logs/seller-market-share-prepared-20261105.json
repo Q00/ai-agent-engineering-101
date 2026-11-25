@@ -1,0 +1,62 @@
+{
+  "at": "2026-11-05T00:11:34.272063+09:00",
+  "branch": "seller-market-share",
+  "base_commit": "ef7e66bc58e95a8e6f131b3c675ef24055e1c1aa",
+  "last_verified_production_strategy": "0ddcc318e01c1297eeb2963020175684bb02f7d4",
+  "status": "prepared_not_deployed",
+  "production_source_currently_unverified": true,
+  "market_writes": false,
+  "services_restarted": false,
+  "forum_draft_included": false,
+  "buyer_code_changed": false,
+  "pricing_changed": false,
+  "before": {
+    "window_budget": 1200000,
+    "rolling_novel_exploration_budget": 6000000,
+    "maintained_skus_per_window": 6,
+    "supply_lines_per_window": 8,
+    "target_variety": 40,
+    "max_units": 120,
+    "max_inventory_cost": 8000000
+  },
+  "after": {
+    "window_budget": 2400000,
+    "rolling_novel_exploration_budget": 12000000,
+    "maintained_skus_per_window": 8,
+    "supply_lines_per_window": 12,
+    "target_variety": 50,
+    "max_units": 180,
+    "max_inventory_cost": 12000000
+  },
+  "retained": {
+    "epsilon": 0.3,
+    "new_units_per_new_sku": 1,
+    "new_skus_per_window": 8,
+    "soft_inventory_capital_target": 0.65,
+    "inventory_capital_share_limit": 0.75,
+    "min_cash": 600000,
+    "goods_storage_cash_buffer": true,
+    "max_unit_cost": 500000,
+    "proven_positive_spread_sales_threshold_12h": 2,
+    "ambiguous_pending_reservations_preserved": true,
+    "round_end_taper": true
+  },
+  "validation": {
+    "full_unit_tests": 285,
+    "passed": 285,
+    "initial_failure": "Second-trial test fixture exhausted the old 6m cap. Fixture now exhausts the active cap with valid per-intent quantities. Original failed run retained.",
+    "old_6m_reservations_preserved_new_approved_ceiling": 2400000,
+    "fresh_cash_after_model_emitted_ceiling": 300000,
+    "mixed_supply_lines_test": {
+      "maintained": 8,
+      "novel": 4
+    },
+    "real_llm_probe": false,
+    "official_week08_checker": "not present in this checkout; week-08.html is the assignment source"
+  },
+  "limitations": [
+    "No live performance improvement established.",
+    "Linux rollout is pending SSH availability; do not reset state or run a parallel shop.",
+    "Revenue, paid units, market share and acquisition spread must be tracked separately after rollout."
+  ]
+}

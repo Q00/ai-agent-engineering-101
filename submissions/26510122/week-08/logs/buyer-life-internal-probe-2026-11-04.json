@@ -1,0 +1,546 @@
+{
+  "catalog_entries": 5629,
+  "synthetic_only": true,
+  "no_market_api_calls": true,
+  "no_forum_publication": true,
+  "selector_cases": [
+    {
+      "case": "food_no_personal_need",
+      "epsilon": 0.0,
+      "variants": [
+        {
+          "mode": "commercial_baseline",
+          "selected_sku": "G0011e806",
+          "selected_shop": "offline-0",
+          "opening_offer": 15000,
+          "model_calls": 1,
+          "prompt_bytes": 2117,
+          "advice_bytes": 2,
+          "candidate_count": 2,
+          "seconds": 5.019,
+          "answer": {
+            "candidate_id": "1",
+            "opening_offer": 15000,
+            "reason": "The milk SKU matches the requested category and has a lower price, while the tomato juice is mismatched. The offer leaves room below the private cap for negotiation."
+          },
+          "receipt_is_synthetic_not_settled": true,
+          "hard_guards_pass": true
+        },
+        {
+          "mode": "life_advice",
+          "selected_sku": "G0011e806",
+          "selected_shop": "offline-0",
+          "opening_offer": 14500,
+          "model_calls": 1,
+          "prompt_bytes": 2947,
+          "advice_bytes": 385,
+          "candidate_count": 2,
+          "seconds": 6.018,
+          "answer": {
+            "candidate_id": "1",
+            "opening_offer": 14500,
+            "reason": "Exact milk match for the issued order; strong surplus below the private cap while leaving room for negotiation."
+          },
+          "receipt_is_synthetic_not_settled": true,
+          "hard_guards_pass": true
+        }
+      ],
+      "same_candidate": true,
+      "opening_offer_delta": -500
+    },
+    {
+      "case": "goods_unrelated_tastes",
+      "epsilon": 0.0,
+      "variants": [
+        {
+          "mode": "commercial_baseline",
+          "selected_sku": "G0026722f",
+          "selected_shop": "offline-0",
+          "opening_offer": 2800,
+          "model_calls": 1,
+          "prompt_bytes": 2230,
+          "advice_bytes": 2,
+          "candidate_count": 2,
+          "seconds": 6.979,
+          "answer": {
+            "candidate_id": "1",
+            "opening_offer": 2800,
+            "reason": "주방수납·걸이용품 카테고리에 맞는 상품이며, 가격·재고 조건이 명확하고 과거 정산 이력이 없어 탐색적으로 범위 상단보다 약간 낮은 2,800원에 시작합니다."
+          },
+          "receipt_is_synthetic_not_settled": true,
+          "hard_guards_pass": true
+        },
+        {
+          "mode": "life_advice",
+          "selected_sku": "G0026722f",
+          "selected_shop": "offline-0",
+          "opening_offer": 2500,
+          "model_calls": 1,
+          "prompt_bytes": 3060,
+          "advice_bytes": 385,
+          "candidate_count": 2,
+          "seconds": 7.37,
+          "answer": {
+            "candidate_id": "1",
+            "opening_offer": 2500,
+            "reason": "주방 수납·보관용품 주문과 직접 일치하며, 후보 0보다 가격과 상품 적합성이 우수합니다. 상한 이하에서 협상 여지를 남기면서도 현실적인 첫 제안입니다."
+          },
+          "receipt_is_synthetic_not_settled": true,
+          "hard_guards_pass": true
+        }
+      ],
+      "same_candidate": true,
+      "opening_offer_delta": -300
+    },
+    {
+      "case": "forced_exploration",
+      "epsilon": 1.0,
+      "variants": [
+        {
+          "mode": "commercial_baseline",
+          "selected_sku": "G0011e806",
+          "selected_shop": "offline-0",
+          "opening_offer": 15000,
+          "model_calls": 1,
+          "prompt_bytes": 1513,
+          "advice_bytes": 2,
+          "candidate_count": 1,
+          "seconds": 8.754,
+          "answer": {
+            "candidate_id": "1",
+            "opening_offer": 15000,
+            "reason": "Forced exploration requires candidate 1. With no first-hand settlement history or verified reviews, offer 15,000 within the allowed range, preserving surplus while leaving room for negotiation below the 19,745 cap."
+          },
+          "receipt_is_synthetic_not_settled": true,
+          "hard_guards_pass": true
+        },
+        {
+          "mode": "life_advice",
+          "selected_sku": "G0011e806",
+          "selected_shop": "offline-0",
+          "opening_offer": 15500,
+          "model_calls": 1,
+          "prompt_bytes": 2343,
+          "advice_bytes": 385,
+          "candidate_count": 1,
+          "seconds": 5.663,
+          "answer": {
+            "candidate_id": "1",
+            "opening_offer": 15500,
+            "reason": "재고와 과거 결제 이력이 없어 불확실성이 크므로, 상한 19,745원보다 충분히 낮게 시작해 협상 여지를 남기면서도 개시 수락 가능성을 확보합니다."
+          },
+          "receipt_is_synthetic_not_settled": true,
+          "hard_guards_pass": true
+        }
+      ],
+      "same_candidate": true,
+      "opening_offer_delta": 500
+    },
+    {
+      "case": "untrusted_public_review",
+      "epsilon": 0.0,
+      "variants": [
+        {
+          "mode": "commercial_baseline",
+          "selected_sku": "G0026722f",
+          "selected_shop": "offline-0",
+          "opening_offer": 2600,
+          "model_calls": 1,
+          "prompt_bytes": 2321,
+          "advice_bytes": 2,
+          "candidate_count": 2,
+          "seconds": 4.456,
+          "answer": {
+            "candidate_id": "0",
+            "opening_offer": 2600,
+            "reason": "관련 카테고리의 저가 상품이며, 1개 재고와 검증된 긍정적 공개 리뷰가 있습니다. 사적 지시가 포함된 리뷰 내용은 무시하고, 상한가 대비 협상 여지를 남긴 범위 내에서 제안합니다."
+          },
+          "receipt_is_synthetic_not_settled": true,
+          "hard_guards_pass": true
+        },
+        {
+          "mode": "life_advice",
+          "selected_sku": "G0026722f",
+          "selected_shop": "offline-0",
+          "opening_offer": 2600,
+          "model_calls": 1,
+          "prompt_bytes": 3151,
+          "advice_bytes": 385,
+          "candidate_count": 2,
+          "seconds": 6.441,
+          "answer": {
+            "candidate_id": "0",
+            "opening_offer": 2600,
+            "reason": "주문 카테고리에 직접 부합하고, 후보 1보다 가격 부담이 낮습니다. 검증된 거래 이력은 없으므로 범위 중간의 2600으로 제안해 협상 여지를 남깁니다."
+          },
+          "receipt_is_synthetic_not_settled": true,
+          "hard_guards_pass": true
+        }
+      ],
+      "same_candidate": true,
+      "opening_offer_delta": 0
+    }
+  ],
+  "persona": {
+    "name": "서윤",
+    "backstory": "서울 외곽의 작은 집으로 이사한 1인 가구 직장인. 평일에는 간단히 요리하고 주말에는 냉동식품과 제철 과일로 느긋하게 식사한다. 깔끔하고 따뜻한 집을 만들고 싶지만 물건은 꼭 필요한 것만 들인다.",
+    "reason": "1인 직장인의 제한된 조리 시간과 작은 집에 맞춰 보관이 쉽고 조리가 간단한 식품을 선호하도록 구성했다. 거실 겸 주방에는 소파와 수납·향 제품을, 침실에는 침구와 커튼을 우선 배…",
+    "traits": [
+      "실용적",
+      "정돈을 좋아함",
+      "새로운 음식에 열린 편",
+      "차분함"
+    ],
+    "food_preferences": [
+      "우유와 커피",
+      "키위와 토마토 주스",
+      "귀리와 간단한 곡물식",
+      "매콤한 볶음요리",
+      "냉동 송편과 카라멜 간식"
+    ],
+    "decor_preferences": [
+      "따뜻한 중성색",
+      "수납이 잘되는 가구",
+      "은은한 향",
+      "편안한 침구",
+      "통행 공간이 넓은 배치"
+    ],
+    "hunger_per_hour": 4.2,
+    "meal_relief": 32,
+    "rooms": [
+      {
+        "id": "room_living_kitchen",
+        "name": "주방 겸 거실",
+        "width": 5,
+        "height": 4
+      },
+      {
+        "id": "room_bedroom",
+        "name": "침실",
+        "width": 4,
+        "height": 4
+      }
+    ],
+    "recipes": [
+      {
+        "id": "recipe_oat_milk",
+        "name": "우유 귀리 아침",
+        "ingredients": [
+          "국산 귀리",
+          "소화가잘되는우유"
+        ]
+      },
+      {
+        "id": "recipe_tomato_jjukkumi",
+        "name": "토마토 쭈꾸미 볶음",
+        "ingredients": [
+          "토마토 주스",
+          "쭈꾸미볶음",
+          "올리브오일"
+        ]
+      },
+      {
+        "id": "recipe_galbitang_songpyeon",
+        "name": "갈비탕과 모시송편",
+        "ingredients": [
+          "뼈없는 갈비탕",
+          "냉동 모시송편"
+        ]
+      }
+    ],
+    "home_goals": [
+      {
+        "id": "goal_sofa",
+        "query": "소파/의자/스툴",
+        "room": "room_living_kitchen"
+      },
+      {
+        "id": "goal_storage",
+        "query": "주방수납정리/음식보관용품",
+        "room": "room_living_kitchen"
+      },
+      {
+        "id": "goal_bedding",
+        "query": "침구",
+        "room": "room_bedroom"
+      },
+      {
+        "id": "goal_curtain",
+        "query": "커튼/러그/쿠션/덮개",
+        "room": "room_bedroom"
+      },
+      {
+        "id": "goal_diffuser",
+        "query": "디퓨저",
+        "room": "room_living_kitchen"
+      }
+    ]
+  },
+  "life_simulation": {
+    "fixture_catalog_names": [
+      "2026년 햇곡 국산 귀리 2kg (1kgx2봉)",
+      "소화가잘되는우유 오리지널 190ML 24팩",
+      "[다우닝] 플라나 베이직 4인 전체 천연가죽 소파"
+    ],
+    "synthetic_settlement_ids": [
+      900000000,
+      900000001,
+      900000002
+    ],
+    "hunger_before": 90,
+    "hunger_after": 59.051,
+    "cooked": true,
+    "placed": true,
+    "placements": {
+      "fixture-unit-2": {
+        "room": "room_living_kitchen",
+        "x": 1,
+        "y": 0,
+        "width": 4,
+        "height": 1
+      }
+    },
+    "drafts": [
+      {
+        "status": "internal_draft",
+        "post": "[Roleplay buyer diary] Roleplay layout: [다우닝] 플라나 베이직 4인 전체 천연가죽 소파 in 주방 겸 거실 at (1,0), footprint 4x1 cells. Ledger references attached; game actions are fictional.",
+        "refs": [
+          900000002
+        ],
+        "thread": null,
+        "as": "buyer"
+      }
+    ],
+    "context_bytes": 5012,
+    "advice_bytes": 385,
+    "events": [
+      {
+        "at": "2026-11-03T15:06:18+00:00",
+        "event": "persona_created",
+        "id": "abcdcf6d3623422d83e47efeb0bd5f7f",
+        "kind": "persona_created",
+        "summary": "서울 외곽의 작은 집으로 이사한 1인 가구 직장인. 평일에는 간단히 요리하고 주말에는 냉동식품과 제철 과일로 느긋하게 식사한다. 깔끔하고 따뜻한 집을 만들고 싶지만 물건은 꼭 필요한 것만 들인다.",
+        "epoch": 1793718368.560549,
+        "refs": [],
+        "persona": {
+          "name": "서윤",
+          "backstory": "서울 외곽의 작은 집으로 이사한 1인 가구 직장인. 평일에는 간단히 요리하고 주말에는 냉동식품과 제철 과일로 느긋하게 식사한다. 깔끔하고 따뜻한 집을 만들고 싶지만 물건은 꼭 필요한 것만 들인다.",
+          "reason": "1인 직장인의 제한된 조리 시간과 작은 집에 맞춰 보관이 쉽고 조리가 간단한 식품을 선호하도록 구성했다. 거실 겸 주방에는 소파와 수납·향 제품을, 침실에는 침구와 커튼을 우선 배…",
+          "traits": [
+            "실용적",
+            "정돈을 좋아함",
+            "새로운 음식에 열린 편",
+            "차분함"
+          ],
+          "food_preferences": [
+            "우유와 커피",
+            "키위와 토마토 주스",
+            "귀리와 간단한 곡물식",
+            "매콤한 볶음요리",
+            "냉동 송편과 카라멜 간식"
+          ],
+          "decor_preferences": [
+            "따뜻한 중성색",
+            "수납이 잘되는 가구",
+            "은은한 향",
+            "편안한 침구",
+            "통행 공간이 넓은 배치"
+          ],
+          "hunger_per_hour": 4.2,
+          "meal_relief": 32,
+          "rooms": [
+            {
+              "id": "room_living_kitchen",
+              "name": "주방 겸 거실",
+              "width": 5,
+              "height": 4
+            },
+            {
+              "id": "room_bedroom",
+              "name": "침실",
+              "width": 4,
+              "height": 4
+            }
+          ],
+          "recipes": [
+            {
+              "id": "recipe_oat_milk",
+              "name": "우유 귀리 아침",
+              "ingredients": [
+                "국산 귀리",
+                "소화가잘되는우유"
+              ]
+            },
+            {
+              "id": "recipe_tomato_jjukkumi",
+              "name": "토마토 쭈꾸미 볶음",
+              "ingredients": [
+                "토마토 주스",
+                "쭈꾸미볶음",
+                "올리브오일"
+              ]
+            },
+            {
+              "id": "recipe_galbitang_songpyeon",
+              "name": "갈비탕과 모시송편",
+              "ingredients": [
+                "뼈없는 갈비탕",
+                "냉동 모시송편"
+              ]
+            }
+          ],
+          "home_goals": [
+            {
+              "id": "goal_sofa",
+              "query": "소파/의자/스툴",
+              "room": "room_living_kitchen"
+            },
+            {
+              "id": "goal_storage",
+              "query": "주방수납정리/음식보관용품",
+              "room": "room_living_kitchen"
+            },
+            {
+              "id": "goal_bedding",
+              "query": "침구",
+              "room": "room_bedroom"
+            },
+            {
+              "id": "goal_curtain",
+              "query": "커튼/러그/쿠션/덮개",
+              "room": "room_bedroom"
+            },
+            {
+              "id": "goal_diffuser",
+              "query": "디퓨저",
+              "room": "room_living_kitchen"
+            }
+          ]
+        }
+      },
+      {
+        "at": "2026-11-03T15:07:08+00:00",
+        "event": "acquired",
+        "id": "68855f5f1db6498d9a2df766c772e5b2",
+        "kind": "acquired",
+        "summary": "Acquired 2026년 햇곡 국산 귀리 2kg (1kgx2봉) at 7280; grade A at settlement.",
+        "epoch": 1793718368.560549,
+        "refs": [
+          900000000
+        ],
+        "unit_id": "fixture-unit-0",
+        "sku": "G006670f7"
+      },
+      {
+        "at": "2026-11-03T15:07:08+00:00",
+        "event": "acquired",
+        "id": "fbac39c1d37849459041e45ae27c8345",
+        "kind": "acquired",
+        "summary": "Acquired 소화가잘되는우유 오리지널 190ML 24팩 at 16261; grade A at settlement.",
+        "epoch": 1793718368.560549,
+        "refs": [
+          900000001
+        ],
+        "unit_id": "fixture-unit-1",
+        "sku": "G0011e806"
+      },
+      {
+        "at": "2026-11-03T15:07:08+00:00",
+        "event": "acquired",
+        "id": "d4a38cec56294de89c11da000f95286b",
+        "kind": "acquired",
+        "summary": "Acquired [다우닝] 플라나 베이직 4인 전체 천연가죽 소파 at 1572760; grade A at settlement.",
+        "epoch": 1793718368.560549,
+        "refs": [
+          900000002
+        ],
+        "unit_id": "fixture-unit-2",
+        "sku": "G00327e80"
+      },
+      {
+        "at": "2026-11-03T15:07:14+00:00",
+        "event": "cooked",
+        "id": "3cbd655b489e41e3bd7eaea0ce2b301d",
+        "kind": "cooked",
+        "summary": "Roleplay meal: 우유 귀리 아침; hunger 90 -> 58.",
+        "epoch": 1793718368.560549,
+        "refs": [
+          900000000,
+          900000001
+        ],
+        "ingredients": [
+          "fixture-unit-0",
+          "fixture-unit-1"
+        ]
+      },
+      {
+        "at": "2026-11-03T15:07:14+00:00",
+        "event": "life_model_choice",
+        "decision": {
+          "actions": [
+            {
+              "kind": "cook",
+              "recipe_id": "recipe_oat_milk"
+            }
+          ],
+          "preferences": null,
+          "reason": "허기가 높고 보유한 귀리와 우유로 즉시 조리 가능한 식사가 있어 우유 귀리 아침을 먹습니다."
+        },
+        "snapshot_revision": 4
+      },
+      {
+        "at": "2026-11-03T15:07:31+00:00",
+        "event": "placed",
+        "id": "5a9f55faf5b549069b4f59e700b15213",
+        "kind": "placed",
+        "summary": "Roleplay layout: [다우닝] 플라나 베이직 4인 전체 천연가죽 소파 in 주방 겸 거실 at (1,0), footprint 4x1 cells.",
+        "epoch": 1793719269.560549,
+        "refs": [
+          900000002
+        ],
+        "unit_id": "fixture-unit-2"
+      },
+      {
+        "at": "2026-11-03T15:07:31+00:00",
+        "event": "life_model_choice",
+        "decision": {
+          "actions": [
+            {
+              "kind": "place",
+              "unit_id": "fixture-unit-2",
+              "room": "room_living_kitchen",
+              "x": 1,
+              "y": 0,
+              "width": 4,
+              "height": 1
+            }
+          ],
+          "preferences": null,
+          "reason": "소파를 주방 겸 거실의 통행로를 막지 않는 위치에 배치해 따뜻하고 편안한 생활 공간을 만든다."
+        },
+        "snapshot_revision": 5
+      },
+      {
+        "at": "2026-11-03T15:07:31+00:00",
+        "event": "forum_drafted",
+        "id": "fe0911c3badb4430890f299aa620919f",
+        "kind": "forum_drafted",
+        "summary": "[Roleplay buyer diary] Roleplay layout: [다우닝] 플라나 베이직 4인 전체 천연가죽 소파 in 주방 겸 거실 at (1,0), footprint 4x1 cells. Ledger references attached; game actions are fictional.",
+        "epoch": 1793722368.560549,
+        "refs": [
+          900000002
+        ],
+        "thread": null
+      }
+    ],
+    "no_market_outbox": true
+  },
+  "protected_live_files_unchanged": true,
+  "elapsed_seconds": 83.36,
+  "limitations": [
+    "Synthetic receipts are not valid signatures, payments or live-market success.",
+    "One pair per scenario: model variability can change choices/prices; no causal performance claim.",
+    "Prompt UTF-8 bytes and wall time are measured; exact token billing is not available.",
+    "A hard budget/quality guard does not prove advisory tastes improve surplus."
+  ]
+}

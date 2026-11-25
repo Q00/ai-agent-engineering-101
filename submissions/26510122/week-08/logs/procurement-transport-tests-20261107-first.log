@@ -1,0 +1,84 @@
+...E.E.EE..
+======================================================================
+ERROR: test_exhausted_429_is_final_rejection_and_retry_success_is_accepted (test_procurement_transport.TransportTests.test_exhausted_429_is_final_rejection_and_retry_success_is_accepted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_procurement_transport.py", line 68, in test_exhausted_429_is_final_rejection_and_retry_success_is_accepted
+    self.run_batch([429,429,429,200]);rows=[intent('s0'),intent('s1')]
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_procurement_transport.py", line 46, in run_batch
+    self.kit.restock({'restock':{'cmd':'test'}},Path('.'),market,Path('.market'),
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        {'balance':5000000,'bankrupt_line':500000},{})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/procurement_transport.py", line 64, in observed_restock
+    try:return original_restock(agent,d,ObservedMarket(market,batch),md,inv,demand)
+               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/scripts/market_kit.py", line 915, in restock
+    log(f"[supply] {b} refused: {r.status_code} {r.text[:200]}")
+                                                 ~~~~~~^^^^^^
+TypeError: 'Mock' object is not subscriptable
+
+======================================================================
+ERROR: test_monitor_persists_reconciliation_and_deduplicates_warnings (test_procurement_transport.TransportTests.test_monitor_persists_reconciliation_and_deduplicates_warnings)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_procurement_transport.py", line 90, in test_monitor_persists_reconciliation_and_deduplicates_warnings
+    self.run_batch([400,502]);history=events()
+    ~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_procurement_transport.py", line 46, in run_batch
+    self.kit.restock({'restock':{'cmd':'test'}},Path('.'),market,Path('.market'),
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        {'balance':5000000,'bankrupt_line':500000},{})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/procurement_transport.py", line 64, in observed_restock
+    try:return original_restock(agent,d,ObservedMarket(market,batch),md,inv,demand)
+               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/scripts/market_kit.py", line 915, in restock
+    log(f"[supply] {b} refused: {r.status_code} {r.text[:200]}")
+                                                 ~~~~~~^^^^^^
+TypeError: 'Mock' object is not subscriptable
+
+======================================================================
+ERROR: test_real_kit_402_releases_rejected_and_unstarted_lines (test_procurement_transport.TransportTests.test_real_kit_402_releases_rejected_and_unstarted_lines)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_procurement_transport.py", line 50, in test_real_kit_402_releases_rejected_and_unstarted_lines
+    market=self.run_batch([402]);self.assertEqual(market.call.call_count,1)
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_procurement_transport.py", line 46, in run_batch
+    self.kit.restock({'restock':{'cmd':'test'}},Path('.'),market,Path('.market'),
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        {'balance':5000000,'bankrupt_line':500000},{})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/procurement_transport.py", line 64, in observed_restock
+    try:return original_restock(agent,d,ObservedMarket(market,batch),md,inv,demand)
+               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/scripts/market_kit.py", line 915, in restock
+    log(f"[supply] {b} refused: {r.status_code} {r.text[:200]}")
+                                                 ~~~~~~^^^^^^
+TypeError: 'Mock' object is not subscriptable
+
+======================================================================
+ERROR: test_success_and_server_error_stay_reserved_without_physical_evidence (test_procurement_transport.TransportTests.test_success_and_server_error_stay_reserved_without_physical_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_procurement_transport.py", line 57, in test_success_and_server_error_stay_reserved_without_physical_evidence
+    self.run_batch([200,502]);rows=[intent('s0'),intent('s1')]
+    ~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/tests/test_procurement_transport.py", line 46, in run_batch
+    self.kit.restock({'restock':{'cmd':'test'}},Path('.'),market,Path('.market'),
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        {'balance':5000000,'bankrupt_line':500000},{})
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/submissions/26510122/week-08/procurement_transport.py", line 64, in observed_restock
+    try:return original_restock(agent,d,ObservedMarket(market,batch),md,inv,demand)
+               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/song-inseop/dev/Agent/AX/ai-agent-engineering-101-week08/scripts/market_kit.py", line 915, in restock
+    log(f"[supply] {b} refused: {r.status_code} {r.text[:200]}")
+                                                 ~~~~~~^^^^^^
+TypeError: 'Mock' object is not subscriptable
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.131s
+
+FAILED (errors=4)

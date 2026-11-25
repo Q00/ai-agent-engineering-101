@@ -1,0 +1,40 @@
+{
+  "findings": [
+    {
+      "priority": "P1",
+      "title": "Receipt holds are lost on process restart",
+      "source": "seller_r3.py:109",
+      "evidence": "Sugar unit u-3a4492884a5e received two signed receipts 436 seconds apart across the 02:35 restart, inside HOLD_SECONDS=600; no double payment established. Local restart probe reproduces release.",
+      "fix": "Persist per-unit pending receipt reservations, reload on start, and release from confirmed settlement/expiry evidence."
+    },
+    {
+      "priority": "P1",
+      "title": "Settled exploration units can remain pending forever",
+      "source": "inventory_portfolio.py:160",
+      "evidence": "Offline fixture supplies 8 units then provides 8 explicit settlements with no current stock. All 8 remain issued_unknown and reserve 60000 of exposure.",
+      "fix": "Reconcile intent status from settlement and unit arrival evidence; keep rolling exploration spend recorded while releasing pending unit/cost exposure."
+    },
+    {
+      "priority": "P1",
+      "title": "Purchase requirements disappear after the opening turn",
+      "source": "seller_r3.py:304",
+      "evidence": "Follow-up prompt has no original buyer request or structured min-hours/grade/warranty constraints. Offline deliberately bad model choice can sign a 36-hour food unit despite an 84-hour request. Mixed text is rejected without model interpretation.",
+      "fix": "Keep compact structured requirements and validate them when selecting and signing; pass changed buyer conditions to the model."
+    },
+    {
+      "priority": "P2",
+      "title": "Coverage exploration preempts existing replenishment plans",
+      "source": "restock.py:240",
+      "evidence": "At 23 stocked SKUs, the fixture has a valid replenishment plan needing 3 units. The coverage branch instead emits 8 new SKU intents without ever executing that plan. This is a policy interaction, not a demonstrated live stockout.",
+      "fix": "Keep broad seeding, but allocate part of each window budget/slots to existing seller demand. Distinguish initial coverage completion from continually requiring 24 currently stocked SKUs."
+    },
+    {
+      "priority": "P2",
+      "title": "Seller cannot offer goods warranties",
+      "source": "seller_r3.py:331",
+      "evidence": "Decision schema and signed receipts omit warranty_hours. Buyers that require warranty cannot be served, although goods are now purchased.",
+      "fix": "Expose no-warranty and 6-hour warranty pricing/risk alternatives for model choice; include the selected term in the canonical seller receipt."
+    }
+  ],
+  "validation": "Four isolated deterministic probes; fake model, temporary local keys, local A2A only, no market writes."
+}

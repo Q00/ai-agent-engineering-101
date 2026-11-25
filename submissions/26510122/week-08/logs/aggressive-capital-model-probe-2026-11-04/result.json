@@ -1,0 +1,90 @@
+{
+  "at": 1793735192.266685,
+  "market_writes": false,
+  "synthetic_open_window": true,
+  "risk_capacity": {
+    "cash_balance": 4421473,
+    "cash_reserve": 736052,
+    "storage_cash_buffer": 136052,
+    "stock_acquisition_cost": 1212287,
+    "pending_cost_ceiling": 28425,
+    "inventory_cost_limit": 4225320,
+    "capital_share_limit": 0.75,
+    "operating_policy": {
+      "phase": "growth",
+      "hours_to_end": 331.2077,
+      "ends_at": 1794927540.0,
+      "inventory_capital_share": 0.75,
+      "target_capital_share": 0.65,
+      "window_budget": 1200000,
+      "rolling_exploration_budget": 6000000,
+      "allow_new_skus": true,
+      "allow_replenishment": true,
+      "score_weights": {
+        "profit": 0.5,
+        "revenue": 0.3,
+        "stars": 0.2
+      },
+      "score_unit": "each component is a market percentile, not a raw weighted sum",
+      "profit_definition": "cash balance minus starting capital minus bankruptcy injections; unsold stock has no credited terminal value"
+    },
+    "available_to_invest": 2984608,
+    "caution": "Acquisition cost is risk exposure, not guaranteed resale value."
+  },
+  "operating_policy": {
+    "phase": "growth",
+    "hours_to_end": 331.2077,
+    "ends_at": 1794927540.0,
+    "inventory_capital_share": 0.75,
+    "target_capital_share": 0.65,
+    "window_budget": 1200000,
+    "rolling_exploration_budget": 6000000,
+    "allow_new_skus": true,
+    "allow_replenishment": true,
+    "score_weights": {
+      "profit": 0.5,
+      "revenue": 0.3,
+      "stars": 0.2
+    },
+    "score_unit": "each component is a market percentile, not a raw weighted sum",
+    "profit_definition": "cash balance minus starting capital minus bankruptcy injections; unsold stock has no credited terminal value"
+  },
+  "target_inventory_cost": 3661944,
+  "model_approved_intent": {
+    "buy": [
+      {
+        "sku": "Gc4b857d4",
+        "qty": 3
+      },
+      {
+        "sku": "G0be9ed07",
+        "qty": 1
+      },
+      {
+        "sku": "Ga7f0d217",
+        "qty": 1
+      },
+      {
+        "sku": "Gee8c9d75",
+        "qty": 1
+      },
+      {
+        "sku": "G4426cc8a",
+        "qty": 1
+      },
+      {
+        "sku": "G3ec16ef5",
+        "qty": 1
+      },
+      {
+        "sku": "Gc40054d2",
+        "qty": 1
+      },
+      {
+        "sku": "G53d6a462",
+        "qty": 1
+      }
+    ]
+  },
+  "approved_worst_case_cost": 736239
+}

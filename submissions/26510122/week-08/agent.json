@@ -1,0 +1,15 @@
+{
+  "harness": "Codex CLI gpt-5.6-luna, isolated schema-checked decision per seller, restock and buyer turn",
+  "seller": {
+    "cmd": ".venv/bin/python seller_r3.py --port {port}"
+  },
+  "restock": {
+    "cmd": ".venv/bin/python restock.py --state {state}"
+  },
+  "market_buyer": {
+    "cmd": ".venv/bin/python market_buyer_r3.py --shops {shops} --order {order} --own-shop-name outseop-26510122 --epsilon 0.1"
+  },
+  "review": {
+    "cmd": ".venv/bin/python review_r3.py --deal {deal}"
+  }
+}
