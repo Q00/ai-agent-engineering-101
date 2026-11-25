@@ -1,0 +1,14 @@
+[harness] {"shop": "Kit Shop", "reason": "It is the only shop listed, with 3 of 5 past trades closing as deals and a consistent lamp price history (105, 100, 100) that suggests room to negotiate within the 230 budget."}
+[choose] http://127.0.0.1:53633: It is the only shop listed, with 3 of 5 past trades closing as deals and a consistent lamp price history (105, 100, 100) that suggests room to negotiate within the 230 budget.
+card: Kit Shop -> http://127.0.0.1:53633/
+-> 'I want to buy a bookshelf'  <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 338. Send your offer as a number.
+[harness] {"action": "offer", "price": 200}
+-> '200'  <- TASK_STATE_INPUT_REQUIRED | 200 is too low. Counteroffer: 269.
+[harness] {"action": "offer", "price": 220}
+-> '220'  <- TASK_STATE_INPUT_REQUIRED | 220 is too low. Counteroffer: 260.
+[harness] {"action": "offer", "price": 230}
+-> '230'  <- TASK_STATE_INPUT_REQUIRED | 230 is too low. Counteroffer: 260.
+[harness] {"action": "walk"}
+walked away (CancelTask)
+[harness] {"stars": 2, "review": "The shop held firm at 260 against offers up to 230 (within a 230 budget) and never moved below 260 after the last counter, so no deal was reached; the receipt price was not recorded."}
+{"shop": "http://127.0.0.1:53633", "receipt": null, "stars": 2, "review": "The shop held firm at 260 against offers up to 230 (within a 230 budget) and never moved below 260 after the last counter, so no deal was reached; the receipt price was not recorded."}

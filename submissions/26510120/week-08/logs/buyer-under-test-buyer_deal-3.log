@@ -1,0 +1,10 @@
+[harness] {"shop": "Kit Shop", "reason": "It is the only shop listed, with a record of 2 deals completed out of 2 trades and past lamp prices of 105 and 100, both within the 120 budget."}
+[choose] http://127.0.0.1:42341: It is the only shop listed, with a record of 2 deals completed out of 2 trades and past lamp prices of 105 and 100, both within the 120 budget.
+card: Kit Shop -> http://127.0.0.1:42341/
+-> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[harness] {"action": "offer", "price": 90}
+-> '90'  <- TASK_STATE_INPUT_REQUIRED | 90 is too low. Counteroffer: 110.
+[harness] {"action": "offer", "price": 100}
+-> '100'  <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[harness] {"stars": 4, "review": "Kit Shop countered reasonably from 130 to 110 and closed the lamp at 100, which was within budget and matched the receipt, though the shop held its initial price firmly and did not move much from 110."}
+{"shop": "http://127.0.0.1:42341", "receipt": {"sig_seller": "wDaPcEovlW/iAytWEiBcto8LHvWem3GvLQnqWEs/j4jfdrtEnxfdXpOOvX5aE+kUYqz4Mhpbx/9deAUFqPOdBQ==", "price": 100.0, "shop": "Kit Shop", "item": "lamp", "task": "4d4609d0-be8c-4f57-9cb8-6ee064a9dd8d"}, "stars": 4, "review": "Kit Shop countered reasonably from 130 to 110 and closed the lamp at 100, which was within budget and matched the receipt, though the shop held its initial price firmly and did not move much from 110."}
