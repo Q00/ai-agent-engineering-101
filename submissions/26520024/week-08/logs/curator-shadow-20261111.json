@@ -1,0 +1,45 @@
+{
+  "mode": "read_only_memory_benchmark_no_model_no_market",
+  "pairs_tested": 8,
+  "market_time": 1794382417.6754196,
+  "old_memory": {
+    "status": "complete",
+    "chars": 27031,
+    "seconds": 1.973982
+  },
+  "curated_memory": {
+    "status": "complete",
+    "chars": 8902,
+    "source_events": 1032,
+    "capped_kinds": [
+      "settlement",
+      "payment",
+      "negotiation"
+    ],
+    "packet_sizes": [
+      929,
+      1292,
+      1235,
+      1202,
+      1152,
+      1235,
+      1166,
+      691
+    ],
+    "seconds": 0.113016
+  },
+  "strategy": {
+    "status": "complete",
+    "old_chars": 136800,
+    "curated_chars": 23956,
+    "old_candidates": 24,
+    "curated_candidates": 13,
+    "guard_inputs_changed": false,
+    "seconds": 0.79741
+  },
+  "limitations": [
+    "One snapshot and eight recently settled pairs; timing depends on cache and load.",
+    "Characters are not billed tokens or profit.",
+    "Raw evidence retained; no trade or model call."
+  ]
+}

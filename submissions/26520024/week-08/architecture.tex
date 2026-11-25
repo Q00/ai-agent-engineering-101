@@ -1,0 +1,97 @@
+\documentclass[10pt]{article}
+\usepackage[a4paper,landscape,margin=11mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,backgrounds}
+\pagestyle{empty}
+\definecolor{ink}{HTML}{172033}
+\definecolor{muted}{HTML}{738095}
+\definecolor{teal}{HTML}{00A88A}
+\definecolor{violet}{HTML}{8756F6}
+\definecolor{amber}{HTML}{F59B24}
+\definecolor{rose}{HTML}{EF607C}
+\definecolor{slate}{HTML}{90A0B6}
+\renewcommand{\familydefault}{\sfdefault}
+\begin{document}
+\noindent{\LARGE\bfseries\color{ink} LeeUichann\enspace Round 3 Agent}\par
+\vspace{1.5mm}
+\noindent{\small\color{muted}26520024\quad /\quad Deployed architecture\quad /\quad Model, context, and tools}
+\vspace{5mm}
+\begin{center}
+\begin{tikzpicture}[
+  card/.style={draw=teal,fill=teal!6,line width=.8pt,rounded corners=4pt,
+    align=center,text width=4.45cm,minimum height=1.25cm,inner sep=6pt,
+    font=\fontsize{10}{13}\selectfont,text=ink},
+  memory/.style={card,draw=violet,fill=violet!6},
+  guard/.style={card,draw=rose,fill=rose!6},
+  cloud/.style={card,draw=amber,fill=amber!8},
+  external/.style={card,draw=slate,fill=slate!8},
+  flow/.style={-{Latex[length=2.0mm]},line width=.85pt,draw=teal,rounded corners=3pt},
+  data/.style={flow,draw=slate},
+  modelFlow/.style={flow,draw=violet,dashed},
+  label/.style={font=\fontsize{7.5}{9}\selectfont,text=muted,fill=white,inner sep=2pt},
+  zoneLabel/.style={font=\fontsize{8}{10}\selectfont,anchor=west,text=muted},
+  legend/.style={font=\fontsize{8}{10}\selectfont,text=muted,anchor=west}]
+
+\begin{scope}[on background layer]
+  \filldraw[fill=amber!2,draw=amber!65,dashed,rounded corners=6pt,line width=.6pt]
+    (0,0) rectangle (25,2.7);
+  \filldraw[fill=teal!1,draw=slate!65,dashed,rounded corners=6pt,line width=.6pt]
+    (0,-10.0) rectangle (19.3,-1.9);
+\end{scope}
+\node[zoneLabel,text=amber!85!black] at (.35,2.4) {MARKET\quad /\quad EXTERNAL};
+\node[zoneLabel] at (.35,-2.18) {OUR AGENT\quad /\quad J SERVER};
+\node[zoneLabel,text=amber!85!black] at (19.65,-2.45) {SHARED MODEL};
+
+\node[cloud] (marketdata) at (3.1,1.0)
+  {\textbf{Public evidence}\\{\small\color{muted}ledger\enspace\textperiodcentered\enspace board\enspace\textperiodcentered\enspace forum}};
+\node[cloud] (marketapi) at (10.1,1.0)
+  {\textbf{Market APIs}\\{\small\color{muted}registry\enspace\textperiodcentered\enspace supply\enspace\textperiodcentered\enspace settle}};
+\node[external] (peers) at (22.0,1.0)
+  {\textbf{Other agents}\\{\small\color{muted}external shops \& buyers}};
+
+\node[memory] (context) at (3.1,-3.5)
+  {\textbf{Context memory}\\{\small\color{muted}SQLite\enspace\textperiodcentered\enspace role-scoped curator}};
+\node[card] (harness) at (10.1,-3.5)
+  {\textbf{Decision harness}\\{\small\color{muted}seller\enspace\textperiodcentered\enspace buyer\enspace\textperiodcentered\enspace restock}};
+\node[cloud] (model) at (22.0,-3.5)
+  {\textbf{gpt-5.6-luna}\\{\small\color{muted}low reasoning\enspace\textperiodcentered\enspace JSON only}};
+
+\node[card] (control) at (3.1,-6.4)
+  {\textbf{Discovery \& control}\\{\small\color{muted}signals\enspace\textperiodcentered\enspace supply\enspace\textperiodcentered\enspace forum}};
+\node[guard] (guards) at (10.1,-6.4)
+  {\textbf{Code guards}\\{\small\color{muted}budget\enspace\textperiodcentered\enspace inventory\enspace\textperiodcentered\enspace Saved}};
+\node[card] (kit) at (16.4,-6.4)
+  {\textbf{Guarded kit v4}\\{\small\color{muted}A2A\enspace\textperiodcentered\enspace ACP\enspace\textperiodcentered\enspace AP2}};
+\node[memory] (records) at (16.4,-9.0)
+  {\textbf{Trade evidence}\\{\small\color{muted}payments\enspace\textperiodcentered\enspace grades\enspace\textperiodcentered\enspace reviews}};
+
+\draw[data] (marketdata.south) -- node[label,right]{GET} (context.north);
+\draw[flow] (context.east) -- node[label,above]{context} (harness.west);
+\draw[modelFlow,<->] (harness.east) -- node[label,above,text=violet]{decision} (model.west);
+\draw[data] (context.south) -- node[label,right]{signals} (control.north);
+\draw[flow] (control.east) -- node[label,above]{intent} (guards.west);
+\draw[flow] (harness.south) -- node[label,right]{plan} (guards.north);
+\draw[flow] (guards.east) -- node[label,above]{approved} (kit.west);
+\draw[flow,<->] (kit.north) -- (16.4,-1.05) -- (10.1,-1.05)
+  -- node[label,right]{market} (marketapi.south);
+\draw[data,<->] (kit.east) -- (25.6,-6.4) -- (25.6,1.0) -- (peers.east);
+\node[label,rotate=90] at (25.6,-3.0) {A2A / checkout};
+\draw[flow] (kit.south) -- node[label,right]{settled} (records.north);
+\draw[flow,draw=violet] (records.west) -- node[label,above,text=violet]{outcomes} (.35,-9.0)
+  -- (.35,-3.5) -- (context.west);
+
+\fill[teal!14,draw=teal,line width=.5pt,rounded corners=1pt] (1,-10.8) rectangle (1.24,-10.58);
+\node[legend] at (1.4,-10.69) {Control / execution};
+\fill[violet!14,draw=violet,line width=.5pt,rounded corners=1pt] (6.3,-10.8) rectangle (6.54,-10.58);
+\node[legend] at (6.7,-10.69) {Memory};
+\fill[rose!14,draw=rose,line width=.5pt,rounded corners=1pt] (10,-10.8) rectangle (10.24,-10.58);
+\node[legend] at (10.4,-10.69) {Validation};
+\fill[amber!14,draw=amber,line width=.5pt,rounded corners=1pt] (14.1,-10.8) rectangle (14.34,-10.58);
+\node[legend] at (14.5,-10.69) {External service};
+\end{tikzpicture}
+\end{center}
+\vspace{1mm}
+\noindent\centering{\small\color{ink}\textbf{Model proposes.}\quad Code validates.\quad Kit executes.\quad Confirmed outcomes become memory.}
+\end{document}

@@ -1,0 +1,89 @@
+{
+  "timestamp_utc": "20261110T103917975103Z",
+  "mode": "offline_test_doubles_not_market_performance",
+  "python": "3.10.22",
+  "interpreter": "/nas/home/uichan/ai-agent-engineering-101/submissions/26520024/week-08/.venv/bin/python",
+  "tests": 268,
+  "failures": 0,
+  "errors": 0,
+  "cli_locks": [
+    {
+      "command": [
+        "r3_seller.py",
+        "--port",
+        "12345"
+      ],
+      "blocked": true,
+      "returncode": 2
+    },
+    {
+      "command": [
+        "r3_buyer.py",
+        "--shops",
+        "unused",
+        "--order",
+        "unused",
+        "--item",
+        "unused",
+        "--budget",
+        "1"
+      ],
+      "blocked": true,
+      "returncode": 2
+    },
+    {
+      "command": [
+        "r3_restock.py",
+        "--state",
+        "unused"
+      ],
+      "blocked": true,
+      "returncode": 0
+    },
+    {
+      "command": [
+        "r3_review.py",
+        "--deal",
+        "unused"
+      ],
+      "blocked": true,
+      "returncode": 1
+    },
+    {
+      "command": [
+        "r3_controller.py"
+      ],
+      "blocked": true,
+      "returncode": 1
+    },
+    {
+      "command": [
+        "r3_market_kit.py",
+        "join"
+      ],
+      "blocked": true,
+      "returncode": 1
+    },
+    {
+      "command": [
+        "r3_trend_watch.py",
+        "--loop",
+        "--apply"
+      ],
+      "blocked": true,
+      "returncode": 1
+    }
+  ],
+  "passed": true,
+  "packages": {
+    "a2a-sdk": "1.2.0",
+    "cryptography": "50.0.2",
+    "httpx": "0.28.1"
+  },
+  "limitations": [
+    "No live model quality measurement",
+    "No actual market settlement or ranking",
+    "No deployment",
+    "Fake inputs/models are labelled unit-test fixtures"
+  ]
+}

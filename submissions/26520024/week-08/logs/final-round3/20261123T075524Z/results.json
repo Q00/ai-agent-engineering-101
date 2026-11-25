@@ -1,0 +1,620 @@
+{
+  "generated_at_utc": "2026-11-23T07:55:28.696159+00:00",
+  "method": "Original K and J events deduplicated by (kind,event_key); original records preferred over recovery projections",
+  "duplicate_keys": {
+    "payment": 2622,
+    "settlement": 144,
+    "forum_queued": 769,
+    "stock_unit": 4
+  },
+  "duplicate_keys_with_different_payloads": {
+    "payment": 2622,
+    "settlement": 144,
+    "forum_queued": 769
+  },
+  "baseline": {
+    "at_utc": "2026-11-10T04:03:30.386717+00:00",
+    "own": {
+      "shop": {
+        "deals": 221,
+        "stars_rank": 4.2,
+        "revenue": 24474126,
+        "book": 2007719,
+        "all": 0.313,
+        "name": "leeuichann"
+      },
+      "buyer": {
+        "posts": 419,
+        "forum": 0.901,
+        "saved": 0.2228,
+        "deals": 1286,
+        "all": 0.479,
+        "name": "leeuichann"
+      }
+    },
+    "source": "original_K_score_snapshot",
+    "original_event_key": "1794283410.3867166",
+    "watch_log": "logs/trend-watch/20261110T040910274456Z.json",
+    "rule": "Patch 3.5, list-price-based Saved; not numerically comparable to final 3.6 Saved",
+    "class_rank_recorded": false
+  },
+  "baseline_cumulative_local_counts": {
+    "cutoff_exclusive_utc": "2026-11-10T04:03:30.386717+00:00",
+    "scope_by_kind": {
+      "order_seen": {
+        "count": 3682,
+        "first_utc": "2026-11-04T06:20:19.277893+00:00",
+        "last_utc": "2026-11-10T04:03:21.056044+00:00",
+        "sources": {
+          "K": 3682
+        }
+      },
+      "negotiation": {
+        "count": 3681,
+        "first_utc": "2026-11-04T06:20:19.283671+00:00",
+        "last_utc": "2026-11-10T04:03:18.719572+00:00",
+        "sources": {
+          "K": 3681
+        }
+      },
+      "policy_fallback": {
+        "count": 58,
+        "first_utc": "2026-11-04T06:25:55.801268+00:00",
+        "last_utc": "2026-11-04T09:32:26.113827+00:00",
+        "sources": {
+          "K": 58
+        }
+      },
+      "restock_intent": {
+        "count": 130,
+        "first_utc": "2026-11-04T06:25:55.830788+00:00",
+        "last_utc": "2026-11-10T03:41:22.368360+00:00",
+        "sources": {
+          "K": 130
+        }
+      },
+      "payment": {
+        "count": 1377,
+        "first_utc": "2026-11-04T06:26:40.064826+00:00",
+        "last_utc": "2026-11-10T04:03:19.945624+00:00",
+        "sources": {
+          "K": 1377
+        }
+      },
+      "settlement": {
+        "count": 1287,
+        "first_utc": "2026-11-04T06:26:40.210039+00:00",
+        "last_utc": "2026-11-10T04:03:19.971062+00:00",
+        "sources": {
+          "K": 1287
+        }
+      },
+      "forum_queued": {
+        "count": 420,
+        "first_utc": "2026-11-04T06:26:55.851455+00:00",
+        "last_utc": "2026-11-10T04:02:37.287739+00:00",
+        "sources": {
+          "K": 420
+        }
+      },
+      "score_snapshot": {
+        "count": 83,
+        "first_utc": "2026-11-06T08:45:25.858569+00:00",
+        "last_utc": "2026-11-10T04:03:30.386717+00:00",
+        "sources": {
+          "K": 83
+        }
+      },
+      "stock_unit": {
+        "count": 38,
+        "first_utc": "2026-11-06T08:46:04.959794+00:00",
+        "last_utc": "2026-11-10T03:42:22.396271+00:00",
+        "sources": {
+          "K": 38
+        }
+      },
+      "seller_failure": {
+        "count": 406,
+        "first_utc": "2026-11-06T08:46:05.931233+00:00",
+        "last_utc": "2026-11-10T03:54:33.491938+00:00",
+        "sources": {
+          "K": 406
+        }
+      },
+      "seller_checkout": {
+        "count": 399,
+        "first_utc": "2026-11-06T09:35:01.322938+00:00",
+        "last_utc": "2026-11-10T04:01:46.042532+00:00",
+        "sources": {
+          "K": 399
+        }
+      },
+      "seller_settlement": {
+        "count": 36,
+        "first_utc": "2026-11-06T09:35:54.944000+00:00",
+        "last_utc": "2026-11-10T04:01:54.018000+00:00",
+        "sources": {
+          "K": 36
+        }
+      }
+    },
+    "local_paid_purchases": 1287,
+    "local_payment_rejections": 90,
+    "local_seller_settlement_callbacks": 36,
+    "buyer_outcomes_by_unique_order": {
+      "timeout": 18,
+      "own_policy_walk": 477,
+      "receipt_validation": 68,
+      "paid": 1287,
+      "no_deal_without_detailed_reason": 1529,
+      "negotiation_turn_limit": 143,
+      "payment_rejected": 90,
+      "ValueError": 6,
+      "remote_http_530": 11,
+      "network_connection": 16,
+      "remote_http_502": 10,
+      "receipt_without_payment_evidence": 9,
+      "RuntimeError": 5,
+      "agent_card_origin_guard": 12
+    },
+    "buyer_nonpaid_reasons_by_unique_order": {
+      "timeout": 18,
+      "own_policy_walk": 477,
+      "receipt_validation": 68,
+      "no_deal_without_detailed_reason": 1529,
+      "negotiation_turn_limit": 143,
+      "payment_rejected": 90,
+      "ValueError": 6,
+      "remote_http_530": 11,
+      "network_connection": 16,
+      "remote_http_502": 10,
+      "receipt_without_payment_evidence": 9,
+      "RuntimeError": 5,
+      "agent_card_origin_guard": 12
+    },
+    "seller_refusals_by_unique_task": {
+      "no_matching_unreserved_inventory": 359,
+      "local_quote_consistency_guard": 45,
+      "deadline_or_expiry": 1,
+      "local_price_floor_guard": 1
+    },
+    "payment_rejection_reasons": {
+      "other_recorded_reason": 63,
+      "remote_http_409": 25,
+      "remote_http_402": 2
+    },
+    "model_fallback_diagnostics_not_refusals": {
+      "ValueError": 1,
+      "circuit_open": 56,
+      "RuntimeError": 1
+    },
+    "checkout_events": {
+      "create": 200,
+      "cancel": 163,
+      "complete": 36
+    },
+    "queued_posts_by_role": {
+      "buyer": 420
+    }
+  },
+  "observed_submission_board": {
+    "retrieved_at_utc": "2026-11-23T07:55:28.629729+00:00",
+    "own": {
+      "shop": {
+        "name": "leeuichann",
+        "alive": false,
+        "deals": 494,
+        "revenue": 33986718,
+        "profit": 2714515,
+        "book": 2806943,
+        "stock_units": 2,
+        "stock_cost": 92428,
+        "all": 0.322,
+        "forum": 0.785,
+        "stars": 4.6,
+        "stars_rank": 4.35,
+        "reviews": 485,
+        "visits": 3694,
+        "refunds": 0,
+        "broken": 17,
+        "bankruptcies": 0
+      },
+      "buyer": {
+        "name": "leeuichann",
+        "alive": false,
+        "deals": 4377,
+        "orders": 11079,
+        "all": 0.522,
+        "saved": 0.7003,
+        "surplus": 297175825,
+        "forum": 0.917,
+        "posts": 1238,
+        "served": 4193
+      }
+    },
+    "class_players": {
+      "rank": 40,
+      "cohort_size": 46,
+      "percentile": 0.133,
+      "class_shop": 0.189,
+      "class_buyer": 0.437,
+      "class_total": 0.626,
+      "everyone_total": 0.844
+    }
+  },
+  "local_score_checkpoints": {
+    "last_before_close": {
+      "at_utc": "2026-11-17T14:56:57.643885+00:00",
+      "source": "J",
+      "event_key": "1794927417.6438851",
+      "own": {
+        "buyer": {
+          "all": 0.522,
+          "deals": 4375,
+          "forum": 0.917,
+          "name": "leeuichann",
+          "posts": 1237,
+          "saved": 0.7036
+        },
+        "shop": {
+          "all": 0.322,
+          "book": 2834527,
+          "deals": 494,
+          "name": "leeuichann",
+          "revenue": 33986718,
+          "stars_rank": 4.35
+        }
+      }
+    },
+    "first_after_close": {
+      "at_utc": "2026-11-17T15:02:36.647252+00:00",
+      "source": "J",
+      "event_key": "1794927756.6472516",
+      "own": {
+        "buyer": {
+          "all": 0.522,
+          "deals": 4377,
+          "forum": 0.917,
+          "name": "leeuichann",
+          "posts": 1238,
+          "saved": 0.7037
+        },
+        "shop": {
+          "all": 0.322,
+          "book": 2834527,
+          "deals": 494,
+          "name": "leeuichann",
+          "revenue": 33986718,
+          "stars_rank": 4.35
+        }
+      }
+    },
+    "latest_local_observation": {
+      "at_utc": "2026-11-20T06:59:51.002711+00:00",
+      "source": "J",
+      "event_key": "1795157991.0027106",
+      "own": {
+        "buyer": {
+          "all": 0.522,
+          "deals": 4377,
+          "forum": 0.917,
+          "name": "leeuichann",
+          "posts": 1238,
+          "saved": 0.7003
+        },
+        "shop": {
+          "all": 0.322,
+          "book": 2809715,
+          "deals": 494,
+          "name": "leeuichann",
+          "revenue": 33986718,
+          "stars_rank": 4.35
+        }
+      }
+    }
+  },
+  "round_events": {
+    "cutoff_exclusive_utc": "2026-11-17T14:59:00+00:00",
+    "scope_by_kind": {
+      "order_seen": {
+        "count": 11080,
+        "first_utc": "2026-11-04T06:20:19.277893+00:00",
+        "last_utc": "2026-11-17T14:58:06.885907+00:00",
+        "sources": {
+          "K": 6598,
+          "J": 4482
+        }
+      },
+      "negotiation": {
+        "count": 11072,
+        "first_utc": "2026-11-04T06:20:19.283671+00:00",
+        "last_utc": "2026-11-17T14:58:51.665695+00:00",
+        "sources": {
+          "K": 6590,
+          "J": 4482
+        }
+      },
+      "policy_fallback": {
+        "count": 1249,
+        "first_utc": "2026-11-04T06:25:55.801268+00:00",
+        "last_utc": "2026-11-17T14:08:35.655100+00:00",
+        "sources": {
+          "K": 738,
+          "J": 511
+        }
+      },
+      "restock_intent": {
+        "count": 295,
+        "first_utc": "2026-11-04T06:25:55.830788+00:00",
+        "last_utc": "2026-11-17T03:01:07.509745+00:00",
+        "sources": {
+          "K": 215,
+          "J": 80
+        }
+      },
+      "payment": {
+        "count": 4555,
+        "first_utc": "2026-11-04T06:26:40.064826+00:00",
+        "last_utc": "2026-11-17T14:57:57.917916+00:00",
+        "sources": {
+          "K": 2622,
+          "J": 1933
+        }
+      },
+      "settlement": {
+        "count": 4376,
+        "first_utc": "2026-11-04T06:26:40.210039+00:00",
+        "last_utc": "2026-11-17T14:57:57.985932+00:00",
+        "sources": {
+          "K": 2492,
+          "J": 1884
+        }
+      },
+      "forum_queued": {
+        "count": 1262,
+        "first_utc": "2026-11-04T06:26:55.851455+00:00",
+        "last_utc": "2026-11-17T14:57:04.154025+00:00",
+        "sources": {
+          "K": 776,
+          "J": 486
+        }
+      },
+      "score_snapshot": {
+        "count": 1088,
+        "first_utc": "2026-11-06T08:45:25.858569+00:00",
+        "last_utc": "2026-11-17T14:56:57.643885+00:00",
+        "sources": {
+          "K": 512,
+          "J": 576
+        }
+      },
+      "stock_unit": {
+        "count": 317,
+        "first_utc": "2026-11-06T08:46:04.959794+00:00",
+        "last_utc": "2026-11-17T03:01:31.077209+00:00",
+        "sources": {
+          "K": 179,
+          "J": 138
+        }
+      },
+      "seller_failure": {
+        "count": 4399,
+        "first_utc": "2026-11-06T08:46:05.931233+00:00",
+        "last_utc": "2026-11-17T14:58:09.743472+00:00",
+        "sources": {
+          "K": 737,
+          "J": 3662
+        }
+      },
+      "seller_checkout": {
+        "count": 1461,
+        "first_utc": "2026-11-06T09:35:01.322938+00:00",
+        "last_utc": "2026-11-17T09:01:04.615850+00:00",
+        "sources": {
+          "K": 1007,
+          "J": 454
+        }
+      },
+      "seller_settlement": {
+        "count": 309,
+        "first_utc": "2026-11-06T09:35:54.944000+00:00",
+        "last_utc": "2026-11-17T09:01:06.596000+00:00",
+        "sources": {
+          "K": 173,
+          "J": 136
+        }
+      }
+    },
+    "local_paid_purchases": 4376,
+    "local_payment_rejections": 179,
+    "local_seller_settlement_callbacks": 309,
+    "buyer_outcomes_by_unique_order": {
+      "timeout": 21,
+      "own_policy_walk": 1399,
+      "receipt_validation": 143,
+      "paid": 4376,
+      "no_deal_without_detailed_reason": 3962,
+      "negotiation_turn_limit": 801,
+      "payment_rejected": 179,
+      "ValueError": 6,
+      "remote_http_530": 36,
+      "network_connection": 43,
+      "remote_http_502": 38,
+      "receipt_without_payment_evidence": 10,
+      "RuntimeError": 7,
+      "agent_card_origin_guard": 35,
+      "remote_http_503": 2,
+      "remote_http_524": 10,
+      "PermissionError": 1,
+      "remote_database_locked": 2,
+      "remote_http_404": 1
+    },
+    "buyer_nonpaid_reasons_by_unique_order": {
+      "timeout": 21,
+      "own_policy_walk": 1399,
+      "receipt_validation": 143,
+      "no_deal_without_detailed_reason": 3962,
+      "negotiation_turn_limit": 801,
+      "payment_rejected": 179,
+      "ValueError": 6,
+      "remote_http_530": 36,
+      "network_connection": 43,
+      "remote_http_502": 38,
+      "receipt_without_payment_evidence": 10,
+      "RuntimeError": 7,
+      "agent_card_origin_guard": 35,
+      "remote_http_503": 2,
+      "remote_http_524": 10,
+      "PermissionError": 1,
+      "remote_database_locked": 2,
+      "remote_http_404": 1
+    },
+    "seller_refusals_by_unique_task": {
+      "no_matching_unreserved_inventory": 4236,
+      "local_quote_consistency_guard": 85,
+      "deadline_or_expiry": 2,
+      "local_price_floor_guard": 69,
+      "inventory_freshness_or_clock": 7
+    },
+    "payment_rejection_reasons": {
+      "other_recorded_reason": 109,
+      "remote_http_409": 58,
+      "remote_http_402": 8,
+      "remote_http_500": 1,
+      "timeout": 2,
+      "remote_http_530": 1
+    },
+    "model_fallback_diagnostics_not_refusals": {
+      "ValueError": 1,
+      "circuit_open": 1222,
+      "RuntimeError": 3,
+      "TimeoutExpired": 20,
+      "TimeoutError": 3
+    },
+    "checkout_events": {
+      "create": 731,
+      "cancel": 421,
+      "complete": 309
+    },
+    "queued_posts_by_role": {
+      "buyer": 1241,
+      "shop": 16,
+      "unspecified": 5
+    }
+  },
+  "retained_raw_log_evidence": {
+    "scope": "Retained, rotated raw-log window plus the Nov 15 excerpt; not the complete round",
+    "timestamps": "Structured log time is host UTC; HH:MM:SS prefix is host local time, not corrected market time",
+    "unique_result_lines": 187,
+    "verified_result_lines": 73,
+    "files": [
+      {
+        "file": "logs/market-kit.log.1",
+        "bytes": 20000392,
+        "sha256": "513d99beaa3c59bbb16b412f680bd6b6f1ff23f74ed2f19656c7e2553fbabf94",
+        "first_structured_host_utc": "2026-11-17T13:01:01.203612+00:00",
+        "last_structured_host_utc": "2026-11-17T14:46:35.133057+00:00"
+      },
+      {
+        "file": "logs/market-kit.log",
+        "bytes": 17321920,
+        "sha256": "08ae7140aaab62c4aec5d226e886b5ba478ceb4be4c3c6dfad86f19a4ab54d14",
+        "first_structured_host_utc": "2026-11-17T14:46:35.133169+00:00",
+        "last_structured_host_utc": "2026-11-20T06:35:26.025882+00:00"
+      },
+      {
+        "file": "logs/j-resume-20261115.log",
+        "bytes": 2110,
+        "sha256": "b3dd8dec9d8e1935f1c1fde2053858b3f41a963e1b895435301040c6abf12dd2",
+        "first_structured_host_utc": null,
+        "last_structured_host_utc": null
+      }
+    ],
+    "quotes": {
+      "no_matching_unreserved_inventory": [
+        {
+          "file": "logs/market-kit.log.1",
+          "line": 22,
+          "text": "22:01:14 [seller] {\"time\": \"2026-11-17T13:01:14.950601+00:00\", \"event\": \"r3_seller_refused\", \"task_id\": \"42c6136d-4185-482b-be81-32f495e09dd7\", \"reason\": \"No matching unreserved inventory unit\", \"kind\": \"ValueError\"}",
+          "truncated": false
+        },
+        {
+          "file": "logs/market-kit.log.1",
+          "line": 83,
+          "text": "22:02:13 [seller] {\"time\": \"2026-11-17T13:02:13.189234+00:00\", \"event\": \"r3_seller_refused\", \"task_id\": \"96b6ecf3-f801-4073-a689-afa3bf0c59a4\", \"reason\": \"No matching unreserved inventory unit\", \"kind\": \"ValueError\"}",
+          "truncated": false
+        },
+        {
+          "file": "logs/market-kit.log",
+          "line": 12,
+          "text": "23:46:56 [seller] {\"time\": \"2026-11-17T14:46:56.249358+00:00\", \"event\": \"r3_seller_refused\", \"task_id\": \"d4b591b9-f07c-4ab6-964a-0c360a944083\", \"reason\": \"No matching unreserved inventory unit\", \"kind\": \"ValueError\"}",
+          "truncated": false
+        },
+        {
+          "file": "logs/market-kit.log",
+          "line": 351,
+          "text": "23:51:56 [seller] {\"time\": \"2026-11-17T14:51:56.804926+00:00\", \"event\": \"r3_seller_refused\", \"task_id\": \"11c29517-9da6-4549-83d1-0e37de349de3\", \"reason\": \"No matching unreserved inventory unit\", \"kind\": \"ValueError\"}",
+          "truncated": false
+        }
+      ],
+      "unverified_result": [
+        {
+          "file": "logs/market-kit.log.1",
+          "line": 23,
+          "text": "22:01:15 [market] ledger #7862447: no deal, stars None, verified False, review not shown",
+          "truncated": false
+        },
+        {
+          "file": "logs/market-kit.log.1",
+          "line": 133,
+          "text": "22:02:36 [market] ledger #7862831: no deal, stars None, verified False, review not shown",
+          "truncated": false
+        },
+        {
+          "file": "logs/market-kit.log",
+          "line": 37,
+          "text": "23:47:14 [market] ledger #7894894: no deal, stars None, verified False, review not shown",
+          "truncated": false
+        },
+        {
+          "file": "logs/market-kit.log",
+          "line": 313,
+          "text": "23:51:13 [market] ledger #7895939: no deal, stars None, verified False, review not shown",
+          "truncated": false
+        }
+      ],
+      "verified_result": [
+        {
+          "file": "logs/market-kit.log.1",
+          "line": 63,
+          "text": "22:01:58 [market] ledger #7862643: G3e0d6c67 at 1153075, stars 5, verified True, review accepted",
+          "truncated": false
+        },
+        {
+          "file": "logs/market-kit.log.1",
+          "line": 95,
+          "text": "22:02:15 [market] ledger #7862721: G022ce883 at 8955, stars 4, verified True, review accepted",
+          "truncated": false
+        },
+        {
+          "file": "logs/market-kit.log",
+          "line": 19,
+          "text": "23:47:02 [market] ledger #7894843: G07ec17d5 at 180000, stars 5, verified True, review accepted",
+          "truncated": false
+        },
+        {
+          "file": "logs/market-kit.log",
+          "line": 343,
+          "text": "23:51:48 [market] ledger #7896063: G9c9f8f94 at 198438, stars 4, verified True, review accepted",
+          "truncated": false
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Class baseline rank was not recorded; no reconstructed rank is presented as official",
+    "Saved changed from list-price share to margin share on Nov 12; its before/after delta is not a policy effect",
+    "Current Book/Saved can differ from close-time observations; the instructor frozen board determines the grade",
+    "Seller failures count unique task IDs, not all network attempts; fallback is not itself a failed transaction"
+  ]
+}
