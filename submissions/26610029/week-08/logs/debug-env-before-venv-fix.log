@@ -1,0 +1,11 @@
+Reproduction of the venv-not-activated failure quoted in REPORT.md section 3(b).
+Running seller.py with the system python3 (3.9.x) instead of the venv's 3.12:
+
+Traceback (most recent call last):
+  File "/Users/hajinhwang/Seoultech_study/ai-agent-engineering-101/submissions/26610029/week-06/seller.py", line 16, in <module>
+    import uvicorn
+ModuleNotFoundError: No module named 'uvicorn'
+Traceback (most recent call last):
+  File "/Users/hajinhwang/Seoultech_study/ai-agent-engineering-101/submissions/26610029/week-06/buyer.py", line 39, in <module>
+    def send(url: str, text: str, task_id: str | None = None):
+TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'
