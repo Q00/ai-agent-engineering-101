@@ -1,0 +1,138 @@
+{
+  "source": "logs\\v18-objective-replay-20261112T032004364954Z.json",
+  "at_utc": "2026-11-12T03:25:24.430773+00:00",
+  "calls": 2,
+  "schema_valid": true,
+  "market_transactions": 0,
+  "published_only_in_isolation": true,
+  "analyst": {
+    "summary": "Stockouts and repeat sales support retaining 3-cycle coverage; buyer price failures justify bounded routing, but immature Saved and sparse forum data warrant no promotion.",
+    "hypotheses": [
+      "Three-cycle depth may improve Book/rank with repeat demand and lower cost stress.",
+      "Food price-failure routing may improve buyer outcomes; mature Saved evidence is pending.",
+      "Goods contract conversion remains weak; keep price caps and validate comparable offers."
+    ],
+    "evidence_ids": [
+      "ledger:5499461",
+      "kv:objective-decision-context",
+      "kv:framework-plan",
+      "kv:feedback-last-policy",
+      "kv:quality-holdout-summary"
+    ],
+    "skills": [
+      "stock_coverage",
+      "buyer_price_gap",
+      "shop_rating_holdout",
+      "feed_stale"
+    ],
+    "skill_steps": [
+      "measure",
+      "diagnose",
+      "validate_facts"
+    ],
+    "buyer_probe_percent": 8,
+    "buyer_gap_power": 2,
+    "buyer_diverse_quotes": false,
+    "shop_service_level": 0.9098,
+    "shop_plan": "diversified",
+    "forum_focus": "balanced",
+    "operating_actions": [
+      "stock_coverage",
+      "buyer_price_gap"
+    ],
+    "operating_policy": {
+      "cover_cycles": 3,
+      "initial_batch_limit": 6,
+      "frontier_min_orders": 8,
+      "recheck_seconds": 60
+    },
+    "approve_trial": false
+  },
+  "critic": {
+    "summary": "Retain 3-cycle coverage: stockouts and repeat sales align with the strongest conservative Book/rank forecast. Route bounded buyer price failures; hold promotion pending mature evidence.",
+    "hypotheses": [
+      "Three-cycle depth may improve Book/rank; its forecast leads despite upper-cost stress.",
+      "Price-failure routing may help buyers, but mature Saved outcomes are not yet available.",
+      "Goods conversion is weak and quotes exceed caps; preserve caps and validate comparable offers."
+    ],
+    "evidence_ids": [
+      "ledger:5499461",
+      "kv:objective-decision-context",
+      "kv:framework-plan",
+      "kv:feedback-last-policy",
+      "kv:quality-holdout-summary"
+    ],
+    "skills": [
+      "stock_coverage",
+      "buyer_price_gap",
+      "shop_rating_holdout",
+      "feed_stale"
+    ],
+    "skill_steps": [
+      "measure",
+      "diagnose",
+      "validate_facts"
+    ],
+    "buyer_probe_percent": 8,
+    "buyer_gap_power": 2,
+    "buyer_diverse_quotes": false,
+    "shop_service_level": 0.946,
+    "shop_plan": "diversified",
+    "forum_focus": "balanced",
+    "operating_actions": [
+      "stock_coverage",
+      "buyer_price_gap"
+    ],
+    "operating_policy": {
+      "cover_cycles": 3,
+      "initial_batch_limit": 6,
+      "frontier_min_orders": 8,
+      "recheck_seconds": 60
+    },
+    "approve_trial": false
+  },
+  "selected": {
+    "schema": 1,
+    "at": 1794453924.353809,
+    "expires_at": 1794455124.353809,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "summary": "Retain 3-cycle coverage: stockouts and repeat sales align with the strongest conservative Book/rank forecast. Route bounded buyer price failures; hold promotion pending mature evidence.",
+    "hypotheses": [
+      "Three-cycle depth may improve Book/rank; its forecast leads despite upper-cost stress.",
+      "Price-failure routing may help buyers, but mature Saved outcomes are not yet available.",
+      "Goods conversion is weak and quotes exceed caps; preserve caps and validate comparable offers."
+    ],
+    "evidence_ids": [
+      "ledger:5499461",
+      "kv:objective-decision-context",
+      "kv:framework-plan",
+      "kv:feedback-last-policy",
+      "kv:quality-holdout-summary"
+    ],
+    "skill_ids": [
+      "55de9bd2e33be29009320f41e0889176778f45a273c4ae1ccabf811c4e01e015",
+      "f9e8ddd93bc44b85702424555b82f168d7b0e21a72fb7916d8567941bd2a727e",
+      "518d48effaa7e782ed6c8ce0776cde1e96012831490ef580c42d99b42d4013d6",
+      "bd826e6a9ca0f478fa6c079ba52f8b91dcc96ec7262fba4f7b2324d3d1458d33"
+    ],
+    "queued_buyer_profile": null,
+    "trial_review_approved": false,
+    "economic_superiority_verified": false,
+    "shop_plan_recommendation": "diversified",
+    "operating_intents": [
+      "buyer_price_gap",
+      "stock_coverage"
+    ],
+    "operating_actions_reviewed": true,
+    "forum_focus": "balanced",
+    "objective_context_id": "1b34fd78adb3d5fa73e1617c4cf01920093ffccf798acbb7b33c58fa89604e74",
+    "operating_policy": {
+      "cover_cycles": 3,
+      "initial_batch_limit": 6,
+      "frontier_min_orders": 8,
+      "recheck_seconds": 60
+    },
+    "policy_authority": "independent_agent_consensus_with_numeric_execution_guards"
+  },
+  "economic_superiority_proven": false
+}

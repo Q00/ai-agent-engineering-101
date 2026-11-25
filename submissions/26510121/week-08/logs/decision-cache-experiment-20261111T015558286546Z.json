@@ -1,0 +1,129 @@
+{
+  "at": "2026-11-11T01:55:58.286546+00:00",
+  "cutoff": 1794362142.380952,
+  "summary": {
+    "shop_food": {
+      "baseline_median_seconds": 1.3703806002158672,
+      "cache_median_seconds": 0.6012481998186558,
+      "full_output_identical_across_runs": true,
+      "baseline_decoded_rows": 112130,
+      "cache_decoded_rows": 48426
+    },
+    "shop_goods": {
+      "baseline_median_seconds": 2.533340600086376,
+      "cache_median_seconds": 0.682257300009951,
+      "full_output_identical_across_runs": true,
+      "baseline_decoded_rows": 241112,
+      "cache_decoded_rows": 48426
+    }
+  },
+  "runs": {
+    "shop_food": [
+      {
+        "repeat": 0,
+        "variant": "baseline",
+        "seconds": 1.3703806002158672,
+        "output_rows": 5,
+        "full_output_sha256": "542b030eb5dad49c9dcc6691fdeb64343ab83d0eb385ddff7696d5aa5a50a764",
+        "decoded_rows": 112130
+      },
+      {
+        "repeat": 0,
+        "variant": "decision_cache",
+        "seconds": 0.6012481998186558,
+        "output_rows": 5,
+        "full_output_sha256": "542b030eb5dad49c9dcc6691fdeb64343ab83d0eb385ddff7696d5aa5a50a764",
+        "decoded_rows": 48426
+      },
+      {
+        "repeat": 1,
+        "variant": "decision_cache",
+        "seconds": 0.6267937999218702,
+        "output_rows": 5,
+        "full_output_sha256": "542b030eb5dad49c9dcc6691fdeb64343ab83d0eb385ddff7696d5aa5a50a764",
+        "decoded_rows": 48426
+      },
+      {
+        "repeat": 1,
+        "variant": "baseline",
+        "seconds": 1.5124180000275373,
+        "output_rows": 5,
+        "full_output_sha256": "542b030eb5dad49c9dcc6691fdeb64343ab83d0eb385ddff7696d5aa5a50a764",
+        "decoded_rows": 112130
+      },
+      {
+        "repeat": 2,
+        "variant": "baseline",
+        "seconds": 1.3297019000165164,
+        "output_rows": 5,
+        "full_output_sha256": "542b030eb5dad49c9dcc6691fdeb64343ab83d0eb385ddff7696d5aa5a50a764",
+        "decoded_rows": 112130
+      },
+      {
+        "repeat": 2,
+        "variant": "decision_cache",
+        "seconds": 0.5871317000128329,
+        "output_rows": 5,
+        "full_output_sha256": "542b030eb5dad49c9dcc6691fdeb64343ab83d0eb385ddff7696d5aa5a50a764",
+        "decoded_rows": 48426
+      }
+    ],
+    "shop_goods": [
+      {
+        "repeat": 0,
+        "variant": "baseline",
+        "seconds": 2.6637605000287294,
+        "output_rows": 10,
+        "full_output_sha256": "c3bae784f9d14396f10e84560cb3c41baa86acefb1ceca4d04b0faf1cc6dfa91",
+        "decoded_rows": 241112
+      },
+      {
+        "repeat": 0,
+        "variant": "decision_cache",
+        "seconds": 0.682257300009951,
+        "output_rows": 10,
+        "full_output_sha256": "c3bae784f9d14396f10e84560cb3c41baa86acefb1ceca4d04b0faf1cc6dfa91",
+        "decoded_rows": 48426
+      },
+      {
+        "repeat": 1,
+        "variant": "decision_cache",
+        "seconds": 0.7014963000547141,
+        "output_rows": 10,
+        "full_output_sha256": "c3bae784f9d14396f10e84560cb3c41baa86acefb1ceca4d04b0faf1cc6dfa91",
+        "decoded_rows": 48426
+      },
+      {
+        "repeat": 1,
+        "variant": "baseline",
+        "seconds": 2.523051899857819,
+        "output_rows": 10,
+        "full_output_sha256": "c3bae784f9d14396f10e84560cb3c41baa86acefb1ceca4d04b0faf1cc6dfa91",
+        "decoded_rows": 241112
+      },
+      {
+        "repeat": 2,
+        "variant": "baseline",
+        "seconds": 2.533340600086376,
+        "output_rows": 10,
+        "full_output_sha256": "c3bae784f9d14396f10e84560cb3c41baa86acefb1ceca4d04b0faf1cc6dfa91",
+        "decoded_rows": 241112
+      },
+      {
+        "repeat": 2,
+        "variant": "decision_cache",
+        "seconds": 0.6362574999220669,
+        "output_rows": 10,
+        "full_output_sha256": "c3bae784f9d14396f10e84560cb3c41baa86acefb1ceca4d04b0faf1cc6dfa91",
+        "decoded_rows": 48426
+      }
+    ]
+  },
+  "deployed": false,
+  "limits": [
+    "Three paired repetitions of one input per case, in one local process.",
+    "No concurrency, real writes, full API latency or economic outcomes tested.",
+    "Cache only covers a frozen decision; cross-decision freshness/invalidation is untested.",
+    "Output identity in these samples is not full regression or a deployment approval."
+  ]
+}

@@ -1,0 +1,305 @@
+{
+  "at_utc": "2026-11-12T04:54:34.784296+00:00",
+  "runtime": {
+    "pid": 11120,
+    "session": "3e9d3438a5f84f668ca937ba130849ad",
+    "started_at": 1794459187.7398262,
+    "launch_id": "auto-join-20261112T045307284680Z"
+  },
+  "expected_models": {
+    "market_research_analyst": "gpt-6.1-sol",
+    "market_research_critic": "gpt-6.1-terra",
+    "capability_triage": "gpt-6-luna",
+    "capability_designer": "gpt-6.1-sol"
+  },
+  "actual_models": {
+    "market_research_analyst": [],
+    "market_research_critic": [],
+    "capability_triage": [],
+    "capability_designer": []
+  },
+  "all_roles_verified": false,
+  "astra_calls_since_restart": 0,
+  "capability_plan": {
+    "schema": 1,
+    "at": 1794459075.0924873,
+    "expires_at": 1794460275.0924873,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "tools": [
+      "objective_gap_audit",
+      "stock_depth_audit",
+      "buyer_frontier_audit"
+    ],
+    "evidence_ids": [
+      "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "ledger:5525870",
+      "snapshot:inventory.json",
+      "kv:feedback-last-policy"
+    ],
+    "effects": "read_only_analysis",
+    "id": "1499e7e93c4c2a22649a8bb358ea778ea6c1b44c944b8a31567005c2cae5616e"
+  },
+  "capability_brief": {
+    "at": 1794459268.681903,
+    "expires_at": 1794459448.681903,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "plan_id": "1499e7e93c4c2a22649a8bb358ea778ea6c1b44c944b8a31567005c2cae5616e",
+    "evidence_ids": [
+      "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "ledger:5526142",
+      "snapshot:inventory.json",
+      "kv:feedback-last-policy",
+      "kv:objective-decision-context"
+    ],
+    "calculations": {
+      "objective_gap_audit": {
+        "control": {
+          "status": "observe_and_trade",
+          "leader_gap": 0.05899999999999994,
+          "reasons": []
+        },
+        "constraints": [
+          "no_price_cap_change",
+          "full_refund_reserve",
+          "live_supply_checks",
+          "no_unverified_profile_promotion"
+        ],
+        "shop_alternatives": [],
+        "issues": []
+      },
+      "stock_depth_audit": {
+        "held_units": 136,
+        "distinct_skus": 93,
+        "internal_held_sku_cap": 20,
+        "skus_at_cap": 0,
+        "repeat_skus": [
+          {
+            "sku": "Gef4d3036",
+            "observed_paid20": 30,
+            "observed_external_buyers20": 16,
+            "held": 2
+          },
+          {
+            "sku": "G200e39a3",
+            "observed_paid20": 19,
+            "observed_external_buyers20": 9,
+            "held": 4
+          },
+          {
+            "sku": "G022ce883",
+            "observed_paid20": 34,
+            "observed_external_buyers20": 17,
+            "held": 2
+          },
+          {
+            "sku": "G3434758a",
+            "observed_paid20": 15,
+            "observed_external_buyers20": 10,
+            "held": 0
+          },
+          {
+            "sku": "G7fa48eaa",
+            "observed_paid20": 17,
+            "observed_external_buyers20": 9,
+            "held": 0
+          },
+          {
+            "sku": "G0be9ed07",
+            "observed_paid20": 19,
+            "observed_external_buyers20": 9,
+            "held": 1
+          },
+          {
+            "sku": "G66ded25b",
+            "observed_paid20": 9,
+            "observed_external_buyers20": 6,
+            "held": 0
+          },
+          {
+            "sku": "G2560a8c9",
+            "observed_paid20": 28,
+            "observed_external_buyers20": 13,
+            "held": 0
+          }
+        ],
+        "note": "Paid observations are not latent demand. A cap is not proof it binds; no cap change authorized."
+      },
+      "buyer_frontier_audit": {
+        "scope": "execution_cohorts_only",
+        "results": {
+          "main_choices_total": 2174,
+          "main_choices_by_policy": {
+            "75e0de1ed8db2b96b05957be748780493ed6e180bba91b83ddc5d7d39d24b56c": 307,
+            "eb54b4df9747f08e29711c2ab2ceea5a616b97118e891c99a7ca9bd0343b713e": 62,
+            "31abbaa687462843f6e5c4315e50674f3a642453cb24a850d1c9d286c46f812a": 62,
+            "edb117d5f9ff2cf25759eb6a8c9d0579d7c9b1bfde510341a4b7ed0ac35f9226": 55
+          },
+          "buyer_closed_results_by_policy": {
+            "75e0de1ed8db2b96b05957be748780493ed6e180bba91b83ddc5d7d39d24b56c": {
+              "closed_orders": 20,
+              "paid": 11
+            },
+            "da0097b4fdffecdef5a2c1a61cf61947a0ba69a70923321dce9a72ad36005fc8": {
+              "closed_orders": 4,
+              "paid": 1
+            },
+            "98575615eb63155c296ea9683c82130002045a5f11ee774a26287a4826926ef2": {
+              "closed_orders": 4,
+              "paid": 3
+            },
+            "b9921c680438f3d34139d01c9b04354e2787a5e8cd0e7f2975a57f7ecc6499b6": {
+              "closed_orders": 4,
+              "paid": 2
+            }
+          },
+          "buyer_closed_results_by_policy_total": 171,
+          "shop_paid_results_by_policy": {
+            "75e0de1ed8db2b96b05957be748780493ed6e180bba91b83ddc5d7d39d24b56c": {
+              "paid": 13,
+              "gross_revenue": 1234653,
+              "gross_margin": 144941
+            },
+            "edb117d5f9ff2cf25759eb6a8c9d0579d7c9b1bfde510341a4b7ed0ac35f9226": {
+              "paid": 3,
+              "gross_revenue": 496914,
+              "gross_margin": 62848
+            },
+            "eb54b4df9747f08e29711c2ab2ceea5a616b97118e891c99a7ca9bd0343b713e": {
+              "paid": 3,
+              "gross_revenue": 59436,
+              "gross_margin": 13076
+            },
+            "b156c6c77fdcc295259adc65c75471ee0978601bde0c807eb9ea6860f2ba031b": {
+              "paid": 2,
+              "gross_revenue": 68145,
+              "gross_margin": 16795
+            }
+          },
+          "shop_paid_results_by_policy_total": 51,
+          "buyer_canonical_mature_results_by_policy": {
+            "0df40c8e210abc04024c57f4f86d06b1278775f98a5966ff7769812c2cf32dbc": {
+              "mature_paid": 1,
+              "broken": 0,
+              "sum_final_saved_contribution": 0.3878721278721279,
+              "saved_delta_at_assignment_sum": 3.7214431508506113e-06
+            },
+            "15a16c2fbfe084e137bb40922fe55af7923a3fd3cef2bb11e1c27cc8dc4d32b0": {
+              "mature_paid": 1,
+              "broken": 0,
+              "sum_final_saved_contribution": 0.3745594525235244,
+              "saved_delta_at_assignment_sum": 2.747582481603832e-06
+            },
+            "dc110695884f3e7dc090398709c1ba033058f9cb1814d1f6da011f1cb388b92e": {
+              "mature_paid": 1,
+              "broken": 0,
+              "sum_final_saved_contribution": 0.3920909578880593,
+              "saved_delta_at_assignment_sum": 4.021570709964846e-06
+            }
+          },
+          "buyer_canonical_mature_results_by_policy_total": 3,
+          "note": "Bounded observed cohorts, not causal lift; final quality uses canonical mature outcomes only."
+        }
+      }
+    },
+    "authority": "read_only_calculated_evidence",
+    "economic_superiority_verified": false,
+    "id": "f7e93c6c1b9791c74bf8cf392396924a1d634bbdbeacbd1305e1b7e93552c1d0"
+  },
+  "capability_consumers": [],
+  "research_publications": [],
+  "compiled_research_generations": 0,
+  "matched_main_choices": {
+    "shop": 0,
+    "buyer": 0
+  },
+  "main_examples": [],
+  "errors_since_restart": {
+    "analytical_role_error": 0,
+    "cycle_supervisor_error": 0,
+    "cycle_supply_error": 0,
+    "buyer_worker_error": 0,
+    "background_model_failed": 0,
+    "capability_deferred": 0,
+    "research_publication_rejected": 0
+  },
+  "usage": [],
+  "cycle_heartbeat": {
+    "at": 1794459273.7169883,
+    "preparing": true,
+    "researching": true,
+    "capability_designing": true,
+    "capability_error": null,
+    "preparation_error": null,
+    "research_error": null
+  },
+  "research_last_attempt": {
+    "at": 1794459268.6683807,
+    "window": 1794458637,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "execution_revision": "v19-role-reasoning-analytic-skills-2",
+    "operating_state": "39b394d6ee9268a0d0a1455d9cb330b7ac0ef189bfe80f0e9bed585a4123308c",
+    "capability_plan_id": null
+  },
+  "current_policy": {
+    "id": "f065e910660a4b352fe455a2f9fc377b72d4eb82d454b6a0e1c43cd87be6eb46",
+    "at": 1794459272.1628327,
+    "research_at": 1794458999.6144776,
+    "policy_authority": "agent_selected",
+    "patches": {
+      "shop": {
+        "shop_demand_horizon_cycles": 3,
+        "shop_sku_trend_factors": {
+          "Gef4d3036": 1.05,
+          "G200e39a3": 0.8,
+          "G022ce883": 1.25,
+          "G3434758a": 0.8,
+          "G7fa48eaa": 1.15,
+          "G0be9ed07": 0.95,
+          "G66ded25b": 0.85,
+          "G2560a8c9": 1.15,
+          "G1831f2c0": 1.0,
+          "G021aae64": 0.85,
+          "G74e686be": 1.1,
+          "G575cddb8": 1.2,
+          "G0b5efdc7": 1.25
+        },
+        "shop_public_demand_skus": [
+          "G021aae64",
+          "G022ce883",
+          "G0b5efdc7",
+          "G0be9ed07",
+          "G1831f2c0",
+          "G200e39a3",
+          "G2560a8c9",
+          "G3434758a",
+          "G575cddb8",
+          "G74e686be",
+          "G7fa48eaa",
+          "Gef4d3036"
+        ],
+        "shop_public_demand_caps": {
+          "Gef4d3036": 6,
+          "G200e39a3": 6,
+          "G022ce883": 6,
+          "G3434758a": 6,
+          "G7fa48eaa": 6,
+          "G0be9ed07": 6,
+          "G2560a8c9": 6,
+          "G1831f2c0": 6,
+          "G021aae64": 6,
+          "G74e686be": 6,
+          "G575cddb8": 6,
+          "G0b5efdc7": 6
+        }
+      },
+      "buyer": {
+        "buyer_frontier_category_enabled": true,
+        "buyer_frontier_min_orders": 8,
+        "buyer_frontier_recheck_seconds": 60
+      }
+    },
+    "reasons": []
+  },
+  "economic_superiority_or_first_place_proven": false,
+  "verified": false
+}

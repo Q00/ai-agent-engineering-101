@@ -1,0 +1,166 @@
+{
+  "old_source": "logs\\peer-market-source-20261112T054459689112Z.json",
+  "new_source": "logs\\peer-market-source-20261112T085523230195Z.json",
+  "old_rules_sha256": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+  "new_rules_sha256": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+  "rule_diff": "--- \n+++ \n@@ -226,8 +226,9 @@\n Buyer value: a settled deal is worth the SKU's list price to the order, or 0 if the food did not last\n `use_within_hours` at settle or the goods broke. Surplus = value - price + refund, so broken goods under a\n warranty come to 0 and without one to minus the price. Saved, the part that scores, is the sum over deals of\n-surplus / list price (a deal that served nothing counts -1, or 0 if refunded), divided by deals + 100. A sofa and a\n-snack at 30% off score the same.\n+(list price - price) / (list price - unit cost), the share of the shop's margin kept, at most 1 (a deal that served\n+nothing counts -1, or 0 if refunded), divided by deals + 100 (patch 3.6). A sofa and a snack bought at the same\n+point between cost and list score the same.\n \n Forum votes count when the voter has at least 50 settled deals and a different GitHub owner from the author;\n other votes are kept (`\"counted\": false`) and start counting once the voter reaches 50 deals. `likes`,\n",
+  "before_1728_kst": {
+    "values": {
+      "saved": 0.3416,
+      "all": 0.869,
+      "deals": 14486,
+      "forum": 0.903,
+      "posts": 2029
+    },
+    "ranks": {
+      "saved": 9,
+      "all": 3,
+      "deals": 13,
+      "posts": 12
+    },
+    "cohort": 65
+  },
+  "after_1755_kst": {
+    "values": {
+      "saved": 0.7079,
+      "all": 0.747,
+      "deals": 14498,
+      "forum": 0.903,
+      "posts": 2034
+    },
+    "ranks": {
+      "saved": 25,
+      "all": 21,
+      "deals": 13,
+      "posts": 12
+    },
+    "cohort": 65
+  },
+  "new_deals": 12,
+  "maximum_saved_from_only_new_deals_under_old_units": 0.34214122482531856,
+  "rules_auditor_still_claims_buyer_compatible": true,
+  "latest_rule_observation": [
+    {
+      "at": 1794472867.195824,
+      "sha256": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+      "compatible": true,
+      "expected": "book/revenue/stars; surge<=1.5",
+      "source": "/agent.md",
+      "buyer_metric": "saved",
+      "buyer_compatible": true,
+      "buyer_forum_metric": "raw",
+      "paid_dislike_power": true,
+      "paid_dislike_contract_known": true,
+      "forum_vote_min_deals": 50,
+      "stance_scoring": true,
+      "dislike_costs_shop_cash": true,
+      "_event_id": "e0cd20ded1874a5a9ddbe4ef6773967e",
+      "_ts": 1794472867.2002223,
+      "_role": "system"
+    }
+  ],
+  "new_rule_quote_caps": [
+    {
+      "order": "o-83e6a6c65172",
+      "sku": "Gdef153a2",
+      "kind": "goods",
+      "list_price": 161100,
+      "ask": 118140,
+      "cap": 36519,
+      "target": 0.7099,
+      "cap_to_list": 0.2266852886405959,
+      "at": 1794474520.0535884
+    },
+    {
+      "order": "o-ac2bca8d0d09",
+      "sku": "G74e686be",
+      "kind": "food",
+      "list_price": 13500,
+      "ask": 8670,
+      "cap": 3916,
+      "target": 0.7099,
+      "cap_to_list": 0.2900740740740741,
+      "at": 1794474498.2031598
+    },
+    {
+      "order": "o-c02902cb766c",
+      "sku": "G796e9122",
+      "kind": "goods",
+      "list_price": 70900,
+      "ask": 70900,
+      "cap": 8471,
+      "target": 0.7099,
+      "cap_to_list": 0.11947813822284908,
+      "at": 1794474460.804614
+    },
+    {
+      "order": "o-dc600dbd32f7",
+      "sku": "G7fa48eaa",
+      "kind": "food",
+      "list_price": 5400,
+      "ask": 3078,
+      "cap": 1566,
+      "target": 0.7099,
+      "cap_to_list": 0.29,
+      "at": 1794474439.5091727
+    },
+    {
+      "order": "o-bef0e37386fd",
+      "sku": "G74e686be",
+      "kind": "food",
+      "list_price": 13500,
+      "ask": 7567,
+      "cap": 3916,
+      "target": 0.7099,
+      "cap_to_list": 0.2900740740740741,
+      "at": 1794474417.1762502
+    },
+    {
+      "order": "o-e1d629a9c11f",
+      "sku": "G14b4a078",
+      "kind": "food",
+      "list_price": 36900,
+      "ask": 20769,
+      "cap": 10704,
+      "target": 0.7099,
+      "cap_to_list": 0.29008130081300815,
+      "at": 1794474398.4444246
+    }
+  ],
+  "local_purchase_fields": [
+    "order",
+    "sku",
+    "unit",
+    "shop",
+    "shop_identity",
+    "name",
+    "kind",
+    "price",
+    "value",
+    "paid_at",
+    "grade",
+    "list_price",
+    "expires_at",
+    "initial_saved_contribution",
+    "warranty_hours",
+    "ledger",
+    "strategy_version",
+    "_event_id",
+    "_ts",
+    "_role"
+  ],
+  "buyer_formula_corrected_by_this_script": false,
+  "verified_causes": [
+    "Historical score units changed; public saved rank falls from 9 to 25.",
+    "Price cap still treats new Saved as old list-price discount; observed food cap about 29% of list.",
+    "Rule audit recognizes Saved and deals+100 but not the changed cost denominator."
+  ],
+  "buyer_patch36_implementation_status": "not implemented in the Shop-only v21 release",
+  "next_required_repairs": [
+    "explicit scoring formula/version detection",
+    "cost-aware contribution and price caps with verified cost or labeled cost uncertainty",
+    "formula-scoped outcomes, policy evaluation and refusal-memory invalidation"
+  ],
+  "model_calls": 0,
+  "market_transactions": 0
+}

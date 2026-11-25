@@ -1,0 +1,979 @@
+--- a/r3/buyer_scoring.py
++++ b/r3/buyer_scoring.py
+@@ -1,7 +1,50 @@
+-"""Patch 3.4 Saved accounting; scenarios are separate from confirmed outcomes."""
++"""Versioned Saved accounting; hidden acquisition costs remain scenarios."""
+ import math
+ import re
+ import time
++
++LEGACY = 'list_discount_v34'
++MARGIN = 'margin_share_v36'
++
++
++def formula(journal):
++    return journal.get('market_rules', {}).get('buyer_saved_formula', LEGACY)
++
++
++def same_formula(row, version):
++    return row.get('score_formula', LEGACY) == version
++
++
++def cost_scenario(product, grade=None):
++    """Public supply bounds, NOT a seller's unverified cost claim.
++
++    Food can only degrade, so a current A/B implies supply grade at least A/B.
++    Caps are conditional on the grade being verified again at checkout. Surge
++    is nonnegative; omit it from the lower scenario. The official behavior for
++    C>=L is unspecified: these scenarios describe positive-margin units only.
++    """
++    low = {'A': .55, 'B': .40, 'C': .25}.get(grade, .25)
++    return {'unit_cost': math.floor(product['list_price']*low),
++            'source': 'public_supply_lower_scenario', 'exact': False,
++            'conditional_grade': grade, 'positive_margin_assumption': True,
++            'c_ge_list_behavior': 'not_specified_by_public_rules'}
++
++
++def score_inputs(current):
++    return {'score_formula': current.get('score_formula', LEGACY),
++            'unit_cost': current.get('unit_cost'),'cost_samples':current.get('cost_samples')}
++
++
++def joint_actions(actions):
++    """Explicit outside option: a high average is a reference, never a veto.
++
++    Each action carries the official Saved/deal deltas. Forum/post deltas are
++    zero here: a payment does not guarantee either a useful post or a vote.
++    Their actual actions are evaluated by the background publication lane.
++    """
++    return actions+[{'id':'continue_search','score':0,'execution_seconds':1,
++        'expected_delta':{'saved':0,'deals':0,'forum':0,'posts':0},
++        'reason':'retain current score; inspect another offer or finish without purchase'}]
+ 
+ 
+ def metric(board, rules=None):
+@@ -14,7 +57,7 @@
+ 
+ def state(journal,config):
+     from .decision_view import fact
+-    return dict(fact(journal, ('buyer-state', bool(config.get('buyer_patch34_enabled')), config.get('buyer_forum_metric')), lambda: _state(journal, config)))
++    return dict(fact(journal, ('buyer-state', bool(config.get('buyer_patch34_enabled')), config.get('buyer_forum_metric'), formula(journal)), lambda: _state(journal, config)))
+ 
+ 
+ def _state(journal,config):
+@@ -23,18 +66,31 @@
+     rules=journal.get('market_rules',{})
+     saved=config.get('buyer_patch34_enabled') and metric(board,rules)=='saved'
+     return {'metric':'saved' if saved else 'surplus','saved':own.get('saved',0) or 0,
++            'score_formula':formula(journal),
+             'forum_metric':rules.get('buyer_forum_metric',config.get('buyer_forum_metric','percentile')),
+             'deals':own.get('deals',0) or 0}
+ 
+ 
+-def contribution(price,list_price,failure=0,covered_failure=0):
++def contribution(price,list_price,failure=0,covered_failure=0, *, score_formula=LEGACY, unit_cost=None,cost_samples=None):
+     """Healthy: 1-P/L; broken uninsured: -1; confirmed full refund: 0.
+ 
+     For decisions failure is an upper risk scenario and coverage a lower one.
+     """
+     if list_price<=0 or not 0<=covered_failure<=failure<=1:
+         raise ValueError('invalid_saved_inputs')
+-    return (1-failure)*(1-price/list_price)-(failure-covered_failure)
++    if score_formula == MARGIN:
++        if cost_samples is not None:
++            if not isinstance(cost_samples,list) or not 1<=len(cost_samples)<=9:
++                raise ValueError('invalid_cost_scenarios')
++            return sum(contribution(price,list_price,failure,covered_failure,
++                score_formula=MARGIN,unit_cost=c) for c in cost_samples)/len(cost_samples)
++        if type(unit_cost) not in (int,float) or not math.isfinite(unit_cost) or not 0<=unit_cost<list_price:
++            raise ValueError('cost_unknown_or_nonpositive_margin')
++        healthy=min(1,(list_price-price)/(list_price-unit_cost))
++    elif score_formula == LEGACY:
++        healthy=1-price/list_price
++    else:raise ValueError('unknown_saved_formula')
++    return (1-failure)*healthy-(failure-covered_failure)
+ 
+ 
+ def delta(current,returned,completion=1):
+@@ -46,15 +102,32 @@
+     absolute=(1-failure)*list_price-price+covered*price
+     result={'surplus':completion*absolute,'deals':completion}
+     if current['metric']=='saved':
+-        result['saved']=delta(current,contribution(price,list_price,failure,covered),completion)
++        result['saved']=delta(current,contribution(price,list_price,failure,covered,**score_inputs(current)),completion)
+     return result
+ 
+ 
+ def saved_price_cap(list_price,current,failure,covered,margin=.002):
+     target=max(0,min(1,current['saved']+margin))
+     if failure>=1:return 0,target
+-    ratio=1-(target+failure-covered)/(1-failure)
+-    return max(0,math.floor(list_price*ratio)),target
++    required=(target+failure-covered)/(1-failure)
++    version=current.get('score_formula',LEGACY)
++    if version==MARGIN:
++        if current.get('cost_samples') is not None:
++            low,high=0,math.floor(list_price)
++            if contribution(0,list_price,failure,covered,**score_inputs(current))<target:return 0,target
++            while low<high:
++                mid=(low+high+1)//2
++                if contribution(mid,list_price,failure,covered,**score_inputs(current))>=target:low=mid
++                else:high=mid-1
++            return low,target
++        cost=current.get('unit_cost')
++        if type(cost) not in (int,float) or not math.isfinite(cost) or not 0<=cost<list_price:
++            raise ValueError('cost_unknown_or_nonpositive_margin')
++        if required>1:return 0,target
++        cap=list_price-required*(list_price-cost)
++    elif version==LEGACY:cap=list_price*(1-required)
++    else:raise ValueError('unknown_saved_formula')
++    return max(0,math.floor(cap)),target
+ 
+ 
+ def remember_refusal(journal,order,shop,receipt,reasons,now=None):
+--- a/r3/control.py
++++ b/r3/control.py
+@@ -20,7 +20,11 @@
+                   'surplus' if 'buyers by surplus' in text else 'unknown')
+     flat=' '.join(text.split())
+     buyer_weights_ok=bool(re.search(r'buyers by .*?ALL weighs them 0\.5,\s*0\.3,\s*0\.1,\s*0\.1',flat))
+-    saved_formula_ok=('divided by deals + 100' in flat and 'counts -1, or 0 if refunded' in flat)
++    from .buyer_scoring import LEGACY,MARGIN
++    score_formula=(MARGIN if '(list price - price) / (list price - unit cost)' in flat and 'at most 1' in flat else
++                   LEGACY if 'surplus / list price' in flat or '(list price - price) / list price' in flat else 'unknown')
++    saved_formula_ok=('divided by deals + 100' in flat and 'counts -1, or 0 if refunded' in flat
++                      and score_formula!='unknown')
+     forum_mode=('raw' if 'except the forum rating, which counts as itself (0 to 1)' in flat else
+                 'unknown' if 'except the forum rating' in flat else 'percentile')
+     paid_power='A dislike with value -N' in flat
+@@ -28,7 +32,7 @@
+                  ['N up to 1000','(N - 1)^2','3%','largest Book','power_fee','next_vote_fee']))
+     result = {'at': now, 'sha256': hashlib.sha256(text.encode()).hexdigest(),
+               'compatible': understood, 'expected': 'book/revenue/stars; surge<=1.5',
+-              'source': '/agent.md','buyer_metric':buyer_metric,
++              'source': '/agent.md','buyer_metric':buyer_metric,'buyer_saved_formula':score_formula,
+               'buyer_compatible':buyer_weights_ok and forum_mode!='unknown' and
+                   (buyer_metric=='surplus' or buyer_metric=='saved' and saved_formula_ok),
+               'buyer_forum_metric':forum_mode,'paid_dislike_power':paid_power,
+@@ -39,6 +43,9 @@
+     journal.put('market_rules', result)
+     if previous.get('sha256') != result['sha256']:
+         journal.add('market_rules_observed', result)
++    if previous.get('buyer_saved_formula')!=score_formula:
++        journal.add('buyer_score_formula_changed',{'before':previous.get('buyer_saved_formula'),
++                    'after':score_formula,'at':now,'rules_hash':result['sha256']},role='buyer')
+     if previous.get('buyer_forum_metric')!=forum_mode:
+         journal.add('market_scoring_definition',{'at':now,'before':previous.get('buyer_forum_metric'),
+                     'after':forum_mode,'buyer_metric':buyer_metric,'paid_dislike_power':paid_power})
+--- a/r3/market_memory.py
++++ b/r3/market_memory.py
+@@ -85,9 +85,9 @@
+         return (1 - failure_stress) * L - price + price * recovery
+     def expected(price,completion):
+         if saved_state and saved_state['metric']=='saved':
+-            from .buyer_scoring import contribution,terms_delta
++            from .buyer_scoring import contribution,terms_delta,score_inputs
+             recovery=(failure_stress if covered else 0) if covered_failure is None else covered_failure
+-            value=contribution(price,L,failure_stress,recovery)
++            value=contribution(price,L,failure_stress,recovery,**score_inputs(saved_state))
+             return completion*value,terms_delta(saved_state,price,L,failure_stress,recovery,completion)
+         return completion*surplus(price),{'surplus':completion*surplus(price),'deals':completion}
+     if ask <= cap:
+@@ -137,16 +137,28 @@
+         stress, covered = risk['failure_upper'], risk['covered_lower']
+         if required < 6:
+             cap = min(cap, int(product['list_price'] * (1 - stress) / max(.000001, 1 - covered)))
+-    from .buyer_scoring import state,saved_price_cap
++    from .buyer_scoring import state,saved_price_cap,cost_scenario,MARGIN
+     current=state(journal,config)
+-    target=None
++    cost=None
++    if current.get('score_formula')==MARGIN:
++        # A plain peer cost field is never authoritative. Enforce any grade
++        # used in this conditional scenario at the authoritative checkout.
++        declared=declared or terms.get('grade',terms.get('claim'))
++        declared=declared if declared in ('A','B','C') else None
++        from .buyer_costs import scenario
++        cost=scenario(journal,product,declared)
++        current=dict(current,unit_cost=cost['unit_cost'],cost_samples=cost['cost_samples'])
++    target=None;normalized_cap=None
+     if current['metric']=='saved':
+         normalized_cap,target=saved_price_cap(product['list_price'],current,stress,covered,
+                                                config.get('buyer_saved_target_margin',.002))
+-        cap=min(cap,normalized_cap)
++        if not (config.get('buyer_joint_objective_enabled') and current.get('score_formula')==MARGIN):
++            cap=min(cap,normalized_cap)
+     return {'cap': cap, 'required_warranty': required, 'failure': stress,
+             'required_grade':declared,'conditional_terms':conditional,
+-            'covered_failure': covered, 'risk_evidence': risk,'saved_state':current,'target_contribution':target}
++            'covered_failure': covered, 'risk_evidence': risk,'saved_state':current,'target_contribution':target,
++            'cost_scenario':cost,'saved_reference_cap':normalized_cap,
++            'saved_target_is_hard_cap':not (config.get('buyer_joint_objective_enabled') and current.get('score_formula')==MARGIN)}
+ 
+ 
+ def buyer_terms(product, order, terms, journal, config):
+--- a/r3/buyer_routes.py
++++ b/r3/buyer_routes.py
+@@ -1,7 +1,7 @@
+ """Route by observed terms, recent technical reliability and own settled history."""
+ import time
+ from .decision_view import history
+-from .buyer_scoring import contribution,terms_delta
++from .buyer_scoring import contribution,terms_delta,score_inputs
+ 
+ 
+ def context(journal,now=None):
+@@ -32,7 +32,8 @@
+         assessment=buyer_assessment(dict(candidate['product'],sku=candidate['sku']),order,term,journal,config,shop=shop)
+         q,covered=assessment['failure'],assessment['covered_failure']
+         completion=.7 if price<=assessment['cap'] else .1
+-        options.append((completion*contribution(price,candidate['product']['list_price'],q,covered),term,assessment,completion))
++        options.append((completion*contribution(price,candidate['product']['list_price'],q,covered,
++                       **score_inputs(assessment['saved_state'])),term,assessment,completion))
+     failures=route_context['errors'].get(shop,0)
+     reliability=1/(1+.35*min(8,failures))
+     if options:
+--- a/r3/buyer_execution.py
++++ b/r3/buyer_execution.py
+@@ -5,7 +5,7 @@
+ from collections import defaultdict
+ import statistics
+ import time
+-from .buyer_scoring import contribution
++from .buyer_scoring import contribution,score_inputs,formula,same_formula
+ from .decision_view import history
+ 
+ 
+@@ -13,6 +13,7 @@
+     now=time.time() if now is None else now;start=now-3600
+     visits=defaultdict(dict);latency=defaultdict(list)
+     for event in history(journal,'attempt',2000):
++        if event.get('kind')=='no_agreement' and not same_formula(event,formula(journal)):continue
+         if not start<=event['_ts']<=now:continue
+         if not event.get('shop') or not event.get('sku') or not event.get('order'):continue
+         if (order or {}).get('kind')=='food' and event.get('use_within_hours')!=order.get('use_within_hours',0):continue
+@@ -78,5 +79,6 @@
+     if assessment.get('conditional_terms') or ask>assessment['cap']:return False
+     state=assessment['saved_state']
+     if state['metric']!='saved':return False
+-    value=contribution(ask,candidate['product']['list_price'],assessment['failure'],assessment['covered_failure'])
++    value=contribution(ask,candidate['product']['list_price'],assessment['failure'],assessment['covered_failure'],
++                       **score_inputs(state))
+     return value>=state['saved']+config.get('buyer_fast_accept_margin',.04)
+--- a/r3/economy.py
++++ b/r3/economy.py
+@@ -178,7 +178,7 @@
+ 
+ @decision
+ def buyer_candidates(order, shops, catalog, journal, config=None):
+-    from .buyer_scoring import state,terms_delta,blocked_units
++    from .buyer_scoring import state,terms_delta,blocked_units,cost_scenario,MARGIN,same_formula,contribution,score_inputs
+     from .state import policy
+     current=state(journal,config or policy())
+     from .forum import shop_hint
+@@ -228,7 +228,8 @@
+             if counterpart_key:
+                 own_rows.update(by_identity.get((counterpart_key, sku), {}))
+             own = [own_rows[position] for position in sorted(own_rows)]
+-            failed = failed_routes.get((shop['url'], sku), [])
++            failed = [r for r in failed_routes.get((shop['url'], sku), [])
++                      if r.get('kind')!='no_agreement' or same_formula(r,current.get('score_formula'))]
+             if (config or {}).get('buyer_championship_enabled'):
+                 failed=[x for x in failed if x.get('kind')=='no_agreement' and
+                         (product.get('kind')!='food' or
+@@ -250,8 +251,14 @@
+             hint = shop_hint(journal, shop['name'], sku)
+             monetary=max(0,product['list_price']-estimate)
+             normalized=monetary/max(1,product['list_price'])
++            scenario=dict(current)
++            if current.get('score_formula')==MARGIN:
++                from .buyer_costs import scenario as cost_forecast
++                costs=cost_forecast(journal,product,None)
++                scenario.update(unit_cost=costs['unit_cost'],cost_samples=costs['cost_samples'])
++                normalized=contribution(estimate,product['list_price'],**score_inputs(scenario))
+             score=success*(normalized if current['metric']=='saved' else monetary)
+-            changes=terms_delta(current,estimate,product['list_price'],completion=success)
++            changes=terms_delta(scenario,estimate,product['list_price'],completion=success)
+             result.append({"id": shop["name"] + ":" + sku, "shop": shop["url"], "name": shop["name"],
+                            "sku": sku, "product": product, "reference_price": estimate,
+                            "score": score * (1.03 if hint else 1),
+--- a/r3/contracts.py
++++ b/r3/contracts.py
+@@ -20,11 +20,14 @@
+ 
+ 
+ def history(journal,now=None):
+-    now=time.time() if now is None else now;cache_key=str(getattr(journal,'md',id(journal)))
++    from .buyer_scoring import formula,same_formula
++    version=formula(journal)
++    now=time.time() if now is None else now;cache_key=(str(getattr(journal,'md',id(journal))),version)
+     cached=_HISTORY.get(cache_key)
+     if cached and 0<=now-cached['now']<3:return cached
+     groups=defaultdict(dict)
+     for row in journal.events('buyer_contract_result',6000):
++        if not same_formula(row,version):continue
+         if not 0<=now-row['_ts']<=3600:continue
+         key=(row['shop_identity'],row['sku'],row.get('kind'))
+         groups[key].setdefault(row['order'],row)
+@@ -118,7 +121,8 @@
+ 
+ def observe(journal,order,candidate,terms,assessment,ask):
+     contract={'grade':terms.get('grade'),'warranty_hours':terms.get('warranty_hours'),
+-              'ask':ask,'cap':assessment['cap']}
++              'ask':ask,'cap':assessment['cap'],
++              'score_formula':assessment.get('saved_state',{}).get('score_formula','list_discount_v34')}
+     signature=identity([contract['grade'],contract['warranty_hours'],int(ask/max(1,candidate['product']['list_price'])*50)])
+     candidate['last_contract']=dict(contract,signature=signature)
+     candidate.setdefault('evidence',{})['contract_frontier']={'ask':ask,'safe_cap':assessment['cap'],
+--- a/r3/prepared.py
++++ b/r3/prepared.py
+@@ -13,7 +13,9 @@
+     with journal.connect() as db:
+         rows = [db.execute('SELECT rowid FROM events WHERE kind=? ORDER BY ts DESC,rowid DESC LIMIT 1',
+                            (kind,)).fetchone() for kind in KINDS]
+-    return identity([row[0] if row else 0 for row in rows] + [journal.get('buyer_revision_epoch', 0)])
++    return identity([row[0] if row else 0 for row in rows] + [journal.get('buyer_revision_epoch', 0),
++                    journal.get('market_rules',{}).get('buyer_saved_formula'),
++                    journal.get('buyer-cost-scenarios:v22',{}).get('id')])
+ 
+ 
+ def pack_execution(row):
+--- a/r3/outcomes.py
++++ b/r3/outcomes.py
+@@ -34,6 +34,8 @@
+                 if oid:refunds.setdefault('order:'+oid,row)
+         facts={'at':now,'broken':broken,'refunds':refunds}
+         journal.put('outcome-unit-facts:v1',facts)
++    from .buyer_scoring import formula,LEGACY,same_formula
++    version=formula(journal)
+     old=latest(journal);feed=journal.get('public_feed_caught_up_at',0)
+     fresh=0<=now-feed<=180
+     pending=[]
+@@ -61,8 +63,13 @@
+             row={'order':oid,'unit':unit,'broken':False,'canonical':True,'matured':True,
+                  'refund_status':'not_needed','refunded':0,'surplus':item['value']-item['price'],
+                  'source':'six_hour_unit_feed_complete',
+-                 'saved_contribution':item.get('initial_saved_contribution',1-item['price']/max(1,item['value']))}
++                 'saved_contribution':item.get('initial_saved_contribution',1-item['price']/max(1,item['value']))
++                    if version==LEGACY and same_formula(item,version) else None,
++                 'saved_lower_scenario':item.get('initial_saved_lower_scenario') if same_formula(item,version) else None,
++                 'score_exact':version==LEGACY and same_formula(item,version)}
+         else:continue
++        row['score_formula']=version
++        if broken:row['score_exact']=True
+         previous=old.get(oid,{})
+         # Sparse bookkeeping changes must not produce a new event every poll.
+         if all(previous.get(k)==v for k,v in row.items()):continue
+--- a/r3/evolution.py
++++ b/r3/evolution.py
+@@ -7,6 +7,7 @@
+ import math,statistics,time
+ from .state import identity
+ from .outcomes import latest
++from .buyer_scoring import formula
+ 
+ PROFILES={'contract_frontier':{'buyer_contract_probe_percent':8,'buyer_contract_gap_power':2,'buyer_contract_diverse_quotes':False},
+           'coverage_probe':{'buyer_contract_probe_percent':15,'buyer_contract_gap_power':1,'buyer_contract_diverse_quotes':True},
+@@ -29,6 +30,7 @@
+         board=journal.snapshot('board.json',{})
+         own=next((r for r in board.get('buyers',[]) if r.get('name')=='seochanit'),{})
+         frozen={'order':order['order'],'kind':order.get('kind'),'profile':profile,'arm':arm,
++                'score_formula':formula(journal),
+                 'experiment':arena.get('experiment'),'revision':REVISION,'saved_at_assignment':own.get('saved',0),
+                 'rules_sha256':journal.get('market_rules',{}).get('sha256'), 'challenger_percent':fraction}
+         if profile not in PROFILES:
+@@ -52,7 +54,10 @@
+ 
+ 
+ def evaluate(journal,arena,now):
++    from .buyer_scoring import formula,same_formula
++    version=formula(journal)
+     assignments=[r for r in journal.events('framework_order',6000) if r.get('experiment')==arena.get('experiment')
++                 and same_formula(r,version)
+                  and r.get('kind')=='goods' and r['_ts']>=arena.get('since',now) and r['_ts']<=now-22200]
+     purchases={r['order']:r for r in journal.events('purchase',10000)}
+     results={r['order']:r for r in journal.events('market_result',10000)}
+@@ -68,6 +73,7 @@
+             if oid in purchases:
+                 outcome=outcomes.get(oid,{})
+                 if not outcome.get('canonical') or outcome.get('refund_status')=='expected_by_warranty_rule':pending+=1;continue
++                if not same_formula(outcome,version) or type(outcome.get('saved_contribution')) not in (int,float):pending+=1;continue
+                 reward=outcome.get('saved_contribution',0)-row.get('saved_at_assignment',0);npaid+=1
+             rewards.append(reward)
+             durations.append(max(1,result['_ts']-row['_ts'])+15)
+--- a/r3/feedback.py
++++ b/r3/feedback.py
+@@ -93,11 +93,13 @@
+     for role in ('shops', 'buyers'):
+         peers[role] = [{k: r.get(k) for k in ('name', 'all', 'book', 'revenue', 'deals', 'saved', 'forum', 'stock_units', 'alive')}
+                       for r in board.get(role, []) if type(r.get('all')) in (int, float)]
+-    observation = {'at': now, 'board_at': journal.get('board_checked_at'), 'peers': peers}
++    from .buyer_scoring import formula,same_formula
++    observation = {'at': now, 'score_formula':formula(journal), 'board_at': journal.get('board_checked_at'), 'peers': peers}
+     trends = {}
+     if prior_rows:
+         old = json.loads(prior_rows[0][1]); hours = (now-prior_rows[0][0])/3600
+         for role in peers:
++            if role=='buyers' and not same_formula(old,formula(journal)):continue
+             baseline = {r['name']: r for r in old['peers'][role]}
+             compared = []
+             for row in peers[role]:
+@@ -189,7 +191,10 @@
+         out = shop_outcomes.setdefault(pid, {'paid': 0, 'gross_revenue': 0, 'gross_margin': 0})
+         out['paid'] += 1; out['gross_revenue'] += sale['price']; out['gross_margin'] += sale['price']-sale['cost']
+     canonical = {}
++    from .buyer_scoring import formula,same_formula
++    score_version=formula(journal)
+     for oid,frozen in mature_policy_rows.items():
++        if not same_formula(frozen,score_version) or not same_formula(mature_outcomes[oid],score_version):continue
+         value=mature_outcomes[oid].get('saved_contribution')
+         if type(value) not in (int,float):continue
+         row=canonical.setdefault(frozen['id'], {'mature_paid':0,'broken':0,'sum_final_saved_contribution':0,'saved_delta_at_assignment_sum':0})
+@@ -251,7 +256,8 @@
+         # the same order; the actual economic and payment guards stay fresh.
+         row = {k:row[k] for k in ('id','rules_hash','patches','at','regime')}
+         buyer=next((r for r in journal.snapshot('board.json',{}).get('buyers',[]) if r.get('name')=='seochanit'),{})
+-        row.update(saved_at_assignment=buyer.get('saved'),deals_at_assignment=buyer.get('deals',0))
++        from .buyer_scoring import formula
++        row.update(saved_at_assignment=buyer.get('saved'),deals_at_assignment=buyer.get('deals',0),score_formula=formula(journal))
+         journal.put(key, row)
+     patch = row.get('patches', {}).get(role, {})
+     if not valid_patch(role, patch): return config
+--- a/r3/objective_context.py
++++ b/r3/objective_context.py
+@@ -51,12 +51,14 @@
+ 
+ 
+ def buyer_evidence(journal, now):
++    from .buyer_scoring import formula,same_formula,MARGIN
++    version=formula(journal)
+     orders = {r['order']: r for r in journal.events('buyer_order', 4000) if 0 <= now-r['_ts'] <= 3600}
+     results = {r['order']: r for r in journal.events('market_result', 4000) if r.get('order') in orders}
+     purchases = {r['order']: r for r in journal.events('purchase', 10000)}
+     canonical = {}
+     for row in reversed(journal.events('outcome', 10000)):
+-        if row.get('canonical'):
++        if row.get('canonical') and same_formula(row,version):
+             canonical[row['order']] = row
+     segments = {}
+     for kind in ('food', 'goods'):
+@@ -66,7 +68,7 @@
+                    and canonical[o].get('matured') and type(canonical[o].get('saved_contribution')) in (int,float)
+                    and canonical[o].get('refund_status') != 'expected_by_warranty_rule']
+         initial = [purchases[o]['initial_saved_contribution'] for o in paid
+-                   if type(purchases[o].get('initial_saved_contribution')) in (int,float)]
++                   if same_formula(purchases[o],version) and type(purchases[o].get('initial_saved_contribution')) in (int,float)]
+         durations = [max(0, results[o]['_ts']-orders[o]['_ts']) for o in closed]
+         segments[kind] = {'closed': len(closed), 'paid': len(paid),
+             'conversion': len(paid)/max(1,len(closed)), 'active_seconds': sum(durations),
+@@ -101,8 +103,15 @@
+             'enough_for_descriptive_comparison':len(rows)>=5}
+     board = journal.snapshot('board.json', {})
+     own = next((r for r in board.get('buyers', []) if r.get('name') == 'seochanit'), {})
+-    failures = [r for r in journal.events('buyer_contract_result', 4000) if 0 <= now-r['_ts'] <= 3600]
++    failures = [r for r in journal.events('buyer_contract_result', 4000) if 0 <= now-r['_ts'] <= 3600 and same_formula(r,version)]
+     return {'metric':journal.get('market_rules',{}).get('buyer_metric','unknown'),
++        'score_formula':version,'acquisition_cost_observable':False,
++        'decision_score_source':'public_range_and_shrunk_own_cost_proxy_scenarios' if version==MARGIN else 'list_discount',
++        'cost_model':{k:journal.get('buyer-cost-scenarios:v22',{}).get(k) for k in ('at','id','groups','source')},
++        'healthy_margin_share_exact_reward_pending':version==MARGIN,
++        'objective_weights':{'saved_percentile':.5,'forum_raw':.3,'deals_percentile':.1,'posts_percentile':.1},
++        'decision_contract':'joint expected ALL progress per execution second; compare purchase/counter/outside option',
++        'saved_average_is_not_a_purchase_veto':True,
+         'current_saved':own.get('saved'), 'current_deals':own.get('deals'), 'current_forum':own.get('forum'),
+         'forum_raw_all_gain_per_0_01':.003 if journal.get('market_rules',{}).get('buyer_forum_metric')=='raw' else None,
+         'segments_60min':segments,'mature_quality_cohorts':mature_cohorts,
+--- a/r3/research.py
++++ b/r3/research.py
+@@ -167,7 +167,16 @@
+             'spendable cash, upper-mean-cost stress, eligibility and observed supply delays; do not retain a '
+             'low coverage baseline solely because the market-wide trade rate is flat when own profitable repeat '
+             'demand and marginal-unit evidence support depth. Forecasts are not measured superiority. '
+-            'Buyer uses official normalized Saved, not absolute surplus. Compare closed-order throughput and '
++            'Buyer uses the formula version in buyer_objective evidence: patch 3.6 healthy Saved is '
++            'min(1,(list-price)/(list-acquisition_cost)), not list-price discount. Acquisition cost is '
++            'hidden; public-range and shrunk own-cost proxy scenarios are conditional forecasts, never exact rewards. '
++            'Do not mix pre-change rejection histories or rewards with the new scoring units. '
++            'Optimize joint Buyer ALL: .5 Saved percentile + .3 raw forum + .1 deals percentile + '
++            '.1 posts percentile, per elapsed time. The current Saved average is a reference, NOT '
++            'a hard purchase cap. Inspect actual quote utility and outside-option skips, compare '
++            'throughput, alternative sellers, mature failure cohorts and observed forum format effects. '
++            'Never award hypothetical forum likes or posts to a payment; publication has its own evidence. '
++            'Compare closed-order throughput and '
+             'confirmed mature Saved separately from pending initial results. buyer_information permits choosing '
+             'forum_focus among already ledger-backed formats; retain balanced when comparisons are sparse or '
+             'biased and preserve format exploration. No vote trading, unverifiable posts or quality promises. '
+--- a/r3/progress.py
++++ b/r3/progress.py
+@@ -2,7 +2,9 @@
+ 
+ 
+ def observe(journal,board,inv,capacity,now):
+-    current={'at':now}
++    from .buyer_scoring import formula,same_formula
++    version=formula(journal)
++    current={'at':now,'score_formula':version}
+     for role,table,fields in [('shop','shops',['book','revenue','all','stock_cost','stock_units']),
+                               ('buyer','buyers',['saved','forum','deals','posts','all'])]:
+         rows=[r for r in board.get(table,[]) if type(r.get('all')) in (int,float)]
+@@ -16,6 +18,7 @@
+     if baseline:
+         hours=(now-baseline['at'])/3600
+         for role,field in [('shop','book'),('buyer','saved')]:
++            if role=='buyer' and not same_formula(baseline,version):continue
+             own=current[role]['own'].get(field);old=baseline[role]['own'].get(field)
+             if type(own) not in (int,float) or type(old) not in (int,float):continue
+             peers=[]
+--- a/r3/buyer_costs.py
++++ b/r3/buyer_costs.py
+@@ -0,0 +1,66 @@
++"""Background hidden-cost scenarios from trusted own sale costs, never peer claims.
++
++Sales are a selected proxy for other shops' acquisition draws, not exact unit
++costs. Small cohorts shrink to a public-range scenario grid (no uniform-law
++claim). Main reads at most nine numeric samples; no scans or LLM in checkout.
++"""
++from collections import defaultdict
++import math
++import time
++from .state import identity
++
++KEY='buyer-cost-scenarios:v22'
++
++
++def update(journal,config,now=None):
++    now=time.time() if now is None else now
++    catalog=journal.snapshot('catalog.json',{});groups=defaultdict(dict)
++    for row in journal.events('shop_settled',10000):
++        if not 0<=now-row['_ts']<=21600:continue
++        product=catalog.get(row.get('sku'),{});L=product.get('list_price');cost=row.get('cost')
++        grade=row.get('grade');kind=product.get('kind');unit=row.get('unit')
++        if (grade not in ('A','B','C') or kind not in ('food','goods') or not unit or
++                type(L) not in (int,float) or L<=0 or type(cost) not in (int,float) or
++                not math.isfinite(cost) or not 0<=cost/L<=1.125):continue
++        groups[kind+':'+grade].setdefault(unit,cost/L)
++    rows={}
++    for key,units in groups.items():
++        values=sorted(units.values());valid=[v for v in values if v<1]
++        rows[key]={'n':len(values),'positive_margin_n':len(valid),
++            'quantile_ratios':[valid[round((len(valid)-1)*q/8)] for q in range(9)] if valid else [],
++            'nonpositive_margin_n':len(values)-len(valid)}
++    packet={'at':now,'expires_at':now+180,'rules_hash':journal.get('market_rules',{}).get('sha256'),
++            'groups':rows,'source':'own_settled_costs_selected_proxy_not_other_sellers_cost',
++            'selection_and_surge_transfer_uncertain':True}
++    packet['id']=identity(packet);journal.put(KEY,packet)
++    journal.add('buyer_cost_model_prepared',{'at':now,'id':packet['id'],
++        'samples':{k:r['n'] for k,r in rows.items()},'source':packet['source']},role='buyer')
++    return packet
++
++
++def scenario(journal,product,grade,now=None):
++    from .buyer_scoring import cost_scenario
++    now=time.time() if now is None else now
++    result=cost_scenario(product,grade);L=product['list_price']
++    low=result['unit_cost']/L
++    # Food may have degraded from a higher supply grade. With no grade,
++    # retain a broad public-range scenario, never silently assume certified A.
++    high=.75 if product.get('kind')=='food' else {'A':.75,'B':.60,'C':.45}.get(grade,.75)
++    ratios=[low+(high-low)*q/8 for q in range(9)]
++    packet=journal.get(KEY,{})
++    group=packet.get('groups',{}).get(product.get('kind','')+':'+str(grade),{})
++    usable=(0<=now-packet.get('at',-1000)<180 and now<packet.get('expires_at',0) and
++            packet.get('rules_hash')==journal.get('market_rules',{}).get('sha256') and
++            group.get('positive_margin_n',0)>=20 and len(group.get('quantile_ratios',[]))==9 and
++            all(type(v) in (int,float) and math.isfinite(v) and low<=v<1 for v in group['quantile_ratios']))
++    if usable:
++        # Shrink sparse/selected proxy cohorts towards the public scenario.
++        weight=min(.8,group['positive_margin_n']/(group['positive_margin_n']+50))
++        ratios=[(1-weight)*a+weight*b for a,b in zip(ratios,group['quantile_ratios'])]
++    result.update(cost_samples=[min(L-1,max(result['unit_cost'],round(L*v))) for v in ratios],
++        expected_source='shrunk_own_cost_proxy' if usable else 'public_range_scenario_grid',
++        samples=group.get('positive_margin_n',0) if usable else 0,
++        model_id=packet.get('id') if usable else None,
++        probabilities_are_scenarios=True,other_seller_cost_exact=False,
++        nonpositive_margin_n=group.get('nonpositive_margin_n',0) if usable else None)
++    return result
+--- a/r3/cycle.py
++++ b/r3/cycle.py
+@@ -67,6 +67,9 @@
+         if now-self.last_analysis>=60:
+             self.last_analysis=now
+             roles={'market_observer':lambda:analytics(self.j,time.time())}
++            if self.cfg.get('buyer_joint_objective_enabled'):
++                from .buyer_costs import update as buyer_cost_update
++                roles['buyer_cost_observer']=lambda:buyer_cost_update(self.j,self.cfg,time.time())
+             if self.cfg.get('shop_adaptive_demand_enabled'):
+                 from .demand_policy import update as demand_update
+                 roles['shop_demand_observer']=lambda:demand_update(self.j,self.cfg,time.time())
+--- a/r3/model.py
++++ b/r3/model.py
+@@ -93,6 +93,15 @@
+                     # bonus; otherwise the .3 forum term would be counted twice.
+                     candidate['objective_utility']-=.3*direct_gain(own.get('forum') or 0,delta.get('forum',0))
+             candidate['objective_utility'] *= candidate.get('capital_efficiency_factor',1)
++            if role=='buyer' and self.config.get('buyer_joint_objective_enabled'):
++                # Keep the four actual marginal contributions inspectable.
++                # A zero forum/post delta on a quote is deliberate: publishing
++                # and votes are separate observed actions, not payment rewards.
++                candidate['objective_component_progress']={key:{
++                    'raw_delta':delta.get(key,0),
++                    'rank_gain':rank_gain(board,role,'seochanit',{key:delta.get(key,0)}),
++                    'progress_surrogate':rank_progress(board,role,'seochanit',{key:delta.get(key,0)})}
++                    for key in ('saved','forum','deals','posts')}
+         def utility(candidate):
+             if role=='buyer' and context.get('buyer_execution') and self.config.get('buyer_throughput_enabled'):
+                 seconds=max(1,candidate.get('execution_seconds',1))
+@@ -119,7 +128,8 @@
+             if packet:
+                 context['observed_role_facts'] = packet
+         if role=='buyer':context.update(buyer_metric=current['metric'],buyer_forum_metric=current['forum_metric'],
+-                                       buyer_rank_scope=board.get('buyer_rank_scope'))
++                                       buyer_rank_scope=board.get('buyer_rank_scope'),buyer_score_formula=current.get('score_formula'),
++                                       saved_average_is_reference=self.config.get('buyer_joint_objective_enabled',False))
+         if role=='buyer' and self.config.get('buyer_throughput_enabled'):
+             context['execution_objective']='expected rank/Saved progress per bounded execution-second scenario; hard caps unchanged'
+         if self.config.get('market_cycle_enabled'):
+--- a/market_buyer.py
++++ b/market_buyer.py
+@@ -11,6 +11,7 @@
+ from r3.protocol import Peer, quote, quote_terms, retain_quote_terms, verify_receipt
+ from r3.quote_market import compare_quotes, close_quotes, request_text,clarify
+ from r3.adaptive import begin_buyer
++from r3.buyer_scoring import formula,MARGIN,joint_actions
+ 
+ 
+ def receipt_guard(journal,order,candidate,rec,stage,reasons,*,task=None,agreed=None,cap=None):
+@@ -216,9 +217,25 @@
+                     if rec.get('cert') is False:
+                         # The kit will reject this checkout. Try another shop while the order is still alive.
+                         raise ValueError('certificate_unavailable')
++                    if cfg.get('buyer_joint_objective_enabled') and formula(journal)==MARGIN:
++                        # Immediate artifacts and negotiated receipts share the
++                        # same whole-objective/outside-option check.
++                        final=buyer_assessment(dict(c['product'],sku=c['sku']),order,rec,journal,cfg,shop=c['shop'])
++                        actions=buyer_price_actions(rec['price'],final['cap'],c['product'],rec['price'],
++                            1,0,1,failure_stress=final['failure'],covered_failure=final['covered_failure'],
++                            saved_state=final['saved_state'])
++                        for action in actions:action['execution_seconds']=max(1,c.get('execution_seconds',5))
++                        decision=chooser.choose('buyer',joint_actions(actions),{'buyer_execution':True,
++                            'operation':'final_purchase','order':order,'shop':c['shop'],'sku':c['sku']},deadline=deadline)
++                        if decision['id']=='continue_search':
++                            journal.add('buyer_objective_skip',{'order':order['order'],'shop':c['shop'],
++                                'sku':c['sku'],'stage':'final_purchase'},role='buyer')
++                            break
+                     accept = {"cert": True, "expected_sku": c["sku"]}
+                     if order.get("kind") == "food":
+                         accept["min_hours_left"] = order.get("use_within_hours", 0) + cfg["checkout_buffer_seconds"] / 3600
++                        if required_grade in ('A','B','C'):
++                            accept['grades']=[required_grade]
+                     else:
+                         accept["warranty_hours"] = required_warranty
+                         if required_grade in ('A', 'B', 'C'):
+@@ -274,6 +291,8 @@
+                         action['score']*=factor
+                         action['expected_delta']={k:v*factor for k,v in action['expected_delta'].items()}
+                         action['completion_probability']=calibrated
++                if cfg.get('buyer_joint_objective_enabled') and formula(journal)==MARGIN:
++                    actions=joint_actions(actions)
+                 if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled') and not cfg.get('buyer_patch34_enabled'):
+                     move=max(actions,key=lambda a:a['score'])
+                 else:
+@@ -281,6 +300,10 @@
+                                            'shop':c['shop'],'sku':c['sku'],'task':task['id'],
+                                            'buyer_execution':True,'operation':'price',
+                                            "product": product, "strategy": strategy}, deadline=deadline)
++                if move['id']=='continue_search':
++                    journal.add('buyer_objective_skip',{'order':order['order'],'shop':c['shop'],
++                        'sku':c['sku'],'stage':'price'},role='buyer')
++                    break
+                 agreed = move["price"]
+                 previous_offer = agreed
+                 if move['id'] == 'counter':
+@@ -299,7 +322,8 @@
+             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
+                                     "shop": c["shop"], "sku": c["sku"], "success": False,
+                                     'use_within_hours':order.get('use_within_hours',0),
+-                                    "kind": "no_agreement", "seconds": time.monotonic() - started}, role="buyer")
++                                    "kind": "no_agreement", "seconds": time.monotonic() - started,
++                                    "score_formula": formula(journal)}, role="buyer")
+         except Exception as exc:
+             if not isinstance(exc, ValueError):
+                 ranked = [x for x in ranked if x['shop'] != c['shop']]
+--- a/review.py
++++ b/review.py
+@@ -18,12 +18,21 @@
+         value = buyer_value(product, price, hours_left=(expires - now) / 3600 if expires else float("inf"),
+                             use_hours=order.get("use_within_hours", 0))["value"]
+     value = value or 0
++    from r3.buyer_scoring import formula,LEGACY,cost_scenario,contribution,MARGIN
++    version=formula(journal)
++    scenario=cost_scenario(product,settled.get('grade')) if product.get('list_price') and version==MARGIN else None
++    # Settlement is signed, but does not expose acquisition cost. Do not invent
++    # an exact margin-share outcome from a seller's claimed cost or our bound.
++    initial=((value-price)/product['list_price'] if value and product.get('list_price') else -1) if version==LEGACY else None
+     item = {"order": order["order"], "sku": sku, "unit": settled.get("unit"), "shop": settled["shop"],
+             "shop_identity": journal.snapshot("registry.json", {}).get(settled["shop"], {}).get("pubkey"),
+             "name": settled.get("name", product.get("name", sku)), "kind": product.get("kind", order.get("kind")),
+             "price": price, "value": value, "paid_at": now, "grade": settled.get("grade"),
+             'list_price':product.get('list_price'),'expires_at':expires,
+-            'initial_saved_contribution':(value-price)/product['list_price'] if value and product.get('list_price') else -1,
++            'initial_saved_contribution':initial,'score_formula':version,
++            'initial_saved_lower_scenario':contribution(price,product['list_price'],score_formula=MARGIN,
++                 unit_cost=scenario['unit_cost']) if scenario and value else None,
++            'cost_scenario':scenario,
+             "warranty_hours": warranty_hours(settled.get('warranty_hours')), "ledger": settled.get("ledger"),
+             "strategy_version": journal.get('buyer_strategy:' + str(order['order']), {}).get('version', 0)}
+     journal.add("purchase", item, eid="purchase:" + order["order"], role="buyer")
+--- a/policy.json
++++ b/policy.json
+@@ -18,7 +18,7 @@
+   "warranty_menu_enabled": true,
+   "checkout_recovery_enabled": true,
+   "buyer_patch34_enabled": true,
+-  "buyer_strategy_revision": "buyer-v13-contract-frontier",
++  "buyer_strategy_revision": "buyer-v22-margin-share-v36",
+   "buyer_forum_metric": "raw",
+   "buyer_championship_enabled": true,
+   "buyer_saved_target_margin": 0.002,
+@@ -116,7 +116,7 @@
+   "buyer_contract_probe_percent": 8,
+   "autonomy_v14_enabled": true,
+   "buyer_worker_enabled": true,
+-  "execution_revision": "v21-adaptive-shop-demand-and-replenishment-1",
++  "execution_revision": "v22-buyer-cost-scenarios-and-scoring-isolation-1",
+   "objective_feedback_enabled": true,
+   "agent_policy_selection_enabled": true,
+   "discovery_priority_enabled": true,
+@@ -157,5 +157,7 @@
+   "shop_demand_calibration_prior_events": 5,
+   "shop_demand_prior_hours": 0.25,
+   "shop_replenishment_service_level": 0.9,
+-  "shop_supply_delivery_seconds": 30
++  "shop_supply_delivery_seconds": 30,
++  "buyer_patch36_enabled": true,
++  "buyer_joint_objective_enabled": true
+ }
+--- a/verify_market_cycle_live.py
++++ b/verify_market_cycle_live.py
+@@ -46,7 +46,7 @@
+     try:
+         with lease(ROOT/'.market/shop-recovery-guard.lock'):guard_active=False
+     except RuntimeError:guard_active=True
+-    release='v21' if cfg.get('shop_adaptive_demand_enabled') else 'v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
++    release='v22' if cfg.get('buyer_patch36_enabled') else 'v21' if cfg.get('shop_adaptive_demand_enabled') else 'v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
+     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
+     manifest=read_json(promotion,{})
+     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]
+--- a/tests/test_patch36.py
++++ b/tests/test_patch36.py
+@@ -0,0 +1,188 @@
++"""Scoring version boundaries and hidden-cost decisions; no network or payments."""
++import time
++import pytest
++from r3.state import Journal,atomic_json,policy
++from r3.buyer_scoring import MARGIN,LEGACY,contribution,saved_price_cap,state,cost_scenario,score_inputs
++from r3.control import audit_rules
++from r3.market_memory import buyer_assessment,buyer_price_actions
++from r3.outcomes import reconcile,latest
++
++
++def market(tmp_path):
++    j=Journal(tmp_path);cfg=policy()
++    j.put('market_rules',{'buyer_metric':'saved','buyer_saved_formula':MARGIN,'buyer_forum_metric':'raw'})
++    atomic_json(j.md/'board.json',{'round':3,'buyers':[{'name':'seochanit','saved':.708,'deals':14500}]})
++    return j,cfg
++
++
++def test_rule_audit_rejects_unknown_denominator_not_just_saved_label(tmp_path):
++    j=Journal(tmp_path)
++    prefix=('shops by book, revenue and stars; each further unit adds 0.2%; up to +50%; '
++            'buyers by saved rate; ALL weighs them 0.5, 0.3, 0.1, 0.1; divided by deals + 100; '
++            'counts -1, or 0 if refunded; ')
++    old=audit_rules(j,prefix+'surplus / list price')
++    new=audit_rules(j,prefix+'(list price - price) / (list price - unit cost), at most 1')
++    unknown=audit_rules(j,prefix+'(list price - price) / (list price - unknown cost), at most 1')
++    assert old['buyer_saved_formula']==LEGACY and old['buyer_compatible']
++    assert new['buyer_saved_formula']==MARGIN and new['buyer_compatible']
++    assert unknown['compatible'] and not unknown['buyer_compatible']
++    assert len(j.events('buyer_score_formula_changed'))==3
++
++
++def test_margin_share_changes_the_preferred_contract_and_caps_at_one():
++    assert contribution(80,100,score_formula=MARGIN,unit_cost=70)>contribution(60,100,score_formula=MARGIN,unit_cost=30)
++    assert contribution(80,100)<contribution(60,100)
++    assert contribution(50,100,score_formula=MARGIN,unit_cost=70)==1
++    assert contribution(80,100,1,0,score_formula=MARGIN,unit_cost=70)==-1
++    assert contribution(80,100,1,1,score_formula=MARGIN,unit_cost=70)==0
++
++
++@pytest.mark.parametrize('saved',[0,.4,.708,.95])
++@pytest.mark.parametrize('failure',[0,.05,.2,.6])
++@pytest.mark.parametrize('cost',[2500,5500,9000])
++def test_price_cap_inverse_matches_new_capped_reward(saved,failure,cost):
++    current={'score_formula':MARGIN,'unit_cost':cost,'saved':saved}
++    for covered in [0,failure]:
++        cap,target=saved_price_cap(10000,current,failure,covered)
++        if cap:
++            assert contribution(cap,10000,failure,covered,**score_inputs(current))>=target-1e-12
++            if target<1:
++                assert contribution(cap+1,10000,failure,covered,**score_inputs(current))<target+1e-12
++
++
++@pytest.mark.parametrize('cost',[None,float('nan'),100,101,-1])
++def test_undefined_or_nonpositive_margin_is_not_invented(cost):
++    with pytest.raises(ValueError):contribution(80,100,score_formula=MARGIN,unit_cost=cost)
++
++
++def test_peer_cost_claim_cannot_increase_our_bid_and_food_grade_is_conditional(tmp_path):
++    j,cfg=market(tmp_path);p={'kind':'food','list_price':29300}
++    a=buyer_assessment(p,{'budget':29300},{'grade':'A','cost':29000},j,cfg)
++    b=buyer_assessment(p,{'budget':29300},{'grade':'A','cost':1},j,cfg)
++    assert a['cap']==b['cap']==29300 and a['saved_reference_cap']>19000
++    assert not a['saved_target_is_hard_cap']
++    assert a['required_grade']=='A' and not a['cost_scenario']['exact']
++    unknown=buyer_assessment(p,{'budget':29300},{},j,cfg)
++    assert unknown['cap']==a['cap'] and unknown['saved_reference_cap']<a['saved_reference_cap']
++    assert cost_scenario(p,'B')['unit_cost']==11720
++    assert state(j,cfg)['score_formula']==MARGIN
++
++
++def test_actions_use_new_score_and_keep_monotone_bids(tmp_path):
++    j,cfg=market(tmp_path);p={'kind':'food','list_price':10000}
++    a=buyer_assessment(p,{'budget':10000},{'grade':'A'},j,cfg)
++    actions=buyer_price_actions(6500,a['cap'],p,6500,.92,0,4,saved_state=a['saved_state'])
++    accept=next(x for x in actions if x['id']=='accept')
++    assert accept['expected_delta']['saved']>0
++    assert accept['score']==pytest.approx(contribution(6500,10000,**score_inputs(a['saved_state'])))
++    counters=buyer_price_actions(7500,a['cap'],p,7000,.92,1,4,previous_offer=6000,saved_state=a['saved_state'])
++    assert all(x['price']>6000 and x['price']<=a['cap'] for x in counters)
++
++
++def test_old_refusal_memory_expires_by_formula_while_transport_facts_survive(tmp_path):
++    from r3.contracts import history
++    from r3.buyer_execution import route_context
++    j,cfg=market(tmp_path);now=time.time()
++    j.add('buyer_contract_result',{'shop_identity':'owner:peer','order':'old','sku':'G1','kind':'goods','class':'price'})
++    j.add('buyer_contract_result',{'shop_identity':'owner:peer','order':'new','sku':'G1','kind':'goods','class':'price','score_formula':MARGIN})
++    j.add('attempt',{'order':'old','shop':'s','sku':'G1','kind':'no_agreement'})
++    j.add('attempt',{'order':'transport','shop':'s','sku':'G1','kind':'ReadTimeout'})
++    assert [r['order'] for r in history(j,now+1)['groups'][('owner:peer','G1','goods')]]==['new']
++    assert route_context(j,now+1)['routes'][('s','G1')]['n']==1
++
++
++def test_healthy_hidden_cost_is_never_an_exact_reward_and_breaks_remain_exact(tmp_path):
++    j,cfg=market(tmp_path);now=time.time()
++    p={'order':'o','unit':'u','kind':'goods','paid_at':now-25000,'price':600,'value':1000,
++       'warranty_hours':6,'score_formula':MARGIN,'initial_saved_contribution':None,'initial_saved_lower_scenario':.8}
++    j.put('public_feed_caught_up_at',now);reconcile(j,[p],now)
++    out=latest(j)['o'];assert out['canonical'] and out['saved_contribution'] is None
++    assert out['saved_lower_scenario']==.8 and not out['score_exact']
++    j.add('public_broken',{'unit':'u','order':'o','hours_after_sale':1,'refunded':600},ts=now)
++    reconcile(j,[p],now+31)
++    assert latest(j)['o']['saved_contribution']==0 and latest(j)['o']['score_exact']
++
++
++def test_prepared_cache_version_changes_when_formula_changes(tmp_path):
++    from r3.prepared import version
++    j,cfg=market(tmp_path);old=version(j)
++    j.put('market_rules',{'buyer_saved_formula':LEGACY})
++    assert version(j)!=old
++
++
++def test_new_experiment_does_not_compare_legacy_rewards(tmp_path):
++    from r3.evolution import evaluate
++    j,cfg=market(tmp_path);now=time.time()
++    j.add('framework_order',{'order':'o','experiment':'e','kind':'goods','arm':'challenger','saved_at_assignment':.3},ts=now-25000)
++    j.add('market_result',{'order':'o','verified':False},ts=now-24000)
++    result=evaluate(j,{'experiment':'e','since':now-30000},now)
++    assert result['stats']['challenger']['closed']==0 and not result['promote']
++
++
++def test_joint_objective_can_buy_below_saved_average_for_a_larger_deal_rank_gain(tmp_path,monkeypatch):
++    from r3.model import Chooser
++    from r3.buyer_scoring import joint_actions,terms_delta
++    j,cfg=market(tmp_path)
++    atomic_json(j.md/'board.json',{'round':3,'buyers':[
++        {'name':'seochanit','saved':.8,'deals':100,'forum':.9,'posts':20},
++        {'name':'peer','saved':.9,'deals':101,'forum':.9,'posts':30},
++        {'name':'lower','saved':.1,'deals':50,'forum':.8,'posts':10}]})
++    current={'metric':'saved','score_formula':MARGIN,'unit_cost':5000,'saved':.8,'deals':100}
++    changes=terms_delta(current,6050,10000)
++    assert changes['saved']<0
++    actions=joint_actions([{'id':'accept','price':6050,'score':.79,'execution_seconds':1,'expected_delta':changes}])
++    chooser=Chooser(j,cfg)
++    monkeypatch.setattr(chooser,'_call',lambda *a,**k:pytest.fail('no API in numeric execution'))
++    selected=chooser.choose('buyer',actions,{'buyer_execution':True,'operation':'price'})
++    assert selected['id']=='accept' and selected['objective_utility']>0
++
++
++def test_joint_outside_option_prevents_purchase_when_overall_score_decreases(tmp_path):
++    from r3.model import Chooser
++    from r3.buyer_scoring import joint_actions,terms_delta
++    j,cfg=market(tmp_path)
++    atomic_json(j.md/'board.json',{'round':3,'buyers':[
++        {'name':'seochanit','saved':.8,'deals':100,'forum':.9,'posts':20},
++        {'name':'peer','saved':.81,'deals':10000,'forum':.9,'posts':30},
++        {'name':'lower','saved':.79,'deals':50,'forum':.8,'posts':10}]})
++    current={'metric':'saved','score_formula':MARGIN,'unit_cost':5000,'saved':.8,'deals':100}
++    actions=joint_actions([{'id':'accept','price':9500,'score':.1,'execution_seconds':1,
++                          'expected_delta':terms_delta(current,9500,10000)}])
++    assert Chooser(j,cfg).choose('buyer',actions,{'buyer_execution':True,'operation':'price'})['id']=='continue_search'
++
++
++def test_private_cost_is_not_recorded_as_exact_margin_reward(tmp_path):
++    from review import review
++    j,cfg=market(tmp_path)
++    atomic_json(j.md/'catalog.json',{'G1':{'kind':'goods','list_price':10000}})
++    review({'order':{'order':'o'},'receipt':{'price':6000,'cost':9999},'settled':{
++        'sku':'G1','shop':'s','grade':'A','unit':'u','value':10000,'warranty_hours':6}},j)
++    p=j.events('purchase',1)[0]
++    assert p['initial_saved_contribution'] is None and p['initial_saved_lower_scenario']==pytest.approx(4000/4500)
++    assert not p['cost_scenario']['exact'] and p['score_formula']==MARGIN
++
++
++def test_cost_observer_updates_a_small_packet_and_main_respects_its_freshness(tmp_path):
++    from r3.buyer_costs import update,scenario
++    j,cfg=market(tmp_path);now=time.time();p={'list_price':10000,'kind':'goods'}
++    atomic_json(j.md/'catalog.json',{'G1':p})
++    for n in range(30):
++        j.add('shop_settled',{'unit':str(n),'sku':'G1','cost':7400,'grade':'A'},ts=now-10)
++    j.add('shop_settled',{'unit':'duplicate','sku':'G1','cost':float('nan'),'grade':'A'},ts=now-10)
++    before=scenario(j,p,'A',now)
++    packet=update(j,cfg,now)
++    after=scenario(j,p,'A',now+1)
++    assert packet['groups']['goods:A']['n']==30 and after['samples']==30
++    assert after['expected_source']=='shrunk_own_cost_proxy'
++    assert sum(after['cost_samples'])>sum(before['cost_samples'])
++    assert not after['other_seller_cost_exact'] and after['probabilities_are_scenarios']
++    assert scenario(j,p,'A',now+181)['expected_source']=='public_range_scenario_grid'
++    j.put('market_rules',{'sha256':'new'})
++    assert scenario(j,p,'A',now+1)['model_id'] is None
++
++
++def test_expected_score_integrates_margin_shares_instead_of_using_mean_cost():
++    values=[5500,6500,7500]
++    result=contribution(7000,10000,score_formula=MARGIN,cost_samples=values)
++    assert result==pytest.approx(sum(min(1,3000/(10000-c)) for c in values)/3)
++    assert result!=pytest.approx(contribution(7000,10000,score_formula=MARGIN,unit_cost=6500))
+--- a/tests/test_patch35.py
++++ b/tests/test_patch35.py
+@@ -35,7 +35,7 @@
+ def rule_text():
+     return ('shops by book, revenue and stars; each further unit adds 0.2%; up to +50%; '
+             'buyers by saved rate; ALL weighs them 0.5, 0.3, 0.1, 0.1; divided by deals + 100; '
+-            'counts -1, or 0 if refunded; except the forum rating, which counts as itself (0 to 1). '
++            'surplus / list price; counts -1, or 0 if refunded; except the forum rating, which counts as itself (0 to 1). '
+             'A dislike with value -N (N up to 1000); unit x (N - 1)^2; 3% of largest Book; '
+             'power_fee and next_vote_fee; at least 50 settled deals')
+ 
+--- a/tests/test_buyer_patch34.py
++++ b/tests/test_buyer_patch34.py
+@@ -178,7 +178,7 @@
+     j,cfg=fixture(tmp_path)
+     text=('shops by book, revenue and stars; each further unit adds 0.2%; up to +50%; '
+           'buyers by saved rate; ALL weighs them 0.5, 0.3, 0.1, 0.1; divided by deals + 100; '
+-          'counts -1, or 0 if refunded; at least 50 settled deals; one stance per; next_dislike_fee')
++          'surplus / list price; counts -1, or 0 if refunded; at least 50 settled deals; one stance per; next_dislike_fee')
+     r=audit_rules(j,text)
+     assert r['compatible'] and r['buyer_compatible'] and r['buyer_metric']=='saved' and r['forum_vote_min_deals']==50
+     assert audit_rules(j,'unrecognized buyer scoring')['buyer_compatible'] is False

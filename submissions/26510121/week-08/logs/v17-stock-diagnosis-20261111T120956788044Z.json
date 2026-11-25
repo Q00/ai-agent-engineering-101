@@ -1,0 +1,2148 @@
+{
+  "at_kst": "2026-11-11T21:09:56.788044+09:00",
+  "runtime_start_kst": "2026-11-11T19:42:32.862826+09:00",
+  "inventory_cutoff_kst": "2026-11-11T21:09:45.279787+09:00",
+  "sources": {
+    "baseline": "logs/autonomous-deploy-before-20261111T104125973451Z.json",
+    "public_board": "logs\\peer-market-source-20261111T120640865978Z.json",
+    "console": "logs\\auto-join-20261111T104232311820Z.txt",
+    "database": ".market/r3.sqlite3"
+  },
+  "file_times": {
+    "runtime.json": "2026-11-11T19:42:32.862826+09:00",
+    "inventory.json": "2026-11-11T21:09:45.279787+09:00",
+    "board.json": "2026-11-11T21:09:28.762506+09:00",
+    "catalog.json": "2026-11-11T19:43:57.384235+09:00",
+    "market_stock_counts.json": "2026-11-11T21:09:45.832551+09:00",
+    "market-control.json": "2026-11-11T21:09:30.371757+09:00",
+    "operating-policy-v16.json": "2026-11-11T21:09:31.582980+09:00",
+    "market-research-v15.json": "2026-11-11T20:49:41.584201+09:00",
+    "shop-plan-v15.json": "2026-11-11T21:05:33.270153+09:00",
+    "shop-health.json": "2026-11-11T21:09:16.946047+09:00"
+  },
+  "periods": {
+    "before_equal_duration": {
+      "start_kst": "2026-11-11T18:15:20.445865+09:00",
+      "end_kst": "2026-11-11T19:42:32.862826+09:00",
+      "hours": 1.4534491557545133,
+      "sales": 9,
+      "sales_per_hour": 6.192167069874507,
+      "revenue": 5302021,
+      "gross_margin": 412337,
+      "below_cost_sales": 0,
+      "by_kind": {
+        "goods": 9
+      },
+      "raw_stockout_events": 27,
+      "distinct_stockout_tasks": 27,
+      "restock_block_reasons": {
+        "market_shop_not_discoverable": 2
+      },
+      "supply_status": {}
+    },
+    "v17": {
+      "start_kst": "2026-11-11T19:42:32.862826+09:00",
+      "end_kst": "2026-11-11T21:09:45.279787+09:00",
+      "hours": 1.4534491557545133,
+      "sales": 45,
+      "sales_per_hour": 30.960835349372534,
+      "revenue": 25911776,
+      "gross_margin": 2710039,
+      "below_cost_sales": 0,
+      "by_kind": {
+        "goods": 40,
+        "food": 5
+      },
+      "raw_stockout_events": 58,
+      "distinct_stockout_tasks": 58,
+      "restock_block_reasons": {
+        "market_control_defensive_or_stale": 1,
+        "market_shop_not_discoverable": 1
+      },
+      "supply_status": {
+        "complete": 33,
+        "retryable": 26
+      }
+    }
+  },
+  "inventory": {
+    "units": 53,
+    "skus": 47,
+    "cost": 44401089,
+    "by_kind": {
+      "goods": 50,
+      "food": 3
+    },
+    "balance": 727761188,
+    "capacity": {
+      "spendable": 559838637.88,
+      "refund_liability": 21484345,
+      "storage_to_end": 885967.52,
+      "cash_floor": 145552237.6,
+      "remaining_days": 2.0,
+      "reserve_release_schedule": [
+        {
+          "at": 1794400800,
+          "amount": 250233
+        },
+        {
+          "at": 1794402000,
+          "amount": 1060800
+        },
+        {
+          "at": 1794404400,
+          "amount": 1178487
+        },
+        {
+          "at": 1794405600,
+          "amount": 155000
+        },
+        {
+          "at": 1794406800,
+          "amount": 6100287
+        },
+        {
+          "at": 1794408000,
+          "amount": 302964
+        },
+        {
+          "at": 1794409200,
+          "amount": 3252602
+        },
+        {
+          "at": 1794415200,
+          "amount": 490634
+        },
+        {
+          "at": 1794416400,
+          "amount": 2938094
+        },
+        {
+          "at": 1794417600,
+          "amount": 3095261
+        },
+        {
+          "at": 1794418800,
+          "amount": 711614
+        },
+        {
+          "at": 1794420000,
+          "amount": 1697917
+        },
+        {
+          "at": 1794421200,
+          "amount": 250452
+        }
+      ],
+      "discharged_refund_reserve": 1245834
+    },
+    "ceiling": 180,
+    "initial_timeline_at_kst": "2026-11-11T19:41:24.854754+09:00",
+    "initial_timeline_units": 58,
+    "actual_supply_units": 40,
+    "actual_supply_cost": 24598234,
+    "sold": 45,
+    "accounting_residual": 0
+  },
+  "supply_windows": [
+    {
+      "opens_kst": "2026-11-11T20:04:21+09:00",
+      "decision_kst": "2026-11-11T20:05:00.100917+09:00",
+      "planned_lines": 10,
+      "planned_units": 11,
+      "acquired_lines": 10,
+      "acquired_units": 11,
+      "actual_cost": 7755864,
+      "planned_qty_histogram": {
+        "1": 9,
+        "2": 1
+      }
+    },
+    {
+      "opens_kst": "2026-11-11T20:21:15+09:00",
+      "decision_kst": "2026-11-11T20:21:53.291408+09:00",
+      "planned_lines": 10,
+      "planned_units": 11,
+      "acquired_lines": 10,
+      "acquired_units": 11,
+      "actual_cost": 8382231,
+      "planned_qty_histogram": {
+        "1": 9,
+        "2": 1
+      }
+    },
+    {
+      "opens_kst": "2026-11-11T20:42:40+09:00",
+      "decision_kst": "2026-11-11T20:44:20.960625+09:00",
+      "planned_lines": 5,
+      "planned_units": 8,
+      "acquired_lines": 5,
+      "acquired_units": 8,
+      "actual_cost": 4151052,
+      "planned_qty_histogram": {
+        "2": 1,
+        "3": 1,
+        "1": 3
+      }
+    },
+    {
+      "opens_kst": "2026-11-11T21:03:07+09:00",
+      "decision_kst": "2026-11-11T21:03:51.432756+09:00",
+      "planned_lines": 10,
+      "planned_units": 12,
+      "acquired_lines": 8,
+      "acquired_units": 10,
+      "actual_cost": 4309087,
+      "planned_qty_histogram": {
+        "3": 1,
+        "1": 9
+      }
+    }
+  ],
+  "actual_supplies": [
+    {
+      "at": 1794395109.0,
+      "time_kst": "20:05:09",
+      "qty": 1,
+      "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+      "cost": 1416093,
+      "balance_after": 729945772,
+      "sku": "Gf6b70da8",
+      "window": 1794395061
+    },
+    {
+      "at": 1794395121.0,
+      "time_kst": "20:05:21",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 허브. 라지킹 매트리스",
+      "cost": 1486857,
+      "balance_after": 728458915,
+      "sku": "G3e0d6c67",
+      "window": 1794395061
+    },
+    {
+      "at": 1794395132.0,
+      "time_kst": "20:05:32",
+      "qty": 2,
+      "name": "지누스 그린티 에어 하이브리드 스프링 매트리스 20cm Q 퀸",
+      "cost": 425275,
+      "balance_after": 732248293,
+      "sku": "G0667d440",
+      "window": 1794395061
+    },
+    {
+      "at": 1794395143.0,
+      "time_kst": "20:05:43",
+      "qty": 1,
+      "name": "[헬렌스타인][한파용] 국내생산 알러지케어 헝가리 워셔블 구스이불 Q",
+      "cost": 355616,
+      "balance_after": 731892677,
+      "sku": "G05277ffe",
+      "window": 1794395061
+    },
+    {
+      "at": 1794395157.0,
+      "time_kst": "20:05:57",
+      "qty": 1,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 1110197,
+      "balance_after": 730782480,
+      "sku": "G03d0199f",
+      "window": 1794395061
+    },
+    {
+      "at": 1794395171.0,
+      "time_kst": "20:06:11",
+      "qty": 1,
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "cost": 345063,
+      "balance_after": 730437417,
+      "sku": "G021aae64",
+      "window": 1794395061
+    },
+    {
+      "at": 1794395191.0,
+      "time_kst": "20:06:31",
+      "qty": 1,
+      "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+      "cost": 203496,
+      "balance_after": 730233921,
+      "sku": "G07ec17d5",
+      "window": 1794395061
+    },
+    {
+      "at": 1794395201.0,
+      "time_kst": "20:06:41",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "cost": 702104,
+      "balance_after": 729531817,
+      "sku": "Gb5d0dde7",
+      "window": 1794395061
+    },
+    {
+      "at": 1794395210.0,
+      "time_kst": "20:06:50",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+      "cost": 661565,
+      "balance_after": 728870252,
+      "sku": "G85a1a856",
+      "window": 1794395061
+    },
+    {
+      "at": 1794395221.0,
+      "time_kst": "20:07:01",
+      "qty": 1,
+      "name": "[베스트슬립] L3 그레이 양면유로탑 라지킹 매트리스 LK 1800",
+      "cost": 1049598,
+      "balance_after": 727820654,
+      "sku": "G21d176a2",
+      "window": 1794395061
+    },
+    {
+      "at": 1794396114.0,
+      "time_kst": "20:21:54",
+      "qty": 1,
+      "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+      "cost": 1703376,
+      "balance_after": 732353265,
+      "sku": "Gf6b70da8",
+      "window": 1794396075
+    },
+    {
+      "at": 1794396126.0,
+      "time_kst": "20:22:06",
+      "qty": 2,
+      "name": "지누스 그린티 에어 하이브리드 스프링 매트리스 20cm Q 퀸",
+      "cost": 405259,
+      "balance_after": 731948006,
+      "sku": "G0667d440",
+      "window": 1794396075
+    },
+    {
+      "at": 1794396137.0,
+      "time_kst": "20:22:17",
+      "qty": 1,
+      "name": "시몬스 D2178A. 뷰티레스트 자스민. 라지킹 침대",
+      "cost": 2233415,
+      "balance_after": 729714591,
+      "sku": "Gbec2b68f",
+      "window": 1794396075
+    },
+    {
+      "at": 1794396150.0,
+      "time_kst": "20:22:30",
+      "qty": 1,
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "cost": 263692,
+      "balance_after": 729450899,
+      "sku": "G021aae64",
+      "window": 1794396075
+    },
+    {
+      "at": 1794396173.0,
+      "time_kst": "20:22:53",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "cost": 524573,
+      "balance_after": 729326688,
+      "sku": "Gb5d0dde7",
+      "window": 1794396075
+    },
+    {
+      "at": 1794396180.0,
+      "time_kst": "20:23:00",
+      "qty": 1,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 1000337,
+      "balance_after": 728574270,
+      "sku": "G03d0199f",
+      "window": 1794396075
+    },
+    {
+      "at": 1794396198.0,
+      "time_kst": "20:23:18",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+      "cost": 322383,
+      "balance_after": 728251887,
+      "sku": "G85a1a856",
+      "window": 1794396075
+    },
+    {
+      "at": 1794396213.0,
+      "time_kst": "20:23:33",
+      "qty": 1,
+      "name": "[베드리움] 파인드 LED 서랍형침대(Q)+독립 자카드 매트리스",
+      "cost": 379276,
+      "balance_after": 727872611,
+      "sku": "G2607d1f6",
+      "window": 1794396075
+    },
+    {
+      "at": 1794396226.0,
+      "time_kst": "20:23:46",
+      "qty": 1,
+      "name": "[다우닝] 릴로 SO302 1인 전체 내추럴가죽 리클라이너",
+      "cost": 617269,
+      "balance_after": 727255342,
+      "sku": "G429bd69e",
+      "window": 1794396075
+    },
+    {
+      "at": 1794396234.0,
+      "time_kst": "20:23:54",
+      "qty": 1,
+      "name": "[베스트슬립] L3 그레이 양면유로탑 라지킹 매트리스 LK 1800",
+      "cost": 932651,
+      "balance_after": 726625655,
+      "sku": "G21d176a2",
+      "window": 1794396075
+    },
+    {
+      "at": 1794397462.0,
+      "time_kst": "20:44:22",
+      "qty": 2,
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "cost": 1382684,
+      "balance_after": 731314345,
+      "sku": "Gb5d0dde7",
+      "window": 1794397360
+    },
+    {
+      "at": 1794397477.0,
+      "time_kst": "20:44:37",
+      "qty": 3,
+      "name": "지누스 그린티 에어 하이브리드 스프링 매트리스 20cm Q 퀸",
+      "cost": 716792,
+      "balance_after": 730692413,
+      "sku": "G0667d440",
+      "window": 1794397360
+    },
+    {
+      "at": 1794397489.0,
+      "time_kst": "20:44:49",
+      "qty": 1,
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "cost": 1162183,
+      "balance_after": 729530230,
+      "sku": "G03d0199f",
+      "window": 1794397360
+    },
+    {
+      "at": 1794397501.0,
+      "time_kst": "20:45:01",
+      "qty": 1,
+      "name": "[헬렌스타인][한파용] 국내생산 알러지케어 헝가리 워셔블 구스이불 Q",
+      "cost": 357058,
+      "balance_after": 729173172,
+      "sku": "G05277ffe",
+      "window": 1794397360
+    },
+    {
+      "at": 1794397514.0,
+      "time_kst": "20:45:14",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+      "cost": 532335,
+      "balance_after": 728640837,
+      "sku": "G85a1a856",
+      "window": 1794397360
+    },
+    {
+      "at": 1794398633.0,
+      "time_kst": "21:03:53",
+      "qty": 3,
+      "name": "지누스 그린티 에어 하이브리드 스프링 매트리스 20cm Q 퀸",
+      "cost": 659383,
+      "balance_after": 731521732,
+      "sku": "G0667d440",
+      "window": 1794398587
+    },
+    {
+      "at": 1794398655.0,
+      "time_kst": "21:04:15",
+      "qty": 1,
+      "name": "시몬스 뷰티레스트 허브. 라지킹 매트리스",
+      "cost": 1313153,
+      "balance_after": 730208579,
+      "sku": "G3e0d6c67",
+      "window": 1794398587
+    },
+    {
+      "at": 1794398666.0,
+      "time_kst": "21:04:26",
+      "qty": 1,
+      "name": "[베드리움] 파인드 LED 서랍형침대(Q)+독립 자카드 매트리스",
+      "cost": 349710,
+      "balance_after": 729858869,
+      "sku": "G2607d1f6",
+      "window": 1794398587
+    },
+    {
+      "at": 1794398684.0,
+      "time_kst": "21:04:44",
+      "qty": 1,
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "cost": 310226,
+      "balance_after": 729548643,
+      "sku": "G021aae64",
+      "window": 1794398587
+    },
+    {
+      "at": 1794398693.0,
+      "time_kst": "21:04:53",
+      "qty": 1,
+      "name": "[다우닝] 릴로 SO302 1인 전체 내추럴가죽 리클라이너",
+      "cost": 637449,
+      "balance_after": 728911194,
+      "sku": "G429bd69e",
+      "window": 1794398587
+    },
+    {
+      "at": 1794398713.0,
+      "time_kst": "21:05:13",
+      "qty": 1,
+      "name": "현대의료기 포시즌 베르디 3인 패브릭 컴포트 황토숯볼 온열소파",
+      "cost": 415328,
+      "balance_after": 728495866,
+      "sku": "G4a6cfc11",
+      "window": 1794398587
+    },
+    {
+      "at": 1794398723.0,
+      "time_kst": "21:05:23",
+      "qty": 1,
+      "name": "지누스 클라우드 럭스S 하이브리드 매트리스 30cm Q 퀸",
+      "cost": 415108,
+      "balance_after": 728080758,
+      "sku": "G754bf0ca",
+      "window": 1794398587
+    },
+    {
+      "at": 1794398735.0,
+      "time_kst": "21:05:35",
+      "qty": 1,
+      "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+      "cost": 208730,
+      "balance_after": 727872028,
+      "sku": "G07ec17d5",
+      "window": 1794398587
+    }
+  ],
+  "supply_refusals": [
+    "21:06:19 [supply] {'sku': 'G53b150b5', 'qty': 1} refused: 409 {\"error\":\"supply window closed; replan\"}",
+    "21:06:21 [supply] {'sku': 'Ge04f5cab', 'qty': 1} refused: 409 {\"error\":\"supply window closed; replan\"}"
+  ],
+  "policy_history": [
+    {
+      "at_kst": "2026-11-11T19:44:13.699107+09:00",
+      "operating_policy": {
+        "cover_cycles": 1,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 120
+      },
+      "intents": [
+        "stock_coverage"
+      ],
+      "summary": "Use a bounded stock-coverage operating response, but defer policy and parameter changes: inventory is 58 units versus 153 median online-peer stock, with 27 stockouts and 9 own paid sales in 60 minutes. Supply execution still requires fresh guards, and the shop is reported nondiscoverable. Goods conversion remains weak, with 1/23 closed orders paid and all 40 goods quotes above cap; do not relax price caps. The challenger is not promotion-ready, and the rating holdout is predictive rather than causal with rank mapping unverified."
+    },
+    {
+      "at_kst": "2026-11-11T19:54:18.144207+09:00",
+      "operating_policy": {
+        "cover_cycles": 1,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "summary": "Allow bounded stock-coverage and buyer price-gap routing responses: recent stockouts are high, while goods quotes repeatedly exceed the price cap. Keep research parameters and operating policy unchanged; do not promote the challenger because mature canonical results are absent and the evaluation is not ready. Transport issues and declining external-trade rate argue against broader inventory changes."
+    },
+    {
+      "at_kst": "2026-11-11T19:59:18.630871+09:00",
+      "operating_policy": {
+        "cover_cycles": 1,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "summary": "Market activity is substantial but easing (786 trades in 20 minutes; rate ratio 0.906). Own stock is low versus peers (50 vs median 191) with 39 stockouts, supporting bounded coverage routing. Food conversion exceeds goods (50/88 vs 3/32 closed orders), while goods quotes are frequently above cap (53/54). Keep the operating policy unchanged; do not promote the challenger, infer demand from observational preferences, or change price caps. The holdout is predictive but noncausal, and official stars-rank mapping is unverified."
+    },
+    {
+      "at_kst": "2026-11-11T20:04:23.834794+09:00",
+      "operating_policy": {
+        "cover_cycles": 1,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "summary": "Stockouts (39 in 60 minutes) and inventory below the online-peer median support bounded stock-coverage and eligible failed-contract routing responses, subject to live supply checks. Retain the diversified shop plan and current operating policy: market trade rate is near flat, while transport and discoverability blockers remain. Goods conversion is weak and most goods quotes exceed the cap; recovery probes must not relax price caps. Challenger promotion is unsupported: evaluation is not ready and canonical mature buyer outcomes are absent."
+    },
+    {
+      "at_kst": "2026-11-11T20:14:25.022727+09:00",
+      "operating_policy": {
+        "cover_cycles": 1,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "intents": [],
+      "summary": "Keep the current research parameters and operating policy. Stockouts are elevated (44 in 60 minutes) against 51 units of stock, while shop sales and external trade activity remain substantial. However, defensive controls and unhealthy transport block restocking, so do not issue a stock-coverage operating intent until live guards permit it. Goods contracts convert poorly and are mostly above cap; retain the existing buyer settings and do not change the price cap. The challenger is not ready for promotion. Although the diversified plan has the strongest modeled supply-plan utility, execution remains guarded and its projection is not realized performance."
+    },
+    {
+      "at_kst": "2026-11-11T20:19:27.401850+09:00",
+      "operating_policy": {
+        "cover_cycles": 1,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "summary": "Authorize bounded measurement-based stock coverage and buyer price-failure routing, but do not approve economic promotion or change trial parameters. Stock is low (51 units versus 237 median peer stock) with 41 stockouts in 60 minutes; the supply plan favors diversified stocking, though defensive/discoverability blocks remain. Buyer goods conversion is weak (4/36 closed orders paid in the recent 60 minutes), and 59/60 goods quotes were above cap. Keep the current operating policy and avoid treating routing as a price-cap exception. The challenger is not promotion-ready; the quality holdout is predictive, not causal, and official rank mapping remains unverified."
+    },
+    {
+      "at_kst": "2026-11-11T20:24:30.961056+09:00",
+      "operating_policy": {
+        "cover_cycles": 1,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "summary": "Approve bounded operating responses: stockouts are elevated despite near-flat-to-slightly-rising market activity, and buyer recovery routing is justified by repeated above-cap failures. Keep operating policy and buyer parameters at baseline; the diversified supply plan has the highest supplied utility, but discovery and defensive/stale-control blocks require live checks. Do not promote the challenger: evaluation is not ready, and its apparent uplift lacks sufficient mature evidence."
+    },
+    {
+      "at_kst": "2026-11-11T20:49:41.594236+09:00",
+      "operating_policy": {
+        "cover_cycles": 1,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "summary": "Approve bounded stock-coverage and buyer price-gap routing responses, while retaining the current operating policy and profile parameters. Stockouts (49 in 60 minutes) and 48 units of stock versus 198 median peer stock support a coverage response, though external trade rate is essentially flat and a discoverability block is recorded. Goods conversion is weak (5/43 closed orders paid) and 61/62 goods quotes were above cap; route qualifying repeated failures to recovery probes without changing the cap. Do not promote a challenger: evaluation is not ready and has only 9 paid challenger outcomes. The quality holdout is predictive, not causal, and official stars-rank mapping is unverified."
+    }
+  ],
+  "effective_shop_patch": {
+    "shop_recovery_v15_enabled": true,
+    "shop_growth_v5": true,
+    "shop_strategy_revision": "shop-v11-contract-memory",
+    "shop_championship_enabled": true,
+    "shop_championship_allocation_enabled": true,
+    "shop_inventory_ceiling": 180,
+    "shop_velocity_enabled": true,
+    "shop_velocity_allocation_enabled": true,
+    "shop_fast_execution_enabled": true,
+    "shop_stock_service_level": 0.9,
+    "shop_supply_slot_capital": 100000,
+    "shop_warranty_liquidity_penalty": 0.02,
+    "shop_margin_fraction": 0.02,
+    "shop_demand_horizon_cycles": 1,
+    "shop_sku_trend_factors": {
+      "G200e39a3": 0.9,
+      "Gef4d3036": 1.45,
+      "G021aae64": 0.95,
+      "G3434758a": 0.95,
+      "G1831f2c0": 1.05,
+      "G66ded25b": 1.15,
+      "G022ce883": 1.15,
+      "G0be9ed07": 1.5,
+      "G2560a8c9": 1.05,
+      "G75f11c19": 1.1,
+      "G4a998429": 1.35,
+      "Gb2392fa9": 1.05
+    },
+    "shop_public_demand_skus": [
+      "G021aae64",
+      "G022ce883",
+      "G0be9ed07",
+      "G1831f2c0",
+      "G200e39a3",
+      "G2560a8c9",
+      "G3434758a",
+      "G4a998429",
+      "G66ded25b",
+      "G75f11c19",
+      "Gb2392fa9",
+      "Gef4d3036"
+    ],
+    "shop_public_demand_caps": {
+      "G200e39a3": 6,
+      "Gef4d3036": 6,
+      "G021aae64": 6,
+      "G3434758a": 6,
+      "G1831f2c0": 6,
+      "G66ded25b": 6,
+      "G022ce883": 6,
+      "G0be9ed07": 6,
+      "G2560a8c9": 6,
+      "G75f11c19": 6,
+      "G4a998429": 6,
+      "Gb2392fa9": 6
+    }
+  },
+  "research_deferrals": {
+    "research_incomplete": 1,
+    "api_http_400": 1,
+    "research_input_budget": 7
+  },
+  "stockout_skus": [
+    {
+      "sku": "G9df06998",
+      "name": "햇반 쿡반 주먹밥 아이간식 베스트 3종 6봉 세트 (불고기x2+버터장조림x2+참치마요x2)",
+      "events": 26,
+      "held": 1,
+      "kind": "food"
+    },
+    {
+      "sku": null,
+      "name": null,
+      "events": 7,
+      "held": 0,
+      "kind": null
+    },
+    {
+      "sku": "G6841e8a3",
+      "name": "[설치배송/단단한타입] 지누스 키스톤 독립 스프링 매트리스 25cm SS 슈퍼싱글사이즈",
+      "events": 5,
+      "held": 1,
+      "kind": "goods"
+    },
+    {
+      "sku": "G2c023a8c",
+      "name": "현대의료기 5005SF 황토숯볼 흙쇼파 흙카우치",
+      "events": 4,
+      "held": 0,
+      "kind": "goods"
+    },
+    {
+      "sku": "G24f5f979",
+      "name": "[다우닝] 플라나 4인 스윙 전체 통가죽 소파+스툴",
+      "events": 4,
+      "held": 1,
+      "kind": "goods"
+    },
+    {
+      "sku": "G0132ff94",
+      "name": "[헬렌스타인][이불커버 증정] 앨버리 호주산 양모이불 Q",
+      "events": 3,
+      "held": 1,
+      "kind": "goods"
+    },
+    {
+      "sku": "G75f11c19",
+      "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+      "events": 2,
+      "held": 0,
+      "kind": "goods"
+    },
+    {
+      "sku": "G8095ddd6",
+      "name": "[에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈)",
+      "events": 1,
+      "held": 1,
+      "kind": "goods"
+    },
+    {
+      "sku": "Gd6fb41c7",
+      "name": "맛젤 제스프리 그린키위 왕점보 개별 155g내외 65개입 10kg 대용량 벌크",
+      "events": 1,
+      "held": 0,
+      "kind": "food"
+    },
+    {
+      "sku": "Gf6b70da8",
+      "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+      "events": 1,
+      "held": 1,
+      "kind": "goods"
+    },
+    {
+      "sku": "G8ec51935",
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "events": 1,
+      "held": 1,
+      "kind": "goods"
+    },
+    {
+      "sku": "G4a998429",
+      "name": "[지정일배송]예소담 충북 괴산 절임배추 20kg",
+      "events": 1,
+      "held": 1,
+      "kind": "food"
+    }
+  ],
+  "stock_and_targets": [
+    {
+      "sku": "G0667d440",
+      "name": "지누스 그린티 에어 하이브리드 스프링 매트리스 20cm Q 퀸",
+      "kind": "goods",
+      "held": 3,
+      "sold": 7,
+      "positive_paid_available_6h": 12,
+      "rate": 4.740135212488301,
+      "target_1cycle": 3,
+      "target_3cycles": 8,
+      "public_qualified": false,
+      "exposure_hours": 2.311240229606628
+    },
+    {
+      "sku": "Gb5d0dde7",
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "kind": "goods",
+      "held": 1,
+      "sold": 4,
+      "positive_paid_available_6h": 6,
+      "rate": 1.5382244527365059,
+      "target_1cycle": 1,
+      "target_3cycles": 3,
+      "public_qualified": false,
+      "exposure_hours": 3.7291548771990675
+    },
+    {
+      "sku": "G03d0199f",
+      "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+      "kind": "goods",
+      "held": 1,
+      "sold": 3,
+      "positive_paid_available_6h": 3,
+      "rate": 0.6950145144042496,
+      "target_1cycle": 1,
+      "target_3cycles": 2,
+      "public_qualified": false,
+      "exposure_hours": 4.234889779223341
+    },
+    {
+      "sku": "G07ec17d5",
+      "name": "지누스 얼티마 에어 하이브리드 스프링 침대 매트리스 25cm SS",
+      "kind": "goods",
+      "held": 1,
+      "sold": 3,
+      "positive_paid_available_6h": 3,
+      "rate": 0.7956223249835743,
+      "target_1cycle": 1,
+      "target_3cycles": 2,
+      "public_qualified": false,
+      "exposure_hours": 3.7637792526351115
+    },
+    {
+      "sku": "G3e0d6c67",
+      "name": "시몬스 뷰티레스트 허브. 라지킹 매트리스",
+      "kind": "goods",
+      "held": 1,
+      "sold": 2,
+      "positive_paid_available_6h": 2,
+      "rate": 0.6124780930818386,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.156709706650843
+    },
+    {
+      "sku": "G44d10eb9",
+      "name": "비비고 포기배추김치 5kg x2개",
+      "kind": "food",
+      "held": 0,
+      "sold": 2,
+      "positive_paid_available_6h": 5,
+      "rate": 1.9491028938279256,
+      "target_1cycle": 2,
+      "target_3cycles": 4,
+      "public_qualified": false,
+      "exposure_hours": 2.4408747010098573
+    },
+    {
+      "sku": "G85a1a856",
+      "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+      "kind": "goods",
+      "held": 1,
+      "sold": 2,
+      "positive_paid_available_6h": 4,
+      "rate": 1.1377946665792185,
+      "target_1cycle": 1,
+      "target_3cycles": 3,
+      "public_qualified": false,
+      "exposure_hours": 3.437023573584028
+    },
+    {
+      "sku": "G021aae64",
+      "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+      "kind": "goods",
+      "held": 1,
+      "sold": 2,
+      "positive_paid_available_6h": 3,
+      "rate": 0.9271924543191478,
+      "target_1cycle": 1,
+      "target_3cycles": 2,
+      "public_qualified": true,
+      "exposure_hours": 3.193170691463685
+    },
+    {
+      "sku": "G75f11c19",
+      "name": "프리미엄 앤 모달 차렵 이불패드세트 Q",
+      "kind": "goods",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 1.3226190476190476,
+      "target_1cycle": 1,
+      "target_3cycles": 2,
+      "public_qualified": true,
+      "exposure_hours": 4.320558437705042
+    },
+    {
+      "sku": "G429bd69e",
+      "name": "[다우닝] 릴로 SO302 1인 전체 내추럴가죽 리클라이너",
+      "kind": "goods",
+      "held": 1,
+      "sold": 1,
+      "positive_paid_available_6h": 2,
+      "rate": 0.9639380212481936,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 2.427435992823707
+    },
+    {
+      "sku": "G4a6cfc11",
+      "name": "현대의료기 포시즌 베르디 3인 패브릭 컴포트 황토숯볼 온열소파",
+      "kind": "goods",
+      "held": 1,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.38558437093748804,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 2.3704813857210985
+    },
+    {
+      "sku": "G1ec9482f",
+      "name": "씰리 모네2 슈퍼싱글(SS) + 바타르 프레임 침대세트",
+      "kind": "goods",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.25781205972267335,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 3.669198612173399
+    },
+    {
+      "sku": "G2607d1f6",
+      "name": "[베드리움] 파인드 LED 서랍형침대(Q)+독립 자카드 매트리스",
+      "kind": "goods",
+      "held": 1,
+      "sold": 1,
+      "positive_paid_available_6h": 4,
+      "rate": 1.4085578451385665,
+      "target_1cycle": 1,
+      "target_3cycles": 3,
+      "public_qualified": false,
+      "exposure_hours": 2.619365060594348
+    },
+    {
+      "sku": "G2c023a8c",
+      "name": "현대의료기 5005SF 황토숯볼 흙쇼파 흙카우치",
+      "kind": "goods",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.4091839871572494,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 3.957100543114876
+    },
+    {
+      "sku": "Gf6b70da8",
+      "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+      "kind": "goods",
+      "held": 1,
+      "sold": 1,
+      "positive_paid_available_6h": 4,
+      "rate": 1.2641408628767752,
+      "target_1cycle": 1,
+      "target_3cycles": 3,
+      "public_qualified": false,
+      "exposure_hours": 2.974631849659814
+    },
+    {
+      "sku": "G05277ffe",
+      "name": "[헬렌스타인][한파용] 국내생산 알러지케어 헝가리 워셔블 구스이불 Q",
+      "kind": "goods",
+      "held": 1,
+      "sold": 1,
+      "positive_paid_available_6h": 2,
+      "rate": 0.579624307757489,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.042063078814085
+    },
+    {
+      "sku": "G3f910f50",
+      "name": "안동 햇생강 10kg",
+      "kind": "food",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.6780481864786506,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 1.9967982812722525
+    },
+    {
+      "sku": "G21d176a2",
+      "name": "[베스트슬립] L3 그레이 양면유로탑 라지킹 매트리스 LK 1800",
+      "kind": "goods",
+      "held": 1,
+      "sold": 1,
+      "positive_paid_available_6h": 2,
+      "rate": 0.47613258369250583,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 3.9869734401835353
+    },
+    {
+      "sku": "G53b150b5",
+      "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+      "kind": "goods",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.32534425386672006,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.187302262120778
+    },
+    {
+      "sku": "Gd6fb41c7",
+      "name": "맛젤 제스프리 그린키위 왕점보 개별 155g내외 65개입 10kg 대용량 벌크",
+      "kind": "food",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 3,
+      "rate": 0.6967589444582268,
+      "target_1cycle": 1,
+      "target_3cycles": 2,
+      "public_qualified": false,
+      "exposure_hours": 4.431539846526253
+    },
+    {
+      "sku": "G754bf0ca",
+      "name": "지누스 클라우드 럭스S 하이브리드 매트리스 30cm Q 퀸",
+      "kind": "goods",
+      "held": 1,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.4059204259656553,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.359873537686138
+    },
+    {
+      "sku": "G57d8dfa6",
+      "name": "목화솜요 + 순면커버 60수 마일드 퀸 베스트필",
+      "kind": "goods",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.42513261230054145,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 3.3297653625408823
+    },
+    {
+      "sku": "G1515d951",
+      "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+      "kind": "goods",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.6359649122807017,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 3.4415311347776
+    },
+    {
+      "sku": "Gbec2b68f",
+      "name": "시몬스 D2178A. 뷰티레스트 자스민. 라지킹 침대",
+      "kind": "goods",
+      "held": 1,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.3730267886520303,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.455779847039118
+    },
+    {
+      "sku": "G037721ac",
+      "name": "단독)홈리 더깊고더큰 수납옷장 싱글장 장롱 옷장 (수납/선반/행거)1800 D세트",
+      "kind": "goods",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.25254464265667215,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.597877756092285
+    },
+    {
+      "sku": "G7aac0d6f",
+      "name": "[헬렌스타인][이불커버 증정] 겨울용 폴란드 구스 이불 S/SS",
+      "kind": "goods",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.2651781594628379,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.2988286156124556
+    },
+    {
+      "sku": "G5c543233",
+      "name": "지누스 루미 수납형 침대 프레임 슬림형 헤드보드 SS 슈퍼싱글 색상선택 2color",
+      "kind": "goods",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.38024762691356473,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 3.9764125259055056
+    },
+    {
+      "sku": "G56b7eae7",
+      "name": "26년 해남 황토방 고춧가루 양념용 보통맛 3kg (500gx6팩)",
+      "kind": "food",
+      "held": 0,
+      "sold": 1,
+      "positive_paid_available_6h": 1,
+      "rate": 0.43771829031501613,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 3.364220874508223
+    },
+    {
+      "sku": "G00327e80",
+      "name": "[다우닝] 플라나 베이직 4인 전체 천연가죽 소파",
+      "kind": "goods",
+      "held": 2,
+      "sold": 0,
+      "positive_paid_available_6h": 3,
+      "rate": 0.8186873712732082,
+      "target_1cycle": 1,
+      "target_3cycles": 2,
+      "public_qualified": false,
+      "exposure_hours": 3.558104495339924
+    },
+    {
+      "sku": "G4a998429",
+      "name": "[지정일배송]예소담 충북 괴산 절임배추 20kg",
+      "kind": "food",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 1.3806818181818183,
+      "target_1cycle": 1,
+      "target_3cycles": 2,
+      "public_qualified": true,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G04ee8423",
+      "name": "[자코모]메이트 3인 기능성 슈렁큰 천연면피 소가죽 소파+쿠션1개",
+      "kind": "goods",
+      "held": 2,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.3177083333333333,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "Ge5fe0d41",
+      "name": "[자코모]키프 6인 코너카우치형 기능성 오플 천연면피 소가죽 소파",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.1742474047821898,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G6cd0e9d4",
+      "name": "[자코모] 굿뮤즈 스윙 3.5인 기능성 슈렁큰 천연면피 소가죽 소파+스툴",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.23484848484848486,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G8095ddd6",
+      "name": "[에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈)",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.3125,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G24f5f979",
+      "name": "[다우닝] 플라나 4인 스윙 전체 통가죽 소파+스툴",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.6858974358974359,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "Gad293c6d",
+      "name": "베터리 건전지 CR1632 3V",
+      "kind": "goods",
+      "held": 3,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.020833333333333332,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G0e4deffc",
+      "name": "에비뉴엘 4인 슈렁큰 소가죽 소파+스툴",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 1,
+      "rate": 0.37280701754385964,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "Ga7f2fa4c",
+      "name": "[베드리움] NEW 노블아워 코어 서포트 유로탑 매트리스 SS",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 1,
+      "rate": 0.4174716560305816,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 3.5979504732953176
+    },
+    {
+      "sku": "G4a12722c",
+      "name": "[다우닝] 아지오 4인 전체 통가죽 소파+스툴",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.21153846153846154,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "Gd289350f",
+      "name": "[재고보유][삼성무료설치] Crystal 4K UHD AI 스마트 TV 189cm(75인치) KU75UH8000FXKR 1등급 (스탠드형)",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.1209565080353189,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G19a70f63",
+      "name": "[다우닝] 플라나 베이직 3인 전체 천연가죽 소파",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.16994838182266997,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G47788edd",
+      "name": "[자코모] 와드 4인 코너카우치형 기능성 비텔로 통가죽 슈렁큰 소가죽소파+쿠션2개",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.1818114256960464,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G9df06998",
+      "name": "햇반 쿡반 주먹밥 아이간식 베스트 3종 6봉 세트 (불고기x2+버터장조림x2+참치마요x2)",
+      "kind": "food",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 3,
+      "rate": 0.7458431347100942,
+      "target_1cycle": 1,
+      "target_3cycles": 2,
+      "public_qualified": false,
+      "exposure_hours": 4.27857177264161
+    },
+    {
+      "sku": "G6a308a3b",
+      "name": "LG 퓨리케어 오브제컬렉션 하이드로타워 + 급수비커 + 무빙휠 세트 HY706RSUABM",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.1007970900294324,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G1297eb6c",
+      "name": "Bambu Lab 뱀부랩 X2D Combo 3D 프린터",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.1738096972113736,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G7a341425",
+      "name": "[자코모]메이트 멀티 3.5인 기능성 슈렁큰 천연면피 소가죽 소파+쿠션2개",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.10123900632689106,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "Gc529cf12",
+      "name": "[시몬스] 뷰티레스트 스위트. 킹오브킹 매트리스",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.16043972050280642,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G2af689a3",
+      "name": "바로크가구 화이트 슬라이딩 10자 장롱세트 3030",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.12124137969814348,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G33cc4ecf",
+      "name": "BIF보루네오 디에르 보이시 천연통가죽 4인 카우치 소파",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.29166666666666663,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G6b0fd5bc",
+      "name": "[헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 Q",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.17222300726716494,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "Gea0cca52",
+      "name": "[나이스필]소라 워싱모달 차렵베개세트Q",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 1,
+      "rate": 0.2838233482245129,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.4661083647277655
+    },
+    {
+      "sku": "G0132ff94",
+      "name": "[헬렌스타인][이불커버 증정] 앨버리 호주산 양모이불 Q",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.3425925925925926,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G2698c6f8",
+      "name": "[다우닝] 플라나 3인 스윙 전체 천연가죽 소파",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.12099828921253318,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "Ga4e6abc9",
+      "name": "지누스 얼티마 럭스S 하이브리드 매트리스 25cm LK 라지킹",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.1441680180800172,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G6398e431",
+      "name": "[다우닝] 플라나 3.5인 스윙 전체 천연가죽 소파",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.14408537399321975,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G8ec51935",
+      "name": "[자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.4754901960784314,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "Ge4f8ef71",
+      "name": "[온열스프링] 현대의료기 베르디 팬텀자수정 3인용 흙소파카우치+리프트테이블증정",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.17222222222222222,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G6841e8a3",
+      "name": "[설치배송/단단한타입] 지누스 키스톤 독립 스프링 매트리스 25cm SS 슈퍼싱글사이즈",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.16666666666666666,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "Gcfe62c2c",
+      "name": "지누스 클라우드 럭스S 하이브리드 매트리스 30cm LK 라지킹",
+      "kind": "goods",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.13471264410904832,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    },
+    {
+      "sku": "G0b9cdd37",
+      "name": "서울김치 프리미엄 이선희명인 포기8kg+백김치3kg",
+      "kind": "food",
+      "held": 1,
+      "sold": 0,
+      "positive_paid_available_6h": 0,
+      "rate": 0.22916666666666666,
+      "target_1cycle": 1,
+      "target_3cycles": 1,
+      "public_qualified": false,
+      "exposure_hours": 4.736296395262085
+    }
+  ],
+  "peers_since_baseline": [
+    {
+      "name": "yms979",
+      "stock_before": 1759,
+      "stock_after": 1804,
+      "alive": false,
+      "all_before": 0.974,
+      "all_after": 0.975,
+      "book_delta": 616665,
+      "deals_delta": 94,
+      "revenue_delta": 20042690,
+      "book_per_hour": 433953.6157735182
+    },
+    {
+      "name": "moss-and-oak",
+      "stock_before": 344,
+      "stock_after": 364,
+      "alive": true,
+      "all_before": 0.872,
+      "all_after": 0.875,
+      "book_delta": 3465569,
+      "deals_delta": 238,
+      "revenue_delta": 43600502,
+      "book_per_hour": 2438757.1830128445
+    },
+    {
+      "name": "Kiro729",
+      "stock_before": 441,
+      "stock_after": 463,
+      "alive": true,
+      "all_before": 0.868,
+      "all_after": 0.865,
+      "book_delta": 333001,
+      "deals_delta": 100,
+      "revenue_delta": 9481261,
+      "book_per_hour": 234336.28956758912
+    },
+    {
+      "name": "inextro",
+      "stock_before": 1295,
+      "stock_after": 1317,
+      "alive": false,
+      "all_before": 0.932,
+      "all_after": 0.934,
+      "book_delta": -949710,
+      "deals_delta": 49,
+      "revenue_delta": 9642381,
+      "book_per_hour": -668320.8686017011
+    },
+    {
+      "name": "25620027",
+      "stock_before": 335,
+      "stock_after": 342,
+      "alive": true,
+      "all_before": 0.885,
+      "all_after": 0.878,
+      "book_delta": 2529947,
+      "deals_delta": 72,
+      "revenue_delta": 20662720,
+      "book_per_hour": 1780350.1874848825
+    },
+    {
+      "name": "seochanit",
+      "stock_before": 59,
+      "stock_after": 53,
+      "alive": false,
+      "all_before": 0.843,
+      "all_after": 0.842,
+      "book_delta": 2742030,
+      "deals_delta": 46,
+      "revenue_delta": 26282914,
+      "book_per_hour": 1929595.2146780833
+    }
+  ],
+  "numerical_scenarios": [
+    {
+      "NOT_EXECUTED": true,
+      "cover_cycles": 1,
+      "public_cap": 6,
+      "lines": 10,
+      "units": 11,
+      "capital_commitment": 11130029.38,
+      "book_scenario": 451463.0314680293,
+      "rows": [
+        {
+          "sku": "G44d10eb9",
+          "name": "비비고 포기배추김치 5kg x2개",
+          "qty": 2,
+          "rate": 1.9491028938279256,
+          "own_positive_paid_available": 5,
+          "own_paid_last_hour": 2,
+          "held": 0,
+          "capital": 188776.0,
+          "book_scenario": 17567.29923062343
+        },
+        {
+          "sku": "G6e0a91de",
+          "name": "[헬렌스타인] 뉴질랜드 퓨어 양모이불 S/SS",
+          "qty": 1,
+          "rate": 1.184929794334575,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 172297.38,
+          "book_scenario": 18720.954698897483
+        },
+        {
+          "sku": "G53b150b5",
+          "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+          "qty": 1,
+          "rate": 0.32534425386672006,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 1,
+          "held": 0,
+          "capital": 962064.0,
+          "book_scenario": 61126.30440672138
+        },
+        {
+          "sku": "G9718023b",
+          "name": "라이젠5 7500F RTX5060Ti RAM_16GB SSD_1TB_윈도우 탑재 조립PC 게이밍 컴퓨터 데스크탑 P609",
+          "qty": 1,
+          "rate": 0.10833333333333332,
+          "own_positive_paid_available": 0,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 3097102.5,
+          "book_scenario": 104237.72630166696
+        },
+        {
+          "sku": "G1ec9482f",
+          "name": "씰리 모네2 슈퍼싱글(SS) + 바타르 프레임 침대세트",
+          "qty": 1,
+          "rate": 0.25781205972267335,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 1916784.0,
+          "book_scenario": 64891.79054159711
+        },
+        {
+          "sku": "Ge04f5cab",
+          "name": "지누스 루미 수납형 침대 프레임 트롤리형 헤드보드 Q 퀸 색상선택 2color",
+          "qty": 1,
+          "rate": 0.32407407407407407,
+          "own_positive_paid_available": 0,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 927409.5,
+          "book_scenario": 50516.95010419939
+        },
+        {
+          "sku": "G1515d951",
+          "name": "지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸",
+          "qty": 1,
+          "rate": 0.6359649122807017,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 486322.74,
+          "book_scenario": 17617.21521094779
+        },
+        {
+          "sku": "G5c543233",
+          "name": "지누스 루미 수납형 침대 프레임 슬림형 헤드보드 SS 슈퍼싱글 색상선택 2color",
+          "qty": 1,
+          "rate": 0.38024762691356473,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 1,
+          "held": 0,
+          "capital": 532899.0,
+          "book_scenario": 28840.044809577907
+        },
+        {
+          "sku": "G6d965f60",
+          "name": "[웰빙건강침대] 그루 퀸 홍맥반석 돌침대 Q",
+          "qty": 1,
+          "rate": 0,
+          "own_positive_paid_available": 0,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 2272050.0,
+          "book_scenario": 62667.0
+        },
+        {
+          "sku": "G2c023a8c",
+          "name": "현대의료기 5005SF 황토숯볼 흙쇼파 흙카우치",
+          "qty": 1,
+          "rate": 0.4091839871572494,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 1,
+          "held": 0,
+          "capital": 574324.26,
+          "book_scenario": 25277.74616379782
+        }
+      ]
+    },
+    {
+      "NOT_EXECUTED": true,
+      "cover_cycles": 2,
+      "public_cap": 6,
+      "lines": 10,
+      "units": 12,
+      "capital_commitment": 11503381.5,
+      "book_scenario": 597999.3883019852,
+      "rows": [
+        {
+          "sku": "Gf6b70da8",
+          "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+          "qty": 1,
+          "rate": 1.2641408628767752,
+          "own_positive_paid_available": 4,
+          "own_paid_last_hour": 1,
+          "held": 1,
+          "capital": 2675970.0,
+          "book_scenario": 145869.56715875035
+        },
+        {
+          "sku": "G0667d440",
+          "name": "지누스 그린티 에어 하이브리드 스프링 매트리스 20cm Q 퀸",
+          "qty": 3,
+          "rate": 4.740135212488301,
+          "own_positive_paid_available": 12,
+          "own_paid_last_hour": 7,
+          "held": 3,
+          "capital": 1197475.92,
+          "book_scenario": 60943.077052252396
+        },
+        {
+          "sku": "Gb5d0dde7",
+          "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+          "qty": 1,
+          "rate": 1.5382244527365059,
+          "own_positive_paid_available": 6,
+          "own_paid_last_hour": 3,
+          "held": 1,
+          "capital": 1255824.0,
+          "book_scenario": 53809.78080110843
+        },
+        {
+          "sku": "G2607d1f6",
+          "name": "[베드리움] 파인드 LED 서랍형침대(Q)+독립 자카드 매트리스",
+          "qty": 1,
+          "rate": 1.4085578451385665,
+          "own_positive_paid_available": 4,
+          "own_paid_last_hour": 1,
+          "held": 1,
+          "capital": 711565.26,
+          "book_scenario": 41695.80099136403
+        },
+        {
+          "sku": "G021aae64",
+          "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+          "qty": 1,
+          "rate": 0.9271924543191478,
+          "own_positive_paid_available": 3,
+          "own_paid_last_hour": 2,
+          "held": 1,
+          "capital": 626455.4400000001,
+          "book_scenario": 59260.32239658106
+        },
+        {
+          "sku": "G85a1a856",
+          "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+          "qty": 1,
+          "rate": 1.1377946665792185,
+          "own_positive_paid_available": 4,
+          "own_paid_last_hour": 2,
+          "held": 1,
+          "capital": 1057536.0,
+          "book_scenario": 41164.840150513686
+        },
+        {
+          "sku": "G6e0a91de",
+          "name": "[헬렌스타인] 뉴질랜드 퓨어 양모이불 S/SS",
+          "qty": 1,
+          "rate": 1.184929794334575,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 172297.38,
+          "book_scenario": 18720.954698897483
+        },
+        {
+          "sku": "G53b150b5",
+          "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+          "qty": 1,
+          "rate": 0.32534425386672006,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 1,
+          "held": 0,
+          "capital": 962064.0,
+          "book_scenario": 61126.30440672138
+        },
+        {
+          "sku": "G1ec9482f",
+          "name": "씰리 모네2 슈퍼싱글(SS) + 바타르 프레임 침대세트",
+          "qty": 1,
+          "rate": 0.25781205972267335,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 1916784.0,
+          "book_scenario": 64891.79054159711
+        },
+        {
+          "sku": "Ge04f5cab",
+          "name": "지누스 루미 수납형 침대 프레임 트롤리형 헤드보드 Q 퀸 색상선택 2color",
+          "qty": 1,
+          "rate": 0.32407407407407407,
+          "own_positive_paid_available": 0,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 927409.5,
+          "book_scenario": 50516.95010419939
+        }
+      ]
+    },
+    {
+      "NOT_EXECUTED": true,
+      "cover_cycles": 3,
+      "public_cap": 6,
+      "lines": 10,
+      "units": 18,
+      "capital_commitment": 18923807.04,
+      "book_scenario": 951448.9866458954,
+      "rows": [
+        {
+          "sku": "Gf6b70da8",
+          "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+          "qty": 2,
+          "rate": 1.2641408628767752,
+          "own_positive_paid_available": 4,
+          "own_paid_last_hour": 1,
+          "held": 1,
+          "capital": 5351940.0,
+          "book_scenario": 289131.0598336592
+        },
+        {
+          "sku": "G0667d440",
+          "name": "지누스 그린티 에어 하이브리드 스프링 매트리스 20cm Q 퀸",
+          "qty": 5,
+          "rate": 4.740135212488301,
+          "own_positive_paid_available": 12,
+          "own_paid_last_hour": 7,
+          "held": 3,
+          "capital": 1995793.2000000002,
+          "book_scenario": 101481.55143783259
+        },
+        {
+          "sku": "Gb5d0dde7",
+          "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+          "qty": 2,
+          "rate": 1.5382244527365059,
+          "own_positive_paid_available": 6,
+          "own_paid_last_hour": 3,
+          "held": 1,
+          "capital": 2511648.0,
+          "book_scenario": 107218.10606054653
+        },
+        {
+          "sku": "G2607d1f6",
+          "name": "[베드리움] 파인드 LED 서랍형침대(Q)+독립 자카드 매트리스",
+          "qty": 2,
+          "rate": 1.4085578451385665,
+          "own_positive_paid_available": 4,
+          "own_paid_last_hour": 1,
+          "held": 1,
+          "capital": 1423130.52,
+          "book_scenario": 82962.99562505742
+        },
+        {
+          "sku": "G85a1a856",
+          "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+          "qty": 2,
+          "rate": 1.1377946665792185,
+          "own_positive_paid_available": 4,
+          "own_paid_last_hour": 2,
+          "held": 1,
+          "capital": 2115072.0,
+          "book_scenario": 81071.34847992257
+        },
+        {
+          "sku": "G03d0199f",
+          "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+          "qty": 1,
+          "rate": 0.6950145144042496,
+          "own_positive_paid_available": 3,
+          "own_paid_last_hour": 2,
+          "held": 1,
+          "capital": 1848622.5,
+          "book_scenario": 85584.55316508026
+        },
+        {
+          "sku": "G021aae64",
+          "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+          "qty": 1,
+          "rate": 0.9271924543191478,
+          "own_positive_paid_available": 3,
+          "own_paid_last_hour": 2,
+          "held": 1,
+          "capital": 626455.4400000001,
+          "book_scenario": 59260.32239658106
+        },
+        {
+          "sku": "G6e0a91de",
+          "name": "[헬렌스타인] 뉴질랜드 퓨어 양모이불 S/SS",
+          "qty": 1,
+          "rate": 1.184929794334575,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 172297.38,
+          "book_scenario": 18720.954698897483
+        },
+        {
+          "sku": "G53b150b5",
+          "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+          "qty": 1,
+          "rate": 0.32534425386672006,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 1,
+          "held": 0,
+          "capital": 962064.0,
+          "book_scenario": 61126.30440672138
+        },
+        {
+          "sku": "G1ec9482f",
+          "name": "씰리 모네2 슈퍼싱글(SS) + 바타르 프레임 침대세트",
+          "qty": 1,
+          "rate": 0.25781205972267335,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 1916784.0,
+          "book_scenario": 64891.79054159711
+        }
+      ]
+    },
+    {
+      "NOT_EXECUTED": true,
+      "cover_cycles": 3,
+      "public_cap": 20,
+      "lines": 10,
+      "units": 18,
+      "capital_commitment": 18923807.04,
+      "book_scenario": 951448.9866458954,
+      "rows": [
+        {
+          "sku": "Gf6b70da8",
+          "name": "장수돌침대 다하스 1305Q /맥반석 퀸침대",
+          "qty": 2,
+          "rate": 1.2641408628767752,
+          "own_positive_paid_available": 4,
+          "own_paid_last_hour": 1,
+          "held": 1,
+          "capital": 5351940.0,
+          "book_scenario": 289131.0598336592
+        },
+        {
+          "sku": "G0667d440",
+          "name": "지누스 그린티 에어 하이브리드 스프링 매트리스 20cm Q 퀸",
+          "qty": 5,
+          "rate": 4.740135212488301,
+          "own_positive_paid_available": 12,
+          "own_paid_last_hour": 7,
+          "held": 3,
+          "capital": 1995793.2000000002,
+          "book_scenario": 101481.55143783259
+        },
+        {
+          "sku": "Gb5d0dde7",
+          "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+          "qty": 2,
+          "rate": 1.5382244527365059,
+          "own_positive_paid_available": 6,
+          "own_paid_last_hour": 3,
+          "held": 1,
+          "capital": 2511648.0,
+          "book_scenario": 107218.10606054653
+        },
+        {
+          "sku": "G2607d1f6",
+          "name": "[베드리움] 파인드 LED 서랍형침대(Q)+독립 자카드 매트리스",
+          "qty": 2,
+          "rate": 1.4085578451385665,
+          "own_positive_paid_available": 4,
+          "own_paid_last_hour": 1,
+          "held": 1,
+          "capital": 1423130.52,
+          "book_scenario": 82962.99562505742
+        },
+        {
+          "sku": "G85a1a856",
+          "name": "시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리스",
+          "qty": 2,
+          "rate": 1.1377946665792185,
+          "own_positive_paid_available": 4,
+          "own_paid_last_hour": 2,
+          "held": 1,
+          "capital": 2115072.0,
+          "book_scenario": 81071.34847992257
+        },
+        {
+          "sku": "G03d0199f",
+          "name": "라클라우드 루나 호텔식 침대 세트 Q 퀸 (프레임+매트리스)",
+          "qty": 1,
+          "rate": 0.6950145144042496,
+          "own_positive_paid_available": 3,
+          "own_paid_last_hour": 2,
+          "held": 1,
+          "capital": 1848622.5,
+          "book_scenario": 85584.55316508026
+        },
+        {
+          "sku": "G021aae64",
+          "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+          "qty": 1,
+          "rate": 0.9271924543191478,
+          "own_positive_paid_available": 3,
+          "own_paid_last_hour": 2,
+          "held": 1,
+          "capital": 626455.4400000001,
+          "book_scenario": 59260.32239658106
+        },
+        {
+          "sku": "G6e0a91de",
+          "name": "[헬렌스타인] 뉴질랜드 퓨어 양모이불 S/SS",
+          "qty": 1,
+          "rate": 1.184929794334575,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 172297.38,
+          "book_scenario": 18720.954698897483
+        },
+        {
+          "sku": "G53b150b5",
+          "name": "시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스",
+          "qty": 1,
+          "rate": 0.32534425386672006,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 1,
+          "held": 0,
+          "capital": 962064.0,
+          "book_scenario": 61126.30440672138
+        },
+        {
+          "sku": "G1ec9482f",
+          "name": "씰리 모네2 슈퍼싱글(SS) + 바타르 프레임 침대세트",
+          "qty": 1,
+          "rate": 0.25781205972267335,
+          "own_positive_paid_available": 1,
+          "own_paid_last_hour": 0,
+          "held": 0,
+          "capital": 1916784.0,
+          "book_scenario": 64891.79054159711
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Scenarios are unexecuted model forecasts, not proof of extra sales or causal gains.",
+    "Public board and local inventory have separately recorded observation times.",
+    "Raw stockout events include repeated negotiation turns; distinct tasks are also reported.",
+    "Inventory residual includes timing, expiry/disposal and other changes; no waste attribution without evidence.",
+    "Baseline board precedes runtime start; local before/after periods use the exact runtime start.",
+    "Gross margins precede future refunds and storage."
+  ],
+  "frozen_inputs": "logs\\v17-stock-inputs-20261111T120956788044Z.json"
+}

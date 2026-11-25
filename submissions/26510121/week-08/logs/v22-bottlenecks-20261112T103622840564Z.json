@@ -1,0 +1,3091 @@
+{
+  "at": "2026-11-12T10:36:22.744055+00:00",
+  "adaptive_enabled": true,
+  "unit_caps_enabled": false,
+  "reservation_ttl_seconds": 180,
+  "active_reservations": 7,
+  "stale_or_missing_reserved_units": 0,
+  "demand_packet_age_seconds": 17.568217515945435,
+  "merchant_demand_policy_id": "3aeeb6e02d89e23b6bb73ce52903dc6d861d706ef868049a7feac3f892a576e4",
+  "current_diagnostics": {
+    "inventory_unit_caps_enabled": false,
+    "total_unit_ceiling": null,
+    "held_skus": 115,
+    "held_skus_target_at_most_two": 99,
+    "held_skus_with_repeat_paid_evidence": 35,
+    "target_shortfall_units_scenario": 23,
+    "merchant_context_at": 1794479769.2924006,
+    "supply_cycle_seconds": 1200,
+    "repeat_coverage_cycles": null,
+    "public_only_coverage_cycles": null,
+    "public_equal_share_prior_multiplier": "data-derived",
+    "demand_policy_id": "3aeeb6e02d89e23b6bb73ce52903dc6d861d706ef868049a7feac3f892a576e4",
+    "examples": [
+      {
+        "sku": "Gb2392fa9",
+        "held": 1,
+        "target_scenario": 6,
+        "rate_per_hour_scenario": 4.743101334125386,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 12,
+        "public_qualified": false,
+        "observed_availability_hours": 5.308122218251237,
+        "adaptive_calibration": {
+          "rate_per_hour": 4.743101334125386,
+          "raw_public_rate": 7.694444444444444,
+          "posterior_multiplier": 0.6164319423412055,
+          "group_multiplier": 0.6303226213384822,
+          "weighted_paid": 4.705897845611733,
+          "weighted_exposure_hours": 0.9995364056662398,
+          "proxy_exposure_fraction": 0.31003993852875356,
+          "supply_success_scenario": 0.8333333333333334,
+          "coverage_hours": 0.675,
+          "supply_success_windows": 3,
+          "supply_failed_windows": 0
+        },
+        "lost_exact_requests_not_directly_added_to_rate": 1
+      },
+      {
+        "sku": "G74e686be",
+        "held": 2,
+        "target_scenario": 7,
+        "rate_per_hour_scenario": 6.207499449243365,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 18,
+        "public_qualified": false,
+        "observed_availability_hours": 2.321815512379012,
+        "adaptive_calibration": {
+          "rate_per_hour": 6.207499449243365,
+          "raw_public_rate": 8.047619047619047,
+          "posterior_multiplier": 0.7713460854089388,
+          "group_multiplier": 0.40793786648279146,
+          "weighted_paid": 7.648351175794379,
+          "weighted_exposure_hours": 1.1091513096740915,
+          "proxy_exposure_fraction": 0.04397541620957646,
+          "supply_success_scenario": 0.8333333333333334,
+          "coverage_hours": 0.675,
+          "supply_success_windows": 3,
+          "supply_failed_windows": 0
+        },
+        "lost_exact_requests_not_directly_added_to_rate": 0
+      },
+      {
+        "sku": "G022ce883",
+        "held": 2,
+        "target_scenario": 5,
+        "rate_per_hour_scenario": 3.832321338425264,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 39,
+        "public_qualified": false,
+        "observed_availability_hours": 5.895186796850635,
+        "adaptive_calibration": {
+          "rate_per_hour": 3.832321338425264,
+          "raw_public_rate": 8.055555555555555,
+          "posterior_multiplier": 0.47573644201141213,
+          "group_multiplier": 0.509442757612452,
+          "weighted_paid": 5.168090638315746,
+          "weighted_exposure_hours": 1.3702721249617889,
+          "proxy_exposure_fraction": 0.2261566882407785,
+          "supply_success_scenario": 0.8571428571428571,
+          "coverage_hours": 0.675,
+          "supply_success_windows": 4,
+          "supply_failed_windows": 0
+        },
+        "lost_exact_requests_not_directly_added_to_rate": 0
+      },
+      {
+        "sku": "G2560a8c9",
+        "held": 2,
+        "target_scenario": 5,
+        "rate_per_hour_scenario": 4.633016755802326,
+        "rate_source": "own_positive_paid",
+        "own_positive_paid": 7,
+        "public_qualified": false,
+        "observed_availability_hours": 1.7786415627929906,
+        "adaptive_calibration": {
+          "rate_per_hour": 4.633016755802326,
+          "raw_public_rate": 3.8205128205128203,
+          "posterior_multiplier": 1.212668815277119,
+          "group_multiplier": 1.5588469523265722,
+          "weighted_paid": 2.9106585226451327,
+          "weighted_exposure_hours": 0.7132799339440171,
+          "proxy_exposure_fraction": 0.1915497148273818,
+          "supply_success_scenario": 0.8333333333333334,
+          "coverage_hours": 0.675,
+          "supply_success_windows": 3,
+          "supply_failed_windows": 0
+        },
+        "lost_exact_requests_not_directly_added_to_rate": 0
+      }
+    ],
+    "interpretation": "Low rate/coverage can retain small targets without a unit cap. Prior and Poisson arrivals are scenarios, not identified hidden demand. Lost requests require feasibility attribution before adding demand."
+  },
+  "stockout_examples": [
+    {
+      "sku": "G0b4dad18",
+      "name": "[마녀바스켓] 좋은 재료 듬뿍 5분 순대국밥 1인분 x8팩",
+      "stockouts_last_hour": 12,
+      "held": 1,
+      "reserved_now": 1,
+      "reasons": {
+        "reserved_stock": 12
+      },
+      "model": {
+        "public": {
+          "samples": 167,
+          "median": 13559,
+          "external_samples": 167,
+          "external_median": 13527,
+          "external_buyers": [
+            [
+              "JangSeongWoong",
+              54
+            ],
+            [
+              "thisjonghoon",
+              41
+            ],
+            [
+              "buyer-02",
+              11
+            ],
+            [
+              "ddolcom",
+              8
+            ],
+            [
+              "fair-furniture",
+              6
+            ]
+          ],
+          "term_prices": [
+            {
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 51,
+              "median": 14714,
+              "refs": [
+                5620629,
+                5613702,
+                5612359
+              ]
+            },
+            {
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 88,
+              "median": 13794.0,
+              "refs": [
+                5620207,
+                5615183,
+                5614512
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 30,
+              "median": 11725.0,
+              "refs": [
+                5617089,
+                5613684,
+                5608896
+              ]
+            }
+          ],
+          "seller_prices": [
+            {
+              "shop": "https://winners-doctrine-thomas-mls.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 57,
+              "median": 13794
+            },
+            {
+              "shop": "https://shop2.bluespot.team",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 21,
+              "median": 12196
+            },
+            {
+              "shop": "https://winners-doctrine-thomas-mls.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 21,
+              "median": 15173
+            },
+            {
+              "shop": "https://winners-doctrine-thomas-mls.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 15,
+              "median": 11725
+            },
+            {
+              "shop": "https://viruses-closest-cruz-misc.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 11,
+              "median": 13794
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 9,
+              "median": 13104
+            },
+            {
+              "shop": "https://viruses-closest-cruz-misc.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 7,
+              "median": 10499
+            },
+            {
+              "shop": "https://delete-leadership-gore-voluntary.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 4,
+              "median": 15316.0
+            },
+            {
+              "shop": "https://viruses-closest-cruz-misc.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 4,
+              "median": 18931.0
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 15769
+            },
+            {
+              "shop": "https://delete-leadership-gore-voluntary.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 13041
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 13559
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 13426
+            },
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 15907.0
+            },
+            {
+              "shop": "https://combines-spelling-sam-parish.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 13350.0
+            },
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 15121.0
+            },
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 14449
+            },
+            {
+              "shop": "https://aypno-203-246-85-147.free.pinggy.net",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 11613
+            }
+          ],
+          "low": 9399,
+          "high": 28327,
+          "sellers": 9,
+          "per_seller_per_hour": 3.1296296296296298,
+          "refs": [
+            5620629,
+            5620207,
+            5617089,
+            5615183
+          ],
+          "latest_at": 1794479617.369,
+          "grade_medians": {
+            "A": 14714,
+            "B": 13794.0,
+            "C": 11725.0
+          },
+          "grade_prices": {
+            "A": {
+              "n": 51,
+              "p25": 12300,
+              "p50": 14714
+            },
+            "B": {
+              "n": 88,
+              "p25": 13334,
+              "p50": 13794.0
+            },
+            "C": {
+              "n": 30,
+              "p25": 10499,
+              "p50": 11725.0
+            }
+          },
+          "note": "observed 6h trades; availability, quality, warranty and traffic confound comparisons"
+        },
+        "arrival_rate_scenario": 0.8066117284263735,
+        "paid_while_available": 3,
+        "positive_paid_while_available": 3,
+        "paid_arrival_rate_scenario": 0.8066117284263735,
+        "payment_rate_scenario": 0.0625,
+        "available_hours_observed": 2.6472997820377366,
+        "available_requests": 15,
+        "lost_exact_requests": 31,
+        "category_lost_signal": 9.942168998538325,
+        "coverage_keys": [
+          "category:식품>김치/반찬/즉석요리>찌개/탕류/장류",
+          "band:식품>김치/반찬/즉석요리>찌개/탕류/장류:14",
+          "own-basket:1f6dfe77de01",
+          "own-basket:25b6fd51d898",
+          "observed-buyer:JangSeongWoong:식품>김치/반찬/즉석요리>찌개/탕류/장류",
+          "observed-buyer:thisjonghoon:식품>김치/반찬/즉석요리>찌개/탕류/장류",
+          "observed-buyer:buyer-02:식품>김치/반찬/즉석요리>찌개/탕류/장류",
+          "observed-buyer:ddolcom:식품>김치/반찬/즉석요리>찌개/탕류/장류",
+          "observed-buyer:fair-furniture:식품>김치/반찬/즉석요리>찌개/탕류/장류"
+        ],
+        "competition_sellers_plus_us": 8,
+        "rate_note": "data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable",
+        "demand_calibration": {
+          "rate_per_hour": 0.8066117284263735,
+          "raw_public_rate": 3.4791666666666665,
+          "posterior_multiplier": 0.23184049679320917,
+          "group_multiplier": 0.7070603554355851,
+          "weighted_paid": 0.49104623876180675,
+          "weighted_exposure_hours": 1.1687270053309078,
+          "proxy_exposure_fraction": 0.09270863567360899,
+          "supply_success_scenario": 0.9523809523809523,
+          "coverage_hours": 0.3416666666666667,
+          "supply_success_windows": 2,
+          "supply_failed_windows": 0
+        }
+      },
+      "active_coverage_hours": 0.3416666666666667,
+      "target_by_legacy_cycle_knob": {
+        "1": 1,
+        "1.5": 1,
+        "2": 1,
+        "3": 1
+      }
+    },
+    {
+      "sku": "Gd6fb41c7",
+      "name": "맛젤 제스프리 그린키위 왕점보 개별 155g내외 65개입 10kg 대용량 벌크",
+      "stockouts_last_hour": 5,
+      "held": 1,
+      "reserved_now": 0,
+      "reasons": {
+        "grade_requirement": 1,
+        "shelf_life": 4
+      },
+      "model": {
+        "public": {
+          "samples": 16,
+          "median": 45390,
+          "external_samples": 16,
+          "external_median": 47164.0,
+          "external_buyers": [
+            [
+              "jiseokkk",
+              4
+            ],
+            [
+              "usagi",
+              3
+            ],
+            [
+              "lee3q",
+              2
+            ],
+            [
+              "buzllightyear",
+              2
+            ],
+            [
+              "buyer-01",
+              1
+            ]
+          ],
+          "term_prices": [
+            {
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 11,
+              "median": 51017,
+              "refs": [
+                5584025,
+                5580821,
+                5579087
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 5,
+              "median": 37348,
+              "refs": [
+                5541743,
+                5536505,
+                5530631
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 44865,
+              "refs": [
+                5524319,
+                5523081,
+                5522091
+              ]
+            }
+          ],
+          "seller_prices": [
+            {
+              "shop": "https://venice-snap-toronto-bowl.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 6,
+              "median": 51611.0
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 4,
+              "median": 49452.0
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 44865
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 36011.5
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 38395
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 31450
+            },
+            {
+              "shop": "https://wedding-evaluate-wheels-them.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 44617
+            },
+            {
+              "shop": "https://venice-snap-toronto-bowl.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 49711
+            }
+          ],
+          "low": 31450,
+          "high": 59120,
+          "sellers": 5,
+          "per_seller_per_hour": 0.6333333333333333,
+          "refs": [
+            5584025,
+            5580821,
+            5579087,
+            5569825
+          ],
+          "latest_at": 1794471680.488,
+          "grade_medians": {
+            "B": 51017,
+            "C": 37348,
+            "A": 44865
+          },
+          "grade_prices": {
+            "B": {
+              "n": 11,
+              "p25": 43425,
+              "p50": 51017
+            },
+            "C": {
+              "n": 5,
+              "p25": 34675,
+              "p50": 37348
+            },
+            "A": {
+              "n": 3,
+              "p25": 40827,
+              "p50": 44865
+            }
+          },
+          "note": "observed 6h trades; availability, quality, warranty and traffic confound comparisons"
+        },
+        "arrival_rate_scenario": 0.2008008739341732,
+        "paid_while_available": 3,
+        "positive_paid_while_available": 3,
+        "paid_arrival_rate_scenario": 0.2008008739341732,
+        "payment_rate_scenario": 0.1,
+        "available_hours_observed": 4.037398453023696,
+        "available_requests": 9,
+        "lost_exact_requests": 11,
+        "category_lost_signal": 8.958352073396053,
+        "coverage_keys": [
+          "category:식품>야채/과일>신선과일(부패주의)",
+          "band:식품>야채/과일>신선과일(부패주의):16",
+          "own-basket:eb664ee0acbc",
+          "own-basket:b7a4e7624c8d",
+          "observed-buyer:jiseokkk:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:usagi:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:lee3q:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:buzllightyear:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:buyer-01:식품>야채/과일>신선과일(부패주의)"
+        ],
+        "competition_sellers_plus_us": 3,
+        "rate_note": "data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable",
+        "demand_calibration": {
+          "rate_per_hour": 0.2008008739341732,
+          "raw_public_rate": 0.8888888888888888,
+          "posterior_multiplier": 0.22590098317594487,
+          "group_multiplier": 0.5079040993119263,
+          "weighted_paid": 0.17998481004553768,
+          "weighted_exposure_hours": 1.2573030171297348,
+          "proxy_exposure_fraction": 0.1566266009505951,
+          "supply_success_scenario": 0.9523809523809523,
+          "coverage_hours": 0.3416666666666667,
+          "supply_success_windows": 2,
+          "supply_failed_windows": 0
+        }
+      },
+      "active_coverage_hours": 0.3416666666666667,
+      "target_by_legacy_cycle_knob": {
+        "1": 1,
+        "1.5": 1,
+        "2": 1,
+        "3": 1
+      }
+    },
+    {
+      "sku": "G5bdaf222",
+      "name": "얼큰한 맛을 추가한 칼국수 명인맛집 강남교자 칼국수 밀키트 선택하기(4인분)/(non 인스턴트/직접 끓이고 볶은 육수와 고명/분말 스프 아님)",
+      "stockouts_last_hour": 5,
+      "held": 0,
+      "reserved_now": 0,
+      "reasons": {
+        "shelf_life": 1,
+        "reserved_stock": 2,
+        "grade_requirement": 2
+      },
+      "model": {
+        "public": {
+          "samples": 48,
+          "median": 22422,
+          "external_samples": 48,
+          "external_median": 22422.0,
+          "external_buyers": [
+            [
+              "sergiobuilds",
+              17
+            ],
+            [
+              "dae-yangkim",
+              10
+            ],
+            [
+              "olstjr",
+              5
+            ],
+            [
+              "winun1127",
+              5
+            ],
+            [
+              "dragonash",
+              3
+            ]
+          ],
+          "term_prices": [
+            {
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 16,
+              "median": 22122.0,
+              "refs": [
+                5620789,
+                5619359,
+                5617454
+              ]
+            },
+            {
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 21,
+              "median": 24000,
+              "refs": [
+                5607034,
+                5592942,
+                5582685
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 12,
+              "median": 24759.5,
+              "refs": [
+                5583448,
+                5569164,
+                5563946
+              ]
+            }
+          ],
+          "seller_prices": [
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 18,
+              "median": 24412.0
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 11,
+              "median": 22258
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 10,
+              "median": 24759.5
+            },
+            {
+              "shop": "https://traditions-found-iron-midnight.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 21229
+            },
+            {
+              "shop": "https://amounts-pmid-described-existing.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 21986
+            },
+            {
+              "shop": "https://helena-nine-const-payment.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 19745
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 23562
+            },
+            {
+              "shop": "https://attributes-vehicles-grace-played.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 21450
+            },
+            {
+              "shop": "https://mug-document-manufactured-leon.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 7421
+            },
+            {
+              "shop": "https://mug-document-manufactured-leon.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 21146
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 27420
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 21904
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 19500
+            }
+          ],
+          "low": 7421,
+          "high": 27420,
+          "sellers": 8,
+          "per_seller_per_hour": 1.0208333333333333,
+          "refs": [
+            5620789,
+            5619359,
+            5617454,
+            5616804
+          ],
+          "latest_at": 1794479646.989,
+          "grade_medians": {
+            "C": 22122.0,
+            "B": 24000,
+            "A": 24759.5
+          },
+          "grade_prices": {
+            "C": {
+              "n": 16,
+              "p25": 19500,
+              "p50": 22122.0
+            },
+            "B": {
+              "n": 21,
+              "p25": 22258,
+              "p50": 24000
+            },
+            "A": {
+              "n": 12,
+              "p25": 23562,
+              "p50": 24759.5
+            }
+          },
+          "note": "observed 6h trades; availability, quality, warranty and traffic confound comparisons"
+        },
+        "arrival_rate_scenario": 1.3179753152937468,
+        "paid_while_available": 2,
+        "positive_paid_while_available": 2,
+        "paid_arrival_rate_scenario": 1.3179753152937468,
+        "payment_rate_scenario": 0.18181818181818182,
+        "available_hours_observed": 3.2859607894553053,
+        "available_requests": 9,
+        "lost_exact_requests": 8,
+        "category_lost_signal": 6.152085815184393,
+        "coverage_keys": [
+          "category:식품>김치/반찬/즉석요리>즉석조리식품",
+          "band:식품>김치/반찬/즉석요리>즉석조리식품:15",
+          "own-basket:5ba8e5c0c33b",
+          "own-basket:d2afc4942b51",
+          "observed-buyer:sergiobuilds:식품>김치/반찬/즉석요리>즉석조리식품",
+          "observed-buyer:dae-yangkim:식품>김치/반찬/즉석요리>즉석조리식품",
+          "observed-buyer:olstjr:식품>김치/반찬/즉석요리>즉석조리식품",
+          "observed-buyer:winun1127:식품>김치/반찬/즉석요리>즉석조리식품",
+          "observed-buyer:dragonash:식품>김치/반찬/즉석요리>즉석조리식품"
+        ],
+        "competition_sellers_plus_us": 2,
+        "rate_note": "data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable",
+        "demand_calibration": {
+          "rate_per_hour": 1.3179753152937468,
+          "raw_public_rate": 4.0,
+          "posterior_multiplier": 0.3294938288234367,
+          "group_multiplier": 0.6863701665749404,
+          "weighted_paid": 0.9206529072439197,
+          "weighted_exposure_hours": 1.024457667843754,
+          "proxy_exposure_fraction": 0.20365786435707312,
+          "supply_success_scenario": 0.9523809523809523,
+          "coverage_hours": 0.3416666666666667,
+          "supply_success_windows": 2,
+          "supply_failed_windows": 0
+        }
+      },
+      "active_coverage_hours": 0.3416666666666667,
+      "target_by_legacy_cycle_knob": {
+        "1": 1,
+        "1.5": 1,
+        "2": 1,
+        "3": 1
+      }
+    },
+    {
+      "sku": "G67efbcf0",
+      "name": "더미식 유니자장+시래기장+한우두부강된장+마파두부+치킨크림카레 덮밥소스",
+      "stockouts_last_hour": 5,
+      "held": 0,
+      "reserved_now": 0,
+      "reasons": {
+        "grade_requirement": 4,
+        "reserved_stock": 1
+      },
+      "model": {
+        "public": {
+          "samples": 178,
+          "median": 11788,
+          "external_samples": 178,
+          "external_median": 11788.0,
+          "external_buyers": [
+            [
+              "dae-yangkim",
+              34
+            ],
+            [
+              "sergiobuilds",
+              33
+            ],
+            [
+              "myeonggi",
+              29
+            ],
+            [
+              "q00",
+              22
+            ],
+            [
+              "olstjr",
+              15
+            ]
+          ],
+          "term_prices": [
+            {
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 84,
+              "median": 11933.5,
+              "refs": [
+                5620989,
+                5620706,
+                5620415
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 62,
+              "median": 10463.5,
+              "refs": [
+                5619416,
+                5619148,
+                5618906
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 33,
+              "median": 13600,
+              "refs": [
+                5617114,
+                5610040,
+                5605511
+              ]
+            }
+          ],
+          "seller_prices": [
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 44,
+              "median": 11407.0
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 32,
+              "median": 10160.0
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 22,
+              "median": 11981.0
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 22,
+              "median": 10428.0
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 15,
+              "median": 12907
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 8,
+              "median": 13118.0
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 7,
+              "median": 11700
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 6,
+              "median": 13400.0
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 5,
+              "median": 14040
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 4,
+              "median": 13776.0
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 9000
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 11121.0
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 11084.0
+            },
+            {
+              "shop": "https://traditions-found-iron-midnight.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 11000
+            },
+            {
+              "shop": "https://traditions-found-iron-midnight.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 14167
+            },
+            {
+              "shop": "https://a52a6ecee4d6ed.lhr.life",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 9395
+            },
+            {
+              "shop": "https://fiction-provisions-ministries-icon.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 11141
+            },
+            {
+              "shop": "https://ending-depending-fold-strips.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 11955
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 11915
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 13600
+            }
+          ],
+          "low": 7500,
+          "high": 16000,
+          "sellers": 9,
+          "per_seller_per_hour": 3.314814814814815,
+          "refs": [
+            5620989,
+            5620706,
+            5620415,
+            5619705
+          ],
+          "latest_at": 1794479695.946,
+          "grade_medians": {
+            "B": 11933.5,
+            "C": 10463.5,
+            "A": 13600
+          },
+          "grade_prices": {
+            "B": {
+              "n": 84,
+              "p25": 11000,
+              "p50": 11933.5
+            },
+            "C": {
+              "n": 62,
+              "p25": 10062,
+              "p50": 10463.5
+            },
+            "A": {
+              "n": 33,
+              "p25": 12698,
+              "p50": 13600
+            }
+          },
+          "note": "observed 6h trades; availability, quality, warranty and traffic confound comparisons"
+        },
+        "arrival_rate_scenario": 3.385194470393483,
+        "paid_while_available": 11,
+        "positive_paid_while_available": 11,
+        "paid_arrival_rate_scenario": 3.385194470393483,
+        "payment_rate_scenario": 0.21739130434782608,
+        "available_hours_observed": 3.7800311130947515,
+        "available_requests": 21,
+        "lost_exact_requests": 7,
+        "category_lost_signal": 6.152085815184393,
+        "coverage_keys": [
+          "category:식품>김치/반찬/즉석요리>즉석조리식품",
+          "band:식품>김치/반찬/즉석요리>즉석조리식품:14",
+          "own-basket:7a38ceda71af",
+          "own-basket:d2afc4942b51",
+          "observed-buyer:dae-yangkim:식품>김치/반찬/즉석요리>즉석조리식품",
+          "observed-buyer:sergiobuilds:식품>김치/반찬/즉석요리>즉석조리식품",
+          "observed-buyer:myeonggi:식품>김치/반찬/즉석요리>즉석조리식품",
+          "observed-buyer:q00:식품>김치/반찬/즉석요리>즉석조리식품",
+          "observed-buyer:olstjr:식품>김치/반찬/즉석요리>즉석조리식품"
+        ],
+        "competition_sellers_plus_us": 5,
+        "rate_note": "data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable",
+        "demand_calibration": {
+          "rate_per_hour": 3.385194470393483,
+          "raw_public_rate": 5.933333333333334,
+          "posterior_multiplier": 0.570538393886542,
+          "group_multiplier": 0.6472034612118712,
+          "weighted_paid": 3.8218851988084066,
+          "weighted_exposure_hours": 1.1694676432976208,
+          "proxy_exposure_fraction": 0.20462874993532165,
+          "supply_success_scenario": 0.8571428571428571,
+          "coverage_hours": 0.675,
+          "supply_success_windows": 4,
+          "supply_failed_windows": 0
+        }
+      },
+      "active_coverage_hours": 0.675,
+      "target_by_legacy_cycle_knob": {
+        "1": 4,
+        "1.5": 4,
+        "2": 4,
+        "3": 4
+      }
+    },
+    {
+      "sku": "Gcc33f336",
+      "name": "대복 태양초 프리미엄 포기김치 10kg(5kg+5kg)",
+      "stockouts_last_hour": 5,
+      "held": 1,
+      "reserved_now": 0,
+      "reasons": {
+        "shelf_life": 5
+      },
+      "model": {
+        "public": {
+          "samples": 13,
+          "median": 35932,
+          "external_samples": 13,
+          "external_median": 35932,
+          "external_buyers": [
+            [
+              "lee-sungsoo",
+              5
+            ],
+            [
+              "25512088",
+              2
+            ],
+            [
+              "sergiobuilds",
+              2
+            ],
+            [
+              "nocha12",
+              1
+            ],
+            [
+              "buyer-03",
+              1
+            ]
+          ],
+          "term_prices": [
+            {
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 7,
+              "median": 35932,
+              "refs": [
+                5609681,
+                5586865,
+                5556445
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 32175,
+              "refs": [
+                5597861,
+                5551499,
+                5536036
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 45498,
+              "refs": [
+                5587317,
+                5539756,
+                5534322
+              ]
+            }
+          ],
+          "seller_prices": [
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 4,
+              "median": 36314.5
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 35449
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 32893.5
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 47774.5
+            },
+            {
+              "shop": "https://ending-depending-fold-strips.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 32175
+            },
+            {
+              "shop": "https://ending-depending-fold-strips.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 36270
+            }
+          ],
+          "low": 32175,
+          "high": 50051,
+          "sellers": 3,
+          "per_seller_per_hour": 0.7222222222222222,
+          "refs": [
+            5609681,
+            5597861,
+            5587317,
+            5586865
+          ],
+          "latest_at": 1794477197.153,
+          "grade_medians": {
+            "B": 35932,
+            "C": 32175,
+            "A": 45498
+          },
+          "grade_prices": {
+            "B": {
+              "n": 7,
+              "p25": 35449,
+              "p50": 35932
+            },
+            "C": {
+              "n": 3,
+              "p25": 32175,
+              "p50": 32175
+            },
+            "A": {
+              "n": 3,
+              "p25": 36270,
+              "p50": 45498
+            }
+          },
+          "note": "observed 6h trades; availability, quality, warranty and traffic confound comparisons"
+        },
+        "arrival_rate_scenario": 0.5226652394940593,
+        "paid_while_available": 2,
+        "positive_paid_while_available": 2,
+        "paid_arrival_rate_scenario": 0.5226652394940593,
+        "payment_rate_scenario": 0.3333333333333333,
+        "available_hours_observed": 2.382943428754808,
+        "available_requests": 4,
+        "lost_exact_requests": 8,
+        "category_lost_signal": 3.9338754306473214,
+        "coverage_keys": [
+          "category:식품>김치/반찬/즉석요리>김치",
+          "band:식품>김치/반찬/즉석요리>김치:15",
+          "own-basket:391ec3358cf7",
+          "own-basket:1667c49efe26",
+          "own-basket:e1f37b8aad2f",
+          "own-basket:d13add200ecc",
+          "own-basket:dfed7c4b64a5",
+          "own-basket:d8990bdae9ed",
+          "own-basket:7f0d1e2894b7",
+          "own-basket:4b4bb813d63c",
+          "own-basket:1004a2603e5a",
+          "own-basket:6f0915cfe5e9",
+          "own-basket:5d18436be4e7",
+          "observed-buyer:lee-sungsoo:식품>김치/반찬/즉석요리>김치",
+          "observed-buyer:25512088:식품>김치/반찬/즉석요리>김치",
+          "observed-buyer:sergiobuilds:식품>김치/반찬/즉석요리>김치",
+          "observed-buyer:nocha12:식품>김치/반찬/즉석요리>김치",
+          "observed-buyer:buyer-03:식품>김치/반찬/즉석요리>김치"
+        ],
+        "competition_sellers_plus_us": 4,
+        "rate_note": "data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable",
+        "demand_calibration": {
+          "rate_per_hour": 0.5226652394940593,
+          "raw_public_rate": 0.5416666666666666,
+          "posterior_multiplier": 0.9649204421428788,
+          "group_multiplier": 0.5348052449195665,
+          "weighted_paid": 0.6151005204539538,
+          "weighted_exposure_hours": 1.0513586076422177,
+          "proxy_exposure_fraction": 0.126142762238453,
+          "supply_success_scenario": 0.8333333333333334,
+          "coverage_hours": 0.675,
+          "supply_success_windows": 3,
+          "supply_failed_windows": 0
+        }
+      },
+      "active_coverage_hours": 0.675,
+      "target_by_legacy_cycle_knob": {
+        "1": 1,
+        "1.5": 1,
+        "2": 1,
+        "3": 1
+      }
+    },
+    {
+      "sku": "G00327e80",
+      "name": "[다우닝] 플라나 베이직 4인 전체 천연가죽 소파",
+      "stockouts_last_hour": 4,
+      "held": 1,
+      "reserved_now": 0,
+      "reasons": {
+        "reserved_stock": 4
+      },
+      "model": {
+        "public": {
+          "samples": 54,
+          "median": 1471911.0,
+          "external_samples": 54,
+          "external_median": 1471911.0,
+          "external_buyers": [
+            [
+              "nocha12",
+              17
+            ],
+            [
+              "fair-furniture",
+              9
+            ],
+            [
+              "mjforge",
+              5
+            ],
+            [
+              "buyer-03",
+              4
+            ],
+            [
+              "cheapest-in-town",
+              3
+            ]
+          ],
+          "term_prices": [
+            {
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 27,
+              "median": 1471804,
+              "refs": [
+                5616049,
+                5605809,
+                5600254
+              ]
+            },
+            {
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 7,
+              "median": 1446697,
+              "refs": [
+                5612691,
+                5565486,
+                5561731
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 6,
+              "median": 1572760.0,
+              "refs": [
+                5610388,
+                5605268,
+                5591680
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 6.0,
+              "n": 8,
+              "median": 1594107.5,
+              "refs": [
+                5608047,
+                5603428,
+                5567355
+              ]
+            },
+            {
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 1285169,
+              "refs": [
+                5590037
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 1195297,
+              "refs": [
+                5575876
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 1154858,
+              "refs": [
+                5566583
+              ]
+            },
+            {
+              "grade": "B",
+              "warranty_hours": 6.0,
+              "n": 2,
+              "median": 1377377.0,
+              "refs": [
+                5533156,
+                5525528
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 6.0,
+              "n": 1,
+              "median": 1640164,
+              "refs": [
+                5526377
+              ]
+            }
+          ],
+          "seller_prices": [
+            {
+              "shop": "https://venice-snap-toronto-bowl.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 12,
+              "median": 1458864.0
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 6,
+              "median": 1572760.0
+            },
+            {
+              "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 6.0,
+              "n": 6,
+              "median": 1651032.5
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 4,
+              "median": 1625135.5
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 3,
+              "median": 1540110
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 3,
+              "median": 1692550
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 3,
+              "median": 1471725
+            },
+            {
+              "shop": "https://venice-snap-toronto-bowl.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 2,
+              "median": 1288298.0
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 2,
+              "median": 1471833.0
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 1446697
+            },
+            {
+              "shop": "https://shop2.bluespot.team",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 1416832
+            },
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 1629320
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 1285169
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 1195297
+            },
+            {
+              "shop": "https://publicly-shape-trim-angle.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 6.0,
+              "n": 1,
+              "median": 1506796
+            },
+            {
+              "shop": "https://venice-snap-toronto-bowl.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 1154858
+            },
+            {
+              "shop": "https://farmer-events-implemented-fort.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 1471960
+            },
+            {
+              "shop": "https://ax-week07.treasuresky.xyz",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 1473185
+            },
+            {
+              "shop": "https://sky-greg-motivation-annex.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 6.0,
+              "n": 1,
+              "median": 1405598
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 6.0,
+              "n": 1,
+              "median": 1640164
+            },
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 6.0,
+              "n": 1,
+              "median": 1349156
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 6.0,
+              "n": 1,
+              "median": 1454866
+            }
+          ],
+          "low": 1154858,
+          "high": 2088827,
+          "sellers": 13,
+          "per_seller_per_hour": 0.6923076923076923,
+          "refs": [
+            5616049,
+            5612691,
+            5610388,
+            5608047
+          ],
+          "latest_at": 1794478619.442,
+          "grade_medians": {
+            "A": 1523834,
+            "B": 1377377.0,
+            "C": 1195297
+          },
+          "grade_prices": {
+            "A": {
+              "n": 41,
+              "p25": 1459180,
+              "p50": 1523834
+            },
+            "B": {
+              "n": 10,
+              "p25": 1285169,
+              "p50": 1377377.0
+            },
+            "C": {
+              "n": 3,
+              "p25": 1154858,
+              "p50": 1195297
+            }
+          },
+          "note": "observed 6h trades; availability, quality, warranty and traffic confound comparisons"
+        },
+        "arrival_rate_scenario": 0.08480997769056918,
+        "paid_while_available": 0,
+        "positive_paid_while_available": 0,
+        "paid_arrival_rate_scenario": 0.08480997769056918,
+        "payment_rate_scenario": 0.041666666666666664,
+        "available_hours_observed": 5.895186796850635,
+        "available_requests": 25,
+        "lost_exact_requests": 4,
+        "category_lost_signal": 3.875950892122191,
+        "coverage_keys": [
+          "category:가구/침구>가구>소파/의자/스툴",
+          "band:가구/침구>가구>소파/의자/스툴:21",
+          "own-basket:91b9b4bcf137",
+          "observed-buyer:nocha12:가구/침구>가구>소파/의자/스툴",
+          "observed-buyer:fair-furniture:가구/침구>가구>소파/의자/스툴",
+          "observed-buyer:mjforge:가구/침구>가구>소파/의자/스툴",
+          "observed-buyer:buyer-03:가구/침구>가구>소파/의자/스툴",
+          "observed-buyer:cheapest-in-town:가구/침구>가구>소파/의자/스툴"
+        ],
+        "competition_sellers_plus_us": 17,
+        "rate_note": "data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable",
+        "demand_calibration": {
+          "rate_per_hour": 0.08480997769056918,
+          "raw_public_rate": 0.5294117647058824,
+          "posterior_multiplier": 0.16019662452663067,
+          "group_multiplier": 0.876297498768917,
+          "weighted_paid": 0,
+          "weighted_exposure_hours": 1.3702721249617889,
+          "proxy_exposure_fraction": 0.2261566882407785,
+          "supply_success_scenario": 0.9523809523809523,
+          "coverage_hours": 0.3416666666666667,
+          "supply_success_windows": 0,
+          "supply_failed_windows": 0
+        }
+      },
+      "active_coverage_hours": 0.3416666666666667,
+      "target_by_legacy_cycle_knob": {
+        "1": 1,
+        "1.5": 1,
+        "2": 1,
+        "3": 1
+      }
+    },
+    {
+      "sku": "Gb5d0dde7",
+      "name": "시몬스 뷰티레스트 스위트. 퀸 매트리스",
+      "stockouts_last_hour": 4,
+      "held": 1,
+      "reserved_now": 0,
+      "reasons": {
+        "reserved_stock": 4
+      },
+      "model": {
+        "public": {
+          "samples": 54,
+          "median": 729762,
+          "external_samples": 54,
+          "external_median": 728571.0,
+          "external_buyers": [
+            [
+              "kimauve",
+              10
+            ],
+            [
+              "11im",
+              10
+            ],
+            [
+              "Afford Shop",
+              4
+            ],
+            [
+              "move_76",
+              4
+            ],
+            [
+              "YAHO1212",
+              4
+            ]
+          ],
+          "term_prices": [
+            {
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 33,
+              "median": 764503,
+              "refs": [
+                5617377,
+                5611872,
+                5611814
+              ]
+            },
+            {
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 6,
+              "median": 693584.0,
+              "refs": [
+                5610071,
+                5604259,
+                5583030
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 730000,
+              "refs": [
+                5601003,
+                5600671,
+                5587470
+              ]
+            },
+            {
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 5,
+              "median": 700000,
+              "refs": [
+                5600131,
+                5588362,
+                5567387
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 9,
+              "median": 689472,
+              "refs": [
+                5595469,
+                5580905,
+                5575628
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 6.0,
+              "n": 1,
+              "median": 864668,
+              "refs": [
+                5525720
+              ]
+            }
+          ],
+          "seller_prices": [
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 9,
+              "median": 739761
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 7,
+              "median": 766080
+            },
+            {
+              "shop": "https://winners-doctrine-thomas-mls.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 5,
+              "median": 689472
+            },
+            {
+              "shop": "https://specialty-outreach-recruitment-begin.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 4,
+              "median": 788738.0
+            },
+            {
+              "shop": "https://ax-week07.treasuresky.xyz",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 4,
+              "median": 721410.5
+            },
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 4,
+              "median": 715000.0
+            },
+            {
+              "shop": "https://neo-radiation-calcium-tucson.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 3,
+              "median": 766080
+            },
+            {
+              "shop": "https://farmer-events-implemented-fort.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 3,
+              "median": 734967
+            },
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 730000.0
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 2,
+              "median": 782041.5
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 690156.0
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 2,
+              "median": 713284.5
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 723881.0
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 609530
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 811040
+            },
+            {
+              "shop": "https://farmer-events-implemented-fort.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 647099
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 660994
+            },
+            {
+              "shop": "https://sponsors-mattress-defining-llp.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 582220
+            },
+            {
+              "shop": "https://neo-radiation-calcium-tucson.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 733248
+            },
+            {
+              "shop": "https://ax-week07.treasuresky.xyz",
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 676028
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 6.0,
+              "n": 1,
+              "median": 864668
+            }
+          ],
+          "low": 582220,
+          "high": 864668,
+          "sellers": 12,
+          "per_seller_per_hour": 0.7916666666666666,
+          "refs": [
+            5617377,
+            5611872,
+            5611814,
+            5610212
+          ],
+          "latest_at": 1794478939.922,
+          "grade_medians": {
+            "A": 737538,
+            "B": 700000,
+            "C": 730000
+          },
+          "grade_prices": {
+            "A": {
+              "n": 43,
+              "p25": 701784,
+              "p50": 737538
+            },
+            "B": {
+              "n": 11,
+              "p25": 660994,
+              "p50": 700000
+            },
+            "C": {
+              "n": 3,
+              "p25": 582220,
+              "p50": 730000
+            }
+          },
+          "note": "observed 6h trades; availability, quality, warranty and traffic confound comparisons"
+        },
+        "arrival_rate_scenario": 0.02777395015752705,
+        "paid_while_available": 0,
+        "positive_paid_while_available": 0,
+        "paid_arrival_rate_scenario": 0.02777395015752705,
+        "payment_rate_scenario": 0.16666666666666666,
+        "available_hours_observed": 5.895186796850635,
+        "available_requests": 4,
+        "lost_exact_requests": 4,
+        "category_lost_signal": 4.838306812346193,
+        "coverage_keys": [
+          "category:가구/침구>가구>침대/매트리스",
+          "band:가구/침구>가구>침대/매트리스:20",
+          "own-basket:883bdd64977c",
+          "own-basket:685b26c406e3",
+          "own-basket:658fa27fd395",
+          "own-basket:650ab3dae70a",
+          "own-basket:5f20b5fdc67c",
+          "own-basket:b270d9c0231e",
+          "observed-buyer:kimauve:가구/침구>가구>침대/매트리스",
+          "observed-buyer:11im:가구/침구>가구>침대/매트리스",
+          "observed-buyer:Afford Shop:가구/침구>가구>침대/매트리스",
+          "observed-buyer:move_76:가구/침구>가구>침대/매트리스",
+          "observed-buyer:YAHO1212:가구/침구>가구>침대/매트리스"
+        ],
+        "competition_sellers_plus_us": 15,
+        "rate_note": "data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable",
+        "demand_calibration": {
+          "rate_per_hour": 0.02777395015752705,
+          "raw_public_rate": 0.6,
+          "posterior_multiplier": 0.04628991692921175,
+          "group_multiplier": 0.25321219184956045,
+          "weighted_paid": 0,
+          "weighted_exposure_hours": 1.3702721249617889,
+          "proxy_exposure_fraction": 0.2261566882407785,
+          "supply_success_scenario": 0.9523809523809523,
+          "coverage_hours": 0.3416666666666667,
+          "supply_success_windows": 0,
+          "supply_failed_windows": 0
+        }
+      },
+      "active_coverage_hours": 0.3416666666666667,
+      "target_by_legacy_cycle_knob": {
+        "1": 1,
+        "1.5": 1,
+        "2": 1,
+        "3": 1
+      }
+    },
+    {
+      "sku": "Gb909a9c8",
+      "name": "제스프리 썬골드키위 왕점보 3.1kg내외 (개별 155g내외 20개입) 맛젤인증점",
+      "stockouts_last_hour": 3,
+      "held": 1,
+      "reserved_now": 0,
+      "reasons": {
+        "shelf_life": 1,
+        "reserved_stock": 2
+      },
+      "model": {
+        "public": {
+          "samples": 67,
+          "median": 17363,
+          "external_samples": 67,
+          "external_median": 17193,
+          "external_buyers": [
+            [
+              "kimauve",
+              11
+            ],
+            [
+              "real_yellow",
+              11
+            ],
+            [
+              "buyer-01",
+              9
+            ],
+            [
+              "olstjr",
+              5
+            ],
+            [
+              "psyoung82",
+              4
+            ]
+          ],
+          "term_prices": [
+            {
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 32,
+              "median": 17371.0,
+              "refs": [
+                5618864,
+                5613931,
+                5593216
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 9,
+              "median": 21876,
+              "refs": [
+                5605349,
+                5603748,
+                5598648
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 28,
+              "median": 15952.0,
+              "refs": [
+                5604414,
+                5601673,
+                5598423
+              ]
+            }
+          ],
+          "seller_prices": [
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 14,
+              "median": 15513.0
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 14,
+              "median": 17278.0
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 9,
+              "median": 21876
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 6,
+              "median": 19303.5
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 5,
+              "median": 16667
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 4,
+              "median": 17004.0
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 4,
+              "median": 17742.0
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 16000
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 3,
+              "median": 13043
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 17535.0
+            },
+            {
+              "shop": "https://traditions-found-iron-midnight.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 14109
+            },
+            {
+              "shop": "https://ending-depending-fold-strips.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 14950
+            },
+            {
+              "shop": "https://aquarium-mysterious-compilation-medical.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 16833
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 17916
+            },
+            {
+              "shop": "https://wedding-evaluate-wheels-them.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 17460
+            }
+          ],
+          "low": 11961,
+          "high": 24609,
+          "sellers": 9,
+          "per_seller_per_hour": 1.2777777777777777,
+          "refs": [
+            5618864,
+            5613931,
+            5605349,
+            5604414
+          ],
+          "latest_at": 1794479206.343,
+          "grade_medians": {
+            "B": 17371.0,
+            "A": 21876,
+            "C": 15952.0
+          },
+          "grade_prices": {
+            "B": {
+              "n": 32,
+              "p25": 16445,
+              "p50": 17371.0
+            },
+            "A": {
+              "n": 9,
+              "p25": 21299,
+              "p50": 21876
+            },
+            "C": {
+              "n": 28,
+              "p25": 14034,
+              "p50": 15952.0
+            }
+          },
+          "note": "observed 6h trades; availability, quality, warranty and traffic confound comparisons"
+        },
+        "arrival_rate_scenario": 1.2838571405149022,
+        "paid_while_available": 10,
+        "positive_paid_while_available": 10,
+        "paid_arrival_rate_scenario": 1.2838571405149022,
+        "payment_rate_scenario": 0.08333333333333333,
+        "available_hours_observed": 5.812548415992004,
+        "available_requests": 22,
+        "lost_exact_requests": 6,
+        "category_lost_signal": 8.958352073396053,
+        "coverage_keys": [
+          "category:식품>야채/과일>신선과일(부패주의)",
+          "band:식품>야채/과일>신선과일(부패주의):14",
+          "own-basket:bd8f5c3b44b5",
+          "own-basket:c32ade55a8df",
+          "own-basket:eb664ee0acbc",
+          "own-basket:b7a4e7624c8d",
+          "own-basket:5321b9e0a80c",
+          "own-basket:2e548ccd18d3",
+          "own-basket:d8b6c963ef7f",
+          "own-basket:ad81f7d0904f",
+          "own-basket:9ad7171a08e5",
+          "observed-buyer:kimauve:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:real_yellow:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:buyer-01:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:olstjr:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:psyoung82:식품>야채/과일>신선과일(부패주의)"
+        ],
+        "competition_sellers_plus_us": 6,
+        "rate_note": "data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable",
+        "demand_calibration": {
+          "rate_per_hour": 1.2838571405149022,
+          "raw_public_rate": 1.861111111111111,
+          "posterior_multiplier": 0.6898336874408431,
+          "group_multiplier": 0.4845838454699849,
+          "weighted_paid": 1.8672187588911942,
+          "weighted_exposure_hours": 1.36346327269875,
+          "proxy_exposure_fraction": 0.22229227554260567,
+          "supply_success_scenario": 0.9523809523809523,
+          "coverage_hours": 0.3416666666666667,
+          "supply_success_windows": 2,
+          "supply_failed_windows": 0
+        }
+      },
+      "active_coverage_hours": 0.3416666666666667,
+      "target_by_legacy_cycle_knob": {
+        "1": 1,
+        "1.5": 1,
+        "2": 1,
+        "3": 1
+      }
+    },
+    {
+      "sku": "Gef4d3036",
+      "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+      "stockouts_last_hour": 2,
+      "held": 1,
+      "reserved_now": 1,
+      "reasons": {
+        "reserved_stock": 2
+      },
+      "model": {
+        "public": {
+          "samples": 506,
+          "median": 17186,
+          "external_samples": 506,
+          "external_median": 17241.5,
+          "external_buyers": [
+            [
+              "olstjr",
+              101
+            ],
+            [
+              "usagi",
+              59
+            ],
+            [
+              "buzllightyear",
+              46
+            ],
+            [
+              "real_yellow",
+              42
+            ],
+            [
+              "kimauve",
+              35
+            ]
+          ],
+          "term_prices": [
+            {
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 80,
+              "median": 21525.5,
+              "refs": [
+                5621103,
+                5617836,
+                5617662
+              ]
+            },
+            {
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 277,
+              "median": 17918,
+              "refs": [
+                5621003,
+                5619831,
+                5619013
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 170,
+              "median": 15171.5,
+              "refs": [
+                5620531,
+                5620333,
+                5620129
+              ]
+            }
+          ],
+          "seller_prices": [
+            {
+              "shop": "https://specialty-outreach-recruitment-begin.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 75,
+              "median": 19624
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 69,
+              "median": 17509
+            },
+            {
+              "shop": "https://specialty-outreach-recruitment-begin.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 62,
+              "median": 15500.0
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 35,
+              "median": 14257
+            },
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 25,
+              "median": 17254
+            },
+            {
+              "shop": "https://farmer-events-implemented-fort.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 24,
+              "median": 20466.5
+            },
+            {
+              "shop": "https://sensors-stranger-gas-enhance.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 23,
+              "median": 22110
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 23,
+              "median": 17051
+            },
+            {
+              "shop": "https://cookie-chemicals-mistress-globe.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 16,
+              "median": 15895.0
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 15,
+              "median": 15981
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 15,
+              "median": 18109
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 14,
+              "median": 17051.0
+            },
+            {
+              "shop": "https://docs-quotes-solutions-recipes.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 13,
+              "median": 20913
+            },
+            {
+              "shop": "https://cookie-chemicals-mistress-globe.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 10,
+              "median": 13874.5
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 10,
+              "median": 22065.5
+            },
+            {
+              "shop": "https://farmer-events-implemented-fort.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 9,
+              "median": 24000
+            },
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 8,
+              "median": 19772.0
+            },
+            {
+              "shop": "https://camps-advanced-whereas-increases.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 8,
+              "median": 14220.0
+            },
+            {
+              "shop": "https://breakfast-afternoon-for-header.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 8,
+              "median": 14867.0
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 7,
+              "median": 18620
+            },
+            {
+              "shop": "https://breakfast-afternoon-for-header.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 7,
+              "median": 18471
+            },
+            {
+              "shop": "https://farmer-events-implemented-fort.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 6,
+              "median": 19250.0
+            },
+            {
+              "shop": "https://cookie-chemicals-mistress-globe.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 6,
+              "median": 18010.0
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 6,
+              "median": 18253.0
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 6,
+              "median": 14450.0
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 5,
+              "median": 14450
+            },
+            {
+              "shop": "https://specialty-outreach-recruitment-begin.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 5,
+              "median": 24800
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 4,
+              "median": 12953.0
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 4,
+              "median": 20887.5
+            },
+            {
+              "shop": "https://wrapping-skiing-cameras-direct.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 15073.0
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 18121
+            },
+            {
+              "shop": "https://aid-res-comfortable-rats.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 20495
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 23739
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 17738
+            },
+            {
+              "shop": "https://breakfast-afternoon-for-header.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 19434
+            },
+            {
+              "shop": "https://wedding-evaluate-wheels-them.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 15600
+            },
+            {
+              "shop": "https://thy-double-silver-tribune.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 17340
+            }
+          ],
+          "low": 10344,
+          "high": 40600,
+          "sellers": 15,
+          "per_seller_per_hour": 5.855555555555555,
+          "refs": [
+            5621103,
+            5621003,
+            5620531,
+            5620333
+          ],
+          "latest_at": 1794479723.946,
+          "grade_medians": {
+            "A": 21525.5,
+            "B": 17918,
+            "C": 15171.5
+          },
+          "grade_prices": {
+            "A": {
+              "n": 80,
+              "p25": 19944,
+              "p50": 21525.5
+            },
+            "B": {
+              "n": 277,
+              "p25": 16997,
+              "p50": 17918
+            },
+            "C": {
+              "n": 170,
+              "p25": 14202,
+              "p50": 15171.5
+            }
+          },
+          "note": "observed 6h trades; availability, quality, warranty and traffic confound comparisons"
+        },
+        "arrival_rate_scenario": 1.6835968436705753,
+        "paid_while_available": 13,
+        "positive_paid_while_available": 13,
+        "paid_arrival_rate_scenario": 1.6835968436705753,
+        "payment_rate_scenario": 0.07142857142857142,
+        "available_hours_observed": 5.566452144185709,
+        "available_requests": 13,
+        "lost_exact_requests": 4,
+        "category_lost_signal": 8.958352073396053,
+        "coverage_keys": [
+          "category:식품>야채/과일>신선과일(부패주의)",
+          "band:식품>야채/과일>신선과일(부패주의):14",
+          "own-basket:feff3efab5a1",
+          "own-basket:bd8f5c3b44b5",
+          "own-basket:c32ade55a8df",
+          "own-basket:eb664ee0acbc",
+          "own-basket:b7a4e7624c8d",
+          "own-basket:5321b9e0a80c",
+          "own-basket:2e548ccd18d3",
+          "own-basket:d8b6c963ef7f",
+          "own-basket:ad81f7d0904f",
+          "own-basket:9ad7171a08e5",
+          "observed-buyer:olstjr:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:usagi:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:buzllightyear:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:real_yellow:식품>야채/과일>신선과일(부패주의)",
+          "observed-buyer:kimauve:식품>야채/과일>신선과일(부패주의)"
+        ],
+        "competition_sellers_plus_us": 10,
+        "rate_note": "data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable",
+        "demand_calibration": {
+          "rate_per_hour": 1.6835968436705753,
+          "raw_public_rate": 8.433333333333334,
+          "posterior_multiplier": 0.1996359893680524,
+          "group_multiplier": 0.6390969783204227,
+          "weighted_paid": 1.154745449169261,
+          "weighted_exposure_hours": 1.356272287568144,
+          "proxy_exposure_fraction": 0.2181688522936075,
+          "supply_success_scenario": 0.8571428571428571,
+          "coverage_hours": 0.675,
+          "supply_success_windows": 4,
+          "supply_failed_windows": 0
+        }
+      },
+      "active_coverage_hours": 0.675,
+      "target_by_legacy_cycle_knob": {
+        "1": 3,
+        "1.5": 3,
+        "2": 3,
+        "3": 3
+      }
+    },
+    {
+      "sku": "G03c2d98f",
+      "name": "숙면연구소 3단 접이식 토퍼 매트리스 침대용 6cm Q (퀸)",
+      "stockouts_last_hour": 2,
+      "held": 1,
+      "reserved_now": 0,
+      "reasons": {
+        "reserved_stock": 2
+      },
+      "model": {
+        "public": {
+          "samples": 80,
+          "median": 82297.5,
+          "external_samples": 80,
+          "external_median": 82297.5,
+          "external_buyers": [
+            [
+              "fair-furniture",
+              32
+            ],
+            [
+              "dyishappy",
+              10
+            ],
+            [
+              "mjforge",
+              9
+            ],
+            [
+              "kimauve",
+              5
+            ],
+            [
+              "myeonggi",
+              3
+            ]
+          ],
+          "term_prices": [
+            {
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 41,
+              "median": 84484,
+              "refs": [
+                5621184,
+                5616975,
+                5614329
+              ]
+            },
+            {
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 22,
+              "median": 71777.0,
+              "refs": [
+                5619398,
+                5580517,
+                5571284
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 6.0,
+              "n": 8,
+              "median": 83566.0,
+              "refs": [
+                5607500,
+                5605937,
+                5587075
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 6,
+              "median": 77355.0,
+              "refs": [
+                5601528,
+                5600755,
+                5568523
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 2,
+              "median": 61822.0,
+              "refs": [
+                5589529,
+                5565318
+              ]
+            },
+            {
+              "grade": "A",
+              "warranty_hours": 3.0,
+              "n": 1,
+              "median": 81260,
+              "refs": [
+                5556298
+              ]
+            },
+            {
+              "grade": "C",
+              "warranty_hours": 12.0,
+              "n": 1,
+              "median": 70537,
+              "refs": [
+                5541084
+              ]
+            },
+            {
+              "grade": "B",
+              "warranty_hours": 6.0,
+              "n": 1,
+              "median": 64295,
+              "refs": [
+                5535615
+              ]
+            }
+          ],
+          "seller_prices": [
+            {
+              "shop": "https://shop2.bluespot.team",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 30,
+              "median": 84682.5
+            },
+            {
+              "shop": "https://shop2.bluespot.team",
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 21,
+              "median": 71777
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 6.0,
+              "n": 7,
+              "median": 83794
+            },
+            {
+              "shop": "https://counts-piece-louisiana-spreading.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 4,
+              "median": 80978.0
+            },
+            {
+              "shop": "https://combines-spelling-sam-parish.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 3,
+              "median": 87022
+            },
+            {
+              "shop": "https://winners-doctrine-thomas-mls.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 3,
+              "median": 73647
+            },
+            {
+              "shop": "https://neo-radiation-calcium-tucson.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 2,
+              "median": 81830.0
+            },
+            {
+              "shop": "https://amy-oval-they-doctor.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 83921
+            },
+            {
+              "shop": "https://stakeholders-carter-salon-round.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 87411
+            },
+            {
+              "shop": "https://combines-spelling-sam-parish.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 52371
+            },
+            {
+              "shop": "https://neo-radiation-calcium-tucson.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 62614
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 69081
+            },
+            {
+              "shop": "https://interesting-dollars-architecture-cams.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 71273
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 3.0,
+              "n": 1,
+              "median": 81260
+            },
+            {
+              "shop": "https://shaft-did-integrity-relatives.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 0,
+              "n": 1,
+              "median": 72478
+            },
+            {
+              "shop": "https://venice-snap-toronto-bowl.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 72.0,
+              "n": 1,
+              "median": 96944
+            },
+            {
+              "shop": "https://excuse-sandy-changes-buried.trycloudflare.com",
+              "grade": "C",
+              "warranty_hours": 12.0,
+              "n": 1,
+              "median": 70537
+            },
+            {
+              "shop": "https://anna-kde-phenomenon-rolling.trycloudflare.com",
+              "grade": "B",
+              "warranty_hours": 6.0,
+              "n": 1,
+              "median": 64295
+            },
+            {
+              "shop": "https://anna-kde-phenomenon-rolling.trycloudflare.com",
+              "grade": "A",
+              "warranty_hours": 6.0,
+              "n": 1,
+              "median": 80979
+            }
+          ],
+          "low": 52371,
+          "high": 96944,
+          "sellers": 12,
+          "per_seller_per_hour": 1.1388888888888888,
+          "refs": [
+            5621184,
+            5619398,
+            5616975,
+            5614329
+          ],
+          "latest_at": 1794479741.256,
+          "grade_medians": {
+            "A": 84484.0,
+            "B": 71777,
+            "C": 70537
+          },
+          "grade_prices": {
+            "A": {
+              "n": 56,
+              "p25": 81830,
+              "p50": 84484.0
+            },
+            "B": {
+              "n": 23,
+              "p25": 71777,
+              "p50": 71777
+            },
+            "C": {
+              "n": 3,
+              "p25": 52371,
+              "p50": 70537
+            }
+          },
+          "note": "observed 6h trades; availability, quality, warranty and traffic confound comparisons"
+        },
+        "arrival_rate_scenario": 0.12162094038649429,
+        "paid_while_available": 2,
+        "positive_paid_while_available": 2,
+        "paid_arrival_rate_scenario": 0.12162094038649429,
+        "payment_rate_scenario": 0.05555555555555555,
+        "available_hours_observed": 5.895186796850635,
+        "available_requests": 16,
+        "lost_exact_requests": 3,
+        "category_lost_signal": 4.838306812346193,
+        "coverage_keys": [
+          "category:가구/침구>가구>침대/매트리스",
+          "band:가구/침구>가구>침대/매트리스:16",
+          "own-basket:1671748f11be",
+          "own-basket:fc61790aff8a",
+          "own-basket:17b34a434115",
+          "observed-buyer:fair-furniture:가구/침구>가구>침대/매트리스",
+          "observed-buyer:dyishappy:가구/침구>가구>침대/매트리스",
+          "observed-buyer:mjforge:가구/침구>가구>침대/매트리스",
+          "observed-buyer:kimauve:가구/침구>가구>침대/매트리스",
+          "observed-buyer:myeonggi:가구/침구>가구>침대/매트리스"
+        ],
+        "competition_sellers_plus_us": 11,
+        "rate_note": "data-derived time-decayed posterior; neutral raw-public fallback when calibration unavailable",
+        "demand_calibration": {
+          "rate_per_hour": 0.12162094038649429,
+          "raw_public_rate": 1.2121212121212122,
+          "posterior_multiplier": 0.10033727581885779,
+          "group_multiplier": 0.2570315325624005,
+          "weighted_paid": 0.10843205384294571,
+          "weighted_exposure_hours": 1.3702721249617889,
+          "proxy_exposure_fraction": 0.2261566882407785,
+          "supply_success_scenario": 0.9523809523809523,
+          "coverage_hours": 0.3416666666666667,
+          "supply_success_windows": 0,
+          "supply_failed_windows": 0
+        }
+      },
+      "active_coverage_hours": 0.3416666666666667,
+      "target_by_legacy_cycle_knob": {
+        "1": 1,
+        "1.5": 1,
+        "2": 1,
+        "3": 1
+      }
+    }
+  ],
+  "code_paths": {
+    "cycle_knob_ignored_in_adaptive": "r3/shop_growth.py:target_stock adaptive branch",
+    "trend_knob_ignored_in_adaptive": "r3/economy.py:trend condition not shop_adaptive_demand_enabled",
+    "exposure_is_physical_stock": "r3/demand_policy.py:fit timeline counts; reservations/grade eligibility excluded",
+    "reservations_still_count_as_inventory": "r3/economy.py:restock_candidates counts all live units"
+  },
+  "limits": [
+    "Reserved-stock rejection is not proof a profitable alternative sale would have occurred.",
+    "The legacy cycle knob is intentionally superseded by adaptive coverage; it should not be treated as live authority.",
+    "These are current snapshots, not a reconstruction of every refusal."
+  ],
+  "market_transactions": 0,
+  "model_calls": 0,
+  "shared_state_writes": 0
+}

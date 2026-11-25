@@ -1,0 +1,532 @@
+{
+  "at": 1794554773.9512856,
+  "runtime": {
+    "pid": 47260,
+    "session": "c60afa001fcd4303a83c0e26d4279daf",
+    "started_at": 1794553847.1885386,
+    "launch_id": "auto-join-20261113T071046765879Z"
+  },
+  "minutes_live": 15.446045784155528,
+  "execution_revision": "v27-robust-sku-lot-portfolio-1",
+  "source_mismatches": [],
+  "analytical_roles": {
+    "market_observer": {
+      "at": 1794554727.0577517,
+      "status": "completed"
+    },
+    "service_region_observer": {
+      "at": 1794554733.850431,
+      "status": "completed"
+    },
+    "negotiation_path_observer": {
+      "at": 1794554739.4846702,
+      "status": "completed"
+    },
+    "account_reputation_observer": {
+      "at": 1794554742.179118,
+      "status": "completed"
+    },
+    "policy_learning_observer": {
+      "at": 1794554746.4173543,
+      "status": "completed"
+    },
+    "buyer_cost_observer": {
+      "at": 1794554749.5510464,
+      "status": "completed"
+    },
+    "shop_demand_observer": {
+      "at": 1794554751.025,
+      "status": "completed"
+    },
+    "inventory_opportunity_observer": {
+      "at": 1794554751.0710032,
+      "status": "completed"
+    },
+    "forum_objective_observer": {
+      "at": 1794554751.1390066,
+      "status": "completed"
+    },
+    "quality_evaluator": {
+      "at": 1794554753.3639374,
+      "status": "completed"
+    },
+    "policy_compiler": {
+      "at": 1794554753.364935,
+      "status": "completed"
+    }
+  },
+  "counts": {
+    "inventory_portfolio_prepared": 11,
+    "shop_plan_prepared": 7,
+    "shop_prepared_plan_used": 0,
+    "restock_decision": 1,
+    "supply_execution_status": 17,
+    "shop_settled": 19,
+    "purchase": 13,
+    "market_result": 26,
+    "cycle_supply_error": 0,
+    "cycle_supervisor_error": 0,
+    "buyer_worker_error": 2,
+    "analytical_role_error": 0
+  },
+  "portfolio": {
+    "at": 1794554642.8946993,
+    "expires_at": 1794554822.8946993,
+    "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+    "candidate_counts": {
+      "all": 1405,
+      "supported_goods": 37,
+      "supported_food": 106
+    },
+    "selection": "lot_risk_4",
+    "dominance_guard_passed": true,
+    "alternatives": {
+      "baseline": {
+        "book": 80494.24750520292,
+        "revenue": 459743.8327725944,
+        "stress_book": -3401.823728610163,
+        "rank_progress": 1.927436299316021e-05,
+        "units": 32,
+        "lines": 10,
+        "capital": 854887.0
+      },
+      "baseline_plus_robust_depth": {
+        "book": 117066.36399239057,
+        "revenue": 619911.0548742074,
+        "stress_book": 3067.9768092118566,
+        "rank_progress": 2.7340201267789245e-05,
+        "units": 41,
+        "lines": 10,
+        "capital": 1135005.0
+      },
+      "lot_risk_0": {
+        "book": 328635.8045805616,
+        "revenue": 2281640.602249632,
+        "stress_book": -221216.1552143295,
+        "rank_progress": 8.443447082302491e-05,
+        "units": 111,
+        "lines": 10,
+        "capital": 5451239.32
+      },
+      "lot_risk_0.25": {
+        "book": 330332.5830878744,
+        "revenue": 2186787.9936744766,
+        "stress_book": -187777.3390370983,
+        "rank_progress": 8.335707749433928e-05,
+        "units": 115,
+        "lines": 10,
+        "capital": 5191816.32
+      },
+      "lot_risk_1": {
+        "book": 304409.74074318184,
+        "revenue": 1801369.1347255453,
+        "stress_book": -82991.7977865344,
+        "rank_progress": 7.378122691377164e-05,
+        "units": 99,
+        "lines": 10,
+        "capital": 3961623.56
+      },
+      "lot_risk_4": {
+        "book": 207794.96711437774,
+        "revenue": 1086956.3656223181,
+        "stress_book": -2566.1923088935782,
+        "rank_progress": 4.833923021341224e-05,
+        "units": 70,
+        "lines": 10,
+        "capital": 1999938.0
+      },
+      "lot_risk_8.0": {
+        "book": 152806.4837643594,
+        "revenue": 753196.7031695705,
+        "stress_book": 14250.22503540654,
+        "rank_progress": 3.489275386067137e-05,
+        "units": 57,
+        "lines": 10,
+        "capital": 1361496.0
+      },
+      "lot_risk_6.0": {
+        "book": 162477.7375594678,
+        "revenue": 801017.9812155324,
+        "stress_book": 12145.038760929578,
+        "rank_progress": 3.710328657596795e-05,
+        "units": 60,
+        "lines": 10,
+        "capital": 1451047.0
+      },
+      "lot_risk_5.0": {
+        "book": 178701.45074769587,
+        "revenue": 911249.6528682725,
+        "stress_book": 7453.423505959572,
+        "rank_progress": 4.123740795427544e-05,
+        "units": 68,
+        "lines": 10,
+        "capital": 1660973.0
+      },
+      "lot_risk_4.5": {
+        "book": 194755.26696653946,
+        "revenue": 1003840.8724897736,
+        "stress_book": 2253.43870601869,
+        "rank_progress": 4.509426533323424e-05,
+        "units": 71,
+        "lines": 10,
+        "capital": 1839624.0
+      }
+    },
+    "goods_units": 0,
+    "selected": [
+      {
+        "sku": "G83b76977",
+        "qty": 7,
+        "held": 1,
+        "book": 47157.75477102858,
+        "stress_book": 7638.25091859896
+      },
+      {
+        "sku": "G74e686be",
+        "qty": 8,
+        "held": 1,
+        "book": 17449.619472471808,
+        "stress_book": 4410.742655148211
+      },
+      {
+        "sku": "Gbe634c1f",
+        "qty": 16,
+        "held": 0,
+        "book": 22078.28930625898,
+        "stress_book": -1085.2100204584112
+      },
+      {
+        "sku": "G11ee03a7",
+        "qty": 4,
+        "held": 0,
+        "book": 13248.714288340265,
+        "stress_book": 862.7806681159193
+      },
+      {
+        "sku": "G7f85e9f7",
+        "qty": 3,
+        "held": 6,
+        "book": 24820.41157005271,
+        "stress_book": -4162.411637737857
+      },
+      {
+        "sku": "G03aae7ca",
+        "qty": 10,
+        "held": 0,
+        "book": 16069.217149726599,
+        "stress_book": -1126.5867902586904
+      },
+      {
+        "sku": "Gf7ca73a2",
+        "qty": 3,
+        "held": 7,
+        "book": 20244.831377042898,
+        "stress_book": -3006.31976225063
+      },
+      {
+        "sku": "G2d6e8e91",
+        "qty": 7,
+        "held": 0,
+        "book": 7482.440769402465,
+        "stress_book": 1430.6351153670316
+      },
+      {
+        "sku": "G67efbcf0",
+        "qty": 9,
+        "held": 7,
+        "book": 16688.094513570653,
+        "stress_book": -2677.376326593263
+      },
+      {
+        "sku": "Gf0e58a76",
+        "qty": 3,
+        "held": 6,
+        "book": 22555.593896482776,
+        "stress_book": -4850.6971288248515
+      }
+    ],
+    "interpretation": "Shared-fact forecast dominance and explicit cost/demand sensitivity; not causal uplift or a competitor guarantee.",
+    "id": "4c2b8be89456e73a14d49435ee51391d1c62c0bf14603b6d2cbd5fc62b302293"
+  },
+  "observer": {
+    "at": 1794554751.025,
+    "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+    "demand_policy_id": "0055081269b116ad552141366d8c5bbc27e3e1e1fe85a566f80d2dfc2dbdd19e",
+    "demand_at": 1794554749.5510464,
+    "portfolio_at": 1794554642.8946993,
+    "selection": "lot_risk_4",
+    "alternatives": {
+      "baseline": {
+        "book": 80494.24750520292,
+        "revenue": 459743.8327725944,
+        "stress_book": -3401.823728610163,
+        "rank_progress": 1.927436299316021e-05,
+        "units": 32,
+        "lines": 10,
+        "capital": 854887.0
+      },
+      "baseline_plus_robust_depth": {
+        "book": 117066.36399239057,
+        "revenue": 619911.0548742074,
+        "stress_book": 3067.9768092118566,
+        "rank_progress": 2.7340201267789245e-05,
+        "units": 41,
+        "lines": 10,
+        "capital": 1135005.0
+      },
+      "lot_risk_0": {
+        "book": 328635.8045805616,
+        "revenue": 2281640.602249632,
+        "stress_book": -221216.1552143295,
+        "rank_progress": 8.443447082302491e-05,
+        "units": 111,
+        "lines": 10,
+        "capital": 5451239.32
+      },
+      "lot_risk_0.25": {
+        "book": 330332.5830878744,
+        "revenue": 2186787.9936744766,
+        "stress_book": -187777.3390370983,
+        "rank_progress": 8.335707749433928e-05,
+        "units": 115,
+        "lines": 10,
+        "capital": 5191816.32
+      },
+      "lot_risk_1": {
+        "book": 304409.74074318184,
+        "revenue": 1801369.1347255453,
+        "stress_book": -82991.7977865344,
+        "rank_progress": 7.378122691377164e-05,
+        "units": 99,
+        "lines": 10,
+        "capital": 3961623.56
+      },
+      "lot_risk_4": {
+        "book": 207794.96711437774,
+        "revenue": 1086956.3656223181,
+        "stress_book": -2566.1923088935782,
+        "rank_progress": 4.833923021341224e-05,
+        "units": 70,
+        "lines": 10,
+        "capital": 1999938.0
+      },
+      "lot_risk_8.0": {
+        "book": 152806.4837643594,
+        "revenue": 753196.7031695705,
+        "stress_book": 14250.22503540654,
+        "rank_progress": 3.489275386067137e-05,
+        "units": 57,
+        "lines": 10,
+        "capital": 1361496.0
+      },
+      "lot_risk_6.0": {
+        "book": 162477.7375594678,
+        "revenue": 801017.9812155324,
+        "stress_book": 12145.038760929578,
+        "rank_progress": 3.710328657596795e-05,
+        "units": 60,
+        "lines": 10,
+        "capital": 1451047.0
+      },
+      "lot_risk_5.0": {
+        "book": 178701.45074769587,
+        "revenue": 911249.6528682725,
+        "stress_book": 7453.423505959572,
+        "rank_progress": 4.123740795427544e-05,
+        "units": 68,
+        "lines": 10,
+        "capital": 1660973.0
+      },
+      "lot_risk_4.5": {
+        "book": 194755.26696653946,
+        "revenue": 1003840.8724897736,
+        "stress_book": 2253.43870601869,
+        "rank_progress": 4.509426533323424e-05,
+        "units": 71,
+        "lines": 10,
+        "capital": 1839624.0
+      }
+    },
+    "goods_units": 0,
+    "scope": "Background demand/stock/lot competition; Main uses numerical prepared plans, not additional LLMs."
+  },
+  "last_plan_used": null,
+  "last_direct_decision": {
+    "strategy_version": 28,
+    "buy": [
+      {
+        "sku": "G0033fd0a",
+        "qty": 5
+      },
+      {
+        "sku": "Gb375f74f",
+        "qty": 7
+      },
+      {
+        "sku": "G2dc1adf4",
+        "qty": 16
+      },
+      {
+        "sku": "Gf7ca73a2",
+        "qty": 5
+      },
+      {
+        "sku": "G5bdaf222",
+        "qty": 5
+      },
+      {
+        "sku": "Gd3898fa7",
+        "qty": 4
+      },
+      {
+        "sku": "Gd6fb41c7",
+        "qty": 3
+      },
+      {
+        "sku": "G1c373db9",
+        "qty": 14
+      },
+      {
+        "sku": "Gbe634c1f",
+        "qty": 16
+      },
+      {
+        "sku": "G83b76977",
+        "qty": 3
+      }
+    ],
+    "policy": "shop-v27-opportunity-cost-inventory",
+    "line_budget": 10,
+    "capital_commitment": 2578762.0,
+    "spendable": 687710463.74,
+    "expected_delta": {
+      "book": 296114.863539658,
+      "profit": 1410218.6000799963,
+      "revenue": 1418217.6659449115
+    },
+    "_ts": 1794554525.2166164
+  },
+  "successful_supply_lots": 10,
+  "console_confirmed_acquired": [
+    {
+      "time_kst": "16:22:08",
+      "qty": 5,
+      "cost": 217586
+    },
+    {
+      "time_kst": "16:22:21",
+      "qty": 7,
+      "cost": 83678
+    },
+    {
+      "time_kst": "16:22:34",
+      "qty": 16,
+      "cost": 102164
+    },
+    {
+      "time_kst": "16:22:46",
+      "qty": 5,
+      "cost": 121614
+    },
+    {
+      "time_kst": "16:23:03",
+      "qty": 5,
+      "cost": 105458
+    },
+    {
+      "time_kst": "16:23:15",
+      "qty": 4,
+      "cost": 63122
+    },
+    {
+      "time_kst": "16:23:43",
+      "qty": 3,
+      "cost": 115992
+    },
+    {
+      "time_kst": "16:23:48",
+      "qty": 14,
+      "cost": 199444
+    },
+    {
+      "time_kst": "16:24:08",
+      "qty": 16,
+      "cost": 111349
+    },
+    {
+      "time_kst": "16:24:14",
+      "qty": 3,
+      "cost": 83719
+    }
+  ],
+  "console_confirmed_acquired_units": 78,
+  "supply_console_source": "logs\\auto-join-20261113T071046765879Z.txt",
+  "verified_buyer_results": 13,
+  "recent_diagnostics": {
+    "buyer_worker_error": [
+      {
+        "order": "o-34949488260f",
+        "error_type": "ValueError",
+        "payment_started": false,
+        "_ts": 1794553971.0984826
+      },
+      {
+        "order": "o-e69187e3a7fe",
+        "error_type": "ValueError",
+        "payment_started": false,
+        "_ts": 1794554355.7398605
+      }
+    ],
+    "market_research_deferred": [
+      {
+        "at": 1794553934.0271134,
+        "reason": "research_essential_context_budget",
+        "_ts": 1794553962.1307073
+      },
+      {
+        "at": 1794554236.5327392,
+        "reason": "research_essential_context_budget",
+        "_ts": 1794554258.2709796
+      },
+      {
+        "at": 1794554538.1540098,
+        "reason": "research_essential_context_budget",
+        "_ts": 1794554555.3902159
+      }
+    ]
+  },
+  "buyer_revision_unchanged": true,
+  "no_additional_llm_roles": true,
+  "models": {
+    "market_research_analyst": {
+      "model": "gpt-6-luna",
+      "reasoning": "low",
+      "max_output_tokens": 4096,
+      "timeout_seconds": 45
+    },
+    "market_research_critic": {
+      "model": "gpt-6.1-terra",
+      "reasoning": "medium",
+      "max_output_tokens": 8192,
+      "timeout_seconds": 75
+    },
+    "capability_triage": {
+      "model": "gpt-6-luna",
+      "reasoning": "none",
+      "max_output_tokens": 1024,
+      "timeout_seconds": 25
+    },
+    "capability_designer": {
+      "model": "gpt-6-luna",
+      "reasoning": "low",
+      "max_output_tokens": 2048,
+      "timeout_seconds": 35,
+      "response_mode": "function"
+    }
+  },
+  "astra_excluded": true,
+  "limits": [
+    "Early trades and forecasting dominance are not realized causal profit lift or first-place evidence.",
+    "Supply status alone is not the acquisition count: console-confirmed units are reported separately."
+  ]
+}

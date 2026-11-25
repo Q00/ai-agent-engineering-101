@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "official-progress",
+      "title": "공식 점수·순위와 경쟁 Shop의 Book 증가",
+      "queries": [{
+        "id": "paired-board",
+        "source": {
+          "label": "시장 공식 게시판의 두 시점 응답",
+          "files": ["autonomous-deploy-before-20261113T070936759881Z.json", "peer-market-source-20261114T033752254761Z.json", "diagnose_progress_20261114.py"],
+          "filters": ["비교 대상: 두 응답에 모두 존재하는 동일 이름의 Shop·Buyer", "우리 계정: seochanit", "차트 대상: seochanit, inextro, sergiobuilds, yms979"],
+          "metricDefinitions": [
+            {"label": "Shop ALL", "definition": "Book·매출·별점의 백분위에 0.5·0.3·0.2를 적용한 공식 점수."},
+            {"label": "순위", "definition": "같은 게시판에서 우리 ALL보다 높은 행 수에 1을 더한 전체 순위."},
+            {"label": "차트 증가액", "definition": "두 시점의 공식 Book 차이, 백만 크레딧 단위."}
+          ],
+          "caveats": ["기간에는 운영 중단과 재접속이 포함되므로 정책의 인과 효과를 측정한 실험이 아닙니다.", "구성요소 순위는 로컬 자격집단 추정치이며 공식 ALL의 정확한 재현값이 아닙니다."]
+        },
+        "reportingPeriod": "2026-11-13 16:09:36.759881 → 2026-11-14 12:37:53.186146 KST",
+        "columns": ["name", "book_before", "book_after", "book_delta"],
+        "rows": [
+          {"name": "seochanit", "book_before": 807845888, "book_after": 811954592, "book_delta": 4108704},
+          {"name": "inextro", "book_before": 854722122, "book_after": 930793173, "book_delta": 76071051},
+          {"name": "sergiobuilds", "book_before": 629333489, "book_after": 747419750, "book_delta": 118086261},
+          {"name": "yms979", "book_before": 1215089518, "book_after": 1214547366, "book_delta": -542152}
+        ],
+        "preview": {"kind": "aggregate", "note": "선택한 네 Shop의 공식 Book 비교입니다. 전체 순위표의 모든 행을 표시하지 않습니다.", "totalRows": 4}
+      }]
+    },
+    {
+      "id": "execution-diagnosis",
+      "title": "실제 거래 이익·환불·재고 적합성·별점·Buyer 전환",
+      "queries": [{
+        "id": "journal-events",
+        "source": {
+          "label": "로컬 실행 원장과 공식 게시판 대조",
+          "tables": ["events (SQLite)", "kv (SQLite)"],
+          "files": ["diagnose_progress_20261114.py", "progress-diagnosis-20261114T034839695020Z.json", "PROGRESS_REVIEW_2026-11-14.md"],
+          "sql": "SELECT id,ts,data FROM events WHERE kind=? AND ts>=? AND ts<? ORDER BY ts,rowid",
+          "filters": ["ts: 2026-11-13 16:09:36.759881 이상, 2026-11-14 12:37:53.186146 KST 미만", "kind별 조회: shop_settled, public_refund, public_broken, stockout, shop_review_observed, buyer_order, purchase, market_result", "Shop 판매는 unit으로 중복 제거, 리뷰는 author·ledger로 중복 제거 후 판매 ledger와 연결", "환불은 직전 48시간을 추가 조회한 우리 판매 unit과 연결하고 unit별 최대 관측 환불액 사용", "미성사 재고 요청은 task별 최종 사유를 사용하고 구간 내 우리 판매로 완료된 task 제외", "Buyer 전환율 분모는 구간 내 관측 주문 중 market_result가 있는 주문, 분자는 그중 purchase가 연결되는 주문"],
+          "metricDefinitions": [
+            {"label": "매출총이익", "definition": "관측 판매가격에서 해당 판매 재고 원가를 차감한 합계. 환불·보관료 차감 전."},
+            {"label": "미분류 차액", "definition": "관측 매출총이익 − 관측 환불 − 공식 Book 증가액. 특정 비용으로 확정하지 않은 대사 차액."},
+            {"label": "낮은 리뷰", "definition": "이 구간에서 관측된 유료 거래 리뷰 중 별점 3 이하."}
+          ],
+          "caveats": ["로컬 판매 1,853건과 공식 거래 증가 1,852건 사이에 경계 차이가 있습니다.", "미분류 차액 2,678,330은 폐기·보관료·수수료·미포착 환불·집계 시차를 포함할 수 있습니다.", "재고 부족 요청은 탐색 요청이며 모두 실현 가능한 추가 판매를 뜻하지 않습니다.", "등급별 리뷰 차이는 관찰적 상관이며 등급의 독립적인 인과 효과가 아닙니다.", "Buyer 전환은 이 구간의 운영 지표로 누적 게시판 paid 비율 및 성숙 Saved와 다릅니다.", "비교 구간 이후의 재고·제어 상태 스냅샷은 당시 상태만 나타냅니다."]
+        },
+        "reportingPeriod": "거래·리뷰 구간: 2026-11-13 16:09:36.759881 → 2026-11-14 12:37:53.186146 KST",
+        "columns": ["measure", "numerator", "denominator"],
+        "rows": [
+          {"measure": "관측 매출총이익 (크레딧)", "numerator": 10418235, "denominator": null},
+          {"measure": "관측 환불 (크레딧)", "numerator": 3631201, "denominator": null},
+          {"measure": "공식 Book 증가 (크레딧)", "numerator": 4108704, "denominator": null},
+          {"measure": "미분류 차액 (크레딧)", "numerator": 2678330, "denominator": null},
+          {"measure": "유통기한 사유의 미성사 요청", "numerator": 1070, "denominator": 1535},
+          {"measure": "C등급 식품의 3점 이하 리뷰", "numerator": 117, "denominator": 263},
+          {"measure": "A등급 식품의 3점 이하 리뷰", "numerator": 18, "denominator": 537},
+          {"measure": "Buyer 식품 구매 전환", "numerator": 1489, "denominator": 1887},
+          {"measure": "Buyer 공산품 구매 전환", "numerator": 444, "denominator": 793}
+        ],
+        "preview": {"kind": "aggregate", "note": "질문에 관련된 집계만 표시합니다. 서로 다른 지표의 행을 합산하지 않습니다."}
+      }]
+    }
+  ]
+}

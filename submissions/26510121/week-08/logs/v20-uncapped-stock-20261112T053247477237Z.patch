@@ -1,0 +1,490 @@
+--- a/r3/shop_growth.py
++++ b/r3/shop_growth.py
+@@ -9,14 +9,37 @@
+ def poisson_tail(arrivals, quantity):
+     if quantity<=0:return 1.0
+     if arrivals<=0:return 0.0
+-    term=math.exp(-arrivals);cdf=term
+-    for index in range(1,quantity):
+-        term*=arrivals/index;cdf+=term
+-    return max(0.0,min(1.0,1-cdf))
++    # Sum from the requested boundary toward the smaller tail. Starting at
++    # exp(-lambda) underflows for large demand once fixed quantity caps are gone.
++    if not math.isfinite(arrivals):raise ValueError('nonfinite_poisson_mean')
++    k=int(quantity)
++    if k>arrivals:
++        term=math.exp(k*math.log(arrivals)-arrivals-math.lgamma(k+1));total=term
++        while term>max(1e-300,total*1e-14):
++            k+=1;term*=arrivals/k;total+=term
++        return max(0.,min(1.,total))
++    k-=1;term=math.exp(k*math.log(arrivals)-arrivals-math.lgamma(k+1));cdf=term
++    while k>0 and term>max(1e-300,cdf*1e-14):
++        term*=k/arrivals;k-=1;cdf+=term
++    return max(0.,min(1.,1-cdf))
++
++
++def stock_caps_enabled(config):
++    return config.get('shop_inventory_caps_enabled',True)
++
++
++def poisson_target(arrivals,service):
++    """Finite demand quantile, without an arbitrary inventory-unit ceiling."""
++    if not math.isfinite(arrivals) or arrivals<0:raise ValueError('invalid_demand_mean')
++    low=1;high=max(1,math.ceil(arrivals+10*math.sqrt(arrivals)+10))
++    while low<high:
++        mid=(low+high)//2
++        if poisson_tail(arrivals,mid+1)>1-service:low=mid+1
++        else:high=mid
++    return low
+ 
+ 
+ def target_stock(rate, paid, config, public_qualified=False, public_limit=6):
+-    maximum=min(20,config['restock_max_qty'])
+     arrivals=max(0,rate)*config.get('supply_cycle_seconds',1200)/3600
+     supported=paid>=3 or public_qualified and config.get('objective_feedback_enabled')
+     if supported and config.get('objective_feedback_enabled'):
+@@ -24,6 +47,8 @@
+     # Proven repeat demand can use the legal 20-unit lot capacity. A raw
+     # request or peer announcement alone never qualifies as paid evidence.
+     service=config.get('shop_stock_service_level',.9) if paid>=3 else .8 if supported else .65
++    if not stock_caps_enabled(config):return poisson_target(arrivals,service)
++    maximum=min(20,config['restock_max_qty'])
+     target=1
+     while target<maximum and poisson_tail(arrivals,target+1)>1-service:
+         target+=1
+@@ -74,8 +99,18 @@
+     evidence=candidate['evidence']
+     rate=evidence.get('arrival_rate_scenario',0)
+     horizon=evidence.get('planning_hours',6)
+-    probability=(evidence.get('sale_probability_scenario',.25) if evidence.get('exploration') else
+-                 poisson_tail(max(0,rate)*horizon,held+quantity))
++    if evidence.get('exploration') and not evidence.get('uncapped_inventory'):
++        probability=evidence.get('sale_probability_scenario',.25)
++    else:
++        arrivals=max(0,rate)*horizon
++        if evidence.get('exploration'):
++            prior=max(0.,min(.999999,evidence.get('sale_probability_scenario',.25)))
++            # Unknown is not known-zero demand. Apply the first-unit discovery
++            # prior once to an arrival process, then price additional depth.
++            arrivals=max(arrivals,-math.log1p(-prior))
++        probability=poisson_tail(arrivals,held+quantity)
++        if evidence.get('exploration'):
++            probability=min(evidence.get('sale_probability_scenario',.25),probability)
+     holding=min(horizon,max(1/3,(held+quantity)/max(.01,rate)))
+     price=evidence['resale_price_scenario'];cost=evidence['scenario_unit_cost']
+     revenue=probability*price*(1-evidence['refund_stress'])
+@@ -86,7 +121,7 @@
+ 
+ 
+ def allocate_velocity(candidates,inv,capacity,config,existing,merchant):
+-    total=capacity['spendable'];slots=max(0,config['inventory_target_units']-len(existing))
++    total=capacity['spendable'];slots=planning_slots(config,existing,candidates)
+     held={};coverage=set();weights=merchant.get('coverage_weights',{})
+     for unit in existing:
+         held[unit['sku']]=held.get(unit['sku'],0)+1
+@@ -142,8 +177,45 @@
+ 
+ def inventory_limit(config):
+     """A bounded capacity ceiling, never a requirement to buy or spend cash."""
++    if not stock_caps_enabled(config):return None
+     base=config['inventory_target_units']
+     return max(base,min(240,config.get('shop_inventory_ceiling',180))) if config.get('shop_championship_enabled') else base
++
++
++def planning_slots(config,existing,candidates):
++    limit=inventory_limit(config)
++    return sum(c['qty'] for c in candidates) if limit is None else max(0,limit-len(existing))
++
++
++def demand_diagnostics(inv,merchant,config):
++    """Expose target-setting mechanisms to background research, never commands."""
++    from collections import Counter
++    counts=Counter(u['sku'] for u in inv.get('units',[]))
++    rows=[];low=repeat=shortfall=0
++    for sku,held in counts.items():
++        g=merchant.get('skus',{}).get(sku,{})
++        paid=g.get('positive_paid_while_available',0)
++        trend=config.get('shop_sku_trend_factors',{}).get(sku,1)
++        rate=g.get('paid_arrival_rate_scenario',0) if paid>=3 else g.get('arrival_rate_scenario',0)
++        rate=max(.01,rate*trend) if paid>=3 else max(0,rate*trend)
++        public=sku in config.get('shop_public_demand_skus',[])
++        target=target_stock(rate,paid,config,public,config.get('shop_public_demand_caps',{}).get(sku,6))
++        low+=target<=2;repeat+=paid>=3;shortfall+=max(0,target-held)
++        rows.append({'sku':sku,'held':held,'target_scenario':target,'rate_per_hour_scenario':rate,
++            'rate_source':'own_positive_paid' if paid>=3 else 'public_prior_or_request_conversion',
++            'own_positive_paid':paid,'public_qualified':public,
++            'observed_availability_hours':g.get('available_hours_observed'),
++            'lost_exact_requests_not_directly_added_to_rate':g.get('lost_exact_requests',0)})
++    return {'inventory_unit_caps_enabled':stock_caps_enabled(config),
++        'total_unit_ceiling':inventory_limit(config),'held_skus':len(counts),
++        'held_skus_target_at_most_two':low,'held_skus_with_repeat_paid_evidence':repeat,
++        'target_shortfall_units_scenario':shortfall,'merchant_context_at':merchant.get('at'),
++        'supply_cycle_seconds':config.get('supply_cycle_seconds',1200),
++        'repeat_coverage_cycles':max(1,min(3,config.get('shop_demand_horizon_cycles',1))),
++        'public_only_coverage_cycles':max(1,min(2,config.get('shop_demand_horizon_cycles',1))),
++        'public_equal_share_prior_multiplier':.5,
++        'examples':sorted(rows,key=lambda r:r['target_scenario']-r['held'],reverse=True)[:4],
++        'interpretation':'Low rate/coverage can retain small targets without a unit cap. Prior and Poisson arrivals are scenarios, not identified hidden demand. Lost requests require feasibility attribution before adding demand.'}
+ 
+ 
+ def allocate_championship(candidates,inv,capacity,config,existing,merchant):
+@@ -157,7 +229,7 @@
+     velocity=allocate_velocity(candidates,inv,capacity,cfg,existing,merchant)
+     total=capacity['spendable'];held={};selected={};used=probes=0;categories={}
+     for u in existing:held[u['sku']]=held.get(u['sku'],0)+1
+-    slots=max(0,cfg['inventory_target_units']-len(existing))
++    slots=planning_slots(cfg,existing,candidates)
+     def cost(c):return c['capital_commitment']/c['qty']
+     def selected_qty(c):return len(selected.get(c['sku'],{}).get('deltas',[]))
+     def delta(c):return marginal(c,selected_qty(c)+1,held.get(c['sku'],0))
+@@ -166,7 +238,8 @@
+         return max(0,c.get('rank_progress_surrogate') or 0)*d['book']/max(1,c['expected_delta']['book'])*weight
+     def feasible(c):
+         q=selected_qty(c)
+-        return (slots>0 and q<min(c['qty'],20,max(0,cfg['restock_max_qty']-held.get(c['sku'],0))) and used+cost(c)<=total+1e-6 and
++        held_room=max(0,cfg['restock_max_qty']-held.get(c['sku'],0)) if stock_caps_enabled(cfg) else 20
++        return (slots>0 and q<min(c['qty'],20,held_room) and used+cost(c)<=total+1e-6 and
+                 (c['sku'] in selected or len(selected)<min(10,cfg['restock_max_lines'])) and
+                 categories.get(c['category'],0)+cost(c)<=total*.6+1e-6 and
+                 (not c['evidence']['exploration'] or probes+cost(c)<=total*cfg['exploration_fraction']+1e-6) and
+--- a/r3/economy.py
++++ b/r3/economy.py
+@@ -328,9 +328,9 @@
+     count = {}
+     for u in units:
+         count[u["sku"]] = count.get(u["sku"], 0) + 1
+-    from .shop_growth import inventory_limit
++    from .shop_growth import inventory_limit,stock_caps_enabled
+     target = inventory_limit(config)
+-    if len(units) >= target:
++    if target is not None and len(units) >= target:
+         return []
+     capacity = cash_capacity(inv, journal, config, now)
+     if config.get('market_control_enabled'):
+@@ -379,7 +379,7 @@
+         factor = surge_factor(inv, sku)
+         per_unit = supply_bound(p, inv, sku)
+         commitment = per_unit * (1 + fee)
+-        if count.get(sku, 0) >= config["restock_max_qty"] or commitment > spendable:
++        if (stock_caps_enabled(config) and count.get(sku, 0) >= config["restock_max_qty"]) or commitment > spendable:
+             continue
+         if p.get("kind") == "food" and (p.get("shelf_hours") or 0) < 6:
+             continue
+@@ -408,7 +408,8 @@
+         needed=desired-count.get(sku,0)
+         if needed<=0:
+             continue
+-        qty = min(20, config['restock_max_qty'] - count.get(sku, 0),
++        held_room=config['restock_max_qty']-count.get(sku,0) if stock_caps_enabled(config) else 20
++        qty = min(20, held_room,
+                   needed, max(0, math.floor(spendable / commitment)))
+         if qty <= 0:
+             continue
+@@ -447,7 +448,7 @@
+             price,refund_stress=terms['price'],terms['refund_stress']
+         expected_storage = cost_ratio * p['list_price'] * .01 * holding_hours / 24 if fee else 0
+         # Small lots: only own observed repeat sales justify multiple new units.
+-        if probe_sku:
++        if probe_sku and stock_caps_enabled(config):
+             qty = 1
+         existing_exposure = sum(u.get('cost', 0) * (1 + fee) for u in units if u['sku'] == sku)
+         max_exposure = min(spendable, max(0, inv.get('balance', 0) *
+@@ -484,6 +485,7 @@
+                                         'refund_stress': refund_stress, 'exploration': probe_sku,
+                                         "adaptive_category_weight": weight}})
+         candidates[-1]['evidence'].update(kind=p.get('kind'), list_price=p['list_price'],
++                                           uncapped_inventory=not stock_caps_enabled(config),
+                                            growth=growth, arrival_rate_scenario=rate,
+                                            planning_hours=hours,scenario_unit_cost=cost_ratio*p['list_price'],
+                                            resale_price_scenario=price,resale_terms_scenario=terms)
+--- a/r3/portfolio.py
++++ b/r3/portfolio.py
+@@ -15,7 +15,8 @@
+     if config.get('shop_growth_v5'):
+         return allocate_growth(candidates, inv, capacity, config, existing_units, merchant or {})
+     total = capacity['spendable']
+-    slots = config['inventory_target_units'] - len(existing_units)
++    from .shop_growth import planning_slots
++    slots = planning_slots(config,existing_units,candidates)
+     chosen, category_spent, bucket_spent = [], {}, {'core': 0, 'cashflow': 0, 'discovery': 0}
+     pressure = min(1, capacity['refund_liability'] / max(1, inv.get('balance', 0)))
+     core_fraction = max(.3, .7 - .5 * pressure)
+@@ -86,7 +87,8 @@
+         coverage.update(merchant.get('skus', {}).get(unit['sku'], {}).get('coverage_keys', []))
+     selected, cat_used = {}, {}
+     used = probes = 0
+-    slots = config['inventory_target_units'] - len(existing_units)
++    from .shop_growth import planning_slots
++    slots = planning_slots(config,existing_units,candidates)
+     def per_unit(c): return c['capital_commitment'] / c['qty']
+     def feasible(c):
+         quantity = selected.get(c['sku'], {}).get('qty', 0)
+--- a/r3/prewindow.py
++++ b/r3/prewindow.py
+@@ -98,6 +98,7 @@
+     if option is None:
+         return None
+     counts = Counter(u['sku'] for u in inv.get('units', []) if not u.get('expires_at') or u['expires_at'] > now)
++    from .shop_growth import stock_caps_enabled
+     lines, committed = [], 0
+     for row in option['buy'][:config['restock_max_lines']]:
+         sku = row['sku']
+@@ -105,8 +106,8 @@
+                 or sku not in catalog or type(packet['unit_commitments'].get(sku)) not in (int,float)
+                 or not __import__('math').isfinite(packet['unit_commitments'][sku]) or packet['unit_commitments'][sku]<=0):
+             return None
+-        qty = min(row['qty'], max(0, row['qty'] - max(0, counts[sku] - packet['held'].get(sku, 0))),
+-                  max(0, config['restock_max_qty'] - counts[sku]))
++        held_room=max(0,config['restock_max_qty']-counts[sku]) if stock_caps_enabled(config) else 20
++        qty = min(row['qty'], max(0, row['qty'] - max(0, counts[sku] - packet['held'].get(sku, 0))),held_room)
+         if qty:
+             lines.append({'sku': sku, 'qty': qty})
+             committed += packet['unit_commitments'][sku] * qty
+--- a/r3/feedback.py
++++ b/r3/feedback.py
+@@ -139,7 +139,7 @@
+         if regime == 'shock': cycles = min(cycles, 1.5)
+         if 'stock_coverage' in intents:
+             patches['shop']['shop_demand_horizon_cycles'] = cycles
+-            if len(inv.get('units', [])) >= .8*config.get('shop_inventory_ceiling', 180):
++            if config.get('shop_inventory_caps_enabled',True) and len(inv.get('units', [])) >= .8*config.get('shop_inventory_ceiling', 180):
+                 patches['shop']['shop_inventory_ceiling'] = min(240, config.get('shop_inventory_ceiling', 180)+30)
+         else: reasons.append('stock_coverage_review_pending')
+     if evidence_ok and segments['goods']['closed'] >= 20 and segments['goods']['conversion'] < .3:
+@@ -164,7 +164,7 @@
+                 factors[sku['sku']]=round(max(.75,min(1.5,1+(ratio-1)*.5))*20)/20
+             if n>=20 and current>=10 and sku.get('buyers20',0)>=3:
+                 qualified.append(sku['sku'])
+-                if agent_selected:
++                if agent_selected and config.get('shop_inventory_caps_enabled',True):
+                     caps[sku['sku']]=min(selected['initial_batch_limit'],20 if current>=50 and sku.get('buyers20',0)>=5 else 6)
+         if factors:patches['shop']['shop_sku_trend_factors']=factors
+         if qualified:patches['shop']['shop_public_demand_skus']=sorted(qualified)
+--- a/r3/objective_context.py
++++ b/r3/objective_context.py
+@@ -167,12 +167,14 @@
+     with journal.connect() as db:
+         reserved = {r[0] for r in db.execute('SELECT unit FROM reservations WHERE until>?',(now,))}
+     unreserved = sum(u.get('unit') not in reserved for u in units)
++    from .shop_growth import demand_diagnostics
++    diagnostic=demand_diagnostics(dict(inv,units=units),shadow.get('merchant_context_v5',{}),cfg)
+     return {'at':now, 'rules_hash':journal.get('market_rules',{}).get('sha256'),
+         'physical_live_units':len(units),'unreserved_live_units':unreserved,'inventory_ceiling':inventory_limit(cfg),
+         'food_under_2h_units':sum(u.get('kind')=='food' and remaining(u,now)<2 for u in units),
+         'cash':inv.get('balance'), 'spendable':cap['spendable'],
+         'refund_liability':cap['refund_liability'],'execution_guard_reasons':control.get('reasons',[]),
+-        'execution_permitted':False, 'alternatives':rows,
++        'execution_permitted':False, 'alternatives':rows,'demand_diagnostics':diagnostic,
+         'note':'Shared-data forecasts, not measured lift. Cash converts to inventory; acquisition alone adds no Book. '
+                'Stars effect unmodeled; retain validated quality and full refund guards. '
+                'Select repeat-demand depth by marginal Book/rank, cash and supply delay; raw peer quantities are not targets.'}
+--- a/r3/capability.py
++++ b/r3/capability.py
+@@ -65,7 +65,7 @@
+         'evidence_ids':['rules:'+rules['sha256'],'ledger:'+str(market.get('ledger_seq')),
+                         'snapshot:inventory.json','kv:feedback-last-policy','kv:objective-decision-context'],
+         'held_total':sum(counts.values()),'held_by_sku':dict(counts),
+-        'held_sku_cap':config.get('restock_max_qty'),'top_skus':top,
++        'held_sku_cap':config.get('restock_max_qty') if config.get('shop_inventory_caps_enabled',True) else None,'top_skus':top,
+         'buyer':decision.get('buyer') or {'scope':'execution_cohorts_only',
+             'results':execution_projection(current.get('execution_feedback',{}))},
+         'control':{k:journal.get('market_control',{}).get(k) for k in ('status','leader_gap','reasons')},
+--- a/r3/research.py
++++ b/r3/research.py
+@@ -173,6 +173,13 @@
+             'biased and preserve format exploration. No vote trading, unverifiable posts or quality promises. '
+             'Forum raw score contributes .3 directly, not a second percentile term. '
+             'Explain which numerical alternatives justify changing or retaining the current policy.')
++    if config.get('shop_inventory_caps_enabled') is False:
++        instructions+=(' Inventory unit ceilings are disabled: there is no total-held or per-SKU-held '
++            'quantity cap and no 1/2/6/20-unit demand-target ceiling. The legal supply limit remains 20 per '
++            'POST. initial_batch_limit is a legacy schema field with no inventory authority in this mode. '
++            'Quantity follows finite demand quantiles, marginal Book, available cash, storage/refund reserves '
++            'and executable supply time. Probe-unit probability decreases with existing inventory and depth. '
++            'Distinguish estimated low demand from a quantity ceiling; do not request buying just to fill space.')
+     from .objective_context import curate
+     try:
+         facts, compacted = curate(facts)
+@@ -327,7 +334,7 @@
+     facts={'observed_at':now,'market':market,'control':{k:control.get(k) for k in ('status','reasons','leader_gap','suggestions')},
+            'framework':{k:framework.get(k) for k in ('issues','evaluation','segments')},
+            'supply_plan':{k:plan.get(k) for k in ('window','phase','selected','options')},
+-           'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level')},
++           'parameters':{k:config.get(k) for k in ('buyer_contract_probe_percent','shop_stock_service_level','shop_inventory_caps_enabled')},
+            'meta':journal.get('cycle-meta-state',{}),
+            'evidence_ids':evidence}
+     if capability_brief:
+--- a/policy.json
++++ b/policy.json
+@@ -116,7 +116,7 @@
+   "buyer_contract_probe_percent": 8,
+   "autonomy_v14_enabled": true,
+   "buyer_worker_enabled": true,
+-  "execution_revision": "v19-role-reasoning-analytic-skills-2",
++  "execution_revision": "v20-demand-without-held-unit-caps-1",
+   "objective_feedback_enabled": true,
+   "agent_policy_selection_enabled": true,
+   "discovery_priority_enabled": true,
+@@ -150,5 +150,6 @@
+       "timeout_seconds": 35,
+       "response_mode": "function"
+     }
+-  }
++  },
++  "shop_inventory_caps_enabled": false
+ }
+--- a/verify_market_cycle_live.py
++++ b/verify_market_cycle_live.py
+@@ -46,7 +46,7 @@
+     try:
+         with lease(ROOT/'.market/shop-recovery-guard.lock'):guard_active=False
+     except RuntimeError:guard_active=True
+-    release='v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
++    release='v20' if cfg.get('shop_inventory_caps_enabled') is False else 'v19' if cfg.get('capability_llm_enabled') else 'v18' if cfg.get('objective_decision_enabled') else 'v17' if cfg.get('agent_policy_selection_enabled') else 'v16' if cfg.get('objective_feedback_enabled') else 'v15'
+     promotion=sorted((ROOT/'logs').glob(release+'-source-promotion-*.json'))[-1]
+     manifest=read_json(promotion,{})
+     mismatches=[r['path'] for r in manifest['files'] if hashlib.sha256((ROOT/r['path']).read_bytes()).hexdigest()!=r['candidate_sha256']]
+--- a/tests/test_uncapped_stock.py
++++ b/tests/test_uncapped_stock.py
+@@ -0,0 +1,108 @@
++import copy
++import math
++import time
++from r3.state import policy,atomic_json
++from r3.shop_growth import inventory_limit,target_stock,poisson_tail,marginal,allocate_championship,demand_diagnostics
++from r3.economy import restock_candidates
++from r3 import prewindow
++from test_market_cycle import fixture
++from test_shop_velocity import candidate
++
++
++def test_live_configuration_removes_inventory_caps_not_market_lot_limit():
++    cfg=policy()
++    assert cfg['shop_inventory_caps_enabled'] is False
++    assert inventory_limit(cfg) is None
++    assert cfg['restock_max_qty']==20 and cfg['restock_max_lines']==10
++    assert cfg['background_llm_roles']['market_research_analyst']['model']=='gpt-6.1-sol'
++
++
++def test_demand_targets_can_exceed_twenty_and_sparse_fixed_batch_limits():
++    cfg=policy()
++    assert target_stock(1000,8,cfg)>20
++    assert target_stock(1000,0,cfg,True,public_limit=6)>6
++    assert target_stock(1000,0,cfg)>2
++    assert target_stock(0,8,cfg)==1
++    legacy=dict(cfg,shop_inventory_caps_enabled=True)
++    assert target_stock(1000,8,legacy)==20
++    assert target_stock(1000,0,legacy)<=2
++
++
++def test_poisson_probabilities_remain_finite_above_old_underflow_threshold():
++    assert .5<poisson_tail(1000,1000)<.51
++    assert poisson_tail(1000,1100)<poisson_tail(1000,1050)<poisson_tail(1000,1000)
++    assert poisson_tail(1000,100)<1.0000000001
++    assert poisson_tail(1000,100)>1-1e-10
++    assert abs(poisson_tail(1,1)-(1-math.exp(-1)))<1e-12
++
++
++def test_current_plan_can_add_inventory_above_old_total_and_sku_caps():
++    cfg=policy();c=candidate('hot',1000,1000,rate=1000,qty=20)
++    existing=[{'sku':'hot'} for _ in range(300)]
++    rows=allocate_championship([c],{}, {'spendable':1000000},cfg,existing,{})
++    assert len(rows)==1 and rows[0]['qty']==20
++    assert sum(r['capital_commitment'] for r in rows)<=1000000
++    assert not allocate_championship([c],{}, {'spendable':1000000},
++        dict(cfg,shop_inventory_caps_enabled=True),existing,{})
++
++
++def test_uncapped_exploration_prices_existing_and_additional_stock_risk():
++    c=candidate('probe',1000,1000,rate=.1,qty=20,explore=True)
++    c['evidence'].update(uncapped_inventory=True,sale_probability_scenario=.25)
++    p=[marginal(c,n)['probability'] for n in range(1,10)]
++    assert all(a>b for a,b in zip(p,p[1:]))
++    assert marginal(c,1,held=20)['probability']<p[-1]
++    rows=allocate_championship([c],{}, {'spendable':1000000},policy(),[],{})
++    assert rows and 1<=rows[0]['qty']<20
++    assert all(d['book']>0 for d in rows[0]['evidence']['marginal_units'])
++
++
++def hot_inventory(j,now,qty=25):
++    inv=j.snapshot('inventory.json');inv['units']=[{'unit':str(n),'sku':'G111','cost':500,
++        'kind':'food','category':'food>one','expires_at':now+86400} for n in range(qty)]
++    inv['restock']={'open':True,'opens_at':now-1,'closes_at':now+180}
++    atomic_json(j.md/'inventory.json',inv)
++    j.put('merchant_context_v5',{'at':now,'skus':{'G111':{
++        'arrival_rate_scenario':150,'paid_arrival_rate_scenario':150,
++        'positive_paid_while_available':30,'available_hours_observed':1}},'coverage_weights':{}})
++    return inv
++
++
++def test_economy_replenishes_more_than_twenty_held_but_only_twenty_per_post(tmp_path):
++    j,cfg,now=fixture(tmp_path);inv=hot_inventory(j,now)
++    rows=restock_candidates(inv,j.snapshot('catalog.json'),[],j,cfg,now)
++    assert rows and 1<=rows[0]['qty']<=20 and rows[0]['sku']=='G111'
++    assert rows[0]['evidence']['uncapped_inventory'] is True
++    assert not restock_candidates(inv,j.snapshot('catalog.json'),[],j,
++        dict(cfg,shop_inventory_caps_enabled=True),now)
++
++
++def test_prepared_execution_does_not_reintroduce_held_cap_and_rechecks_new_stock(tmp_path):
++    j,cfg,now=fixture(tmp_path);inv=hot_inventory(j,now)
++    packet=prewindow.prepare(j,cfg,{'version':1},now)
++    assert packet and packet['options'][0]['buy']
++    planned=prewindow.consume(j,cfg,{'version':1},inv,now)
++    assert planned and planned['buy'] and planned['buy'][0]['qty']<=20
++    # The same prepared plan cannot buy its original quantity again after it
++    # has already been acquired; removing a held cap must not remove dedup.
++    after=copy.deepcopy(inv);sku=planned['buy'][0]['sku']
++    after['units'] += [dict(inv['units'][0],unit='new'+str(n)) for n in range(planned['buy'][0]['qty'])]
++    repeated=prewindow.consume(j,cfg,{'version':1},after,now)
++    assert repeated is not None and repeated['buy']==[]
++
++
++def test_cash_and_storage_obligations_still_block_unaffordable_supply(tmp_path):
++    j,cfg,now=fixture(tmp_path);inv=hot_inventory(j,now)
++    inv['balance']=1
++    assert restock_candidates(inv,j.snapshot('catalog.json'),[],j,cfg,now)==[]
++
++
++def test_background_research_can_distinguish_low_demand_targets_from_caps():
++    inv={'units':[{'sku':'cold'},{'sku':'hot'}]}
++    merchant={'at':time.time(),'skus':{'cold':{'arrival_rate_scenario':.05},
++        'hot':{'positive_paid_while_available':20,'paid_arrival_rate_scenario':100}}}
++    result=demand_diagnostics(inv,merchant,dict(policy(),shop_demand_horizon_cycles=3))
++    assert result['inventory_unit_caps_enabled'] is False and result['total_unit_ceiling'] is None
++    assert result['held_skus_target_at_most_two']==1 and result['held_skus_with_repeat_paid_evidence']==1
++    assert result['target_shortfall_units_scenario']>20
++    assert {r['rate_source'] for r in result['examples']}=={'own_positive_paid','public_prior_or_request_conversion'}
+--- a/tests/test_championship.py
++++ b/tests/test_championship.py
+@@ -12,7 +12,7 @@
+ 
+ 
+ def cfg(**patch):
+-    return dict(policy(),**dict(shop_championship_enabled=True,buyer_championship_enabled=True,**patch))
++    return dict(policy(),**dict(shop_inventory_caps_enabled=True,shop_championship_enabled=True,buyer_championship_enabled=True,**patch))
+ 
+ 
+ def test_call_slot_prefers_absolute_growth_when_cash_is_abundant():
+--- a/tests/test_shop_velocity.py
++++ b/tests/test_shop_velocity.py
+@@ -11,7 +11,7 @@
+ 
+ def config(**kwargs):
+     return dict(policy(),**dict(shop_velocity_enabled=True,shop_fast_execution_enabled=True,
+-        restock_max_qty=12,**kwargs))
++        restock_max_qty=12,shop_inventory_caps_enabled=True,**kwargs))
+ 
+ 
+ def test_paid_demand_can_batch_beyond_six_but_unknown_demand_cannot():
+--- a/tests/test_objective_feedback.py
++++ b/tests/test_objective_feedback.py
+@@ -8,7 +8,7 @@
+ 
+ 
+ def market(tmp_path):
+-    now=time.time();j=Journal(tmp_path);cfg=dict(policy(),objective_feedback_enabled=True)
++    now=time.time();j=Journal(tmp_path);cfg=dict(policy(),objective_feedback_enabled=True,shop_inventory_caps_enabled=True)
+     j.put('market_rules',{'sha256':'rules','compatible':True,'buyer_compatible':True})
+     j.put('board_checked_at',now);j.put('public_feed_caught_up_at',now)
+     atomic_json(j.md/'board.json',{'round':3,'shops':[

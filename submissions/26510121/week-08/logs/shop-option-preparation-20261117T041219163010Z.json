@@ -1,0 +1,66 @@
+{
+  "at": 1794888738.9599037,
+  "finished_at": 1794888739.1630106,
+  "execution_allowed": false,
+  "risk": {
+    "refund_upper": 0.10052774749962368,
+    "refund_mean": 0.025,
+    "mean_validated": true,
+    "mean_validation": {
+      "validated": true,
+      "train": 40,
+      "test": 24,
+      "embargo_seconds": 22200,
+      "brier": 0.002267573696145123,
+      "upper_as_point_brier": 0.033208958625738465,
+      "forecast": 0.047619047619047616,
+      "observed": 0.0,
+      "limitation": "selected temporal predictive check; not causal or shift-proof"
+    },
+    "mature_samples": 78,
+    "covered_breaks": 1,
+    "grade": "A",
+    "warranty_hours": 6,
+    "source": "own mature seller units, 48h; 99% Wilson upper bound"
+  },
+  "contract_observed_skus": 178,
+  "fresh_competition_counts": true,
+  "scenarios": {
+    "upper_cost_upper_failure": {
+      "candidate_count": 0,
+      "top10_forecast_book": 0,
+      "top10_capital": 0,
+      "top10_units": 0,
+      "top10": []
+    },
+    "mid_cost_upper_failure": {
+      "candidate_count": 0,
+      "top10_forecast_book": 0,
+      "top10_capital": 0,
+      "top10_units": 0,
+      "top10": []
+    },
+    "upper_cost_validated_mean": {
+      "candidate_count": 0,
+      "top10_forecast_book": 0,
+      "top10_capital": 0,
+      "top10_units": 0,
+      "top10": []
+    },
+    "mid_cost_upper_failure_half_demand": {
+      "candidate_count": 0,
+      "top10_forecast_book": 0,
+      "top10_capital": 0,
+      "top10_units": 0,
+      "top10": []
+    }
+  },
+  "query": "SELECT ts,data FROM events WHERE kind=? AND ts>=? AND ts<=? ORDER BY ts",
+  "limitations": [
+    "Historical public contract prices do not establish future buyer conversion.",
+    "Cost .65 is a midpoint scenario, not a known supplier distribution.",
+    "A-grade pooled risk may not transfer to a new SKU; forecasts are not realized uplift.",
+    "B/C draws are held at cost in this model; their sales are not counted as upside.",
+    "No supplier request, live policy change, or live journal write was made."
+  ]
+}

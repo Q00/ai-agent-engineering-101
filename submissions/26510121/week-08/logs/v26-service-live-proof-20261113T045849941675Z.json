@@ -1,0 +1,117 @@
+{
+  "at": 1794545929.9281757,
+  "runtime": {
+    "pid": 37304,
+    "session": "bf858ec965fb4de8b53ef88e83f31211",
+    "started_at": 1794545888.6568327,
+    "launch_id": "auto-join-20261113T045808136884Z"
+  },
+  "execution_revision": "v26-explicit-service-and-complete-contracts-1",
+  "minutes_live": 0.6878557165463766,
+  "source_mismatches": [],
+  "analytical_roles": {
+    "market_observer": {
+      "at": 1794543038.6061199,
+      "status": "completed"
+    },
+    "account_reputation_observer": {
+      "at": 1794543038.6113029,
+      "status": "completed"
+    },
+    "policy_learning_observer": {
+      "at": 1794543039.828489,
+      "status": "completed"
+    },
+    "buyer_cost_observer": {
+      "at": 1794543040.0663738,
+      "status": "completed"
+    },
+    "shop_demand_observer": {
+      "at": 1794543040.1178777,
+      "status": "completed"
+    },
+    "forum_objective_observer": {
+      "at": 1794543040.221828,
+      "status": "completed"
+    },
+    "quality_evaluator": {
+      "at": 1794543040.2306025,
+      "status": "completed"
+    },
+    "policy_compiler": {
+      "at": 1794543040.7307389,
+      "status": "completed"
+    }
+  },
+  "counts": {
+    "shop_service_need": 0,
+    "service_policy_prepared": 0,
+    "negotiation_path_prepared": 0,
+    "buyer_terms_confirmation": 0,
+    "buyer_counter_route": 0,
+    "buyer_negotiation_step": 0,
+    "buyer_route_terminal": 0,
+    "shop_settled": 0,
+    "purchase": 0,
+    "market_result": 0,
+    "cycle_supply_error": 0,
+    "cycle_supervisor_error": 0,
+    "buyer_worker_error": 0,
+    "analytical_role_error": 0
+  },
+  "verified_buyer_results": 0,
+  "service_generation": "9cd31396bb1270a675889d2d4c102d7f372ab21388bbcab8f9336ce0268c6656",
+  "qualified_service_skus": 4,
+  "observed_explicit_needs": 0,
+  "fresh_supply_draws": 0,
+  "negotiation_holdout": {
+    "mode": "validated_predictive_scenario",
+    "train": 105,
+    "test": 45,
+    "brier": 0.19215263289873294,
+    "baseline_brier": 0.20581321998039617,
+    "covered_test": 32,
+    "price_test": 6,
+    "price_mae": 0.0754092951699148,
+    "ask_mae": 0.1370308587495022,
+    "temporal_split": 0.7,
+    "not_causal": true
+  },
+  "negotiation_samples": 150,
+  "selected_buyer_price_actions": [],
+  "confirmation_statuses": {
+    "response_received": 0,
+    "unconfirmed": 0
+  },
+  "models": {
+    "market_research_analyst": {
+      "model": "gpt-6-luna",
+      "reasoning": "low",
+      "max_output_tokens": 4096,
+      "timeout_seconds": 45
+    },
+    "market_research_critic": {
+      "model": "gpt-6.1-terra",
+      "reasoning": "medium",
+      "max_output_tokens": 8192,
+      "timeout_seconds": 75
+    },
+    "capability_triage": {
+      "model": "gpt-6-luna",
+      "reasoning": "none",
+      "max_output_tokens": 1024,
+      "timeout_seconds": 25
+    },
+    "capability_designer": {
+      "model": "gpt-6-luna",
+      "reasoning": "low",
+      "max_output_tokens": 2048,
+      "timeout_seconds": 35,
+      "response_mode": "function"
+    }
+  },
+  "astra_excluded": true,
+  "additional_llm_roles": 0,
+  "models_or_cadence_changed": false,
+  "limitation": "Early live mechanics and paid deals do not prove causal economic improvement or mature review/Saved uplift."
+}

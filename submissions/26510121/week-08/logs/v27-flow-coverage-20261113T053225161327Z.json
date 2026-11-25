@@ -1,0 +1,19 @@
+{
+  "at": 1794547945.0970955,
+  "queries": {
+    "limited": "SELECT count(*),min(ts),max(ts) FROM (SELECT ts FROM events WHERE kind=? AND ts<=? ORDER BY ts DESC,rowid DESC LIMIT 20000)",
+    "full": "SELECT count(*),min(ts),max(ts),count(DISTINCT coalesce(json_extract(data,'$.sku'),json_extract(data,'$.item'))) FROM events WHERE kind=? AND ts>=? AND ts<=?"
+  },
+  "limited": [
+    20000,
+    1794524637.524,
+    1794547937.402
+  ],
+  "six_hours": [
+    18504,
+    1794526345.909,
+    1794547937.402,
+    980
+  ],
+  "limited_span_hours": 6.472188333339162
+}

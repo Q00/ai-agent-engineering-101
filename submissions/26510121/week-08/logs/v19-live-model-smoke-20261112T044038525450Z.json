@@ -1,0 +1,279 @@
+{
+  "schema_valid": true,
+  "calls": 4,
+  "seconds": 35.014999999897555,
+  "published_only_in_isolation": true,
+  "market_transactions": 0,
+  "research_source": "logs\\v18-objective-replay-20261112T032746536024Z.json",
+  "research_source_cutoff": 1794454051.8027737,
+  "research_source_is_historical_replay": true,
+  "research": {
+    "analyst": {
+      "summary": "Retain 3 cycles: forecast Book/revenue 171k/1328k vs 153k/1252k (2), 150k/1223k (1/1.5). Stage diversified; execution awaits eligibility.",
+      "hypotheses": [
+        "3-cycle depth may ease 19 stockouts: stress -32.9k; cost 3.69m/571.57m spendable; delays 55–152s.",
+        "Routing repeated goods price failures (74/74 above cap) may help; retain 8-order/60s recovery probes.",
+        "Food 101/128 vs goods 1/49 suggests throughput potential, not mature Saved lift; policy-mature n=0."
+      ],
+      "evidence_ids": [
+        "ledger:5501995",
+        "kv:framework-plan",
+        "kv:feedback-last-policy",
+        "kv:objective-decision-context",
+        "snapshot:shop-plan-v15.json",
+        "kv:quality-holdout-summary"
+      ],
+      "skills": [
+        "stock_coverage",
+        "buyer_price_gap",
+        "shop_rating_holdout"
+      ],
+      "skill_steps": [
+        "measure",
+        "diagnose",
+        "propose",
+        "validate_facts"
+      ],
+      "buyer_probe_percent": 8,
+      "buyer_gap_power": 2,
+      "buyer_diverse_quotes": false,
+      "shop_service_level": 0.9209,
+      "shop_plan": "diversified",
+      "forum_focus": "balanced",
+      "operating_actions": [
+        "stock_coverage",
+        "buyer_price_gap"
+      ],
+      "operating_policy": {
+        "cover_cycles": 3,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "approve_trial": false
+    },
+    "critic": {
+      "summary": "3-cycle forecast Book/revenue: 171k/1328k vs 153k/1252k at 2 and 150k/1223k at 1 or 1.5. Stage only; execution awaits permission.",
+      "hypotheses": [
+        "Depth may help: 19 stockouts, 103 acquired, 55–152s delays; stress -32.9k, cost 3.69m/571.6m.",
+        "Goods 1/49 paid and 74/74 quotes over cap vs food 101/128; routing may help without changing caps.",
+        "Food Saved is pending; goods mature mean is 0.3775 (n=113). Challenger is not ready."
+      ],
+      "evidence_ids": [
+        "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+        "ledger:5501995",
+        "kv:framework-plan",
+        "kv:feedback-last-policy",
+        "kv:objective-decision-context",
+        "snapshot:shop-plan-v15.json",
+        "kv:quality-holdout-summary"
+      ],
+      "skills": [
+        "stock_coverage",
+        "buyer_price_gap",
+        "shop_rating_holdout"
+      ],
+      "skill_steps": [
+        "measure",
+        "diagnose",
+        "propose",
+        "validate_facts"
+      ],
+      "buyer_probe_percent": 8,
+      "buyer_gap_power": 2,
+      "buyer_diverse_quotes": false,
+      "shop_service_level": 0.9171,
+      "shop_plan": "diversified",
+      "forum_focus": "balanced",
+      "operating_actions": [
+        "stock_coverage",
+        "buyer_price_gap"
+      ],
+      "operating_policy": {
+        "cover_cycles": 3,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "approve_trial": false
+    },
+    "selected": {
+      "schema": 1,
+      "at": 1794458438.363231,
+      "expires_at": 1794459638.363231,
+      "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "summary": "3-cycle forecast Book/revenue: 171k/1328k vs 153k/1252k at 2 and 150k/1223k at 1 or 1.5. Stage only; execution awaits permission.",
+      "hypotheses": [
+        "Depth may help: 19 stockouts, 103 acquired, 55–152s delays; stress -32.9k, cost 3.69m/571.6m.",
+        "Goods 1/49 paid and 74/74 quotes over cap vs food 101/128; routing may help without changing caps.",
+        "Food Saved is pending; goods mature mean is 0.3775 (n=113). Challenger is not ready."
+      ],
+      "evidence_ids": [
+        "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+        "ledger:5501995",
+        "kv:framework-plan",
+        "kv:feedback-last-policy",
+        "kv:objective-decision-context",
+        "snapshot:shop-plan-v15.json",
+        "kv:quality-holdout-summary"
+      ],
+      "skill_ids": [
+        "74d3ee01e01fa04e8eefa711e85041d7902f50df1834ce399f094e416d8bea07",
+        "07b1f855ba6afa45f49af8efa61263665e3df4be6202bd964f361ecb676a8894",
+        "674377d13d42befbb838a6cd4550837e93fbb27965fc16c4b9888f46de3a7b9a"
+      ],
+      "queued_buyer_profile": null,
+      "trial_review_approved": false,
+      "economic_superiority_verified": false,
+      "shop_plan_recommendation": "diversified",
+      "operating_intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "operating_actions_reviewed": true,
+      "forum_focus": "balanced",
+      "objective_context_id": "67cf36fb379f3eb18212946594a2c40a94b0b14bf98e16c1431c3b17206363a1",
+      "operating_policy": {
+        "cover_cycles": 3,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "policy_authority": "independent_agent_consensus_with_numeric_execution_guards"
+    }
+  },
+  "capability": {
+    "triage": {
+      "design_needed": true,
+      "focus": "buyer_frontier_audit",
+      "reason": "Buyer Saved evidence is highly asymmetric: food quality is entirely pending while goods has mature confirmations; audit outcomes before prioritizing either frontier.",
+      "evidence_ids": [
+        "ledger:5522354",
+        "kv:objective-decision-context"
+      ]
+    },
+    "design": {
+      "tools": [
+        "buyer_frontier_audit",
+        "stock_depth_audit",
+        "objective_gap_audit"
+      ],
+      "reason": "Compare mature versus pending Buyer Saved, audit Shop stock depth, and check official ALL gaps and constraints.",
+      "evidence_ids": [
+        "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+        "ledger:5522354",
+        "snapshot:inventory.json",
+        "kv:objective-decision-context"
+      ]
+    },
+    "calculated_tools": [
+      "buyer_frontier_audit",
+      "stock_depth_audit",
+      "objective_gap_audit"
+    ],
+    "calculation_bytes": 5994
+  },
+  "usage": [
+    {
+      "role": "market_research_critic",
+      "model": "gpt-6.1-terra",
+      "reasoning_effort": "medium",
+      "usage": {
+        "input_tokens": 8879,
+        "input_tokens_details": {
+          "cache_write_tokens": 8876,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1259,
+        "output_tokens_details": {
+          "reasoning_tokens": 800
+        },
+        "total_tokens": 10138
+      },
+      "estimated_usd": 0.01739375,
+      "seconds": 15.344000000040978,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "_event_id": "5888d54bb901463f95b0482da8c9552f",
+      "_ts": 1794458438.3431613,
+      "_role": "system"
+    },
+    {
+      "role": "market_research_analyst",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "medium",
+      "usage": {
+        "input_tokens": 8508,
+        "input_tokens_details": {
+          "cache_write_tokens": 8505,
+          "cached_tokens": 0
+        },
+        "output_tokens": 933,
+        "output_tokens_details": {
+          "reasoning_tokens": 516
+        },
+        "total_tokens": 9441
+      },
+      "estimated_usd": 0.0306,
+      "seconds": 18.984000000171363,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "_event_id": "347562066fc643d7aca0ef2f34472587",
+      "_ts": 1794458422.9365997,
+      "_role": "system"
+    },
+    {
+      "role": "capability_designer",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "medium",
+      "usage": {
+        "input_tokens": 3728,
+        "input_tokens_details": {
+          "cache_write_tokens": 3725,
+          "cached_tokens": 0
+        },
+        "output_tokens": 191,
+        "output_tokens_details": {
+          "reasoning_tokens": 76
+        },
+        "total_tokens": 3919
+      },
+      "estimated_usd": 0.01123,
+      "seconds": 5.9530000002123415,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "_event_id": "6eeb8da412b1465f8cb79dcae2aad997",
+      "_ts": 1794458414.382248,
+      "_role": "system"
+    },
+    {
+      "role": "capability_triage",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "low",
+      "usage": {
+        "input_tokens": 3653,
+        "input_tokens_details": {
+          "cache_write_tokens": 3650,
+          "cached_tokens": 0
+        },
+        "output_tokens": 316,
+        "output_tokens_details": {
+          "reasoning_tokens": 245
+        },
+        "total_tokens": 3969
+      },
+      "estimated_usd": 0.000614625,
+      "seconds": 4.2030000002123415,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "_event_id": "68752ea436b14ab3b536c72ff979d74e",
+      "_ts": 1794458408.3582792,
+      "_role": "system"
+    }
+  ],
+  "economic_superiority_proven": false
+}

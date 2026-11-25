@@ -1,0 +1,8 @@
+{
+  "harness": "Round 3 lifecycle actor-critic; bounded Responses API calls; numeric critics and strict-SKU adapter",
+  "seller": {"cmd": "python -u seller_r3.py --port {port}"},
+  "buyer": {"cmd": "python -u market_buyer.py --shops .market/shops.json --order .market/order.json --item {item} --budget {budget}"},
+  "market_buyer": {"cmd": "python -u market_buyer.py --shops {shops} --order {order} --item {item} --budget {budget}"},
+  "restock": {"cmd": "python -u restock.py --state {state}"},
+  "review": {"cmd": "python -u review.py --deal {deal}"}
+}

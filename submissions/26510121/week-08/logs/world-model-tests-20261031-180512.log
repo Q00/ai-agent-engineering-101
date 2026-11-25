@@ -1,0 +1,69 @@
+test_world_model.py
+test_critic_adjusts_control_share_only_with_comparable_observations (test_world_model.WorldModelTests.test_critic_adjusts_control_share_only_with_comparable_observations) ... ok
+test_local_failure_does_not_recalibrate_counterparty_success (test_world_model.WorldModelTests.test_local_failure_does_not_recalibrate_counterparty_success) ... ok
+test_prior_is_not_recorded_as_a_successful_observation (test_world_model.WorldModelTests.test_prior_is_not_recorded_as_a_successful_observation) ... ok
+test_shop_keeps_censored_and_late_settlement_revisions_without_double_count (test_world_model.WorldModelTests.test_shop_keeps_censored_and_late_settlement_revisions_without_double_count) ... ok
+test_unpaid_receipt_gets_zero_actual_saved_and_negative_advantage (test_world_model.WorldModelTests.test_unpaid_receipt_gets_zero_actual_saved_and_negative_advantage) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.979s
+
+OK
+
+EXIT: 0
+test_ranking.py
+test_capability_expires_and_is_bound_to_signing_key (test_ranking.EvidenceTests.test_capability_expires_and_is_bound_to_signing_key) ... ok
+test_censored_opportunity_is_zero_fixed_horizon_reward_not_rejection (test_ranking.EvidenceTests.test_censored_opportunity_is_zero_fixed_horizon_reward_not_rejection) ... ok
+test_failure_without_receipt_is_zero_reward_and_contributes_cycle_time (test_ranking.EvidenceTests.test_failure_without_receipt_is_zero_reward_and_contributes_cycle_time) ... ok
+test_new_key_and_different_round_or_budget_band_do_not_inherit_success (test_ranking.EvidenceTests.test_new_key_and_different_round_or_budget_band_do_not_inherit_success) ... ok
+test_shop_summary_shares_only_confirmed_prices (test_ranking.EvidenceTests.test_shop_summary_shares_only_confirmed_prices) ... ok
+test_unconfirmed_new_contract_does_not_relabel_old_quality_evidence (test_ranking.EvidenceTests.test_unconfirmed_new_contract_does_not_relabel_old_quality_evidence) ... ok
+test_experiment_is_stable_and_does_not_exploit_tiny_samples (test_ranking.RankingTests.test_experiment_is_stable_and_does_not_exploit_tiny_samples) ... ok
+test_exploitation_uses_cycle_reward_after_matured_samples (test_ranking.RankingTests.test_exploitation_uses_cycle_reward_after_matured_samples) ... ok
+test_failed_capability_and_integrity_are_temporarily_excluded (test_ranking.RankingTests.test_failed_capability_and_integrity_are_temporarily_excluded) ... ok
+test_saved_per_time_prefers_repeatable_fast_savings (test_ranking.RankingTests.test_saved_per_time_prefers_repeatable_fast_savings) ... ok
+test_unpaid_cheap_promises_do_not_outvote_observed_success (test_ranking.RankingTests.test_unpaid_cheap_promises_do_not_outvote_observed_success) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.337s
+
+OK
+
+EXIT: 0
+test_experience.py
+test_private_smaller_budget_failure_does_not_discredit_affordable_shop (test_experience.ExperienceTests.test_private_smaller_budget_failure_does_not_discredit_affordable_shop) ... ok
+test_restart_and_duplicate_import_preserve_one_observation (test_experience.ExperienceTests.test_restart_and_duplicate_import_preserve_one_observation) ... ok
+test_seller_retains_price_outcomes_and_keeps_unresolved_distinct (test_experience.ExperienceTests.test_seller_retains_price_outcomes_and_keeps_unresolved_distinct) ... ok
+test_signature_only_or_failed_payment_never_becomes_r3_success (test_experience.ExperienceTests.test_signature_only_or_failed_payment_never_becomes_r3_success) ... ok
+test_simultaneous_writers_do_not_lose_observations (test_experience.ExperienceTests.test_simultaneous_writers_do_not_lose_observations) ... ok
+test_unknown_text_never_enters_trusted_memory (test_experience.ExperienceTests.test_unknown_text_never_enters_trusted_memory) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 1.008s
+
+OK
+
+EXIT: 0
+test_memory_integration.py
+test_buyer_feedback_requires_verified_payment_not_just_signature (test_memory_integration.MemoryIntegrationTests.test_buyer_feedback_requires_verified_payment_not_just_signature) ... ok
+test_r3_selection_uses_paid_history_instead_of_receipt_only_success (test_memory_integration.MemoryIntegrationTests.test_r3_selection_uses_paid_history_instead_of_receipt_only_success) ... ok
+test_review_does_not_encode_private_budget_in_rating_or_text (test_memory_integration.MemoryIntegrationTests.test_review_does_not_encode_private_budget_in_rating_or_text) ... ok
+test_seller_feedback_binds_to_its_signed_checkout_and_failed_settle_is_ignored (test_memory_integration.MemoryIntegrationTests.test_seller_feedback_binds_to_its_signed_checkout_and_failed_settle_is_ignored) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.134s
+
+OK
+
+EXIT: 0
+test_ranking_runtime.py
+test_poll_wait_and_failed_no_receipt_order_are_preserved (test_ranking_runtime.AdapterTimingTests.test_poll_wait_and_failed_no_receipt_order_are_preserved) ... ok
+test_preflight_only_reads_and_rejects_foreign_endpoint (test_ranking_runtime.PreflightTests.test_preflight_only_reads_and_rejects_foreign_endpoint) ... ok
+test_transport_failure_is_recorded_without_any_binding_offer (test_ranking_runtime.PreflightTests.test_transport_failure_is_recorded_without_any_binding_offer) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.141s
+
+OK
+
+EXIT: 0

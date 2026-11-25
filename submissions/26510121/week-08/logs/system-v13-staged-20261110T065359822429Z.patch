@@ -1,0 +1,1168 @@
+--- a/r3/outcomes.py
++++ b/r3/outcomes.py
+@@ -0,0 +1,71 @@
++"""One outcome view: exact market unit facts supersede provisional name matching."""
++import math
++from .state import identity
++
++
++def latest(journal, limit=10000):
++    result={}
++    for row in journal.events('outcome',limit):
++        oid=row.get('order');old=result.get(oid)
++        if old is None or row.get('canonical') and not old.get('canonical') or (
++                not old.get('canonical') and row.get('broken') and not old.get('broken')):
++            result[oid]=row
++    return result
++
++
++def confirmed_refund(event):
++    value=event.get('refunded')
++    if type(value) not in (int,float):value=event.get('amount')
++    return value if type(value) in (int,float) and math.isfinite(value) and value>=0 else None
++
++
++def reconcile(journal,purchases,now):
++    """Append revisions, never rewrite raw outcomes or assume a promised refund."""
++    # A shared short cache bounds the extra feed decoding on the order path.
++    facts=journal.get('outcome-unit-facts:v1',{})
++    if not 0<=now-facts.get('at',-1000)<30:
++        broken={};refunds={}
++        for row in journal.events('public_broken',20000):
++            if row.get('unit') and 0<=now-row['_ts']<=172800:broken.setdefault(row['unit'],row)
++        for row in journal.events('public_refund',20000):
++            unit=row.get('unit');oid=row.get('order');amount=confirmed_refund(row)
++            if amount is not None and 0<=now-row['_ts']<=172800:
++                if unit:refunds.setdefault('unit:'+unit,row)
++                if oid:refunds.setdefault('order:'+oid,row)
++        facts={'at':now,'broken':broken,'refunds':refunds}
++        journal.put('outcome-unit-facts:v1',facts)
++    old=latest(journal);feed=journal.get('public_feed_caught_up_at',0)
++    fresh=0<=now-feed<=180
++    pending=[]
++    for item in purchases:
++        if item.get('kind')!='goods' or not item.get('unit'):continue
++        age=now-item.get('paid_at',now)
++        if not 0<=age<=172800:continue
++        unit=item['unit'];oid=item['order'];broken=facts['broken'].get(unit)
++        if broken and broken.get('order') not in (None,oid):continue
++        refund=facts['refunds'].get('unit:'+unit) or facts['refunds'].get('order:'+oid)
++        if refund and refund.get('unit') not in (None,unit):refund=None
++        if broken:
++            amount=confirmed_refund(refund or broken)
++            hours=broken.get('hours_after_sale')
++            if type(hours) in (int,float) and not 0<=hours<=6:continue
++            coverage=item.get('warranty_hours') or 0
++            covered=type(hours) in (int,float) and type(coverage) in (int,float) and 0<=hours<=coverage and coverage>0
++            status=('confirmed' if amount is not None else 'expected_by_warranty_rule' if covered else 'not_covered')
++            amount=min(item['price'],amount) if amount is not None else 0
++            row={'order':oid,'unit':unit,'broken':True,'covered':covered,'canonical':True,
++                 'matured':age>=21600,'refund_status':status,'refunded':amount,
++                 'surplus':-item['price']+amount,'source':'market_unit_ledger',
++                 'saved_contribution':0 if amount==item['price'] else -1}
++        elif age>=22200 and fresh and feed>=item['paid_at']+22200 and not old.get(oid,{}).get('broken'):
++            row={'order':oid,'unit':unit,'broken':False,'canonical':True,'matured':True,
++                 'refund_status':'not_needed','refunded':0,'surplus':item['value']-item['price'],
++                 'source':'six_hour_unit_feed_complete',
++                 'saved_contribution':item.get('initial_saved_contribution',1-item['price']/max(1,item['value']))}
++        else:continue
++        previous=old.get(oid,{})
++        # Sparse bookkeeping changes must not produce a new event every poll.
++        if all(previous.get(k)==v for k,v in row.items()):continue
++        pending.append(('outcome',row,'canonical-outcome:'+oid+':'+identity(row),'buyer'))
++    journal.add_batch(pending,ts=now)
++    return len(pending)
+--- a/r3/long_memory.py
++++ b/r3/long_memory.py
+@@ -0,0 +1,156 @@
++"""Versioned facts, immutable experience summaries and expiring procedures.
++
++Raw financial events are preserved. This is a derived, exact-key retrieval layer;
++anonymous visitors are never turned into guessed personal identities.
++"""
++from collections import defaultdict
++import json,re,statistics,time
++from .state import identity
++
++SCHEMA='market-memory-v2'
++_FACT_CACHE={}
++
++
++def schema(c):
++    c.execute('CREATE TABLE IF NOT EXISTS memory_episodes(id TEXT PRIMARY KEY,kind TEXT,at REAL,subject TEXT,body TEXT)')
++    c.execute('CREATE INDEX IF NOT EXISTS memory_episode_kind ON memory_episodes(kind,at)')
++
++
++def refresh(journal,now=None):
++    now=time.time() if now is None else now
++    if 0<=now-journal.get('memory-refreshed-at',0)<120:return
++    with journal.connect() as c:
++        schema(c)
++        since=max(now-172800,journal.get('memory-sale-watermark',now-172800)-1)
++        rows=c.execute("SELECT id,ts,data FROM events WHERE kind='shop_settled' AND ts>=? AND ts<=? ORDER BY ts",(since,now)).fetchall()
++        for eid,at,body in rows:
++            sale=json.loads(body)
++            selected={k:sale.get(k) for k in ('task','unit','sku','category','grade','warranty_hours','price','cost','paid_at','strategy_version')}
++            c.execute('INSERT OR IGNORE INTO memory_episodes VALUES(?,?,?,?,?)',
++                ('sale:'+eid,'shop_sale',at,None,json.dumps(selected)))
++        saved=c.execute("SELECT body FROM memory_episodes WHERE kind='shop_sale' AND at>=?",(now-172800,)).fetchall()
++    if rows:journal.put('memory-sale-watermark',rows[-1][1])
++    catalog=journal.snapshot('catalog.json',{});groups=defaultdict(list)
++    for (body,) in saved:
++        sale=json.loads(body);product=catalog.get(sale.get('sku'),{})
++        value=product.get('list_price');price=sale.get('price')
++        if type(value) not in (int,float) or value<=0 or type(price) not in (int,float):continue
++        key=identity([sale.get('category'),sale.get('grade'),sale.get('warranty_hours') or 0])
++        groups[key].append(price/value)
++    journal.put('memory-contract-facts:v2',{'at':now,'groups':{k:{'samples':len(v),
++        'median_paid_to_list_ratio':statistics.median(v)} for k,v in groups.items()}})
++    # Reviews are linked only through explicit market ledger references. Missing
++    # authors are retained as observations, never guessed account means.
++    sales={eid.partition('settlement:')[2]:json.loads(body) for eid,at,body in rows if eid.startswith('settlement:')}
++    for row in journal.events('shop_settled',10000):
++        seq=row.get('_event_id','').partition('settlement:')[2]
++        if seq:sales.setdefault(seq,row)
++    review_groups=defaultdict(list);known_accounts=set();matched=0
++    deduplicated={}
++    for review in journal.events('shop_review_observed',1000):
++        key=identity([review.get('ledger'),review.get('stars'),review.get('review')])
++        old=deduplicated.get(key)
++        if old is None or review.get('identity_known') and not old.get('identity_known'):
++            deduplicated[key]=review
++    reviews=list(deduplicated.values())
++    for review in reviews:
++        sale=sales.get(str(review.get('ledger')))
++        if not sale:continue
++        matched+=1
++        if review.get('identity_known'):known_accounts.add(review['author'])
++        key=identity([sale.get('grade'),sale.get('warranty_hours') or 0])
++        review_groups[key].append(review)
++    ratings={}
++    for key,rs in review_groups.items():
++        accounts=defaultdict(list)
++        for row in rs:
++            if row.get('identity_known'):accounts[row['author']].append(row['stars'])
++        ready=len(accounts)>=5 and sum(map(len,accounts.values()))>=20
++        ratings[key]={'reviews':len(rs),'verified_accounts':len(accounts),'mode':'shadow',
++            'account_balanced_stars':statistics.mean(statistics.mean(v) for v in accounts.values()) if ready else None,
++            'ready_for_holdout_validation':ready,'official_all_delta_available':False}
++    journal.put('shop-rating-shadow',{'at':now,'reviews':len(reviews),'matched_trades':matched,
++        'verified_accounts':len(known_accounts),'groups':ratings,'mode':'shadow'})
++    journal.put('memory-refreshed-at',now)
++    journal.put('memory-schema',SCHEMA)
++
++
++def archive_customer(c,task,data):
++    schema(c)
++    # A small complete episode survives FIFO eviction of the working visit.
++    rows=c.execute("SELECT data FROM events WHERE kind IN ('customer_paid','customer_identity') AND json_extract(data,'$.task')=?",(task,)).fetchall()
++    paid=None;payer=data.get('signer')
++    for (body,) in rows:
++        row=json.loads(body)
++        if 'price' in row:paid=row
++        if row.get('payer'):payer=row['payer']
++    episode={'task':task,'category':data.get('category'),'sku':data.get('sku'),'kind':data.get('kind'),
++             'paid':paid,'identity_scope':'verified' if payer else 'anonymous'}
++    c.execute('INSERT OR IGNORE INTO memory_episodes VALUES(?,?,?,?,?)',
++              ('visit:'+task,'customer_visit',time.time(),payer,json.dumps(episode)))
++
++
++def contract_summary(journal,unit,warranty=None,now=None):
++    now=time.time() if now is None else now
++    category=unit.get('category');grade=unit.get('grade')
++    version=journal.get('memory-refreshed-at',0);cache_key=(str(getattr(journal,'md',id(journal))),version)
++    facts=_FACT_CACHE.get(cache_key)
++    if facts is None:
++        facts=journal.get('memory-contract-facts:v2',{})
++        if len(_FACT_CACHE)>8:_FACT_CACHE.clear()
++        _FACT_CACHE[cache_key]=facts
++    row=facts.get('groups',{}).get(identity([category,grade,warranty or 0]),{}) if 0<=now-facts.get('at',0)<=600 else {}
++    return {'schema':SCHEMA,'samples':row.get('samples',0),'median_paid_to_list_ratio':row.get('median_paid_to_list_ratio'),
++            'grade':grade,'warranty_hours':warranty,'source':'own settled contracts; 48h; exact category/grade/warranty',
++            'not_a_conversion_probability':True}
++
++
++def observe_reviews(journal,shops,now=None):
++    now=time.time() if now is None else now
++    shop=next((r for r in shops if r.get('name')=='seochanit'),{})
++    for review in shop.get('reviews',[])[:20]:
++        stars=review.get('stars')
++        if type(stars) not in (int,float) or not 1<=stars<=5:continue
++        text=str(review.get('review',''))[:1500]
++        refs=re.findall(r'(?:ledger\s*#|Deal\s*#)\s*(\d+)',text,re.I)
++        author=review.get('buyer') or review.get('author')
++        if not isinstance(author,str):author=None
++        row={'stars':stars,'review':text,'ledger':int(refs[0]) if len(set(refs))==1 else None,
++             'author':author,'identity_known':bool(author),'source':'market_api_shop_reviews','round':review.get('round')}
++        journal.add('shop_review_observed',row,eid='shop-review:'+identity(row),role='shop',ts=now)
++
++
++def observe_market_result(journal,event):
++    """Use a verified result only when its task is one of our accepted sales."""
++    data=event.get('data',{});receipt=data.get('receipt') or {};checks=data.get('checks') or {}
++    if data.get('verified') is not True or checks.get('settled') is not True or receipt.get('shop')!='Seochanit Shop':return False
++    task=receipt.get('task');stars=data.get('stars')
++    if not task or type(stars) not in (int,float) or not 1<=stars<=5:return False
++    with journal.connect() as c:
++        sale=c.execute("SELECT id FROM events WHERE kind='shop_settled' AND json_extract(data,'$.task')=? LIMIT 1",(task,)).fetchone()
++    if not sale:return False
++    seq=sale[0].partition('settlement:')[2]
++    if not seq.isdigit():return False
++    buyers=journal.snapshot('board.json',{}).get('buyers',[])
++    buyer=next((r for r in buyers if r.get('name')==data.get('buyer')),{})
++    owner=buyer.get('owner');owner=owner.get('login') if isinstance(owner,dict) else owner
++    author='owner:'+owner.casefold() if isinstance(owner,str) and owner else None
++    row={'stars':stars,'review':str(data.get('review',''))[:1500],'ledger':int(seq),
++        'author':author,'reviewer_label':data.get('buyer'),'identity_known':bool(author),
++        'source':'verified_market_result_and_accepted_own_task','round':event.get('round')}
++    return journal.add('shop_review_observed',row,eid='shop-review-ledger:'+str(event['seq']),role='shop',ts=event.get('ts'))
++
++
++def manifest(journal):
++    rules=journal.get('market_rules',{})
++    return {'system_revision':'system-v13-contract-frontier','memory_schema':SCHEMA,
++            'rules_sha256':rules.get('sha256'),'facts_not_instructions':True,
++            'board_checked_at':journal.get('board_checked_at'),'ledger_caught_up_at':journal.get('public_feed_caught_up_at'),
++            'execution':'bounded numeric contracts','review_forecast':'shadow_until_account_linked_data'}
++
++
++def rating_summary(journal,unit,warranty):
++    data=journal.get('shop-rating-shadow',{})
++    return data.get('groups',{}).get(identity([unit.get('grade'),warranty or 0]),
++        {'mode':'shadow','reviews':0,'verified_accounts':0,'account_balanced_stars':None,
++         'ready_for_holdout_validation':False,'official_all_delta_available':False})
+--- a/r3/contracts.py
++++ b/r3/contracts.py
+@@ -0,0 +1,110 @@
++"""A contract frontier: remember failed terms, preserve recovery and price caps."""
++import time
++from collections import defaultdict
++from .state import identity
++_IDENTITIES={}
++_HISTORY={}
++
++
++def shop_identity(journal,url):
++    key=str(getattr(journal,'md',id(journal)));now=time.time();cached=_IDENTITIES.get(key)
++    if cached is None or now-cached[0]>5:
++        rows=dict(journal.snapshot('registry.json',{}));rows.update(journal.get('market-shop-identities',{}))
++        if len(_IDENTITIES)>16:_IDENTITIES.clear()
++        cached=(now,rows);_IDENTITIES[key]=cached
++    row=cached[1].get(url,{})
++    owner=row.get('owner');owner=owner.get('login') if isinstance(owner,dict) else owner
++    if isinstance(owner,str) and owner:return 'owner:'+owner.casefold()
++    if row.get('pubkey'):return 'key:'+identity(row['pubkey'])
++    return 'url:'+url.rstrip('/')
++
++
++def history(journal,now=None):
++    now=time.time() if now is None else now;cache_key=str(getattr(journal,'md',id(journal)))
++    cached=_HISTORY.get(cache_key)
++    if cached and 0<=now-cached['now']<3:return cached
++    groups=defaultdict(dict)
++    for row in journal.events('buyer_contract_result',6000):
++        if not 0<=now-row['_ts']<=3600:continue
++        key=(row['shop_identity'],row['sku'],row.get('kind'))
++        groups[key].setdefault(row['order'],row)
++    paid={}
++    for p in journal.events('purchase',2000):
++        at=p.get('paid_at',p['_ts'])
++        if 0<=now-at<=3600:
++            key=(shop_identity(journal,p.get('shop','')),p.get('sku'),p.get('kind'))
++            paid[key]=max(paid.get(key,0),at)
++    result={'groups':{key:list(rows.values()) for key,rows in groups.items()},'paid':paid,'now':now}
++    if len(_HISTORY)>16:_HISTORY.clear()
++    _HISTORY[cache_key]=result
++    return result
++
++
++def prepare(candidates,order,journal,config):
++    if not config.get('system_framework_enabled') or order.get('kind')!='goods':return candidates
++    context=history(journal);now=context['now'];kept=[];paused=[]
++    for candidate in candidates:
++        candidate['contract_gap_power']=config.get('buyer_contract_gap_power',2)
++        key=(shop_identity(journal,candidate['shop']),candidate['sku'],'goods')
++        rows=[r for r in context['groups'].get(key,[]) if r.get('class') in ('price','contract')]
++        rows.sort(key=lambda r:r['_ts'],reverse=True)
++        if not rows:kept.append(candidate);continue
++        recent=[r for r in rows if r.get('signature')==rows[0].get('signature')]
++        burst=len(recent)>=3 and recent[0]['_ts']-recent[2]['_ts']<=600
++        seconds=min(3600,600*2**min(2,max(0,len(recent)//3-1)))
++        blocked=burst and now-recent[0]['_ts']<seconds and context['paid'].get(key,0)<recent[0]['_ts']
++        probe=int(identity([order['order'],key])[:8],16)%100<config.get('buyer_contract_probe_percent',8)
++        candidate['evidence']['contract_route']={'failed_orders':len(recent),'paused':blocked,'probe':probe,
++            'until':recent[0]['_ts']+seconds if blocked else None,'stable_identity':key[0]}
++        if blocked and not probe:paused.append(candidate)
++        else:kept.append(candidate)
++    if not kept and paused:
++        # One bounded recovery probe, never bypass a certificate or safe cap.
++        kept=[paused[0]];kept[0]['evidence']['contract_route']['probe']=True
++    if config.get('buyer_contract_diverse_quotes'):
++        unique=[];repeated=[];seen=set()
++        for candidate in kept:
++            (repeated if candidate['sku'] in seen else unique).append(candidate)
++            seen.add(candidate['sku'])
++        kept=unique+repeated
++    if paused:journal.add('buyer_contract_pause',{'order':order['order'],'paused':len(paused),'kept':len(kept)},role='buyer')
++    return kept
++
++
++def observe(journal,order,candidate,terms,assessment,ask):
++    contract={'grade':terms.get('grade'),'warranty_hours':terms.get('warranty_hours'),
++              'ask':ask,'cap':assessment['cap']}
++    signature=identity([contract['grade'],contract['warranty_hours'],int(ask/max(1,candidate['product']['list_price'])*50)])
++    candidate['last_contract']=dict(contract,signature=signature)
++    candidate.setdefault('evidence',{})['contract_frontier']={'ask':ask,'safe_cap':assessment['cap'],
++        'gap_fraction':max(0,ask-assessment['cap'])/max(1,ask),'conditional':bool(assessment.get('conditional_terms'))}
++
++
++def probability(journal,order,candidate,assessment,ask,base):
++    if order.get('kind')!='goods':return base
++    context=history(journal);key=(shop_identity(journal,candidate['shop']),candidate['sku'],'goods')
++    signature=candidate.get('last_contract',{}).get('signature')
++    rows=[r for r in context['groups'].get(key,[]) if r.get('signature')==signature]
++    prior=base*(min(1,assessment['cap']/max(1,ask))**max(1,min(3,candidate.get('contract_gap_power',2))))
++    if assessment.get('conditional_terms'):prior=min(prior,.15)
++    # Failures refer to the same declared term bucket. A paid order after the
++    # failures releases this penalty; term changes are evaluated afresh.
++    failures=sum(r.get('class') in ('price','contract') for r in rows)
++    if rows and context['paid'].get(key,0)>=max(r['_ts'] for r in rows):failures=0
++    value=max(.02,min(base,2*prior/(failures+2)))
++    candidate['evidence']['contract_completion']={'scenario':value,'same_term_failed_orders':failures,
++        'prior':prior,'not_a_calibrated_causal_probability':True}
++    return value
++
++
++def failed(journal,order,candidate,reason,task=None):
++    if order.get('kind')!='goods':return
++    contract=candidate.get('last_contract')
++    if not contract:return
++    if reason=='no_agreement':category='price' if contract['ask']>contract['cap'] else 'negotiation'
++    elif reason in ('quote_grade_changed','quote_warranty_changed','quote_sku_mismatch','receipt_integrity_failure','conflicting_offer_terms'):category='contract'
++    else:return  # Outages, local deadlines and unknown payments are not price evidence.
++    row={'order':order['order'],'kind':'goods','shop':candidate['shop'],
++         'shop_identity':shop_identity(journal,candidate['shop']),'sku':candidate['sku'],
++         'task':task,'class':category,'reason':reason,**contract}
++    journal.add('buyer_contract_result',row,eid='contract-result:'+identity([order['order'],row['shop_identity'],candidate['sku']]),role='buyer')
+--- a/r3/evolution.py
++++ b/r3/evolution.py
+@@ -0,0 +1,122 @@
++"""A bounded champion/challenger laboratory around the fast execution engine.
++
++Profiles change exploration allocation, never money, certificate or receipt caps.
++Randomized order assignments are frozen. Promotion uses completed quality cohorts.
++"""
++from collections import Counter
++import math,statistics,time
++from .state import identity
++from .outcomes import latest
++
++PROFILES={'contract_frontier':{'buyer_contract_probe_percent':8,'buyer_contract_gap_power':2,'buyer_contract_diverse_quotes':False},
++          'coverage_probe':{'buyer_contract_probe_percent':15,'buyer_contract_gap_power':1,'buyer_contract_diverse_quotes':True},
++          'selective_contracts':{'buyer_contract_probe_percent':4,'buyer_contract_gap_power':3,'buyer_contract_diverse_quotes':False}}
++REVISION='system-v13-contract-frontier'
++
++
++def assign(journal,order,config):
++    key='framework-order:'+str(order['order']);frozen=journal.get(key)
++    if frozen is None:
++        arena=journal.get('framework-arena',{})
++        profile=arena.get('champion','contract_frontier');arm='champion'
++        if order.get('kind')=='goods' and arena.get('active') and int(identity(order['order'])[:8],16)%100<10:
++            profile=arena.get('challenger','coverage_probe');arm='challenger'
++        if profile not in PROFILES:profile='contract_frontier'
++        board=journal.snapshot('board.json',{})
++        own=next((r for r in board.get('buyers',[]) if r.get('name')=='seochanit'),{})
++        frozen={'order':order['order'],'kind':order.get('kind'),'profile':profile,'arm':arm,
++                'experiment':arena.get('experiment'),'revision':REVISION,'saved_at_assignment':own.get('saved',0),
++                'rules_sha256':journal.get('market_rules',{}).get('sha256')}
++        journal.put(key,frozen);journal.add('framework_order',frozen,eid=key,role='buyer')
++    return dict(PROFILES[frozen['profile']],framework_profile=frozen['profile'])
++
++
++def summarize(journal,now):
++    orders={r['order']:r for r in journal.events('buyer_order',4000) if 0<=now-r['_ts']<=14400}
++    results={r['order']:r for r in journal.events('market_result',4000) if r.get('order') in orders}
++    paid={r['order']:r for r in journal.events('purchase',4000) if r.get('order') in orders}
++    quotes=journal.events('quote_comparison',6000);segments={}
++    for kind in ('food','goods'):
++        ids={oid for oid,r in orders.items() if r.get('kind')==kind};closed=ids&results.keys()
++        rows=[r for r in quotes if r.get('order') in ids]
++        segments[kind]={'orders':len(ids),'closed':len(closed),'paid':len(ids&paid.keys()),
++                        'conversion':len(ids&paid.keys())/max(1,len(closed)),
++                        'quotes':len(rows),'above_cap':sum(r['ask']>r['assessment']['cap'] for r in rows)}
++    return segments
++
++
++def evaluate(journal,arena,now):
++    assignments=[r for r in journal.events('framework_order',6000) if r.get('experiment')==arena.get('experiment')
++                 and r.get('kind')=='goods' and r['_ts']>=arena.get('since',now) and r['_ts']<=now-22200]
++    purchases={r['order']:r for r in journal.events('purchase',10000)}
++    results={r['order']:r for r in journal.events('market_result',10000)}
++    outcomes=latest(journal);stats={}
++    for arm in ('champion','challenger'):
++        rewards=[];durations=[];npaid=0;pending=0
++        for row in assignments:
++            if row['arm']!=arm:continue
++            oid=row['order'];result=results.get(oid)
++            if not result:pending+=1;continue
++            if bool(result.get('verified'))!=(oid in purchases):pending+=1;continue
++            reward=0
++            if oid in purchases:
++                outcome=outcomes.get(oid,{})
++                if not outcome.get('canonical') or outcome.get('refund_status')=='expected_by_warranty_rule':pending+=1;continue
++                reward=outcome.get('saved_contribution',0)-row.get('saved_at_assignment',0);npaid+=1
++            rewards.append(reward)
++            durations.append(max(1,result['_ts']-row['_ts'])+15)
++        n=len(rewards);avg=statistics.mean(rewards) if n else 0
++        se=math.sqrt(statistics.variance(rewards)/n) if n>1 else 1
++        stats[arm]={'closed':n,'paid':npaid,'pending':pending,'reward':avg,'standard_error':se,
++                    'seconds':statistics.mean(durations) if durations else None,
++                    'score_per_second':avg/statistics.mean(durations) if durations else 0}
++    a,b=stats['champion'],stats['challenger']
++    ready=min(a['closed'],b['closed'])>=50 and min(a['paid'],b['paid'])>=20
++    better=ready and b['reward']-1.96*b['standard_error']>a['reward']+1.96*a['standard_error'] and b['score_per_second']>a['score_per_second']
++    faster=ready and b['seconds']<=a['seconds']*1.2
++    from .risk import wilson
++    worse=min(a['closed'],b['closed'])>=50 and (wilson(b['paid'],b['closed'])<wilson(a['paid'],a['closed'],False) or
++        ready and b['reward']+1.96*b['standard_error']<a['reward']-1.96*a['standard_error'])
++    return {'at':now,'stats':stats,'ready':ready,'promote':bool(better and faster),'rollback':bool(worse),
++            'note':'Saved uplift over assignment baseline; completed 6h+10m cohorts, minimum samples and latency guard.'}
++
++
++def update(journal,config,now=None):
++    if not config.get('system_framework_enabled'):return {}
++    now=time.time() if now is None else now
++    if 0<=now-journal.get('framework-last-update',0)<300:return journal.get('framework-plan',{})
++    from .long_memory import refresh
++    refresh(journal,now)
++    segments=summarize(journal,now);arena=journal.get('framework-arena',{})
++    rules=journal.get('market_rules',{});rule_hash=rules.get('sha256')
++    if arena.get('revision')!=REVISION or arena.get('rules_sha256')!=rule_hash:
++        arena={'revision':REVISION,'rules_sha256':rule_hash,'champion':'contract_frontier',
++            'challenger':'coverage_probe','active':bool(config.get('framework_experiments_enabled')),
++            'since':now,'experiment':identity([REVISION,rule_hash,now])}
++        journal.add('framework_experiment',dict(arena,action='started'),role='buyer')
++    elif not arena.get('active') and now>=arena.get('retry_at',float('inf')) and config.get('framework_experiments_enabled') and journal.get('adaptive:buyer',{}).get('status')!='trial':
++        arena=dict(arena,active=True,since=now,experiment=identity([REVISION,rule_hash,now]))
++        journal.add('framework_experiment',dict(arena,action='restarted_after_cooldown'),role='buyer')
++    evaluation=evaluate(journal,arena,now)
++    if arena.get('active') and evaluation['promote']:
++        alternatives=[name for name in PROFILES if name not in (arena['champion'],arena['challenger'])]
++        arena=dict(arena,champion=arena['challenger'],challenger=alternatives[0] if alternatives else arena['champion'],since=now,
++                   experiment=identity([REVISION,rule_hash,now]))
++        journal.add('framework_experiment',dict(arena,action='promoted',evidence=evaluation),role='buyer')
++    elif arena.get('active') and (evaluation['rollback'] or now-arena['since']>172800):
++        arena=dict(arena,active=False,retry_at=now+21600)
++        journal.add('framework_experiment',dict(arena,action='rollback' if evaluation['rollback'] else 'expired_without_verified_improvement',evidence=evaluation),role='buyer')
++    issues=[];goods=segments['goods']
++    if goods['closed']>=20 and goods['conversion']<.3:issues.append('goods_contract_conversion')
++    if goods['quotes']>=20 and goods['above_cap']/goods['quotes']>.8:issues.append('price_frontier_no_overlap')
++    reviews=journal.events('shop_review_observed',500)
++    authors={r['author'] for r in reviews if r.get('identity_known')}
++    issues.append('shop_rating_model_shadow' if len(authors)<5 else 'shop_rating_model_requires_holdout_validation')
++    plan={'at':now,'revision':REVISION,'segments':segments,'issues':issues,'arena':arena,
++          'evaluation':evaluation,'shop_rating':{'mode':'shadow','reviews':len(reviews),'verified_accounts':len(authors)},
++          'next_actions':[{'issue':name,'stage':'observe' if 'rating' in name else 'bounded_contract_execution'} for name in issues],
++          'memory':{'facts':'market_unit_ledger','episodes':'contract and customer summaries','procedures':'versioned bounded profiles'},
++          'hard_guards':['receipt_signature','exact_sku','market_certificate','saved_price_cap','refund_reserve','no_uncertain_payment_retry']}
++    journal.put('framework-arena',arena);journal.put('framework-plan',plan);journal.put('framework-last-update',now)
++    journal.add('framework_evaluation',plan,role='system')
++    return plan
+--- a/r3/state.py
++++ b/r3/state.py
+@@ -203,3 +203,5 @@
+                 pending.append(("outcome", {"order": item["order"], "broken": False, "surplus": item["value"] - item["price"],
+                                      "matured": True}, "mature:" + item["order"], "buyer"))
+         self.add_batch(pending,ts=now)
++        from .outcomes import reconcile as reconcile_units
++        reconcile_units(self,purchases,now)
+--- a/r3/adaptive.py
++++ b/r3/adaptive.py
+@@ -35,12 +35,12 @@
+ 
+ 
+ def validate(role, patch):
+-    allowed = {'buyer_counter_ratio', 'buyer_food_time_seconds', 'buyer_goods_time_seconds'} if role == 'buyer' else {
++    allowed = {'buyer_counter_ratio', 'buyer_goods_counter_ratio', 'buyer_food_time_seconds', 'buyer_goods_time_seconds'} if role == 'buyer' else {
+         'inventory_target_units', 'category_weights', 'assortment_coverage_fraction', 'shop_margin_fraction'}
+     if role not in {'buyer', 'shop'} or not isinstance(patch, dict) or set(patch) - allowed:
+         raise ValueError('Unsupported adaptive strategy field')
+     for key, value in patch.items():
+-        if key == 'buyer_counter_ratio':
++        if key in ('buyer_counter_ratio','buyer_goods_counter_ratio'):
+             if type(value) not in (int, float) or not .88 <= value <= .98:
+                 raise ValueError('Counter ratio outside bounds')
+         elif key == 'inventory_target_units':
+@@ -101,6 +101,10 @@
+         cfg=policy()
+         if cfg.get('buyer_patch34_enabled'):activate_buyer_revision(journal,cfg.get('buyer_strategy_revision'))
+     cfg, selected = effective(journal, 'buyer', frozen=frozen)
++    if order.get('kind')=='goods':cfg['buyer_counter_ratio']=cfg.get('buyer_goods_counter_ratio',cfg['buyer_counter_ratio'])
++    if cfg.get('system_framework_enabled'):
++        from .evolution import assign
++        cfg.update(assign(journal,order,cfg))
+     if frozen is None:
+         journal.put(key, selected)
+         journal.add('buyer_order', {'order': order['order'], 'budget': order['budget'],
+@@ -205,10 +209,8 @@
+             opportunities = [e for e in opportunities if e['order'] in executed]
+         results = {e['order']: e for e in journal.events('market_result', 10000)}
+         purchases = {e['order']: e for e in journal.events('purchase', 10000)}
+-        outcomes = {}
+-        for event in journal.events('outcome', 10000):
+-            if event.get('broken') or event['order'] not in outcomes:
+-                outcomes[event['order']] = event
++        from .outcomes import latest
++        outcomes = latest(journal)
+         known, paid, bad = [], 0, 0
+         for order in opportunities:
+             oid = order['order']
+@@ -228,8 +230,16 @@
+         counters = sum(e.get('order') in ids for e in journal.events('buyer_counter', 10000))
+         price_failures = sum(e.get('order') in ids and e.get('kind') == 'no_agreement'
+                              for e in journal.events('attempt', 10000))
++        segments={}
++        for name in ('food','goods'):
++            group=[o for o in known if o.get('kind')==name];oids={o['order'] for o in group}
++            npaid=sum(oid in purchases for oid in oids)
++            segments[name]={'samples':len(group),'paid':npaid,'success_rate':npaid/max(1,len(group)),
++                'bad':sum(bool(outcomes.get(oid,{}).get('broken')) for oid in oids),
++                'counter_moves':sum(e.get('order') in oids for e in journal.events('buyer_counter',10000)),
++                'no_agreement':sum(e.get('order') in oids and e.get('kind')=='no_agreement' for e in journal.events('attempt',10000))}
+         return {'samples': len(known), 'paid': paid, 'bad': bad, 'counter_moves': counters,
+-                'no_agreement': price_failures, 'success_rate': paid / max(1, len(known))}
++                'no_agreement': price_failures, 'success_rate': paid / max(1, len(known)),'segments':segments}
+     settlements = journal.events('shop_settled', 10000)
+     pending = {e.get('task') for e in settlements if e.get('paid_at', e['_ts']) > now - MATURITY}
+     ids = {e['task'] for e in opportunities} - pending
+@@ -248,7 +258,7 @@
+     cfg = policy()
+     diagnosis = journal.get('market_control', {})
+     if cfg.get('market_control_enabled') and 0 <= time.time()-diagnosis.get('at',0) < 900:
+-        if diagnosis.get('pause_restock'):
++        if role=='shop' and diagnosis.get('pause_restock'):
+             return None
+         steps = {'shop_margin_fraction':.01, 'assortment_coverage_fraction':.05,
+                  'inventory_target_units':5, 'buyer_food_time_seconds':-3}
+@@ -265,17 +275,23 @@
+             except ValueError:continue
+             return patch, item['reason']
+     if role == 'buyer':
+-        ratio = current.get('buyer_counter_ratio', .92)
+-        if stats['counter_moves'] >= 5 and stats['no_agreement'] >= 5 and stats['success_rate'] < .5:
++        if cfg.get('system_framework_enabled') and journal.get('framework-arena',{}).get('active'):
++            return None  # One experiment at a time; keep diagnostic loops independent.
++        goods=stats.get('segments',{}).get('goods',{})
++        segmented=goods.get('samples',0)>=MIN_SAMPLES
++        selected=goods if segmented else stats
++        key='buyer_goods_counter_ratio' if segmented else 'buyer_counter_ratio'
++        ratio = current.get(key, .92)
++        if selected['counter_moves'] >= 5 and selected['no_agreement'] >= 5 and selected['success_rate'] < .5:
+             new = min(.98, round(ratio + .02, 2))
+             reason = 'Repeated failed price negotiations: test a smaller discount request'
+-        elif stats['success_rate'] >= .8 and not stats['bad']:
++        elif selected['success_rate'] >= .8 and not selected['bad']:
+             new = max(.88, round(ratio - .02, 2))
+             reason = 'High observed completion with no known bad outcomes: test a larger discount'
+         else:
+             return None
+         if new != ratio:
+-            return dict(current, buyer_counter_ratio=new), reason
++            return dict(current, **{key:new}), reason
+         return None
+     inv = journal.snapshot('inventory.json', {})
+     if inv.get('round') != 3:
+@@ -405,7 +421,10 @@
+                 transition(journal, role, state, next_state, action,
+                            {'reason': reason, 'evidence': stats, 'public_categories': market}, now)
+             else:
+-                reason = 'No supported untried bounded change'
++                reason = ('framework_experiment_active' if role=='buyer' and journal.get('framework-arena',{}).get('active')
++                          else 'No supported untried bounded change')
++        elif not trial and now<state.get('cooldown_until',0):
++            reason='experiment_cooldown'
+         journal.add('strategy_evaluation', {'version': state['version'], 'action': action,
+                     'reason': reason, 'evidence': stats, 'public_categories': market}, role=role, ts=now)
+         actions.append({'role': role, 'action': action})
+--- a/r3/risk.py
++++ b/r3/risk.py
+@@ -23,11 +23,8 @@
+         return cached['grades']
+     # Reconciliation can append a true break AFTER a provisional mature result.
+     # Any broken result wins; ambiguous attribution cannot become a healthy label.
+-    outcomes = {}
+-    for e in journal.events('outcome', 10000):
+-        previous = outcomes.get(e.get('order'))
+-        if previous is None or e.get('broken'):
+-            outcomes[e.get('order')] = e
++    from .outcomes import latest
++    outcomes = latest(journal)
+     ambiguous = {o for e in journal.events('ambiguous_break', 2000) for o in e.get('orders', [])}
+     breaks = {e.get('unit'): e for e in journal.events('public_broken', 20000)
+               if 0 <= now - e['_ts'] < 172800 and e.get('unit')}
+@@ -38,7 +35,7 @@
+             continue
+         outcome = outcomes.get(e.get('order'))
+         exact = breaks.get(e.get('unit'))
+-        if e.get('order') in ambiguous and not exact:
++        if e.get('order') in ambiguous and not exact and not (outcome or {}).get('canonical'):
+             continue
+         if not exact and (not outcome or not (outcome.get('matured') or outcome.get('broken'))):
+             continue
+--- a/r3/meta.py
++++ b/r3/meta.py
+@@ -149,10 +149,6 @@
+ 
+ def observed_breaks(journal, sku):
+     purchases = {x["order"]: x for x in journal.events("purchase", 10000) if x.get("sku") == sku}
+-    latest = {}
+-    for e in journal.events("outcome", 10000):
+-        # A verified broken revision supersedes an earlier provisional non-broken outcome.
+-        if e.get("order") in purchases and (e.get("broken") or e.get("order") not in latest):
+-            latest[e["order"]] = e
+-    known = [e for e in latest.values() if e.get("broken") or e.get("matured")]
++    from .outcomes import latest
++    known = [e for oid,e in latest(journal).items() if oid in purchases and (e.get("broken") or e.get("matured"))]
+     return {"mature_samples": len(known), "broken": sum(bool(e.get("broken")) for e in known)}
+--- a/r3/customer_memory.py
++++ b/r3/customer_memory.py
+@@ -36,7 +36,9 @@
+             "SELECT data FROM events WHERE kind='customer_visit' ORDER BY ts DESC,rowid DESC LIMIT -1 OFFSET ?",
+             (max_visits,)).fetchall()
+         for (data,) in old:
+-            task = json.loads(data)['task']
++            visit_data=json.loads(data);task=visit_data['task']
++            from .long_memory import archive_customer
++            archive_customer(connection,task,visit_data)
+             connection.execute("DELETE FROM events WHERE kind LIKE 'customer_%' AND json_extract(data,'$.task')=?", (task,))
+             connection.execute('DELETE FROM kv WHERE key IN (?,?)', ('customer-visit:' + task, 'customer-payer:' + task))
+             connection.execute("DELETE FROM kv WHERE key LIKE 'customer-ledger:%' AND value=?", (json.dumps(task),))
+--- a/r3/economy.py
++++ b/r3/economy.py
+@@ -110,6 +110,15 @@
+         recovery_floor = max(1, math.ceil(cost*.98/max(.01,1-stress_refund)))
+     ceiling = previous_ask or int(1.05 * L)
+     prices = {max(recovery_floor, int(reference * f)) for f in (.9, 1, 1.1)}
++    long_contract=None;rating=None
++    if config.get('system_framework_enabled'):
++        from .long_memory import contract_summary,rating_summary
++        long_contract=contract_summary(journal,unit,warranty,now)
++        rating=rating_summary(journal,unit,warranty)
++        ratio=long_contract.get('median_paid_to_list_ratio')
++        if long_contract['samples']>=3 and type(ratio) in (int,float):
++            remembered=int(ratio*L)
++            if recovery_floor<=remembered<=ceiling:prices.add(remembered)
+     memory_evidence = None
+     if customer_memory:
+         behavior = customer_memory.get('category_behavior', {})
+@@ -141,7 +150,8 @@
+                             scenario='shrunk observed completion plus monotone price response')
+         result.append({"id": "quote:" + str(p), "action": "counter", "price": p,
+                        "warranty_hours": warranty, "score": sale_delta(p, cost, completion['completion'], stress_refund)['book'],
+-                       "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence),
++                       "evidence": dict(stats, quote_completion=completion, customer_memory=memory_evidence,
++                                        long_contract_memory=long_contract,rating_shadow=rating),
+                        'expected_delta': sale_delta(p, cost, completion['completion'], stress_refund),
+                        "recovery_floor": recovery_floor,
+                            "risk": "conservative grade risk; full gross reserve remains required" if warranty else "food expiry or uninsured goods"})
+@@ -239,7 +249,9 @@
+                 from .buyer_execution import route_adjust
+                 route_adjust(result[-1],order,journal,config,execution_context)
+                 result[-1]['checkout_buffer_seconds']=config.get('checkout_buffer_seconds',30)
+-    return sorted(result, key=lambda x:x['score']/max(1,x.get('execution_seconds',1)),reverse=True)
++    result=sorted(result, key=lambda x:x['score']/max(1,x.get('execution_seconds',1)),reverse=True)
++    from .contracts import prepare
++    return prepare(result,order,journal,config or {})
+ 
+ 
+ def supply_open(inv, now=None):
+--- a/r3/adapter.py
++++ b/r3/adapter.py
+@@ -119,8 +119,15 @@
+             return response
+         data = response.json()
+         if path == "/api/shops" and method == "GET":
++            if cfg.get('system_framework_enabled'):
++                from .long_memory import observe_reviews
++                observe_reviews(j,data.get('shops',[]))
+             registry = {s["url"].rstrip("/"): {k: s.get(k) for k in ("name", "pubkey", "owner")} for s in data["shops"]}
+             atomic_json(j.md / "registry.json", registry)
++            if cfg.get('system_framework_enabled'):
++                aliases=j.get('market-shop-identities',{})
++                aliases.update(registry)
++                j.put('market-shop-identities',dict(list(aliases.items())[-5000:]))
+             if cfg.get('shop_growth_v5'):
+                 from collections import Counter
+                 counts = Counter(sku for s in data['shops'] if s.get('name') != 'seochanit'
+@@ -186,6 +193,9 @@
+                     customer_memory.bind_market_payer(j, event['seq'], event['data'])
+                 elif event.get("kind") in {"refund", "broken"}:
+                     j.add("public_" + event["kind"], event["data"], eid="public:" + str(event["seq"]), ts=event.get("ts"))
++                elif event.get('kind')=='result' and cfg.get('system_framework_enabled'):
++                    from .long_memory import observe_market_result
++                    observe_market_result(j,event)
+             seq = rows[-1]["seq"]
+             j.put("public_ledger_seq", seq)
+             if len(rows) < 500:
+--- a/r3/model.py
++++ b/r3/model.py
+@@ -84,6 +84,10 @@
+                        next_rank_thresholds=rank_targets(board, role),
+                        numerical_recommendation=best['id'],
+                        rank_note='percentile components use midrank/continuous surrogates; Patch 3.5 forum uses its raw 0..1 rating')
++        if self.config.get('system_framework_enabled'):
++            from .long_memory import manifest
++            context['system_manifest']=manifest(self.j)
++            context['framework_profile']=self.config.get('framework_profile','shop_contract_service')
+         if role=='buyer':context.update(buyer_metric=current['metric'],buyer_forum_metric=current['forum_metric'],
+                                        buyer_rank_scope=board.get('buyer_rank_scope'))
+         if role=='buyer' and self.config.get('buyer_throughput_enabled'):
+--- a/r3/control.py
++++ b/r3/control.py
+@@ -148,4 +148,7 @@
+     journal.put('market_control', result)
+     journal.add('market_control', result)
+     atomic_json(journal.md/'market-control.json', result)
++    if cfg.get('system_framework_enabled'):
++        from .evolution import update as framework_update
++        framework_update(journal,cfg,now)
+     return result
+--- a/r3/buyer_execution.py
++++ b/r3/buyer_execution.py
+@@ -29,13 +29,21 @@
+             visits[(event['shop'],event['sku'])][event['order']]=True
+     for event in journal.events('buyer_quote_latency',1000):
+         if start<=event['_ts']<=now:latency[event['shop']].append(event['seconds'])
++    paid={r['order']:r for r in journal.events('purchase',2000) if start<=r.get('paid_at',r['_ts'])<=now}
++    checkout=defaultdict(list)
++    for row in journal.events('agreement',3000):
++        purchase=paid.get(row.get('order'))
++        if purchase and purchase.get('shop')==row.get('shop'):
++            seconds=purchase.get('paid_at',purchase['_ts'])-row['_ts']
++            if 0<seconds<120:checkout[row['shop']].append(seconds)
+     return {'routes':{k:{'n':len(rows),'paid':sum(rows.values())} for k,rows in visits.items()},
++            'checkout':{key:statistics.median(values) for key,values in checkout.items()},
+             'latency':{k:max(.25,min(8,statistics.median(v))) for k,v in latency.items()}}
+ 
+ 
+ def execution_seconds(candidate,context):
+     latency=context['latency'].get(candidate['shop'],1.5)
+-    return max(1,2*latency+2)
++    return max(1,2*latency+context.get('checkout',{}).get(candidate['shop'],2))
+ 
+ 
+ def route_adjust(candidate,order,journal,config,context):
+--- a/r3/quote_market.py
++++ b/r3/quote_market.py
+@@ -216,6 +216,10 @@
+                     c['quote_failed']=True;continue
+                 feasible=ask<=a['cap'] and not a['conditional_terms']
+                 price=min(ask,a['cap']);completion=1 if feasible else .35 if ask<=a['cap'] else .25
++                if config.get('system_framework_enabled'):
++                    from .contracts import observe,probability
++                    observe(journal,order,c,terms,a,ask)
++                    if not feasible:completion=probability(journal,order,c,a,ask,completion)
+                 c['score']=completion*contribution(price,c['product']['list_price'],a['failure'],a['covered_failure'])
+                 c['expected_delta']=terms_delta(a['saved_state'],price,c['product']['list_price'],a['failure'],a['covered_failure'],completion)
+                 c['execution_seconds']=max(1,seconds+2)
+--- a/market_buyer.py
++++ b/market_buyer.py
+@@ -51,7 +51,7 @@
+         cfg=dict(cfg,max_shop_candidates=cfg.get('buyer_route_candidates',4))
+     journal.reconcile()
+     journal.add('buyer_execution', {'order': order['order'], 'strategy_version': strategy['version'],
+-                'contract_revision':'contract-memory-v1'},
++                'contract_revision':'contract-frontier-v2'},
+                 eid='buyer-execution:' + order['order'], role='buyer')
+     empty = {"shop": "", "receipt": None, "stars": 3, "review": "No settled purchase; no seller rating inferred."}
+     if cfg.get('buyer_patch34_enabled') and journal.get('market_rules',{}).get('buyer_compatible') is False:
+@@ -239,6 +239,9 @@
+                 if terms.get('sku') not in (None, c['sku']):
+                     raise ValueError('quote_sku_mismatch')
+                 assessment = buyer_assessment(dict(product, sku=c['sku']), order, terms, journal, cfg,shop=c['shop'])
++                if cfg.get('system_framework_enabled'):
++                    from r3.contracts import observe
++                    observe(journal,order,c,terms,assessment,ask)
+                 cap, required_warranty, stress = assessment['cap'], assessment['required_warranty'], assessment['failure']
+                 required_grade = assessment.get('required_grade',terms.get('grade'))
+                 conditional_requirements=assessment.get('conditional_terms',[])
+@@ -261,10 +264,21 @@
+                 if cfg.get('buyer_throughput_enabled'):
+                     from r3.buyer_execution import price_times
+                     price_times(actions,c,assessment,cfg)
++                if cfg.get('system_framework_enabled'):
++                    from r3.contracts import probability
++                    for action in actions:
++                        if action['id']!='counter':continue
++                        old_probability=action.get('completion_probability',1)
++                        calibrated=probability(journal,order,c,assessment,ask,old_probability)
++                        factor=calibrated/max(.000001,old_probability)
++                        action['score']*=factor
++                        action['expected_delta']={k:v*factor for k,v in action['expected_delta'].items()}
++                        action['completion_probability']=calibrated
+                 if order.get('kind')=='food' and cfg.get('buyer_fast_food_enabled') and not cfg.get('buyer_patch34_enabled'):
+                     move=max(actions,key=lambda a:a['score'])
+                 else:
+                     move = chooser.choose("buyer", actions, {"ask": ask, "order": order, "turn": turn,
++                                           'shop':c['shop'],'sku':c['sku'],'task':task['id'],
+                                            'buyer_execution':True,'operation':'price',
+                                            "product": product, "strategy": strategy}, deadline=deadline)
+                 agreed = move["price"]
+@@ -279,6 +293,9 @@
+                     from r3.protocol import observe_quote
+                     observe_quote(journal,task,c['shop'],order,'negotiation')
+                 except Exception:pass
++            if cfg.get('system_framework_enabled'):
++                from r3.contracts import failed
++                failed(journal,order,c,'no_agreement',task.get('id') if task else None)
+             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
+                                     "shop": c["shop"], "sku": c["sku"], "success": False,
+                                     'use_within_hours':order.get('use_within_hours',0),
+@@ -290,6 +307,9 @@
+                 'certificate_unavailable', 'receipt_integrity_failure', 'registered_signing_key_unavailable',
+                 'ambiguous_ask', 'conflicting_ask', 'conflicting_offer_terms', 'quote_sku_mismatch', 'invalid_money',
+                 'known_unavailable_unit','known_unsuitable_shelf_life','quote_grade_changed','quote_warranty_changed'} else None
++            if cfg.get('system_framework_enabled'):
++                from r3.contracts import failed
++                failed(journal,order,c,reason,task.get('id') if task else None)
+             journal.add("attempt", {"order": order['order'], "strategy_version": strategy['version'],
+                                     "shop": c["shop"], "sku": c["sku"], "success": False,
+                                     'reason': reason,
+--- a/seller_r3.py
++++ b/seller_r3.py
+@@ -43,15 +43,23 @@
+         skus = re.findall(r"\bG[0-9a-z]+\b", text, re.I)
+         requirement = re.search(r'(?:last at least|use within|minimum shelf life(?: after checkout)?:?)\s*(\d+(?:\.\d+)?)\s*(?:hours?|h)\b', text, re.I)
+         min_hours = float(requirement.group(1)) if requirement else 0
++        warranty_request=re.search(r'(?:minimum|at least)\s*(\d+(?:\.\d+)?)\s*(?:hours?|h)\s*(?:of\s*)?warranty|warranty\s*(?:of\s*)?(?:at least|minimum)\s*(\d+(?:\.\d+)?)',text,re.I)
++        requested_warranty=float(next(x for x in warranty_request.groups() if x)) if warranty_request else 0
++        if requested_warranty>72:return None
++        grade_matches=re.findall(r'\b(?:require|need|only)\s+(?:certified\s+)?(?:grade\s+)?([ABC])\b|\bgrade\s+([ABC])\s+(?:only|required)\b',text,re.I)
++        required_grades={token.upper() for pair in grade_matches for token in pair if token}
++        minimum_grade=re.search(r'\b(?:at least|minimum)\s+grade\s+([ABC])\b',text,re.I)
++        if minimum_grade:required_grades=set('ABC'[:'ABC'.index(minimum_grade[1].upper())+1])
++        # Parse only explicit requirements, not incidental descriptions or a
++        # hypothetical list of grades in an RFQ.
+         choices = [u for u in inv.get("units", []) if grade(u, cat) != "expired" and
++                   (not required_grades or grade(u,cat) in required_grades) and
+                    (u.get('kind') != 'food' or remaining(u) >= min_hours + self.cfg['checkout_buffer_seconds'] / 3600) and
+                    ((u["sku"].casefold() in {x.casefold() for x in skus}) if skus else
+                     (u["name"].casefold() in want or u["category"].split(">")[ -1].casefold() in want))]
+         for u in sorted(choices, key=lambda x: (remaining(x), x.get("supplied_at", 0))):
+             if self.j.reserve(u["unit"], task, self.cfg["session_ttl_seconds"]):
+-                warranty = re.search(r'(?:minimum|at least)\s*(\d+(?:\.\d+)?)\s*(?:hours?|h)\s*(?:of\s*)?warranty|warranty\s*(?:of\s*)?(?:at least|minimum)\s*(\d+(?:\.\d+)?)', text, re.I)
+-                required = min(6, float(next(x for x in warranty.groups() if x))) if warranty else 0
+-                return dict(u, requested_use_hours=min_hours, minimum_warranty_hours=required)
++                return dict(u, requested_use_hours=min_hours, minimum_warranty_hours=requested_warranty)
+         self.j.add("stockout", {"sku": skus[0] if skus else None, "request": text[:300]}, role="shop")
+         return None
+ 
+--- a/policy.json
++++ b/policy.json
+@@ -4,7 +4,7 @@
+   "tunnel_provider": "cloudflare",
+   "market_control_interval_seconds": 300,
+   "shop_growth_v5": true,
+-  "shop_strategy_revision": "shop-v10-patch35-terms",
++  "shop_strategy_revision": "shop-v11-contract-memory",
+   "shop_championship_enabled": true,
+   "shop_championship_allocation_enabled": true,
+   "shop_inventory_ceiling": 180,
+@@ -17,7 +17,7 @@
+   "warranty_menu_enabled": true,
+   "checkout_recovery_enabled": true,
+   "buyer_patch34_enabled": true,
+-  "buyer_strategy_revision": "buyer-v12-saved-throughput",
++  "buyer_strategy_revision": "buyer-v13-contract-frontier",
+   "buyer_forum_metric": "raw",
+   "buyer_championship_enabled": true,
+   "buyer_saved_target_margin": 0.002,
+@@ -79,5 +79,8 @@
+   "buyer_rfq_food_seconds": 3,
+   "buyer_rfq_goods_seconds": 5,
+   "buyer_compare_grace_seconds": 0.35,
+-  "buyer_fast_accept_margin": 0.04
+-}+  "buyer_fast_accept_margin": 0.04,
++  "system_framework_enabled": true,
++  "framework_experiments_enabled": true,
++  "buyer_contract_probe_percent": 8
++}
+--- a/verify_system_upgrade.py
++++ b/verify_system_upgrade.py
+@@ -0,0 +1,56 @@
++"""Replay a bounded copy of real evidence. Never connect to market or API."""
++from pathlib import Path
++from datetime import datetime,timezone
++import argparse,json,sqlite3,time
++from r3.state import ROOT,Journal,read_json,atomic_json,policy
++from r3.evolution import update
++from r3.outcomes import latest
++from r3.economy import buyer_candidates
++from r3.long_memory import contract_summary
++
++
++def main(source):
++    target=ROOT/'.market/replay';j=Journal(target);now=time.time()
++    selected=['purchase','outcome','broken_news','ambiguous_break','public_broken','public_refund','shop_settled',
++        'buyer_order','market_result','attempt','buyer_counter','quote_comparison','agreement','customer_visit',
++        'customer_paid','customer_identity','buyer_execution','buyer_contract_result']
++    with sqlite3.connect((source/'.market/r3.sqlite3').as_uri()+'?mode=ro',uri=True) as original:
++        original.execute('BEGIN')
++        with j.connect() as c:
++            for kind in selected:
++                limit=20000 if kind.startswith('public_') else 10000
++                rows=original.execute('SELECT id,kind,ts,role,data FROM events WHERE kind=? AND ts>=? ORDER BY ts DESC LIMIT ?',
++                                      (kind,now-172800,limit)).fetchall()
++                c.executemany('INSERT OR IGNORE INTO events VALUES(?,?,?,?,?)',rows)
++            for key in ('public_feed_caught_up_at','market_rules','adaptive:buyer','adaptive:shop'):
++                row=original.execute('SELECT value FROM kv WHERE key=?',(key,)).fetchone()
++                if row:c.execute('INSERT OR REPLACE INTO kv VALUES(?,?)',(key,row[0]))
++    for name in ('catalog.json','inventory.json','board.json','registry.json'):
++        atomic_json(target/name,read_json(source/'.market'/name,{}))
++    j.put('framework-last-update',0);j.put('memory-refreshed-at',0)
++    before=latest(j);started=time.monotonic();j.reconcile();reconcile_seconds=time.monotonic()-started
++    after=latest(j);started=time.monotonic();plan=update(j,policy(),now);planning_seconds=time.monotonic()-started
++    confirmed=sum(bool(r.get('canonical')) and r.get('refund_status')=='confirmed' for r in after.values())
++    assert confirmed>=sum(bool(r.get('canonical')) and r.get('refund_status')=='confirmed' for r in before.values())
++    assert plan['revision']=='system-v13-contract-frontier'
++    order=read_json(source/'.market/order.json',{})
++    shops=read_json(source/'.market/shops.json',[]);catalog=read_json(target/'catalog.json',{})
++    started=time.monotonic();candidates=buyer_candidates(order,shops,catalog,j,policy()) if order.get('acceptable') else []
++    candidate_seconds=time.monotonic()-started
++    sample=next((u for u in read_json(target/'inventory.json',{}).get('units',[]) if u.get('kind')=='goods'),{})
++    memory=contract_summary(j,sample,6) if sample else {}
++    memory_groups=j.get('memory-contract-facts:v2',{}).get('groups',{})
++    assert memory_groups,'Expected real settled contract memory to be materialized'
++    result={'source':str(source),'replay_database':str(target/'r3.sqlite3'),'network_calls':0,
++        'reconcile_seconds':reconcile_seconds,'planning_seconds':planning_seconds,'candidate_seconds':candidate_seconds,
++        'canonical_confirmed_refund_orders':confirmed,'canonical_outcomes':sum(bool(r.get('canonical')) for r in after.values()),
++        'plan':plan,'candidate_count':len(candidates),'memory_sample':memory,'memory_contract_groups':len(memory_groups),
++        'checks':['read-only original database','working replay only','no model or market calls','hard guards unchanged']}
++    path=source/'logs'/('system-upgrade-replay-'+datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'.json')
++    atomic_json(path,result);print('SOURCE',path)
++    print(json.dumps({k:v for k,v in result.items() if k!='plan'},ensure_ascii=False))
++
++
++if __name__=='__main__':
++    parser=argparse.ArgumentParser();parser.add_argument('--source-root',type=Path,required=True)
++    main(parser.parse_args().source_root)
+--- a/tests/test_system_outcomes.py
++++ b/tests/test_system_outcomes.py
+@@ -0,0 +1,44 @@
++import time
++from r3.state import Journal
++from r3.outcomes import reconcile,latest
++
++
++def purchase(j,oid,unit,now):
++    p={'order':oid,'unit':unit,'name':'same','kind':'goods','paid_at':now-25000,
++       'price':100,'value':200,'warranty_hours':6,'grade':'A'}
++    j.add('purchase',p);return p
++
++
++def test_exact_units_resolve_same_name_and_confirm_refunds(tmp_path):
++    j=Journal(tmp_path);now=time.time();ps=[purchase(j,'a','u1',now),purchase(j,'b','u2',now)]
++    j.add('broken_news',{'name':'same','broke_at':now-24000})
++    j.add('public_broken',{'order':'a','unit':'u1','hours_after_sale':1,'refunded':100},ts=now-1)
++    j.put('public_feed_caught_up_at',now)
++    reconcile(j,ps,now);out=latest(j)
++    assert out['a']['broken'] and out['a']['refund_status']=='confirmed' and out['a']['surplus']==0
++    assert not out['b']['broken'] and out['b']['matured']
++    count=len(j.events('outcome'));reconcile(j,ps,now+1);assert len(j.events('outcome'))==count
++
++
++def test_late_exact_break_overrides_healthy_without_rewriting(tmp_path):
++    j=Journal(tmp_path);now=time.time();p=purchase(j,'a','u',now)
++    j.put('public_feed_caught_up_at',now);reconcile(j,[p],now)
++    assert not latest(j)['a']['broken']
++    j.add('public_broken',{'order':'a','unit':'u','hours_after_sale':2,'refunded':0})
++    reconcile(j,[p],now+31)
++    assert latest(j)['a']['broken'] and latest(j)['a']['saved_contribution']==-1
++    assert len(j.events('outcome'))==2
++
++
++def test_stale_feed_does_not_clear_ambiguity_or_invent_health(tmp_path):
++    j=Journal(tmp_path);now=time.time();p=purchase(j,'a','u',now)
++    j.put('public_feed_caught_up_at',now-500)
++    assert reconcile(j,[p],now)==0
++
++
++def test_unconfirmed_refund_stays_pending_until_market_fact(tmp_path):
++    j=Journal(tmp_path);now=time.time();p=purchase(j,'a','u',now)
++    j.add('public_broken',{'order':'a','unit':'u','hours_after_sale':2},ts=now-1)
++    reconcile(j,[p],now);assert latest(j)['a']['refund_status']=='expected_by_warranty_rule'
++    j.add('public_refund',{'order':'a','unit':'u','amount':100})
++    reconcile(j,[p],now+31);assert latest(j)['a']['refund_status']=='confirmed'
+--- a/tests/test_long_framework_memory.py
++++ b/tests/test_long_framework_memory.py
+@@ -0,0 +1,56 @@
++import time
++from r3.state import Journal,atomic_json
++from r3.long_memory import refresh,contract_summary,observe_reviews
++from r3.customer_memory import retain
++
++
++def test_contract_summary_survives_working_visit_eviction_and_separates_terms(tmp_path):
++    j=Journal(tmp_path);now=time.time()
++    atomic_json(j.md/'catalog.json',{'G1':{'list_price':1000}})
++    for i in range(4):
++        j.add('shop_settled',{'task':str(i),'unit':str(i),'sku':'G1','category':'bed','grade':'A',
++            'warranty_hours':6,'price':600+i,'cost':500},ts=now-100)
++    j.add('customer_visit',{'task':'old','category':'bed','kind':'goods'})
++    j.add('customer_paid',{'task':'old','price':650,'sku':'G1'})
++    j.add('customer_visit',{'task':'new','category':'bed','kind':'goods'})
++    retain(j,max_visits=1)
++    assert [r['task'] for r in j.events('customer_visit')]==['new']
++    with j.connect() as c:assert c.execute('SELECT count(*) FROM memory_episodes WHERE id=?',('visit:old',)).fetchone()[0]==1
++    refresh(j,now)
++    assert contract_summary(j,{'category':'bed','grade':'A'},6,now)['samples']==4
++    assert contract_summary(j,{'category':'bed','grade':'C'},6,now)['samples']==0
++    assert contract_summary(j,{'category':'bed','grade':'A'},0,now)['samples']==0
++    refresh(j,now+121)
++    with j.connect() as c:assert c.execute("SELECT count(*) FROM memory_episodes WHERE kind='shop_sale'").fetchone()[0]==4
++
++
++def test_reviews_are_deduplicated_without_guessing_authors(tmp_path):
++    j=Journal(tmp_path);shops=[{'name':'seochanit','reviews':[{'stars':2,'review':'grade A; ledger #123.'}]}]
++    observe_reviews(j,shops);observe_reviews(j,shops)
++    rows=j.events('shop_review_observed');assert len(rows)==1
++    assert rows[0]['ledger']==123 and not rows[0]['identity_known']
++
++
++def test_unidentified_reviews_never_manufacture_a_rating_forecast(tmp_path):
++    from r3.long_memory import rating_summary
++    j=Journal(tmp_path);now=time.time()
++    j.add('shop_settled',{'task':'t','sku':'G1','grade':'A','warranty_hours':6,'price':100,'category':'bed'},eid='settlement:123',ts=now-100)
++    observe_reviews(j,[{'name':'seochanit','reviews':[{'stars':2,'review':'ledger #123.'}]}],now-1)
++    refresh(j,now)
++    summary=rating_summary(j,{'grade':'A'},6)
++    assert summary['reviews']==1 and summary['account_balanced_stars'] is None
++    assert not summary['official_all_delta_available']
++
++
++def test_verified_ledger_result_links_only_our_sale_and_real_owner(tmp_path):
++    from r3.long_memory import observe_market_result
++    j=Journal(tmp_path);now=time.time()
++    atomic_json(j.md/'board.json',{'buyers':[{'name':'buyer','owner':{'login':'real-account'}}]})
++    event={'seq':900,'ts':now,'round':3,'data':{'verified':True,'checks':{'settled':True},
++        'buyer':'buyer','receipt':{'shop':'Seochanit Shop','task':'t'},'stars':2,'review':'ledger #123.'}}
++    assert not observe_market_result(j,event)
++    j.add('shop_settled',{'task':'t'},eid='settlement:123')
++    assert observe_market_result(j,event)
++    row=j.events('shop_review_observed')[0]
++    assert row['identity_known'] and row['author']=='owner:real-account' and row['ledger']==123
++    assert not observe_market_result(j,event)
+--- a/tests/test_contract_frontier.py
++++ b/tests/test_contract_frontier.py
+@@ -0,0 +1,36 @@
++import time
++from r3.state import Journal,atomic_json
++from r3.contracts import prepare,observe,failed,probability
++
++
++def candidate():return {'shop':'s','sku':'G1','product':{'list_price':1000},'evidence':{}}
++
++
++def test_same_failed_contract_pauses_but_keeps_one_recovery_probe(tmp_path):
++    j=Journal(tmp_path);c=candidate();a={'cap':500,'conditional_terms':[]}
++    observe(j,{'order':'x'},c,{'grade':'C','warranty_hours':0},a,900)
++    for i in range(3):failed(j,{'order':str(i),'kind':'goods'},c,'no_agreement')
++    for i in range(3):failed(j,{'order':'0','kind':'goods'},c,'no_agreement')
++    assert len(j.events('buyer_contract_result'))==3
++    assert len(prepare([c],{'order':'new','kind':'goods'},j,{'system_framework_enabled':True,'buyer_contract_probe_percent':0}))==1
++    assert c['evidence']['contract_route']['paused'] and c['evidence']['contract_route']['probe']
++    assert probability(j,{'kind':'goods'},c,a,900,.25)<.1
++    observe(j,{'order':'new'},c,{'grade':'A','warranty_hours':6},a,800)
++    assert c['last_contract']['grade']=='A'
++    assert probability(j,{'kind':'goods'},c,a,800,.25)>probability(j,{'kind':'goods'},dict(c,last_contract={'signature':'not-seen'}),a,900,.25)
++
++
++def test_technical_errors_and_food_never_become_price_failures(tmp_path):
++    j=Journal(tmp_path);c=candidate();observe(j,{},c,{}, {'cap':500},900)
++    failed(j,{'order':'x','kind':'goods'},c,'ReadTimeout')
++    failed(j,{'order':'y','kind':'food'},c,'no_agreement')
++    assert not j.events('buyer_contract_result')
++
++
++def test_verified_owner_continuity_survives_url_change(tmp_path):
++    j=Journal(tmp_path);j.put('market-shop-identities',{'s':{'owner':'owner'},'new':{'owner':'owner'}})
++    c=candidate();a={'cap':500};observe(j,{},c,{'grade':'B','warranty_hours':0},a,900)
++    for i in range(3):failed(j,{'order':str(i),'kind':'goods'},c,'no_agreement')
++    c['shop']='new'
++    out=prepare([c],{'order':'n','kind':'goods'},j,{'system_framework_enabled':True,'buyer_contract_probe_percent':0})
++    assert out[0]['evidence']['contract_route']['failed_orders']==3
+--- a/tests/test_evolution_framework.py
++++ b/tests/test_evolution_framework.py
+@@ -0,0 +1,32 @@
++import time
++from r3.state import Journal,atomic_json,policy
++from r3.evolution import update,assign,evaluate
++from r3.adaptive import propose
++
++
++def test_assignment_frozen_and_never_changes_hard_guards(tmp_path):
++    j=Journal(tmp_path);now=time.time()
++    cfg=dict(policy(),system_framework_enabled=True,framework_experiments_enabled=True)
++    update(j,cfg,now)
++    first=assign(j,{'order':'o','kind':'goods'},cfg)
++    j.put('framework-arena',{'champion':'selective_contracts','active':False})
++    assert assign(j,{'order':'o','kind':'goods'},cfg)==first
++    assert set(first)=={'buyer_contract_probe_percent','framework_profile','buyer_contract_gap_power','buyer_contract_diverse_quotes'}
++    assert len(j.events('framework_order'))==1
++
++
++def test_buyer_diagnostics_not_blocked_by_shop_outage(tmp_path,monkeypatch):
++    j=Journal(tmp_path);j.put('market_control',{'at':time.time(),'pause_restock':True,'suggestions':[]})
++    stats={'samples':100,'counter_moves':10,'no_agreement':10,'success_rate':.7,'bad':0,
++        'segments':{'goods':{'samples':30,'counter_moves':10,'no_agreement':10,'success_rate':.1,'bad':0}}}
++    patch,reason=propose(j,'buyer',{'patch':{}},stats,{})
++    assert patch=={'buyer_goods_counter_ratio':.94}
++
++
++def test_immature_or_unconfirmed_quality_can_never_promote(tmp_path):
++    j=Journal(tmp_path);now=time.time();arena={'experiment':'x','since':now-100}
++    for i in range(100):
++        j.add('framework_order',{'order':str(i),'experiment':'x','arm':'challenger','kind':'goods'},ts=now-90)
++        j.add('market_result',{'order':str(i),'verified':False},ts=now-80)
++    result=evaluate(j,arena,now)
++    assert not result['ready'] and not result['promote']
+--- a/tests/test_framework_contract_guards.py
++++ b/tests/test_framework_contract_guards.py
+@@ -0,0 +1,36 @@
++import time
++from r3.state import Journal,atomic_json,policy
++from seller_r3 import Seller
++from r3.adaptive import begin_buyer,evidence,MATURITY
++from r3.outcomes import reconcile
++
++
++def test_shop_respects_explicit_required_grade_without_treating_conditional_rfq_as_requirement(tmp_path):
++    j=Journal(tmp_path);now=time.time()
++    units=[{'unit':'c','sku':'G111','name':'bed','kind':'goods','category':'bed','grade':'C','supplied_at':now-100,'list_price':1000},
++           {'unit':'a','sku':'G111','name':'bed','kind':'goods','category':'bed','grade':'A','supplied_at':now,'list_price':1000}]
++    atomic_json(j.md/'inventory.json',{'round':3,'units':units})
++    seller=Seller(j)
++    assert seller.select_unit('I require certified grade A for G111.','one')['unit']=='a'
++    assert seller.select_unit('G111: state grade. Without declared grade my offer is conditional on certified grade A.','two')['unit']=='c'
++
++
++def test_explicit_longer_warranty_is_not_silently_shortened(tmp_path):
++    j=Journal(tmp_path);now=time.time()
++    atomic_json(j.md/'inventory.json',{'round':3,'units':[{'unit':'a','sku':'G111','name':'bed','kind':'goods',
++        'category':'bed','grade':'A','supplied_at':now,'list_price':1000}]})
++    seller=Seller(j)
++    assert seller.select_unit('G111, at least 12 hours warranty.','one')['minimum_warranty_hours']==12
++    assert seller.select_unit('G111, at least 100 hours warranty.','two') is None
++
++
++def test_final_refund_enters_segmented_adaptive_evidence(tmp_path):
++    j=Journal(tmp_path);now=time.time();at=now-MATURITY-1000
++    j.add('buyer_order',{'order':'o','kind':'goods','budget':1000,'strategy_version':1},ts=at)
++    p={'order':'o','kind':'goods','unit':'u','paid_at':at+10,'price':100,'value':200,'warranty_hours':6}
++    j.add('purchase',p,ts=at+10)
++    j.add('outcome',{'order':'o','broken':True,'refund_status':'expected_by_warranty_rule'},ts=at+100)
++    j.add('public_broken',{'order':'o','unit':'u','hours_after_sale':1,'refunded':100},ts=at+100)
++    reconcile(j,[p],now)
++    e=evidence(j,'buyer',1,now)
++    assert e['paid']==1 and e['bad']==1 and e['segments']['goods']['samples']==1

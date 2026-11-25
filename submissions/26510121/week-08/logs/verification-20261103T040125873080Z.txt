@@ -1,0 +1,42 @@
+Local contract and integration tests; no public market actions.
+..........F.......                                                       [100%]
+================================== FAILURES ===================================
+________________ test_actual_a2a_server_and_buyer_interoperate ________________
+
+tmp_path = WindowsPath('C:/Users/Public/Documents/ESTsoft/CreatorTemp/pytest-of-kenjin/pytest-52/test_actual_a2a_server_and_buy0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001FDE284D890>
+
+    def test_actual_a2a_server_and_buyer_interoperate(tmp_path, monkeypatch):
+        monkeypatch.setenv('R3_MODEL_MODE', 'offline')
+        j = Journal(tmp_path / '.market')
+        u = unit()
+        atomic_json(j.md / 'inventory.json', {'round': 3, 'balance': 5000000, 'units': [u]})
+        atomic_json(j.md / 'catalog.json', {'G111': {'name': u['name'], 'category': u['category'], 'list_price': 10000, 'kind': 'goods'}})
+        key = Ed25519PrivateKey.generate()
+        keypath = tmp_path / 'synthetic.pem'
+        keypath.write_bytes(key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
+        sock = socket.socket()
+        sock.bind(('127.0.0.1', 0))
+        port = sock.getsockname()[1]
+        url = f'http://127.0.0.1:{port}'
+        server = uvicorn.Server(uvicorn.Config(build(port, Seller(j, key_path=keypath)), log_level='error'))
+        thread = threading.Thread(target=lambda: server.run(sockets=[sock]), daemon=True)
+        thread.start()
+        try:
+            for _ in range(100):
+                if server.started:
+                    break
+                time.sleep(.05)
+            assert server.started
+            atomic_json(j.md / 'registry.json', {url: {'name': 'shop', 'pubkey': pub(key)}})
+            order = {'order': 'o1', 'acceptable': ['G111'], 'budget': 10000, 'kind': 'goods', 'expires': time.time() + 300}
+            out = buy(order, [{'name': 'shop', 'url': url, 'offers': [{'sku': 'G111', 'qty': 1}]}], j)
+>           assert out['receipt'] and out['receipt']['item'] == 'G111'
+E           assert (None)
+
+tests\test_market_contract.py:63: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  a2a.utils.version_validator:version_validator.py:117 Version mismatch: actual='0.3', expected='1.0'
+=========================== short test summary info ===========================
+FAILED tests/test_market_contract.py::test_actual_a2a_server_and_buyer_interoperate
+1 failed, 17 passed in 3.56s

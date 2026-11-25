@@ -1,0 +1,1313 @@
+{
+  "checked_at_utc": "2026-11-11T01:48:57.696874+00:00",
+  "observed_live_timings": {
+    "window_start_utc": "2026-11-10T19:48:41.066685+00:00",
+    "window_end_utc": "2026-11-11T01:48:41.066685+00:00",
+    "event_counts": {
+      "buyer_order": 1004,
+      "buyer_preparation": 1032,
+      "buyer_saved_execution": 5749,
+      "shop_fast_execution": 3118,
+      "attempt": 2379,
+      "buyer_quote_latency": 1986,
+      "buyer_quote_race": 1019,
+      "agreement": 480,
+      "purchase": 453,
+      "market_result": 1004,
+      "shop_opportunity": 1392,
+      "shop_quote": 3093,
+      "model_usage": 0,
+      "market_control": 148
+    },
+    "buyer_preparation": {
+      "food": {
+        "seconds": {
+          "n": 704,
+          "p50": 1.8400503396987915,
+          "p95": 3.2498343467712405,
+          "p99": 4.0475508308410655,
+          "max": 5.015295505523682
+        },
+        "candidate_counts": {
+          "n": 704,
+          "p50": 35.0,
+          "p95": 87.85000000000002,
+          "p99": 97.0,
+          "max": 103
+        },
+        "over_one_second": 691
+      },
+      "goods": {
+        "seconds": {
+          "n": 326,
+          "p50": 6.07903265953064,
+          "p95": 10.659781455993652,
+          "p99": 11.940989196300507,
+          "max": 13.076691150665283
+        },
+        "candidate_counts": {
+          "n": 326,
+          "p50": 241.0,
+          "p95": 425.75,
+          "p99": 442.5,
+          "max": 452
+        },
+        "over_one_second": 326
+      }
+    },
+    "buyer_chooser_seconds": {
+      "n": 5749,
+      "p50": 0.03100000019185245,
+      "p95": 0.06199999991804361,
+      "p99": 0.2029999999795109,
+      "max": 1.547000000020489
+    },
+    "shop_chooser_seconds": {
+      "n": 3118,
+      "p50": 0.031999999890103936,
+      "p95": 0.21800000010989606,
+      "p99": 0.3119999999180436,
+      "max": 1.5619999999180436
+    },
+    "shop_chooser_by_operation": {
+      "restock": {
+        "n": 22,
+        "p50": 0.03150000004097819,
+        "p95": 0.7491499998955983,
+        "p99": 0.8681100000254809,
+        "max": 0.8910000000614673
+      },
+      "quote": {
+        "n": 3096,
+        "p50": 0.031999999890103936,
+        "p95": 0.21800000010989606,
+        "p99": 0.3119999999180436,
+        "max": 1.5619999999180436
+      }
+    },
+    "quote_rpc_seconds": {
+      "n": 1986,
+      "p50": 0.18799999984912574,
+      "p95": 0.8279999999795109,
+      "p99": 1.752250000019559,
+      "max": 4.312000000150874
+    },
+    "attempt_counts": {
+      "no_agreement": 2001,
+      "known_unsuitable_shelf_life": 70,
+      "HTTPStatusError": 2,
+      "ambiguous_ask": 102,
+      "ReadTimeout": 134,
+      "quote_sku_mismatch": 25,
+      "rfq_failed": 37,
+      "receipt_integrity_failure": 5,
+      "known_unavailable_unit": 3
+    },
+    "attempt_seconds_by_kind": {
+      "HTTPStatusError": {
+        "n": 2,
+        "p50": 0.17150000005494803,
+        "p95": 0.27004999996861445,
+        "p99": 0.27880999996094036,
+        "max": 0.2809999999590218
+      },
+      "rfq_failed": {
+        "n": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null
+      },
+      "ReadTimeout": {
+        "n": 134,
+        "p50": 4.047000000020489,
+        "p95": 7.827099999960045,
+        "p99": 8.21947000004118,
+        "max": 8.485000000102445
+      },
+      "ValueError": {
+        "n": 161,
+        "p50": 0.2660000000614673,
+        "p95": 2.3119999999180436,
+        "p99": 3.109999999869615,
+        "max": 3.9379999998491257
+      },
+      "no_agreement": {
+        "n": 2001,
+        "p50": 0.26599999982863665,
+        "p95": 1.7650000001303852,
+        "p99": 7.25,
+        "max": 9.015000000130385
+      }
+    },
+    "quote_race": {
+      "races": 1019,
+      "strong_offers": 156,
+      "pending_discarded": 64
+    },
+    "agreement_to_recorded_purchase_seconds": {
+      "n": 453,
+      "p50": 3.241246223449707,
+      "p95": 12.009276008605953,
+      "p99": 15.486400861740117,
+      "max": 20.0871798992157
+    },
+    "buyer_order_record_to_result_seconds": {
+      "food": {
+        "n": 682,
+        "p50": 7.61996853351593,
+        "p95": 17.764583778381343,
+        "p99": 22.26682776689529,
+        "max": 31.989634037017822
+      },
+      "goods": {
+        "n": 321,
+        "p50": 11.926588535308838,
+        "p95": 19.625350952148438,
+        "p99": 24.24175491333008,
+        "max": 40.07930374145508
+      }
+    },
+    "shop_opportunity_to_first_quote_seconds": {
+      "n": 1392,
+      "p50": 2.5784659385681152,
+      "p95": 5.315084815025331,
+      "p99": 7.348176226615904,
+      "max": 9.87488842010498
+    },
+    "logging_bytes": {
+      "prediction": {
+        "events": 8867,
+        "total_bytes": 126137402,
+        "largest_bytes": 268441
+      },
+      "customer_turn": {
+        "events": 2088,
+        "total_bytes": 491241,
+        "largest_bytes": 240
+      },
+      "decision": {
+        "events": 8867,
+        "total_bytes": 1117702,
+        "largest_bytes": 172
+      },
+      "shop_fast_execution": {
+        "events": 3118,
+        "total_bytes": 487043,
+        "largest_bytes": 161
+      },
+      "buyer_saved_execution": {
+        "events": 5749,
+        "total_bytes": 773546,
+        "largest_bytes": 161
+      }
+    }
+  },
+  "isolated_profiles": {
+    "reconcile_shadow_no_db_writes": {
+      "instrumented_seconds": 0.4774564001709223,
+      "output_rows": null,
+      "journal_calls": {
+        "get:offset": 2,
+        "shadow_put": 2,
+        "events:purchase": 1,
+        "events:outcome": 2,
+        "events:broken_news": 1,
+        "shadow_batch_rows": 9567,
+        "get:outcome-unit-facts": 1,
+        "get:public_feed_caught_up_at": 1
+      },
+      "decoded_rows_by_kind": {
+        "purchase": 10000,
+        "outcome": 20000,
+        "broken_news": 116
+      },
+      "event_read_seconds": {
+        "purchase": 0.1913876999169588,
+        "outcome": 0.22347979992628098,
+        "broken_news": 0.002553200116381049
+      },
+      "top_cumulative_functions": [
+        {
+          "function": ".\\profile_main_latency_20261111.py:165:<lambda>",
+          "calls": 1,
+          "own_seconds": 0.0113443,
+          "cumulative_seconds": 0.4774011
+        },
+        {
+          "function": ".\\r3\\state.py:162:reconcile",
+          "calls": 1,
+          "own_seconds": 0.013931,
+          "cumulative_seconds": 0.46605680000000005
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:51:events",
+          "calls": 4,
+          "own_seconds": 7.850000000000001e-05,
+          "cumulative_seconds": 0.4174417
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:53:<listcomp>",
+          "calls": 4,
+          "own_seconds": 0.2372004,
+          "cumulative_seconds": 0.41693650000000004
+        },
+        {
+          "function": ".\\r3\\outcomes.py:22:reconcile",
+          "calls": 1,
+          "own_seconds": 0.0028264,
+          "cumulative_seconds": 0.1347402
+        },
+        {
+          "function": ".\\r3\\outcomes.py:6:latest",
+          "calls": 1,
+          "own_seconds": 0.0032424000000000003,
+          "cumulative_seconds": 0.1171385
+        },
+        {
+          "function": "~:0:<method 'match' of 're.Pattern' objects>",
+          "calls": 60240,
+          "own_seconds": 0.018822600000000002,
+          "cumulative_seconds": 0.018822600000000002
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:40:get",
+          "calls": 4,
+          "own_seconds": 7.08e-05,
+          "cumulative_seconds": 0.012512
+        },
+        {
+          "function": "~:0:<method 'get' of 'dict' objects>",
+          "calls": 71471,
+          "own_seconds": 0.006250800000000001,
+          "cumulative_seconds": 0.006250800000000001
+        },
+        {
+          "function": "~:0:<method 'startswith' of 'str' objects>",
+          "calls": 30134,
+          "own_seconds": 0.005328800000000001,
+          "cumulative_seconds": 0.005328800000000001
+        },
+        {
+          "function": "~:0:<method 'end' of 're.Match' objects>",
+          "calls": 60240,
+          "own_seconds": 0.0045707000000000005,
+          "cumulative_seconds": 0.0045707000000000005
+        },
+        {
+          "function": "~:0:<built-in method builtins.isinstance>",
+          "calls": 30127,
+          "own_seconds": 0.0031103000000000003,
+          "cumulative_seconds": 0.0031103000000000003
+        },
+        {
+          "function": "~:0:<built-in method builtins.len>",
+          "calls": 30258,
+          "own_seconds": 0.0026065000000000003,
+          "cumulative_seconds": 0.0026065000000000003
+        },
+        {
+          "function": ".\\r3\\state.py:192:<setcomp>",
+          "calls": 1,
+          "own_seconds": 0.0019533000000000003,
+          "cumulative_seconds": 0.0025158000000000003
+        }
+      ]
+    },
+    "buyer_input": {
+      "order": "o-332a10d44583",
+      "kind": "food",
+      "acceptable_skus": 157,
+      "shops": 39,
+      "shops_file_is_not_older_than_order": true
+    },
+    "buyer_candidates_cold": {
+      "instrumented_seconds": 1.3392199999652803,
+      "output_rows": 19,
+      "journal_calls": {
+        "snapshot:board.json": 9,
+        "get:market_rules": 9,
+        "get:public_ledger_seq": 1,
+        "events:public_settle": 1,
+        "events:purchase": 4,
+        "events:attempt": 3,
+        "snapshot:registry.json": 1,
+        "get:buyer_revision_epoch": 1,
+        "events:agreement": 2,
+        "events:buyer_quote_latency": 1,
+        "get:buyer_offer_blocks": 38,
+        "events:forum_observation": 19
+      },
+      "decoded_rows_by_kind": {
+        "public_settle": 20000,
+        "purchase": 16000,
+        "attempt": 5500,
+        "agreement": 6000,
+        "buyer_quote_latency": 1000,
+        "forum_observation": 28500
+      },
+      "event_read_seconds": {
+        "public_settle": 0.22281059995293617,
+        "purchase": 0.28921690001152456,
+        "attempt": 0.06902209995314479,
+        "agreement": 0.08474829979240894,
+        "buyer_quote_latency": 0.013746500015258789,
+        "forum_observation": 0.2277720991987735
+      },
+      "top_cumulative_functions": [
+        {
+          "function": ".\\profile_main_latency_20261111.py:173:<lambda>",
+          "calls": 1,
+          "own_seconds": 0.0032966000000000002,
+          "cumulative_seconds": 1.3392087000000001
+        },
+        {
+          "function": ".\\r3\\economy.py:174:buyer_candidates",
+          "calls": 1,
+          "own_seconds": 0.0045464,
+          "cumulative_seconds": 1.3359121
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:51:events",
+          "calls": 30,
+          "own_seconds": 0.00046100000000000004,
+          "cumulative_seconds": 0.9074103
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:53:<listcomp>",
+          "calls": 30,
+          "own_seconds": 0.4144702,
+          "cumulative_seconds": 0.9061269000000001
+        },
+        {
+          "function": ".\\r3\\market_memory.py:15:market_book",
+          "calls": 1,
+          "own_seconds": 0.17014220000000002,
+          "cumulative_seconds": 0.506949
+        },
+        {
+          "function": ".\\r3\\forum.py:73:shop_hint",
+          "calls": 19,
+          "own_seconds": 0.00011980000000000001,
+          "cumulative_seconds": 0.2426298
+        },
+        {
+          "function": ".\\r3\\buyer_execution.py:11:route_context",
+          "calls": 1,
+          "own_seconds": 0.0043734,
+          "cumulative_seconds": 0.1638823
+        },
+        {
+          "function": ".\\r3\\buyer_routes.py:6:context",
+          "calls": 1,
+          "own_seconds": 0.0026384000000000004,
+          "cumulative_seconds": 0.10224860000000001
+        },
+        {
+          "function": ".\\r3\\economy.py:206:<listcomp>",
+          "calls": 19,
+          "own_seconds": 0.07048220000000001,
+          "cumulative_seconds": 0.0928081
+        },
+        {
+          "function": "~:0:<method 'match' of 're.Pattern' objects>",
+          "calls": 154098,
+          "own_seconds": 0.052030900000000005,
+          "cumulative_seconds": 0.052030900000000005
+        },
+        {
+          "function": "~:0:<method 'get' of 'dict' objects>",
+          "calls": 482793,
+          "own_seconds": 0.050845,
+          "cumulative_seconds": 0.050845
+        },
+        {
+          "function": "~:0:<method 'setdefault' of 'dict' objects>",
+          "calls": 71886,
+          "own_seconds": 0.0191393,
+          "cumulative_seconds": 0.0191393
+        },
+        {
+          "function": "~:0:<built-in method builtins.any>",
+          "calls": 19,
+          "own_seconds": 0.0018609000000000002,
+          "cumulative_seconds": 0.0146888
+        },
+        {
+          "function": ".\\r3\\forum.py:75:<genexpr>",
+          "calls": 28519,
+          "own_seconds": 0.012827900000000001,
+          "cumulative_seconds": 0.012827900000000001
+        }
+      ]
+    },
+    "buyer_candidates_warm": {
+      "instrumented_seconds": 0.8448723000474274,
+      "output_rows": 19,
+      "journal_calls": {
+        "snapshot:board.json": 9,
+        "get:market_rules": 9,
+        "get:public_ledger_seq": 1,
+        "events:purchase": 4,
+        "events:attempt": 3,
+        "snapshot:registry.json": 1,
+        "get:buyer_revision_epoch": 1,
+        "events:agreement": 2,
+        "events:buyer_quote_latency": 1,
+        "get:buyer_offer_blocks": 38,
+        "events:forum_observation": 19
+      },
+      "decoded_rows_by_kind": {
+        "purchase": 16000,
+        "attempt": 5500,
+        "agreement": 6000,
+        "buyer_quote_latency": 1000,
+        "forum_observation": 28500
+      },
+      "event_read_seconds": {
+        "purchase": 0.253562499769032,
+        "attempt": 0.060226800153031945,
+        "agreement": 0.0910712000913918,
+        "buyer_quote_latency": 0.014419000130146742,
+        "forum_observation": 0.26508680009283125
+      },
+      "top_cumulative_functions": [
+        {
+          "function": ".\\profile_main_latency_20261111.py:173:<lambda>",
+          "calls": 1,
+          "own_seconds": 0.0055515,
+          "cumulative_seconds": 0.844851
+        },
+        {
+          "function": ".\\r3\\economy.py:174:buyer_candidates",
+          "calls": 1,
+          "own_seconds": 0.0014139,
+          "cumulative_seconds": 0.8392995000000001
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:51:events",
+          "calls": 29,
+          "own_seconds": 0.0004447,
+          "cumulative_seconds": 0.6844448000000001
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:53:<listcomp>",
+          "calls": 29,
+          "own_seconds": 0.29482790000000003,
+          "cumulative_seconds": 0.6831654
+        },
+        {
+          "function": ".\\r3\\forum.py:73:shop_hint",
+          "calls": 19,
+          "own_seconds": 0.00010980000000000001,
+          "cumulative_seconds": 0.2806964
+        },
+        {
+          "function": ".\\r3\\buyer_execution.py:11:route_context",
+          "calls": 1,
+          "own_seconds": 0.005017300000000001,
+          "cumulative_seconds": 0.1662829
+        },
+        {
+          "function": ".\\r3\\economy.py:206:<listcomp>",
+          "calls": 19,
+          "own_seconds": 0.0802019,
+          "cumulative_seconds": 0.1051903
+        },
+        {
+          "function": ".\\r3\\buyer_routes.py:6:context",
+          "calls": 1,
+          "own_seconds": 0.0022463,
+          "cumulative_seconds": 0.0966927
+        },
+        {
+          "function": "~:0:<method 'match' of 're.Pattern' objects>",
+          "calls": 114098,
+          "own_seconds": 0.0521338,
+          "cumulative_seconds": 0.0521338
+        },
+        {
+          "function": "~:0:<method 'get' of 'dict' objects>",
+          "calls": 269331,
+          "own_seconds": 0.0323175,
+          "cumulative_seconds": 0.0323175
+        },
+        {
+          "function": "~:0:<built-in method builtins.any>",
+          "calls": 19,
+          "own_seconds": 0.0024783,
+          "cumulative_seconds": 0.015454800000000001
+        },
+        {
+          "function": ".\\r3\\economy.py:208:<listcomp>",
+          "calls": 19,
+          "own_seconds": 0.0099194,
+          "cumulative_seconds": 0.014537300000000001
+        },
+        {
+          "function": ".\\r3\\forum.py:75:<genexpr>",
+          "calls": 28519,
+          "own_seconds": 0.0129765,
+          "cumulative_seconds": 0.0129765
+        },
+        {
+          "function": "~:0:<method 'startswith' of 'str' objects>",
+          "calls": 57049,
+          "own_seconds": 0.0095773,
+          "cumulative_seconds": 0.0095773
+        }
+      ]
+    },
+    "shop_memory_anonymous_food": {
+      "instrumented_seconds": 0.04683019989170134,
+      "output_rows": null,
+      "journal_calls": {
+        "events:customer_visit": 1,
+        "get:customer-visit": 1,
+        "events:customer_turn": 1,
+        "events:customer_paid": 1,
+        "get:customer-payer": 1
+      },
+      "decoded_rows_by_kind": {
+        "customer_visit": 1000,
+        "customer_turn": 2000,
+        "customer_paid": 109
+      },
+      "event_read_seconds": {
+        "customer_visit": 0.017676000017672777,
+        "customer_turn": 0.0240556001663208,
+        "customer_paid": 0.001569999847561121
+      },
+      "top_cumulative_functions": [
+        {
+          "function": ".\\profile_main_latency_20261111.py:178:<lambda>",
+          "calls": 1,
+          "own_seconds": 0.0006186000000000001,
+          "cumulative_seconds": 0.0468195
+        },
+        {
+          "function": ".\\r3\\customer_memory.py:200:summary",
+          "calls": 1,
+          "own_seconds": 0.0005825,
+          "cumulative_seconds": 0.0462009
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:51:events",
+          "calls": 3,
+          "own_seconds": 4.6200000000000005e-05,
+          "cumulative_seconds": 0.043309900000000005
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:53:<listcomp>",
+          "calls": 3,
+          "own_seconds": 0.022412300000000003,
+          "cumulative_seconds": 0.0430626
+        },
+        {
+          "function": "~:0:<method 'match' of 're.Pattern' objects>",
+          "calls": 6218,
+          "own_seconds": 0.0037316000000000003,
+          "cumulative_seconds": 0.0037316000000000003
+        },
+        {
+          "function": "~:0:<built-in method builtins.sorted>",
+          "calls": 4,
+          "own_seconds": 0.0003121,
+          "cumulative_seconds": 0.0008376000000000001
+        },
+        {
+          "function": "~:0:<method 'startswith' of 'str' objects>",
+          "calls": 3109,
+          "own_seconds": 0.0005839,
+          "cumulative_seconds": 0.0005839
+        },
+        {
+          "function": ".\\r3\\customer_memory.py:205:<setcomp>",
+          "calls": 1,
+          "own_seconds": 0.00037380000000000003,
+          "cumulative_seconds": 0.0005427
+        },
+        {
+          "function": "~:0:<method 'end' of 're.Match' objects>",
+          "calls": 6218,
+          "own_seconds": 0.0005149,
+          "cumulative_seconds": 0.0005149
+        },
+        {
+          "function": "~:0:<built-in method builtins.sum>",
+          "calls": 2,
+          "own_seconds": 1.69e-05,
+          "cumulative_seconds": 0.00047940000000000005
+        },
+        {
+          "function": "~:0:<built-in method builtins.isinstance>",
+          "calls": 3109,
+          "own_seconds": 0.0003613,
+          "cumulative_seconds": 0.0003613
+        },
+        {
+          "function": "~:0:<built-in method builtins.len>",
+          "calls": 3118,
+          "own_seconds": 0.000312,
+          "cumulative_seconds": 0.000312
+        },
+        {
+          "function": ".\\r3\\customer_memory.py:213:<lambda>",
+          "calls": 2000,
+          "own_seconds": 0.00030520000000000005,
+          "cumulative_seconds": 0.00030520000000000005
+        },
+        {
+          "function": "~:0:<method 'execute' of 'sqlite3.Connection' objects>",
+          "calls": 5,
+          "own_seconds": 0.00026020000000000004,
+          "cumulative_seconds": 0.00026020000000000004
+        }
+      ]
+    },
+    "shop_candidates_food_cold": {
+      "instrumented_seconds": 2.4755452000536025,
+      "output_rows": 6,
+      "journal_calls": {
+        "events:shop_opportunity": 1,
+        "events:shop_settled": 6,
+        "get:public_ledger_seq": 1,
+        "events:public_settle": 1,
+        "get:memory-refreshed-at": 1,
+        "get:memory-contract-facts": 1,
+        "get:shop-rating-shadow": 1,
+        "events:shop_quote": 5
+      },
+      "decoded_rows_by_kind": {
+        "shop_opportunity": 10000,
+        "shop_settled": 50556,
+        "public_settle": 20000,
+        "shop_quote": 50000
+      },
+      "event_read_seconds": {
+        "shop_opportunity": 0.11758349998854101,
+        "shop_settled": 0.9959746999666095,
+        "public_settle": 0.30069910013116896,
+        "shop_quote": 0.6847760996315628
+      },
+      "top_cumulative_functions": [
+        {
+          "function": ".\\profile_main_latency_20261111.py:181:<lambda>",
+          "calls": 1,
+          "own_seconds": 3.48e-05,
+          "cumulative_seconds": 2.4755352
+        },
+        {
+          "function": ".\\r3\\economy.py:49:shop_candidates",
+          "calls": 1,
+          "own_seconds": 0.0037250000000000004,
+          "cumulative_seconds": 2.4755004
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:51:events",
+          "calls": 13,
+          "own_seconds": 0.0003152,
+          "cumulative_seconds": 2.0990871
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:53:<listcomp>",
+          "calls": 13,
+          "own_seconds": 1.1058693000000002,
+          "cumulative_seconds": 2.0976582
+        },
+        {
+          "function": ".\\r3\\meta.py:134:quote_completion",
+          "calls": 5,
+          "own_seconds": 0.025371300000000003,
+          "cumulative_seconds": 1.5801548
+        },
+        {
+          "function": ".\\r3\\market_memory.py:15:market_book",
+          "calls": 1,
+          "own_seconds": 0.1677645,
+          "cumulative_seconds": 0.5941937
+        },
+        {
+          "function": ".\\r3\\economy.py:40:shop_statistics",
+          "calls": 1,
+          "own_seconds": 3.52e-05,
+          "cumulative_seconds": 0.29185740000000004
+        },
+        {
+          "function": "~:0:<method 'match' of 're.Pattern' objects>",
+          "calls": 261120,
+          "own_seconds": 0.1186466,
+          "cumulative_seconds": 0.1186466
+        },
+        {
+          "function": "~:0:<method 'get' of 'dict' objects>",
+          "calls": 339288,
+          "own_seconds": 0.0419503,
+          "cumulative_seconds": 0.0419503
+        },
+        {
+          "function": ".\\r3\\meta.py:137:<setcomp>",
+          "calls": 5,
+          "own_seconds": 0.023371600000000003,
+          "cumulative_seconds": 0.0289521
+        },
+        {
+          "function": "~:0:<method 'startswith' of 'str' objects>",
+          "calls": 130602,
+          "own_seconds": 0.0269291,
+          "cumulative_seconds": 0.0269291
+        },
+        {
+          "function": "~:0:<method 'end' of 're.Match' objects>",
+          "calls": 261120,
+          "own_seconds": 0.023625900000000002,
+          "cumulative_seconds": 0.023625900000000002
+        },
+        {
+          "function": "~:0:<built-in method builtins.len>",
+          "calls": 195190,
+          "own_seconds": 0.0184584,
+          "cumulative_seconds": 0.0184584
+        },
+        {
+          "function": "~:0:<method 'setdefault' of 'dict' objects>",
+          "calls": 71921,
+          "own_seconds": 0.0175298,
+          "cumulative_seconds": 0.0175298
+        }
+      ]
+    },
+    "shop_candidates_food_warm": {
+      "instrumented_seconds": 1.7385889000725,
+      "output_rows": 6,
+      "journal_calls": {
+        "events:shop_opportunity": 1,
+        "events:shop_settled": 6,
+        "get:public_ledger_seq": 1,
+        "get:memory-refreshed-at": 1,
+        "get:shop-rating-shadow": 1,
+        "events:shop_quote": 5
+      },
+      "decoded_rows_by_kind": {
+        "shop_opportunity": 10000,
+        "shop_settled": 50556,
+        "shop_quote": 50000
+      },
+      "event_read_seconds": {
+        "shop_opportunity": 0.12661929987370968,
+        "shop_settled": 0.9123575994744897,
+        "shop_quote": 0.6188298999331892
+      },
+      "top_cumulative_functions": [
+        {
+          "function": ".\\profile_main_latency_20261111.py:181:<lambda>",
+          "calls": 1,
+          "own_seconds": 4.9000000000000005e-06,
+          "cumulative_seconds": 1.7385816
+        },
+        {
+          "function": ".\\r3\\economy.py:49:shop_candidates",
+          "calls": 1,
+          "own_seconds": 0.0017998,
+          "cumulative_seconds": 1.7385767
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:51:events",
+          "calls": 12,
+          "own_seconds": 0.0002641,
+          "cumulative_seconds": 1.6578553
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:53:<listcomp>",
+          "calls": 12,
+          "own_seconds": 0.9216404,
+          "cumulative_seconds": 1.6559591
+        },
+        {
+          "function": ".\\r3\\meta.py:134:quote_completion",
+          "calls": 5,
+          "own_seconds": 0.0304909,
+          "cumulative_seconds": 1.4281215
+        },
+        {
+          "function": ".\\r3\\economy.py:40:shop_statistics",
+          "calls": 1,
+          "own_seconds": 3.68e-05,
+          "cumulative_seconds": 0.3077981
+        },
+        {
+          "function": "~:0:<method 'match' of 're.Pattern' objects>",
+          "calls": 221118,
+          "own_seconds": 0.0797948,
+          "cumulative_seconds": 0.0797948
+        },
+        {
+          "function": ".\\r3\\meta.py:137:<setcomp>",
+          "calls": 5,
+          "own_seconds": 0.022209700000000002,
+          "cumulative_seconds": 0.0270366
+        },
+        {
+          "function": "~:0:<method 'startswith' of 'str' objects>",
+          "calls": 110559,
+          "own_seconds": 0.021575300000000002,
+          "cumulative_seconds": 0.021575300000000002
+        },
+        {
+          "function": "~:0:<method 'end' of 're.Match' objects>",
+          "calls": 221118,
+          "own_seconds": 0.0185399,
+          "cumulative_seconds": 0.0185399
+        },
+        {
+          "function": "~:0:<method 'get' of 'dict' objects>",
+          "calls": 125835,
+          "own_seconds": 0.015912700000000002,
+          "cumulative_seconds": 0.015912700000000002
+        },
+        {
+          "function": "~:0:<built-in method builtins.isinstance>",
+          "calls": 110563,
+          "own_seconds": 0.012832300000000001,
+          "cumulative_seconds": 0.012832300000000001
+        },
+        {
+          "function": "~:0:<built-in method builtins.len>",
+          "calls": 110587,
+          "own_seconds": 0.0108605,
+          "cumulative_seconds": 0.0108605
+        },
+        {
+          "function": ".\\r3\\economy.py:41:<listcomp>",
+          "calls": 1,
+          "own_seconds": 0.0053746,
+          "cumulative_seconds": 0.006756600000000001
+        }
+      ]
+    },
+    "shop_memory_anonymous_goods": {
+      "instrumented_seconds": 0.04106079996563494,
+      "output_rows": null,
+      "journal_calls": {
+        "events:customer_visit": 1,
+        "get:customer-visit": 1,
+        "events:customer_turn": 1,
+        "events:customer_paid": 1,
+        "get:customer-payer": 1
+      },
+      "decoded_rows_by_kind": {
+        "customer_visit": 1000,
+        "customer_turn": 2000,
+        "customer_paid": 109
+      },
+      "event_read_seconds": {
+        "customer_visit": 0.01381310005672276,
+        "customer_turn": 0.02301420015282929,
+        "customer_paid": 0.0017043000552803278
+      },
+      "top_cumulative_functions": [
+        {
+          "function": ".\\profile_main_latency_20261111.py:178:<lambda>",
+          "calls": 1,
+          "own_seconds": 0.000438,
+          "cumulative_seconds": 0.0410516
+        },
+        {
+          "function": ".\\r3\\customer_memory.py:200:summary",
+          "calls": 1,
+          "own_seconds": 0.0002387,
+          "cumulative_seconds": 0.0406136
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:51:events",
+          "calls": 3,
+          "own_seconds": 5.5700000000000005e-05,
+          "cumulative_seconds": 0.0385411
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:53:<listcomp>",
+          "calls": 3,
+          "own_seconds": 0.0215072,
+          "cumulative_seconds": 0.0382073
+        },
+        {
+          "function": "~:0:<method 'match' of 're.Pattern' objects>",
+          "calls": 6218,
+          "own_seconds": 0.0020544,
+          "cumulative_seconds": 0.0020544
+        },
+        {
+          "function": "~:0:<built-in method builtins.sorted>",
+          "calls": 2,
+          "own_seconds": 0.0002156,
+          "cumulative_seconds": 0.0006579
+        },
+        {
+          "function": ".\\r3\\customer_memory.py:205:<setcomp>",
+          "calls": 1,
+          "own_seconds": 0.0003905,
+          "cumulative_seconds": 0.0005611
+        },
+        {
+          "function": "~:0:<method 'startswith' of 'str' objects>",
+          "calls": 3109,
+          "own_seconds": 0.0005510000000000001,
+          "cumulative_seconds": 0.0005510000000000001
+        },
+        {
+          "function": "~:0:<method 'end' of 're.Match' objects>",
+          "calls": 6218,
+          "own_seconds": 0.00045010000000000004,
+          "cumulative_seconds": 0.00045010000000000004
+        },
+        {
+          "function": "~:0:<method 'execute' of 'sqlite3.Connection' objects>",
+          "calls": 5,
+          "own_seconds": 0.00033,
+          "cumulative_seconds": 0.00033
+        },
+        {
+          "function": "~:0:<built-in method builtins.isinstance>",
+          "calls": 3109,
+          "own_seconds": 0.0003151,
+          "cumulative_seconds": 0.0003151
+        },
+        {
+          "function": ".\\r3\\customer_memory.py:201:<dictcomp>",
+          "calls": 1,
+          "own_seconds": 0.0002921,
+          "cumulative_seconds": 0.0002921
+        },
+        {
+          "function": "~:0:<built-in method builtins.len>",
+          "calls": 3116,
+          "own_seconds": 0.00026210000000000003,
+          "cumulative_seconds": 0.00026210000000000003
+        },
+        {
+          "function": ".\\r3\\customer_memory.py:204:<genexpr>",
+          "calls": 1,
+          "own_seconds": 0.0002591,
+          "cumulative_seconds": 0.0002591
+        }
+      ]
+    },
+    "shop_candidates_goods_cold": {
+      "instrumented_seconds": 4.203611300094053,
+      "output_rows": 10,
+      "journal_calls": {
+        "get:market_control": 1,
+        "get:quality_risk_v4": 3,
+        "events:shop_opportunity": 3,
+        "events:shop_settled": 13,
+        "get:public_ledger_seq": 3,
+        "events:public_settle": 1,
+        "get:memory-refreshed-at": 3,
+        "get:shop-rating-shadow": 3,
+        "events:shop_quote": 9,
+        "get:shop_quality_cohorts_v9": 2,
+        "events:public_broken": 1,
+        "snapshot:catalog.json": 1,
+        "shadow_put": 1
+      },
+      "decoded_rows_by_kind": {
+        "shop_opportunity": 30000,
+        "shop_settled": 109538,
+        "public_settle": 20000,
+        "shop_quote": 90000,
+        "public_broken": 15627
+      },
+      "event_read_seconds": {
+        "shop_opportunity": 0.31570410006679595,
+        "shop_settled": 1.921278800116852,
+        "public_settle": 0.20875240000896156,
+        "shop_quote": 1.0946469001937658,
+        "public_broken": 0.18060089997015893
+      },
+      "top_cumulative_functions": [
+        {
+          "function": ".\\profile_main_latency_20261111.py:181:<lambda>",
+          "calls": 1,
+          "own_seconds": 7.2000000000000005e-06,
+          "cumulative_seconds": 4.2035914000000005
+        },
+        {
+          "function": ".\\r3\\economy.py:49:shop_candidates",
+          "calls": 4,
+          "own_seconds": 0.007618000000000001,
+          "cumulative_seconds": 4.2035842
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:51:events",
+          "calls": 27,
+          "own_seconds": 0.0005058,
+          "cumulative_seconds": 3.7210820000000004
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:53:<listcomp>",
+          "calls": 27,
+          "own_seconds": 2.0094376,
+          "cumulative_seconds": 3.7173211000000004
+        },
+        {
+          "function": ".\\r3\\meta.py:134:quote_completion",
+          "calls": 9,
+          "own_seconds": 0.0552276,
+          "cumulative_seconds": 2.5823891000000003
+        },
+        {
+          "function": ".\\r3\\economy.py:40:shop_statistics",
+          "calls": 3,
+          "own_seconds": 6.82e-05,
+          "cumulative_seconds": 0.7791902
+        },
+        {
+          "function": ".\\r3\\market_memory.py:15:market_book",
+          "calls": 3,
+          "own_seconds": 0.1539577,
+          "cumulative_seconds": 0.48787670000000005
+        },
+        {
+          "function": ".\\r3\\risk.py:68:shop_refund_risk",
+          "calls": 3,
+          "own_seconds": 0.0165439,
+          "cumulative_seconds": 0.3447194
+        },
+        {
+          "function": "~:0:<method 'match' of 're.Pattern' objects>",
+          "calls": 530358,
+          "own_seconds": 0.1800353,
+          "cumulative_seconds": 0.1800353
+        },
+        {
+          "function": "~:0:<method 'get' of 'dict' objects>",
+          "calls": 573274,
+          "own_seconds": 0.06690410000000001,
+          "cumulative_seconds": 0.06690410000000001
+        },
+        {
+          "function": ".\\r3\\meta.py:137:<setcomp>",
+          "calls": 9,
+          "own_seconds": 0.0477343,
+          "cumulative_seconds": 0.05833990000000001
+        },
+        {
+          "function": "~:0:<method 'startswith' of 'str' objects>",
+          "calls": 265179,
+          "own_seconds": 0.050225200000000005,
+          "cumulative_seconds": 0.050225200000000005
+        },
+        {
+          "function": "~:0:<method 'end' of 're.Match' objects>",
+          "calls": 530358,
+          "own_seconds": 0.0427094,
+          "cumulative_seconds": 0.0427094
+        },
+        {
+          "function": "~:0:<built-in method builtins.isinstance>",
+          "calls": 265191,
+          "own_seconds": 0.0291111,
+          "cumulative_seconds": 0.0291111
+        }
+      ]
+    },
+    "shop_candidates_goods_warm": {
+      "instrumented_seconds": 3.6117837000638247,
+      "output_rows": 10,
+      "journal_calls": {
+        "get:market_control": 1,
+        "get:quality_risk_v4": 3,
+        "events:shop_opportunity": 3,
+        "events:shop_settled": 13,
+        "get:public_ledger_seq": 3,
+        "get:memory-refreshed-at": 3,
+        "get:shop-rating-shadow": 3,
+        "events:shop_quote": 9,
+        "get:shop_quality_cohorts_v9": 2,
+        "events:public_broken": 1,
+        "snapshot:catalog.json": 1,
+        "shadow_put": 1
+      },
+      "decoded_rows_by_kind": {
+        "shop_opportunity": 30000,
+        "shop_settled": 109538,
+        "shop_quote": 90000,
+        "public_broken": 15627
+      },
+      "event_read_seconds": {
+        "shop_opportunity": 0.34428939991630614,
+        "shop_settled": 1.8250465001910925,
+        "shop_quote": 1.0571362997870892,
+        "public_broken": 0.17507919995114207
+      },
+      "top_cumulative_functions": [
+        {
+          "function": ".\\profile_main_latency_20261111.py:181:<lambda>",
+          "calls": 1,
+          "own_seconds": 9.4e-06,
+          "cumulative_seconds": 3.6117701
+        },
+        {
+          "function": ".\\r3\\economy.py:49:shop_candidates",
+          "calls": 4,
+          "own_seconds": 0.0040074,
+          "cumulative_seconds": 3.6117607
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:51:events",
+          "calls": 26,
+          "own_seconds": 0.0004906,
+          "cumulative_seconds": 3.4016441000000004
+        },
+        {
+          "function": ".\\profile_main_latency_20261111.py:53:<listcomp>",
+          "calls": 26,
+          "own_seconds": 1.8441551,
+          "cumulative_seconds": 3.3983487
+        },
+        {
+          "function": ".\\r3\\meta.py:134:quote_completion",
+          "calls": 9,
+          "own_seconds": 0.058352100000000004,
+          "cumulative_seconds": 2.4738908
+        },
+        {
+          "function": ".\\r3\\economy.py:40:shop_statistics",
+          "calls": 3,
+          "own_seconds": 7.16e-05,
+          "cumulative_seconds": 0.7827032
+        },
+        {
+          "function": ".\\r3\\risk.py:68:shop_refund_risk",
+          "calls": 3,
+          "own_seconds": 0.016271900000000002,
+          "cumulative_seconds": 0.3491841
+        },
+        {
+          "function": "~:0:<method 'match' of 're.Pattern' objects>",
+          "calls": 490358,
+          "own_seconds": 0.1669333,
+          "cumulative_seconds": 0.1669333
+        },
+        {
+          "function": ".\\r3\\meta.py:137:<setcomp>",
+          "calls": 9,
+          "own_seconds": 0.048966100000000005,
+          "cumulative_seconds": 0.059749500000000004
+        },
+        {
+          "function": "~:0:<method 'startswith' of 'str' objects>",
+          "calls": 245179,
+          "own_seconds": 0.047166900000000005,
+          "cumulative_seconds": 0.047166900000000005
+        },
+        {
+          "function": "~:0:<method 'get' of 'dict' objects>",
+          "calls": 359830,
+          "own_seconds": 0.045577400000000004,
+          "cumulative_seconds": 0.045577400000000004
+        },
+        {
+          "function": "~:0:<method 'end' of 're.Match' objects>",
+          "calls": 490358,
+          "own_seconds": 0.0391928,
+          "cumulative_seconds": 0.0391928
+        },
+        {
+          "function": "~:0:<built-in method builtins.isinstance>",
+          "calls": 245191,
+          "own_seconds": 0.0266715,
+          "cumulative_seconds": 0.0266715
+        },
+        {
+          "function": "~:0:<built-in method builtins.len>",
+          "calls": 245241,
+          "own_seconds": 0.0229659,
+          "cumulative_seconds": 0.0229659
+        }
+      ]
+    }
+  },
+  "child_startup_seconds": {
+    "empty_child": {
+      "samples": [
+        0.06196110020391643,
+        0.056836399948224425,
+        0.05620120000094175
+      ],
+      "median": 0.056836399948224425
+    },
+    "buyer_module_child": {
+      "samples": [
+        0.3434949000366032,
+        0.2816238000523299,
+        0.3121853999327868
+      ],
+      "median": 0.3121853999327868
+    }
+  },
+  "source_files": {
+    "catalog.json": {
+      "mtime": 1794295228.4300473,
+      "bytes": 1281348,
+      "sha256": "5caa09a0945b8ceec35ef32fd06d9d1015a0522ccc56c5cfe0ac6d012098de1d"
+    },
+    "board.json": {
+      "mtime": 1794361677.5120113,
+      "bytes": 232922,
+      "sha256": "9f3c07049207f11748ada72842ceceb5e0714b869af4501ea9fda5df29e229e8"
+    },
+    "inventory.json": {
+      "mtime": 1794361719.9267097,
+      "bytes": 61046,
+      "sha256": "f449505b71bed61d7e7eac58d0d27ac5dc706255c9e5d5350db5aa65db5c8447"
+    },
+    "registry.json": {
+      "mtime": 1794361716.1815088,
+      "bytes": 6956,
+      "sha256": "c599d9f2eabcfc3481210aab7e426323ab4193a7ca654165dcc0b2ebf97f8083"
+    },
+    "shops.json": {
+      "mtime": 1794361716.2114584,
+      "bytes": 79519,
+      "sha256": "4474a1211d2cf4f57e22e73634b8a1d1be21c41034c3de8ae02d10b7473294eb"
+    },
+    "order.json": {
+      "mtime": 1794361715.7646494,
+      "bytes": 3214,
+      "sha256": "f395de4a725082468db010cf55defe81659746548470c695f800bc24e45ce6c9"
+    },
+    "forum.json": {
+      "mtime": 1794361705.7125244,
+      "bytes": 187766,
+      "sha256": "2f208950fe70ccbd894886b537e6267ef70b03ec89b77025b5a2139f676faf9a"
+    },
+    "market_stock_counts.json": {
+      "mtime": 1794361716.1938307,
+      "bytes": 24060,
+      "sha256": "5926e6640d8f94626717f2e71303ac29e7b5f5eb2afde69edf3974f1c536124c"
+    },
+    "runtime.json": {
+      "mtime": 1794295134.085077,
+      "bytes": 158,
+      "sha256": "5941c485f30a048c1e2f9cf4bc56e900b6243b793b64620c2e554b0f321ada74"
+    },
+    "shop-health.json": {
+      "mtime": 1794361535.9752572,
+      "bytes": 429,
+      "sha256": "023ba5c0f93be922279df4cae01dcc20659121a78e509ab9ca8378947aab30f9"
+    }
+  },
+  "database_bytes": 2621837312,
+  "limits": [
+    "Existing timers do not cover the full parent order/network/payment path.",
+    "Order record to result starts inside the Buyer child, after parent discovery and process startup.",
+    "Agreement to recorded purchase includes payment plus reconciliation/recording; it is not pure network latency.",
+    "Shop opportunity to quote excludes work before the opportunity event and response transmission.",
+    "Profiles are instrumented single-input samples, not live p95 or economic improvement evidence.",
+    "Replay uses one read-only connection, frozen file objects and shadow writes; production opens many connections and writes records.",
+    "Cold/warm labels concern the sampled process cache; no speedup candidate is deployed.",
+    "Outcome-shadow writes are counted but not committed, so reconciliation timing understates actual write cost.",
+    "Snapshot files and the SQL transaction are close in time, not an atomic market snapshot."
+  ]
+}

@@ -1,0 +1,167 @@
+"""Real HTTP + course ACP/AP2 client + real Ed25519, against a local synthetic market."""
+import asyncio
+import base64
+import hashlib
+import json
+import os
+from pathlib import Path
+import socket
+import sys
+import threading
+import time
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import httpx
+import pytest
+import uvicorn
+from starlette.applications import Starlette
+from starlette.routing import Route
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives import serialization
+from r3.adapter import load_kit, install
+from r3.state import Journal, atomic_json, policy
+from seller_r3 import Seller, build
+from market_buyer import buy
+from review import review
+from test_market_contract import unit, pub
+
+
+@pytest.mark.parametrize('championship,market_cohort',[(False,False),(True,False),(True,True)])
+def test_end_to_end_payment_moves_credits_once(tmp_path, monkeypatch,championship,market_cohort):
+    if championship:
+        cfg=dict(policy(),shop_championship_enabled=True,buyer_championship_enabled=True,
+                 buyer_patch34_enabled=True,buyer_strategy_revision='championship-synthetic',
+                 buyer_market_quality_enabled=market_cohort,buyer_contract_routing_enabled=market_cohort)
+        for module in ['r3.adaptive','r3.adapter','seller_r3']:
+            monkeypatch.setattr(module+'.policy',lambda *a:cfg)
+    if not os.environ.get('R3_LIVE_INTEGRATION'):
+        monkeypatch.setenv('R3_MODEL_MODE', 'offline')
+    else:
+        monkeypatch.delenv('R3_MODEL_MODE', raising=False)
+    j = Journal(tmp_path / '.market')
+    if championship:
+        atomic_json(j.md/'board.json',{'round':3,'buyers':[
+            {'name':'seochanit','saved':.30 if market_cohort else .15,'deals':100,'forum':.5,'posts':2}]})
+        j.put('market_rules',{'buyer_metric':'saved','buyer_compatible':True})
+        if not market_cohort:
+            j.put('quality_risk_v4',{'at':time.time(),'grades':{'A':{'n':200,'broken':2,'within3':1}}})
+    kit = install(load_kit(), j)
+    shop_key, buyer_key, market_key = (Ed25519PrivateKey.generate() for _ in range(3))
+    product = {'name': 'synthetic appliance', 'category': 'goods>appliance', 'kind': 'goods', 'list_price': 10000}
+    atomic_json(j.md / 'catalog.json', {'G111': product})
+    if championship:
+        for n in range(100):
+            j.add('shop_settled',{'sku':'G111','unit':'past-own'+str(n),'grade':'A',
+                'price':7000,'cost':6000,'warranty_hours':6,'task':'past'+str(n),
+                'paid_at':time.time()-25000},ts=time.time()-25000)
+    u = unit()
+    if market_cohort:
+        u['cost']=4000
+        now=time.time();j.put('public_feed_caught_up_at',now)
+        for i in range(100):
+            j.add('public_settle',{'sku':'G111','unit':f'mature-{i}','grade':'A',
+                                  'amount':6500,'warranty_hours':0,'shop':'http://other'},ts=now-25000-i)
+        for i in range(3):
+            j.add('public_settle',{'sku':'G111','unit':f'recent-{i}','grade':'A',
+                                  'amount':5500,'warranty_hours':0,'shop':'http://other'},ts=now-30-i)
+    u['name'] = product['name']
+    cert = {'unit': 'u1', 'sku': 'G111', 'grade': 'A', 'expires_at': None}
+    u['cert'] = {'cert': cert, 'sig': base64.b64encode(market_key.sign(kit.canon(cert))).decode()}
+    inventory = {'round': 3, 'balance': 4994000, 'start': 5000000, 'injected': 0, 'units': [u]}
+    atomic_json(j.md / 'inventory.json', inventory)
+    keypath = tmp_path / 'test-shop.pem'
+    keypath.write_bytes(shop_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
+    sock = socket.socket()
+    sock.bind(('127.0.0.1', 0))
+    port = sock.getsockname()[1]
+    url = f'http://127.0.0.1:{port}'
+    order = {'order': 'synthetic-order', 'round': 3, 'item': 'appliance', 'kind': 'goods', 'budget': 10000,
+             'acceptable': ['G111'], 'expires': time.time() + 300, 'market_pubkey': pub(market_key),
+             'mandates': {'checkout': {'mandate': {'scope': 'synthetic-checkout'}},
+                          'payment': {'mandate': {'constraints': [{'type': 'payment.amount_range', 'max': 10000}]}}}}
+
+    class SyntheticMarket:
+        balance = 4994000
+        settlements = 0
+        buyer_paid = 0
+        def call(self, method, path, role='shop', **kwargs):
+            if path == '/api/inventory':
+                return httpx.Response(200, json=dict(inventory, balance=self.balance, units=[] if self.settlements else [u]))
+            assert path == '/api/settle'
+            if self.settlements:
+                return httpx.Response(409, json={'checks': {'not_settled_before': False}})
+            data = kwargs['json']
+            co = kit.jwt_payload(data['checkout_jwt'], pub(shop_key))
+            assert co and co['item'] == 'G111' and co['unit'] == 'u1'
+            assert co['price'] <= order['budget'] and time.time() < order['expires']
+            checkout_hash = kit.b64url(hashlib.sha256(data['checkout_jwt'].encode()).digest())
+            for key, vct, open_kind in [('checkout_mandate', 'mandate.checkout.1', 'checkout'),
+                                        ('payment_mandate', 'mandate.payment.1', 'payment')]:
+                signed = data[key]
+                buyer_key.public_key().verify(base64.b64decode(signed['sig']), kit.canon(signed['mandate']))
+                assert signed['mandate']['vct'] == vct
+                assert signed['mandate']['order'] == order['order']
+                assert signed['mandate']['checkout_hash'] == checkout_hash
+                assert signed['mandate']['open_mandate'] == hashlib.sha256(kit.canon(order['mandates'][open_kind]['mandate'])).hexdigest()
+            pm = data['payment_mandate']['mandate']
+            assert pm['payee'] == url and pm['amount'] == co['price']
+            self.balance += co['price']
+            self.buyer_paid += co['price']
+            self.settlements += 1
+            mr = {'shop': url, 'unit': 'u1', 'sku': 'G111', 'name': u['name'], 'grade': 'A', 'claim': 'A',
+                  'claim_honest': True, 'warranty_hours': co.get('warranty_hours',0), 'value': 10000, 'ledger': 101}
+            return httpx.Response(200, json={'mandate_receipt': mr, 'ledger': 101})
+
+    market = SyntheticMarket()
+    acp = kit.AcpShop(shop_key, market, j.md)
+    async def endpoint(request):
+        return await acp.handle(request, request.url.path.strip('/'), await request.body(), url)
+    seller=Seller(j,key_path=keypath)
+    if os.environ.get('R3_LIVE_INTEGRATION'):
+        # Exercise the preserved critical-sale actor/critic path with real
+        # models; the ordinary numeric sale path has separate HTTP coverage.
+        seller.cfg=dict(seller.cfg,critic_cash_fraction=.0001)
+    seller_app = build(port,seller)
+    app = Starlette(routes=list(seller_app.routes) + [
+        Route('/.well-known/acp.json', endpoint), Route('/acp/{path:path}', endpoint, methods=['GET', 'POST'])])
+    server = uvicorn.Server(uvicorn.Config(app, log_level='error'))
+    thread = threading.Thread(target=lambda: server.run(sockets=[sock]), daemon=True)
+    thread.start()
+    try:
+        for _ in range(100):
+            if server.started:
+                break
+            time.sleep(.05)
+        assert server.started
+        atomic_json(j.md / 'registry.json', {url: {'name': 'shop', 'pubkey': pub(shop_key)}})
+        result = buy(order, [{'name': 'shop', 'url': url, 'offers': [{'sku': 'G111', 'qty': 1}]}], j)
+        assert result['receipt']
+        rec = result['receipt']
+        if market_cohort:
+            from r3.market_memory import buyer_assessment
+            assessed=buyer_assessment(dict(product,sku='G111'),order,rec,j,cfg,shop=url)
+            assert assessed['risk_evidence']['mature_samples']==100
+            assert rec['price']<=assessed['cap']
+            assert result['accept']['grades']==['A']
+        # Emulate the kit Proxy's authoritative record of what the seller sent.
+        acp.terms[rec['task']] = dict(rec)
+        mr = kit.acp_pay(order, url, pub(shop_key), rec, buyer_key, result['accept'])
+        assert mr and market.settlements == 1
+        assert len(j.events('customer_paid')) == 1
+        assert j.events('customer_paid')[0]['ledger'] == 101
+        assert market.balance == 4994000 + rec['price'] and market.buyer_paid == rec['price']
+        rv = review({'order': order, 'receipt': rec, 'settled': mr}, j)
+        assert rv['stars'] >= 1 and len(j.events('purchase')) == 1
+        assert kit.acp_pay(order, url, pub(shop_key), rec, buyer_key, result['accept']) is None
+        assert market.settlements == 1
+        assert len(j.events('customer_paid')) == 1
+        if os.environ.get('R3_LIVE_INTEGRATION'):
+            assert j.events('model_usage'), 'A numeric fallback alone is not a live-model validation'
+            decisions = j.events('decision')
+            assert {d['_role'] for d in decisions} == {'shop', 'buyer'}
+            assert all(d['mode'] in {'model','single_feasible','fast_buyer_saved'} for d in decisions)
+            assert {d['_role'] for d in decisions if d['mode']=='model'} == ({'shop'} if championship else {'shop','buyer'})
+            print('LIVE_MODEL_USAGE', json.dumps(j.events('model_usage'), ensure_ascii=False))
+    finally:
+        server.should_exit = True
+        thread.join(timeout=8)
+        sock.close()

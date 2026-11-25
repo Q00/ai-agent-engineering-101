@@ -1,0 +1,223 @@
+{
+  "at_utc": "2026-11-12T04:50:32.433306+00:00",
+  "runtime": {
+    "pid": 45640,
+    "session": "6c29c1da70274402afe79c4075b057af",
+    "started_at": 1794458668.3528152,
+    "launch_id": "auto-join-20261112T044427854770Z"
+  },
+  "expected_models": {
+    "market_research_analyst": "gpt-6.1-sol",
+    "market_research_critic": "gpt-6.1-terra",
+    "capability_triage": "gpt-6-luna",
+    "capability_designer": "gpt-6.1-sol"
+  },
+  "actual_models": {
+    "market_research_analyst": [
+      "gpt-6.1-sol"
+    ],
+    "market_research_critic": [
+      "gpt-6.1-terra"
+    ],
+    "capability_triage": [
+      "gpt-6-luna"
+    ],
+    "capability_designer": [
+      "gpt-6.1-sol"
+    ]
+  },
+  "all_roles_verified": true,
+  "astra_calls_since_restart": 0,
+  "capability_plan": {},
+  "capability_brief": {},
+  "capability_consumers": [],
+  "research_publications": [
+    {
+      "schema": 1,
+      "at": 1794458999.69988,
+      "expires_at": 1794460199.6144776,
+      "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+      "summary": "3-cycle Book forecast 176k vs 78/69/77k; stress -105k vs -39/-39/-41k. 4.72m fits 571.77m spendable; execution gated.",
+      "hypotheses": [
+        "44 sales, 39 stockouts and repeat lines with 23/6 paid support depth despite stress.",
+        "153s delays and peer Book 9.31m/h favor preparation; 35/36 planned units acquired.",
+        "Goods 1/54 vs food 79/118 paid; Saved pending, challenger and forum samples sparse."
+      ],
+      "evidence_ids": [
+        "rules:e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+        "ledger:5525319",
+        "kv:framework-plan",
+        "kv:feedback-last-policy",
+        "kv:objective-decision-context",
+        "kv:quality-holdout-summary",
+        "snapshot:shop-plan-v15.json"
+      ],
+      "skill_ids": [
+        "74d3ee01e01fa04e8eefa711e85041d7902f50df1834ce399f094e416d8bea07",
+        "07b1f855ba6afa45f49af8efa61263665e3df4be6202bd964f361ecb676a8894",
+        "343aac61dc07a0e086f3324861db5bb0ad0f5b83436eda1311a62327163e2cac",
+        "674377d13d42befbb838a6cd4550837e93fbb27965fc16c4b9888f46de3a7b9a"
+      ],
+      "queued_buyer_profile": null,
+      "trial_review_approved": false,
+      "economic_superiority_verified": false,
+      "shop_plan_recommendation": "diversified",
+      "operating_intents": [
+        "buyer_price_gap",
+        "stock_coverage"
+      ],
+      "operating_actions_reviewed": true,
+      "forum_focus": "balanced",
+      "objective_context_id": "bb4eb5c01da9e775bd1fdce7577f8ddc352aa058968c16837653767bd6f0b042",
+      "operating_policy": {
+        "cover_cycles": 3,
+        "initial_batch_limit": 6,
+        "frontier_min_orders": 8,
+        "recheck_seconds": 60
+      },
+      "policy_authority": "independent_agent_consensus_with_numeric_execution_guards"
+    }
+  ],
+  "compiled_research_generations": 0,
+  "matched_main_choices": {
+    "shop": 0,
+    "buyer": 0
+  },
+  "main_examples": [],
+  "errors_since_restart": {
+    "analytical_role_error": 0,
+    "cycle_supervisor_error": 0,
+    "cycle_supply_error": 0,
+    "buyer_worker_error": 0,
+    "background_model_failed": 1,
+    "capability_deferred": 1,
+    "research_publication_rejected": 0
+  },
+  "usage": [
+    {
+      "role": "capability_triage",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "low",
+      "usage": {
+        "input_tokens": 3159,
+        "input_tokens_details": {
+          "cache_write_tokens": 3156,
+          "cached_tokens": 0
+        },
+        "output_tokens": 373,
+        "output_tokens_details": {
+          "reasoning_tokens": 259
+        },
+        "total_tokens": 3532
+      },
+      "estimated_usd": 0.000581375,
+      "seconds": 7.5,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "at": 1794458759.2486706
+    },
+    {
+      "role": "capability_designer",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "medium",
+      "usage": {
+        "input_tokens": 3291,
+        "input_tokens_details": {
+          "cache_write_tokens": 3288,
+          "cached_tokens": 0
+        },
+        "output_tokens": 8192,
+        "output_tokens_details": {
+          "reasoning_tokens": 35
+        },
+        "total_tokens": 11483
+      },
+      "estimated_usd": 0.0901475,
+      "seconds": 85.93800000008196,
+      "completion_status": "incomplete",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "at": 1794458845.330025
+    },
+    {
+      "role": "market_research_analyst",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "medium",
+      "usage": {
+        "input_tokens": 9514,
+        "input_tokens_details": {
+          "cache_write_tokens": 9511,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1181,
+        "output_tokens_details": {
+          "reasoning_tokens": 720
+        },
+        "total_tokens": 10695
+      },
+      "estimated_usd": 0.035595,
+      "seconds": 25.188000000081956,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "at": 1794458984.7111661
+    },
+    {
+      "role": "market_research_critic",
+      "model": "gpt-6.1-terra",
+      "reasoning_effort": "medium",
+      "usage": {
+        "input_tokens": 9926,
+        "input_tokens_details": {
+          "cache_write_tokens": 9923,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1097,
+        "output_tokens_details": {
+          "reasoning_tokens": 760
+        },
+        "total_tokens": 11023
+      },
+      "estimated_usd": 0.0178925,
+      "seconds": 14.781999999890104,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "at": 1794458999.5902634
+    }
+  ],
+  "cycle_heartbeat": {
+    "at": 1794459028.907996,
+    "preparing": true,
+    "researching": true,
+    "capability_designing": true,
+    "capability_error": null,
+    "preparation_error": null,
+    "research_error": null
+  },
+  "research_last_attempt": {
+    "at": 1794458943.5132163,
+    "window": 1794458637,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "execution_revision": "v19-role-reasoning-analytic-skills-1",
+    "operating_state": "453bdea8eba2caa0b65aff1666a8e73cbce9e4e3937efeb98c10a7d2b61a1f82",
+    "capability_plan_id": null
+  },
+  "current_policy": {
+    "id": "75e0de1ed8db2b96b05957be748780493ed6e180bba91b83ddc5d7d39d24b56c",
+    "at": 1794458992.4202158,
+    "research_at": 1794457285.4876757,
+    "policy_authority": "bounded_baseline",
+    "patches": {
+      "shop": {},
+      "buyer": {}
+    },
+    "reasons": [
+      "stock_coverage_review_pending",
+      "buyer_frontier_review_pending"
+    ]
+  },
+  "economic_superiority_or_first_place_proven": false,
+  "verified": false
+}

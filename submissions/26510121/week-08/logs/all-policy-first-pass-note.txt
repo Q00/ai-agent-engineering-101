@@ -1,0 +1,7 @@
+2026-11-04 ALL objective revision, first regression run.
+Observed result: 71 passed, 1 failed.
+Failure: test_budget_and_transport_failure_do_not_leak_keys expected numeric_fallback, got single_feasible.
+Reason: a single feasible candidate now needs no paid model call.
+Correction: use two candidates in the transport-failure fixture so it still exercises HTTP 401 and credential redaction.
+Next complete run: 82 passed; all-policy-tests-20261104T043418907890Z.txt.
+This is a process note; the first run console was returned by the execution tool, not redirected to a file.

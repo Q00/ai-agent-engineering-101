@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "official-progress",
+      "title": "전체 순위와 1위 격차",
+      "queries": [
+        {
+          "id": "frozen-boards",
+          "source": {
+            "label": "공식 시장 보드 저장본",
+            "files": [
+              "logs/peer-market-source-20261109T235759979196Z.json",
+              "logs/peer-market-source-20261110T042621171414Z.json",
+              "logs/autonomous-deploy-before-20261110T071822185481Z.json",
+              "logs/peer-market-source-20261110T105742394569Z.json"
+            ],
+            "links": [
+              {
+                "label": "공식 순위판 API",
+                "href": "https://market.ourolabs.ai/api/board"
+              }
+            ],
+            "metricDefinitions": [
+              {
+                "label": "전체 순위",
+                "definition": "공식 점수가 숫자인 전체 참가자 중 더 높은 점수의 수+1. house 포함, 동점 공동 순위."
+              }
+            ],
+            "filters": [
+              "참가자: seochanit",
+              "전체 시장 점수와 학생 점수를 분리"
+            ],
+            "caveats": [
+              "모집단은 오전 Shop 64·Buyer 61·합계 67에서 현재 65·62·68로 변했습니다.",
+              "19:58 별도 확인에서 Shop ALL은 .827로 변했습니다. 이 표와 차트는 19:57 동결본 .830을 일관되게 사용합니다."
+            ]
+          },
+          "reportingPeriod": {
+            "start": "2026-11-10T08:58:00.856118+09:00",
+            "end": "2026-11-10T19:57:43.166032+09:00"
+          },
+          "columns": [
+            "역할",
+            "오전 점수",
+            "현재 점수",
+            "오전 순위",
+            "현재 순위",
+            "현재 모집단"
+          ],
+          "rows": [
+            {
+              "역할": "Shop",
+              "오전 점수": 0.832,
+              "현재 점수": 0.83,
+              "오전 순위": 7,
+              "현재 순위": 9,
+              "현재 모집단": 65
+            },
+            {
+              "역할": "Buyer",
+              "오전 점수": 0.796,
+              "현재 점수": 0.805,
+              "오전 순위": 10,
+              "현재 순위": 9,
+              "현재 모집단": 62
+            },
+            {
+              "역할": "합계",
+              "오전 점수": 1.628,
+              "현재 점수": 1.635,
+              "오전 순위": 9,
+              "현재 순위": 6,
+              "현재 모집단": 68
+            }
+          ],
+          "preview": {
+            "kind": "aggregate",
+            "note": "전체 보드에서 선택한 우리 계정의 역할별 집계",
+            "totalRows": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "buyer-conversion",
+      "title": "동일 길이 구간의 Buyer 결제율",
+      "queries": [
+        {
+          "id": "closed-order-join",
+          "source": {
+            "label": "로컬 append-only 사건 원장",
+            "files": [
+              ".market/r3.sqlite3",
+              "review_evening_progress_20261110.py"
+            ],
+            "sql": "SELECT id,ts,data FROM events WHERE kind=? AND ts>=? AND ts<=? ORDER BY ts,rowid",
+            "filters": [
+              "kind별 buyer_order·market_result·purchase·quote_comparison 조회",
+              "동일 order로 연결, 조회 구간 내 주문과 완료 결과 모두 존재해야 완료 주문으로 집계",
+              "직전/직후 각각 3.64697시간, 16:18:54 KST 런타임 시작을 경계로 비교"
+            ],
+            "metricDefinitions": [
+              {
+                "label": "결제율",
+                "definition": "완료 결과가 있는 주문 중 purchase 사건이 있는 주문 비율. 반복 견적·시도 수는 주문 수와 다릅니다."
+              }
+            ],
+            "caveats": [
+              "시장 장애와 상대 가게·상품 구성이 달라, 전후 차이는 v13 코드의 인과 효과가 아닙니다.",
+              "새 공산품 구매 13개는 6시간 품질 관측 전이므로 최종 Saved 개선을 판정하지 않습니다."
+            ]
+          },
+          "columns": [
+            "구간",
+            "종류",
+            "완료 주문",
+            "결제",
+            "결제율",
+            "상한 초과 견적",
+            "전체 견적"
+          ],
+          "rows": [
+            {
+              "구간": "before_equal_duration",
+              "종류": "food",
+              "완료 주문": 412,
+              "결제": 307,
+              "결제율": 0.7451456310679612,
+              "상한 초과 견적": 435,
+              "전체 견적": 611
+            },
+            {
+              "구간": "before_equal_duration",
+              "종류": "goods",
+              "완료 주문": 187,
+              "결제": 6,
+              "결제율": 0.03208556149732621,
+              "상한 초과 견적": 295,
+              "전체 견적": 298
+            },
+            {
+              "구간": "since_framework",
+              "종류": "food",
+              "완료 주문": 412,
+              "결제": 259,
+              "결제율": 0.6286407766990292,
+              "상한 초과 견적": 382,
+              "전체 견적": 502
+            },
+            {
+              "구간": "since_framework",
+              "종류": "goods",
+              "완료 주문": 191,
+              "결제": 13,
+              "결제율": 0.06806282722513089,
+              "상한 초과 견적": 263,
+              "전체 견적": 268
+            }
+          ],
+          "preview": {
+            "kind": "aggregate",
+            "note": "2개 구간 × 식품·공산품 집계",
+            "totalRows": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": "shop-book-reconciliation",
+      "title": "Book 증가와 현금·재고",
+      "queries": [
+        {
+          "id": "sales-refunds",
+          "source": {
+            "label": "공식 자산 변화와 로컬 정산 원장",
+            "files": [
+              "logs/peer-market-source-20261110T105742394569Z.json",
+              "logs/peer-market-source-20261109T235759979196Z.json",
+              ".market/r3.sqlite3"
+            ],
+            "sql": "SELECT id,ts,data FROM events WHERE kind=? AND ts>=? AND ts<=? ORDER BY ts,rowid",
+            "filters": [
+              "판매: kind=shop_settled, 오전 보드 시점 이후부터 현재 보드 cutoff까지",
+              "환불: kind=public_broken, 우리 정산 unit에 연결되며 refunded>0, unit별 중복 제거"
+            ],
+            "metricDefinitions": [
+              {
+                "label": "Book 증가",
+                "definition": "현재 공식 Book − 오전 공식 Book."
+              },
+              {
+                "label": "관측 환불",
+                "definition": "구간 중 원장에 반영된 우리 unit 환불액. 이전 구간 판매의 환불도 포함."
+              }
+            ],
+            "caveats": [
+              "매출총이익 88,655,022 − 관측 환불 10,582,399 − 공식 Book 증가 77,874,521 = 잔차 198,102입니다. 잔차 원인을 전부 보관료로 확정하지 않았습니다.",
+              "현금·재고와 KV 자금 모델은 각각 기록된 조회 시각의 상태이며 과거 상태를 복원한 값이 아닙니다."
+            ]
+          },
+          "columns": [
+            "Book 증가",
+            "판매",
+            "원가 미만 판매",
+            "관측 환불액",
+            "잔차"
+          ],
+          "rows": [
+            {
+              "Book 증가": 77874521,
+              "판매": 548,
+              "원가 미만 판매": 0,
+              "관측 환불액": 10582399,
+              "잔차": 198102
+            }
+          ],
+          "preview": {
+            "kind": "aggregate",
+            "note": "오전 08:58~19:57 정산 및 공식 보드 대사",
+            "totalRows": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "framework-maturity",
+      "title": "프레임워크 작동과 검증 한계",
+      "queries": [
+        {
+          "id": "runtime-and-learning",
+          "source": {
+            "label": "현재 런타임 및 읽기 전용 프레임워크 검증",
+            "files": [
+              "logs/framework-live-20261110T105742428392Z.json",
+              "logs/evening-progress-review-20261110T110036681059Z.json"
+            ],
+            "filters": [
+              "런타임 PID 16608 시작 이후 관측",
+              "정책 배정·실패 피드백과 실제 결제를 구분"
+            ],
+            "metricDefinitions": [
+              {
+                "label": "shadow",
+                "definition": "관측·자료 수집 중이며 별점 예측을 가격 결정에 적용하지 않는 상태."
+              }
+            ],
+            "caveats": [
+              "603개 주문 배정·458개 계약 피드백·9회 경로 제외가 실제 관측됐지만, 성능 최적성을 증명하지 않습니다.",
+              "계정 연결 리뷰는 14개 계정에 걸쳐 수집됐으며 별점 모델은 holdout 검증 전입니다.",
+              "제어 상태 관측 104회 중 defensive 69회는 표본 빈도이며 오프라인 시간 비율이 아닙니다."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

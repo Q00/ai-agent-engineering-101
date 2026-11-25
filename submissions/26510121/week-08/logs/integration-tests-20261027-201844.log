@@ -1,0 +1,131 @@
+PATTERN test_experience.py
+test_private_smaller_budget_failure_does_not_discredit_affordable_shop (test_experience.ExperienceTests.test_private_smaller_budget_failure_does_not_discredit_affordable_shop) ... ok
+test_restart_and_duplicate_import_preserve_one_observation (test_experience.ExperienceTests.test_restart_and_duplicate_import_preserve_one_observation) ... ok
+test_seller_retains_price_outcomes_and_keeps_unresolved_distinct (test_experience.ExperienceTests.test_seller_retains_price_outcomes_and_keeps_unresolved_distinct) ... ok
+test_signature_only_or_failed_payment_never_becomes_r3_success (test_experience.ExperienceTests.test_signature_only_or_failed_payment_never_becomes_r3_success) ... ok
+test_simultaneous_writers_do_not_lose_observations (test_experience.ExperienceTests.test_simultaneous_writers_do_not_lose_observations) ... ok
+test_unknown_text_never_enters_trusted_memory (test_experience.ExperienceTests.test_unknown_text_never_enters_trusted_memory) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.623s
+
+OK
+
+EXIT: 0
+PATTERN test_market.py
+test_over_budget_never_reaches_transport (test_market.BudgetBoundaryTests.test_over_budget_never_reaches_transport) ... Executing <Task finished name='Task-2' coro=<BudgetBoundaryTests.test_over_budget_never_reaches_transport() done, defined at C:\Users\MASTER\ai-agent-engineering-101\submissions\26510121\week-07\tests\test_market.py:145> result=None created at C:\Users\MASTER\anaconda3\Lib\asyncio\runners.py:100> took 0.313 seconds
+ok
+test_affordable_shop_beats_good_but_unaffordable_history (test_market.MarketSelectionTests.test_affordable_shop_beats_good_but_unaffordable_history) ... ok
+test_confirmed_recovery_clears_transport_cooldown (test_market.MarketSelectionTests.test_confirmed_recovery_clears_transport_cooldown) ... ok
+test_duplicate_review_spam_is_bounded (test_market.MarketSelectionTests.test_duplicate_review_spam_is_bounded) ... ok
+test_exploration_continues_after_rolling_window_is_full (test_market.MarketSelectionTests.test_exploration_continues_after_rolling_window_is_full) ... ok
+test_failed_larger_budget_is_relevant_but_smaller_budget_is_not (test_market.MarketSelectionTests.test_failed_larger_budget_is_relevant_but_smaller_budget_is_not) ... ok
+test_low_budget_no_deal_is_not_an_integrity_fault (test_market.MarketSelectionTests.test_low_budget_no_deal_is_not_an_integrity_fault) ... ok
+test_market_feedback_is_joined_without_rewriting_original_memory (test_market.MarketSelectionTests.test_market_feedback_is_joined_without_rewriting_original_memory) ... ok
+test_market_rejection_is_not_learned_as_a_success (test_market.MarketSelectionTests.test_market_rejection_is_not_learned_as_a_success) ... ok
+test_multiple_bad_reviews_are_avoided_on_first_visit (test_market.MarketSelectionTests.test_multiple_bad_reviews_are_avoided_on_first_visit) ... ok
+test_new_url_keeps_same_personal_reputation (test_market.MarketSelectionTests.test_new_url_keeps_same_personal_reputation) ... ok
+test_own_receipt_fault_outweighs_glowing_public_reviews (test_market.MarketSelectionTests.test_own_receipt_fault_outweighs_glowing_public_reviews) ... ok
+test_public_smear_does_not_erase_repeated_personal_success (test_market.MarketSelectionTests.test_public_smear_does_not_erase_repeated_personal_success) ... ok
+test_receipt_keeps_original_signed_fields_and_float_type (test_market.MarketSelectionTests.test_receipt_keeps_original_signed_fields_and_float_type) ... ok
+test_separate_buyer_role_cannot_select_own_shop (test_market.MarketSelectionTests.test_separate_buyer_role_cannot_select_own_shop) ... ok
+test_seventh_order_explores_an_untried_reasonable_shop (test_market.MarketSelectionTests.test_seventh_order_explores_an_untried_reasonable_shop) ... ok
+test_transport_failure_cools_down_other_items_and_later_recovers (test_market.MarketSelectionTests.test_transport_failure_cools_down_other_items_and_later_recovers) ... ok
+test_invalid_signature_unknown_key_and_reused_task_are_rejected (test_market.RoundTwoBuyerTests.test_invalid_signature_unknown_key_and_reused_task_are_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.369s
+
+OK
+
+EXIT: 0
+PATTERN test_harness.py
+test_api_error_body_with_credentials_is_never_logged (test_harness.HarnessTests.test_api_error_body_with_credentials_is_never_logged) ... ok
+test_invalid_price_is_repaired_by_model_with_unchanged_reserve (test_harness.HarnessTests.test_invalid_price_is_repaired_by_model_with_unchanged_reserve) ... ok
+test_network_error_is_safe_and_not_retried_as_a_decision (test_harness.HarnessTests.test_network_error_is_safe_and_not_retried_as_a_decision) ... ok
+test_second_invalid_decision_fails_without_a_fallback_price (test_harness.HarnessTests.test_second_invalid_decision_fails_without_a_fallback_price) ... ok
+test_settings_repr_does_not_reveal_key (test_harness.HarnessTests.test_settings_repr_does_not_reveal_key) ... ok
+test_task_memory_is_bounded_and_separate (test_harness.HarnessTests.test_task_memory_is_bounded_and_separate) ... ok
+test_truncated_output_is_not_accepted_even_if_json_looks_valid (test_harness.HarnessTests.test_truncated_output_is_not_accepted_even_if_json_looks_valid) ... ok
+test_valid_model_price_is_returned_and_strict_schema_is_requested (test_harness.HarnessTests.test_valid_model_price_is_returned_and_strict_schema_is_requested) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.007s
+
+OK
+
+EXIT: 0
+PATTERN test_buyer.py
+test_changed_task_id_prevents_further_purchase_actions (test_buyer.BuyerLoopTests.test_changed_task_id_prevents_further_purchase_actions) ... ok
+test_lost_offer_response_uses_gettask_instead_of_repeating_offer (test_buyer.BuyerLoopTests.test_lost_offer_response_uses_gettask_instead_of_repeating_offer) ... ok
+test_model_walkaway_cancels_without_sending_a_price (test_buyer.BuyerLoopTests.test_model_walkaway_cancels_without_sending_a_price) ... ok
+test_purchase_stops_after_one_valid_receipt (test_buyer.BuyerLoopTests.test_purchase_stops_after_one_valid_receipt) ... ok
+test_unresolved_lost_offer_is_not_reported_as_purchase_or_retried (test_buyer.BuyerLoopTests.test_unresolved_lost_offer_is_not_reported_as_purchase_or_retried) ... ok
+test_all_requests_have_version_header_and_followups_have_task_id (test_buyer.ProtocolTests.test_all_requests_have_version_header_and_followups_have_task_id) ... ok
+test_missing_supported_interface_is_rejected_before_send (test_buyer.ProtocolTests.test_missing_supported_interface_is_rejected_before_send) ... ok
+test_baseline_ask_parser_preserves_negative_sign (test_buyer.ReceiptTests.test_baseline_ask_parser_preserves_negative_sign) ... ok
+test_bool_string_fraction_nan_infinity_are_not_money (test_buyer.ReceiptTests.test_bool_string_fraction_nan_infinity_are_not_money) ... ok
+test_missing_or_duplicate_receipt_is_not_success (test_buyer.ReceiptTests.test_missing_or_duplicate_receipt_is_not_success) ... ok
+test_receipt_must_match_item_budget_and_agreed_price (test_buyer.ReceiptTests.test_receipt_must_match_item_budget_and_agreed_price) ... ok
+test_sdk_float_price_is_normalized (test_buyer.ReceiptTests.test_sdk_float_price_is_normalized) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.039s
+
+OK
+
+EXIT: 0
+PATTERN test_receipts.py
+test_changes_to_any_signed_field_or_wrong_key_fail (test_receipts.ReceiptSignatureTests.test_changes_to_any_signed_field_or_wrong_key_fail) ... ok
+test_fractional_boolean_and_nonfinite_prices_are_rejected (test_receipts.ReceiptSignatureTests.test_fractional_boolean_and_nonfinite_prices_are_rejected) ... ok
+test_signing_uses_the_provided_key_and_preserves_input (test_receipts.ReceiptSignatureTests.test_signing_uses_the_provided_key_and_preserves_input) ... ok
+test_utf8_sorted_keys_and_integer_float_have_same_signature_bytes (test_receipts.ReceiptSignatureTests.test_utf8_sorted_keys_and_integer_float_have_same_signature_bytes) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.025s
+
+OK
+
+EXIT: 0
+PATTERN test_contracts.py
+test_acceptance_requires_an_observed_price (test_contracts.ContractTests.test_acceptance_requires_an_observed_price) ... ok
+test_ask_and_sale_below_reserve_are_blocked (test_contracts.ContractTests.test_ask_and_sale_below_reserve_are_blocked) ... ok
+test_bool_string_float_nan_and_infinity_are_not_integer_money (test_contracts.ContractTests.test_bool_string_float_nan_and_infinity_are_not_integer_money) ... ok
+test_buyer_accepts_only_actual_ask (test_contracts.ContractTests.test_buyer_accepts_only_actual_ask) ... ok
+test_buyer_cannot_exceed_budget (test_contracts.ContractTests.test_buyer_cannot_exceed_budget) ... ok
+test_cannot_switch_item_during_negotiation (test_contracts.ContractTests.test_cannot_switch_item_during_negotiation) ... ok
+test_context_rejects_untrusted_money_types (test_contracts.ContractTests.test_context_rejects_untrusted_money_types) ... ok
+test_duplicate_fields_are_not_silently_overwritten (test_contracts.ContractTests.test_duplicate_fields_are_not_silently_overwritten) ... ok
+test_followup_cannot_restart_opening (test_contracts.ContractTests.test_followup_cannot_restart_opening) ... ok
+test_malformed_unknown_and_extra_fields_are_blocked (test_contracts.ContractTests.test_malformed_unknown_and_extra_fields_are_blocked) ... ok
+test_multiple_valid_prices_are_not_replaced_by_formula (test_contracts.ContractTests.test_multiple_valid_prices_are_not_replaced_by_formula) ... ok
+test_nonpositive_or_null_trading_prices_are_blocked (test_contracts.ContractTests.test_nonpositive_or_null_trading_prices_are_blocked) ... ok
+test_opening_cannot_skip_to_a_deal (test_contracts.ContractTests.test_opening_cannot_skip_to_a_deal) ... ok
+test_schemas_require_all_fields_and_forbid_extras (test_contracts.ContractTests.test_schemas_require_all_fields_and_forbid_extras) ... ok
+test_seller_accepts_only_actual_offer (test_contracts.ContractTests.test_seller_accepts_only_actual_offer) ... ok
+test_seller_opens_with_valid_ask (test_contracts.ContractTests.test_seller_opens_with_valid_ask) ... ok
+test_stop_actions_never_contain_a_price (test_contracts.ContractTests.test_stop_actions_never_contain_a_price) ... ok
+test_summary_does_not_change_trusted_budget (test_contracts.ContractTests.test_summary_does_not_change_trusted_budget) ... ok
+test_terminal_tasks_cannot_get_more_decisions (test_contracts.ContractTests.test_terminal_tasks_cannot_get_more_decisions) ... ok
+
+----------------------------------------------------------------------
+Ran 19 tests in 0.015s
+
+OK
+
+EXIT: 0
+PATTERN test_shop_runtime.py
+20:18:47 [kit] market_kit 3, C:\Users\MASTER\AppData\Local\Temp\tmp82okf5n8; monitored shop transport
+20:18:47 [keys] added *.pem, .market/ to .gitignore
+20:18:47 [kit] leaving the market
+test_renewed_url_uses_same_key_and_seller_and_cleans_up (test_shop_runtime.ShopRuntimeTests.test_renewed_url_uses_same_key_and_seller_and_cleans_up) ... ok
+test_repeated_provisioning_failure_is_bounded (test_shop_runtime.ShopRuntimeTests.test_repeated_provisioning_failure_is_bounded) ... ok
+test_shop_only_runtime_exposes_signed_checkout_before_publication (test_shop_runtime.V3CheckoutTests.test_shop_only_runtime_exposes_signed_checkout_before_publication)
+Exercise the real v3 proxy through our runtime, without a live market. ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.586s
+
+OK
+
+EXIT: 0

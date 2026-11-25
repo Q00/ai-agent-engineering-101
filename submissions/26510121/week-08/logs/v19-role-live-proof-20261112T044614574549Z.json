@@ -1,0 +1,101 @@
+{
+  "at_utc": "2026-11-12T04:46:14.573550+00:00",
+  "runtime": {
+    "pid": 45640,
+    "session": "6c29c1da70274402afe79c4075b057af",
+    "started_at": 1794458668.3528152,
+    "launch_id": "auto-join-20261112T044427854770Z"
+  },
+  "expected_models": {
+    "market_research_analyst": "gpt-6.1-sol",
+    "market_research_critic": "gpt-6.1-terra",
+    "capability_triage": "gpt-6-luna",
+    "capability_designer": "gpt-6.1-sol"
+  },
+  "actual_models": {
+    "market_research_analyst": [],
+    "market_research_critic": [],
+    "capability_triage": [
+      "gpt-6-luna"
+    ],
+    "capability_designer": []
+  },
+  "all_roles_verified": false,
+  "astra_calls_since_restart": 0,
+  "capability_plan": {},
+  "capability_brief": {},
+  "capability_consumers": [],
+  "research_publications": [],
+  "compiled_research_generations": 0,
+  "matched_main_choices": {
+    "shop": 0,
+    "buyer": 0
+  },
+  "main_examples": [],
+  "errors_since_restart": {
+    "analytical_role_error": 0,
+    "cycle_supervisor_error": 0,
+    "cycle_supply_error": 0,
+    "buyer_worker_error": 0,
+    "background_model_failed": 0,
+    "capability_deferred": 0,
+    "research_publication_rejected": 0
+  },
+  "usage": [
+    {
+      "role": "capability_triage",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "low",
+      "usage": {
+        "input_tokens": 3159,
+        "input_tokens_details": {
+          "cache_write_tokens": 3156,
+          "cached_tokens": 0
+        },
+        "output_tokens": 373,
+        "output_tokens_details": {
+          "reasoning_tokens": 259
+        },
+        "total_tokens": 3532
+      },
+      "estimated_usd": 0.000581375,
+      "seconds": 7.5,
+      "completion_status": "completed",
+      "accounting": "conservative_input_1.25x",
+      "automatic_model_fallback": false,
+      "at": 1794458759.2486706
+    }
+  ],
+  "cycle_heartbeat": {
+    "at": 1794458771.5133195,
+    "preparing": true,
+    "researching": true,
+    "capability_designing": true,
+    "capability_error": null,
+    "preparation_error": null,
+    "research_error": null
+  },
+  "research_last_attempt": {
+    "at": 1794458642.5035763,
+    "window": 1794458637,
+    "rules_hash": "e8e63cc2f212ac65c62062760f43c6a335f4ccfbfd78d77d258b476d5575a942",
+    "execution_revision": "v18-objective-alternatives-context-1",
+    "operating_state": "453bdea8eba2caa0b65aff1666a8e73cbce9e4e3937efeb98c10a7d2b61a1f82"
+  },
+  "current_policy": {
+    "id": "75e0de1ed8db2b96b05957be748780493ed6e180bba91b83ddc5d7d39d24b56c",
+    "at": 1794458753.8776019,
+    "research_at": 1794457285.4876757,
+    "policy_authority": "bounded_baseline",
+    "patches": {
+      "shop": {},
+      "buyer": {}
+    },
+    "reasons": [
+      "stock_coverage_review_pending",
+      "buyer_frontier_review_pending"
+    ]
+  },
+  "economic_superiority_or_first_place_proven": false,
+  "verified": false
+}

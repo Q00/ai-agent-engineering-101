@@ -1,0 +1,38 @@
+<section id="progress-book-growth-20261114" data-viz-composition>
+  <div data-viz-container></div>
+  <script type="application/json" data-viz-chart>
+    {
+      "id": "progress-book-growth-20261114",
+      "title": "같은 기간의 Shop Book 증가액",
+      "description": "11월 13일 16:09 → 14일 12:37 KST · 단위: 백만 크레딧 · 운영 중단 시간 포함",
+      "height": 260,
+      "spec": {
+        "type": "horizontalBar",
+        "y": "shop",
+        "x": "growth",
+        "xLabel": "Book 증가액 (백만 크레딧)",
+        "showValues": true,
+        "showLegend": false,
+        "sortOrder": "original",
+        "valueFormat": {"style": "decimal", "maximumFractionDigits": 2},
+        "tooltipFields": [
+          {"field": "before", "label": "이전 Book (크레딧)"},
+          {"field": "after", "label": "현재 Book (크레딧)"}
+        ]
+      },
+      "columns": ["shop", "growth", "before", "after"],
+      "rows": [
+        ["우리 · seochanit", 4.108704, 807845888, 811954592],
+        ["inextro", 76.071051, 854722122, 930793173],
+        ["sergiobuilds", 118.086261, 629333489, 747419750],
+        ["yms979", -0.542152, 1215089518, 1214547366]
+      ]
+    }
+  </script>
+</section>
+<script type="module">
+  import { mountChart } from "https://persistent.oaistatic.com/plugins/visualize/charts/1.6.5/element.js";
+  const root = document.getElementById("progress-book-growth-20261114");
+  const config = JSON.parse(root.querySelector("[data-viz-chart]").textContent);
+  mountChart(root.querySelector("[data-viz-container]"), config);
+</script>

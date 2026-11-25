@@ -1,0 +1,125 @@
+{
+  "at": 1794554120.823756,
+  "runtime": {
+    "pid": 47260,
+    "session": "c60afa001fcd4303a83c0e26d4279daf",
+    "started_at": 1794553847.1885386,
+    "launch_id": "auto-join-20261113T071046765879Z"
+  },
+  "minutes_live": 4.56058695713679,
+  "execution_revision": "v27-robust-sku-lot-portfolio-1",
+  "source_mismatches": [],
+  "analytical_roles": {
+    "market_observer": {
+      "at": 1794554069.725346,
+      "status": "completed"
+    },
+    "service_region_observer": {
+      "at": 1794554074.1704352,
+      "status": "completed"
+    },
+    "negotiation_path_observer": {
+      "at": 1794554075.8774269,
+      "status": "completed"
+    },
+    "account_reputation_observer": {
+      "at": 1794554078.6498516,
+      "status": "completed"
+    },
+    "policy_learning_observer": {
+      "at": 1794554083.5127616,
+      "status": "completed"
+    },
+    "buyer_cost_observer": {
+      "at": 1794554086.6162071,
+      "status": "completed"
+    },
+    "shop_demand_observer": {
+      "at": 1794554090.7940702,
+      "status": "completed"
+    },
+    "inventory_opportunity_observer": {
+      "at": 1794554090.8210886,
+      "status": "completed"
+    },
+    "forum_objective_observer": {
+      "at": 1794554092.1579733,
+      "status": "completed"
+    },
+    "quality_evaluator": {
+      "at": 1794554096.653138,
+      "status": "completed"
+    },
+    "policy_compiler": {
+      "at": 1794554096.6541348,
+      "status": "completed"
+    }
+  },
+  "counts": {
+    "inventory_portfolio_prepared": 1,
+    "shop_plan_prepared": 0,
+    "shop_prepared_plan_used": 0,
+    "restock_decision": 0,
+    "supply_execution_status": 0,
+    "shop_settled": 5,
+    "purchase": 2,
+    "market_result": 7,
+    "cycle_supply_error": 0,
+    "cycle_supervisor_error": 0,
+    "buyer_worker_error": 1,
+    "analytical_role_error": 0
+  },
+  "portfolio": {},
+  "observer": {
+    "at": 1794554090.7940702,
+    "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+    "demand_policy_id": "e77421dae43b19b3c7bc77bc4098f1c0102313c0ba627db6a6a6a54f7e1dc5d3",
+    "demand_at": 1794554086.6162071,
+    "portfolio_at": null,
+    "selection": null,
+    "alternatives": {},
+    "goods_units": null,
+    "scope": "Background demand/stock/lot competition; Main uses numerical prepared plans, not additional LLMs."
+  },
+  "last_plan_used": null,
+  "last_direct_decision": null,
+  "successful_supply_lots": 0,
+  "console_confirmed_acquired": [],
+  "console_confirmed_acquired_units": 0,
+  "supply_console_source": "logs\\auto-join-20261113T071046765879Z.txt",
+  "verified_buyer_results": 2,
+  "buyer_revision_unchanged": true,
+  "no_additional_llm_roles": true,
+  "models": {
+    "market_research_analyst": {
+      "model": "gpt-6-luna",
+      "reasoning": "low",
+      "max_output_tokens": 4096,
+      "timeout_seconds": 45
+    },
+    "market_research_critic": {
+      "model": "gpt-6.1-terra",
+      "reasoning": "medium",
+      "max_output_tokens": 8192,
+      "timeout_seconds": 75
+    },
+    "capability_triage": {
+      "model": "gpt-6-luna",
+      "reasoning": "none",
+      "max_output_tokens": 1024,
+      "timeout_seconds": 25
+    },
+    "capability_designer": {
+      "model": "gpt-6-luna",
+      "reasoning": "low",
+      "max_output_tokens": 2048,
+      "timeout_seconds": 35,
+      "response_mode": "function"
+    }
+  },
+  "astra_excluded": true,
+  "limits": [
+    "Early trades and forecasting dominance are not realized causal profit lift or first-place evidence.",
+    "Supply status alone is not the acquisition count: console-confirmed units are reported separately."
+  ]
+}

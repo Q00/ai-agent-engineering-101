@@ -1,0 +1,363 @@
+"""Reuse the verified week-07 transport path for v4, without editing the kit."""
+from datetime import datetime, timezone
+import os
+import re
+import shutil
+import subprocess
+import sys
+import threading
+import time
+import httpx
+from .state import ROOT, atomic_json, read_json
+
+
+def install_registration_retry(kit, attempts=4, delay=15):
+    """Keep the same ready address through transient initial card validation.
+
+    The supervisor already owns tries=1 retries. Ownership/authentication and
+    other refusals remain fatal; this retries only the market's card timeout.
+    """
+    original = kit.Market.join
+
+    def join(market, role, name, key, url=None, tries=6):
+        budget = attempts if role == 'shop' and tries != 1 else 1
+        for attempt in range(budget):
+            try:
+                return original(market, role, name, key, url, tries=tries)
+            except SystemExit as exc:
+                reason = str(exc)
+                temporary = ('join as shop failed: 400' in reason and
+                             'cannot read an agent card' in reason and
+                             'timeout' in reason.lower())
+                if not temporary or attempt + 1 == budget:
+                    raise
+                kit.log(f'[market] temporary agent-card validation timeout; keeping current address; '
+                        f'retry {attempt + 2}/{budget} in {delay} s')
+                time.sleep(delay)
+
+    kit.Market.join = join
+
+
+def open_available_tunnel(kit,port,avoid=None):
+    preferred=os.environ.get('MARKET_TUNNEL_PROVIDER','pinggy')
+    previous=read_json(ROOT/'.market/transport-provider.json',{})
+    if previous.get('provider') in {'pinggy','cloudflare','localhost'} and 0<=time.time()-previous.get('at',0)<86400:
+        preferred=previous['provider']
+    providers=list(dict.fromkeys([preferred,'cloudflare','localhost','pinggy']))
+    if avoid in providers:providers.remove(avoid);providers.append(avoid)
+    pinned=read_json(ROOT/'policy.json',{}).get('tunnel_provider')
+    failover=read_json(ROOT/'policy.json',{}).get('shop_recovery_v15_enabled',False)
+    if pinned in {'cloudflare','localhost','pinggy'} and not failover:
+        providers=[pinned]
+    elif pinned in providers and avoid is None:
+        providers.remove(pinned);providers.insert(0,pinned)
+    for provider in providers:
+        try:
+            process,url=open_tunnel(kit,port,provider)
+            process.r3_provider=provider
+            atomic_json(ROOT/'.market/transport-provider.json',{'at':time.time(),'provider':provider})
+            return process,url
+        except Exception as exc:
+            kit.log('[tunnel] '+provider+' unavailable ('+type(exc).__name__+'); trying alternative transport')
+    raise RuntimeError('Public tunnel providers failed; watcher will retry')
+
+
+def open_tunnel(kit, port, provider=None, log_path=None, protocol='http2'):
+    provider = provider or os.environ.get('MARKET_TUNNEL_PROVIDER', 'pinggy')
+    card = httpx.get(f'http://127.0.0.1:{port}/.well-known/agent-card.json', timeout=5)
+    card.raise_for_status()
+    if card.json().get('name') != 'Seochanit Shop':
+        raise RuntimeError('Refusing to expose an unexpected local service')
+    if provider == 'pinggy':
+        command = [sys.executable, '-u', str(ROOT / 'r3/pinggy_tunnel.py'), '--port', str(port)]
+        pattern = r'TUNNEL_URL (https://[^\s]+)'
+    elif provider == 'cloudflare':
+        binary = ROOT / '.market/bin/cloudflared.exe'
+        command = [str(binary) if binary.is_file() else shutil.which('cloudflared') or 'cloudflared',
+                   'tunnel', '--no-autoupdate', '--url', f'http://127.0.0.1:{port}',
+                   '--protocol', protocol, '--edge-ip-version', '4']
+        pattern = r'https://[a-z0-9-]+\.trycloudflare\.com'
+    elif provider == 'localhost':
+        command=[shutil.which('ssh') or 'ssh','-T','-o','BatchMode=yes','-o','IdentitiesOnly=yes',
+            '-o','IdentityAgent=none','-o','IdentityFile=none','-o','StrictHostKeyChecking=accept-new',
+            '-o','UserKnownHostsFile='+str(ROOT/'.market/ssh-known-hosts'),
+            '-o','ExitOnForwardFailure=yes','-o','ConnectTimeout=10',
+            '-o','ServerAliveInterval=15','-o','ServerAliveCountMax=3',
+            '-R',f'80:127.0.0.1:{port}','nokey@localhost.run','--','--output','json']
+        # The SSH welcome banner links admin.localhost.run before the actual
+        # forwarding address. Never use that account portal as our shop URL.
+        pattern=r'https://(?!admin\.localhost\.run\b)[a-z0-9-]+\.(?:lhr\.life|localhost\.run)'
+    else:
+        raise ValueError('Unsupported tunnel provider')
+    if log_path is None:
+        stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+        log_path = ROOT / 'logs' / f'tunnel-{provider}-{stamp}.txt'
+    # Reserve the append-only log before launching a subprocess.
+    out = log_path.open('x', encoding='utf-8')
+    env = {k: v for k, v in os.environ.items()
+           if k.upper() not in {'OPENAI_API_KEY', 'MARKET_OWNER'}}
+    try:
+        proc = subprocess.Popen(command, cwd=ROOT, stdin=subprocess.DEVNULL,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                text=True, encoding='utf-8', errors='replace', env=env,
+                                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+    except BaseException:
+        out.close()
+        raise
+    found = []
+
+    def capture():
+        try:
+            for line in proc.stdout:
+                out.write(line)
+                out.flush()
+                match = re.search(pattern, line)
+                if match and not found:
+                    found.append(match.group(1) if provider == 'pinggy' else match.group())
+        finally:
+            out.close()
+            proc.stdout.close()
+
+    reader = threading.Thread(target=capture, daemon=True)
+    reader.start()
+    try:
+        deadline = time.monotonic() + 90
+        while time.monotonic() < deadline and proc.poll() is None:
+            if found:
+                return proc, found[0]
+            time.sleep(.2)
+        raise RuntimeError(f'{provider} did not provision a live tunnel; see {log_path.name}')
+    except BaseException:
+        kit.stop(proc)
+        reader.join(timeout=5)
+        raise
+
+
+class ShopSupervisor:
+    """Registration is independent of reachability; prepare a replacement before expiry."""
+    def __init__(self, kit, args, agent, directory, market, keys, procs, proxy, sport, pport, state,
+                 now=None, provider=None):
+        self.kit, self.args, self.agent, self.directory = kit, args, agent, directory
+        self.market, self.keys, self.procs, self.proxy = market, keys, procs, proxy
+        self.sport, self.pport, self.state = sport, pport, state
+        self.provider = provider or getattr(procs[1],'r3_provider',None) or os.environ.get('MARKET_TUNNEL_PROVIDER', 'pinggy')
+        self.started = time.monotonic() if now is None else now
+        self.misses = 0
+        self.pending_registration = False
+        self.retired = None
+        self.registry_misses=0
+        self.registration_failures=0
+        self.last_registry_probe=-1000
+        self.market_visibility='unknown'
+        self.last_board_probe=-1000
+        self.last_board_alive=None
+        self.board_offline_checks=0
+        self.last_board_rejoin=-1000
+        self.board_global_outage=False
+        self.recovery_v15=read_json(self.directory/'policy.json',{}).get('shop_recovery_v15_enabled',False)
+        self.last_verified=self.started
+        self.last_rotation=self.started-600
+        self.verified_checks=0
+        self.active_peers=False
+        self.cooperative=read_json(self.directory/'policy.json',{}).get('cooperative_recovery_enabled',False)
+        self.runtime=read_json(self.directory/'.market/runtime.json',{})
+        self.last_request=None;self.last_actual_verified=None
+        self.next_registration=self.started
+
+    def snapshot(self, status):
+        atomic_json(self.directory / '.market/shop-health.json', {
+            'checked_at': time.time(), 'primary_heartbeat_at': time.time(), 'status': status, 'url': self.proxy.public,
+            'pending_registration': self.pending_registration, 'consecutive_probe_failures': self.misses,
+            'market_visibility':self.market_visibility,'registry_misses':self.registry_misses,
+            'board_offline_checks':self.board_offline_checks,
+            'market_board_alive':self.last_board_alive,
+            'board_global_outage':self.board_global_outage,
+            'recovery_revision':'v17' if self.cooperative else 'v15' if self.recovery_v15 else 'v14',
+            'verified_checks':self.verified_checks,
+            'seconds_since_market_verified':(max(0,time.monotonic()-self.last_actual_verified) if self.last_actual_verified is not None else None) if self.cooperative else max(0,time.monotonic()-self.last_verified),
+            'seconds_since_verification_or_grace':max(0,time.monotonic()-self.last_verified),
+            'last_observer_request':self.last_request,
+            'discovery':self.proxy.discovery.summary() if hasattr(self.proxy,'discovery') else None,
+            'probe_interval_seconds': 15, 'renewal_seconds': 3300 if self.provider == 'pinggy' else None})
+
+    def tick(self, now=None):
+        if not self.cooperative:return self._tick(now)
+        from .lifecycle import lease
+        try:
+            with lease(self.directory/'.market/discovery-mutation.lock'):
+                return self._tick(now)
+        except RuntimeError as exc:
+            if 'already holds' not in str(exc):raise
+            self.snapshot('recovery_mutation_in_progress')
+
+    def _tick(self, now=None):
+        now = time.monotonic() if now is None else now
+        kit = self.kit
+        if self.procs[0].poll() is not None:
+            kit.log('[kit] seller exited; restarting its existing command')
+            self.procs[0] = kit.start(kit.fill(self.agent['seller']['cmd'], port=self.sport), self.directory)
+            kit.pump(self.procs[0], '[seller]')
+            if not kit.wait_card(f'http://127.0.0.1:{self.sport}', 30):
+                self.snapshot('seller_starting')
+                return
+        if not self.args.tunnel:
+            return
+        healthy = self.procs[1].poll() is None and kit.card_ok(self.proxy.public)
+        self.misses = 0 if healthy else self.misses + 1
+        # Local reachability cannot prove the market server can reach the card.
+        # A global empty registry is a market outage, not a reason for a join storm.
+        if hasattr(self.market,'c') and now-self.last_registry_probe>=30:
+            self.last_registry_probe=now
+            try:
+                response=self.market.c.get(self.market.base+'/api/shops',timeout=8)
+                if response.status_code==200:
+                    shops=response.json().get('shops',[])
+                    present=any(s.get('name')==self.args.name and s.get('url','').rstrip('/')==self.proxy.public
+                                for s in shops)
+                    self.market_visibility='present' if present else 'market_empty' if not shops else 'absent'
+                    self.registry_misses=self.registry_misses+1 if shops and not present else 0
+                    if self.registry_misses>=2:self.pending_registration=True
+                    # Registry membership and an answering card can coexist
+                    # with market board alive=false. Require two independent
+                    # observations and active peers before same-address repair.
+                    if (present or self.recovery_v15) and healthy and now-self.last_board_probe>=60:
+                        self.last_board_probe=now
+                        try:
+                            board_response=self.market.c.get(self.market.base+'/api/board',timeout=4)
+                            if board_response.status_code==200:
+                                rows=board_response.json().get('shops',[])
+                                own=[r for r in rows if r.get('name')==self.args.name]
+                                self.last_board_alive=own[0].get('alive') if len(own)==1 else None
+                                active_peer=any(r.get('name')!=self.args.name and r.get('alive') is True for r in rows)
+                                self.active_peers=active_peer
+                                self.board_global_outage=bool(rows) and any(r.get('alive') is False for r in rows) and not any(r.get('alive') is True for r in rows)
+                                if self.board_global_outage:self.market_visibility='market_board_outage'
+                                offline=len(own)==1 and own[0].get('alive') is False and active_peer
+                                if self.recovery_v15:
+                                    matched=(len(own)==1 and (own[0].get('card') or {}).get('url','').rstrip('/')==self.proxy.public)
+                                    verified=present and matched and self.last_board_alive is True
+                                    self.verified_checks=self.verified_checks+1 if verified else 0
+                                    if verified:self.last_verified=now;self.last_actual_verified=now
+                                self.board_offline_checks=self.board_offline_checks+1 if offline else 0
+                                if self.board_offline_checks>=2 and now-self.last_board_rejoin>=120:
+                                    self.pending_registration=True
+                                    self.market_visibility='board_offline'
+                        except Exception:pass
+            except Exception:
+                self.market_visibility='unverified'
+        if self.cooperative:
+            from .recovery import receive
+            req=receive(self.directory/'.market',self.runtime,self.proxy.public,time.time(),self.last_request)
+            if req:
+                self.last_request=req['id']
+                accepted=(healthy and self.active_peers and not self.board_global_outage
+                          and self.market_visibility not in ('market_empty','unverified')
+                          and (self.market_visibility!='present' or self.last_board_alive is False))
+                if accepted:self.pending_registration=True
+                atomic_json(self.directory/'.market/recovery-response.json',{'id':req['id'],'at':time.time(),
+                    'accepted':bool(accepted),'reason':'confirmed_primary_probe' if accepted else 'current_probe_does_not_confirm_failure'})
+        expired_soon = self.provider == 'pinggy' and now - self.started >= 3300
+        # A market validator timeout while our public card still answers does
+        # not establish a broken tunnel. Preserve the reachable address and
+        # retry registration; rotating it repeats DNS warmup during an outage.
+        alternative=(self.registration_failures>=2 and not healthy and
+                     self.market_visibility!='market_empty')
+        remote_stuck=(self.recovery_v15 and self.active_peers and not self.board_global_outage
+                      and self.market_visibility not in {'market_empty','unverified'}
+                      and now-self.last_verified>=300 and now-self.last_rotation>=600)
+        alternative=alternative or remote_stuck
+        if (expired_soon and not self.pending_registration) or self.misses >= 2 or alternative:
+            # Keep the old process in the kit's cleanup list until registration succeeds.
+            # A provisioning failure leaves the current tunnel untouched.
+            replacement, url = (kit.open_tunnel(self.pport,avoid=self.provider) if alternative else
+                                kit.open_tunnel(self.pport))
+            # A freshly allocated Cloudflare hostname took ~60 seconds to
+            # resolve in production. Match initial startup's readiness budget;
+            # discarding it at 30 seconds creates endless hostname churn.
+            if not kit.wait_card(url, 120):
+                kit.stop(replacement)
+                raise RuntimeError('Replacement tunnel failed discovery')
+            previous = self.procs[1]
+            if self.retired is None:
+                self.retired = previous
+                self.procs.append(previous)
+            else:
+                kit.stop(previous)
+            self.procs[1] = replacement
+            self.provider=getattr(replacement,'r3_provider',self.provider)
+            self.proxy.public = self.state['own_shop'] = url
+            self.pending_registration = True
+            self.registration_failures=0
+            self.started, self.misses = now, 0
+            self.last_rotation=now
+            self.last_verified=now  # Bounded discovery grace for the new hostname.
+            self.verified_checks=0
+            kit.log('[tunnel] replacement ready; shop registration pending at ' + url)
+        if self.pending_registration and self.market_visibility!='market_empty' and not self.board_global_outage and (not self.cooperative or now>=self.next_registration):
+            # A one-shot join must be retried even when the new URL is already healthy.
+            try:
+                result = self.market.join('shop', self.args.name, self.keys['shop'], self.proxy.public, tries=1)
+            except (Exception, SystemExit) as exc:
+                self.registration_failures+=1
+                if self.cooperative:self.next_registration=now+min(120,15*2**min(3,self.registration_failures-1))
+                kit.log('[market] shop registration pending; retrying in 15 s (' + type(exc).__name__ + ')')
+                self.snapshot('registration_retry')
+                return
+            self.pending_registration = False
+            self.registration_failures=0
+            if self.cooperative:self.next_registration=now+60
+            self.registry_misses=0
+            # Join acknowledges identity/URL acceptance, not sustained public
+            # discovery. Only independent registry and board probes establish it.
+            self.market_visibility='registration_unverified'
+            self.last_board_alive=None
+            self.last_board_probe=-1000
+            self.board_offline_checks=0
+            self.last_board_rejoin=now
+            kit.log(f"[market] registration accepted for {result['name']} at {self.proxy.public}; awaiting public verification")
+            if self.retired is not None and not self.recovery_v15:
+                kit.stop(self.retired)
+                for i in range(len(self.procs) - 1, 1, -1):
+                    if self.procs[i] is self.retired:
+                        self.procs.pop(i)
+                self.retired = None
+        if self.recovery_v15 and self.retired is not None and self.verified_checks>=3:
+            kit.stop(self.retired)
+            for i in range(len(self.procs)-1,1,-1):
+                if self.procs[i] is self.retired:self.procs.pop(i)
+            self.retired=None
+            kit.log('[market] replacement verified across registry and board; retired previous tunnel')
+        self.snapshot('market_discovery_outage' if self.market_visibility in {'market_empty','market_board_outage'} else
+                      'market_registration_missing' if self.market_visibility in {'absent','board_offline'} else
+                      'market_board_offline' if self.last_board_alive is False else
+                      'registration_unverified' if self.market_visibility=='registration_unverified' or
+                          self.market_visibility=='present' and (self.last_board_alive is not True or now-self.last_board_probe>=120) else
+                      'healthy' if healthy or not self.pending_registration and self.misses == 0 else 'probing')
+
+
+def supervision_step(monitor, kit):
+    """A failed diagnostic write must not terminate the recovery worker."""
+    try:
+        monitor.tick()
+        return True
+    except (Exception, SystemExit) as exc:
+        try:
+            kit.log('[kit] shop supervisor: ' + type(exc).__name__)
+        except Exception:
+            pass
+        try:
+            monitor.snapshot('retrying')
+        except Exception as reporting_error:
+            try:
+                kit.log('[kit] supervisor health write failed; continuing next tick (' +
+                        type(reporting_error).__name__ + ')')
+            except Exception:
+                pass
+        return False
+
+
+def supervise(kit, *args):
+    monitor = ShopSupervisor(kit, *args)
+    while True:
+        time.sleep(15)
+        supervision_step(monitor, kit)

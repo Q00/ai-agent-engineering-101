@@ -1,0 +1,855 @@
+{
+  "at": 1794635211.862466,
+  "source_hashes": {
+    "r3/adapter.py": "eaa9b55043ac76678609118a14cc6843fcfb8b4537cec43fd4273ca46c74b717",
+    "r3/adaptive.py": "02dbd25755e67579ce2acee1a9401aa8936675dd4cf8a63397a238ef63e8226d",
+    "r3/autonomy.py": "53d4c62507043cef3e0d18ba6e88251274ce5a89259837e4114e4bb78485de3d",
+    "r3/buyer_costs.py": "8b9881ec8f914a39c1d98ca1a6c4949b8d0b3f07974429fa4c5846ff5ca8ea84",
+    "r3/buyer_execution.py": "2ed174f9b8877a171cf5009c31986bf551624d726dedc3f31da0c4e0d35ef778",
+    "r3/buyer_forum.py": "37cb5bb6283c57fc4a635b320950c94260950c67364d2d775ce985a829be4399",
+    "r3/buyer_insights.py": "60f1f9c312fbfaf01c9eb1f6184d684b5d261f155bf727d98bde2fe4089c6a6b",
+    "r3/buyer_quality.py": "caf6b0685b0428fe7b6c7908c736c10848845a134c8e42e3a6b1eb1d0ff7ab17",
+    "r3/buyer_routes.py": "a16720201c4482179add5a4aa9018d6384f6d2bd0bf8cc6d36f6212d2c6107dd",
+    "r3/buyer_scoring.py": "9d44e5db8bea0841c2471158844126621e60b1070f900c70f91f21102e22d2d7",
+    "r3/buyer_worker.py": "06fb06e9e83e3181bee2eb2f747a573c760d166cdaa39d1ba16af78b392d3428",
+    "r3/capability.py": "c9d54493a5085a59929e9e992ac89416aa813d84c155df308176558b0445a353",
+    "r3/checkout.py": "8e8cdc79383866a627e56354f6c1701dfae128d74c321b0c2a00e614b3088533",
+    "r3/contracts.py": "439f8a6776b905885dd3d363f8d2756e934202e64e95e5a5a35fc6f958fc0cbc",
+    "r3/control.py": "f5a4375e37b6843745f86ceb76acbaa9e9d4c0ed646d4ccf9869dc7db6fb4353",
+    "r3/customer_memory.py": "3214d3c473aaccc8537381c2f253d3d7933e762d5a3bb1b0a6226d226219d745",
+    "r3/cycle.py": "47052e97c272ecdd4ad00ddf36fba5a14028b17af7e874c938ba99a4fd4383fa",
+    "r3/decision_view.py": "b97d5690fc0041497fb8029cf86c43065e5f0795ef2b4873c6bae0562cf5a127",
+    "r3/demand_policy.py": "97a3b6b9b3c2fa29cc2f774cff457ae1436051e771653da6805f9d21d1f77b90",
+    "r3/discovery.py": "59852dece7d42ff0aef69258794416be4da9305fc91301991141bf258ed3953d",
+    "r3/economy.py": "b376fef8c296bc488dd883a09b9ae28b499c526c5e99a9f5d2d0211e10fa22f2",
+    "r3/evolution.py": "f48ed745a1178896e2bb2061d2e61771e1e9090415e44db93cf8ec9825cdde11",
+    "r3/feedback.py": "03dd51b610b58d4c4fe4d647fcea57cffeb885c28b32b4221a20c61f8ceaf111",
+    "r3/finance.py": "abc5c8e4413dcc4877508fe70d1bd2f90a5310625eb0a4eeb36f04ddec5dc9af",
+    "r3/forum.py": "a5105d0cc4f190c1cb06f2cebaaf970cf20ebb793d1a0aeec01b71471767e7eb",
+    "r3/inventory_portfolio.py": "2c5498fd24d0f4f9717b47d0033c67b749c45c362d5931153791772551ff38b9",
+    "r3/lifecycle.py": "e6744ad667040e1fbba0816f8527b6bce16b5eeb0e14a0bb0e4560324b3cec7b",
+    "r3/limits.py": "5d5ac57974926640e1d8026ffb390a6751ab8f66a1297e1ddfefb4d22f16c081",
+    "r3/llm_roles.py": "2e0523c02ef5bcfa50b816cbbe40be72c20ad23e9cf42b8b5d7e741317861f9c",
+    "r3/long_memory.py": "9dbcd6aa6e261bc52b388239b0c9580e69380a249a732c6ac3109de48bb1dce3",
+    "r3/market_memory.py": "f2a3cf250b609855f98e6026f16d87f107d22e4aaebb7a8a72c523f125b5ec28",
+    "r3/merchant.py": "99d58c3bdcff54cf2fd9844b2f3767a376eaeecabe5954c9f42c5a1646555707",
+    "r3/meta.py": "f6c31896a6871f3c43ed243f1c8467780fa16b3ddeaa30d3dc27ffd81512c857",
+    "r3/model.py": "24b6ec44d4cb1bffa464d20fcdf9ed34e08ec2c1c756c57080b1c5213aaad8e5",
+    "r3/negotiation_path.py": "3118c8a5678e4a1d82ab62d85188cf5b5381a44fd744ddcd868572f43bc98f99",
+    "r3/objective_context.py": "586dcf66cbe3e38480c34161d9fde62ec0e3aa6adce6a5a7090202a477ddcee9",
+    "r3/outcomes.py": "bdc605bdf53ec1548fd9174407ed0c00a5d08befb8511afa2e62261133de07a3",
+    "r3/pinggy_tunnel.py": "02ff91f337fdb34795bd282977afcd1feac43c780c70c7ff595082d56cf9d3c6",
+    "r3/policy_learning.py": "18ef8c1d96e41440109f7c77fb982da8ceca088c7782cd7f4dce883106cbd2ee",
+    "r3/portfolio.py": "6a3f016d62c47567c79a2597911214b40668481a133a2d1808495f318dfffa38",
+    "r3/prepared.py": "2a64b258d80126405d70caa9dd0b3d932a3a5a8a53e907db90f99953ef41bd70",
+    "r3/prewindow.py": "1e3937b441da187c33ceeec44f069e554df1d10414813157ecfd2be5e30053ba",
+    "r3/progress.py": "9754a578ff42575d7564c65e919eb9392d8097950e6a16646b9f2fd3ad9dfdc7",
+    "r3/protocol.py": "528fb67b2dde2db5cf68354e57763b6b718d0f1a19bcb07eede9b01a9d830a39",
+    "r3/quality.py": "0a5ec96a8a4c3095247f356689e547e56af2f99f72362635e71191d0d4354e44",
+    "r3/quote_market.py": "5f443a3211183a620274a164160c94bfce0a862a2f5a184d42ee9345a0b9cace",
+    "r3/recovery.py": "8fad24b5652955660a5a7d552543d0fbe49fd3acaf363adb7709fe400c9a493e",
+    "r3/reputation.py": "712fb378fe6dd56e04fa66c27a6ff0918b7a9295131121186f2981f36a04270a",
+    "r3/research.py": "35fc46366b59cf673c68def51397ccf6f362dfc2bc1efc04b928f9d74ea790d7",
+    "r3/reversal.py": "f1b6135dbf73ece4ac8e6328a3b1e0437ca29df4619cc8e8243cb2dd9407ecff",
+    "r3/risk.py": "3d6161c6e1fb2f878cddb245d1b7f8f08eb583e3e65baf18925d70f86cfdcfc5",
+    "r3/service_contracts.py": "827e743b51b8678fe4ec9965749fb8bed8b8b4e04c53a4664cfc513c9f57a2b8",
+    "r3/service_policy.py": "a20fd65eaf0108e6d9c19690f69a80c5816472552351d32978982e31e286438d",
+    "r3/shop_growth.py": "7c60bb06f9d4b31732543af015f5dffd89a713a35c4ee99543ff1137b31bfb54",
+    "r3/shop_offer.py": "2f689e3a6463af7899af91ce6677c2bd7d0748be024fd5c11b9238c813d1c131",
+    "r3/state.py": "df36b882bc25665112033cdcad1bb4a37cf303b8f4eb50edcf558a044c78f473",
+    "r3/strategy_lab.py": "207ee865ff337543f0188da7a134c164b1e55c15b8a891ebee2d95b6f1d14f92",
+    "r3/transport.py": "419329d1277d7da5ef4aeeaeff4cdd8b8f7211f92ae75092e5303ad4ec0c9989",
+    "r3/transport_health.py": "161019cdfa9bb51ef7763aad4324b1d4ff135ac79738a26063dee20664dd0f10",
+    "r3/usage.py": "4f56c1d1f37c2aabe397568848ccd173d3e477db3e5118aec15de6bbc52f29e1",
+    "r3/worker_bridge.py": "5be65dbfb8c6890f3451c5d5824da7cf08142873ec4849535ddd679c3cf7f89c",
+    "r3/__init__.py": "c443fdecf805b4d8533b7c6a58209296f4938fff885e74e6abaf6e529d2b9c60",
+    "market_buyer.py": "f928f77bc3d0340846e357faf32066cef1f1c0fb97b1a736bd65b7f467779d28",
+    "policy.json": "b55b2b2b2a6cdeb4397977244c9d3cbeec33d2a9f53a5ef7eb88f6cf1cf60557"
+  },
+  "comparisons": {
+    "baseline": {
+      "seconds": 6.062421099999483,
+      "lines": 10,
+      "units": 22,
+      "goods_units": 1,
+      "expected": {
+        "book": 64264.72334870649,
+        "revenue": 387905.7021304339
+      },
+      "allocation": {
+        "at": 1794635211.862466,
+        "expires_at": 1794635391.862466,
+        "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+        "candidate_counts": {
+          "all": 1293,
+          "supported_goods": 7,
+          "supported_food": 121
+        },
+        "selection": "baseline",
+        "dominance_guard_passed": true,
+        "alternatives": {
+          "baseline": {
+            "book": 64264.72334870649,
+            "revenue": 387905.7021304339,
+            "stress_book": -1727.9961295501234,
+            "rank_progress": 7.041863889845068e-06,
+            "units": 22,
+            "lines": 10,
+            "capital": 701336.76
+          },
+          "baseline_plus_robust_depth": {
+            "book": 64264.72334870649,
+            "revenue": 387905.7021304339,
+            "stress_book": -1727.9961295501234,
+            "rank_progress": 7.041863889845068e-06,
+            "units": 22,
+            "lines": 10,
+            "capital": 701336.76
+          },
+          "lot_risk_0": {
+            "book": 206508.10184456903,
+            "revenue": 1804630.1554903663,
+            "stress_book": -208611.8095171896,
+            "rank_progress": 2.488585758626538e-05,
+            "units": 115,
+            "lines": 10,
+            "capital": 4340093.08
+          },
+          "lot_risk_0.25": {
+            "book": 204328.74097007763,
+            "revenue": 1698782.8068869358,
+            "stress_book": -172027.93055370406,
+            "rank_progress": 2.427212826190406e-05,
+            "units": 109,
+            "lines": 10,
+            "capital": 4006078.08
+          },
+          "lot_risk_1": {
+            "book": 167710.94610005908,
+            "revenue": 1293510.5676678924,
+            "stress_book": -84377.51280422533,
+            "rank_progress": 1.9514464827063982e-05,
+            "units": 93,
+            "lines": 10,
+            "capital": 3039022.08
+          },
+          "lot_risk_4": {
+            "book": 60236.60959856824,
+            "revenue": 327479.93129137397,
+            "stress_book": -2728.4009307112974,
+            "rank_progress": 6.4544142525324585e-06,
+            "units": 42,
+            "lines": 10,
+            "capital": 607649.0
+          },
+          "lot_risk_8.0": {
+            "book": 46942.82935522402,
+            "revenue": 252389.23745352132,
+            "stress_book": 443.83693849115593,
+            "rank_progress": 5.018572783999087e-06,
+            "units": 34,
+            "lines": 10,
+            "capital": 465469.0
+          },
+          "lot_risk_6.0": {
+            "book": 51089.89272029733,
+            "revenue": 277301.0890955453,
+            "stress_book": -355.3264053958459,
+            "rank_progress": 5.4725052586857e-06,
+            "units": 37,
+            "lines": 10,
+            "capital": 512596.0
+          },
+          "lot_risk_5.0": {
+            "book": 53750.023647809925,
+            "revenue": 290943.00002132216,
+            "stress_book": -964.519858525578,
+            "rank_progress": 5.754224058684976e-06,
+            "units": 39,
+            "lines": 10,
+            "capital": 537954.0
+          },
+          "lot_risk_4.5": {
+            "book": 58027.18360090659,
+            "revenue": 313218.01588905946,
+            "stress_book": -2073.3006815453045,
+            "rank_progress": 6.2085702117631316e-06,
+            "units": 41,
+            "lines": 10,
+            "capital": 580356.0
+          }
+        },
+        "goods_units": 1,
+        "selected": [
+          {
+            "sku": "G66ded25b",
+            "qty": 7,
+            "held": 0,
+            "book": 9685.300417516097,
+            "stress_book": -3611.4988957050214
+          },
+          {
+            "sku": "G9e00b016",
+            "qty": 2,
+            "held": 0,
+            "book": 9556.894212970048,
+            "stress_book": 3191.592559253404
+          },
+          {
+            "sku": "Gdb8ba026",
+            "qty": 5,
+            "held": 1,
+            "book": 6006.190816830125,
+            "stress_book": -2453.4505893605456
+          },
+          {
+            "sku": "G978e9fab",
+            "qty": 1,
+            "held": 0,
+            "book": 10869.629224508722,
+            "stress_book": 6634.137009696912
+          },
+          {
+            "sku": "G2b54c83e",
+            "qty": 2,
+            "held": 0,
+            "book": 4531.384860998197,
+            "stress_book": -1190.1635240937107
+          },
+          {
+            "sku": "G4f99ea01",
+            "qty": 1,
+            "held": 0,
+            "book": 5339.406302481573,
+            "stress_book": 1800.9240874568607
+          },
+          {
+            "sku": "G002c5cfb",
+            "qty": 1,
+            "held": 0,
+            "book": 3552.696348612452,
+            "stress_book": -323.1036940209982
+          },
+          {
+            "sku": "G01883718",
+            "qty": 1,
+            "held": 0,
+            "book": 5567.331334351243,
+            "stress_book": -6049.017502229649
+          },
+          {
+            "sku": "G309758f3",
+            "qty": 1,
+            "held": 0,
+            "book": 4790.945151573103,
+            "stress_book": 890.0381217956112
+          },
+          {
+            "sku": "Gf4b81d75",
+            "qty": 1,
+            "held": 0,
+            "book": 4364.944678864924,
+            "stress_book": -617.4537023429864
+          }
+        ],
+        "interpretation": "Shared-fact forecast dominance and explicit cost/demand sensitivity; not causal uplift or a competitor guarantee.",
+        "id": "26fecb24fa537579864aa96c45b65b88cf18134740333769a4d7027556db48ff"
+      },
+      "rows": [
+        {
+          "sku": "G66ded25b",
+          "qty": 7,
+          "expected_delta": {
+            "book": 9685.300417516097,
+            "profit": 76094.11200383576,
+            "revenue": 76094.15910725584
+          },
+          "capital_commitment": 140966.0
+        },
+        {
+          "sku": "G9e00b016",
+          "qty": 2,
+          "expected_delta": {
+            "book": 9556.894212970048,
+            "profit": 39543.52296793512,
+            "revenue": 39546.865779193846
+          },
+          "capital_commitment": 67500.0
+        },
+        {
+          "sku": "Gdb8ba026",
+          "qty": 5,
+          "expected_delta": {
+            "book": 6006.190816830125,
+            "profit": 48256.03990086319,
+            "revenue": 48256.07762985492
+          },
+          "capital_commitment": 95065.0
+        },
+        {
+          "sku": "G978e9fab",
+          "qty": 1,
+          "expected_delta": {
+            "book": 10869.629224508722,
+            "profit": 22943.67180090086,
+            "revenue": 23037.661156802824
+          },
+          "capital_commitment": 28013.0
+        },
+        {
+          "sku": "G2b54c83e",
+          "qty": 2,
+          "expected_delta": {
+            "book": 4531.384860998197,
+            "profit": 32426.25713990941,
+            "revenue": 32427.539070181607
+          },
+          "capital_commitment": 62776.0
+        },
+        {
+          "sku": "G4f99ea01",
+          "qty": 1,
+          "expected_delta": {
+            "book": 5339.406302481573,
+            "profit": 21084.16274736559,
+            "revenue": 21097.973636144587
+          },
+          "capital_commitment": 35550.0
+        },
+        {
+          "sku": "G002c5cfb",
+          "qty": 1,
+          "expected_delta": {
+            "book": 3552.696348612452,
+            "profit": 21978.31677815009,
+            "revenue": 21984.41167076568
+          },
+          "capital_commitment": 41513.0
+        },
+        {
+          "sku": "G01883718",
+          "qty": 1,
+          "expected_delta": {
+            "book": 5567.331334351243,
+            "profit": 78192.6470070062,
+            "revenue": 78237.29478130929
+          },
+          "capital_commitment": 143552.76
+        },
+        {
+          "sku": "G309758f3",
+          "qty": 1,
+          "expected_delta": {
+            "book": 4790.945151573103,
+            "profit": 21041.89358357061,
+            "revenue": 21091.656475571235
+          },
+          "capital_commitment": 37013.0
+        },
+        {
+          "sku": "Gf4b81d75",
+          "qty": 1,
+          "expected_delta": {
+            "book": 4364.944678864924,
+            "profit": 26071.102204850507,
+            "revenue": 26132.06282335411
+          },
+          "capital_commitment": 49388.0
+        }
+      ]
+    },
+    "v28": {
+      "seconds": 7.41607920000024,
+      "lines": 10,
+      "units": 22,
+      "goods_units": 3,
+      "expected": {
+        "book": 134269.9182473658,
+        "revenue": 1960899.4001800192
+      },
+      "allocation": {
+        "at": 1794635211.862466,
+        "expires_at": 1794635391.862466,
+        "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+        "candidate_counts": {
+          "all": 1319,
+          "supported_goods": 33,
+          "supported_food": 121
+        },
+        "selection": "baseline",
+        "dominance_guard_passed": true,
+        "alternatives": {
+          "baseline": {
+            "book": 134269.9182473658,
+            "revenue": 1960899.4001800192,
+            "stress_book": -133324.86463926258,
+            "rank_progress": 1.936604868565395e-05,
+            "units": 22,
+            "lines": 10,
+            "capital": 4319379.303770122
+          },
+          "baseline_plus_robust_depth": {
+            "book": 134269.9182473658,
+            "revenue": 1960899.4001800192,
+            "stress_book": -133324.86463926258,
+            "rank_progress": 1.936604868565395e-05,
+            "units": 22,
+            "lines": 10,
+            "capital": 4319379.303770122
+          },
+          "lot_risk_0": {
+            "book": 322842.5939703533,
+            "revenue": 4897189.971446319,
+            "stress_book": -401361.2581945991,
+            "rank_progress": 4.7301855610937244e-05,
+            "units": 92,
+            "lines": 10,
+            "capital": 18704282.28796023
+          },
+          "lot_risk_0.25": {
+            "book": 322329.3667989391,
+            "revenue": 4769670.643753628,
+            "stress_book": -349213.8114290621,
+            "rank_progress": 4.674235714832164e-05,
+            "units": 98,
+            "lines": 10,
+            "capital": 18309518.28796023
+          },
+          "lot_risk_1": {
+            "book": 291076.18445959437,
+            "revenue": 4559369.481996023,
+            "stress_book": -281920.3915241911,
+            "rank_progress": 4.3230171336294807e-05,
+            "units": 92,
+            "lines": 10,
+            "capital": 18091243.13647031
+          },
+          "lot_risk_4": {
+            "book": 60236.60959856824,
+            "revenue": 327479.93129137397,
+            "stress_book": -2728.4009307112974,
+            "rank_progress": 6.4544142525324585e-06,
+            "units": 42,
+            "lines": 10,
+            "capital": 607649.0
+          },
+          "lot_risk_8.0": {
+            "book": 46942.82935522402,
+            "revenue": 252389.23745352132,
+            "stress_book": 443.83693849115593,
+            "rank_progress": 5.018572783999087e-06,
+            "units": 34,
+            "lines": 10,
+            "capital": 465469.0
+          },
+          "lot_risk_6.0": {
+            "book": 51089.89272029733,
+            "revenue": 277301.0890955453,
+            "stress_book": -355.3264053958459,
+            "rank_progress": 5.4725052586857e-06,
+            "units": 37,
+            "lines": 10,
+            "capital": 512596.0
+          },
+          "lot_risk_5.0": {
+            "book": 53750.023647809925,
+            "revenue": 290943.00002132216,
+            "stress_book": -964.519858525578,
+            "rank_progress": 5.754224058684976e-06,
+            "units": 39,
+            "lines": 10,
+            "capital": 537954.0
+          },
+          "lot_risk_4.5": {
+            "book": 58027.18360090659,
+            "revenue": 313218.01588905946,
+            "stress_book": -2073.3006815453045,
+            "rank_progress": 6.2085702117631316e-06,
+            "units": 41,
+            "lines": 10,
+            "capital": 580356.0
+          }
+        },
+        "goods_units": 3,
+        "selected": [
+          {
+            "sku": "Gf6b70da8",
+            "qty": 1,
+            "held": 0,
+            "book": 57499.02512503878,
+            "stress_book": -100901.35244109684
+          },
+          {
+            "sku": "G66ded25b",
+            "qty": 7,
+            "held": 0,
+            "book": 9685.300417516097,
+            "stress_book": -3611.4988957050214
+          },
+          {
+            "sku": "G9e00b016",
+            "qty": 2,
+            "held": 0,
+            "book": 9556.894212970048,
+            "stress_book": 3191.592559253404
+          },
+          {
+            "sku": "Gdb8ba026",
+            "qty": 5,
+            "held": 1,
+            "book": 6006.190816830125,
+            "stress_book": -2453.4505893605456
+          },
+          {
+            "sku": "G978e9fab",
+            "qty": 1,
+            "held": 0,
+            "book": 10869.629224508722,
+            "stress_book": 6634.137009696912
+          },
+          {
+            "sku": "G2b54c83e",
+            "qty": 2,
+            "held": 0,
+            "book": 4531.384860998197,
+            "stress_book": -1190.1635240937107
+          },
+          {
+            "sku": "G8095ddd6",
+            "qty": 1,
+            "held": 0,
+            "book": 21662.05960405857,
+            "stress_book": -30422.93164916298
+          },
+          {
+            "sku": "G4f99ea01",
+            "qty": 1,
+            "held": 0,
+            "book": 5339.406302481573,
+            "stress_book": 1800.9240874568607
+          },
+          {
+            "sku": "G002c5cfb",
+            "qty": 1,
+            "held": 0,
+            "book": 3552.696348612452,
+            "stress_book": -323.1036940209982
+          },
+          {
+            "sku": "G01883718",
+            "qty": 1,
+            "held": 0,
+            "book": 5567.331334351243,
+            "stress_book": -6049.017502229649
+          }
+        ],
+        "interpretation": "Shared-fact forecast dominance and explicit cost/demand sensitivity; not causal uplift or a competitor guarantee.",
+        "id": "3559e5f0bd122e1a1f3c7a0e537b13156a8fdeaff907c5bbb4082dafe614b2bf"
+      },
+      "rows": [
+        {
+          "sku": "Gf6b70da8",
+          "qty": 1,
+          "expected_delta": {
+            "book": 57499.02512503878,
+            "profit": 1209870.0216171984,
+            "revenue": 1211762.673467952
+          },
+          "capital_commitment": 2712264.2209282634
+        },
+        {
+          "sku": "G66ded25b",
+          "qty": 7,
+          "expected_delta": {
+            "book": 9685.300417516097,
+            "profit": 76094.11200383576,
+            "revenue": 76094.15910725584
+          },
+          "capital_commitment": 140966.0
+        },
+        {
+          "sku": "G9e00b016",
+          "qty": 2,
+          "expected_delta": {
+            "book": 9556.894212970048,
+            "profit": 39543.52296793512,
+            "revenue": 39546.865779193846
+          },
+          "capital_commitment": 67500.0
+        },
+        {
+          "sku": "Gdb8ba026",
+          "qty": 5,
+          "expected_delta": {
+            "book": 6006.190816830125,
+            "profit": 48256.03990086319,
+            "revenue": 48256.07762985492
+          },
+          "capital_commitment": 95065.0
+        },
+        {
+          "sku": "G978e9fab",
+          "qty": 1,
+          "expected_delta": {
+            "book": 10869.629224508722,
+            "profit": 22943.67180090086,
+            "revenue": 23037.661156802824
+          },
+          "capital_commitment": 28013.0
+        },
+        {
+          "sku": "G2b54c83e",
+          "qty": 2,
+          "expected_delta": {
+            "book": 4531.384860998197,
+            "profit": 32426.25713990941,
+            "revenue": 32427.539070181607
+          },
+          "capital_commitment": 62776.0
+        },
+        {
+          "sku": "G8095ddd6",
+          "qty": 1,
+          "expected_delta": {
+            "book": 21662.05960405857,
+            "profit": 407595.94040229794,
+            "revenue": 408454.7438805588
+          },
+          "capital_commitment": 990232.3146219226
+        },
+        {
+          "sku": "G4f99ea01",
+          "qty": 1,
+          "expected_delta": {
+            "book": 5339.406302481573,
+            "profit": 21084.16274736559,
+            "revenue": 21097.973636144587
+          },
+          "capital_commitment": 35550.0
+        },
+        {
+          "sku": "G002c5cfb",
+          "qty": 1,
+          "expected_delta": {
+            "book": 3552.696348612452,
+            "profit": 21978.31677815009,
+            "revenue": 21984.41167076568
+          },
+          "capital_commitment": 41513.0
+        },
+        {
+          "sku": "G01883718",
+          "qty": 1,
+          "expected_delta": {
+            "book": 5567.331334351243,
+            "profit": 78192.6470070062,
+            "revenue": 78237.29478130929
+          },
+          "capital_commitment": 145499.76821993594
+        }
+      ],
+      "observer": {
+        "at": 1794635211.862466,
+        "expires_at": 1794635391.862466,
+        "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+        "remaining_hours": 81.2022604260842,
+        "buyer_paid_last_hour": 123,
+        "buyer_saved_scenarios": [
+          {
+            "future_mean": 0.85,
+            "deals": 9987,
+            "terminal_saved": 0.7765133498020371
+          },
+          {
+            "future_mean": 0.9,
+            "deals": 9987,
+            "terminal_saved": 0.7934112551182702
+          },
+          {
+            "future_mean": 0.95,
+            "deals": 9987,
+            "terminal_saved": 0.8103091604345031
+          },
+          {
+            "future_mean": 1.0,
+            "deals": 9987,
+            "terminal_saved": 0.8272070657507361
+          }
+        ],
+        "buyer_forum_max_gain": 0.02819999999999999,
+        "feed_current": true,
+        "research_age_seconds": 17400.25837779045,
+        "risk_mode": "mature mean for expected fully-covered payoff; upper bound retained for stress and full refund cash",
+        "not_a_forecast_or_authorization": true,
+        "id": "864c73ff7e7e85e034f5ef5cdd6564c7ff147f2fbdf78fc2667d8c5c4d2afaae"
+      },
+      "seller_risk": {
+        "A": {
+          "refund_upper": 0.07896868353670178,
+          "refund_mean": 0.03260869565217391,
+          "mean_validated": false,
+          "mean_validation": {
+            "validated": false,
+            "train": 99,
+            "test": 55,
+            "embargo_seconds": 22200,
+            "brier": 0.07138515831781193,
+            "upper_as_point_brier": 0.06753622000414387,
+            "forecast": 0.009900990099009901,
+            "observed": 0.07272727272727272,
+            "limitation": "selected temporal predictive check; not causal or shift-proof"
+          },
+          "mature_samples": 182,
+          "covered_breaks": 5,
+          "grade": "A",
+          "warranty_hours": 6,
+          "source": "own mature seller units, 48h; 99% Wilson upper bound"
+        },
+        "B": {
+          "refund_upper": 0.27905352598403743,
+          "refund_mean": 0.125,
+          "mean_validated": false,
+          "mean_validation": {
+            "validated": false,
+            "reason": "sparse_mature_cohort"
+          },
+          "mature_samples": 46,
+          "covered_breaks": 5,
+          "grade": "B",
+          "warranty_hours": 6,
+          "source": "own mature seller units, 48h; 99% Wilson upper bound"
+        },
+        "C": {
+          "refund_upper": 0.5128253917164715,
+          "refund_mean": null,
+          "mean_validated": false,
+          "mean_validation": {
+            "validated": false,
+            "reason": "sparse_mature_cohort"
+          },
+          "mature_samples": 24,
+          "covered_breaks": 6,
+          "grade": "C",
+          "warranty_hours": 6,
+          "source": "own mature seller units, 48h; 99% Wilson upper bound"
+        }
+      }
+    }
+  },
+  "research_diagnostics": {
+    "research-last-attempt": {
+      "at": 1794617765.4937184,
+      "window": 1794618065,
+      "rules_hash": "3de7d37ca3361ae7620fe873aebada513457cba30a705bb22927553c788045db",
+      "execution_revision": "v27.1-compact-stock-policy-context-1",
+      "operating_state": "39b394d6ee9268a0d0a1455d9cb330b7ac0ef189bfe80f0e9bed585a4123308c",
+      "capability_plan_id": "f147b16d871a77029b28a75800aaba29f0e1b14f4f013c1ab4f9fec9e32c7968"
+    },
+    "cycle-heartbeat": {
+      "at": 1794627160.2530425,
+      "preparing": true,
+      "researching": true,
+      "capability_designing": true,
+      "capability_error": null,
+      "preparation_error": null,
+      "research_error": null
+    },
+    "analytical-role-status": {
+      "market_observer": {
+        "at": 1794627134.476233,
+        "status": "completed"
+      },
+      "service_region_observer": {
+        "at": 1794627151.5619116,
+        "status": "completed"
+      },
+      "negotiation_path_observer": {
+        "at": 1794627157.0786858,
+        "status": "completed"
+      },
+      "account_reputation_observer": {
+        "at": 1794627161.561732,
+        "status": "completed"
+      },
+      "policy_learning_observer": {
+        "at": 1794627163.3122482,
+        "status": "completed"
+      },
+      "buyer_cost_observer": {
+        "at": 1794627163.6062007,
+        "status": "completed"
+      },
+      "shop_demand_observer": {
+        "at": 1794627163.6320636,
+        "status": "completed"
+      },
+      "inventory_opportunity_observer": {
+        "at": 1794627163.6501863,
+        "status": "completed"
+      },
+      "forum_objective_observer": {
+        "at": 1794627163.953174,
+        "status": "completed"
+      },
+      "quality_evaluator": {
+        "at": 1794627164.7657878,
+        "status": "completed"
+      },
+      "policy_compiler": {
+        "at": 1794627165.001928,
+        "status": "completed"
+      }
+    }
+  },
+  "recent_errors": [
+    {
+      "kind": "market_research_deferred",
+      "records": [
+        {
+          "at": 1794610704.9783895,
+          "reason": "research_essential_context_budget",
+          "_event_id": "0847c2cdd7dc416dad62b6f20e115b3c",
+          "_ts": 1794610722.7414162,
+          "_role": "system"
+        },
+        {
+          "at": 1794610098.727485,
+          "reason": "research_essential_context_budget",
+          "_event_id": "d120e803c9744eb89b6e9da90707920c",
+          "_ts": 1794610117.2280934,
+          "_role": "system"
+        }
+      ]
+    },
+    {
+      "kind": "research_error",
+      "records": []
+    },
+    {
+      "kind": "cycle_supervisor_error",
+      "records": [
+        {
+          "error_type": "OperationalError",
+          "_event_id": "71506616e82c4b3f81d55a0f619b34e1",
+          "_ts": 1794610684.2598617,
+          "_role": "system"
+        },
+        {
+          "error_type": "OperationalError",
+          "_event_id": "548b7a6c1b4d4d5aafbf3909c7bf9db1",
+          "_ts": 1794592960.7596421,
+          "_role": "system"
+        }
+      ]
+    }
+  ],
+  "model_calls": 0,
+  "market_transactions": 0,
+  "live_policy_writes": 0,
+  "models_unchanged": true,
+  "economic_superiority_proven": false,
+  "limits": [
+    "Frozen shared market facts; mean-risk and upper-risk forecasts are different estimands.",
+    "Future fills, prices, acquisition draws and matured quality are not observed counterfactuals."
+  ]
+}
