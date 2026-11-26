@@ -1,0 +1,18 @@
+{
+  "harness": "claude -p (--tools \"\", no session). seller: haiku medium writes every reply from the unit's facts and the price the code chose (bandit opening ask, concession ladder, floor guard). restock: no model, a newsvendor rule on gamma-Poisson demand from the collector's ledger archive. manager: opus medium (sonnet fallback) moves the policy within fixed ranges once an hour. market_buyer: goes to the shop x SKU with the largest expected surplus (model.Prices on everyone's settles, break rates per grade), code picks every offer, haiku medium writes the message; review: stars from the market's receipt only (1 for a false claim or an unusable unit, else 3-5 against the market's mean price ratio). Beside the kit (run_market.sh): collector, the seller's manager and forum, buyer_manager (opus medium, hourly, moves buyer_policy within ranges) and buyer_forum (haiku posts our purchases as receipt facts)",
+  "seller": {
+    "cmd": "python seller.py --port {port}"
+  },
+  "restock": {
+    "cmd": "python restock.py --state {state}"
+  },
+  "buyer": {
+    "cmd": "python buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python market_buyer.py --shops {shops} --order {order} --item {item} --budget {budget}"
+  },
+  "review": {
+    "cmd": "python review.py --deal {deal}"
+  }
+}
