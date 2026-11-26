@@ -1,0 +1,39 @@
+{
+  "name": "Ssadassa Shop",
+  "description": "Ssadassa Shop by myeonggi : Lamps, chairs and bookshelves. Request a current quote, then send your offer as a number on the same task. Agreed purchases receive an Ed25519-signed receipt showing the item and exact agreed price.",
+  "supportedInterfaces": [
+    {
+      "url": "https://wisconsin-dylan-nhs-myspace.trycloudflare.com/a2a/0",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "version": "1.0.0",
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "application/json",
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "negotiate",
+      "name": "Catalog search and price negotiation",
+      "description": "Name an item to receive a quote. Reply with a numeric offer on the same task; the shop responds with a counteroffer, a signed receipt, or a rejection.",
+      "tags": [
+        "shopping",
+        "lamp",
+        "chair",
+        "bookshelf"
+      ],
+      "examples": [
+        "I want to buy a lamp",
+        "A wooden shelf for 40 books"
+      ]
+    }
+  ]
+}

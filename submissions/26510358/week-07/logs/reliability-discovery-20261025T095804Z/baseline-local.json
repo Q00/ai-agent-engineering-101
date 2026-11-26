@@ -1,0 +1,30 @@
+{
+  "captured_at": "2026-10-25T09:58:04.119002+00:00",
+  "trace": "submissions/26510358/week-07/logs/runtime/seller-f5b1f218dc0b.jsonl",
+  "since": "2026-10-25T06:37:03.446043+00:00",
+  "until": "2026-10-25T09:57:04.434441+00:00",
+  "events": {
+    "policy_loaded": 1,
+    "seller_started": 1,
+    "trade_stage": 1400,
+    "remote_message": 533,
+    "seller_admission_priority": 533,
+    "harness_request": 560,
+    "harness_exit": 560,
+    "harness_decision": 533,
+    "quote": 307,
+    "sale_completed": 166,
+    "sale_canceled": 2,
+    "decision_rejected": 27,
+    "sale_rejected": 60
+  },
+  "rejected_outputs": {
+    "seller price is below the item's reserve": 7,
+    "acceptance price differs from the incoming offer": 20
+  },
+  "scope": "One seller generation. Retries are not lost trades or measured visitor conversion.",
+  "planned_changes": [
+    "Clarify below-reserve versus floor-bid acceptance; model still decides and validator stays binding.",
+    "Improve truthful public skills while retaining prices, access policy, and review policy."
+  ]
+}

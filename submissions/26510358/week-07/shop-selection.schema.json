@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "action": {"type": "string", "enum": ["select_shop"]},
+    "price": {"type": "null"},
+    "item_id": {"type": "string"},
+    "offer": {"type": "null"},
+    "reason": {"type": "string"}
+  },
+  "required": ["action", "price", "item_id", "offer", "reason"]
+}
