@@ -1,0 +1,201 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "8e00baa43b319e6c0067eab8eedc6834cbe4b9dc3e9e2ab5bd16e9572c99f120",
+  "started": "2026-10-19T14:00:55+00:00",
+  "harness": "Claude Code 2.1.296, claude -p --model haiku --tools \"\" --setting-sources \"\" --no-session-persistence --output-format json --json-schema",
+  "seller_cmd": "python seller.py --port {port}",
+  "buyer_cmd": "python buyer.py --url {url} --item {item} --budget {budget}",
+  "seller_card": {
+    "name": "Nocha Furniture",
+    "description": "Furniture shop with 2993 items. Describe what you need, then negotiate the price.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:55502/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.0.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "application/json",
+      "text/plain"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Negotiate a purchase",
+        "description": "Sells: armchair, bed frame, bookshelf, cabinet, chair, chest of drawers, coat rack, coffee table, cube shelf, desk, desk lamp, dining chair, dining table, floor lamp, lamp, mirror, nightstand, office chair, pendant lamp, rug, shoe rack, sofa, stool, tv stand, wardrobe. Name or describe an item, then send offers as numbers. Each answer ends with the shop's current price, or closes the deal with a receipt artifact (data part with a numeric price).",
+        "tags": [
+          "shopping",
+          "negotiation",
+          "furniture",
+          "armchair",
+          "bed frame",
+          "bookshelf",
+          "cabinet",
+          "chair",
+          "chest of drawers",
+          "coat rack",
+          "coffee table",
+          "cube shelf",
+          "desk",
+          "desk lamp",
+          "dining chair",
+          "dining table",
+          "floor lamp",
+          "lamp",
+          "mirror",
+          "nightstand",
+          "office chair",
+          "pendant lamp",
+          "rug",
+          "shoe rack",
+          "sofa",
+          "stool",
+          "tv stand",
+          "wardrobe"
+        ],
+        "examples": [
+          "I want to buy a lamp",
+          "something wooden to keep about 40 books, not taller than my desk",
+          "90"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Nocha Furniture' binding=JSONRPC version=1.0 skills=1"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": true,
+      "detail": "first message -> TASK_STATE_INPUT_REQUIRED, ask 150"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 130, 115]"
+    },
+    {
+      "test": "seller_terminal",
+      "run": 1,
+      "pass": true,
+      "detail": "error returned"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 120.0, asks [150, 140, 120]"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_COMPLETED, receipt price 115.0, asks [150, 130, 115]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [340, 320, 290, 275, 260, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [340, 320, 290, 270, 265, 260, 260]"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": true,
+      "detail": "TASK_STATE_REJECTED, asks [330, 310, 290, 270, 265, 262, 260]"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [105] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 3, without A2A-Version 1.0 0, follow-ups with taskId 2"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [100] (budget 120)"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "deals [] (budget 230 < reserve 260)"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": true,
+      "detail": "posts 6, without A2A-Version 1.0 0, follow-ups with taskId 4"
+    }
+  ],
+  "passed": true
+}

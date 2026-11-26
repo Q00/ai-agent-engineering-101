@@ -1,0 +1,7 @@
+[22:59:29] buyer card 'Nocha Furniture' -> https://nocha-furniture-a2a.onrender.com/; item lamp, budget 120
+[22:59:29] buyer -> SendMessage 'I want to buy a lamp'
+[22:59:34] buyer <- TASK_STATE_INPUT_REQUIRED | This is a sturdy, attractive desk lamp, and my asking price is lamp My price: 160.
+[22:59:38] buyer-harness claude -p --model haiku --json-schema(set) 4.5s -> {"action": "offer", "price": 100}
+[22:59:38] buyer -> SendMessage '100' taskId=3a3bc08e
+[22:59:39] buyer <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[22:59:39] buyer DEAL {"seller": "Nocha Furniture", "item": "lamp", "item_id": "lamp", "price": 100.0}
