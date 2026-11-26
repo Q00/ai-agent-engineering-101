@@ -1,0 +1,106 @@
+% Midterm architecture figure, 26520057. Build: xelatex architecture.tex
+\documentclass[a4paper,landscape,11pt]{article}
+\usepackage[margin=7mm]{geometry}
+\usepackage{fontspec}
+\setmainfont{NanumSquare}[BoldFont={NanumSquare Bold}]
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc}
+\definecolor{ink}{RGB}{35,40,48}
+\definecolor{accent}{RGB}{0,92,165}
+\definecolor{soft}{RGB}{238,242,247}
+\pagestyle{empty}
+\tikzset{x=1cm,y=1cm,
+  ic/.style={draw=accent,line width=1.2pt,line cap=round,line join=round},
+  frame/.style={draw=ink!45,line width=.7pt,rounded corners=7pt},
+  card/.style={draw=ink!70,line width=.6pt,rounded corners=4pt,fill=white},
+  acard/.style={draw=accent,line width=1.3pt,rounded corners=4pt,fill=white},
+  ttl/.style={font=\large\bfseries,anchor=west,text=ink,inner sep=0pt},
+  hd/.style={font=\normalsize\bfseries,anchor=west,text=ink,inner sep=0pt},
+  tx/.style={font=\small,anchor=north west,text=ink,inner sep=0pt,align=left},
+  ar/.style={-{Stealth[length=6pt]},line width=.9pt,draw=ink},
+  aar/.style={-{Stealth[length=7pt]},line width=1.6pt,draw=accent},
+  lab/.style={font=\small,text=ink,inner sep=2pt,fill=white},
+  % icons, each about 0.9 cm wide, drawn around (0,0)
+  pics/chip/.style={code={\draw[ic] (-.28,-.28) rectangle (.28,.28); \draw[ic] (-.12,-.12) rectangle (.12,.12);
+     \foreach \t in {-.16,0,.16}{\draw[ic] (\t,.28)--(\t,.42) (\t,-.28)--(\t,-.42) (.28,\t)--(.42,\t) (-.28,\t)--(-.42,\t);}}},
+  pics/db/.style={code={\draw[ic] (-.32,.24) -- (-.32,-.26) arc(180:360:.32 and .12) -- (.32,.24);
+     \draw[ic] (0,.24) ellipse (.32 and .12); \draw[ic] (-.32,-.01) arc(180:360:.32 and .12);}},
+  pics/wrench/.style={code={\draw[ic,line width=2.6pt] (-.32,-.32) -- (.08,.08); \draw[ic] (.36,.12) arc(-45:225:.19);}},
+  pics/store/.style={code={\draw[ic] (-.38,-.36) rectangle (.38,.06); \draw[ic] (-.46,.06)--(-.36,.36)--(.36,.36)--(.46,.06)--cycle;
+     \draw[ic] (-.1,-.36) rectangle (.12,-.06);}},
+  pics/cart/.style={code={\draw[ic] (-.46,.34)--(-.3,.34)--(-.18,-.12)--(.3,-.12)--(.4,.2)--(-.27,.2);
+     \draw[ic] (-.1,-.3) circle (.07); \draw[ic] (.22,-.3) circle (.07);}},
+  pics/lens/.style={code={\draw[ic] (-.08,.08) circle (.24); \draw[ic,line width=2.2pt] (.11,-.11)--(.36,-.36);}},
+  pics/lock/.style={code={\draw[ic] (-.27,-.34) rectangle (.27,.06); \draw[ic] (-.16,.06)--(-.16,.2) arc(180:0:.16)--(.16,.06);
+     \fill[accent] (0,-.14) circle (.055);}},
+  pics/person/.style={code={\draw[ic] (0,.22) circle (.15); \draw[ic] (-.32,-.36) to[out=90,in=180] (0,-.02) to[out=0,in=90] (.32,-.36) -- cycle;}},
+  pics/file/.style={code={\draw[ic] (-.25,-.36)--(-.25,.36)--(.1,.36)--(.25,.21)--(.25,-.36)--cycle; \draw[ic] (.1,.36)--(.1,.21)--(.25,.21);
+     \draw[ic,line width=.8pt] (-.13,.02)--(.13,.02) (-.13,-.14)--(.13,-.14);}},
+  pics/globe/.style={code={\draw[ic] (0,0) circle (.34); \draw[ic,line width=.8pt] (0,0) ellipse (.15 and .34); \draw[ic,line width=.8pt] (-.34,0)--(.34,0);}}}
+% a step card: #1 x, #2 icon, #3 title, #4 text, #5 style, #6 NAS role
+\newcommand{\step}[6]{\draw[#5] (#1,14.0) rectangle ++(4.6,2.9); \pic at (#1+.65,16.05) {#2};
+  \node[hd] at (#1+1.3,16.05) {#3}; \node[tx,text width=4.1cm] at (#1+.25,15.45) {#4};
+  \node[tag] at (#1+.25,14.35) {#6};}
+% a row inside an agent card: #1 x, #2 y, #3 icon, #4 label, #5 text
+\newcommand{\row}[5]{\pic[scale=.72] at (#1,#2) {#3}; \node[hd] at (#1+.6,#2) {#4}; \node[font=\small,anchor=west,text=ink,inner sep=0pt] at (#1+3.0,#2) {#5};}
+\tikzset{tag/.style={font=\footnotesize\bfseries,anchor=west,text=accent,fill=soft,rounded corners=2pt,inner sep=2.5pt}}
+\begin{document}\noindent
+\begin{tikzpicture}
+% ---------------- concept line
+\node[font=\Large\bfseries,anchor=west,text=ink] at (0,18.85) {에이전트 설계를 탐색 문제로 푼다};
+\node[font=\normalsize,anchor=west,text=ink] at (8.1,18.85) {NAS처럼 탐색 공간을 정하고, 가설 $\rightarrow$ 실험 $\rightarrow$ 판정을 돌며 시장 점수로 최적화한다};
+% ---------------- layer 2: strategist
+\draw[frame] (0,13.4) rectangle (27.2,18.15);
+\node[ttl] at (.45,17.6) {전략가};
+\node[font=\normalsize,anchor=west,text=ink] at (2.2,17.6) {1시간마다 돈다. 거래는 하지 않고, 두 에이전트의 설정을 바꾼다 (meta-harness)};
+\step{.6}{lens}{1 보기}{순위, 시간당 매출,\\재고, 결정 기록을 읽는다}{card}{성능 평가}
+\step{5.7}{chip}{2 생각 (모델)}{Claude Opus 5.5가 실험을\\판정하고 다음 가설을 낸다}{card}{탐색 전략}
+\step{10.8}{lock}{3 문 (툴)}{한도 안이면 바로 적용,\\밖이면 승인을 기다린다}{acard}{탐색 공간의 경계}
+\step{15.9}{db}{4 기록 (컨텍스트)}{가설, 바꾼 값, 결과를\\실험 기록에 남긴다}{card}{연구 노트}
+\step{22.0}{person}{사람}{한도 밖의 일만 승인하고,\\궁금한 가설을 보탠다}{acard}{가설 추가 · 승인}
+\draw[ar] (5.2,15.45) -- (5.7,15.45);
+\draw[ar] (10.3,15.45) -- (10.8,15.45);
+\draw[ar] (15.4,15.45) -- (15.9,15.45);
+\draw[aar,{Stealth[length=7pt]}-{Stealth[length=7pt]}] (13.1,16.9) -- (13.1,17.2) -- (24.3,17.2) -- (24.3,16.9);
+\node[lab] at (18.7,17.2) {승인 요청 · 승인};
+% ---------------- params.json = search space
+\draw[acard,fill=soft] (.6,11.15) rectangle (19.6,12.55);
+\pic at (1.35,11.85) {file};
+\node[hd] at (2.0,11.85) {params.json};
+\node[tag,fill=white] at (4.5,11.85) {탐색 공간};
+\node[font=\small,anchor=west,text=ink] at (6.4,11.85) {손잡이 52개: 한도, 가격 규칙, 흥정, 프롬프트, 쓸 모델};
+\draw[aar] (13.1,14.0) -- node[lab,right=2pt] {새 설정 (한 번에 실험 하나)} (13.1,12.55);
+\draw[aar] (11.9,11.15) -- (11.9,9.55);
+\draw[aar] (17.0,11.15) -- (17.0,9.55);
+\draw[acard] (20.1,10.85) rectangle (26.6,12.85);
+\pic[scale=.8] at (20.75,12.25) {wrench}; \node[hd] at (21.35,12.25) {코드 에이전트};
+\node[font=\small,anchor=north west,text=ink,inner sep=0pt,align=left,text width=6.0cm] at (20.4,11.75) {버그는 복사본에서 고치고, 시험을 통과해야 반영. 문제가 생기면 되돌린다};
+\draw[aar] (20.3,14.0) -- node[lab,right=2pt] {버그 보고} (20.3,12.85);
+\draw[aar] (23.4,10.85) -- node[lab,right=2pt] {코드 수정} (23.4,9.55);
+\draw[ar] (.3,10.65) -- (.3,14.0); \node[lab,anchor=west] at (.4,12.95) {결과};
+% ---------------- layer 1: trading agents
+\draw[frame] (0,4.0) rectangle (27.2,10.65);
+\node[ttl] at (.45,10.1) {거래 에이전트};
+\node[font=\normalsize,anchor=west,text=ink] at (3.6,10.1) {매초 돈다. 규칙이 먼저, 모델은 마지막};
+\draw[card] (.6,4.5) rectangle (13.3,9.55);
+\pic at (1.4,8.85) {store}; \node[ttl] at (2.1,8.85) {가게};
+\row{1.4}{7.7}{chip}{모델}{규칙으로 먼저 읽고, 애매한 말만 작은 LLM에게}
+\row{1.4}{6.6}{db}{컨텍스트}{공개 장부에서 배운 ``무엇이 얼마에 팔리는지''}
+\row{1.4}{5.5}{wrench}{툴}{재고 매입 계획, 등급을 밝힌 서명 영수증}
+\draw[card] (13.9,4.5) rectangle (26.6,9.55);
+\pic at (14.7,8.85) {cart}; \node[ttl] at (15.4,8.85) {바이어};
+\row{14.7}{7.7}{chip}{모델}{견적을 규칙으로 읽고, 못 읽을 때만 LLM에게}
+\row{14.7}{6.6}{db}{컨텍스트}{가게마다 얼마까지 깎아 줬는지, 내 거래 기록}
+\row{14.7}{5.5}{wrench}{툴}{원가 근처에서 시작하는 흥정, 리뷰, 게시판 글}
+% ---------------- market
+\draw[frame,fill=soft] (0,1.15) rectangle (27.2,3.25);
+\pic at (1.3,2.2) {globe};
+\node[ttl] at (2.0,2.2) {시장};
+\node[font=\normalsize,anchor=west,text=ink] at (3.6,2.2) {주문, 20분마다 열리는 공급 창, 공개 장부, 게시판, 순위표 = 목적 함수 \quad (키트 v4는 그대로 쓴다)};
+\draw[ar,{Stealth[length=6pt]}-{Stealth[length=6pt]}] (7.0,4.5) -- node[lab,right=2pt] {흥정 · 결제} (7.0,3.25);
+\draw[ar,{Stealth[length=6pt]}-{Stealth[length=6pt]}] (20.2,4.5) -- node[lab,right=2pt] {흥정 · 결제} (20.2,3.25);
+% ---------------- legend
+\draw[aar] (.3,.45) -- (1.5,.45);
+\node[font=\small,anchor=west,text=ink] at (1.7,.45) {키트 기본형에 없는 길: 전략가가 쓴 설정이 문을 지나 두 에이전트로 내려가고, 한도 밖의 일은 사람이 승인한다};
+\end{tikzpicture}
+\end{document}

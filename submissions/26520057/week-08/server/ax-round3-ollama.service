@@ -1,0 +1,25 @@
+[Unit]
+Description=AX Round 3 private local-only CPU model
+After=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/ollama serve
+Environment=OLLAMA_HOST=127.0.0.1:12571
+Environment=OLLAMA_MODELS=%h/submissions/26520057/week-08/runtime/ollama-models
+Environment=OLLAMA_NO_CLOUD=1
+Environment=CUDA_VISIBLE_DEVICES=-1
+Environment=ROCR_VISIBLE_DEVICES=-1
+Environment=OLLAMA_NUM_PARALLEL=1
+Environment=OLLAMA_MAX_LOADED_MODELS=1
+Environment=OLLAMA_CONTEXT_LENGTH=4096
+Environment=OLLAMA_KEEP_ALIVE=5m
+CPUQuota=400%
+MemoryMax=6G
+Nice=10
+Restart=on-failure
+RestartSec=15
+StandardOutput=append:%h/submissions/26520057/week-08/logs/ollama.log
+StandardError=append:%h/submissions/26520057/week-08/logs/ollama.log
+
+[Install]
+WantedBy=default.target

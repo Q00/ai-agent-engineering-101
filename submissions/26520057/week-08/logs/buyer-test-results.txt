@@ -1,0 +1,35 @@
+verify_buyer_policy.py
+PASS observed KRW overbid regression, quoted price parsing and same-shop routing
+PASS even an immediate signed receipt cannot exceed the visible quoted price
+PASS standing-price counteroffer can be deliberately accepted within visible ask and hard cap
+13:53:58 [acp] checkout ships unit u-test, warranty 6 h, certificate attached
+13:53:58 [acp] paid 7000 through https://shop.test/acp, settled at ledger #123: Test product, grade A
+PASS preflight session reused without duplicate checkout; original signed payment path retained
+13:53:58 [acp] checkout ships unit u-test, warranty 6 h, certificate attached
+13:53:58 [acp] paid 7000 through https://shop.test/acp, settled at ledger #123: Test product, grade A
+PASS legacy checkout path remains compatible when no prepared session is supplied
+PASS invalid cert/grade/expiry/ceiling rejected and unused reservations canceled before payment
+PASS food grade C is acceptable only with verified adequate shelf life; goods C remains refused
+13:53:59 [acp] not paying: checkout exceeds the buyer's explicit price ceiling
+PASS kit independently rechecks the helper's hard price ceiling
+PASS same-order fallback from an unsuitable candidate without additional payment attempts
+
+verify_guardrails.py
+PASS local-only model identity, invalid JSON and no fallback
+PASS offers cannot exceed budget or an explicit current asking price
+
+verify_shop_strategy.py
+PASS grade-specific positive margin floors, including high-cost stock
+PASS bid parsing does not treat SKU digits or warranty hours as offers
+PASS stock/cash/food bounds, closed supply window, surge and expiry guards
+PASS quoted and committed warranty exposure cannot exceed 500,000 credits
+
+verify_loopback.py
+loopback seconds 14.71 exit 0
+card: cheapest-in-town -> http://127.0.0.1:45285/
+-> 'I want to buy a G00000001'  <- TASK_STATE_INPUT_REQUIRED | Test lamp (G00000001), grade A. Market certificate included; warranty 6 h. Asking price: 7800. Send one price as a number, or accept. 
+[harness] {"action": "offer", "price": 7800}
+-> '7800'  <- TASK_STATE_COMPLETED | Deal: Test lamp at 7800; grade A, certificate included, warranty 6 h.
+{"state": "TASK_STATE_COMPLETED", "artifacts": [{"artifactId": "55e6b876-3da6-4b3f-8452-c9737f7d19b9", "name": "receipt", "parts": [{"data": {"price": 7800.0, "item": "G00000001", "cert": true, "shop": "cheapest-in-town", "sig_seller": "L5m6fEBc+H+NVLC2MsXteVHm+eGPUbV+4LsaHYM+UuJCA3KIvK4lnDvvasf2VPEYVQT+exHCIocYK3liI6xLCA==", "unit": "test-unit", "warranty_hours": 6.0, "claim": "A", "task": "cd915b7a-01e5-4d0d-846c-2af45183ba2f"}}]}]}
+
+PASS: signed receipt; cost floor; buyer budget; actual local model; no market transactions
