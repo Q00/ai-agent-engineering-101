@@ -1,0 +1,59 @@
+[20:44:00] seller listening on 127.0.0.1:9100
+[20:44:03] seller task fbfdd6a7 <- 'I want to buy a lamp'
+[20:44:06] seller-harness claude -p --model haiku --json-schema(set) 3.3s -> {"ask": 150, "message": "This lamp is a lovely piece, and I think you'll be pleased with its quality at this price."}
+[20:44:06] seller task fbfdd6a7 -> INPUT_REQUIRED ask 150
+[20:44:06] seller task fbfdd6a7 <- '60'
+[20:44:09] seller-harness claude -p --model haiku --json-schema(set) 3.1s -> {"action": "counter", "price": 130, "message": "That's well below what the lamp is worth, but I can come down meaningfully from my first ask."}
+[20:44:09] seller task fbfdd6a7 -> INPUT_REQUIRED ask 130
+[20:44:09] seller task fbfdd6a7 <- '80'
+[20:44:13] seller-harness claude -p --model haiku --json-schema(set) 3.5s -> {"action": "counter", "price": 115, "message": "This is a well-made lamp, so I can come down a bit but not that far."}
+[20:44:13] seller task fbfdd6a7 -> INPUT_REQUIRED ask 115
+[20:44:13] seller task fbfdd6a7 <- '100'
+[20:44:17] seller-harness claude -p --model haiku --json-schema(set) 4.3s -> {"action": "accept", "price": 100, "message": "Deal, we have a sale for the lamp at that price."}
+[20:44:17] seller task fbfdd6a7 -> COMPLETED at 100
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x107129e40> at 0x1077c1e80> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-61' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py", line 242, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+  File "/Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x107129e40> at 0x1077c2080> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-62' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/junseok/Desktop/AX의 이해와 활용/submissions/26622007/week-06/.venv/lib/python3.12/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future pending cb=[Task.task_wakeup()]>>

@@ -1,0 +1,8 @@
+[22:15:36] buyer card 'Kit Shop' -> http://127.0.0.1:50201/; item lamp, budget 120
+[22:15:36] buyer -> SendMessage 'I want to buy a lamp'
+[22:15:36] buyer <- TASK_STATE_INPUT_REQUIRED | lamp: asking 130. Send your offer as a number.
+[22:15:36] buyer-harness wire model=openai/gpt-6-luna response_format=json_schema/strict=True provider={'only': ['openai'], 'allow_fallbacks': False, 'require_parameters': True} reasoning={'effort': 'low'} temperature_sent=False
+[22:15:37] buyer-harness openrouter openai/gpt-6-luna response_format=json_schema(strict) 1.1s -> {"action": "offer", "price": 100}
+[22:15:37] buyer -> SendMessage '100' taskId=968d827d
+[22:15:37] buyer <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+[22:15:37] buyer DEAL {"seller": "Kit Shop", "item": "lamp", "price": 100.0}
