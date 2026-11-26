@@ -1,0 +1,90 @@
+dragonash's GRAND SALE on http://127.0.0.1:51433  (harness: OpenRouter minimax/minimax-m3.1-flash:free, receipts signed with shop_key.pem)
+[e413ea94] harness opening ask 140 for lamp (reserve 100)
+[e413ea94] SALE opening ask 140 -> 126
+[e413ea94] offer 60 -> harness {"action": "counter", "price": 115}
+[e413ea94] offer 115 >= current ask 115: accept without asking the harness
+[e413ea94] DEAL lamp at 115 (reserve 100)
+[36906e52] harness opening ask 150 for lamp (reserve 100)
+[36906e52] SALE opening ask 150 -> 135
+[36906e52] offer 60 -> harness {"action": "counter", "price": 120}
+[36906e52] offer 120 >= current ask 120: accept without asking the harness
+[36906e52] DEAL lamp at 120 (reserve 100)
+[deff14b1] harness opening ask 150 for lamp (reserve 100)
+[deff14b1] SALE opening ask 150 -> 135
+[deff14b1] offer 60 -> harness {"action": "counter", "price": 120}
+[deff14b1] offer 120 >= current ask 120: accept without asking the harness
+[deff14b1] DEAL lamp at 120 (reserve 100)
+[40cc4263] harness opening ask 320 for bookshelf (reserve 260)
+[40cc4263] SALE opening ask 320 -> 288
+[40cc4263] offer 140 -> harness {"action": "counter", "price": 270}
+[40cc4263] offer 170 -> harness {"action": "counter", "price": 265}
+[40cc4263] offer 200 -> harness {"action": "counter", "price": 262}
+[40cc4263] offer 230 -> harness {"action": "counter", "price": 261}
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10ac073d0> at 0x10c12d280> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-48' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+Failed to detach context
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 602, in use_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 504, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/trace/__init__.py", line 441, in start_as_current_span
+    yield span
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py", line 250, in async_wrapper
+    result = await func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/__init__.py", line 127, in detach
+    _RUNTIME_CONTEXT.detach(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/opentelemetry/context/contextvars_context.py", line 40, in detach
+    self._current_context.reset(token)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+ValueError: <Token var=<ContextVar name='current_context' default={} at 0x10ac073d0> at 0x10c1f51c0> was created in a different Context
+Task was destroyed but it is pending!
+task: <Task pending name='Task-49' coro=<EventQueueSource._dispatch_loop() done, defined at /Users/dragonash/dev/ai-agent-engineering-101/.venv/lib/python3.13/site-packages/a2a/utils/telemetry.py:225> wait_for=<Future cancelled>>
+[40cc4263] offer 230 -> harness {"action": "counter", "price": 260}
+[40cc4263] offer 230 -> harness {"action": "reject", "price": 260}
+[40cc4263] REJECT after 6 offers (last offer 230)
+[c68c78b8] harness opening ask 320 for bookshelf (reserve 260)
+[c68c78b8] SALE opening ask 320 -> 288
+[c68c78b8] offer 140 -> harness {"action": "counter", "price": 270}
+[c68c78b8] offer 170 -> harness {"action": "counter", "price": 265}
+[c68c78b8] offer 200 -> harness {"action": "counter", "price": 262}
+[c68c78b8] offer 230 -> harness {"action": "counter", "price": 260}
+[c68c78b8] offer 230 -> harness {"action": "reject", "price": 230}
+[c68c78b8] REJECT after 5 offers (last offer 230)
+[b0f5d3b1] harness opening ask 320 for bookshelf (reserve 260)
+[b0f5d3b1] SALE opening ask 320 -> 288
+[b0f5d3b1] offer 140 -> harness {"action": "counter", "price": 270}
+[b0f5d3b1] offer 170 -> harness {"action": "counter", "price": 265}
+[b0f5d3b1] offer 200 -> harness {"action": "counter", "price": 260}
+[b0f5d3b1] offer 230 -> harness {"action": "reject", "price": 260}
+[b0f5d3b1] REJECT after 4 offers (last offer 230)
