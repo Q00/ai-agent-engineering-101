@@ -1,0 +1,43 @@
+# the wrong receipts week-06's buyer caught in Round 0 (from logs/market-kit.log)
+
+19:57:59 [order o-335e2a62] lamp, budget 140, round 0
+19:57:59 [kit] shop for this order: maple-home https://market.ourolabs.ai/shop/maple-home
+19:58:09 [buyer] [buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 112.
+19:58:09 [buyer] [buyer] the shop closed but its receipt is wrong: receipt price 127.0 is above the 112 that was offered
+19:58:09 [sign] sig_seller ok, sig_buyer added
+19:58:10 [market] ledger #1427: lamp at 127, stars None, verified True, review not shown
+
+19:58:20 [order o-db413c16] lamp, budget 110, round 0
+19:58:20 [kit] shop for this order: maple-home https://market.ourolabs.ai/shop/maple-home
+19:58:33 [buyer] [buyer] <- TASK_STATE_COMPLETED | Deal: lamp at 102.
+19:58:33 [buyer] [buyer] the shop closed but its receipt is wrong: receipt price 117.0 is above the 102 that was offered
+19:58:33 [sign] receipt lamp at 117 does not fit the order, not signing
+19:58:33 [market] ledger #1456: lamp at 117, stars None, verified False (failed: price_within_budget, sig_buyer_ok), review not shown
+
+20:08:19 [order o-d4da9b77] bookshelf, budget 295, round 0
+20:08:19 [kit] shop for this order: elm-street https://market.ourolabs.ai/shop/elm-street
+20:08:31 [buyer] [buyer] <- TASK_STATE_COMPLETED | Deal: bookshelf at 268.
+20:08:31 [buyer] [buyer] the shop closed but its receipt is wrong: receipt price 308.0 is above the 268 that was offered
+20:08:32 [sign] receipt bookshelf at 308 does not fit the order, not signing
+20:08:32 [market] ledger #2340: bookshelf at 308, stars None, verified False (failed: price_within_budget, sig_buyer_ok), review not shown
+
+20:24:02 [order o-5c0970a6] chair, budget 205, round 0
+20:24:02 [kit] shop for this order: maple-home https://market.ourolabs.ai/shop/maple-home
+20:24:11 [buyer] [buyer] <- TASK_STATE_COMPLETED | Deal: chair at 188.
+20:24:11 [buyer] [buyer] the shop closed but its receipt is wrong: receipt price 213.0 is above the 188 that was offered
+20:24:11 [sign] receipt chair at 213 does not fit the order, not signing
+20:24:11 [market] ledger #3911: chair at 213, stars None, verified False (failed: price_within_budget, sig_buyer_ok), review not shown
+
+# the buyer's filter on the 41 shops of the last live order (only avoided shops and the two cheats are listed)
+
+--- memory as it was: Round 0 never reached it
+  maple-home     stars 1.00  score 1.34  AVOIDED: reviews: 1.0 stars
+  elm-street     stars 3.53  score 3.81  a candidate
+[market_buyer] memory: maple-home issued a wrong receipt in Round 0 (task f723989f: receipt price 127.0 is above the 112 that was offered)
+[market_buyer] memory: maple-home issued a wrong receipt in Round 0 (task d2aa8118: receipt price 117.0 is above the 102 that was offered)
+[market_buyer] memory: elm-street issued a wrong receipt in Round 0 (task fe8b6296: receipt price 308.0 is above the 268 that was offered)
+[market_buyer] memory: maple-home issued a wrong receipt in Round 0 (task a107df45: receipt price 213.0 is above the 188 that was offered)
+
+--- after import_round0 folded 4 wrong receipt(s) into memory
+  maple-home     stars 1.00  score 0.93  AVOIDED: my memory: 3 wrong receipt(s)
+  elm-street     stars 3.53  score 3.32  AVOIDED: my memory: 1 wrong receipt(s)

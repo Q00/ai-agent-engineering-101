@@ -1,0 +1,56 @@
+{
+ "note": "Two orders of the Cloudflare buyer, copied from its storage (GET /buyer/log) on 10-23: a lamp lost to a fixed-price shop before any holding rule (about 17:10), and a chair bought at a shop holding at the floor under the rule's first version (17:12-17:25, 'not moving; taking it').",
+ "orders": [
+  {
+   "order": "o-66d8f7ee",
+   "item": "lamp",
+   "budget": 140,
+   "shop": "https://wisconsin-dylan-nhs-myspace.trycloudflare.com",
+   "deal": "no deal",
+   "stars": 3,
+   "ledger": 389141,
+   "verified": false,
+   "log": [
+    "[order o-66d8f7ee] lamp, budget 140, round 2",
+    "[market_buyer] harness picked myeonggi",
+    "[market_buyer] chose myeonggi https://wisconsin-dylan-nhs-myspace.trycloudflare.com",
+    "[buyer] card: 'Ssadassa Shop' via JSONRPC https://wisconsin-dylan-nhs-myspace.trycloudflare.com/a2a/0",
+    "[buyer] -> 'I want to buy a lamp'",
+    "[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp x 1, total 100 credits. Offer that total on this task. Asking price: 100",
+    "[buyer] ask 100 budget 140 round 1: harness '90' -> 90",
+    "[buyer] -> '90' taskId=e3416e73",
+    "[buyer] <- TASK_STATE_INPUT_REQUIRED | lamp x 1, total 100 credits. Offer that total on this task. Asking price: 100",
+    "[buyer] ask 100 budget 140 round 2: harness '95' -> 95",
+    "[buyer] -> '95' taskId=e3416e73",
+    "[buyer] <- TASK_STATE_REJECTED | Negotiation ended without a deal.",
+    "[market] ledger #389141: no deal, stars 3, verified False"
+   ]
+  },
+  {
+   "order": "o-3c5cdd76",
+   "item": "chair",
+   "budget": 250,
+   "shop": "https://unsubscribe-saint-sheer-ever.trycloudflare.com",
+   "deal": "chair at 180",
+   "stars": 4,
+   "ledger": 390025,
+   "verified": true,
+   "log": [
+    "[order o-3c5cdd76] chair, budget 250, round 2",
+    "[market_buyer] harness picked psyoung82",
+    "[market_buyer] chose psyoung82 https://unsubscribe-saint-sheer-ever.trycloudflare.com",
+    "[buyer] card: 'psyoung82 Furniture | Quality & Trust' via JSONRPC https://unsubscribe-saint-sheer-ever.trycloudflare.com/a2a/0",
+    "[buyer] -> 'I want to buy a chair'",
+    "[buyer] <- TASK_STATE_INPUT_REQUIRED | chair: final price 180. Quality you can verify: agreed item and price, no added charges, signed receipt. Reply 'I accept",
+    "[buyer] ask 180 budget 250 round 1: harness '160' -> 160",
+    "[buyer] -> '160' taskId=1cefb6f3",
+    "[buyer] <- TASK_STATE_INPUT_REQUIRED | chair: final price 180. Quality you can verify: agreed item and price, no added charges, signed receipt. Reply 'I accept",
+    "[buyer] 180 fits 250 and the shop is not moving; taking it",
+    "[buyer] -> '180' taskId=1cefb6f3",
+    "[buyer] <- TASK_STATE_COMPLETED | Purchased chair at 180. Quality guarantee: your signed receipt records the agreed item and final price with no added cha",
+    "[sign] sig_seller ok, sig_buyer added",
+    "[market] ledger #390025: chair at 180, stars 4, verified True"
+   ]
+  }
+ ]
+}
