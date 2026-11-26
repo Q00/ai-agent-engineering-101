@@ -1,0 +1,34 @@
+### (A) tools/list, correct request
+HTTP/1.1 200 OK
+date: Tue, 29 Sep 2026 11:49:12 GMT
+server: uvicorn
+content-length: 962
+content-type: application/json
+
+{"jsonrpc":"2.0","id":2,"result":{"cacheScope":"private","resultType":"complete","tools":[{"description":"Evaluate an arithmetic expression string, e.g. '3 * (4 + 5)'.","inputSchema":{"type":"object","properties":{"expression":{"title":"Expression","type":"string"}},"required":["expression"],"title":"calculatorArguments"},"name":"calculator","outputSchema":{"properties":{"result":{"title":"Result","type":"string"}},"required":["result"],"title":"calculatorOutput","type":"object"}},{"description":"Read a text file in the working directory and return its contents.","inputSchema":{"type":"object","properties":{"path":{"title":"Path","type":"string"}},"required":["path"],"title":"read_fileArguments"},"name":"read_file","outputSchema":{"properties":{"result":{"title":"Result","type":"string"}},"required":["result"],"title":"read_fileOutput","type":"object"}}],"ttlMs":0,"_meta":{"io.modelcontextprotocol/serverInfo":{"name":"week01-tools","version":""}}}}
+### (B) tools/list, Mcp-Method header removed
+HTTP/1.1 400 Bad Request
+date: Tue, 29 Sep 2026 11:49:22 GMT
+server: uvicorn
+content-length: 119
+content-type: application/json
+
+{"jsonrpc":"2.0","id":3,"error":{"code":-32020,"message":"mcp-method header does not match the request body's method"}}
+
+### (C) tools/list, clientCapabilities removed from _meta
+HTTP/1.1 400 Bad Request
+date: Tue, 29 Sep 2026 11:49:22 GMT
+server: uvicorn
+content-length: 157
+content-type: application/json
+
+{"jsonrpc":"2.0","id":4,"error":{"code":-32602,"message":"params._meta is missing the required envelope key(s): io.modelcontextprotocol/clientCapabilities"}}
+
+### (D) tools/call calculator 48000+9500
+HTTP/1.1 200 OK
+date: Tue, 29 Sep 2026 11:49:22 GMT
+server: uvicorn
+content-length: 241
+content-type: application/json
+
+{"jsonrpc":"2.0","id":5,"result":{"content":[{"text":"57500","type":"text"}],"isError":false,"resultType":"complete","structuredContent":{"result":"57500"},"_meta":{"io.modelcontextprotocol/serverInfo":{"name":"week01-tools","version":""}}}}
