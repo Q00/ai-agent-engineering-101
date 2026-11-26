@@ -1,0 +1,236 @@
+"""One-screen market status for the operator (used by the /market-status skill).
+
+    .venv/bin/python ops/status.py            # ranks, shop health, buyer pace, guards, spend
+    .venv/bin/python ops/status.py --json     # the same as JSON
+
+Read-only: the board, the local logs and state files. No model call, no API credit.
+"""
+import json
+import statistics
+import subprocess
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent.parent
+MARKET = "https://market.ourolabs.ai"
+NAME = "yms979"
+END = 1794927540            # 2026-11-17 23:59 KST
+
+
+def get(path):
+    if path.startswith("/api/board"):                           # 11-11: see board_api.py
+        sys.path.insert(0, str(HERE))
+        import board_api
+        return board_api.fetch(timeout=20, tries=2, wait=10)
+    with urllib.request.urlopen(f"{MARKET}{path}", timeout=20) as r:
+        return json.load(r)
+
+
+def read(p, default=None):
+    try:
+        return json.loads((HERE / p).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return default
+
+
+def score(t):
+    """11-12: the patch 3.6 score (buyer_score.score: (list - price)/(list - unit cost)); costs() must run first."""
+    import buyer_score
+    return buyer_score.score(t)
+
+
+def buyer_pace(now, hours):
+    trades = (read("buyer_memory.json", {}) or {}).get("trades", [])
+    import buyer_score
+    if not buyer_score._COST:
+        buyer_score.costs(trades, now)
+    d = [t for t in trades if now - t["t"] < hours * 3600 and t.get("outcome") == "deal" and t.get("signed") is not False and t.get("list") and t.get("price")]
+    mean = lambda xs: round(sum(xs) / len(xs), 3) if xs else None
+    food = [score(t) for t in d if t.get("kind") == "food"]
+    goods = [score(t) for t in d if t.get("kind") == "goods"]
+    return {"hours": hours, "deals_h": round(len(d) / hours, 1), "v": mean([score(t) for t in d]),
+            "food_h": round(len(food) / hours, 1), "food_v": mean(food),
+            "goods_h": round(len(goods) / hours, 1), "goods_v": mean(goods),
+            "breaks": sum(1 for t in d if t.get("broken"))}
+
+
+def shop_pace(now, hours):
+    rows = []
+    try:
+        raw = (HERE / "seller_r3_log.jsonl").read_bytes()[-20_000_000:].decode("utf-8", "ignore").splitlines()[1:]
+    except OSError:
+        raw = []
+    for line in raw:
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if r.get("event") == "deal" and r.get("t", 0) > now - hours * 3600:
+            rows.append(r)
+    margin = sum((r.get("price") or 0) - (r.get("cost") or 0) for r in rows)
+    grades = {}
+    for r in rows:
+        grades[r.get("grade")] = grades.get(r.get("grade"), 0) + 1
+    out = {"hours": hours, "deals_h": round(len(rows) / hours, 1), "margin_M_h": round(margin / hours / 1e6, 2), "grades": grades}
+    # 11-11 (user: 'is this tool rough?'): a 'deal' in the seller log is an AGREED close; a quarter were never paid
+    # (grade C: 16% paid) and their 'margin' was 60% of the figure above (11.8 M/h shown, 4.7 M/h paid, book +0.63 M/h).
+    # Paid = the unit settled on the ledger (cache, ~10 min behind: closes newer than the cache are left out).
+    sv = read(".market/shop_value.json", {}) or {}
+    D = sv.get("deals") or []
+    if D:
+        t1 = max(d["ts"] for d in D) - 120
+        paid_units = {d.get("unit") for d in D if d.get("shop") == NAME}
+        old = [r for r in rows if r.get("t", 0) <= t1]
+        h = max(0.05, (t1 - (now - hours * 3600)) / 3600)
+        last = {}                                   # a unit agreed twice (unpaid, then paid) counts once: its last close
+        for r in old:
+            if r.get("unit"):
+                last[r["unit"]] = r
+        paid = [r for u, r in last.items() if u in paid_units]
+        settles = [d for d in D if d.get("shop") == NAME and d["ts"] > now - hours * 3600]   # the ledger itself
+        out.update(paid_h=round(len(settles) / h, 1), paid_share=round(len(paid) / len(old), 2) if old else None,
+                   paid_margin_M_h=round(sum((r.get("price") or 0) - (r.get("cost") or 0) for r in paid) / h / 1e6, 2),
+                   paid_revenue_M_h=round(sum(d.get("amt") or 0 for d in settles) / h / 1e6, 1))
+    return out
+
+
+def book_slope():
+    """Our book and the runner-up's in M/h over the guard's history (up to 6.5 h): what the book really did."""
+    bh = (read(".market/guard_state.json", {}) or {}).get("book_hist") or []
+    if len(bh) < 2 or bh[-1]["t"] - bh[0]["t"] < 1800:
+        return None
+    a, b = bh[0], bh[-1]
+    dt = (b["t"] - a["t"]) / 3600
+    same = a.get("rival") == b.get("rival")
+    return {"hours": round(dt, 1), "ours_M_h": round((b["us"] - a["us"]) / dt / 1e6, 2), "rival": b.get("rival"),
+            "rival_M_h": round((b["rb"] - a["rb"]) / dt / 1e6, 2) if same else None}
+
+
+def revenue_race(b, now):
+    """11-11 (user: can we take revenue 1st?): the student shop ahead of us in revenue, the gap, the lead in M/h we
+    need over it to pass before the end, and both shops' settled revenue over the last 6 h (ledger cache)."""
+    try:
+        studs = {(p.get("shop") or {}).get("name") for p in b["players"] if p.get("student")}
+        rv = sorted((s for s in b["shops"] if s["name"] in studs and s.get("revenue") is not None), key=lambda s: -s["revenue"])
+        i = next(k for k, s in enumerate(rv) if s["name"] == NAME)
+        out = {"rank": i + 1}
+        if i == 0:
+            out.update(behind=rv[1]["name"], lead_M=round((rv[0]["revenue"] - rv[1]["revenue"]) / 1e6))
+            return out
+        ahead = rv[i - 1]
+        left = max(1.0, (END - now) / 3600)
+        gap = ahead["revenue"] - rv[i]["revenue"]
+        sv = read(".market/shop_value.json", {}) or {}
+        D = sv.get("deals") or []
+        t1 = max((d["ts"] for d in D), default=now)
+        r6 = {n: sum(d.get("amt") or 0 for d in D if d["shop"] == n and t1 - d["ts"] < 6 * 3600) / 6e6 for n in (NAME, ahead["name"])}
+        out.update(ahead=ahead["name"], gap_M=round(gap / 1e6), need_lead_M_h=round(gap / left / 1e6, 1),
+                   ours_6h_M_h=round(r6[NAME], 1), theirs_6h_M_h=round(r6[ahead["name"]], 1),
+                   lead_6h_M_h=round(r6[NAME] - r6[ahead["name"]], 1))
+        return out
+    except Exception as e:  # noqa: BLE001
+        return {"error": repr(e)[:120]}
+
+
+def kit_state():
+    out = subprocess.run(["pgrep", "-f", f"market_kit.py join --dir {HERE}"], capture_output=True, text=True).stdout.split()
+    log = HERE / "logs" / "market-kit.log"
+    tail = []
+    try:
+        tail = log.read_text(encoding="utf-8", errors="ignore").splitlines()[-3000:]
+    except OSError:
+        pass
+    url = next((l.split(" at ")[-1].split()[0] for l in reversed(tail) if "registered" in l and " at " in l), None)
+    if not url:
+        url = next((l.split("through the kit at ")[-1].strip() for l in reversed(tail) if "through the kit at" in l), None)
+    if not url:                                     # busy log: fall back to the named tunnel's fixed URL
+        try:
+            url = json.loads((Path.home() / ".config/ai-agent-market/named_tunnel.json").read_text())["url"].rstrip("/")
+        except (OSError, ValueError, KeyError):
+            pass
+    last_task = next((l[:8] for l in reversed(tail) if "[seller]" in l and " task " in l), None)
+    rejoins = sum(1 for l in tail[-600:] if "marks this shop dead" in l or "registered again" in l)
+    return {"kit_running": bool(out), "public_url": url, "last_seller_task": last_task, "recent_rejoin_lines": rejoins}
+
+
+def main():
+    now = time.time()
+    b = get("/api/board?round=3")
+    P = [p for p in b["players"] if p.get("student")]
+    tot = sorted(P, key=lambda p: -(p.get("student_total") or 0))
+    buy = sorted(P, key=lambda p: -(p.get("student_buyer") or 0))
+    shp = sorted(P, key=lambda p: -(p.get("student_shop") or 0))
+    rank = lambda L: [p["player"] for p in L].index(NAME) + 1
+    me = tot[rank(tot) - 1]
+    shops = {s["name"]: s for s in b["shops"]}
+    buyers = {x["name"]: x for x in b["buyers"]}
+    live = [s for s in b["shops"] if s.get("deals")]
+    books = sorted(live, key=lambda s: -(s.get("book") or 0))
+    rival = next(s for s in books if s["name"] != NAME)
+    gs = read(".market/guard_state.json", {}) or {}
+    sc = read(".market/buyer_score.json", {}) or {}
+    try:
+        sys.path.insert(0, str(HERE))
+        import model_env
+        spend = model_env.spend_summary(now)
+    except Exception as e:
+        spend = {"error": repr(e)}
+    i_b = rank(buy)
+    out = {
+        "time_utc": time.strftime("%Y-%m-%d %H:%M", time.gmtime(now)), "hours_left": round((END - now) / 3600, 1),
+        "total": {"rank": rank(tot), "score": me["student_total"], "second": tot[1]["player"] if tot[0]["player"] == NAME else tot[0]["player"],
+                  "gap": round(me["student_total"] - (tot[1] if tot[0]["player"] == NAME else tot[0])["student_total"], 3)},
+        "shop": {"rank": rank(shp), "score": me["student_shop"], "alive": shops[NAME].get("alive"),
+                 "book_M": round(shops[NAME]["book"] / 1e6), "rival": rival["name"], "rival_book_M": round(rival["book"] / 1e6),
+                 "lead_M": round((shops[NAME]["book"] - rival["book"]) / 1e6), "stars_rank": shops[NAME].get("stars_rank"),
+                 "market_dead_shops": f"{sum(1 for s in live if not s.get('alive'))}/{len(live)}",
+                 "pace_1h": shop_pace(now, 1), "pace_6h": shop_pace(now, 6), "revenue_race": revenue_race(b, now),
+                 "book_slope": book_slope()},
+        "buyer": {"rank": i_b, "score": buy[i_b - 1]["student_buyer"],
+                  "above": [(p["player"], p["student_buyer"]) for p in buy[max(0, i_b - 3):i_b - 1]],
+                  "saved": buyers[NAME]["saved"], "deals": buyers[NAME]["deals"], "m_star": sc.get("m_star"),
+                  "pace_2h": buyer_pace(now, 2), "pace_6h": buyer_pace(now, 6)},
+        "guards": {"fires": gs.get("fires"), "frozen": list((gs.get("frozen") or {}).keys()), "total_gap": gs.get("total_gap"),
+                   "book_eta_h": gs.get("book_eta_h")},
+        "kit": kit_state(), "spend": spend,
+    }
+    if "--json" in sys.argv:
+        print(json.dumps(out, ensure_ascii=False, indent=1))
+        return
+    t, s, bu, k = out["total"], out["shop"], out["buyer"], out["kit"]
+    print(f"[{out['time_utc']} UTC, {out['hours_left']} h left]")
+    print(f"TOTAL  rank {t['rank']}  {t['score']}  (vs {t['second']}: {t['gap']:+.3f})")
+    print(f"SHOP   rank {s['rank']}  {s['score']}  alive {s['alive']}  book {s['book_M']}M vs {s['rival']} {s['rival_book_M']}M (lead {s['lead_M']}M)"
+          f"  stars_rank {s['stars_rank']}  market dead {s['market_dead_shops']}")
+    p1, p6 = s["pace_1h"], s["pace_6h"]
+    print(f"       6h: PAID {p6.get('paid_h')} deals/h, revenue {p6.get('paid_revenue_M_h')}M/h, margin {p6.get('paid_margin_M_h')}M/h"
+          f" ({(p6.get('paid_share') or 0):.0%} of {p6['deals_h']} agreed closes/h were paid) | 1h: paid {p1.get('paid_h')}/h, margin {p1.get('paid_margin_M_h')}M/h")
+    bs = s.get("book_slope")
+    if bs:
+        print(f"       book over {bs['hours']} h: ours {bs['ours_M_h']:+} M/h, {bs['rival']} {bs['rival_M_h'] if bs['rival_M_h'] is not None else '?':+} M/h"
+              " (paid margin less refunds of broken warranted goods, storage 1%/day and expired food)")
+    pc = read(".market/price_ctl.json", {}) or {}
+    if pc:
+        adj = pc.get("sku") or {}
+        up, dn = sum(1 for x in adj.values() if x > 0), sum(1 for x in adj.values() if x < 0)
+        print(f"       prices: goods sit {pc.get('under', 0):+.2f} of list under the rival shops' settle (negative = above); "
+              f"{up} SKUs set dearer, {dn} cheaper | {str(pc.get('status'))[:150]}")
+    rr = s.get("revenue_race") or {}
+    if rr.get("ahead"):
+        print(f"       revenue rank {rr['rank']}: {rr['gap_M']}M behind {rr['ahead']}; to pass it we must outsell it by {rr['need_lead_M_h']} M/h;"
+              f" last 6 h: us {rr['ours_6h_M_h']} vs {rr['theirs_6h_M_h']} M/h (lead {rr['lead_6h_M_h']:+})")
+    elif rr.get("behind"):
+        print(f"       revenue rank 1, {rr['lead_M']}M ahead of {rr['behind']}")
+    print(f"BUYER  rank {bu['rank']}  {bu['score']}  above {bu['above']}  saved {bu['saved']} (m* {bu['m_star']})  deals {bu['deals']}")
+    for p in (bu["pace_2h"], bu["pace_6h"]):
+        print(f"       {p['hours']}h: {p['deals_h']} deals/h v {p['v']} | food {p['food_h']}/h {p['food_v']} | goods {p['goods_h']}/h {p['goods_v']} | breaks {p['breaks']}")
+    print(f"GUARDS fires {out['guards']['fires']} frozen {out['guards']['frozen']} total_gap {out['guards']['total_gap']} book_eta {out['guards']['book_eta_h']}")
+    print(f"KIT    running {k['kit_running']}  url {k['public_url']}  last seller task {k['last_seller_task']}  rejoin lines (recent) {k['recent_rejoin_lines']}")
+    sp = out["spend"]
+    print(f"API    24h ${sp.get('today')} ({sp.get('calls')} calls) {sp.get('per_role')}  credit ~${sp.get('credit_left')} (expires 11-21 00:00 UTC)")
+
+
+if __name__ == "__main__":
+    main()
