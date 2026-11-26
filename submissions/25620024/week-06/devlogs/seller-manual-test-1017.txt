@@ -1,0 +1,44 @@
+# week-06 seller.py manual tests, 2026-10-17 (before the trade test)
+# seller: python seller.py --port 9100   (harness: claude -p --model haiku)
+# buyer side typed by hand with the a2a CLI, following the kit buyer's offer ladders
+# copied from the Warp screen (seller tab and buyer tab)
+
+## test 1: lamp, kit-buyer ladder 60, 80, 100 (seller_deal-style)  task 447cdbd0
+[user] I want to buy a lamp
+[agent] lamp: asking 160. Send your offer as a number.
+[user] 60
+[agent] 60 is too low. Counteroffer: 130.
+[user] 80
+[agent] 80 is too low. Counteroffer: 115.
+[user] 100
+Status: completed  Deal: lamp at 100.
+Artifacts: [receipt] {"item":"lamp","price":100,"seller":"Harness Shop (25620024)"}
+$ a2a send ... --task-id 447cdbd0-a822-49bf-b69d-ce5376258f5f 110
+Error: failed to send message: Task 447cdbd0-a822-49bf-b69d-ce5376258f5f is in terminal state: TASK_STATE_COMPLETED
+
+## test 2: bookshelf, kit-buyer ladder 140, 170, 200, 230 (seller_holds_reserve-style)  task 2e1916d9
+--- buyer tab
+[user] I want to buy a bookshelf
+[agent] bookshelf: asking 340. Send your offer as a number.
+[user] 140
+[agent] 140 is too low. Counteroffer: 300.
+[user] 170
+[agent] 170 is too low. Counteroffer: 270.
+[user] 200
+[agent] 200 is too low. Counteroffer: 260.
+$ a2a send -a http://127.0.0.1:9100 --task-id 2e1916d9-e9c8-4277-893f-cb07645c0783 230
+Error: failed to send message: failed to send HTTP request: Post "http://127.0.0.1:9100/": context deadline exceeded
+hint: increase --timeout, or start the task with --async and follow it later
+$ a2a send -a http://127.0.0.1:9100 --task-id 2e1916d9-e9c8-4277-893f-cb07645c0783 230
+Error: failed to send message: Task 2e1916d9-e9c8-4277-893f-cb07645c0783 is in terminal state: TASK_STATE_REJECTED
+--- seller tab
+[2e1916d9] harness opening ask 340 for bookshelf (reserve 260)
+[2e1916d9] offer 140 -> harness {"action": "counter", "price": 300}
+[2e1916d9] offer 170 -> harness {"action": "counter", "price": 270}
+[2e1916d9] offer 200 -> harness {"action": "counter", "price": 255}
+[2e1916d9] GUARD counter 255 < reserve 260: raised to 260
+[2e1916d9] offer 230 -> harness {"action": "reject", "price": 260}
+[2e1916d9] REJECT after 4 offers (last offer 230)
+(the a2a CLI gave up after its default 30 s timeout while the harness was still deciding on 230;
+ the seller then printed an OpenTelemetry "Failed to detach context" traceback for the dropped
+ connection and carried on; the trade test waits up to 200 s per request)
