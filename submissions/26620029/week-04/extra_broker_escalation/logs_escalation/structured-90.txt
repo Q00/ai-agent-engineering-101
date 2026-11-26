@@ -1,0 +1,36 @@
+model=claude-haiku-4-5-20251001 temperature=1.0 condition=structured === scenario 90 (파인애플) reserve=70 budget=90 deal_possible=1 ===
+--- stage 1: base negotiation (MAX_TURNS=5) ---
+=== scenario 90 (파인애플) reserve=70 budget=90 condition=structured ===
+[1] buyer: ```json
+{"performative": "propose", "content": {"price": 50}}
+```
+    parse: performative=propose price=50
+[2] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[3] buyer: ```json
+{"performative": "propose", "content": {"price": 65}}
+```
+    parse: performative=propose price=65
+[4] seller: ```json
+{"performative": "reject-proposal", "content": {"price": null}}
+```
+    parse: performative=reject-proposal price=None
+[5] buyer: ```json
+{"performative": "propose", "content": {"price": 75}}
+```
+    parse: performative=propose price=75
+=== outcome=open price=None correct=0 violation=0 turns=5 format_errors=0 reader_calls=0 ===
+
+--- stage 2: broker mediation (up to 5 messages) ---
+  [broker->  buyer] propose 75 | buyer replies: ```json
+{"performative": "accept-proposal", "content": {"price": 75}}
+```
+    parse: performative=accept-proposal price=75
+  [broker->  seller] propose 75 | seller replies: ```json
+{"performative": "accept-proposal", "content": {"price": 75}}
+```
+    parse: performative=accept-proposal price=75
+=== FINAL stage=broker outcome=deal price=75 correct=1 violation=0 ===
+
