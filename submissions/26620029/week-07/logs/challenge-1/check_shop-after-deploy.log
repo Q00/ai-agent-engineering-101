@@ -1,0 +1,94 @@
+  PASS  seller_card: name="Ddolcom's BEST SHOP" url=https://ddolcom-shop.ddolcom.workers.dev/
+
+### seller_deal #1
+    -> I want to buy a lamp
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 115. Send your offer as a number.
+    -> 115
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+  PASS  seller_opens: ask 115
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, price 115, asks [115]
+  PASS  seller_signed_receipt #1: sig_seller verifies
+    -> 110
+    <- error {'code': -32004, 'message': 'Task is already TASK_STATE_COMPLETED'}
+  PASS  seller_terminal: error returned
+
+### seller_deal #2
+    -> I want to buy a lamp
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 115. Send your offer as a number.
+    -> 115
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, price 115, asks [115]
+  PASS  seller_signed_receipt #2: sig_seller verifies
+
+### seller_deal #3
+    -> I want to buy a lamp
+    <- TASK_STATE_INPUT_REQUIRED | lamp: asking 115. Send your offer as a number.
+    -> 115
+    <- TASK_STATE_COMPLETED | Deal: lamp at 115.
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, price 115, asks [115]
+  PASS  seller_signed_receipt #3: sig_seller verifies
+
+### seller_holds_reserve #1
+    -> I want to buy a bookshelf
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 290. Send your offer as a number.
+    -> 140
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 282.
+    -> 170
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 274.
+    -> 200
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 266.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [290, 282, 274, 266, 260, 260, 260, 260]
+
+### seller_holds_reserve #2
+    -> I want to buy a bookshelf
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 290. Send your offer as a number.
+    -> 140
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 282.
+    -> 170
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 274.
+    -> 200
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 266.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [290, 282, 274, 266, 260, 260, 260, 260]
+
+### seller_holds_reserve #3
+    -> I want to buy a bookshelf
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf: asking 290. Send your offer as a number.
+    -> 140
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 282.
+    -> 170
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 274.
+    -> 200
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 266.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+    -> 230
+    <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 260.
+  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [290, 282, 274, 266, 260, 260, 260, 260]
+
+12/12 passed -> PASS

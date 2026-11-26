@@ -1,0 +1,88 @@
+# challenge 3, attempt 1
+
+## A1 lamp: scripted long-message buyer vs my seller (reserve 100)
+    metadata ask 110.0 | last number in text 110
+    metadata ask 104.0 | last number in text 104
+  PASS  A1_lamp: TASK_STATE_COMPLETED, metadata asks [130.0, 110.0, 104.0], receipt 104.0
+
+## A1 bookshelf: scripted long-message buyer vs my seller (reserve 260)
+    metadata ask 290.0 | last number in text 5
+    metadata ask 275.0 | last number in text 275
+    metadata ask 265.0 | last number in text 265
+    metadata ask 260.0 | last number in text 260
+  PASS  A1_bookshelf: TASK_STATE_INPUT_REQUIRED, metadata asks [325.0, 290.0, 275.0, 265.0, 260.0], receipt None
+
+## A2 lamp: scripted long-message buyer vs my seller (reserve 100)
+    metadata ask 110.0 | last number in text 3
+    metadata ask 104.0 | last number in text 104
+  PASS  A2_lamp: TASK_STATE_COMPLETED, metadata asks [125.0, 110.0, 104.0], receipt 104.0
+
+## A2 bookshelf: scripted long-message buyer vs my seller (reserve 260)
+    metadata ask 290.0 | last number in text 5
+    metadata ask 275.0 | last number in text 275
+    metadata ask 260.0 | last number in text 15
+    metadata ask 260.0 | last number in text 260
+  PASS  A2_bookshelf: TASK_STATE_INPUT_REQUIRED, metadata asks [320.0, 290.0, 275.0, 260.0, 260.0], receipt None
+
+  seller harness read 14 free-text offers: 95, 98, 104, 210, 215, 230, 235, 95, 98, 104, 210, 215, 230, 235
+  intended offers per script: {"lamp": [95, 98, 104, 108], "bookshelf": [210, 215, 230, 235]}
+
+## B1 lamp: my buyer (budget 120) vs scripted chatty seller (reserve 100)
+    [read] harness read ask 130 (last number in text: 199)
+    [read] harness read ask 110 (last number in text: 24)
+    true asks [130, 110] | offers [90, 100] | deals [100]
+  PASS  B1_lamp: offers [90, 100], deals [100], budget 120
+
+## B1 bookshelf: my buyer (budget 230) vs scripted chatty seller (reserve 260)
+    [read] harness read ask 338 (last number in text: 199)
+    [read] harness read ask 260 (last number in text: 24)
+    [read] harness read ask 260 (last number in text: 24)
+    [read] harness read ask 260 (last number in text: 24)
+    [read] harness read ask 260 (last number in text: 24)
+    true asks [338, 260, 260, 260, 260] | offers [180, 210, 225, 230] | deals []
+  PASS  B1_bookshelf: offers [180, 210, 225, 230], deals [], budget 230
+
+## B2 lamp: my buyer (budget 120) vs scripted chatty seller (reserve 100)
+    [read] harness read ask 130 (last number in text: 199)
+    [read] harness read ask 110 (last number in text: 24)
+    true asks [130, 110] | offers [90, 100] | deals [100]
+  PASS  B2_lamp: offers [90, 100], deals [100], budget 120
+
+## B2 bookshelf: my buyer (budget 230) vs scripted chatty seller (reserve 260)
+    [read] harness read ask 338 (last number in text: 199)
+    [read] harness read ask 260 (last number in text: 24)
+    [read] harness read ask 260 (last number in text: 24)
+    [read] harness read ask 260 (last number in text: 24)
+    true asks [338, 260, 260, 260] | offers [180, 210, 225] | deals []
+  PASS  B2_bookshelf: offers [180, 210, 225], deals [], budget 230
+
+## C lamp: my buyer (budget 120) vs my chatty seller (reserve 100)
+    -> SendMessage 'I want to buy a lamp'
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for your interest in our plain metal desk lamp. My asking price is $125. I'm happy to discuss it if you have questions about the lamp.
+    [read] harness read ask 125 (last number in text: 125)
+    -> SendMessage '100' taskId=f01b9352
+    <- TASK_STATE_COMPLETED | Deal: lamp at 100.
+    done: TASK_STATE_COMPLETED, harness calls 1, 12s
+    seller deals so far: ['[deal] Haiku Furniture Shop | BASE-LAMP | 100 | task f01b9352-4ffe-43f1-a752-e9689a400c21']
+
+## C bookshelf: my buyer (budget 230) vs my chatty seller (reserve 260)
+    -> SendMessage 'I want to buy a bookshelf'
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for your interest in our bookshelf! This plain pine five-shelf model is a sturdy, classic choice, and my asking price is 325. I'm happy to talk about how we can make it work for you.
+    [read] harness read ask 325 (last number in text: 325)
+    -> SendMessage '180' taskId=bb66912c
+    <- TASK_STATE_INPUT_REQUIRED | Thank you for your offer of 180. This is a solid five-shelf plain pine bookshelf, and I can meet you partway at 300. I'm happy to talk further if that works for you.
+    [read] harness read ask 300 (last number in text: 300)
+    -> SendMessage '215' taskId=bb66912c
+    <- TASK_STATE_INPUT_REQUIRED | Thank you for your offer of 215, but I can't go that low on this five-shelf plain pine bookshelf. I can meet you partway at 280, which is a fair price for solid pine. Let me know if that wo
+    [read] harness read ask 280 (last number in text: 280)
+    -> SendMessage '225' taskId=bb66912c
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for your offer of 225. The pine bookshelf is solid, with five shelves and a clean finish, and I can come down to 270 for you. If that works, I can arrange delivery as soon as you're 
+    [read] harness read ask 270 (last number in text: 270)
+    -> SendMessage '228' taskId=bb66912c
+    <- TASK_STATE_INPUT_REQUIRED | Thanks for your offer of 228 on the five-shelf plain pine bookshelf. I can come down to 265 because the solid pine construction holds up well over time. I'd be happy to close the deal at th
+    [read] harness read ask 265 (last number in text: 265)
+    done: TASK_STATE_CANCELED, harness calls 5, 61s
+    seller deals so far: ['[deal] Haiku Furniture Shop | BASE-LAMP | 100 | task f01b9352-4ffe-43f1-a752-e9689a400c21']
+  PASS  C_lamp_and_bookshelf: seller deals [100.0] (expect one lamp deal in 100..120, no bookshelf), guards []
+
+9/9 passed
