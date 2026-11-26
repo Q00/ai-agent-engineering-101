@@ -1,0 +1,16 @@
+20:16:10 [acp] settled lamp at 100, ledger #1
+20:16:10 [acp] paid 100 through http://127.0.0.1:50975/acp, settled at ledger #1
+{"flow": "our-A2A -> course-ACP/AP2 -> local-settle", "price": 100, "paid": {"order": "local-order-1", "ledger": 1}, "model_api_calls": 0, "public_market_calls": 0}
+.20:16:10 [acp] checkout total 100 is above the mandate's limit; not paying
+.20:16:11 [acp] settled lamp at 100, ledger #1
+.20:16:11 [acp] settle refused: ['amount_is_checkout_total']
+.20:16:11 [acp] settle refused: ['payee_is_this_shop']
+.20:16:12 [acp] settle refused: ['bound_to_this_checkout']
+.20:16:12 [acp] settle refused: ['bound_to_open_mandates']
+.20:16:13 [acp] settle refused: ['amount_is_checkout_total']
+.20:16:13 [acp] settle refused: ['bound_to_this_checkout']
+.20:16:13 [acp] settle refused: ['closed_mandates_types']
+.20:16:14 [acp] settle refused: ['payment_mandate_signed_by_buyer']
+.20:16:14 [acp] settle refused: ['not_expired']
+.........
+20 passed in 8.91s

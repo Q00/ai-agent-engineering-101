@@ -1,0 +1,18 @@
+{
+  "harness": "Round 3: evidence-driven stock seller and buyer with model-assisted message interpretation and analysis. Trading tools validate inventory, certificates, economic value and settlement conditions; persistent ledger and event memory inform later decisions. Versioned policy ownership and expiry bound changes. Official kit v4 restock/review hooks included; model roles follow the operating configuration.",
+  "seller": {
+    "cmd": "./run_harness.sh seller --port {port}"
+  },
+  "buyer": {
+    "cmd": "./run_harness.sh buyer --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "./run_harness.sh market-buyer --shops {shops} --item {item} --budget {budget} --order {order}"
+  },
+  "restock": {
+    "cmd": "./run_harness.sh restock --state {state}"
+  },
+  "review": {
+    "cmd": "./run_harness.sh review --deal {deal}"
+  }
+}

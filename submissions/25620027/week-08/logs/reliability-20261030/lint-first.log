@@ -1,0 +1,133 @@
+PLR2004 Magic value used in comparison, consider replacing `280` with a constant variable
+   --> market_a2a/buyer.py:185:41
+    |
+183 |         msg = "Purchase budget must be positive"
+184 |         raise HarnessError(msg)
+185 |     if not 0 < order.timeout_seconds <= 280:
+    |                                         ^^^
+186 |         msg = "Purchase time budget must be positive and at most 280 seconds"
+187 |         raise HarnessError(msg)
+    |
+
+C901 `_retry_complete` is too complex (11 > 10)
+   --> market_a2a/harness.py:204:15
+    |
+202 |             raise HarnessError(message) from exc
+203 |
+204 |     async def _retry_complete(
+    |               ^^^^^^^^^^^^^^^
+205 |         self,
+206 |         messages: list[ChatCompletionMessageParam],
+    |
+
+E501 Line too long (91 > 88)
+   --> market_a2a/market_buyer.py:146:89
+    |
+144 |                             ],
+145 |                         },
+146 |                         "locally_observed_operator_directive": entry.name in blocked_names,
+    |                                                                                         ^^^
+147 |                         "memory_prior": json_value(memory_tools.prior(index, item)),
+148 |                         "own_trades": [
+    |
+
+E501 Line too long (90 > 88)
+   --> market_a2a/market_buyer.py:173:89
+    |
+171 |                 ToolSpec(
+172 |                     name="lookup_trade_evidence",
+173 |                     description="Read one own-trade record from this selection snapshot.",
+    |                                                                                         ^^
+174 |                     parameters=EvidenceQuery.model_json_schema(),
+175 |                 ),
+    |
+
+E501 Line too long (95 > 88)
+   --> market_a2a/market_buyer.py:263:89
+    |
+261 |                 decision.evaluate,
+262 |             )
+263 |     except (HarnessError, OpenAIError, httpx2.HTTPError, ValidationError, TimeoutError) as exc:
+    |                                                                                         ^^^^^^^
+264 |         emit(f"[MARKET REVIEW FALLBACK] reason={type(exc).__name__}")
+265 |     if decision.review is None:
+    |
+
+C901 `negotiate` is too complex (12 > 10)
+  --> market_a2a/seller_turn.py:81:15
+   |
+79 |         self.price_history: SellerHistory = SellerHistory()
+80 |
+81 |     async def negotiate(self, task: Task, text: str, queue: EventQueue) -> None:
+   |               ^^^^^^^^^
+82 |         """Expose retrieval and guarded commercial actions for one model turn."""
+83 |         updater = TaskUpdater(queue, task.id, task.context_id)
+   |
+
+F401 [*] `market_a2a.models.HarnessError` imported but unused
+  --> tests/test_market_buyer.py:15:31
+   |
+13 | from market_a2a.market_buyer import MarketRequest, market_buy
+14 | from market_a2a.memory import Memory, Trade
+15 | from market_a2a.models import HarnessError, Purchase, ToolDispatch, ToolResult, ToolSpec
+   |                               ^^^^^^^^^^^^
+16 | from market_a2a.promotion import SHOP_URL
+17 | from tests.market_fakes import ScriptedHarness, ShopTransport
+   |
+help: Remove unused import: `market_a2a.models.HarnessError`
+   |
+14 | from market_a2a.memory import Memory, Trade
+   - from market_a2a.models import HarnessError, Purchase, ToolDispatch, ToolResult, ToolSpec
+15 + from market_a2a.models import Purchase, ToolDispatch, ToolResult, ToolSpec
+16 | from market_a2a.promotion import SHOP_URL
+   |
+
+E501 Line too long (89 > 88)
+  --> tests/test_model_deadlines.py:60:89
+   |
+58 |     async def scenario() -> None:
+59 |         async with (
+60 |             httpx2.AsyncClient(transport=httpx2.MockTransport(unavailable)) as free_http,
+   |                                                                                         ^
+61 |             AsyncOpenAI(api_key="offline", max_retries=0, http_client=free_http,
+62 |                         base_url="https://openrouter.ai/api/v1") as free,
+   |
+
+TC003 Move standard library import `pathlib.Path` into a type-checking block
+ --> tests/test_quote_execution.py:6:21
+  |
+5 | import base64
+6 | from pathlib import Path
+  |                     ^^^^
+7 |
+8 | import anyio
+  |
+help: Move into type-checking block
+   |
+5  | import base64
+   - from pathlib import Path
+6  |
+--------------------------------------------------------------------------------
+19 | from tests.test_signed_seller import send, task_from
+20 + from typing import TYPE_CHECKING
+21 +
+22 + if TYPE_CHECKING:
+23 +     from pathlib import Path
+24 |
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+  --> tests/test_quote_execution.py:77:9
+   |
+76 |       async def scenario() -> None:
+77 | /         async with AsyncOpenAI(api_key="offline-placeholder") as client:
+78 | |             async with fresh_client(Harness(client, print)) as seller:
+   | |______________________________________________________________________^
+79 |                   opened = task_from(await send(seller, "lamp"))
+80 |                   continued = task_from(await send(seller, "105", opened.id))
+   |
+help: Combine `with` statements
+
+Found 10 errors.
+[*] 1 fixable with `--fix` (1 unsafe fix available with `--fix --unsafe-fixes`).

@@ -1,0 +1,46 @@
+.{'shops': 100, 'record_ms_median': 0.9180625, 'record_ms_p95': 1.641791, 'record_ms_max': 2.41925}
+...{'input_records': 40000, 'retained': 2048, 'file_bytes': 996543}
+...{"records": 2000, "prior_bytes": 609, "full_memory_bytes": 944036}
+....[MARKET SELECTION] {"index":0,"reason":"Inspect own observation before choosing"}
+[A2A HTTP] {"method": "GET", "url": "http://south.test/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Stable Seller","skills":[],"supportedInterfaces":[{"url":"http://south.test/rpc","protocolBinding":"JSONRPC","protocolVersion":"1.0"}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "5dfe69b1-1926-45bd-a2d0-04702b6bd49c", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "7539ebed-72ae-4d4d-a547-0822931d6b41", "parts": [{"text": "I want to buy lamp"}]}}}
+[A2A HTTP] {"method": "POST", "url": "http://south.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"parts":[{"text":"The asking price is 120."}]}}}}}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "item": "lamp", "budget": 120, "rounds": 0, "last_offer": null, "seller_ask": null, "offered_prices": [], "remaining_rounds": 12, "pricing_context": {"selected_shop_trades": [{"item": "lamp", "budget": 120, "completed": true, "price": 90, "receipt_present": true, "operator_directive_observed": false, "incident_response_count": 0}], "observed_same_item_prices": [90]}, "recent_observations": [{"state": "TASK_STATE_INPUT_REQUIRED", "ask": null}], "operator_directive_observed": false, "directive_response_count": 0}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "1a9ce1ed-8cba-4ffd-abeb-11db353871d9", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "4636f3e2-e116-4ca9-9c9d-d186e03d7b8e", "parts": [{"text": "120"}], "taskId": "trade-1", "contextId": "context-1"}}}
+[A2A HTTP] {"method": "POST", "url": "http://south.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_COMPLETED","message":{"parts":[{"text":"The asking price is 120."}]}},"artifacts":[{"parts":[{"data":{"shop":"Stable Seller","item":"lamp","price":120.0,"task":"trade-1","sig_seller":"original-signature","extension":{"number":3.0}}}]}]}}}
+[NEGOTIATION RESULT] {"completed":true,"item":"lamp","sku":"","price":120,"task_id":"trade-1","shop":"http://south.test/rpc","failure_observation":"","receipt":{"shop":"Stable Seller","item":"lamp","price":120.0,"task":"trade-1","sig_seller":"original-signature","extension":{"number":3.0}},"safety":{"operator_directive_observed":false,"response_count":0,"evidence_sha256":[]},"initial_ask":null,"offer_count":1}
+...[MARKET SELECTION] {"index":1,"reason":"Try South"}
+[A2A HTTP] {"method": "GET", "url": "http://south.test/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Stable Seller","skills":[],"supportedInterfaces":[{"url":"http://south.test/rpc","protocolBinding":"JSONRPC","protocolVersion":"1.0"}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "c7753045-4d11-460f-8e21-5f22b91c147e", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "ec1f6f29-4e46-4cfd-8387-47d467bef875", "parts": [{"text": "I want to buy lamp"}]}}}
+[A2A HTTP] {"method": "POST", "url": "http://south.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"parts":[{"text":"The asking price is 120."}]}}}}}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "item": "lamp", "budget": 100, "rounds": 0, "last_offer": null, "seller_ask": null, "offered_prices": [], "remaining_rounds": 12, "pricing_context": {"selected_shop_trades": [], "observed_same_item_prices": []}, "recent_observations": [{"state": "TASK_STATE_INPUT_REQUIRED", "ask": null}], "operator_directive_observed": false, "directive_response_count": 0}
+[BUYER WALK] No acceptable deal
+[NEGOTIATION RESULT] {"completed":false,"item":"lamp","sku":"","price":null,"task_id":"trade-1","shop":"http://south.test/rpc","failure_observation":"TASK_STATE_INPUT_REQUIRED: The asking price is 120.","receipt":null,"safety":{"operator_directive_observed":false,"response_count":0,"evidence_sha256":[]},"initial_ask":null,"offer_count":0}
+[MARKET SELECTION] {"index":0,"reason":"Remember the previous no-deal"}
+[A2A HTTP] {"method": "GET", "url": "http://restarted.test/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Stable Seller","skills":[],"supportedInterfaces":[{"url":"http://restarted.test/rpc","protocolBinding":"JSONRPC","protocolVersion":"1.0"}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "b7998d59-d8dc-4084-8b37-7698c079d8ae", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "01fa8bdf-b31a-42b4-931d-63a622ce5196", "parts": [{"text": "I want to buy lamp"}]}}}
+[A2A HTTP] {"method": "POST", "url": "http://restarted.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"parts":[{"text":"The asking price is 120."}]}}}}}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "item": "lamp", "budget": 100, "rounds": 0, "last_offer": null, "seller_ask": null, "offered_prices": [], "remaining_rounds": 12, "pricing_context": {"selected_shop_trades": [{"item": "lamp", "budget": 100, "completed": false, "price": null, "receipt_present": false, "operator_directive_observed": false, "incident_response_count": 0}], "observed_same_item_prices": []}, "recent_observations": [{"state": "TASK_STATE_INPUT_REQUIRED", "ask": null}], "operator_directive_observed": false, "directive_response_count": 0}
+[BUYER WALK] Still too expensive
+[NEGOTIATION RESULT] {"completed":false,"item":"lamp","sku":"","price":null,"task_id":"trade-1","shop":"http://restarted.test/rpc","failure_observation":"TASK_STATE_INPUT_REQUIRED: The asking price is 120.","receipt":null,"safety":{"operator_directive_observed":false,"response_count":0,"evidence_sha256":[]},"initial_ask":null,"offer_count":0}
+.[MARKET SELECTION] {"index":0,"reason":"Try this shop"}
+[A2A HTTP] {"method": "GET", "url": "http://north.test/.well-known/agent-card.json", "version": "1.0"}
+[A2A CARD] {"name":"Stable Seller","skills":[],"supportedInterfaces":[{"url":"http://north.test/rpc","protocolBinding":"JSONRPC","protocolVersion":"1.0"}]}
+[A2A REQUEST] {"jsonrpc": "2.0", "id": "b420755e-f7e6-4d95-88be-a89449744a86", "method": "SendMessage", "params": {"message": {"role": "ROLE_USER", "messageId": "ba14d92d-8044-4c58-aff8-da5f487fefde", "parts": [{"text": "I want to buy lamp"}]}}}
+[A2A HTTP] {"method": "POST", "url": "http://north.test/rpc", "version": "1.0"}
+[A2A RESPONSE] {"result":{"task":{"id":"trade-1","contextId":"context-1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"parts":[{"text":"The asking price is 120."}]}}}}}
+[NEGOTIATION SUMMARY] {"requested_item": "lamp", "item": "lamp", "budget": 100, "rounds": 0, "last_offer": null, "seller_ask": null, "offered_prices": [], "remaining_rounds": 12, "pricing_context": {"selected_shop_trades": [], "observed_same_item_prices": []}, "recent_observations": [{"state": "TASK_STATE_INPUT_REQUIRED", "ask": null}], "operator_directive_observed": false, "directive_response_count": 0}
+[BUYER WALK] No affordable offer
+[NEGOTIATION RESULT] {"completed":false,"item":"lamp","sku":"","price":null,"task_id":"trade-1","shop":"http://north.test/rpc","failure_observation":"TASK_STATE_INPUT_REQUIRED: The asking price is 120.","receipt":null,"safety":{"operator_directive_observed":false,"response_count":0,"evidence_sha256":[]},"initial_ask":null,"offer_count":0}
+....[MARKET SELECTION] {"index":0,"reason":"Try the listed shop"}
+[MARKET FAILURE] Purchase failed: ConnectError
+......RECORDER_EXPORTED
+.
+26 passed in 2.97s

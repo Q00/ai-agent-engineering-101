@@ -1,0 +1,1244 @@
+......................................................FFFFFFFFFFFFF..... [ 91%]
+.......                                                                  [100%]
+=================================== FAILURES ===================================
+_____ test_persisted_quote_executes_without_another_model_response[105-2] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1ba780c80>
+tmp_path = PosixPath('/tmp/pytest/test_persisted_quote_executes_0')
+round_number = '2', acceptance = '105'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert isinstance(replay, dict)
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:43: in scenario
+    harness = Harness(client, logs.append)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x7cb1ba780ef0>
+client = <openai.AsyncOpenAI object at 0x7cb1ba7818b0>
+emit = <built-in method append of list object at 0x7cb1baddcd40>, model = None
+fallback = None, clock = None
+
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
+        fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Own observability counters while the caller owns the API client."""
+        self.client = client
+        self.emit = emit
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+>           raise HarnessError(message)
+E           market_a2a.models.HarnessError: The free model requires the OpenRouter endpoint
+
+market_a2a/harness.py:113: HarnessError
+_____ test_persisted_quote_executes_without_another_model_response[105-3] ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1ba7837d0>
+tmp_path = PosixPath('/tmp/pytest/test_persisted_quote_executes_1')
+round_number = '3', acceptance = '105'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert isinstance(replay, dict)
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:43: in scenario
+    harness = Harness(client, logs.append)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x7cb1ba780d10>
+client = <openai.AsyncOpenAI object at 0x7cb1ba783bc0>
+emit = <built-in method append of list object at 0x7cb1b849ef00>, model = None
+fallback = None, clock = None
+
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
+        fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Own observability counters while the caller owns the API client."""
+        self.client = client
+        self.emit = emit
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+>           raise HarnessError(message)
+E           market_a2a.models.HarnessError: The free model requires the OpenRouter endpoint
+
+market_a2a/harness.py:113: HarnessError
+___ test_persisted_quote_executes_without_another_model_response[I accept-2] ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1b863f770>
+tmp_path = PosixPath('/tmp/pytest/test_persisted_quote_executes_2')
+round_number = '2', acceptance = 'I accept'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert isinstance(replay, dict)
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:43: in scenario
+    harness = Harness(client, logs.append)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x7cb1b863cc20>
+client = <openai.AsyncOpenAI object at 0x7cb1b863fd10>
+emit = <built-in method append of list object at 0x7cb1b86d7ac0>, model = None
+fallback = None, clock = None
+
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
+        fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Own observability counters while the caller owns the API client."""
+        self.client = client
+        self.emit = emit
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+>           raise HarnessError(message)
+E           market_a2a.models.HarnessError: The free model requires the OpenRouter endpoint
+
+market_a2a/harness.py:113: HarnessError
+___ test_persisted_quote_executes_without_another_model_response[I accept-3] ___
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1b863c140>
+tmp_path = PosixPath('/tmp/pytest/test_persisted_quote_executes_3')
+round_number = '3', acceptance = 'I accept'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert isinstance(replay, dict)
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:43: in scenario
+    harness = Harness(client, logs.append)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x7cb1b863e0c0>
+client = <openai.AsyncOpenAI object at 0x7cb1b863d700>
+emit = <built-in method append of list object at 0x7cb1b8553980>, model = None
+fallback = None, clock = None
+
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
+        fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Own observability counters while the caller owns the API client."""
+        self.client = client
+        self.emit = emit
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+>           raise HarnessError(message)
+E           market_a2a.models.HarnessError: The free model requires the OpenRouter endpoint
+
+market_a2a/harness.py:113: HarnessError
+_ test_persisted_quote_executes_without_another_model_response[I can pay 110-2] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1b863cd10>
+tmp_path = PosixPath('/tmp/pytest/test_persisted_quote_executes_4')
+round_number = '2', acceptance = 'I can pay 110'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert isinstance(replay, dict)
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:43: in scenario
+    harness = Harness(client, logs.append)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x7cb1b863cb90>
+client = <openai.AsyncOpenAI object at 0x7cb1b863c8f0>
+emit = <built-in method append of list object at 0x7cb1b87fb140>, model = None
+fallback = None, clock = None
+
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
+        fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Own observability counters while the caller owns the API client."""
+        self.client = client
+        self.emit = emit
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+>           raise HarnessError(message)
+E           market_a2a.models.HarnessError: The free model requires the OpenRouter endpoint
+
+market_a2a/harness.py:113: HarnessError
+_ test_persisted_quote_executes_without_another_model_response[I can pay 110-3] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1b85e4f80>
+tmp_path = PosixPath('/tmp/pytest/test_persisted_quote_executes_5')
+round_number = '3', acceptance = 'I can pay 110'
+
+    @pytest.mark.parametrize("round_number", ["2", "3"])
+    @pytest.mark.parametrize("acceptance", ["105", "I accept", "I can pay 110"])
+    def test_persisted_quote_executes_without_another_model_response(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        round_number: str, acceptance: str,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", round_number)
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [action("quote", 105)])
+        key = Ed25519PrivateKey.generate()
+        signer = ReceiptSigner(key)
+        price = 110 if acceptance.endswith("110") else 105
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, logs.append)
+                async with fresh_client(harness, signer) as first:
+                    opened = task_from(await send(first, "lamp"))
+                # The restarted app has a valid quote, but no model replies remain.
+                async with fresh_client(harness, signer) as second:
+                    completed = task_from(await send(second, acceptance, opened.id))
+                async with fresh_client(harness, signer) as third:
+                    replay = await send(third, acceptance, opened.id)
+                assert completed.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(dict[str, JsonValue]).validate_json(
+                    MessageToJson(completed.artifacts[0].parts[0].data)
+                )
+                receipt = SignedReceipt.model_validate({
+                    **{k: raw[k] for k in ("shop", "item", "task", "sig_seller")},
+                    "price": price,
+                })
+                assert raw["price"] == price
+                assert raw["sku"] == "lamp"
+                assert receipt.task == opened.id
+                key.public_key().verify(
+                    base64.b64decode(receipt.sig_seller), receipt.canonical()
+                )
+                assert isinstance(replay, dict)
+                assert "error" in replay
+                assert len(calls) == 1
+                assert any("seller.quote_execution " in line for line in logs)
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:43: in scenario
+    harness = Harness(client, logs.append)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x7cb1b85e67e0>
+client = <openai.AsyncOpenAI object at 0x7cb1b85e52e0>
+emit = <built-in method append of list object at 0x7cb1bab67980>, model = None
+fallback = None, clock = None
+
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
+        fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Own observability counters while the caller owns the API client."""
+        self.client = client
+        self.emit = emit
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+>           raise HarnessError(message)
+E           market_a2a.models.HarnessError: The free model requires the OpenRouter endpoint
+
+market_a2a/harness.py:113: HarnessError
+_____________ test_r3_lower_offer_still_requires_a_new_model_price _____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1b863ce60>
+
+    def test_r3_lower_offer_still_requires_a_new_model_price(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", "3")
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        calls = scripted(monkeypatch, [action("quote", 110), action("quote", 108)])
+    
+        async def scenario() -> None:
+            async with (
+                AsyncOpenAI(api_key="offline-placeholder") as client,
+                fresh_client(Harness(client, print)) as seller,
+            ):
+                opened = task_from(await send(seller, "lamp"))
+                continued = task_from(await send(seller, "105", opened.id))
+                assert continued.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                assert not continued.artifacts
+                assert continued.status.message.metadata["ask"] == 108
+                assert len(calls) == 2
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:83: in scenario
+    fresh_client(Harness(client, print)) as seller,
+                 ^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x7cb1b85e5fa0>
+client = <openai.AsyncOpenAI object at 0x7cb1b863ecf0>
+emit = <built-in function print>, model = None, fallback = None, clock = None
+
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
+        fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Own observability counters while the caller owns the API client."""
+        self.client = client
+        self.emit = emit
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+>           raise HarnessError(message)
+E           market_a2a.models.HarnessError: The free model requires the OpenRouter endpoint
+
+market_a2a/harness.py:113: HarnessError
+_________ test_repeated_infeasible_bid_cannot_raise_a_persisted_quote __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1b85e70b0>
+tmp_path = PosixPath('/tmp/pytest/test_repeated_infeasible_bid_c0')
+
+    def test_repeated_infeasible_bid_cannot_raise_a_persisted_quote(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", "3")
+        monkeypatch.setenv("AX_PRICE_COMPARISON", "0")
+        monkeypatch.setenv("AX_SELLER_STATE_DB", str(tmp_path / "seller.sqlite3"))
+        calls = scripted(monkeypatch, [
+            action("quote", 110), action("quote", 100),
+            action("quote", 130), action("quote", 100),
+        ])
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as client:
+                harness = Harness(client, print)
+                async with fresh_client(harness) as first:
+                    opened = task_from(await send(first, "lamp"))
+                    lowered = task_from(await send(first, "90", opened.id))
+                async with fresh_client(harness) as second:
+                    repeated = task_from(await send(second, "90", opened.id))
+                assert [task.status.message.metadata["ask"] for task in
+                        (opened, lowered, repeated)] == [110, 100, 100]
+                assert repeated.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                assert not repeated.artifacts
+                assert "100" in repeated.status.message.parts[0].text
+                assert len(calls) == 4
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:121: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:108: in scenario
+    harness = Harness(client, print)
+              ^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x7cb1b85e5640>
+client = <openai.AsyncOpenAI object at 0x7cb1b85e5550>
+emit = <built-in function print>, model = None, fallback = None, clock = None
+
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
+        fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Own observability counters while the caller owns the API client."""
+        self.client = client
+        self.emit = emit
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+>           raise HarnessError(message)
+E           market_a2a.models.HarnessError: The free model requires the OpenRouter endpoint
+
+market_a2a/harness.py:113: HarnessError
+________ test_repricing_cannot_search_for_a_different_selected_product _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1b85e6ff0>
+
+    def test_repricing_cannot_search_for_a_different_selected_product(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("AX_MARKET_ROUND", "3")
+        calls = scripted(monkeypatch, [
+            action("quote", 110), ("search_catalog", {"query": "chair"}),
+            action("quote", 108),
+        ])
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with (
+                AsyncOpenAI(api_key="offline-placeholder") as client,
+                fresh_client(Harness(client, logs.append)) as seller,
+            ):
+                opened = task_from(await send(seller, "lamp"))
+                continued = task_from(await send(seller, "105", opened.id))
+                assert continued.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+                assert continued.status.message.metadata["sku"] == "lamp"
+                assert continued.status.message.metadata["ask"] == 108
+                assert any("SKU already selected" in line for line in logs)
+                assert len(calls) == 3
+    
+>       anyio.run(scenario)
+
+tests/test_quote_execution.py:147: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_quote_execution.py:137: in scenario
+    fresh_client(Harness(client, logs.append)) as seller,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x7cb1b85e7d40>
+client = <openai.AsyncOpenAI object at 0x7cb1b85e5bb0>
+emit = <built-in method append of list object at 0x7cb1bb228a40>, model = None
+fallback = None, clock = None
+
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
+        fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Own observability counters while the caller owns the API client."""
+        self.client = client
+        self.emit = emit
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+>           raise HarnessError(message)
+E           market_a2a.models.HarnessError: The free model requires the OpenRouter endpoint
+
+market_a2a/harness.py:113: HarnessError
+_____________ test_stalled_sdk_response_is_cancelled_and_reported ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1b848db50>
+
+    def test_stalled_sdk_response_is_cancelled_and_reported(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("market_a2a.harness.MODEL_WAIT_SECONDS", 0.02)
+        logs: list[str] = []
+    
+        async def scenario() -> None:
+            async with (
+                httpx2.AsyncClient(transport=httpx2.MockTransport(stalled)) as http,
+                AsyncOpenAI(api_key="offline", max_retries=0, http_client=http) as client,
+            ):
+                harness = Harness(client, logs.append)
+                with anyio.fail_after(1), pytest.raises(HarnessError, match="response"):
+                    _ = await harness.complete([], [])
+                assert harness.calls == 0
+                assert "MODEL_TIMEOUT stage=response" in logs
+    
+>       anyio.run(scenario)
+
+tests/test_model_deadlines.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_model_deadlines.py:41: in scenario
+    harness = Harness(client, logs.append)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x7cb1b85e7e00>
+client = <openai.AsyncOpenAI object at 0x7cb1b848f920>
+emit = <built-in method append of list object at 0x7cb1ba9ab680>, model = None
+fallback = None, clock = None
+
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
+        fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Own observability counters while the caller owns the API client."""
+        self.client = client
+        self.emit = emit
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+>           raise HarnessError(message)
+E           market_a2a.models.HarnessError: The free model requires the OpenRouter endpoint
+
+market_a2a/harness.py:113: HarnessError
+__________ test_timeout_after_paid_reservation_does_not_refund_quota ___________
+
+    async def scenario() -> None:
+        async with (
+            httpx2.AsyncClient(
+                transport=httpx2.MockTransport(unavailable)
+            ) as free_http,
+            AsyncOpenAI(api_key="offline", max_retries=0, http_client=free_http,
+                        base_url="https://openrouter.ai/api/v1") as free,
+            httpx2.AsyncClient(transport=httpx2.MockTransport(stalled)) as paid_http,
+            AsyncOpenAI(api_key="offline", max_retries=0,
+                        http_client=paid_http) as paid,
+        ):
+            quota = DailyQuota(tmp_path / "quota.sqlite3", 1)
+            harness = Harness(
+                free, print, model=FREE_ROUTER,
+                fallback=OpenAIFallback(paid, quota),
+            )
+            with anyio.fail_after(1), pytest.raises(HarnessError, match="response"):
+>               _ = await harness.complete([], [])
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_model_deadlines.py:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+market_a2a/harness.py:198: in complete
+    return await self._retry_complete(messages, tools)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+market_a2a/harness.py:215: in _retry_complete
+    completion = await self._complete_once(messages, tools, route)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+market_a2a/harness.py:248: in _complete_once
+    return await self.client.chat.completions.create(
+/usr/local/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py:2907: in create
+    return await self._post(
+/usr/local/lib/python3.12/site-packages/openai/_base_client.py:1979: in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/openai/_base_client.py:1660: in request
+    self._platform = await asyncify(get_platform)()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/openai/_utils/_sync.py:56: in wrapper
+    return await to_thread(function, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/openai/_utils/_sync.py:20: in to_thread
+    return await asyncio.to_thread(func, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+func = <function get_platform at 0x7cb1bcc99300>, args = (), kwargs = {}
+
+    async def to_thread(func, /, *args, **kwargs):
+        """Asynchronously run function *func* in a separate thread.
+    
+        Any *args and **kwargs supplied for this function are directly passed
+        to *func*. Also, the current :class:`contextvars.Context` is propagated,
+        allowing context variables from the main thread to be accessed in the
+        separate thread.
+    
+        Return a coroutine that can be awaited to get the eventual result of *func*.
+        """
+        loop = events.get_running_loop()
+        ctx = contextvars.copy_context()
+        func_call = functools.partial(ctx.run, func, *args, **kwargs)
+>       return await loop.run_in_executor(None, func_call)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       asyncio.exceptions.CancelledError: Cancelled via cancel scope 7cb1ba93f570; reason: deadline exceeded
+
+/usr/local/lib/python3.12/asyncio/threads.py:25: CancelledError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/tmp/pytest/test_timeout_after_paid_reserv0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1b848fb60>
+
+    def test_timeout_after_paid_reservation_does_not_refund_quota(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("market_a2a.harness.MODEL_WAIT_SECONDS", 0.02)
+    
+        async def unavailable(_request: httpx2.Request) -> httpx2.Response:
+            return httpx2.Response(404, json={"error": {"message": "No free route"}})
+    
+        async def scenario() -> None:
+            async with (
+                httpx2.AsyncClient(
+                    transport=httpx2.MockTransport(unavailable)
+                ) as free_http,
+                AsyncOpenAI(api_key="offline", max_retries=0, http_client=free_http,
+                            base_url="https://openrouter.ai/api/v1") as free,
+                httpx2.AsyncClient(transport=httpx2.MockTransport(stalled)) as paid_http,
+                AsyncOpenAI(api_key="offline", max_retries=0,
+                            http_client=paid_http) as paid,
+            ):
+                quota = DailyQuota(tmp_path / "quota.sqlite3", 1)
+                harness = Harness(
+                    free, print, model=FREE_ROUTER,
+                    fallback=OpenAIFallback(paid, quota),
+                )
+                with anyio.fail_after(1), pytest.raises(HarnessError, match="response"):
+                    _ = await harness.complete([], [])
+                with pytest.raises(HarnessError, match="limit reached"):
+                    _ = quota.reserve()
+    
+>       anyio.run(scenario)
+
+tests/test_model_deadlines.py:79: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_model_deadlines.py:74: in scenario
+    with anyio.fail_after(1), pytest.raises(HarnessError, match="response"):
+         ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+/usr/local/lib/python3.12/site-packages/anyio/_core/_tasks.py:178: in fail_after
+    with fail_at(deadline, shield=shield, reason=reason) as scope:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+deadline = 1128782.84543965, shield = False, reason = None
+
+    @contextmanager
+    def fail_at(
+        deadline: float | None, shield: bool = False, reason: str | None = None
+    ) -> Generator[CancelScope, None, None]:
+        """
+        Create a context manager which raises a :class:`TimeoutError` if the code in the
+        enclosing context does not finish by the given deadline.
+    
+        :param deadline: the deadline before raising the exception, or
+            ``None`` to disable the timeout
+        :param shield: ``True`` to shield the cancel scope from external cancellation
+        :param reason: explanation for timeout to add to the message of a raised `TimeoutError`
+        :return: a context manager that yields a cancel scope
+        :rtype: :class:`~typing.ContextManager`\\[:class:`~anyio.CancelScope`\\]
+        :raises NoEventLoopError: if no supported asynchronous event loop is running in the
+            current thread
+    
+        .. versionadded:: 4.15.0
+    
+        """
+        current_time = get_async_backend().current_time
+        effective_deadline = math.inf if deadline is None else deadline
+        with get_async_backend().create_cancel_scope(
+            deadline=effective_deadline, shield=shield
+        ) as cancel_scope:
+            yield cancel_scope
+    
+        if cancel_scope.cancelled_caught and current_time() >= cancel_scope.deadline:
+>           raise TimeoutError(reason) if reason else TimeoutError
+E           TimeoutError
+
+/usr/local/lib/python3.12/site-packages/anyio/_core/_tasks.py:155: TimeoutError
+___________ test_decision_budget_is_shared_across_model_corrections ____________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1ba8ec710>
+
+    def test_decision_budget_is_shared_across_model_corrections(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("market_a2a.harness.DECISION_WAIT_SECONDS", 0.025)
+        attempts: list[int] = []
+    
+        async def invalid_response(
+            _self: Harness, _messages: list[ChatCompletionMessageParam],
+            _tools: list[ChatCompletionToolParam],
+        ) -> ChatCompletionMessage:
+            attempts.append(1)
+            await anyio.sleep(0.015)
+            return ChatCompletionMessage.model_validate({
+                "role": "assistant", "content": None,
+                "tool_calls": [{"id": "bad", "type": "function", "function": {
+                    "name": "invalid", "arguments": "{}",
+                }}],
+            })
+    
+        async def reject(name: str, arguments: str) -> ToolResult:
+            _ = name, arguments
+            return ToolResult(data="Choose an authorized action")
+    
+        monkeypatch.setattr(Harness, "complete", invalid_response)
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline") as client:
+                with anyio.fail_after(1), pytest.raises(HarnessError, match="decision"):
+                    _ = await Harness(client, print).run("test", {}, (), reject)
+                assert len(attempts) < 6
+    
+>       anyio.run(scenario)
+
+tests/test_model_deadlines.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline") as client:
+>           with anyio.fail_after(1), pytest.raises(HarnessError, match="decision"):
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError: Regex pattern did not match.
+E             Expected regex: 'decision'
+E             Actual message: 'The free model requires the OpenRouter endpoint'
+
+tests/test_model_deadlines.py:109: AssertionError
+___________ test_model_deadline_does_not_interrupt_a_committing_tool ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7cb1baf6e210>
+
+    def test_model_deadline_does_not_interrupt_a_committing_tool(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("market_a2a.harness.DECISION_WAIT_SECONDS", 0.01)
+    
+        async def answer(
+            _self: Harness, _messages: list[ChatCompletionMessageParam],
+            _tools: list[ChatCompletionToolParam],
+        ) -> ChatCompletionMessage:
+            return ChatCompletionMessage.model_validate({
+                "role": "assistant", "content": None,
+                "tool_calls": [{"id": "commit", "type": "function", "function": {
+                    "name": "commit", "arguments": "{}",
+                }}],
+            })
+    
+        async def commit(name: str, arguments: str) -> ToolResult:
+            _ = name, arguments
+            await anyio.sleep(0.03)
+            return ToolResult(data="committed", terminal=True)
+    
+        monkeypatch.setattr(Harness, "complete", answer)
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline") as client:
+                with anyio.fail_after(1):
+                    result = await Harness(client, print).run("test", {}, (), commit)
+                assert result.data == "committed"
+    
+>       anyio.run(scenario)
+
+tests/test_model_deadlines.py:145: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_model_deadlines.py:142: in scenario
+    result = await Harness(client, print).run("test", {}, (), commit)
+                   ^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x7cb1ba773230>
+client = <openai.AsyncOpenAI object at 0x7cb1baf6e4e0>
+emit = <built-in function print>, model = None, fallback = None, clock = None
+
+    def __init__(
+        self,
+        client: AsyncOpenAI,
+        emit: Callable[[str], None],
+        *,
+        model: str | None = None,
+        fallback: OpenAIFallback | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        """Own observability counters while the caller owns the API client."""
+        self.client = client
+        self.emit = emit
+        self.model = configured_model() if model is None else model
+        if client.base_url.host == "openrouter.ai" and self.model not in FREE_MODELS:
+            message = "OpenRouter integration permits only the explicit free model"
+            raise HarnessError(message)
+        if self.model in FREE_MODELS and client.base_url.host != "openrouter.ai":
+            message = "The free model requires the OpenRouter endpoint"
+>           raise HarnessError(message)
+E           market_a2a.models.HarnessError: The free model requires the OpenRouter endpoint
+
+market_a2a/harness.py:113: HarnessError
+=========================== short test summary info ============================
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[105-2]
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[105-3]
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[I accept-2]
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[I accept-3]
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[I can pay 110-2]
+FAILED tests/test_quote_execution.py::test_persisted_quote_executes_without_another_model_response[I can pay 110-3]
+FAILED tests/test_quote_execution.py::test_r3_lower_offer_still_requires_a_new_model_price
+FAILED tests/test_quote_execution.py::test_repeated_infeasible_bid_cannot_raise_a_persisted_quote
+FAILED tests/test_quote_execution.py::test_repricing_cannot_search_for_a_different_selected_product
+FAILED tests/test_model_deadlines.py::test_stalled_sdk_response_is_cancelled_and_reported
+FAILED tests/test_model_deadlines.py::test_timeout_after_paid_reservation_does_not_refund_quota
+FAILED tests/test_model_deadlines.py::test_decision_budget_is_shared_across_model_corrections
+FAILED tests/test_model_deadlines.py::test_model_deadline_does_not_interrupt_a_committing_tool
+13 failed, 66 passed in 26.48s

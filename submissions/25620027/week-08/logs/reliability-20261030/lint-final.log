@@ -1,0 +1,12 @@
+E501 Line too long (93 > 88)
+   --> tests/test_seller_offer_release.py:195:89
+    |
+193 |                 last_integer = quote.status.message.parts[0].text.split()[-1]
+194 |                 final = await send(client, last_integer, quote.id)
+195 |                 # Then: the final-price metadata stays factual and acceptance needs no model.
+    |                                                                                         ^^^^^
+196 |                 assert quote.status.state == TaskState.TASK_STATE_INPUT_REQUIRED
+197 |                 metadata = TypeAdapter(JsonValue).validate_json(
+    |
+
+Found 1 error.

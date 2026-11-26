@@ -1,0 +1,205 @@
+% Round 3 submission figure. Build with XeLaTeX and TikZ.
+\documentclass[10pt]{article}
+\usepackage[a4paper,landscape,margin=8.7mm]{geometry}
+\usepackage{fontspec}
+\IfFontExistsTF{Noto Sans CJK KR}
+  {\setmainfont{Noto Sans CJK KR}}
+  {\setmainfont{AppleSDGothicNeo.ttc}[
+    Path=/System/Library/Fonts/,
+    UprightFeatures={FontIndex=0},
+    BoldFont=AppleSDGothicNeo.ttc,
+    BoldFeatures={FontIndex=6}]}
+\XeTeXlinebreaklocale "ko"
+\XeTeXlinebreakskip=0pt plus 1pt
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\usepackage[unicode,hidelinks]{hyperref}
+\hypersetup{pdftitle={Round 3 시장 에이전트 — 거래 궤적과 메모리},pdfauthor={25620027}}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\definecolor{Ink}{HTML}{182B3B}
+\definecolor{Muted}{HTML}{456071}
+\definecolor{Line}{HTML}{B6C6D0}
+\definecolor{Exec}{HTML}{244F72}
+\definecolor{Mem}{HTML}{12685D}
+\definecolor{Ctrl}{HTML}{6C477F}
+\definecolor{ErrorInk}{HTML}{994331}
+\definecolor{ExecPaper}{HTML}{F1F6FB}
+\definecolor{MemPaper}{HTML}{ECF6F3}
+\definecolor{CtrlPaper}{HTML}{F6F1F8}
+\definecolor{ErrorPaper}{HTML}{FBF2EF}
+\definecolor{KitPaper}{HTML}{F4F6F7}
+
+\newcommand{\cardtitle}[1]{\textbf{\color{Ink}#1}}
+\newcommand{\smallprint}[1]{{\fontsize{8.2}{10.8}\selectfont\color{Muted}#1}}
+\newcommand{\mono}[1]{{\smallprint{\texttt{#1}}}}
+% Color/line options, two rectangle corners, text width, content.
+\newcommand{\unitbox}[5]{%
+  \draw[card,#1] #2 rectangle #3;
+  \node[copy,text width=#4] at #2 {#5};
+}
+
+\begin{document}
+\noindent
+\begin{tikzpicture}[
+  x=1mm,y=-1mm,
+  card/.style={rounded corners=2pt,draw=Line,fill=white,line width=.55pt},
+  band/.style={rounded corners=3pt,line width=.55pt,draw=Line},
+  copy/.style={anchor=north west,align=left,inner xsep=2.4mm,inner ysep=1.7mm,
+    outer sep=0pt,text=Ink,font=\fontsize{9.1}{11.6}\selectfont},
+  section/.style={anchor=north west,inner sep=0pt,text=Exec,font=\fontsize{11.6}{14}\selectfont\bfseries},
+  edgecaption/.style={inner xsep=1.1mm,inner ysep=.55mm,fill=white,text=Muted,
+    font=\fontsize{7.9}{9.9}\selectfont,align=center},
+  tradeedge/.style={-{Latex[length=1.9mm]},line width=.73pt,draw=Exec},
+  link/.style={{Latex[length=1.7mm]}-{Latex[length=1.7mm]},line width=.67pt,draw=Exec},
+  remember/.style={tradeedge,draw=Mem},
+  fail/.style={tradeedge,draw=ErrorInk},
+  control/.style={tradeedge,draw=Ctrl,dash pattern=on 2.8pt off 1.7pt}
+]
+\path[use as bounding box] (0,0) rectangle (278,191);
+\node[anchor=north west,inner sep=0pt,text=Ink,font=\fontsize{20}{24}\selectfont\bfseries]
+  at (0,0) {Round 3 시장 에이전트의 거래 궤적과 메모리};
+\node[anchor=north east,inner sep=0pt,text=Muted,font=\fontsize{9}{11}\selectfont]
+  at (278,2.1) {25620027 성진호 · kit v4 · 2026-11-19};
+\node[anchor=north west,inner sep=0pt,text=Muted,font=\fontsize{10.2}{13}\selectfont]
+  at (0,11) {하네스가 주문 문맥을 구성하고 거래 도구를 호출한다. 공식 정산과 자체 실행 기록을 대조해 다음 주문과 운영 개선에 활용한다.};
+
+% Execution and official kit stay in separate ownership boundaries.
+\draw[band,fill=ExecPaper] (0,20) rectangle (232,98);
+\draw[band,fill=KitPaper,dashed] (237,20) rectangle (278,98);
+\node[section] at (4,24) {거래 하네스 · 구매 실행 궤적};
+\node[section,text=Muted] at (241,24) {공식 키트와 시장};
+
+\unitbox{draw=Exec!40}{(87,23)}{(227,37)}{134mm}{%
+  \cardtitle{모델 · 제한적 문장 통역 (Haiku)}\\
+  \smallprint{규칙으로 읽기 어려운 상대 발화에서 의도·금액을 추출하고 코드는 이를 검증한다. \texttt{interpreter.py}}}
+\draw[link] (101,37) -- (101,43);
+
+\unitbox{}{(4,43)}{(45,67)}{36.2mm}{%
+  \cardtitle{주문·문맥 구성}\\
+  키트 훅, 상품·재고, 시간\\
+  \mono{item, budget,}\\[-.4mm]
+  \mono{use\_within\_hours}}
+\unitbox{}{(54,43)}{(107,67)}{48.2mm}{%
+  \cardtitle{가게 선택·견적}\\
+  재고와 거래 기억으로 후보 선택\\
+  A2A 견적·역제안\\
+  \mono{buyer.py · choose()}}
+\unitbox{}{(118,43)}{(170,67)}{47.2mm}{%
+  \cardtitle{영수증 검증}\\
+  실상품·금액·예산 재대조\\
+  등급·기한·보증 확인\\
+  \mono{item, unit, price, cert}}
+\unitbox{draw=Exec!48}{(181,43)}{(227,67)}{41.2mm}{%
+  \cardtitle{수락·결제 위임}\\
+  영수증과 수락 조건 반환\\
+  결제·정산은 키트가 집행\\
+  \smallprint{합의는 정산 전 상태}}
+\unitbox{}{(241,43)}{(274,67)}{28.2mm}{%
+  \cardtitle{기본 키트}\\
+  A2A · ACP · 훅\\
+  영수증 검증·지갑 서명\\
+  결제 요청·정산 연동}
+\unitbox{}{(241,76)}{(274,94)}{28.2mm}{%
+  \cardtitle{공식 시장}\\
+  주문·카탈로그·인증\\
+  공급·원장·보드}
+
+\draw[tradeedge] (45,54.5) -- (54,54.5);
+\draw[tradeedge] (107,54.5) -- (118,54.5);
+\draw[tradeedge] (170,54.5) -- (181,54.5);
+\node[edgecaption] at (175.5,51.8) {통과};
+\draw[tradeedge] (227,54.5) -- (241,54.5);
+\draw[link] (258,67) -- (258,76);
+
+\unitbox{}{(4,76)}{(76,94)}{67.2mm}{%
+  \cardtitle{판매 도구 · \texttt{seller.py}}\\
+  요청·실재고 대조 → 견적·영수증\\
+  \smallprint{운영자 지시로 반영한 첫 주문 문구 규칙 적용}\\
+  \smallprint{일치 시 견적 전 거절 · \texttt{declined\_buyer()}}}
+\unitbox{draw=ErrorInk!55,fill=ErrorPaper}{(117,76)}{(170,94)}{48.2mm}{%
+  \cardtitle{부적합·응답 실패}\\
+  미결제·시간 여유 시 다음 후보\\
+  후보나 시간이 없으면 종료}
+\unitbox{}{(179,76)}{(227,94)}{43.2mm}{%
+  \cardtitle{재입고 도구 · \texttt{restock.py}}\\
+  재고·기존 계획·자금 확인\\
+  수요·실판매로 보충 계획 반환}
+
+\draw[fail] (144,67) -- node[edgecaption,text=ErrorInk]{영수증 거절} (144,76);
+\draw[fail] (107,64) -- (112.5,64)
+  -- node[edgecaption,text=ErrorInk,pos=.52]{협상 실패} (112.5,79.5) -- (117,79.5);
+\draw[fail] (117,85) -- (100,85) -- (100,67);
+\node[edgecaption,text=ErrorInk] at (105,89.6) {시간 내 재시도};
+
+% Memory reads and writes. Source records are kept separate from derived inputs.
+\draw[band,fill=MemPaper] (0,103) rectangle (278,150);
+\node[section,text=Mem] at (4,106) {메모리 · 기록을 쓰고 다음 판단에서 읽는다};
+
+\unitbox{draw=Mem!50}{(4,119)}{(85,142)}{76.2mm}{%
+  \cardtitle{파생 입력}\\
+  가게별 성사·거절·응답시간, 가격·보증 이력\\
+  SKU별 수요·판매와 시장 요약\\
+  \smallprint{출처·시각 확인 후 현재 주문과 관련된 값만 사용}}
+\unitbox{draw=Mem!50}{(96,119)}{(178,142)}{77.2mm}{%
+  \cardtitle{자체 사건 메모리 · 실행 궤적}\\
+  후보 시도·합의·거절과 소요시간, 영수증\\
+  \mono{order\_id · shop · sku · outcome · reason · elapsed}\\
+  \smallprint{구매자·판매자 기록과 지급 결과를 연결 · \texttt{events.py}}}
+\unitbox{draw=Mem!50}{(190,119)}{(274,142)}{79.2mm}{%
+  \cardtitle{공개 원장 사본 · 검증 사실}\\
+  정산·고장·환불을 상품과 단위별로 추적\\
+  원장 \mono{seq · kind · ts · sku · unit}\\
+  \smallprint{시장 사실은 공식 원장이 기준 · \texttt{ledger\_db.py}}}
+
+\draw[remember] (81,119) -- (81,67);
+\node[edgecaption,text=Mem,anchor=west] at (83,99.6) {다음 주문의 후보 선택};
+\draw[remember] (144,94) -- (144,119);
+\node[edgecaption,text=Mem] at (144,107.5) {실패·사유};
+\draw[remember] (170,62) -- (174.6,62) -- (174.6,112) -- (164,112) -- (164,119);
+\node[edgecaption,text=Mem,anchor=west] at (166,105.4) {합의·시도};
+\draw[remember] (258,94) -- (258,119);
+\node[edgecaption,text=Mem] at (258,107.5) {공식 결과 동기화};
+\draw[remember] (209,119) -- (209,94);
+\node[edgecaption,text=Mem] at (212,112.1) {수요·판매 이력};
+\draw[remember] (96,130.5) -- (85,130.5);
+\draw[remember] (232,142) -- (232,147) -- (72,147) -- (72,142);
+\node[edgecaption,text=Mem] at (152,147) {원장·자체 사건으로 거래 통계 갱신};
+
+% Policy evaluation is a separate loop. Observability does not require an LLM.
+\node[section,text=Ctrl] at (4,151.2) {운영 개선 · 정책 검토};
+\unitbox{draw=Ctrl!44,fill=CtrlPaper}{(4,159)}{(66,178)}{57.2mm}{%
+  \cardtitle{코드 집계·관측}\\
+  공식 보드와 정책 적용 구간 대조\\
+  처리량·거절·원가·실제 환불 확인}
+\unitbox{draw=Ctrl!44,fill=CtrlPaper}{(75,159)}{(126,178)}{46.2mm}{%
+  \cardtitle{모델 보조 분석}\\
+  Haiku·Sonnet으로 원인 가설\\
+  변경 후보는 설정에 따라 제안}
+\unitbox{draw=Ctrl!44,fill=CtrlPaper}{(135,159)}{(220,178)}{80.2mm}{%
+  \cardtitle{운영자 판단과 권한 검사}\\
+  제안·관측 근거를 보고 영향과 회수 범위 확인\\
+  허용된 필드·범위·변경 주체 검증 · \texttt{manager.py}\\
+  \smallprint{별점 이상은 운영자 확인·지시 후 판매 코드에 반영}}
+\unitbox{draw=Ctrl!44,fill=CtrlPaper}{(229,159)}{(274,178)}{40.2mm}{%
+  \cardtitle{정책 저장·부분 복구}\\
+  \mono{expected\_version · TTL}\\
+  \smallprint{코드 집행 · \texttt{policy.py}}}
+
+\draw[remember] (55,142) -- (55,159);
+\node[edgecaption,text=Mem,anchor=west] at (56,153.6) {거래 통계};
+\draw[tradeedge] (66,170) -- (75,170);
+\draw[tradeedge] (126,170) -- (135,170);
+\draw[tradeedge] (220,170) -- (229,170);
+\draw[tradeedge] (66,162.5) -- (70,162.5) -- (70,155.7) -- (177,155.7) -- (177,159);
+\node[edgecaption] at (132,155.7) {코드 집계 근거도 직접 검토};
+\draw[control] (251,178) -- (251,181.5) -- (1.6,181.5) -- (1.6,54.7) -- (4,54.7);
+\node[edgecaption,text=Ctrl] at (139,181.5) {허용된 정책을 다음 실행에 반영};
+
+\node[anchor=north west,inner sep=0pt,text=Ink,font=\fontsize{8.7}{10.6}\selectfont]
+  at (0,184) {\textbf{키트 기본형과의 차이}\quad 공식 통신·서명·정산을 사용하고, 문맥 구성·실단위 판단·거래 기억·권한을 제한한 개선 경로를 하네스에 추가했다.};
+\node[anchor=north west,inner sep=0pt,text=Muted,font=\fontsize{8.1}{10}\selectfont]
+  at (0,188.3) {파랑: 거래·호출\quad 녹색: 메모리 읽기·쓰기\quad 적갈색: 거절·재시도\quad 보라 점선: 정책 전달\quad 점선 테두리: 공식 키트·시장 경계};
+\end{tikzpicture}
+\end{document}
