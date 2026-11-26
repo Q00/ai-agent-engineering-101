@@ -1,0 +1,71 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_public_serve_when_paid_environment_is_present ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109cbc0e0>
+tmp_path = PosixPath('/private/var/folders/c5/ymn8pr5s1ts6q1_8zt7b_k480000gn/T/pytest-of-sungjinho/pytest-9/test_public_serve_when_paid_en0')
+
+    @pytest.mark.anyio
+    async def test_public_serve_when_paid_environment_is_present(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        # Given independent paid experiment credentials and explicit public settings.
+        monkeypatch.setenv("OPENAI_API_KEY", "test-only-paid")
+        monkeypatch.setenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        monkeypatch.setenv("OPENAI_CUSTOM_HEADERS", "authorization: Bearer test-only-paid")
+        settings = public_seller.Settings.model_validate(
+            {
+                "public_url": "https://seller.example/",
+                "budget_path": tmp_path / "budget.sqlite",
+                "model_base_url": (
+                    "https://api.cloudflare.com/client/v4/accounts/"
+                    "0123456789abcdef0123456789abcdef/ai/v1"
+                ),
+                "model": "@cf/zai-org/glm-4.7-flash",
+                "model_api_key": "test-only-public",
+            }
+        )
+        harnesses: list[Harness] = []
+        requests: list[httpx2.Request] = []
+        build_app = public_seller.public_app
+    
+        def observe_app(config: public_seller.Settings, harness: Harness) -> FastAPI:
+            harnesses.append(harness)
+            return build_app(config, harness)
+    
+        def upstream(request: httpx2.Request) -> httpx2.Response:
+            requests.append(request)
+            return httpx2.Response(
+                302, headers={"location": "https://api.openai.com/v1/chat/completions"}
+            )
+    
+        def model_client(*, model: bool = False) -> httpx2.AsyncClient:
+            assert model
+            return httpx2.AsyncClient(
+                transport=httpx2.MockTransport(upstream), follow_redirects=True
+            )
+    
+        async def serve_one(_server: uvicorn.Server) -> None:
+            # A redirect is an API error; the public service must never follow it.
+            with pytest.raises(APIStatusError):
+                _ = await harnesses[0].complete([{"role": "user", "content": "choose"}], [])
+    
+        monkeypatch.setattr(public_seller, "public_app", observe_app)
+        monkeypatch.setattr(public_seller, "create_client", model_client)
+        monkeypatch.setattr(uvicorn.Server, "serve", serve_one)
+        # When the real public service creates its client and sends a model request.
+        await public_seller.serve(settings)
+        # Then only the explicit public provider receives its token and model.
+        assert len(requests) == 1
+        request = requests[0]
+        assert str(request.url) == settings.model_base_url + "/chat/completions"
+>       assert request.headers["authorization"] == "Bearer test-only-public"
+E       AssertionError: assert 'Bearer test-...est-only-paid' == 'Bearer test-only-public'
+E         
+E         - Bearer test-only-public
+E         + Bearer test-only-public, Bearer test-only-paid
+
+tests/test_harness_model.py:139: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_harness_model.py::test_public_serve_when_paid_environment_is_present
+1 failed in 1.03s

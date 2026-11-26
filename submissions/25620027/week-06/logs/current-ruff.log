@@ -1,0 +1,75 @@
+FBT001 Boolean-typed positional argument in function definition
+   --> market_a2a/challenges.py:109:13
+    |
+109 | def require(condition: bool, message: str) -> None:
+    |             ^^^^^^^^^
+110 |     """Fail the attempt instead of turning an invalid result into a pass."""
+111 |     if not condition:
+    |
+
+TRY003 Avoid specifying long messages outside the exception class
+   --> market_a2a/challenges.py:169:19
+    |
+167 |         require(shop_match is not None, "Receipt shop is outside directory")
+168 |         if shop_match is None:
+169 |             raise HarnessError("Missing shop identity")
+    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+170 |         index = int(shop_match[1])
+171 |         require(0 <= index < 20, "Invalid shop index")
+    |
+
+EM101 Exception must not use a string literal, assign to variable first
+   --> market_a2a/challenges.py:169:32
+    |
+167 |         require(shop_match is not None, "Receipt shop is outside directory")
+168 |         if shop_match is None:
+169 |             raise HarnessError("Missing shop identity")
+    |                                ^^^^^^^^^^^^^^^^^^^^^^^
+170 |         index = int(shop_match[1])
+171 |         require(0 <= index < 20, "Invalid shop index")
+    |
+help: Assign to variable; remove string literal
+    |
+168 |         if shop_match is None:
+    -             raise HarnessError("Missing shop identity")
+169 +             msg = "Missing shop identity"
+170 +             raise HarnessError(msg)
+171 |         index = int(shop_match[1])
+    |
+note: This is an unsafe fix and may change runtime behavior
+
+PLR2004 Magic value used in comparison, consider replacing `20` with a constant variable
+   --> market_a2a/challenges.py:171:30
+    |
+169 |             raise HarnessError("Missing shop identity")
+170 |         index = int(shop_match[1])
+171 |         require(0 <= index < 20, "Invalid shop index")
+    |                              ^^
+172 |         product = catalog[expected.expected_sku]
+173 |         kinds = ("lamp", "chair", "bookshelf", "desk", "storage")
+    |
+
+PLR2004 Magic value used in comparison, consider replacing `2` with a constant variable
+   --> market_a2a/challenges.py:182:49
+    |
+180 |     require(len(ids) == len(purchases) and "" not in ids, "Duplicate/missing tasks")
+181 |     require(len({p.sku for p in purchases}) == len(purchases), "Duplicate SKU")
+182 |     require(len({p.shop for p in purchases}) >= 2, "Expected several shops")
+    |                                                 ^
+183 |     total = sum(p.price or 0 for p in purchases)
+184 |     require(total <= fixture.budget, "Shopping exceeded total budget")
+    |
+
+E501 Line too long (89 > 88)
+   --> market_a2a/seller_turn.py:201:89
+    |
+199 |                     return ToolResult(
+200 |                     data={
+201 |                         "error": "No matching numeric offer. Use quote to state a price."
+    |                                                                                         ^
+202 |                     }
+203 |                     )
+    |
+
+Found 6 errors.
+1 unsafe fix available with `--fix --unsafe-fixes`.

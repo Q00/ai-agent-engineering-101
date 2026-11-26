@@ -1,0 +1,42 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 24 items
+
+tests/test_current_catalog.py::test_catalog_is_reproducible_when_generated PASSED
+tests/test_current_catalog.py::test_description_finds_expected_product_when_name_is_omitted[reading-light] case=reading-light expected=lamp-nocturne candidates=['lamp-nocturne', 'lamp-aluminum-black-03', 'lamp-bamboo-black-03', 'lamp-plastic-black-03', 'lamp-steel-black-03', 'lamp-wood-black-03']
+PASSED
+tests/test_current_catalog.py::test_description_finds_expected_product_when_name_is_omitted[low-bookcase] case=low-bookcase expected=bookshelf-meadow candidates=['bookshelf-meadow', 'bookshelf-wood-black-05', 'bookshelf-wood-black-06', 'bookshelf-wood-blue-05', 'bookshelf-wood-blue-06', 'bookshelf-wood-brown-05']
+PASSED
+tests/test_current_catalog.py::test_description_finds_expected_product_when_name_is_omitted[office-support] case=office-support expected=chair-stratus candidates=['chair-stratus', 'chair-aluminum-gray-01', 'chair-aluminum-gray-02', 'chair-aluminum-gray-03', 'chair-aluminum-gray-04', 'chair-aluminum-gray-05']
+PASSED
+tests/test_current_catalog.py::test_description_finds_expected_product_when_name_is_omitted[cable-workspace] case=cable-workspace expected=desk-harbor candidates=['desk-harbor', 'desk-bamboo-brown-02', 'desk-bamboo-brown-01', 'desk-bamboo-brown-03']
+PASSED
+tests/test_current_catalog.py::test_description_finds_expected_product_when_name_is_omitted[secure-supplies] case=secure-supplies expected=storage-cove candidates=['storage-cove', 'storage-steel-blue-05', 'storage-steel-blue-06', 'storage-steel-blue-07']
+PASSED
+tests/test_current_catalog.py::test_description_finds_expected_product_when_name_is_omitted[bookcase-disambiguation] case=bookcase-disambiguation expected=bookshelf-meadow candidates=['bookshelf-meadow']
+PASSED
+tests/test_current_catalog.py::test_shopping_description_finds_product_in_specialist_shop[reading-light] PASSED
+tests/test_current_catalog.py::test_shopping_description_finds_product_in_specialist_shop[office-chair] PASSED
+tests/test_current_catalog.py::test_shopping_description_finds_product_in_specialist_shop[book-storage] PASSED
+tests/test_current_catalog.py::test_shopping_description_finds_product_in_specialist_shop[computer-desk] PASSED
+tests/test_current_catalog.py::test_shopping_description_finds_product_in_specialist_shop[secure-storage] PASSED
+tests/test_current_catalog.py::test_shopping_fits_total_budget_when_all_targets_are_selected shopping_count=5 reserves=1250 budget=2200
+PASSED
+tests/test_current_catalog.py::test_baseline_remains_first_when_only_item_is_named[lamp-100] PASSED
+tests/test_current_catalog.py::test_baseline_remains_first_when_only_item_is_named[chair-180] PASSED
+tests/test_current_catalog.py::test_baseline_remains_first_when_only_item_is_named[bookshelf-260] PASSED
+tests/test_current_catalog.py::test_constraints_are_hard_limits_when_generic_variants_compete PASSED
+tests/test_current_catalog.py::test_search_is_empty_when_no_product_satisfies_request[purple helicopter] PASSED
+tests/test_current_catalog.py::test_search_is_empty_when_no_product_satisfies_request[black wooden bookshelf for 9000 books] PASSED
+tests/test_current_catalog.py::test_search_is_empty_when_no_product_satisfies_request[] PASSED
+tests/test_current_catalog.py::test_search_stays_bounded_when_caller_requests_everything PASSED
+tests/test_current_catalog.py::test_get_raises_typed_error_when_sku_is_absent PASSED
+tests/test_current_catalog.py::test_catalog_rejects_duplicates_when_loading PASSED
+tests/test_current_catalog.py::test_catalog_rejects_invalid_records_when_loading PASSED
+
+- generated xml file: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-06/submissions/25620027/week-06/.omo/evidence/catalog-challenges/receipt-pytest.xml -
+============================== 24 passed in 0.17s ==============================

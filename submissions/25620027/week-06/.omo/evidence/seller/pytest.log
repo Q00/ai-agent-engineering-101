@@ -1,0 +1,123 @@
+..seller.summary task=4405b211-25ae-496b-b3e9-36bd1b1a90e5 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=168 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "lamp"}
+seller.search task=4405b211-25ae-496b-b3e9-36bd1b1a90e5 candidates=1 catalog=2
+TOOL_RESULT search_catalog [{"sku": "lamp", "name": "Desk lamp", "description": "Basic lamp", "kind": "lamp", "material": "", "color": "", "height_cm": 0, "capacity": 0, "reserve": 100}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 130, "sku": "lamp", "reason": "Chosen action"}
+seller.action task=4405b211-25ae-496b-b3e9-36bd1b1a90e5 action=quote sku=lamp price=130
+TOOL_RESULT decide {"action": "quote", "price": 130}
+{"result":{"task":{"id":"4405b211-25ae-496b-b3e9-36bd1b1a90e5","contextId":"37ac8746-f628-46e5-8931-47440ad63376","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"f382a07f-57fc-4ec0-a896-d837f6f06bb6","contextId":"37ac8746-f628-46e5-8931-47440ad63376","taskId":"4405b211-25ae-496b-b3e9-36bd1b1a90e5","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},"timestamp":"2026-10-13T22:23:44.602429Z"},"history":[{"messageId":"20","contextId":"37ac8746-f628-46e5-8931-47440ad63376","taskId":"4405b211-25ae-496b-b3e9-36bd1b1a90e5","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]}]}},"id":"test","jsonrpc":"2.0"}
+seller.summary task=4405b211-25ae-496b-b3e9-36bd1b1a90e5 selected=lamp rounds=0 offer=100 history_replayed=0
+CONTEXT chars=302 tools=2
+MODEL_TOOL round=1 decide {"action": "quote", "price": 99, "sku": "lamp", "reason": "Chosen action"}
+seller.guard task=4405b211-25ae-496b-b3e9-36bd1b1a90e5 code=reserve price=99 reserve=100
+TOOL_RESULT decide {"error": "Below reserve; choose a valid price or reject."}
+MODEL_TOOL round=2 decide {"action": "quote", "price": 120, "sku": "lamp", "reason": "Chosen action"}
+seller.action task=4405b211-25ae-496b-b3e9-36bd1b1a90e5 action=quote sku=lamp price=120
+TOOL_RESULT decide {"action": "quote", "price": 120}
+{"result":{"task":{"id":"4405b211-25ae-496b-b3e9-36bd1b1a90e5","contextId":"37ac8746-f628-46e5-8931-47440ad63376","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"49dbbbe0-1663-46b4-bd69-b54753fbe90a","contextId":"37ac8746-f628-46e5-8931-47440ad63376","taskId":"4405b211-25ae-496b-b3e9-36bd1b1a90e5","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 120"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},"timestamp":"2026-10-13T22:23:44.606199Z"},"history":[{"messageId":"20","contextId":"37ac8746-f628-46e5-8931-47440ad63376","taskId":"4405b211-25ae-496b-b3e9-36bd1b1a90e5","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]},{"messageId":"f382a07f-57fc-4ec0-a896-d837f6f06bb6","contextId":"37ac8746-f628-46e5-8931-47440ad63376","taskId":"4405b211-25ae-496b-b3e9-36bd1b1a90e5","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},{"messageId":"3","contextId":"1913802a-eb04-44df-a542-2f990a5d6ba4","taskId":"4405b211-25ae-496b-b3e9-36bd1b1a90e5","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"test","jsonrpc":"2.0"}
+.seller.summary task=ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=168 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "lamp"}
+seller.search task=ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1 candidates=1 catalog=2
+TOOL_RESULT search_catalog [{"sku": "lamp", "name": "Desk lamp", "description": "Basic lamp", "kind": "lamp", "material": "", "color": "", "height_cm": 0, "capacity": 0, "reserve": 100}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 130, "sku": "lamp", "reason": "Chosen action"}
+seller.action task=ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1 action=quote sku=lamp price=130
+TOOL_RESULT decide {"action": "quote", "price": 130}
+{"result":{"task":{"id":"ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1","contextId":"c8f13a86-58bd-4b3d-a30f-eed474d499db","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"a514ab91-6b8c-4bb0-b2d8-8f274297d97f","contextId":"c8f13a86-58bd-4b3d-a30f-eed474d499db","taskId":"ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},"timestamp":"2026-10-13T22:23:44.612606Z"},"history":[{"messageId":"20","contextId":"c8f13a86-58bd-4b3d-a30f-eed474d499db","taskId":"ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]}]}},"id":"test","jsonrpc":"2.0"}
+seller.summary task=ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1 selected=lamp rounds=0 offer=100 history_replayed=0
+CONTEXT chars=302 tools=2
+MODEL_TOOL round=1 decide {"action": "accept", "price": 99, "sku": "lamp", "reason": "Chosen action"}
+seller.guard task=ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1 code=reserve price=99 reserve=100
+TOOL_RESULT decide {"error": "Below reserve; choose a valid price or reject."}
+MODEL_TOOL round=2 decide {"action": "quote", "price": 120, "sku": "lamp", "reason": "Chosen action"}
+seller.action task=ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1 action=quote sku=lamp price=120
+TOOL_RESULT decide {"action": "quote", "price": 120}
+{"result":{"task":{"id":"ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1","contextId":"c8f13a86-58bd-4b3d-a30f-eed474d499db","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"7d13aaec-d4eb-4d7c-8f72-8eb9d218a573","contextId":"c8f13a86-58bd-4b3d-a30f-eed474d499db","taskId":"ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 120"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},"timestamp":"2026-10-13T22:23:44.615046Z"},"history":[{"messageId":"20","contextId":"c8f13a86-58bd-4b3d-a30f-eed474d499db","taskId":"ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]},{"messageId":"a514ab91-6b8c-4bb0-b2d8-8f274297d97f","contextId":"c8f13a86-58bd-4b3d-a30f-eed474d499db","taskId":"ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},{"messageId":"3","contextId":"8ce7edc0-9838-4f0a-9c64-f59099464dec","taskId":"ea7ffc4d-de83-4aa7-b1ee-3e320773d7a1","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"test","jsonrpc":"2.0"}
+.seller.summary task=981733fa-d81b-42ad-bfa8-29b87203d0b6 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=168 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "lamp"}
+seller.search task=981733fa-d81b-42ad-bfa8-29b87203d0b6 candidates=1 catalog=2
+TOOL_RESULT search_catalog [{"sku": "lamp", "name": "Desk lamp", "description": "Basic lamp", "kind": "lamp", "material": "", "color": "", "height_cm": 0, "capacity": 0, "reserve": 100}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 130, "sku": "lamp", "reason": "Chosen action"}
+seller.action task=981733fa-d81b-42ad-bfa8-29b87203d0b6 action=quote sku=lamp price=130
+TOOL_RESULT decide {"action": "quote", "price": 130}
+{"result":{"task":{"id":"981733fa-d81b-42ad-bfa8-29b87203d0b6","contextId":"3d1732dc-6ec0-4029-b0d9-8e64f888dbc1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"7dc169ce-207e-4e58-8716-47805fa51491","contextId":"3d1732dc-6ec0-4029-b0d9-8e64f888dbc1","taskId":"981733fa-d81b-42ad-bfa8-29b87203d0b6","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},"timestamp":"2026-10-13T22:23:44.619846Z"},"history":[{"messageId":"20","contextId":"3d1732dc-6ec0-4029-b0d9-8e64f888dbc1","taskId":"981733fa-d81b-42ad-bfa8-29b87203d0b6","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]}]}},"id":"test","jsonrpc":"2.0"}
+seller.summary task=981733fa-d81b-42ad-bfa8-29b87203d0b6 selected=lamp rounds=0 offer=100 history_replayed=0
+CONTEXT chars=302 tools=2
+MODEL_TOOL round=1 decide {"action": "accept", "price": 101, "sku": "lamp", "reason": "Chosen action"}
+TOOL_RESULT decide {"error": "Accept the current numeric offer only."}
+MODEL_TOOL round=2 decide {"action": "quote", "price": 120, "sku": "lamp", "reason": "Chosen action"}
+seller.action task=981733fa-d81b-42ad-bfa8-29b87203d0b6 action=quote sku=lamp price=120
+TOOL_RESULT decide {"action": "quote", "price": 120}
+{"result":{"task":{"id":"981733fa-d81b-42ad-bfa8-29b87203d0b6","contextId":"3d1732dc-6ec0-4029-b0d9-8e64f888dbc1","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"934bc15d-c3c6-4433-9feb-df2217d57f6d","contextId":"3d1732dc-6ec0-4029-b0d9-8e64f888dbc1","taskId":"981733fa-d81b-42ad-bfa8-29b87203d0b6","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 120"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},"timestamp":"2026-10-13T22:23:44.622359Z"},"history":[{"messageId":"20","contextId":"3d1732dc-6ec0-4029-b0d9-8e64f888dbc1","taskId":"981733fa-d81b-42ad-bfa8-29b87203d0b6","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]},{"messageId":"7dc169ce-207e-4e58-8716-47805fa51491","contextId":"3d1732dc-6ec0-4029-b0d9-8e64f888dbc1","taskId":"981733fa-d81b-42ad-bfa8-29b87203d0b6","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},{"messageId":"3","contextId":"f5dae177-7d76-4e6b-8c4b-52f5abbcbd50","taskId":"981733fa-d81b-42ad-bfa8-29b87203d0b6","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"test","jsonrpc":"2.0"}
+.seller.summary task=5a28eaaf-a75d-4c05-9e51-837e7ad68aea selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=168 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "lamp"}
+seller.search task=5a28eaaf-a75d-4c05-9e51-837e7ad68aea candidates=1 catalog=2
+TOOL_RESULT search_catalog [{"sku": "lamp", "name": "Desk lamp", "description": "Basic lamp", "kind": "lamp", "material": "", "color": "", "height_cm": 0, "capacity": 0, "reserve": 100}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 130, "sku": "lamp", "reason": "Chosen action"}
+seller.action task=5a28eaaf-a75d-4c05-9e51-837e7ad68aea action=quote sku=lamp price=130
+TOOL_RESULT decide {"action": "quote", "price": 130}
+{"result":{"task":{"id":"5a28eaaf-a75d-4c05-9e51-837e7ad68aea","contextId":"4c47c38e-2a5e-4f64-9b92-cca95b3f6fb9","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"c265fe0b-fdba-4f09-8cf5-69024f59d26a","contextId":"4c47c38e-2a5e-4f64-9b92-cca95b3f6fb9","taskId":"5a28eaaf-a75d-4c05-9e51-837e7ad68aea","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},"timestamp":"2026-10-13T22:23:44.626985Z"},"history":[{"messageId":"20","contextId":"4c47c38e-2a5e-4f64-9b92-cca95b3f6fb9","taskId":"5a28eaaf-a75d-4c05-9e51-837e7ad68aea","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]}]}},"id":"test","jsonrpc":"2.0"}
+seller.summary task=5a28eaaf-a75d-4c05-9e51-837e7ad68aea selected=lamp rounds=0 offer=100 history_replayed=0
+CONTEXT chars=302 tools=2
+MODEL_TOOL round=1 decide {"action": "quote", "price": 300, "sku": "bookshelf", "reason": "Chosen action"}
+TOOL_RESULT decide {"error": "Search first; choose a result SKU. Never switch an open SKU."}
+MODEL_TOOL round=2 decide {"action": "quote", "price": 120, "sku": "lamp", "reason": "Chosen action"}
+seller.action task=5a28eaaf-a75d-4c05-9e51-837e7ad68aea action=quote sku=lamp price=120
+TOOL_RESULT decide {"action": "quote", "price": 120}
+{"result":{"task":{"id":"5a28eaaf-a75d-4c05-9e51-837e7ad68aea","contextId":"4c47c38e-2a5e-4f64-9b92-cca95b3f6fb9","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"f17523f6-3c28-4147-82e9-3d214d6ebd20","contextId":"4c47c38e-2a5e-4f64-9b92-cca95b3f6fb9","taskId":"5a28eaaf-a75d-4c05-9e51-837e7ad68aea","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 120"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},"timestamp":"2026-10-13T22:23:44.629502Z"},"history":[{"messageId":"20","contextId":"4c47c38e-2a5e-4f64-9b92-cca95b3f6fb9","taskId":"5a28eaaf-a75d-4c05-9e51-837e7ad68aea","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]},{"messageId":"c265fe0b-fdba-4f09-8cf5-69024f59d26a","contextId":"4c47c38e-2a5e-4f64-9b92-cca95b3f6fb9","taskId":"5a28eaaf-a75d-4c05-9e51-837e7ad68aea","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},{"messageId":"3","contextId":"9c99434a-d59e-4bc4-b92d-9a2281c2ef52","taskId":"5a28eaaf-a75d-4c05-9e51-837e7ad68aea","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"test","jsonrpc":"2.0"}
+.seller.summary task=aef78715-abfd-4227-990b-cd52d2415402 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=168 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "lamp"}
+seller.search task=aef78715-abfd-4227-990b-cd52d2415402 candidates=1 catalog=2
+TOOL_RESULT search_catalog [{"sku": "lamp", "name": "Desk lamp", "description": "Basic lamp", "kind": "lamp", "material": "", "color": "", "height_cm": 0, "capacity": 0, "reserve": 100}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 130, "sku": "lamp", "reason": "Chosen action"}
+seller.action task=aef78715-abfd-4227-990b-cd52d2415402 action=quote sku=lamp price=130
+TOOL_RESULT decide {"action": "quote", "price": 130}
+{"result":{"task":{"id":"aef78715-abfd-4227-990b-cd52d2415402","contextId":"062917fc-fd3c-43d0-8f25-7e13d507e866","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"6836c3af-260b-464e-a0ce-5d186c2fc585","contextId":"062917fc-fd3c-43d0-8f25-7e13d507e866","taskId":"aef78715-abfd-4227-990b-cd52d2415402","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},"timestamp":"2026-10-13T22:23:44.634087Z"},"history":[{"messageId":"20","contextId":"062917fc-fd3c-43d0-8f25-7e13d507e866","taskId":"aef78715-abfd-4227-990b-cd52d2415402","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]}]}},"id":"test","jsonrpc":"2.0"}
+seller.summary task=aef78715-abfd-4227-990b-cd52d2415402 selected=lamp rounds=0 offer=100 history_replayed=0
+CONTEXT chars=302 tools=2
+MODEL_TOOL round=1 decide {"action": "accept", "price": 100, "sku": "lamp", "reason": "Chosen action"}
+seller.receipt task=aef78715-abfd-4227-990b-cd52d2415402 sku=lamp price=100
+seller.action task=aef78715-abfd-4227-990b-cd52d2415402 action=accept sku=lamp price=100
+TOOL_RESULT decide {"action": "accept", "price": 100}
+{"result":{"task":{"id":"aef78715-abfd-4227-990b-cd52d2415402","contextId":"062917fc-fd3c-43d0-8f25-7e13d507e866","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"cb52920c-8e98-423a-ab15-8e5e5ee29931","contextId":"062917fc-fd3c-43d0-8f25-7e13d507e866","taskId":"aef78715-abfd-4227-990b-cd52d2415402","role":"ROLE_AGENT","parts":[{"text":"Deal: Desk lamp at 100."}]},"timestamp":"2026-10-13T22:23:44.635776Z"},"artifacts":[{"artifactId":"5de3551d-9ab2-4629-b2f9-51f85c3b12c9","name":"receipt","parts":[{"data":{"sku":"lamp","item":"lamp","seller":"Test shop","price":100.0},"mediaType":"application/json"}]}],"history":[{"messageId":"20","contextId":"062917fc-fd3c-43d0-8f25-7e13d507e866","taskId":"aef78715-abfd-4227-990b-cd52d2415402","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]},{"messageId":"6836c3af-260b-464e-a0ce-5d186c2fc585","contextId":"062917fc-fd3c-43d0-8f25-7e13d507e866","taskId":"aef78715-abfd-4227-990b-cd52d2415402","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},{"messageId":"3","contextId":"78a6d144-ee91-4219-b2de-6b06c64c814f","taskId":"aef78715-abfd-4227-990b-cd52d2415402","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"test","jsonrpc":"2.0"}
+.seller.summary task=5d1631a2-1ceb-489a-8721-92c706e03599 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=168 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "lamp"}
+seller.search task=5d1631a2-1ceb-489a-8721-92c706e03599 candidates=1 catalog=2
+TOOL_RESULT search_catalog [{"sku": "lamp", "name": "Desk lamp", "description": "Basic lamp", "kind": "lamp", "material": "", "color": "", "height_cm": 0, "capacity": 0, "reserve": 100}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 130, "sku": "lamp", "reason": "Chosen action"}
+seller.action task=5d1631a2-1ceb-489a-8721-92c706e03599 action=quote sku=lamp price=130
+TOOL_RESULT decide {"action": "quote", "price": 130}
+{"result":{"task":{"id":"5d1631a2-1ceb-489a-8721-92c706e03599","contextId":"91324eae-7538-40d5-bf9b-b07b17e4202c","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"e28a4013-cf23-4111-b16c-b9986517df56","contextId":"91324eae-7538-40d5-bf9b-b07b17e4202c","taskId":"5d1631a2-1ceb-489a-8721-92c706e03599","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},"timestamp":"2026-10-13T22:23:44.640428Z"},"history":[{"messageId":"20","contextId":"91324eae-7538-40d5-bf9b-b07b17e4202c","taskId":"5d1631a2-1ceb-489a-8721-92c706e03599","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]}]}},"id":"test","jsonrpc":"2.0"}
+seller.summary task=5d1631a2-1ceb-489a-8721-92c706e03599 selected=lamp rounds=0 offer=100 history_replayed=0
+CONTEXT chars=302 tools=2
+MODEL_TOOL round=1 decide {"action": "accept", "price": 100, "sku": "lamp", "reason": "Chosen action"}
+seller.receipt task=5d1631a2-1ceb-489a-8721-92c706e03599 sku=lamp price=100
+seller.action task=5d1631a2-1ceb-489a-8721-92c706e03599 action=accept sku=lamp price=100
+TOOL_RESULT decide {"action": "accept", "price": 100}
+{"result":{"task":{"id":"5d1631a2-1ceb-489a-8721-92c706e03599","contextId":"91324eae-7538-40d5-bf9b-b07b17e4202c","status":{"state":"TASK_STATE_COMPLETED","message":{"messageId":"613d9b99-c7c4-4cce-8ab4-c8a394f11f3f","contextId":"91324eae-7538-40d5-bf9b-b07b17e4202c","taskId":"5d1631a2-1ceb-489a-8721-92c706e03599","role":"ROLE_AGENT","parts":[{"text":"Deal: Desk lamp at 100."}]},"timestamp":"2026-10-13T22:23:44.642152Z"},"artifacts":[{"artifactId":"4c93f4a9-2bfc-4358-b05e-78139c87ff72","name":"receipt","parts":[{"data":{"sku":"lamp","item":"lamp","seller":"Test shop","price":100.0},"mediaType":"application/json"}]}],"history":[{"messageId":"20","contextId":"91324eae-7538-40d5-bf9b-b07b17e4202c","taskId":"5d1631a2-1ceb-489a-8721-92c706e03599","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]},{"messageId":"e28a4013-cf23-4111-b16c-b9986517df56","contextId":"91324eae-7538-40d5-bf9b-b07b17e4202c","taskId":"5d1631a2-1ceb-489a-8721-92c706e03599","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},{"messageId":"3","contextId":"de86b921-363a-4fff-94a2-9a0ee0ab84b2","taskId":"5d1631a2-1ceb-489a-8721-92c706e03599","role":"ROLE_USER","parts":[{"text":"100"}]}]}},"id":"test","jsonrpc":"2.0"}
+{"error":{"code":-32004,"message":"Task 5d1631a2-1ceb-489a-8721-92c706e03599 is already completed.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"UNSUPPORTED_OPERATION","domain":"a2a-protocol.org","metadata":{}}]},"id":"test","jsonrpc":"2.0"}
+.seller.summary task=29088c72-5955-40a4-b806-a5bb56a3e83b selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=168 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "lamp"}
+seller.search task=29088c72-5955-40a4-b806-a5bb56a3e83b candidates=1 catalog=2
+TOOL_RESULT search_catalog [{"sku": "lamp", "name": "Desk lamp", "description": "Basic lamp", "kind": "lamp", "material": "", "color": "", "height_cm": 0, "capacity": 0, "reserve": 100}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 130, "sku": "lamp", "reason": "Chosen action"}
+seller.action task=29088c72-5955-40a4-b806-a5bb56a3e83b action=quote sku=lamp price=130
+TOOL_RESULT decide {"action": "quote", "price": 130}
+{"result":{"task":{"id":"29088c72-5955-40a4-b806-a5bb56a3e83b","contextId":"24a6ba97-bff5-498a-8c80-2dc46450f95d","status":{"state":"TASK_STATE_INPUT_REQUIRED","message":{"messageId":"35e26e61-1708-4632-b58a-556f158029ae","contextId":"24a6ba97-bff5-498a-8c80-2dc46450f95d","taskId":"29088c72-5955-40a4-b806-a5bb56a3e83b","role":"ROLE_AGENT","parts":[{"text":"Desk lamp. Asking price: 130"}],"metadata":{"sku":"lamp","item":"lamp","name":"Desk lamp"}},"timestamp":"2026-10-13T22:23:44.647342Z"},"history":[{"messageId":"20","contextId":"24a6ba97-bff5-498a-8c80-2dc46450f95d","taskId":"29088c72-5955-40a4-b806-a5bb56a3e83b","role":"ROLE_USER","parts":[{"text":"I want to buy a lamp"}]}]}},"id":"test","jsonrpc":"2.0"}
+{"error":{"code":-32004,"message":"Task 29088c72-5955-40a4-b806-a5bb56a3e83b is already completed.","data":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"UNSUPPORTED_OPERATION","domain":"a2a-protocol.org","metadata":{}}]},"id":"test","jsonrpc":"2.0"}
+.seller.summary task=513f2156-212d-4d9e-85f7-775f851abce4 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=157 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "spaceship"}
+seller.search task=513f2156-212d-4d9e-85f7-775f851abce4 candidates=0 catalog=2
+TOOL_RESULT search_catalog []
+MODEL_TOOL round=2 decide {"action": "reject", "price": 0, "sku": "", "reason": "Chosen action"}
+TOOL_RESULT decide {"state": "rejected"}
+{"result":{"task":{"id":"513f2156-212d-4d9e-85f7-775f851abce4","contextId":"41d78241-9c68-44bd-b13c-e15817d1af72","status":{"state":"TASK_STATE_REJECTED","message":{"messageId":"63ca7092-c23f-4188-8c0f-15ccfd7db6c3","contextId":"41d78241-9c68-44bd-b13c-e15817d1af72","taskId":"513f2156-212d-4d9e-85f7-775f851abce4","role":"ROLE_AGENT","parts":[{"text":"Chosen action"}]},"timestamp":"2026-10-13T22:23:44.652427Z"},"history":[{"messageId":"9","contextId":"41d78241-9c68-44bd-b13c-e15817d1af72","taskId":"513f2156-212d-4d9e-85f7-775f851abce4","role":"ROLE_USER","parts":[{"text":"spaceship"}]}]}},"id":"test","jsonrpc":"2.0"}
+.
+10 passed in 0.97s
