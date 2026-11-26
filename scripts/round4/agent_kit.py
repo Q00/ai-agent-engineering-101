@@ -26,7 +26,9 @@ agent.json (written by the starter; you write the persona and the goal, the agen
 Options: --tunnel | --public-url URL | --port N, --with-buyer | --buyer-only, --owner CODE (or MARKET_OWNER),
          --app PORT (mini app: a chat app where people talk to the agent; see ROUND4.md),
          --app-tunnel (a public https URL for the app, for a phone anywhere) | --app-host 0.0.0.0 (a phone on this Wi-Fi).
-Logs: logs/agent-kit.log, logs/react.jsonl (every thought and move), logs/forge.jsonl (every forge and test).
+Logs: logs/agent-kit.log, logs/react.jsonl (every thought and move), logs/forge.jsonl (every forge and test),
+logs/talk.jsonl (every message another agent wrote to this one, and the answer). The kit also tells the market that
+the agent was written to (POST /api/talk), so the market can show who talks to whom.
 Needs: pip install "a2a-sdk[http-server]" uvicorn httpx eth-account coincurve
 """
 import argparse
@@ -56,7 +58,7 @@ import maroo  # noqa: E402
 import forge_runner  # noqa: E402  (its permission.yml reader)
 import market_kit as mk  # noqa: E402  (wallets, joining, the tunnel: the same code as kit v4)
 
-KIT_VERSION = "v5.1"
+KIT_VERSION = "v5.2"
 RUNNER = HERE / "forge_runner.py"
 MARK = "@@forge-result@@ "
 NAME = re.compile(r"[a-z][a-z0-9_]{1,40}")
@@ -607,6 +609,31 @@ def plain(x):
     return x
 
 
+def talk_seen(root, ctx, claim, text, reply, by):
+    """One message another agent wrote to this one, and the answer: into logs/talk.jsonl, and to the market, which
+    otherwise sees nothing of what agents say to one another. It never holds up or changes the answer."""
+    row = {"ts": round(time.time(), 1), "from": claim, "text": text, "reply": reply, "by": by}
+    try:
+        with open(Path(root) / "logs" / "talk.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+    token = next((t for t in ctx.get("tokens", {}).values() if t and t != "offline"), None)
+    if not token or not str(ctx.get("market") or "").startswith("http"):
+        return
+
+    def send():
+        try:
+            body = json.dumps({"from": claim, "text": text[:2000], "reply": reply[:2000], "by": by}).encode()
+            urllib.request.urlopen(urllib.request.Request(
+                ctx["market"].rstrip("/") + "/api/talk", data=body,
+                headers={"authorization": "Bearer " + token, "content-type": "application/json",
+                         "user-agent": f"agent-market-kit/{KIT_VERSION}"}), timeout=8).read()
+        except Exception:                               # the market is away or older than this kit: the talk goes on
+            pass
+    threading.Thread(target=send, daemon=True).start()
+
+
 def agent_app(root, name, mind, toolbox, public):
     from a2a.helpers import get_data_parts, get_message_text, new_data_part, new_task_from_user_message, new_text_part
     from a2a.server.agent_execution import AgentExecutor
@@ -657,6 +684,8 @@ def agent_app(root, name, mind, toolbox, public):
                     answer = {"reply": "잠시 바빠서 답을 못 했어요. 같은 대화로 다시 말씀해 주세요.", "state": "input_required"}
                 else:
                     answer = ev.answer
+            talk_seen(root, toolbox.ctx, str(claim)[:60] if claim else None, text, str(answer.get("reply") or ""),
+                      "tool" if why is None and h else "mind")
             hist.append({"them": text, "data": data} if data is not None else {"them": text})
             hist.append({"you": answer.get("reply"), "data": answer.get("data")})
             while len(histories) > 300:
