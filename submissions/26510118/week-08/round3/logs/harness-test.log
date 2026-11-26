@@ -1,0 +1,29 @@
+
+[ask] the trading model
+  PASS  one request to the Responses API, the trading model without reasoning, the prompt as input  ({'model': 'gpt-6-luna', 'input': 'What price did the shop ask?', 'reasoning': {'effort': 'none'}})
+  PASS  the answer's text, trimmed
+[harness] HTTPError; falling back to rules
+  PASS  an API error: an empty answer, so the caller falls back to its rule
+
+[run_tools] a tool loop through the Responses API
+  PASS  the tools go out in the Responses shape, not strict, one call at a time; the analysis model reasons low  ([{'type': 'function', 'name': 'replay', 'description': 'Replay a rule change.', 'parameters': {'type': 'object', 'properties': {'field': {'type': 'string'}}}, 'strict': False}])
+  PASS  the code runs the tool the model called
+  PASS  the next request carries the API's own items back (reasoning and the call) and the tool's answer by call id  ([{'role': 'user', 'content': 'analyse'}, {'type': 'reasoning', 'id': 'rs_1', 'summary': []}, {'type': 'function_call', 'id': 'fc_call_1', 'call_id': 'call_1', 'name': 'replay', 'arguments': '{"field": "seller.price_adjust"}'}, {'type': 'function_call_output', 'call_id': 'call_1', 'output': '{"deals": 1}'}])
+  PASS  the final text comes back
+
+[run_tools] the budget spent
+  PASS  the integrated analysis reasons medium
+  PASS  after the last allowed call: no tools offered, earlier calls and answers sent as plain text  ([{'role': 'user', 'content': 'go'}, {'role': 'assistant', 'content': '(called replay {})'}, {'role': 'user', 'content': '(tool answer) {}'}])
+  PASS  a call asked for after that is not run; the text is taken
+[harness] gpt-6.1-terra: HTTPError: 400
+  PASS  an API error inside the loop: no answer, the analysis records that
+
+[decide] the Decisions API
+  PASS  POST /v1/decisions with gpt-6-luna, the note as text and the evidence as JSON data, one predicate per statement  ({'model': 'gpt-6-luna', 'input': [{'role': 'user', 'content': [{'type': 'input_text', 'text': 'One negotiation.'}, {'type': 'input_json', 'data': {'buyer_messages': ['13000 is my final offer']}}]}], 'questions': [{'type': 'predicate', 'name': 'q0', 'instructions': 'The buyer leaves if countered.'}, {'type': 'predicate', 'name': 'q1', 'instructions': 'The buyer is a person.'}]})
+  PASS  the probabilities come back in the order asked  ([0.85, 0.1])
+  PASS  a question left unanswered is None (decide by the rule)
+[harness] decisions: HTTPError: 503; deciding by the rules
+  PASS  an API error: None, so the caller decides by its rule
+  PASS  no key: no call at all
+
+16/16 checks passed

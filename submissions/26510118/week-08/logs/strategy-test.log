@@ -1,0 +1,10 @@
+budget levels: {'bookshelf': [230, 270, 295, 325, 360], 'chair': [160, 185, 205, 225, 250], 'lamp': [90, 105, 110, 125, 140]}
+  PASS  185 is a chair budget amount: taken at once, no harness call: Deal: chair at 185. The receipt is signed with this shop's key.
+  PASS  without the levels the same 185 goes to the harness (week 7 behaviour): I can do better than 185. The chair is 188
+  PASS  183 is not a budget amount: the harness decides, told so: I can do better than 183. The chair is 188
+  PASS  160 is a budget amount below the reserve: never taken: Too low at 160. The chair is 188
+  PASS  205 is above the ask: bought at the ask rule, as always: Deal: chair at 205. The receipt is signed with this shop's key.
+  PASS  the deal note is said after the deal
+  PASS  the Worker's DEAL_NOTE has no digits (buyers read numbers as prices): The receipt is signed with this shop's key, and the shop serves an ACP checkout at /.well-known/acp.json, so the deal can settle at the market.
+
+7/7 passed -> PASS

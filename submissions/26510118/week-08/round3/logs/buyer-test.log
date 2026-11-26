@@ -1,0 +1,59 @@
+
+[B1] choosing a shop and a product
+  PASS  a shop that failed us twice in five is passed over for a clean one  (B trust 0.8)
+  PASS  expected price 70% of list with nothing better; a product over the budget's reach is dropped  ([14000, 9380, 17892])
+  PASS  the largest expected gain wins (파김치: 25560 - 17892)  (Gaaaa0003)
+  PASS  a product listed above the budget is tried when its expected price fits (이불 39900 > 35000)
+  PASS  ...and not when the rules turn that off
+  PASS  food whose whole shelf life is shorter than the need is never a candidate
+  PASS  2 stars over 6 reviews: passed over while another shop exists
+  PASS  ...but tried, as a poor choice, when it is the only one
+  PASS  only a shop that failed us 3 times in a row: the order is skipped  (every shop left failed us 3 times in a row)
+  PASS  a shop the rules say to avoid is passed over
+  PASS  our own past price at a shop sets the expectation there (55%)  (11000)
+  PASS  else the market's average share for the product (ledger summary)  (13000)
+
+[B2 B3] offers and quality terms
+  PASS  offers 60, 70, 80, 90% of list  ([0.6, 0.7, 0.8, 0.9])
+  PASS  a lower price paid there before opens lower
+  PASS  the rules move the range
+  PASS  the ask from metadata first
+  PASS  not a SKU's digits or an hour count
+  PASS  an instruction in the shop's words changes nothing: the model reads the price, only numbers in the message count
+  PASS  a model answer that is not in the message is not taken
+  PASS  food: a certificate and the hours the order needs plus one
+  PASS  goods without a warranty: grades A and B only
+  PASS  goods with a warranty: a 6-hour warranty
+  PASS  a warranty for goods listed at 100,000 or more
+  PASS  ...from a shop whose goods broke on us
+  PASS  ...when every choice was poor
+  PASS  ...not otherwise, and never for food
+
+[B4] the shop notebook
+  PASS  payments: a settled deal and an unpaid one, with our price share  ({'recent': ['settled', 'unpaid'], 'settled': 1, 'unpaid': 1, 'errors': 0, 'false_claims': 0, 'broken': 0, 'broken_no_warranty': 0, 'ratios': [0.7], 'url': 'http://s'})
+  PASS  the unpaid reason is kept
+  PASS  a false grade claim is noted
+  PASS  a breakdown (name and time only) is matched to the purchase and its shop  ({'recent': [], 'settled': 0, 'unpaid': 0, 'errors': 0, 'false_claims': 1, 'broken': 1, 'broken_no_warranty': 1, 'ratios': [], 'url': None})
+  PASS  trust: unknown 0.8, settled once 0.87, lied and broke 0.32  ((0.8, 0.32))
+  PASS  the market's record of mostly false claims lowers trust too
+  PASS  three failures in a row
+
+[B2] against our seller: the product we want is promised to another buyer
+[buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001)'
+[buyer] <- TASK_STATE_INPUT_REQUIRED | 테스트 포기김치 2kg (Gaaaa0001): grade A, 150 h of shelf life left, certificate attached. Asking 15000. Send your offer as a nu
+    [buyer] 1 candidate(s); our-test-shop Gaaaa0001 list 20000, expected 14000, trust 0.8
+    [buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001). It must last at least 49 hours.'
+    [buyer] <- TASK_STATE_INPUT_REQUIRED | That one is not available right now. We have 1 김치 option(s): 1) 테스트 겉절이 2kg (Gaaaa0002): grade A, 150 h of shelf life le
+    [buyer] -> '8040'
+    [buyer] <- TASK_STATE_INPUT_REQUIRED | Counteroffer: 9225.
+    [buyer] -> '9225'
+    [buyer] <- TASK_STATE_COMPLETED | Deal: 테스트 겉절이 2kg (Gaaaa0002) at 9225.
+  PASS  the shop offered 겉절이 instead; the order accepts it, so the buyer followed and bought it  (Gaaaa0002)
+  PASS  the buyer still said how long the food must last
+  PASS  the switch is recorded
+    [buyer] 1 candidate(s); our-test-shop Gaaaa0001 list 20000, expected 14000, trust 0.8
+    [buyer] -> 'I want to buy 테스트 포기김치 2kg (Gaaaa0001). It must last at least 49 hours.'
+    [buyer] <- TASK_STATE_INPUT_REQUIRED | That one is not available right now. We have 1 김치 option(s): 1) 테스트 겉절이 2kg (Gaaaa0002): grade A, 150 h of shelf life le
+  PASS  an offered product the order does not accept: the buyer leaves without a receipt  (No deal on 테스트 포기김치 2kg: the shop offered a product the order does not accept.)
+
+37/37 checks passed

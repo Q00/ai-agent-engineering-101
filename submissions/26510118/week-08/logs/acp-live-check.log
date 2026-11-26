@@ -1,0 +1,57 @@
+== 1. a real deal with the deployed shop over A2A
+[buyer] -> 'I want to buy a lamp'  <- TASK_STATE_INPUT_REQUIRED | Signed deals for a lamp average 102 across the market this round, and every receipt we iss
+[buyer] -> '104'  <- TASK_STATE_COMPLETED | Deal: lamp at 104.
+receipt: {"shop": "Kiro Furniture", "item": "lamp", "price": 104, "task": "5b79e4dd-1302-4a56-8928-6e4a3e2b485f", "sig_seller": "NaZb+w/4S3nioZrlWB9bnY3vaQcxqNbM8KcF3pqcvoroJ9F74DJfLD6/UYwbsN8dDZLFgXb+wwS92gQMWs6aCQ=="}
+receipt signed by shop_key.pem: True
+
+== 2. the checkout
+acp.json endpoint https://kiro-shop.kiro729.workers.dev/acp, services ['checkout']
+create -> 201, session cs_a705b4677b80dde6, status ready_for_payment, totals [{'type': 'total', 'amount': 104}]
+checkout_jwt payload (verified with shop_key.pem): {"currency": "credits", "iat": 1793098357, "id": "cs_a705b4677b80dde6", "item": "lamp", "price": 104, "shop": "Kiro Furniture", "shop_url": "https://kiro-shop.kiro729.workers.dev", "task": "5b79e4dd-1302-4a56-8928-6e4a3e2b485f"}
+same receipt again -> 409 this receipt already has a checkout session
+
+== 3. complete with closed mandates for one of this buyer's own Round 2 lamp orders
+order o-2a4b2ea6 (round 2, so it has no open mandates)
+complete -> 402 payment refused by the market
+  fail  round_3_order
+  fail  not_expired
+  PASS  not_settled_before
+  PASS  checkout_signed_by_shop
+  PASS  checkout_matches_order
+  PASS  checkout_mandate_signed_by_buyer
+  PASS  payment_mandate_signed_by_buyer
+  PASS  closed_mandates_types
+  fail  bound_to_open_mandates
+  PASS  bound_to_this_checkout
+  PASS  payee_is_this_shop
+  PASS  amount_is_checkout_total
+  fail  amount_in_range
+
+== 4. the shop's settlement log
+{
+ "settled": 0,
+ "refused": 1,
+ "refused_checks": {
+  "round_3_order": 1,
+  "not_expired": 1,
+  "bound_to_open_mandates": 1,
+  "amount_in_range": 1
+ },
+ "credits": 0,
+ "recent": [
+  {
+   "order": "o-2a4b2ea6",
+   "item": "lamp",
+   "amount": 104,
+   "failed": [
+    "round_3_order",
+    "not_expired",
+    "bound_to_open_mandates",
+    "amount_in_range"
+   ],
+   "status": 402,
+   "t": 1793098359.136,
+   "line": "[acp] settle refused: ['round_3_order', 'not_expired', 'bound_to_open_mandates', 'amount_in_range']"
+  }
+ ]
+}

@@ -1,0 +1,41 @@
+
+[replay] our own negotiations under another rule
+    {"field": "seller.price_adjust", "from": 0.0, "to": 0.05, "hours": 24.0, "assumption": "each buyer makes the same offers in the same order and leaves where it left; the shop answers with its own rule (pricing.respond)", "negotiations": 6, "check": "with the rules in force the replay gives back 6 of 6 recorded outcomes", "recorded": {"deals": 4, "revenue": 72800, "margin": 24800}, "replayed": {"dea
+  PASS  the replay with the rules in force gives back every recorded outcome
+  PASS  recorded: 4 deals, 72,800 taken, 24,800 over cost  ({'deals': 4, 'revenue': 72800, 'margin': 24800})
+  PASS  asks 5% of list higher: the 12,000-then-14,000 buyer pays 14,000; the three who took the ask leave  ({'deals': 1, 'revenue': 14000, 'margin': 2000})
+  PASS  4 deals is weak evidence, and the answer says so
+  PASS  asks 5% lower: four deals still, each closing lower  ({'deals': 4, 'revenue': 70228, 'margin': 22228})
+  PASS  the warranty for grade C at 25%: the refurbished deal is lost  ({'deals': 3, 'revenue': 43800, 'margin': 7800})
+  PASS  our buyer's ceiling at 85%: the 17,500 deal is lost (surplus 8,500 -> 6,000)  ({'field': 'buyer.max_ratio', 'from': 0.9, 'to': 0.85, 'hours': 24.0, 'assumption': "each shop asks what it asked; a deal above the new ceiling is lost; an order we left with the shop's last ask under the new ceiling would have closed at that ask", 'orders': 3, 'recorded': {'deals': 2, 'spent': 31500, 'surplus': 8500}, 'replayed': {'deals': 1, 'spent': 14000, 'surplus': 6000}, 'weak': 'only 2 recorded deals in 24 h: weak evidence'})
+  PASS  at 95%: the order we left at an ask of 18,800 closes too (surplus 9,700)  ({'deals': 3, 'spent': 50300, 'surplus': 9700})
+  PASS  open_ratio cannot be replayed, and the answer says why
+  PASS  out of range or not a field: refused
+
+[shop_credit, leave_memo]
+    {"shop": "http://alpha", "our_own_shop": false, "ledger": {"settled": 3, "grade_claims": 2, "claims_true": 1, "broke_after_sale": 1}, "ledger_24h": {"settled_24h": 3, "claims": 2, "honest": 1}, "our_buyer": {"recent": ["settled", "unpaid"], "settled": 1, "unpaid": 1, "false_claims": 1, "broken": 1, "broken_no_warranty": 1, "avg_price_share": 0.7}, "trust": 0.26, "reviews": {"count": 2, "avg_stars": 3.0}}
+  PASS  by address: the ledger (3 deals, 1 of 2 claims true, 1 breakdown), our notebook and its reviews
+  PASS  the trust our buyer gives it
+  PASS  our own shop is marked as ours
+  PASS  a memo to itself, a made-up act, 301 characters: refused
+  PASS  a memo is signed by the caller the host set, not by the model  ({'saved': {'ts': 1793623536, 'from': 'seller', 'to': 'buyer', 'act': 'inform', 'text': 'other shops open at 82% of list', 'evidence': '9 asks'}})
+  PASS  at most 2 memos per analysis
+
+[data room] the MCP server over stdio
+  PASS  the handshake: our server and the protocol version  ({'name': 'kiro729-data-room', 'version': '1.30.0'})
+  PASS  tools/list: the four tools, each with a description and an input schema
+  PASS  resources/list: business, insights, reports, memos
+  PASS  resources/read: our business now
+  PASS  tools/call answers what the tool answers in-process
+  PASS  a tool the model made up comes back as an error
+  PASS  a memo through the server is signed by --as (buyer)
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+  PASS  the official MCP client lists the same tools and runs replay (any MCP host can use the room)  (['ledger_query', 'replay', 'shop_credit', 'leave_memo'])
+
+[no data room] an analysis goes on without tools
+[analysis] data room unavailable for seller (RuntimeError: no mcp package); going on without tools
+  PASS  the analysis still reports, offered no tools, and says so
+  PASS  with the room: the four tools offered and the replay instruction in the prompt
+
+26/26 checks passed

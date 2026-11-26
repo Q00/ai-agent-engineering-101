@@ -1,0 +1,50 @@
+== same bytes as the kit
+  PASS  canon
+  PASS  checkout_jwt: Ed25519 is deterministic, so equal tokens mean equal bytes
+  PASS  descriptor
+  PASS  join body
+
+== kit buyer (acp_pay) -> this shop's checkout
+    shop: [acp] settled lamp at 104, ledger #101
+    kit: [acp] paid 104 through http://127.0.0.1:61752/acp, settled at ledger #101
+  PASS  settled: mandate receipt {'order': 'o-0000', 'amount': 104, 'ledger': 101}
+    shop: [acp] settled chair at 191, ledger #102
+    kit: [acp] paid 191 through http://127.0.0.1:61752/acp, settled at ledger #102
+  PASS  settled a second item
+
+== the shop forgets its sessions between create and complete (an object restart)
+    shop: [acp] session cs_868ae5ec649c3ddb restored from its signed checkout_jwt
+    shop: [acp] settled bookshelf at 276, ledger #103
+    us: [acp] paid 276 through http://127.0.0.1:61752/acp, settled at ledger #103
+  PASS  settled anyway, from the checkout_jwt in the closed mandate: {'order': 'o-0002', 'amount': 276, 'ledger': 103}
+  PASS  a session token signed by another key is not restored: no such checkout session
+
+== this buyer (acp.pay) -> the kit shop's checkout
+    kit: [acp] settled lamp at 110, ledger #104
+    us: [acp] paid 110 through http://127.0.0.1:61758/acp, settled at ledger #104
+  PASS  settled: mandate receipt {'order': 'o-0003', 'amount': 110, 'ledger': 104}
+
+== refusals
+    us: [acp] checkout total 110 is above the mandate's limit 100; not paying
+  PASS  buyer: total over the mandate's limit is not paid: over_limit
+    us: [acp] the checkout does not match the agreed receipt (or is not signed by the shop); not paying
+  PASS  buyer: forged checkout (wrong shop key) is not paid: checkout_mismatch
+    us: [acp] http://127.0.0.1:61762 serves no /.well-known/acp.json (200); this deal cannot settle
+  PASS  buyer: a shop without a checkout is reported as the shop's fault: no_checkout
+  PASS  shop: a receipt it did not sign gets no checkout: the receipt is not signed by this shop
+  PASS  shop: a price under the reserve gets no checkout: the price is below this shop's reserve
+  PASS  shop: a receipt already checked out gets no second session: this receipt already has a checkout session
+    shop: [acp] settle refused: ['not_settled_before']
+    kit: [acp] payment not completed: 402 {"error":"payment refused by the market","market":{"settled":false,"checks":{"round_3_order":true,"not_expired":true,"not_settled_before":false,"checkout_signed_by_shop":true,"checkout_matches_order":true,"checkout_mandate_signed_by_buyer":true,"payment_mandate_signed_by_buyer":true,"closed_mandates
+  PASS  market: the same order cannot settle twice
+
+== the buyer's review and memory after a deal that did not settle
+    round 2 (nothing to pay): 4 | Bought the lamp at 100 of 125, receipt matched.
+    no checkout:              2 | Bought the lamp at 100 of 125, receipt matched. The deal could not settle: the shop serves no ACP checkout.
+    market refused:           4 | Bought the lamp at 100 of 125, receipt matched. The payment did not settle.
+  PASS  review: Round 2 deals are untouched
+  PASS  review: the shop's fault caps the stars and says why
+  PASS  review: an unclear refusal is told, not blamed
+  PASS  memory: two unsettled deals in the last five and the shop is avoided: my memory: 2 of my last 5 deals there could not settle
+
+20/20 passed -> PASS

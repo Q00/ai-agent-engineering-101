@@ -1,0 +1,46 @@
+11:13:52 manual objective run after the probe deploy (065b302)
+01:56:07 restore_line_1109 run, kiro-analysis restarted (10060b9)
+13:59:53 fe62f65: run_food once, kiro-analysis and seller restarted
+14:36:37 00d277c f78b97c deployed, kiro-analysis restarted
+04:59:03 0f93050 deployed (odds cache 3h, api usage lines); analysis restarted; seller restarted (was RSS+swap ~190MB after 14.5h)
+03:20:16 d683349 restart_seller.sh deployed and run once by hand; cron daily 19:30 UTC (04:30 KST)
+05:19:33 0de7635 deployed (S1 food 3h depth, S2 food high arm per unit, S3 top-quarter line 80, B1 goods floor, B2 no-haggle); analysis and seller restarted; run_food and objective run once by hand
+05:20:28  buyer order fields goods_floor/nohaggle deployed (buyer runs fresh per order)
+05:40:36 2afcd68 deployed (food max arm, haggle lean, stop-loss alerts); analysis and seller restarted; run_food and run_haggle once by hand
+01:54:54 7cbb85a deployed (Patch 3.6 buyer: margin floor, A first, food per-talk when ample, haggle on margin); analysis restarted; objective, run_food, run_haggle run once by hand
+02:19:25 6711f45 deployed (B1 margin floor >= 0.70 with a 0.60 guard under 25 deals/h; S1 warranty extras A 0.03 B 0.11 C 0.33 via analysts.person_set; S2 food alert on units expiring within 24 h); analysis and seller restarted; objective run once by hand (margin_floor 0.7)
+03:04:07 5bd7778 deployed (goods orders try 3 shops at most, MAX_TRIES_GOODS; food keeps 6); the buyer runs per order, no restart
+03:05:07 b35e385 deployed (reverts 5bd7778: since 7cbb85a 73% of orders close and 10 of 33 goods deals came from the 4th-6th shop, so the cap of 3 cost deals); the buyer runs per order, no restart
+03:49:27 1c5a9be deployed (S-1 grade named in a refusal is avoided, not insisted on; S-2 the market top-40 dear products held at 4 units); analysis and seller restarted
+04:04:50 17fdc8f deployed (linewatch: a product found again starts at its new cap; its old exit kept it at 0 and it was re-added every 20 min); analysis restarted
+08:09:55 49df593 deployed; analysis and seller restarted; TRIAL START warranty_dear_a=false (dear grade A goods carry the warranty only when asked), 20 min
+08:29:39 TRIAL END warranty_dear_a=true again: 2 of 4 dear A deals without the warranty unpaid (G47788edd twice) vs 19 of 19 paid in the 3 h before; 2 asked for it and got it
+10:36:14 7b467a9 deployed (parallel quotes: openers to 3 shops at once, trades one at a time lowest ask first, unused talks cancelled); the buyer runs per order, no restart
+11:33:45 98c4f67 deployed (QUOTE_READ: quote asks read from the reply text, lowest first; asked() keeps what the model read); the buyer runs per order, no restart
+13:18:17 revert deployed: QUOTE_READ off (98c4f67 reverted after the 22:05 check: paid 76/h vs 83/h, kept 0.851 vs 0.856, board deals 79/h vs 91/h); parallel quotes stay; the buyer runs per order, no restart
+13:29:32 f2999f3 deployed (haggle arm deep: two pushes at 93%/97% of an ask inside our ceiling; deep half the orders until 100 each; haggle.json fixed switch); analysis restarted; run_haggle once by hand
+06:22:22 haggle fixed=accept (the user: judge deep in the morning; same period 16.9 h with breakage: accept 0.0864+-0.0083, deep 0.0722+-0.0134, counter 0.0430+-0.0238 reward per order; without breakage deep 0.101 vs accept 0.096; no arm measurably better, the rule picks the better existing arm)
+07:40:24 e8e34ab deployed (cheap rank trial: half the orders by order-id hash rank on the shop's recent ledger price and margin kept, trust as a 0.7 gate; orders record rank and recent); the buyer runs per order, no restart; no other module imports market_buyer
+12:49:40 45cdfe3 + 0bd3849 deployed (cheap-rank trial reverted: same saved per order, fewer deals; last offer on goods taken under the floor at cost/(1-break-0.02), seller rule last_offer_take, wording no longer says our lowest); seller restarted, analysis restarted
+13:18:36 69xxxxx deployed: category requests get the category on the receipt (q00 rates SKU receipts 1 star as forged); seller restarted
+13:18:44 correction to the line above: the commit deployed is bdcf94f (36 .py hashes match HEAD)
+01:57:38 6215f4b deployed: bdcf94f reverted (category-named receipts settled 10 of 59 vs 75% before); receipts name the SKU again; seller restarted
+02:06:56 d84fee6 deployed: buyer margin floor no lower than 0.76 (objective.K_CLAMP, K_DEFAULT); analysis restarted; the buyer runs per order
+02:07:16 objective.run once by hand after d84fee6: margin_floor 0.76
+02:14:55 1540271 deployed: persist haggling arm on half the orders (no leaving on HOLDS, every offer up to the ceiling); the buyer runs per order, no restart
+05:06:05 ca4dcd6 deployed: persist arm (1540271) and 0.76 floor (d84fee6) reverted; analysis restarted; objective.run once by hand: margin_floor 0.7399
+11/15 07:00:01 removed 5 leftover test sellers (cwd ~/test_round3, ppid 1, no key; pids 529672 542066 544878 572042 573261) left by test_buyer runs 11/14-15; live seller untouched
+14:18:40 a332b79 deployed: the buyer leaves a shop when no price keeps its margin floor (one ask for a warranty or an A/B first), no more offers of 0; market_buyer runs per order, no restart
+14:32:59 08ff9c8 deployed: time-aware buyer arm on half the orders (fast_arm), answer times in buyer/latency.json, orders record fast and secs; no restart (market_buyer runs per order)
+14:58:12 REV deployed: time-aware trial (08ff9c8) reverted, market_buyer.py and test_buyer.py back to a332b79; buyer/latency.json left as data
+14:58:19 correction: the line above marked REV is commit 77f80b3
+01:56:21 cda1452 deployed: first-ask arm fixed at 0.0 (experiments.json fixed=0.0 set by hand, the user: 기준 호가로 정리); analysis and seller restarted
+02:18:02 921025c deployed (deploy/freeze_rules.py, deploy/final_capture.py) and scheduled with systemd-run timers: kiro-r3-freeze 11/17 12:00 KST (--write); kiro-r3-capture-2358/0000/0005 at 23:58:30, 00:00:30, 00:05 KST (the last with --logs) into ~/market/final_r3
+04:28:38 line C fix deployed (restock.py, linewatch.py, test_pipeline.py): grade C units of a line product neither count nor block, grade refusals keep it alive; analysis restarted (linewatch); restock runs per call
+04:28:45 correction: the line above (line C fix) is commit 628f24f
+03:00:01 freeze_rules: 9 rule fields set as a person's at their values (already a person's: 4); the integrated analysis can no longer change them
+19:44:24 like on forum post #164163 (dragonash, buyer) queued through the outbox as our buyer; the person asked for it
+10:44:33 correction: the line above gives its time in KST (19:44:24 KST = 10:44:24 UTC); this log keeps UTC
+10:46:51 buyer.prefer_shops = [dragonash] set as a person's (analysts.person_set; the person: try dragonash's near-cost sale whenever it has the item; quotes still decide). market_buyer reads it per order, no restart
+11:02:10 buyer.prefer_shops back to [] with the 12:00 freeze entry (value, time and reason), the person's call: undo the dragonash change, keep the like on #164163
+18:13:52 Round 3 over (11/18 03:1x KST): kiro-kit and kiro-analysis stopped and disabled; the 19:30 UTC seller-restart cron commented out (copy in ~/market/crontab.r3.bak); the person's call, before taking the VM down
