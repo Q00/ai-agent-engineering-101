@@ -1,0 +1,12 @@
+{
+  "name": "lever1b-a-deep040",
+  "description": "lever1b (a) as the one live setting that gives the same twin result: r3lib/config.py DEEP_CATEGORY_SHARE 0.35 -> 0.40, no category_budget_share.",
+  "notes": [
+    "Shadow candidate only; nothing here is read by the live shop. Not promoted to policies/active.json. r3lib/config.py is not changed.",
+    "Why: in the 09:23-15:23 KST window kimchi and bedding are deep at every plan tick (36 of 36); lever1b-a-listed trims no line; so the whole lever1b (a) effect is kimchi going from the live deep cap 0.35 to 0.40. The live shop has no per-category share key; restock_r3.plan reads only the global CATEGORY_MAX_SHARE / DEEP_CATEGORY_SHARE.",
+    "Gate: --end 1793859780 --hours 6 --restock plan, PYTHONHASHSEED=0, pinned inputs and plan DB; see REPORT.md lever1b section."
+  ],
+  "policy": {
+    "DEEP_CATEGORY_SHARE": 0.4
+  }
+}

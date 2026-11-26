@@ -1,0 +1,39 @@
+{
+  "name": "lever1",
+  "description": "MA-2 targets (2026-11-05): move the stock budget from low-ticket bedding / kimchi to sofa and mattress, restock only, inside the 16M STOCK_BUDGET_MAX cap.",
+  "notes": [
+    "Source: MA-2 analysis, 2026-11-05 ~15:08 KST. Shadow candidate only; nothing here is read by the live shop.",
+    "CUT: G0be9ed07 x97 (~2.22M), G200e39a3 x100 (~2.77M), other low-ticket ~2.24M (encoded as the bedding / kimchi share and restock_adjust 0.5). Bedding and kimchi keys are full category paths so the cut hits only those leaves.",
+    "HOLD inside 16M: sofa budget 9.71M (~26 u: G5e3784e6 x10, G8ec51935 x3, G00327e80 x2 + others); mattress budget 6.29M (~23 u: G1515d951 x12, G8095ddd6 x6, G07ec17d5 x3 + others).",
+    "category_budget_share = budget / 16M: sofa 9.71/16 = 0.607, mattress 6.29/16 = 0.393; bedding and kimchi capped at 0.05 each (the cut). Shares are caps per category on held + bought stock cost; the global 16M cap still binds.",
+    "sku_targets = units to hold (the twin buys up to these each supply window while the 16M cap allows); cut_skus = units not bought (the twin skips that many planned units)."
+  ],
+  "policy": {
+    "STOCK_BUDGET_MAX": 16000000,
+    "category_budget_share": {
+      "소파/의자/스툴": 0.607,
+      "침대/매트리스": 0.393,
+      "가구/침구>침구/홈데코>침구": 0.05,
+      "식품>김치/반찬/즉석요리>김치": 0.05
+    },
+    "restock_adjust": {
+      "소파/의자/스툴": 1.5,
+      "침대/매트리스": 1.5,
+      "가구/침구>침구/홈데코>침구": 0.5,
+      "식품>김치/반찬/즉석요리>김치": 0.5
+    },
+    "sku_targets": {
+      "G5e3784e6": 10,
+      "G8ec51935": 3,
+      "G00327e80": 2,
+      "G1515d951": 12,
+      "G8095ddd6": 6,
+      "G07ec17d5": 3
+    },
+    "cut_skus": {
+      "G0be9ed07": 97,
+      "G200e39a3": 100
+    },
+    "category_cap_mode": "raise_all"
+  }
+}

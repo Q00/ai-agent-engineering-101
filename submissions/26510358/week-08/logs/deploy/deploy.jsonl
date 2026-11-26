@@ -1,0 +1,87 @@
+{"ts": 1794292212.0, "at": "11-10 15:30:11", "event": "pushed_server_commits_dry", "head": "3f7d6158", "hub": "5e128b10"}
+{"ts": 1794292215.3, "at": "11-10 15:30:15", "event": "pushed_server_commits", "head": "3f7d6158", "hub": "5e128b10"}
+{"ts": 1794292329.6, "at": "11-10 15:32:09", "event": "new_commits", "head": "3f7d6158", "hub": "1e9aee9b", "n": 1, "commits": ["1e9aee9 log: deploy loop test from a separate hub clone (logs only, no restart expected)"], "restart": false}
+{"ts": 1794292356.3, "at": "11-10 15:32:36", "event": "tests", "hub": "1e9aee9b", "ok": true, "out": "569 passed, 1 warning, 265 subtests passed in 26.12s"}
+{"ts": 1794292374.9, "at": "11-10 15:32:54", "event": "fast_forwarded", "head": "1e9aee9b"}
+{"ts": 1794292411.7, "at": "11-10 15:33:31", "event": "pushed_server_commits", "head": "aca47955", "hub": "1e9aee9b"}
+{"ts": 1794292509.6, "at": "11-10 15:35:09", "event": "new_commits", "head": "aca47955", "hub": "c2e27ebb", "n": 1, "commits": ["c2e27eb test: deliberately failing canary to check that the deploy gate refuses a commit whose tests fail (reverted next)"], "restart": true}
+{"ts": 1794292539.8, "at": "11-10 15:35:39", "event": "tests", "hub": "c2e27ebb", "ok": false, "out": "E       AssertionError: deliberately failing: ops/deploy_pull.py must refuse this commit\ntests/test_deploy_gate_canary.py:2: AssertionError\nFAILED tests/test_deploy_gate_canary.py::test_deploy_gate_canary - AssertionE...\n1 failed, 569 passed, 1 warning, 265 subtests passed in 29.37s"}
+{"ts": 1794292689.6, "at": "11-10 15:38:09", "event": "new_commits", "head": "aca47955", "hub": "3bedc459", "n": 2, "commits": ["3bedc45 revert: failing deploy canary c2e27eb (the gate refused it: tests failed, server stayed at aca4795)", "c2e27eb test: deliberately failing canary to check that the deploy gate refuses a commit whose tests fail (reverted next)"], "restart": false}
+{"ts": 1794292717.0, "at": "11-10 15:38:37", "event": "tests", "hub": "3bedc459", "ok": true, "out": "569 passed, 1 warning, 265 subtests passed in 26.79s"}
+{"ts": 1794292735.2, "at": "11-10 15:38:55", "event": "fast_forwarded", "head": "3bedc459"}
+{"ts": 1794292768.9, "at": "11-10 15:39:28", "event": "pushed_server_commits", "head": "b6f65a02", "hub": "3bedc459"}
+{"ts": 1794293449.3, "at": "11-10 15:50:49", "event": "error", "why": "RuntimeError: git push -q hub: remote: hub refused the push:        \nremote:   refs/heads/week-08: a6208b01 adds submissions/26510358/week-07/logs/buyer-resilience-20261022T160304Z/runtime-console.log (733 MB > 50 MB)        \nremote:   refs/heads/week-08: a6208b01 adds submissions/26510358/week-07/logs/stability-"}
+{"ts": 1794293626.3, "at": "11-10 15:53:46", "event": "error", "why": "RuntimeError: git push -q hub: remote: hub refused the push:        \nremote:   refs/heads/week-08: a6208b01 adds submissions/26510358/week-07/logs/buyer-resilience-20261022T160304Z/runtime-console.log (733 MB > 50 MB)        \nremote:   refs/heads/week-08: a6208b01 adds submissions/26510358/week-07/logs/stability-"}
+{"ts": 1794293807.9, "at": "11-10 15:56:47", "event": "error", "why": "RuntimeError: git push -q hub: remote: hub refused the push:        \nremote:   refs/heads/week-08: a6208b01 adds submissions/26510358/week-07/logs/buyer-resilience-20261022T160304Z/runtime-console.log (733 MB > 50 MB)        \nremote:   refs/heads/week-08: a6208b01 adds submissions/26510358/week-07/logs/stability-"}
+{"ts": 1794293949.6, "at": "11-10 15:59:09", "event": "diverged", "head": "a6208b01", "hub": "39aaf9b7", "why": "server and hub both have new commits: merge by hand"}
+{"ts": 1794294442.3, "at": "11-10 16:07:22", "event": "pushed_server_commits", "head": "83f6cb93", "hub": "39aaf9b7"}
+{"ts": 1794294489.6, "at": "11-10 16:08:09", "event": "new_commits", "head": "83f6cb93", "hub": "afbbb80a", "n": 1, "commits": ["afbbb80 log: CI note test 2 from a separate hub clone"], "restart": false}
+{"ts": 1794294518.0, "at": "11-10 16:08:38", "event": "ci", "hub": "afbbb80a", "ok": true, "seconds": 28.4, "config": [], "failed": {}}
+{"ts": 1794294537.1, "at": "11-10 16:08:57", "event": "fast_forwarded", "head": "afbbb80a"}
+{"ts": 1794294669.6, "at": "11-10 16:11:09", "event": "pushed_server_commits", "head": "aa3825a4", "hub": "afbbb80a"}
+{"ts": 1794294849.6, "at": "11-10 16:14:09", "event": "pushed_server_commits", "head": "c7563546", "hub": "aa3825a4"}
+{"ts": 1794305938.9, "at": "11-10 19:18:58", "event": "pushed_server_commits", "head": "fe5c8034", "hub": "c7563546"}
+{"ts": 1794306429.6, "at": "11-10 19:27:09", "event": "pushed_server_commits", "head": "774d5507", "hub": "fe5c8034"}
+{"ts": 1794307929.6, "at": "11-10 19:52:09", "event": "pushed_server_commits", "head": "7ace5e1e", "hub": "774d5507"}
+{"ts": 1794308109.6, "at": "11-10 19:55:09", "event": "pushed_server_commits", "head": "096b2567", "hub": "7ace5e1e"}
+{"ts": 1794308409.6, "at": "11-10 20:00:09", "event": "pushed_server_commits", "head": "51983652", "hub": "096b2567"}
+{"ts": 1794308769.6, "at": "11-10 20:06:09", "event": "pushed_server_commits", "head": "7961db27", "hub": "51983652"}
+{"ts": 1794312909.6, "at": "11-10 21:15:09", "event": "pushed_server_commits", "head": "0e3c2ad8", "hub": "7961db27"}
+{"ts": 1794313269.7, "at": "11-10 21:21:09", "event": "pushed_server_commits", "head": "a50a41ae", "hub": "0e3c2ad8"}
+{"ts": 1794313569.6, "at": "11-10 21:26:09", "event": "pushed_server_commits", "head": "db789ff2", "hub": "a50a41ae"}
+{"ts": 1794314109.7, "at": "11-10 21:35:09", "event": "pushed_server_commits", "head": "34f506d6", "hub": "db789ff2"}
+{"ts": 1794315069.6, "at": "11-10 21:51:09", "event": "pushed_server_commits", "head": "9c6bf850", "hub": "34f506d6"}
+{"ts": 1794315563.6, "at": "11-10 21:59:23", "event": "pushed_server_commits", "head": "6fc3fa69", "hub": "9c6bf850"}
+{"ts": 1794315909.6, "at": "11-10 22:05:09", "event": "pushed_server_commits", "head": "0f0e819a", "hub": "6fc3fa69"}
+{"ts": 1794316269.6, "at": "11-10 22:11:09", "event": "pushed_server_commits", "head": "41f70556", "hub": "0f0e819a"}
+{"ts": 1794316449.7, "at": "11-10 22:14:09", "event": "pushed_server_commits", "head": "1cc78a9b", "hub": "41f70556"}
+{"ts": 1794316801.4, "at": "11-10 22:20:01", "event": "pushed_server_commits", "head": "2dfea614", "hub": "1cc78a9b"}
+{"ts": 1794321909.6, "at": "11-10 23:45:09", "event": "pushed_server_commits", "head": "32e9d34b", "hub": "2dfea614"}
+{"ts": 1794323289.7, "at": "11-11 00:08:09", "event": "pushed_server_commits", "head": "db8ffc99", "hub": "32e9d34b"}
+{"ts": 1794362105.3, "at": "11-11 10:55:05", "event": "pushed_server_commits", "head": "e6f93254", "hub": "db8ffc99"}
+{"ts": 1794377586.0, "at": "11-11 15:13:05", "event": "pushed_server_commits", "head": "4d9c7c6e", "hub": "e6f93254"}
+{"ts": 1794378069.6, "at": "11-11 15:21:09", "event": "pushed_server_commits", "head": "a1cf5137", "hub": "4d9c7c6e"}
+{"ts": 1794378249.6, "at": "11-11 15:24:09", "event": "pushed_server_commits", "head": "d5ff7266", "hub": "a1cf5137"}
+{"ts": 1794378429.6, "at": "11-11 15:27:09", "event": "pushed_server_commits", "head": "2f5a08c9", "hub": "d5ff7266"}
+{"ts": 1794378969.6, "at": "11-11 15:36:09", "event": "pushed_server_commits", "head": "faaa7e16", "hub": "2f5a08c9"}
+{"ts": 1794379329.6, "at": "11-11 15:42:09", "event": "pushed_server_commits", "head": "0473cae6", "hub": "faaa7e16"}
+{"ts": 1794380169.6, "at": "11-11 15:56:09", "event": "pushed_server_commits", "head": "dceace5f", "hub": "0473cae6"}
+{"ts": 1794380649.6, "at": "11-11 16:04:09", "event": "pushed_server_commits", "head": "8c111505", "hub": "dceace5f"}
+{"ts": 1794380829.6, "at": "11-11 16:07:09", "event": "pushed_server_commits", "head": "fd49b606", "hub": "8c111505"}
+{"ts": 1794381009.6, "at": "11-11 16:10:09", "event": "pushed_server_commits", "head": "ee26e0e9", "hub": "fd49b606"}
+{"ts": 1794383769.6, "at": "11-11 16:56:09", "event": "pushed_server_commits", "head": "d888dda4", "hub": "ee26e0e9"}
+{"ts": 1794384669.6, "at": "11-11 17:11:09", "event": "pushed_server_commits", "head": "2d43909e", "hub": "d888dda4"}
+{"ts": 1794400389.6, "at": "11-11 21:33:09", "event": "pushed_server_commits", "head": "d6728e3c", "hub": "2d43909e"}
+{"ts": 1794404229.6, "at": "11-11 22:37:09", "event": "pushed_server_commits", "head": "2ed3279a", "hub": "d6728e3c"}
+{"ts": 1794406269.6, "at": "11-11 23:11:09", "event": "pushed_server_commits", "head": "6aeb35c3", "hub": "2ed3279a"}
+{"ts": 1794446529.7, "at": "11-12 10:22:09", "event": "pushed_server_commits", "head": "a8243b69", "hub": "6aeb35c3"}
+{"ts": 1794446829.6, "at": "11-12 10:27:09", "event": "pushed_server_commits", "head": "6f53b5b3", "hub": "a8243b69"}
+{"ts": 1794467529.7, "at": "11-12 16:12:09", "event": "pushed_server_commits", "head": "b2db7c1a", "hub": "6f53b5b3"}
+{"ts": 1794468031.4, "at": "11-12 16:20:31", "event": "pushed_server_commits", "head": "a40b5cf3", "hub": "b2db7c1a"}
+{"ts": 1794468669.6, "at": "11-12 16:31:09", "event": "pushed_server_commits", "head": "d3438875", "hub": "a40b5cf3"}
+{"ts": 1794548649.6, "at": "11-13 14:44:09", "event": "pushed_server_commits", "head": "8eac467b", "hub": "d3438875"}
+{"ts": 1794555549.7, "at": "11-13 16:39:09", "event": "pushed_server_commits", "head": "ace832ef", "hub": "8eac467b"}
+{"ts": 1794667689.6, "at": "11-14 23:48:09", "event": "pushed_server_commits", "head": "503afceb", "hub": "ace832ef"}
+{"ts": 1794667869.6, "at": "11-14 23:51:09", "event": "pushed_server_commits", "head": "466a9ee3", "hub": "503afceb"}
+{"ts": 1794668049.6, "at": "11-14 23:54:09", "event": "pushed_server_commits", "head": "70bd3bd6", "hub": "466a9ee3"}
+{"ts": 1794668229.7, "at": "11-14 23:57:09", "event": "pushed_server_commits", "head": "e99e43a2", "hub": "70bd3bd6"}
+{"ts": 1794668829.6, "at": "11-15 00:07:09", "event": "pushed_server_commits", "head": "ba26412f", "hub": "e99e43a2"}
+{"ts": 1794705729.7, "at": "11-15 10:22:09", "event": "pushed_server_commits", "head": "184f254d", "hub": "ba26412f"}
+{"ts": 1794705901.3, "at": "11-15 10:25:01", "event": "pushed_server_commits", "head": "8774893a", "hub": "184f254d"}
+{"ts": 1794734884.8, "at": "11-15 18:28:04", "event": "pushed_server_commits", "head": "227a839b", "hub": "8774893a"}
+{"ts": 1794735009.6, "at": "11-15 18:30:09", "event": "pushed_server_commits", "head": "d36953e0", "hub": "227a839b"}
+{"ts": 1794739809.6, "at": "11-15 19:50:09", "event": "pushed_server_commits", "head": "befa18e8", "hub": "d36953e0"}
+{"ts": 1794742389.6, "at": "11-15 20:33:09", "event": "pushed_server_commits", "head": "0318e226", "hub": "befa18e8"}
+{"ts": 1794743289.6, "at": "11-15 20:48:09", "event": "pushed_server_commits", "head": "af4c2da1", "hub": "0318e226"}
+{"ts": 1794743769.6, "at": "11-15 20:56:09", "event": "pushed_server_commits", "head": "0747a8c5", "hub": "af4c2da1"}
+{"ts": 1794791949.6, "at": "11-16 10:19:09", "event": "pushed_server_commits", "head": "642d0135", "hub": "0747a8c5"}
+{"ts": 1794815470.4, "at": "11-16 16:51:10", "event": "pushed_server_commits", "head": "086ec55d", "hub": "642d0135"}
+{"ts": 1794830169.7, "at": "11-16 20:56:09", "event": "pushed_server_commits", "head": "63773657", "hub": "086ec55d"}
+{"ts": 1794837969.7, "at": "11-16 23:06:09", "event": "pushed_server_commits", "head": "24833bdb", "hub": "63773657"}
+{"ts": 1794879661.7, "at": "11-17 10:41:01", "event": "pushed_server_commits", "head": "d3698348", "hub": "24833bdb"}
+{"ts": 1794879969.6, "at": "11-17 10:46:09", "event": "pushed_server_commits", "head": "29c81aaa", "hub": "d3698348"}
+{"ts": 1794880554.0, "at": "11-17 10:55:54", "event": "pushed_server_commits", "head": "18b82ac9", "hub": "29c81aaa"}
+{"ts": 1794881770.1, "at": "11-17 11:16:10", "event": "pushed_server_commits", "head": "73a829ca", "hub": "18b82ac9"}
+{"ts": 1794882849.6, "at": "11-17 11:34:09", "event": "pushed_server_commits", "head": "dadfc92b", "hub": "73a829ca"}
+{"ts": 1794883029.9, "at": "11-17 11:37:09", "event": "pushed_server_commits", "head": "251ee815", "hub": "dadfc92b"}
+{"ts": 1794888789.7, "at": "11-17 13:13:09", "event": "pushed_server_commits", "head": "b3227878", "hub": "251ee815"}

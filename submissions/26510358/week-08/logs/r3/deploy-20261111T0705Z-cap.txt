@@ -1,0 +1,26 @@
+Deploy note: stock cap ceiling 0.40 -> 0.60 of the balance, and the stuck-grade guard in the restock plan
+Human's direction 2026-11-11 ~16:00 KST: "decide the improvement so we do not lose and keep winning" for the two items
+due before buying stops (2026-11-14 23:59 KST)
+
+Decided
+  1. CAP_CEILING_SHARE = 0.60 (8c11150). Evidence: 36 h of restock plans, the adaptive cap asked to grow 29 times and
+     to shrink 0 times, sell-through 0.78-1.0, clipped at 0.40 x balance every time while the balance was 175-209M.
+     The cap still moves at most once an hour (x1.25 grow / x0.85 shrink) and shrinks when what we receive sells
+     under 0.40. Unsold stock counts at cost, so the downside is storage (1%/day) and food spoilage, which the
+     cohort rules already cut.
+  2. Stuck-grade guard (8c11150): a goods SKU is not bought again while one of its grades has 3+ units older than
+     24 h that our own 24 h sales of that grade would not clear by the round's end.
+  Not done: the grade-aware EV quantity rule. Of the 121 SKUs bought in the last 24 h none had a grade that would
+     not clear by the end; the C piles (office chair, sofa) were already not being bought. Changing every quantity
+     3 days before the stop has no measured gain.
+
+Mistake: 8c11150 was committed with two tests failing (they had 0.40 written in: 40M vs 60M, 6M vs 9M); fixed in
+fd49b60 before the org server was restarted. CI ok at fd49b60, 315 tests.
+
+Restart: org server killed 1794380736 (16:05:36 KST), respawned 16:06:35
+First plan 16:06:42: balance 209M, cap 81.7M, ceiling 125.5M (was ~82M), premium budget 65.4M, 10 lines,
+  stuck_grade {G2cb8041b: A (office chair, 65 A held), G5e3784e6: C (sofa, 13 C held 140 h)}
+
+Watch: cash_cap moves in restock.jsonl (grow toward 125M, any shrink), our sell-through, expired food cost in
+kpi.jsonl (logistics.health.expiring_6h), and that stuck_grade stays a short list.
+Re-measure: python3 -m r3lib.measure compare --at 1794380736 --hours 12

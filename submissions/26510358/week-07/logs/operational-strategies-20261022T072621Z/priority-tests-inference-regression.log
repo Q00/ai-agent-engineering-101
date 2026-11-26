@@ -1,0 +1,23 @@
+test_absent_environment_uses_default_five_seconds (test_inference_gap.InferenceGapTests) ... ok
+test_environment_controls_shared_gap_including_zero (test_inference_gap.InferenceGapTests) ... ok
+test_explicit_interval_overrides_environment_without_changing_existing_test_policy (test_inference_gap.InferenceGapTests) ... ok
+test_harness_uses_central_gap_policy_without_hardcoding_an_interval (test_inference_gap.InferenceGapTests) ... ok
+test_invalid_environment_rejected_before_queue_creation (test_inference_gap.InferenceGapTests) ... ok
+test_invalid_explicit_intervals_still_fail (test_inference_gap.InferenceGapTests) ... ok
+test_invalid_gap_stops_actual_harness_before_subprocess_creation (test_inference_gap.InferenceGapTests) ... ok
+test_low_level_default_and_queue_trace_record_five_second_policy (test_inference_gap.InferenceGapTests) ... ok
+test_completion_to_next_start_interval_is_enforced (test_inference_queue.InferenceQueueTests) ... ok
+test_dead_owner_is_recovered_and_recovery_respects_pacing (test_inference_queue.InferenceQueueTests) ... ok
+test_expired_waiter_unregisters_without_blocking_successor (test_inference_queue.InferenceQueueTests) ... ok
+test_head_waiter_progresses_despite_busy_control_readers (test_inference_queue.InferenceQueueTests) ... ok
+test_killed_waiter_is_removed_before_live_successor (test_inference_queue.InferenceQueueTests) ... ok
+test_live_owner_is_not_preempted_when_its_deadline_expires (test_inference_queue.InferenceQueueTests) ... ok
+test_owner_exception_releases_slot_and_queued_timeout_does_not_leave_ticket (test_inference_queue.InferenceQueueTests) ... ok
+test_processes_receive_slots_in_fifo_ticket_order (test_inference_queue.InferenceQueueTests) ... ok
+test_queue_trace_proves_admission_release_and_labels_wait_deadline (test_inference_queue.InferenceQueueTests) ... ok
+test_thread_arrival_order_cannot_be_overtaken_by_later_callers (test_inference_queue.InferenceQueueTests) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 1.067s
+
+OK

@@ -1,0 +1,34 @@
+# ReAct smoke test after the prompt fix (Codex CLI gpt-6-luna). Raw output:
+{
+ "final": null,
+ "trace": [
+  {
+   "step": 0,
+   "thought": "I have not observed any sales data yet, so I need the sell-through results to identify which category to buy less of.",
+   "action": "sell_through",
+   "args": {},
+   "observation": "{\"식품>김치\": {\"requested\": 20, \"sold\": 2, \"rate\": 0.1}, \"식품>생수\": {\"requested\": 10, \"sold\": 9, \"rate\": 0.9}}"
+  },
+  {
+   "step": 1,
+   "thought": "",
+   "action": null,
+   "args": null,
+   "observation": "{\"error\": \"unknown tool None; use one of ['sell_through'] or give final\"}"
+  },
+  {
+   "step": 2,
+   "thought": "",
+   "action": null,
+   "args": null,
+   "observation": "{\"error\": \"unknown tool None; use one of ['sell_through'] or give final\"}"
+  },
+  {
+   "step": 3,
+   "thought": "",
+   "action": null,
+   "args": null,
+   "observation": "{\"error\": \"unknown tool None; use one of ['sell_through'] or give final\"}"
+  }
+ ]
+}

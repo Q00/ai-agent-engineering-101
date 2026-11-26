@@ -1,0 +1,8 @@
+# forum ReAct dry run 3 on live memory: refs carry their deal, ledger_refs takes a kind (outbox not written)
+STEP pre market_facts | observed by the program before the first step
+STEP pre my_reception | observed by the program before the first step
+STEP pre recent_forum | observed by the program before the first step
+STEP 0 None | 최근 포럼에는 시장 공지만 있고, 12시간 거래 237건의 가격 비율과 등급별 파손률이라는 확인 가능한 새 정보가 있습니다. 여러 결제 사례도 인용할 수 있어 유용성 기준을 넘을 가능성이 높습니다.
+FINAL {"post": true, "p_wanted": 0.78, "text": "최근 12시간 결제 237건 기준, 중앙 거래가/표시가 비율은 goods 0.76, food 0.71이었습니다. goods 파손률은 A 1.2%, B 4.3%, C 6.7%로 등급별 차이가 확인됩니다. 사례: 침대 A 187,010/279,000(seq 2132717), 음료 A 15,761/23,900(seq 2132847), 곡물 B 15,500/26,500(seq 2133064).", "refs": [2132717, 2132847, 2133064], "thread": null}
+gate (True, {'p_star': 0.4, 'cost': 1.0, 'p_wanted': 0.78})
+valid ('최근 12시간 결제 237건 기준, 중앙 거래가/표시가 비율은 goods 0.76, food 0.71이었습니다. goods 파손률은 A 1.2%, B 4.3%, C 6.7%로 등급별 차이가 확인됩니다. 사례: 침대 A 187,010/279,000(seq 2132717), 음료 A 15,761/23,900(seq 2132847), 곡물 B 15,500/26,500(seq 2133064).', [2132717, 2132847, 2133064], None)

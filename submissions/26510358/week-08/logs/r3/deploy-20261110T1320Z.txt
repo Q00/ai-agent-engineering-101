@@ -1,0 +1,35 @@
+Deploy note, 2026-11-10 22:20 KST (13:20Z) - RL_PROACTIVE.md steps 3-7
+
+Commits (week-08 branch): 34f506d step 3 | 9c6bf85 initiative.judge + bandit | 0632ef6 buyer judge log |
+6fc3fa6 unprompted markdown + first-ask bandit | 0f0e819 forge + ledger_query | 41f7055 abnormal offers, KPI fields |
+1cc78a9 removal of week-07 code | a27e28c price gate as a function (flag off)
+
+Restarts of the shop and org server (kit respawned both within 75 s each time):
+  1794314112 (21:35 KST)  step 3: restock sized by supplied-unit outcomes, stale stockouts x0.25
+  1794315563 (21:59 KST)  steps 4-5: CEO-tick markdown, first-ask bandit, purchase judge log
+  1794316093 (22:08 KST)  abnormal-offer guard on the bandit reward
+
+Baselines saved before each: logs/r3/baseline-rl-proactive-20261110.json, logs/r3/baseline-step45-20261110.json
+  21:59 KST: rank 18 of 68, total 1.444, book 289.6M, revenue 1,942M, stars 4.35, saved 0.2989, forum 0.878,
+             deals 14,658, posts 1,337
+
+Seen in the first 20-45 min (too short to judge an effect; KPI rows come every 30 min):
+  step 3   restock.jsonl why rows: fresh vegetables factor 0.0, shellfish 0.0, fresh fruit 0.5; 0 errors;
+           shop log has no_stock rows with "stale": true
+  step 4   initiative.jsonl: shop_markdown 5 rows (1 act: G5e3784e6, 13 units, 0 sold in 24 h; 4 skip),
+           buy 5 rows (4 bought), paid_dislike and loan_or_bond 1 refusal row each. The markdown pass ran with no order.
+           Forum posts keep answering 200 with a post id in .market/outbox.sent.jsonl (1,448 of the last 1,449).
+  step 5   decisions.jsonl: 130 bandit choices, 24 explored (18%); rewards so far ask x1.0 n=89 mean 1.87e-6,
+           x0.9 n=4, x1.1 n=4; premium x1.0 n=23 mean 5.08e-6. Not enough to move any greedy arm yet.
+  step 6   tools/forged/ledger_query registered (5 sandbox tests, 1 try); both ReAct agents load it on their next run.
+  measure  python3 -m r3lib.measure compare --at 1794314112 --hours 2  (2 KPI rows after):
+           shop_all 0.703 -> 0.699, buyer_all 0.750 -> 0.752, rank 18 -> 18, book/h 1.49M -> 2.14M, close rate 0.322 -> 0.380
+
+Measure again when 2 h have passed (from 23:35 KST for step 3, 00:00 KST for steps 4-5):
+  python3 -m r3lib.measure compare --at 1794314112 --hours 2
+  python3 -m r3lib.measure compare --at 1794315563 --hours 2
+
+Waiting for the human:
+  RESTOCK_GATE_BY_EVIDENCE (config, off). Kimchi (+26.3M, +32% on spend over the round) has been skipped by the
+  0.65 line for 17 h at a market ratio of 0.634; 74 units on hand.
+  PREMIUM_ASK_ARMS stays (0.9, 1.0, 1.1). E2's (1.0, 1.2, 1.5): 0.36% of 19,910 premium deals in 72 h settled above list.

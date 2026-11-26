@@ -1,0 +1,148 @@
+...............................................................................................----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 32954)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/usr/lib/python3.10/http/server.py", line 433, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.10/http/server.py", line 421, in handle_one_request
+    method()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_integrations.py", line 114, in do_POST
+    response = peer.responses.pop(0)
+IndexError: pop from empty list
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 32966)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/usr/lib/python3.10/http/server.py", line 433, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.10/http/server.py", line 421, in handle_one_request
+    method()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_integrations.py", line 114, in do_POST
+    response = peer.responses.pop(0)
+IndexError: pop from empty list
+----------------------------------------
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 32976)
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/usr/lib/python3.10/socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/usr/lib/python3.10/socketserver.py", line 747, in __init__
+    self.handle()
+  File "/usr/lib/python3.10/http/server.py", line 433, in handle
+    self.handle_one_request()
+  File "/usr/lib/python3.10/http/server.py", line 421, in handle_one_request
+    method()
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_integrations.py", line 114, in do_POST
+    response = peer.responses.pop(0)
+IndexError: pop from empty list
+----------------------------------------
+........Dispatcher task is not running. Cannot wait for event dispatch.
+.........{"time": "2026-10-29T02:19:18.499792+00:00", "event": "policy_loaded", "policy_sha256": "136af5bc142ef669e156d07c371a038489777d6e328cfdc4be19e3cb8652f0a7", "policy_version": "week07-prompt-completion-v2"}
+{"time": "2026-10-29T02:19:18.499962+00:00", "event": "seller_started", "name": "TEST ONLY policy shop", "catalog_size": 3003, "policy_version": "week07-prompt-completion-v2", "price_policy": "prompt-completion-v3"}
+................................................................F......Dispatcher task is not running. Cannot wait for event dispatch.
+.Dispatcher task is not running. Cannot wait for event dispatch.
+............{"mode": "TEST_ONLY_stub_model_actual_local_JSONRPC", "case": "cancel_before_model_return", "wire": [{"request": {"jsonrpc": "2.0", "id": "283ec4a6f8ee4fd0a7cf222418aaed60", "method": "SendMessage", "params": {"message": {"messageId": "adb85030a57e42a19112590458072dbe", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}, "configuration": {"returnImmediately": true}}}, "response": {"result": {"task": {"id": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7", "contextId": "e119a0ab-04f8-43f0-bf87-bf8c166696c3", "status": {"state": "TASK_STATE_SUBMITTED"}, "history": [{"messageId": "adb85030a57e42a19112590458072dbe", "contextId": "e119a0ab-04f8-43f0-bf87-bf8c166696c3", "taskId": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}}, "id": "283ec4a6f8ee4fd0a7cf222418aaed60", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "83a370e571714e0c996bffd396dd70af", "method": "CancelTask", "params": {"id": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7"}}, "response": {"result": {"id": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7", "contextId": "e119a0ab-04f8-43f0-bf87-bf8c166696c3", "status": {"state": "TASK_STATE_CANCELED", "timestamp": "2026-10-29T02:19:20.906774Z"}, "history": [{"messageId": "adb85030a57e42a19112590458072dbe", "contextId": "e119a0ab-04f8-43f0-bf87-bf8c166696c3", "taskId": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}, "id": "83a370e571714e0c996bffd396dd70af", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "7886b5e147d24432902b906bb96e98b0", "method": "GetTask", "params": {"id": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7"}}, "response": {"result": {"id": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7", "contextId": "e119a0ab-04f8-43f0-bf87-bf8c166696c3", "status": {"state": "TASK_STATE_CANCELED", "timestamp": "2026-10-29T02:19:20.906774Z"}, "history": [{"messageId": "adb85030a57e42a19112590458072dbe", "contextId": "e119a0ab-04f8-43f0-bf87-bf8c166696c3", "taskId": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}, "id": "7886b5e147d24432902b906bb96e98b0", "jsonrpc": "2.0"}}], "seller_events": [{"event": "policy_loaded", "policy_sha256": "test-only-policy", "policy_version": "test-only"}, {"event": "seller_started", "name": "TEST ONLY cancellation HTTP shop", "catalog_size": 1, "policy_version": "test-only", "price_policy": "TEST_ONLY-uncapped"}, {"event": "trade_stage", "stage": "negotiation_started", "side": "seller", "task_id": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7", "shop": "TEST ONLY cancellation HTTP shop"}, {"event": "remote_message", "task_id": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7", "message": "I want to buy a lamp", "flags": [], "candidates": ["lamp"], "remote_stance": null}, {"event": "seller_admission_priority", "task_id": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7", "priority": "normal"}, {"event": "sale_canceled", "task_id": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7"}, {"event": "trade_stage", "stage": "ended", "side": "seller", "task_id": "58f9786b-be42-40a2-9aac-dac4e2ed3fb7", "shop": "TEST ONLY cancellation HTTP shop", "outcome": "canceled", "reason_code": "caller_canceled"}]}
+{"mode": "TEST_ONLY_stub_model_actual_local_JSONRPC", "case": "cancel_during_receipt_publication", "wire": [{"request": {"jsonrpc": "2.0", "id": "313d82949a0a428fa0de9b63ab83cb79", "method": "SendMessage", "params": {"message": {"messageId": "0f7fc47ca3ba433db9f401f21275a9c9", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}}}, "response": {"result": {"task": {"id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "contextId": "7df687fe-4050-4290-bfb8-8b6f4c0c9b0d", "status": {"state": "TASK_STATE_INPUT_REQUIRED", "message": {"messageId": "140fe6eb-73c7-4451-b1a7-b75ce053d0d7", "contextId": "7df687fe-4050-4290-bfb8-8b6f4c0c9b0d", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1, total 130 credits. Offer that total on this task. Asking price: 130"}], "metadata": {"currency": "credits", "description": "TEST ONLY desk lamp", "quoteId": "b6778a8bc9944d838bc34dcb29438992", "attributes": {"material": "metal"}, "quantity": 1.0, "ask": 130.0, "seller": "TEST ONLY cancellation HTTP shop", "itemId": "lamp"}}, "timestamp": "2026-10-29T02:19:21.155008Z"}, "history": [{"messageId": "0f7fc47ca3ba433db9f401f21275a9c9", "contextId": "7df687fe-4050-4290-bfb8-8b6f4c0c9b0d", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}]}}, "id": "313d82949a0a428fa0de9b63ab83cb79", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "26893a99140148118484261c22905f23", "method": "CancelTask", "params": {"id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe"}}, "response": {"error": {"code": -32002, "message": "Task finished before cancellation", "data": [{"@type": "type.googleapis.com/google.rpc.ErrorInfo", "reason": "TASK_NOT_CANCELABLE", "domain": "a2a-protocol.org", "metadata": {}}]}, "id": "26893a99140148118484261c22905f23", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "adfd96ef479e4d9bad85f041e55cda88", "method": "SendMessage", "params": {"message": {"messageId": "375eb1c9511f4149a13ae01a1b9c5141", "role": "ROLE_USER", "parts": [{"text": "100"}], "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe"}}}, "response": {"result": {"task": {"id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "contextId": "7df687fe-4050-4290-bfb8-8b6f4c0c9b0d", "status": {"state": "TASK_STATE_COMPLETED", "message": {"messageId": "57cbbcd2-b1bb-4ceb-abf0-29ce7c363ba8", "contextId": "7df687fe-4050-4290-bfb8-8b6f4c0c9b0d", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1 accepted, total 100 credits. Signed receipt issued; market validation pending."}]}, "timestamp": "2026-10-29T02:19:21.261390Z"}, "artifacts": [{"artifactId": "900e1645-c72e-40ea-9f95-57e7b47e9555", "name": "receipt", "parts": [{"data": {"item": "lamp", "currency": "credits", "shop": "TEST ONLY cancellation HTTP shop", "quoteId": "b6778a8bc9944d838bc34dcb29438992", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "quantity": 1.0, "price": 100.0, "task": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "sig_seller": "rdnfZkYg30Z8lk04Ss8v4XzRwV3bVn0AYTecT1k0aA81WITUP9x2ZTDnconUgn6Sl37A28lC43bLMJKtlJlnDw==", "purchaseId": "b84c5f873a81472a874bc1b997a24568", "seller": "TEST ONLY cancellation HTTP shop", "itemId": "lamp"}}]}], "history": [{"messageId": "0f7fc47ca3ba433db9f401f21275a9c9", "contextId": "7df687fe-4050-4290-bfb8-8b6f4c0c9b0d", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}, {"messageId": "140fe6eb-73c7-4451-b1a7-b75ce053d0d7", "contextId": "7df687fe-4050-4290-bfb8-8b6f4c0c9b0d", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1, total 130 credits. Offer that total on this task. Asking price: 130"}], "metadata": {"description": "TEST ONLY desk lamp", "currency": "credits", "quoteId": "b6778a8bc9944d838bc34dcb29438992", "attributes": {"material": "metal"}, "quantity": 1.0, "ask": 130.0, "seller": "TEST ONLY cancellation HTTP shop", "itemId": "lamp"}}, {"messageId": "375eb1c9511f4149a13ae01a1b9c5141", "contextId": "e03d7560-77fd-4370-b9ab-b37940134482", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "role": "ROLE_USER", "parts": [{"text": "100"}]}]}}, "id": "adfd96ef479e4d9bad85f041e55cda88", "jsonrpc": "2.0"}}, {"request": {"jsonrpc": "2.0", "id": "28c8e11cfe3e43f1bab276b7db4bcc76", "method": "GetTask", "params": {"id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe"}}, "response": {"result": {"id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "contextId": "7df687fe-4050-4290-bfb8-8b6f4c0c9b0d", "status": {"state": "TASK_STATE_COMPLETED", "message": {"messageId": "57cbbcd2-b1bb-4ceb-abf0-29ce7c363ba8", "contextId": "7df687fe-4050-4290-bfb8-8b6f4c0c9b0d", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1 accepted, total 100 credits. Signed receipt issued; market validation pending."}]}, "timestamp": "2026-10-29T02:19:21.261390Z"}, "artifacts": [{"artifactId": "900e1645-c72e-40ea-9f95-57e7b47e9555", "name": "receipt", "parts": [{"data": {"item": "lamp", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "shop": "TEST ONLY cancellation HTTP shop", "quoteId": "b6778a8bc9944d838bc34dcb29438992", "currency": "credits", "quantity": 1.0, "price": 100.0, "task": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "purchaseId": "b84c5f873a81472a874bc1b997a24568", "sig_seller": "rdnfZkYg30Z8lk04Ss8v4XzRwV3bVn0AYTecT1k0aA81WITUP9x2ZTDnconUgn6Sl37A28lC43bLMJKtlJlnDw==", "seller": "TEST ONLY cancellation HTTP shop", "itemId": "lamp"}}]}], "history": [{"messageId": "0f7fc47ca3ba433db9f401f21275a9c9", "contextId": "7df687fe-4050-4290-bfb8-8b6f4c0c9b0d", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "role": "ROLE_USER", "parts": [{"text": "I want to buy a lamp"}]}, {"messageId": "140fe6eb-73c7-4451-b1a7-b75ce053d0d7", "contextId": "7df687fe-4050-4290-bfb8-8b6f4c0c9b0d", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "role": "ROLE_AGENT", "parts": [{"text": "lamp x 1, total 130 credits. Offer that total on this task. Asking price: 130"}], "metadata": {"currency": "credits", "description": "TEST ONLY desk lamp", "quoteId": "b6778a8bc9944d838bc34dcb29438992", "attributes": {"material": "metal"}, "quantity": 1.0, "ask": 130.0, "seller": "TEST ONLY cancellation HTTP shop", "itemId": "lamp"}}, {"messageId": "375eb1c9511f4149a13ae01a1b9c5141", "contextId": "e03d7560-77fd-4370-b9ab-b37940134482", "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "role": "ROLE_USER", "parts": [{"text": "100"}]}]}, "id": "28c8e11cfe3e43f1bab276b7db4bcc76", "jsonrpc": "2.0"}}], "seller_events": [{"event": "policy_loaded", "policy_sha256": "test-only-policy", "policy_version": "test-only"}, {"event": "seller_started", "name": "TEST ONLY cancellation HTTP shop", "catalog_size": 1, "policy_version": "test-only", "price_policy": "TEST_ONLY-uncapped"}, {"event": "trade_stage", "stage": "negotiation_started", "side": "seller", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "shop": "TEST ONLY cancellation HTTP shop"}, {"event": "remote_message", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "message": "I want to buy a lamp", "flags": [], "candidates": ["lamp"], "remote_stance": null}, {"event": "seller_admission_priority", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "priority": "normal"}, {"event": "quote", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "metadata": {"ask": 130, "itemId": "lamp", "quoteId": "b6778a8bc9944d838bc34dcb29438992", "seller": "TEST ONLY cancellation HTTP shop", "quantity": 1, "currency": "credits", "description": "TEST ONLY desk lamp", "attributes": {"material": "metal"}}}, {"event": "trade_stage", "stage": "quote_issued", "side": "seller", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "item": "lamp", "shop": "TEST ONLY cancellation HTTP shop", "quote_id": "b6778a8bc9944d838bc34dcb29438992", "price": 130, "quantity": 1}, {"event": "remote_message", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "message": "100", "flags": [], "candidates": ["lamp"], "remote_stance": null}, {"event": "trade_stage", "stage": "offer_received", "side": "seller", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "item": "lamp", "shop": "TEST ONLY cancellation HTTP shop", "quote_id": "b6778a8bc9944d838bc34dcb29438992", "price": 100, "quantity": 1, "offer_number": 1}, {"event": "seller_admission_priority", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "priority": "normal"}, {"event": "trade_stage", "stage": "offer_accepted", "side": "seller", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "item": "lamp", "shop": "TEST ONLY cancellation HTTP shop", "quote_id": "b6778a8bc9944d838bc34dcb29438992", "price": 100, "quantity": 1, "evidence": "validated_decision"}, {"event": "trade_stage", "stage": "receipt_issued", "side": "seller", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "item": "lamp", "shop": "TEST ONLY cancellation HTTP shop", "quote_id": "b6778a8bc9944d838bc34dcb29438992", "price": 100, "quantity": 1, "evidence": "local_signature"}, {"event": "sale_completed", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "receipt": {"seller": "TEST ONLY cancellation HTTP shop", "item": "lamp", "itemId": "lamp", "price": 100, "taskId": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "quantity": 1, "currency": "credits", "purchaseId": "b84c5f873a81472a874bc1b997a24568", "quoteId": "b6778a8bc9944d838bc34dcb29438992", "shop": "TEST ONLY cancellation HTTP shop", "task": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "sig_seller": "rdnfZkYg30Z8lk04Ss8v4XzRwV3bVn0AYTecT1k0aA81WITUP9x2ZTDnconUgn6Sl37A28lC43bLMJKtlJlnDw=="}, "receipt_signature_checked": true, "market_verified": false, "offer_count": 1}, {"event": "trade_stage", "stage": "ended", "side": "seller", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "item": "lamp", "shop": "TEST ONLY cancellation HTTP shop", "outcome": "completed", "reason_code": "local_receipt_issued"}, {"event": "cancel_already_terminal", "task_id": "eaa91e3d-d507-405c-87a0-6fb62311cfbe", "state": "completed"}]}....
+{"time": "2026-10-29T02:19:22.523926+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.001}
+.{"time": "2026-10-29T02:19:22.528451+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+{"time": "2026-10-29T02:19:22.530415+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+.{"time": "2026-10-29T02:19:22.534696+00:00", "event": "upstream_error", "generation": 1, "kind": "ReadTimeout"}
+{"time": "2026-10-29T02:19:22.534773+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.0}
+.{"time": "2026-10-29T02:19:22.538468+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.001}
+{"time": "2026-10-29T02:19:22.539476+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 1}
+{"time": "2026-10-29T02:19:22.540960+00:00", "event": "request_finished", "generation": 2, "continued": false, "seconds": 0.0}
+.{"time": "2026-10-29T02:19:22.546862+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 0}
+{"time": "2026-10-29T02:19:22.547311+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.003}
+{"time": "2026-10-29T02:19:22.548469+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+.{"time": "2026-10-29T02:19:22.551881+00:00", "event": "request_finished", "generation": 1, "continued": false, "seconds": 0.0}
+{"time": "2026-10-29T02:19:22.552883+00:00", "event": "seller_activated", "generation": 2, "pid": 2222, "preserved_task_routes": 1}
+{"time": "2026-10-29T02:19:22.553728+00:00", "event": "request_finished", "generation": 2, "continued": false, "seconds": 0.0}
+{"time": "2026-10-29T02:19:22.555062+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.001}
+{"time": "2026-10-29T02:19:22.556100+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+{"time": "2026-10-29T02:19:22.557077+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+{"time": "2026-10-29T02:19:22.558041+00:00", "event": "request_finished", "generation": 1, "continued": true, "seconds": 0.0}
+................................................
+======================================================================
+FAIL: test_higher_and_lower_successful_shops_keep_transaction_rating_without_ads (test_review_advertising.TransactionReviewTests) (name='TEST_ONLY_HIGHER')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_review_advertising.py", line 47, in test_higher_and_lower_successful_shops_keep_transaction_rating_without_ads
+    self.assertEqual(response["stars"], 5)
+AssertionError: 4 != 5
+
+======================================================================
+FAIL: test_higher_and_lower_successful_shops_keep_transaction_rating_without_ads (test_review_advertising.TransactionReviewTests) (name='TEST_ONLY_LOWER')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_review_advertising.py", line 47, in test_higher_and_lower_successful_shops_keep_transaction_rating_without_ads
+    self.assertEqual(response["stars"], 5)
+AssertionError: 4 != 5
+
+======================================================================
+FAIL: test_long_requested_item_stays_one_line_within_market_limit (test_review_advertising.TransactionReviewTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_review_advertising.py", line 84, in test_long_requested_item_stays_one_line_within_market_limit
+    self.assertEqual(len(response["review"]), 400)
+AssertionError: 100 != 400
+
+======================================================================
+FAIL: test_no_deal_unsigned_disputed_and_error_reviews_preserve_actual_outcome (test_review_advertising.TransactionReviewTests) (result={'status': 'no_deal', 'receipt': None, 'reason': 'TEST ONLY budget too low'}, error=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_review_advertising.py", line 68, in test_no_deal_unsigned_disputed_and_error_reviews_preserve_actual_outcome
+    self.assertEqual(response["review"], "No deal for lamp within my 120-credit budget.")
+AssertionError: 'No agreement was reached for the lamp purchase.' != 'No deal for lamp within my 120-credit budget.'
+- No agreement was reached for the lamp purchase.
++ No deal for lamp within my 120-credit budget.
+
+
+======================================================================
+FAIL: test_no_deal_unsigned_disputed_and_error_reviews_preserve_actual_outcome (test_review_advertising.TransactionReviewTests) (result=None, error=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_review_advertising.py", line 61, in test_no_deal_unsigned_disputed_and_error_reviews_preserve_actual_outcome
+    self.assertEqual(response["stars"], stars)
+AssertionError: None != 2
+
+======================================================================
+FAIL: test_pretrade_excluded_unavailable_and_blocked_results_have_no_ads (test_review_advertising.TransactionReviewTests) (stage='excluded')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_review_advertising.py", line 78, in test_pretrade_excluded_unavailable_and_blocked_results_have_no_ads
+    self.assertEqual(response["stars"], stars)
+AssertionError: None != 1
+
+======================================================================
+FAIL: test_pretrade_excluded_unavailable_and_blocked_results_have_no_ads (test_review_advertising.TransactionReviewTests) (stage='unavailable')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_review_advertising.py", line 78, in test_pretrade_excluded_unavailable_and_blocked_results_have_no_ads
+    self.assertEqual(response["stars"], stars)
+AssertionError: None != 2
+
+======================================================================
+FAIL: test_pretrade_excluded_unavailable_and_blocked_results_have_no_ads (test_review_advertising.TransactionReviewTests) (stage='blocked')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-07/tests/test_review_advertising.py", line 78, in test_pretrade_excluded_unavailable_and_blocked_results_have_no_ads
+    self.assertEqual(response["stars"], stars)
+AssertionError: None != 1
+
+----------------------------------------------------------------------
+Ran 256 tests in 17.467s
+
+FAILED (failures=8)

@@ -1,0 +1,12 @@
+deploy 20261106T0447Z commit f7938a8
+2026-11-06T04:47:00Z
+SIGTERM seller 2010540
+--- after restart
+2026-11-06T04:47:44Z
+2084953 Fri Nov  6 13:47:03 2026 /bin/bash -c source /home/myeonggi/.claude/shell-snapshots/snapshot-bash-1793927471872-o1buru.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'which'; \builtin unset -f -- 'which'; } >/dev/null 2>&1 || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'until ps -eo pid,args | awk '"'"'$2=="python3" && $3=="shop_r3.py"'"'"' | grep -qv 2010540 && grep -q "grade_ratio" <(tail -200 logs/market-kit.log); do sleep 3; done; L=logs/r3/deploy-20261106T0447Z.txt; { echo "--- after restart"; date -u +%FT%TZ; ps -eo pid,lstart,args | grep -E "shop_r3[.]py|org[.]server"; grep "shop_started" logs/market-kit.log | tail -1; grep '"'"'"terms"'"'"' logs/market-kit.log | tail -1 | cut -c1-400; } >> $L; cat $L' < /dev/null && pwd -P >| /tmp/claude-38a6-cwd
+2088353 Fri Nov  6 13:47:30 2026 /bin/sh -c python3 shop_r3.py --port 45413
+2088355 Fri Nov  6 13:47:30 2026 python3 shop_r3.py --port 45413
+2089983 Fri Nov  6 13:47:43 2026 /bin/bash -c source /home/myeonggi/.claude/shell-snapshots/snapshot-bash-1793927471872-o1buru.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'which'; \builtin unset -f -- 'which'; } >/dev/null 2>&1 || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'until ps -eo pid,args | awk '"'"'$2=="python3" && $3=="shop_r3.py"'"'"' | grep -qv 2010540 && grep -q "grade_ratio" <(tail -200 logs/market-kit.log); do sleep 3; done; L=logs/r3/deploy-20261106T0447Z.txt; { echo "--- after restart"; date -u +%FT%TZ; ps -eo pid,lstart,args | grep -E "shop_r3[.]py|org[.]server"; grep "shop_started" logs/market-kit.log | tail -1; grep '"'"'"terms"'"'"' logs/market-kit.log | tail -1 | cut -c1-400; } >> $L; cat $L' < /dev/null && pwd -P >| /tmp/claude-38a6-cwd
+3036571 Thu Nov  5 15:27:14 2026 /home/myeonggi/ai-agent-engineering-101/.venv/bin/python3 -m r3lib.org.server --port 0
+13:47:31 [seller] {"event": "shop_started", "ts": 1793940451.7, "name": "Ssadassa Shop", "port": 45413}
+13:47:42 [seller] {"event": "terms", "ts": 1793940462.5, "sku": "Gf6b70da8", "grade": "A", "cost": 1605066, "list_price": 2332000, "ask": 1870223, "floor": 1784929, "market_ratio": 0.72, "grade_ratio": 0.725983704974271, "evidence": 900, "adjust": -0.08, "scarcity": 0.0, "warranty": 6, "p_break": 0.0275}

@@ -1,0 +1,17 @@
+baseline 2026-11-10 20:04:08 KST (overstock changes 7ace5e1, 096b256, 5198365)
+shop: book 286.63M revenue 1920.88M stars_rank 4.35 all 0.694
+player: 18 of 68 (1.442); close rate 2 h 0.315
+stock: 1401 units, cost 123.71M, balance 168.92M
+  G021aae64 couch {'A': 6, 'B': 53, 'C': 34}; our sales 24 h: 25 (all A); bought 274 / sold 190 in 72 h
+  G2cb8041b chair {'A': 67, 'B': 30, 'C': 12}; our sales 24 h: 7; A floor = ask 0.81 of list, market A 0.68
+
+deploy 19:58:58 KST: kill shop_r3 and the org server only (no tunnel change)
+  19:59:29 [seller] Terminated; 20:00:01 kit restarted it; org server back by 20:00:11; quotes 5-10/min again from 20:01
+  first quotes: G2cb8041b offers B at 0.590 of list (market B 0.62, floor 0.512; before: A at 0.81);
+    G0be9ed07 C slow, ask 0.460 (market C 0.49)
+  dry run before deploy: G021aae64 B first at 0.624 (market 0.654), then A 0.715, C 0.523
+  restock dry run 20:05: 20 SKUs covered; mattress category moves to G0667d440 but is held by the 35% category cap
+    (couch stock 24.0M); 20:00 window bought 1 unit (premium), windows before it 6-51
+measure next: units and cost of the two SKUs, B/C sold per day, book/h, stars_rank (C ships without warranty)
+seen, not changed: the normal plan skips categories the market pays under 0.65 of list; that now covers fresh fruit
+  (0.64, 4.7 stockouts/h), fresh meat, kimchi, grain

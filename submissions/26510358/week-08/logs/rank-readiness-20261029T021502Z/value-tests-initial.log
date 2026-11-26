@@ -1,0 +1,23 @@
+test_history_is_explicitly_not_a_current_quote_or_comparable_quality_claim (test_buyer_value.BuyerValue) ... ok
+test_invalid_configuration_is_rejected_without_generating_a_price (test_buyer_value.BuyerValue) ... ok
+test_latest_five_observations_keep_raw_prices_and_provenance_without_selecting_a_reference (test_buyer_value.BuyerValue) ... ok
+test_naive_invalid_stale_and_future_dates_are_excluded (test_buyer_value.BuyerValue) ... ok
+test_no_budgets_reviews_peer_prose_or_unbounded_memory_are_copied (test_buyer_value.BuyerValue) ... FAIL
+test_only_same_item_confirmed_completed_records_are_used (test_buyer_value.BuyerValue) ... ok
+test_positive_whole_float_is_normalized_but_boolean_fraction_and_invalid_prices_are_excluded (test_buyer_value.BuyerValue) ... ok
+test_round3_uses_settled_round3_history_only (test_buyer_value.BuyerValue) ... ok
+test_timezone_offsets_are_normalized_and_max_age_is_inclusive (test_buyer_value.BuyerValue) ... ok
+test_unknown_current_round_is_explicit_and_legacy_confirmation_is_not_called_settlement (test_buyer_value.BuyerValue) ... ok
+
+======================================================================
+FAIL: test_no_budgets_reviews_peer_prose_or_unbounded_memory_are_copied (test_buyer_value.BuyerValue)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/myeonggi/ai-agent-engineering-101/submissions/26510358/week-08/tests/test_buyer_value.py", line 89, in test_no_budgets_reviews_peer_prose_or_unbounded_memory_are_copied
+    self.assertNotIn(unwanted, text)
+AssertionError: 'budget' unexpectedly found in '{"source": "personal_confirmed_history", "source_field": "personal_memory.recent", "item": "lamp", "current_round": 3, "historical_not_current": true, "quality_comparison_verified": false, "quality_comparability": "unknown", "observations": [{"price": 105, "observed_at": "2026-11-02T12:00:00+00:00", "task": "TEST-ONLY-task", "round": 3, "confirmation": "round3_settlement"}], "observation_count": 1, "evidence_limits": ["Historical observations are not current offers.", "Matching quality, availability and other purchase conditions have not been verified.", "These observations do not define a fair price, offer, acceptance threshold or budget ceiling."]}'
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.001s
+
+FAILED (failures=1)

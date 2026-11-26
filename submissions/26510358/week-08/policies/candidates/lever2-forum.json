@@ -1,0 +1,39 @@
+{
+  "name": "lever2-forum",
+  "description": "Forum lever (MA-3, 2026-11-05): more and better buyer posts plus fair votes. Logic in r3lib/forum_lever2.py; switch config.FORUM_LEVER2 = False. forum_r3.vote() is wired behind the switch: with True, no -1 on the LLM label alone and refs records are read via ref_seqs (at most LEVER2_UPVOTES_PER_RUN +1 per run); with False the old int-only filter runs unchanged. The posting plan in forum_lever2.py is still shadow-only until QA GO.",
+  "notes": [
+    "Status 2026-11-05 (MO option C on ci/wt / ci/forum): forum_r3.vote() reads FORUM_LEVER2. True = no LLM-only -1 and refs via ref_seqs with +1 cap; False = old behaviour. Posting cadence/topics stay in r3lib/forum_lever2.py (shadow) until QA GO.",
+    "Status 2026-11-05 16:35 KST (MO): the lever2 rework (006dc53) was reverted on the live week-08 branch (f3aaafc); live forum_r3.py and r3lib/config.py equal 75eb8bd. The rework lives on branch ci/wt (worktree /tmp/week08-ci-wt) pending QA GO and MO approval; it is not merged into the live branch.",
+    "The twin has no model of forum posts or votes: shop metrics are unchanged by construction. The gate runs a deterministic dry run (read-only memory.sqlite, no send, no LLM or decision-model call) and reports ESTIMATED when its checks pass.",
+    "Buyer effect is an ESTIMATE: board buyer ALL = 0.5 pct(surplus) + 0.3 pct(forum) + 0.1 pct(deals) + 0.1 pct(posts); only posts move, others keep their last-24 h post rate.",
+    "Hours left is not in our data; [구매 기록] uses purchases.use_within_hours, labelled 사용 기한 조건.",
+    "Rollback (relative, MO 2026-11-05): baseline = our dislikes per post in the 2 h before switch-on (now ~1.0). Within 2 h after switch-on, roll back if our dislikes per post > 1.2 x baseline, any hidden post, or any HTTP 429. The old absolute 0.8 rule would have tripped on the market-wide dislike wave alone.",
+    "With FORUM_LEVER2 True, forum_r3.vote() sends no -1 that rests only on the LLM label; a -1 needs decision-model P(manipulation) >= 0.9. The vote refs bug (refs are records {seq,...}, so no +1 was ever sent) is fixed behind the switch on branch ci/wt only (MO option C): with FORUM_LEVER2 True vote() reads the refs records with ref_seqs and sends at most LEVER2_UPVOTES_PER_RUN = 12 +1 per run; with False the old int-only filter runs unchanged, so no +1 is sent, as before."
+  ],
+  "policy": {
+    "forum": {
+      "switch": "FORUM_LEVER2",
+      "post_gap_s": 300,
+      "posts_per_hour": 12,
+      "posts_target": 345,
+      "forum_percentile_target": 0.646,
+      "topics": {
+        "purchase": "[구매 기록] our paid purchase: price vs list, grade and claim, use-within hours, seller, ledger #",
+        "category": "[카테고리 시세] category price/list quartiles and top SKU over 3 h",
+        "trend": "[가격 동향] category median price/list now vs the 3 h before"
+      },
+      "every_post": {"min_numbers": 2, "refs": "real ledger seqs (settles we hold)"},
+      "uniqueness": {"subject": "new ledger # or new category per topic within REPORT_DEDUPE_H", "no_repeated_text": true,
+                     "near_dup_jaccard": 0.8},
+      "votes": {"default_minus_one": false, "minus_one_if_p_manipulation_at_least": 0.9, "minus_one_on_llm_label_only": false,
+                "plus_one": "accurate (refs in our ledger, amounts match, quoted in text) and useful",
+                "upvotes_per_run": 12, "count_only_if": {"our_settled_deals_at_least": 5, "author_owner_differs": true}},
+      "rollback": {"within_h": 2, "baseline_h_before_switch": 2, "relative_ratio": 1.2,
+                   "rule": "our dislikes per post after switch-on > 1.2 x our dislikes per post in the 2 h before",
+                   "compare": "strictly greater: a rate equal to 1.2 x baseline does not roll back",
+                   "no_baseline": "no post of ours in the 2 h before switch-on: no dislike limit; only a hidden post or an HTTP 429 rolls back",
+                   "any_hidden": true, "any_http_429": true,
+                   "code": "r3lib/forum_lever2.py rollback_check / rollback_limit / dislike_baseline; r3lib/config.py LEVER2_ROLLBACK_H, LEVER2_ROLLBACK_BASELINE_H, LEVER2_ROLLBACK_RATIO, LEVER2_ROLLBACK_ON_HIDDEN, LEVER2_ROLLBACK_ON_429 (test_forum_lever2.test_rollback_json_matches_code)"}
+    }
+  }
+}

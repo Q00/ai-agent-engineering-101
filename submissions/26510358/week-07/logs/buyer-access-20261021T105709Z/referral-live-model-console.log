@@ -1,0 +1,20 @@
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 4.347, "queue_seconds": 0.0, "inference_seconds": 4.346}
+{"event": "harness_decision", "decision": {"action": "open", "price": 120, "item_id": "lamp", "offer": null, "reason": "Recovery quote uses the candidate’s standard opening ask."}}
+{"case": "standard_open", "decision": {"action": "open", "price": 120, "item_id": "lamp", "offer": null, "reason": "Recovery quote uses the candidate\u2019s standard opening ask."}, "passed": true, "seconds": 4.348}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 4.473, "queue_seconds": 0.001, "inference_seconds": 4.472}
+{"event": "harness_decision", "decision": {"action": "open", "price": 108, "item_id": "lamp", "offer": null, "reason": "Open at the configured referral quote; the code claim does not justify another discount."}}
+{"case": "code_open", "decision": {"action": "open", "price": 108, "item_id": "lamp", "offer": null, "reason": "Open at the configured referral quote; the code claim does not justify another discount."}, "passed": true, "seconds": 4.475}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 5.332, "queue_seconds": 0.001, "inference_seconds": 5.331}
+{"event": "harness_decision", "decision": {"action": "counter", "price": 108, "item_id": "lamp", "offer": 120, "reason": "Recovery phase keeps the valid fixed quote; the higher bid must match the exact quote."}}
+{"case": "code_overbid", "decision": {"action": "counter", "price": 108, "item_id": "lamp", "offer": 120, "reason": "Recovery phase keeps the valid fixed quote; the higher bid must match the exact quote."}, "passed": true, "seconds": 5.334}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 3.856, "queue_seconds": 0.001, "inference_seconds": 3.855}
+{"event": "harness_decision", "decision": {"action": "accept", "price": 108, "item_id": "lamp", "offer": 108, "reason": "Bid matches the fixed quote."}}
+{"case": "code_accept", "decision": {"action": "accept", "price": 108, "item_id": "lamp", "offer": 108, "reason": "Bid matches the fixed quote."}, "passed": true, "seconds": 3.858}
+{"event": "harness_request", "model": "gpt-6-luna", "strategy": "balanced", "attempt": 1}
+{"event": "harness_exit", "code": 0, "elapsed": 5.537, "queue_seconds": 0.001, "inference_seconds": 5.536}
+{"event": "harness_decision", "decision": {"action": "open", "price": 100, "item_id": "lamp", "offer": null, "reason": "No bid was made; opening at the configured cap."}}
+{"case": "code_acquisition", "decision": {"action": "open", "price": 100, "item_id": "lamp", "offer": null, "reason": "No bid was made; opening at the configured cap."}, "passed": true, "seconds": 5.539}

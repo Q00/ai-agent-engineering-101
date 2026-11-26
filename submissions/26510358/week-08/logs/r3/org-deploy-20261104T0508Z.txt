@@ -1,0 +1,17 @@
+# 2026-11-04 14:08 KST: first restock cycles through the internal A2A organisation
+# clock: local - market = +163 s (timedatectl: System clock synchronized: no) -> 133a7e8 judges windows on /api/restock now
+{"ts": 1793768816.78, "from": "ceo", "to": "purchasing", "skill": "propose", "via": "a2a", "req": "4ce94f806e10", "ms": 464}
+{"ts": 1793768816.8, "from": "ceo", "to": "logistics", "skill": "approve", "via": "a2a", "req": "847491dfc6e5", "ms": 23}
+{"ts": 1793768816.82, "from": "hook", "to": "ceo", "skill": "tick", "via": "a2a", "req": "4533e87a2e97", "ms": 1034}
+{"ts": 1793768881.85, "from": "ceo", "to": "purchasing", "skill": "propose", "via": "local", "ms": 404}
+{"ts": 1793768882.48, "from": "ceo", "to": "logistics", "skill": "approve", "via": "a2a", "req": "a454869031ab", "ms": 633}
+{"ts": 1793768882.48, "from": "hook", "to": "ceo", "skill": "tick", "via": "local", "ms": 1194}
+# org server restarted for 133a7e8 (pid 1779356 -> new); tick fell back in-process while it started
+14:06:03 [supply] {'sku': 'G5e3784e6', 'qty': 3} refused: 429 {"error":"supply is closed; the next restock window opens in 57 s","wait":57.9,"opens_at":1793768628,"closes_at":1793768808}
+14:06:32 [supply] 10 x [샤이닝홈] 모달 소파패드 돌소파용 마인 요릭 85x200 3컬러 쇼파패드 for 263112, balance 17014147
+14:06:42 [supply] 4 x [마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증) for 85972, balance 16928175
+14:06:53 [supply] 1 x 맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg for 10250, balance 16917925
+14:07:03 [supply] 7 x 지누스 그린티 럭스S 하이브리드 매트리스 20cm Q 퀸 for 1805666, balance 15112259
+14:07:14 [supply] 3 x [착불]우아미가구 윈4인 코브라스윙 갤럭시 패브릭소파 for 1212161, balance 13900098
+14:07:24 [supply] 10 x [마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증) for 200834, balance 13699264
+14:07:35 [supply] 1 x 맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg for 10672, balance 13688592

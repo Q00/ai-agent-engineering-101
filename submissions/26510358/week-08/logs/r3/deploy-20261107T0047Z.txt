@@ -1,0 +1,15 @@
+deploy commit 0d1a4ae (STOCK_BUDGET_MAX 25M, PREMIUM_BUDGET 12M, PREMIUM_MAX_UNITS 15)
+restock_r3 runs per window; the long-lived org server (purchasing calls restock_r3.plan in-process) needs a restart
+2026-11-07T00:47:08Z
+SIGTERM org server 3036571
+--- after restart
+2026-11-07T01:03:45Z
+ 257244 Sat Nov  7 09:48:07 2026 /home/myeonggi/ai-agent-engineering-101/.venv/bin/python3 -m r3lib.org.server --port 0
+1794012362 stock 15643100 budget 16000000 prem 8 7381051 buy [('G1515d951', 1), ('G200e39a3', 1), ('G1831f2c0', 1)]
+1794012427 stock 15794726 budget 16000000 prem 8 7584067.0 buy [('G200e39a3', 7), ('G8095ddd6', 1)]
+1794013423 stock 15627298 budget 25000000 prem 8 10075005.0 buy [('G1515d951', 11), ('G5e3784e6', 8), ('G200e39a3', 20), ('G0be9ed07', 16), ('G84e88e11', 2), ('Gef4d3036', 12), ('Gc184b6fa', 1), ('G8ec51935', 1), ('G24f5f979', 1), ('Gf6b70da8', 1)]
+--- after restart
+2026-11-07T01:03:57Z
+ 257244 Sat Nov  7 09:48:07 2026 /home/myeonggi/ai-agent-engineering-101/.venv/bin/python3 -m r3lib.org.server --port 0
+00:47:07Z stock 15794726 budget 16000000 prem 8 7584067.0 buy [('G200e39a3', 7), ('G8095ddd6', 1)]
+01:03:43Z stock 15627298 budget 25000000 prem 8 10075005.0 buy [('G1515d951', 11), ('G5e3784e6', 8), ('G200e39a3', 20), ('G0be9ed07', 16), ('G84e88e11', 2), ('Gef4d3036', 12), ('Gc184b6fa', 1), ('G8ec51935', 1), ('G24f5f979', 1), ('Gf6b70da8', 1)]
