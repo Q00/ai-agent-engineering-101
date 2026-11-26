@@ -1,0 +1,198 @@
+{
+  "captured_at": "2026-10-27T15:06:11.926257+09:00",
+  "scope": "local log snapshots; public board GETs; saved test receipt, not a fresh market test",
+  "files": {
+    "sales.jsonl": {
+      "sha256": "06fac5c744b8d8fca6bff39b64bafc5140a16a1a7e14a426c791c539b4f6b4b0",
+      "bytes": 3376978,
+      "rows": 19195,
+      "excluded_test_rows": 12,
+      "kept": 19183,
+      "first_time": "2026-10-20T20:51:15",
+      "last_time": "2026-10-27T15:00:53"
+    },
+    "talks.jsonl": {
+      "sha256": "ab5753e0733b1c245d41a0433eae062ec5b407a77dc33a51f81f0f7ce43ff87a",
+      "bytes": 4690283,
+      "rows": 23132,
+      "excluded_test_rows": 3,
+      "kept": 23129,
+      "first_time": "2026-10-21T14:16:02",
+      "last_time": "2026-10-27T15:00:53"
+    },
+    "memory.jsonl": {
+      "sha256": "93830f496d26402f313129673cc8c21a6f4047620c8b47f270736f622adc52b0",
+      "bytes": 4968360,
+      "rows": 20566,
+      "excluded_test_rows": 0,
+      "kept": 20566,
+      "first_time": "2026-10-20T20:30:16",
+      "last_time": "2026-10-27T15:00:40"
+    },
+    "logs/market-kit.log": {
+      "sha256": "6f7ca16787e249a47bd3d6b021450e52165024ba780323bf9ddd85eb42735f7d",
+      "bytes": 344717254,
+      "lines": 1256749
+    }
+  },
+  "sales": {
+    "all": {
+      "deals": 19183,
+      "at_reserve": 14319,
+      "local_margin_sum": 27332,
+      "items": {
+        "lamp": {
+          "deals": 6098,
+          "average_price": 101.17481141357823,
+          "average_price_over_reserve": 1.0117481141357823
+        },
+        "chair": {
+          "deals": 7119,
+          "average_price": 181.16477033291193,
+          "average_price_over_reserve": 1.0064709462939552
+        },
+        "bookshelf": {
+          "deals": 5966,
+          "average_price": 261.9906134763661,
+          "average_price_over_reserve": 1.0076562056783311
+        }
+      }
+    },
+    "promo": {
+      "deals": 70,
+      "at_reserve": 34,
+      "local_margin_sum": 253,
+      "items": {
+        "lamp": {
+          "deals": 16,
+          "average_price": 102.875,
+          "average_price_over_reserve": 1.02875
+        },
+        "chair": {
+          "deals": 24,
+          "average_price": 185.58333333333334,
+          "average_price_over_reserve": 1.0310185185185186
+        },
+        "bookshelf": {
+          "deals": 30,
+          "average_price": 262.43333333333334,
+          "average_price_over_reserve": 1.0093589743589744
+        }
+      }
+    },
+    "normal": {
+      "deals": 19113,
+      "at_reserve": 14285,
+      "local_margin_sum": 27079,
+      "items": {
+        "lamp": {
+          "deals": 6082,
+          "average_price": 101.17033870437356,
+          "average_price_over_reserve": 1.0117033870437357
+        },
+        "chair": {
+          "deals": 7095,
+          "average_price": 181.14982381959126,
+          "average_price_over_reserve": 1.0063879101088402
+        },
+        "bookshelf": {
+          "deals": 5936,
+          "average_price": 261.9883760107817,
+          "average_price_over_reserve": 1.0076476000414678
+        }
+      }
+    }
+  },
+  "talk_outcomes": {
+    "deal": 19105,
+    "buyer canceled": 4000,
+    "reject": 24
+  },
+  "talk_close_rate": 0.8260192831510226,
+  "memory": {
+    "valid_local_receipt_rows": 15756,
+    "receipt_problems": {
+      "none": 20565,
+      "no sig_seller": 1
+    },
+    "ally_shop_trades": {
+      "ggari-shop": 17163
+    }
+  },
+  "log_counts": {
+    "[hold]": 2596,
+    "[pricing]": 2,
+    "ally (BUYER_ALLIES)": 2008,
+    "ADVERTISED inside": 18055,
+    "skipping willow-goods: my memory has a bad receipt": 20568,
+    "sig_seller ok, sig_buyer added": 15761,
+    "receipt has no sig_seller": 26
+  },
+  "pricing_events": [
+    "09:08:27 [seller] [pricing] HOLD 0 -> 1",
+    "10:21:59 [seller] [pricing] HOLD 1 -> 0"
+  ],
+  "recent_log_tail": [
+    "15:04:25 [order o-94a0847d] lamp, budget 125, round 2",
+    "15:04:25 [kit] no shops in the market yet, waiting",
+    "15:04:42 [order o-94a0847d] lamp, budget 125, round 2",
+    "15:04:42 [kit] no shops in the market yet, waiting",
+    "15:04:58 [market] order failed: 502 ",
+    "15:05:08 [market] order failed: 502 ",
+    "15:05:19 [market] order failed: 502 ",
+    "15:05:29 [market] order failed: 502 ",
+    "15:05:39 [market] order failed: 502 ",
+    "15:05:50 [market] order failed: 502 ",
+    "15:06:00 [market] order failed: 502 ",
+    "15:06:11 [market] order failed: 502 "
+  ],
+  "safe_deployment_config": {
+    "rejoin.ps1": [
+      "$env:SHOP_PROMO    = \"0\"                              # 10-21 15:2x: promo opened at 1.05x; off",
+      "$env:SHOP_NICK     = \"fair-furniture\"",
+      "$env:SHOP_PRICING  = \"$HOME\\agent-market\\pricing.json\"   # 10-22: busy from this file, reread once a minute",
+      "$env:BUYER_ALLIES  = \"ggari-shop\"                     # 10-21: alliance approved by the instructor",
+      "$env:SHOP_ALLIES   = \"ggari-shop\"                     # stated on the shop's card",
+      "$env:BUYER_EXPLORE = \"0.25\""
+    ],
+    "run-forever.ps1": [],
+    "watch-then-loop.ps1": []
+  },
+  "pricing_file_snapshot": {
+    "busy": 30,
+    "hold": 0
+  },
+  "boards": [
+    {
+      "url": "https://market.ourolabs.ai/api/board?round=0",
+      "requested_at": "2026-10-27T15:06:13.275708+09:00",
+      "error_type": "HTTPError",
+      "error": "HTTP Error 502: Bad Gateway"
+    },
+    {
+      "url": "https://market.ourolabs.ai/api/board?round=1",
+      "requested_at": "2026-10-27T15:06:13.840219+09:00",
+      "error_type": "HTTPError",
+      "error": "HTTP Error 502: Bad Gateway"
+    },
+    {
+      "url": "https://market.ourolabs.ai/api/board?round=2",
+      "requested_at": "2026-10-27T15:06:14.274537+09:00",
+      "error_type": "HTTPError",
+      "error": "HTTP Error 502: Bad Gateway"
+    }
+  ],
+  "saved_test": {
+    "started": "2026-10-22T07:25:12+00:00",
+    "runs": 25,
+    "passing": 25,
+    "passed": true,
+    "kit_hash_matches": true,
+    "source_matches_688e5c8": {
+      "seller.py": true,
+      "buyer.py": true,
+      "market_buyer.py": true,
+      "agent.json": true
+    }
+  }
+}
