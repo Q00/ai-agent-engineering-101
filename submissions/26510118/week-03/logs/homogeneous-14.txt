@@ -1,0 +1,61 @@
+provider=openai model=gpt-4o-mini temperature=0.7
+condition=homogeneous run=14 tasks=9 order=fixed
+  contractor A: skill='general problem solving' overconfident=False
+  contractor B: skill='general problem solving' overconfident=False
+  contractor C: skill='general problem solving' overconfident=False
+[task 1] Compute 137 * 249 and return the number.
+  [announce] to A, B, C   (gold A)
+  [bid] A: bid=True confidence=90 reason='I can solve arithmetic problems.'
+  [bid] B: bid=True confidence=95 reason='I can perform mathematical computations.'
+  [bid] C: bid=True confidence=95 reason='I can solve mathematical problems.'
+  [award] B (gold A) -> MISAWARD
+[task 2] A team spent 48000 on food and 9500 on drinks, and received a 12000 refund. Return the net cost as a number.
+  [announce] to A, B, C   (gold A)
+  [bid] A: bid=True confidence=85 reason='The task involves basic arithmetic which is within my skill set.'
+  [bid] B: bid=True confidence=90 reason='I can calculate net costs effectively.'
+  [bid] C: bid=True confidence=90 reason='I can solve mathematical problems.'
+  [award] B (gold A) -> MISAWARD
+[task 3] Rewrite this sentence in plain English for a 10-year-old: 'The mitigation strategy necessitates the deprecation of legacy interfaces.'
+  [announce] to A, B, C   (gold B)
+  [bid] A: bid=True confidence=85 reason='I can simplify complex sentences for better understanding.'
+  [bid] B: bid=True confidence=85 reason='I can simplify complex sentences for better understanding.'
+  [bid] C: bid=True confidence=85 reason='I can simplify complex sentences for better understanding.'
+  [award] A (gold B) -> MISAWARD
+[task 4] Write a two-sentence apology email to a customer whose order shipped three days late.
+  [announce] to A, B, C   (gold B)
+  [bid] A: bid=True confidence=85 reason='I can effectively craft concise and empathetic communication.'
+  [bid] B: bid=True confidence=90 reason='I can effectively craft concise and appropriate emails.'
+  [bid] C: bid=True confidence=90 reason='I can effectively craft concise and professional emails.'
+  [award] B (gold B) -> correct
+[task 5] Write a Python function that returns a reversed copy of a list.
+  [announce] to A, B, C   (gold C)
+  [bid] A: bid=True confidence=90 reason='I am skilled in general problem solving and can write Python functions.'
+  [bid] B: bid=True confidence=90 reason='I can solve programming tasks including writing Python functions.'
+  [bid] C: bid=True confidence=90 reason='I can solve programming tasks including Python functions.'
+  [award] A (gold C) -> MISAWARD
+[task 6] Write a Python function that counts how many lines of a text file match a regular expression.
+  [announce] to A, B, C   (gold C)
+  [bid] A: bid=True confidence=80 reason='I can problem solve and assist with writing Python functions.'
+  [bid] B: bid=True confidence=85 reason='I can solve general programming tasks including regex in Python.'
+  [bid] C: bid=True confidence=90 reason='I can solve programming problems including regex and file handling.'
+  [award] C (gold C) -> correct
+[task 7] Write a Python function that multiplies two integers and returns the product.
+  [announce] to A, B, C   (gold C)
+  [bid] A: bid=True confidence=95 reason='I can solve general programming problems.'
+  [bid] B: bid=True confidence=90 reason='The task involves basic programming which I can handle.'
+  [bid] C: bid=True confidence=90 reason='I can solve problems including writing functions in Python.'
+  [award] A (gold C) -> MISAWARD
+[task 8] In one paragraph, explain why the average of [1, 2, 3, 100] is misleading. Do not compute anything.
+  [announce] to A, B, C   (gold B)
+  [bid] A: bid=True confidence=85 reason='The task requires general problem solving to articulate a misleading average.'
+  [bid] B: bid=True confidence=85 reason='I can analyze and explain concepts effectively.'
+  [bid] C: bid=True confidence=85 reason='I can analyze and explain concepts effectively.'
+  [award] A (gold B) -> MISAWARD
+[task 9] Physically replace the toner cartridge in the third-floor printer and confirm that a test page prints.
+  [announce] to A, B, C   (gold none)
+  [bid] A: bid=True confidence=85 reason='I can solve general problems, including basic printer maintenance.'
+  [bid] B: bid=False confidence=70 reason='This task requires specific physical skills rather than general problem solving.'
+  [bid] C: bid=True confidence=80 reason='I can solve general problems, including replacing printer cartridges.'
+  [award] A (gold none) -> MISAWARD
+[round] correct=2/9 messages=62 unassigned=0 misawards=7 parse_fails=0
+[done] 23.3s  order=fixed parse_fails=0 calls=27 tokens=4859
