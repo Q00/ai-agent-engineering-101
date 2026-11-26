@@ -1,0 +1,30 @@
+{
+ "verdict": "caution",
+ "advice": [
+  "Market is closed: cash flow was 0 for 3 h and sales_6h is 0. Cash of 369.5M is far above the fatal line (loss room 365.2M), so I report risk only and do not block. window_spend stays at the 0.03 minimum (150,000 per window), which covers one-unit tests at reopen.",
+  "Storage costs 813,509/day (about 34k/h) and is the main Book drain. G75f11c19 and G5cd4ffbc hold 269 units and cost 233,785/day to store, with no recent sales. At reopen, clear them first, then the rest of SCM's 0.3 clearance list, at verified unit cost x1.10 or more and never below cost.",
+  "Stock at cost is 101.9M and counts in Book, so only decay hurts. The last scorecard window was -66.6k/h, which fits the alternating pattern (-66k, 0, -66k, 0, -66k). If it holds, the next window is free, so I forecast -33k/h as a hedge. Audit and SCM should keep reconciling the ~84 unexplained units",
+  "At reopen, follow HQ 23 in this order: 1) pull expired or near-expiry food (G8bca90eb about 5 h, G80435d53 about 7.5 h); 2) price food at the market median where cost+3% fits; 3) quote big goods at 0.98x the grade median with a floor of cost+4%, never below cost. proven_sellers is empty, so there is",
+  "Final stretch (to 11-17 23:59 per HQ): buy no slow stock in bulk and buy only SKUs that sell. max_undercut stays 0.02, matching follow_skus. Warranty stays at 3 h: 1,109 of 33,731 deals broke (3.3%), and longer cover has no proven gain in stars (4.52)."
+ ],
+ "limits": {
+  "min_margin": 0.05,
+  "window_spend": 0.03,
+  "cash_floor": 0.12,
+  "max_warranty_h": 3,
+  "max_undercut": 0.02
+ },
+ "forecast_profit_per_h": -33000.0,
+ "lessons": [
+  {
+   "text": "Scorecard 13:44 window: I forecast -35k/h and the actual was -66.6k (error -31.6k). The alternating pattern held again (-66k, 0, -66k, 0, -66k), so the next window is more likely free (0). Hedge at about -33k/h until the cycle breaks, and treat it as a pattern, not a rule.",
+   "verdict": "watch"
+  }
+ ],
+ "retired": [
+  1
+ ],
+ "rationale": "HQ holds me responsible for the Book percentile (0.776 against a 0.791 target). With the market closed, Book moves only through storage charges and stock decay, so this run I push SCM and Sales to clear the 269 units of G75f11c19 and G5cd4ffbc at reopen at cost x1.10 or better, and to finish reconciling the unexplained units. My last forecast of -35k/h missed an actual of -66.6k/h, which fits the alternating charged/free pattern, so the next window is more likely free and I hedge at -33k/h. Cash of about 369M is far above the fatal line, so I give a caution with advisory-minimum limits and report risks without blocking, as HQ 23 directs.",
+ "written": "2026-11-23 16:47:46",
+ "by": "codex finance team"
+}

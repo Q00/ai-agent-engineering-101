@@ -1,0 +1,61 @@
+{
+ "pricing": {
+  "price_band": [
+   0.72,
+   0.77
+  ],
+  "min_margin": 0.12,
+  "clear_floor_margin": 0.06,
+  "haggle_room": 0.02,
+  "hero_undercut": false,
+  "warranty_goods_h": 3,
+  "vip_discount": 0.0
+ },
+ "exclusive_skus": {},
+ "follow_skus": {},
+ "restock": {
+  "mode": "normal",
+  "skus": []
+ },
+ "scm_veto": {
+  "cancel_orders": [],
+  "no_clearance": [
+   "G80435d53",
+   "G8bca90eb",
+   "G1d5141af",
+   "G0033fd0a",
+   "Gf93bdf86",
+   "G26fb205a",
+   "Gb67139e2",
+   "G344fc18d",
+   "G35351812",
+   "G5cd4ffbc",
+   "G75f11c19",
+   "G00327e80",
+   "G2698c6f8"
+  ]
+ },
+ "rationale": "HR: the only missed KPI is shop ALL percentile (0.851 against 0.866). The market is closed until 11-24 19:00 KST, so deals, revenue and stars cannot move and no lever of mine can change that. I change zero levers against the current plan, which keeps the Round 4 baseline clean. I follow lessons 0 and 1: never sell below cost, clear at the live same-grade median floored at receipt cost +6%, and buy only 1-unit tests after paid medians appear. I veto all of SCM's flat 0.3-of-list markdowns, since they price below cost, which also means clearing waits for live medians. I follow all five finance points. The code fixes that matter before reopen are the stale Round 3 cutoffs and the price_ab overrides.",
+ "version": 1795420115,
+ "written": "2026-11-23 16:48:35",
+ "by": "codex research + claude seller team",
+ "lessons": [
+  {
+   "text": "Market is paused until 11-24 19:00 KST and no lever can move ALL. Hold the plan unchanged (zero levers) and fix the stale round cutoffs and price_ab before reopen.",
+   "verdict": "keep"
+  },
+  {
+   "text": "At reopen, pull expired and near-expiry food first (G8bca90eb, G80435d53). Then clear G75f11c19 and G5cd4ffbc at 0.98x the same-grade median, floored at receipt cost +6%. Flat 0.3-of-list markdowns stay vetoed.",
+   "verdict": "keep"
+  },
+  {
+   "text": "After reopen, buy only 1-unit tests on SKUs with observed paid medians where actual cost fits finance's window. Review the clearance results after the first 3 h of paid data.",
+   "verdict": "watch"
+  }
+ ],
+ "retired": [
+  2,
+  3,
+  4
+ ]
+}

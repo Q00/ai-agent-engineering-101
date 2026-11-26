@@ -1,0 +1,19 @@
+{
+  "harness": "OpenRouter free models via the chat-completions API, temperature 0, JSON answer (harness.py: a listed model that is busy or missing is skipped, then OpenRouter's current free list); most Round 3 decisions are made by code",
+  "seller": {
+    "cmd": "python shop_r3.py --port {port}"
+  },
+  "buyer": {
+    "cmd": "python buyer.py --url {url} --item {item} --budget {budget}"
+  },
+  "market_buyer": {
+    "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"
+  },
+  "review": {
+    "cmd": "python review_r3.py --deal {deal}"
+  },
+  "restock": {
+    "cmd": "python restock.py --state {state}"
+  },
+  "worker_shop": "https://harness-shop-25620024.imajason.workers.dev (weeks 06-07 shop, ACP built for week 08; the Round 3 shop is shop_r3.py on the VPS)"
+}
