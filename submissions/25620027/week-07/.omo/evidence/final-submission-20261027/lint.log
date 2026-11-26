@@ -1,0 +1,50 @@
+TC003 Move standard library import `collections.abc.AsyncIterator` into a type-checking block
+ --> market_a2a/model_session.py:6:29
+  |
+5 | import os
+6 | from collections.abc import AsyncIterator, Callable
+  |                             ^^^^^^^^^^^^^
+7 | from contextlib import AsyncExitStack, asynccontextmanager
+8 | from pathlib import Path
+  |
+help: Move into type-checking block
+   |
+5  | import os
+   - from collections.abc import AsyncIterator, Callable
+6  | from contextlib import AsyncExitStack, asynccontextmanager
+--------------------------------------------------------------------------------
+16 | from market_a2a.paid_fallback import DailyQuota, OpenAIFallback
+17 + from typing import TYPE_CHECKING
+18 +
+19 + if TYPE_CHECKING:
+20 +     from collections.abc import AsyncIterator, Callable
+21 |
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+TC003 Move standard library import `collections.abc.Callable` into a type-checking block
+ --> market_a2a/model_session.py:6:44
+  |
+5 | import os
+6 | from collections.abc import AsyncIterator, Callable
+  |                                            ^^^^^^^^
+7 | from contextlib import AsyncExitStack, asynccontextmanager
+8 | from pathlib import Path
+  |
+help: Move into type-checking block
+   |
+5  | import os
+   - from collections.abc import AsyncIterator, Callable
+6  | from contextlib import AsyncExitStack, asynccontextmanager
+--------------------------------------------------------------------------------
+16 | from market_a2a.paid_fallback import DailyQuota, OpenAIFallback
+17 + from typing import TYPE_CHECKING
+18 +
+19 + if TYPE_CHECKING:
+20 +     from collections.abc import AsyncIterator, Callable
+21 |
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 2 errors.
+2 unsafe fixes available with `--fix --unsafe-fixes`.

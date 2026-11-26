@@ -1,0 +1,247 @@
+..................................................F..F.................. [ 21%]
+........................................................................ [ 43%]
+........................................................................ [ 64%]
+........................................................................ [ 86%]
+.............................................                            [100%]
+=================================== FAILURES ===================================
+__________ test_missing_free_endpoint_falls_back_only_to_free_router ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10fccd880>
+
+    def test_missing_free_endpoint_falls_back_only_to_free_router(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setenv("AX_MODEL_PROVIDER", "openrouter-free")
+        monkeypatch.setenv("OPENROUTER_API_KEY", "offline-openrouter")
+        requested: list[str] = []
+    
+        def respond(request: httpx2.Request) -> httpx2.Response:
+            body = TypeAdapter(dict[str, JsonValue]).validate_json(request.content)
+            route = TypeAdapter(str).validate_python(body["model"])
+            requested.append(route)
+            assert body["provider"] == {
+                "require_parameters": True,
+                "max_price": {"prompt": 0, "completion": 0, "request": 0},
+            }
+            if route == FREE_MODEL:
+                return httpx2.Response(404, json={"error": {"message": "Free retired"}})
+            assert route == FREE_ROUTER
+            return httpx2.Response(200, json={
+                "id": "free-router", "object": "chat.completion", "created": 0,
+                "model": "offline-free-model",
+                "choices": [{"index": 0, "finish_reason": "stop",
+                             "message": {"role": "assistant", "content": "ok"}}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1,
+                          "total_tokens": 2},
+            })
+    
+        async def scenario() -> None:
+            async with (
+                httpx2.AsyncClient(transport=httpx2.MockTransport(respond)) as http,
+                create_model_client(http) as client,
+            ):
+                harness = Harness(client, print)
+                _ = await harness.complete([{"role": "user", "content": "test"}], [])
+                assert requested == [FREE_MODEL, FREE_ROUTER]
+                assert harness.calls == 1
+    
+>       anyio.run(scenario)
+
+tests/test_model_provider.py:94: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with (
+            httpx2.AsyncClient(transport=httpx2.MockTransport(respond)) as http,
+            create_model_client(http) as client,
+        ):
+            harness = Harness(client, print)
+            _ = await harness.complete([{"role": "user", "content": "test"}], [])
+>           assert requested == [FREE_MODEL, FREE_ROUTER]
+E           AssertionError: assert ['openrouter/free'] == ['minimax/min...nrouter/free']
+E             
+E             At index 0 diff: 'openrouter/free' != 'minimax/minimax-m3.1-flash:free'
+E             Right contains one more item: 'openrouter/free'
+E             Use -v to get more diff
+
+tests/test_model_provider.py:91: AssertionError
+----------------------------- Captured stdout call -----------------------------
+MODEL_USAGE model=offline-free-model route=openrouter/free input=1 output=1
+_ test_sdk_request_uses_correct_host_model_and_zero_price_constraint[openrouter-free] _
+
+provider = 'openrouter-free'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x114484350>
+
+    @pytest.mark.parametrize("provider", ["openai", "openrouter-free"])
+    def test_sdk_request_uses_correct_host_model_and_zero_price_constraint(
+        provider: str, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("AX_MODEL_PROVIDER", provider)
+        monkeypatch.setenv("OPENAI_API_KEY", "offline-openai")
+        monkeypatch.setenv("OPENROUTER_API_KEY", "offline-openrouter")
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+        observed: list[dict[str, JsonValue]] = []
+        request_times: list[float] = []
+    
+        def respond(request: httpx2.Request) -> httpx2.Response:
+            body = TypeAdapter(dict[str, JsonValue]).validate_json(request.content)
+            observed.append(body)
+            request_times.append(monotonic())
+            if provider == "openrouter-free":
+                assert request.url.host == "openrouter.ai"
+                assert request.headers["authorization"] == "Bearer offline-openrouter"
+                assert body["model"] == FREE_MODEL
+                assert body["provider"] == {
+                    "require_parameters": True,
+                    "max_price": {"prompt": 0, "completion": 0, "request": 0},
+                }
+                assert body["max_tokens"] == 4096
+                assert body["reasoning"] == {"effort": "low"}
+                assert "parallel_tool_calls" not in body
+                assert "max_completion_tokens" not in body
+                assert "models" not in body
+                assert body["tool_choice"] == "auto"
+            else:
+                assert request.url.host == "api.openai.com"
+                assert request.headers["authorization"] == "Bearer offline-openai"
+                assert body["model"] == MODEL
+                assert body["max_completion_tokens"] == 450
+                assert body["parallel_tool_calls"] is False
+                assert "provider" not in body
+                assert body["tool_choice"] == "required"
+            return httpx2.Response(
+                200,
+                json={
+                    "id": "offline",
+                    "object": "chat.completion",
+                    "created": 0,
+                    "model": body["model"],
+                    "choices": [{
+                        "index": 0,
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "role": "assistant", "content": None,
+                            "tool_calls": [{
+                                "id": "offline-tool", "type": "function",
+                                "function": {"name": "accept", "arguments": "{}"},
+                            }],
+                        },
+                    }],
+                    "usage": {"prompt_tokens": 10, "completion_tokens": 5,
+                              "total_tokens": 15},
+                },
+            )
+    
+        async def scenario() -> None:
+            async with (
+                httpx2.AsyncClient(transport=httpx2.MockTransport(respond)) as http,
+                create_model_client(http) as client,
+            ):
+                harness = Harness(client, print)
+                result = await harness.complete(
+                    [{"role": "user", "content": "Offline tool serialization check"}],
+                    [{"type": "function", "function": {"name": "accept"}}],
+                )
+                assert result.tool_calls
+                assert harness.calls == 1
+                assert harness.input_tokens == 10
+                assert harness.output_tokens == 5
+                assert len(observed) == 1
+                assert json.dumps(observed)
+                if provider == "openrouter-free":
+                    _ = await harness.complete(
+                        [{"role": "user", "content": "Second offline request"}],
+                        [{"type": "function", "function": {"name": "accept"}}],
+                    )
+                    assert len(request_times) == 2
+                    assert request_times[1] - request_times[0] >= 3
+    
+>       anyio.run(scenario)
+
+tests/test_model_provider.py:195: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+tests/test_model_provider.py:177: in scenario
+    result = await harness.complete(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <market_a2a.harness.Harness object at 0x114487050>
+messages = [{'role': 'user', 'content': 'Offline tool serialization check'}]
+tools = [{'type': 'function', 'function': {'name': 'accept'}}]
+
+    async def complete(
+        self,
+        messages: list[ChatCompletionMessageParam],
+        tools: list[ChatCompletionToolParam],
+    ) -> ChatCompletionMessage:
+        """Retry transient API errors without replacing the model's decision."""
+        if self.fallback is not None and monotonic() < self.free_retry_at:
+            return await self._paid_complete(messages, tools)
+        route = request_model(self.model, datetime.now(UTC))
+        for attempt, delay in enumerate(RETRY_DELAYS):
+            try:
+                completion = await self._complete_once(messages, tools, route)
+            except APIStatusError as exc:
+                if exc.status_code == NOT_FOUND and route == FREE_MODEL:
+                    route = FREE_ROUTER
+                    self.emit("MODEL_FREE_FALLBACK route=openrouter/free")
+                elif (
+                    self.fallback is not None and self.model in FREE_MODELS
+                    and exc.status_code in (PAYMENT_REQUIRED, NOT_FOUND)
+                ):
+                    return await self._paid_complete(messages, tools)
+                elif exc.status_code != RETRY_STATUS and exc.status_code < SERVER_ERROR:
+                    raise
+                self.emit(f"MODEL_RETRY status={exc.status_code} attempt={attempt + 1}")
+            except (APIConnectionError, APITimeoutError) as exc:
+                self.emit(
+                    f"MODEL_RETRY kind={type(exc).__name__} attempt={attempt + 1}"
+                )
+            else:
+                return self._observe_completion(completion, route)
+            await anyio.sleep(delay)
+        if self.fallback is not None and self.model in FREE_MODELS:
+            return await self._paid_complete(messages, tools)
+        message = "Transient API retries exhausted"
+>       raise HarnessError(message)
+E       market_a2a.models.HarnessError: Transient API retries exhausted
+
+market_a2a/harness.py:213: HarnessError
+----------------------------- Captured stdout call -----------------------------
+MODEL_RETRY kind=APIConnectionError attempt=1
+MODEL_RETRY kind=APIConnectionError attempt=2
+MODEL_RETRY kind=APIConnectionError attempt=3
+=========================== short test summary info ============================
+FAILED tests/test_model_provider.py::test_missing_free_endpoint_falls_back_only_to_free_router
+FAILED tests/test_model_provider.py::test_sdk_request_uses_correct_host_model_and_zero_price_constraint[openrouter-free]
+2 failed, 331 passed in 17.14s

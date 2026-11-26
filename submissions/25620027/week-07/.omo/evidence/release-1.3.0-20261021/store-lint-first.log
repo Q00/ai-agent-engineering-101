@@ -1,0 +1,114 @@
+TC003 Move standard library import `pathlib.Path` into a type-checking block
+ --> market_a2a/seller_store.py:7:21
+  |
+5 | import sqlite3
+6 | from contextlib import closing
+7 | from pathlib import Path
+  |                     ^^^^
+8 | from typing import TYPE_CHECKING, Final, override
+  |
+help: Move into type-checking block
+   |
+6  | from contextlib import closing
+   - from pathlib import Path
+7  | from typing import TYPE_CHECKING, Final, override
+--------------------------------------------------------------------------------
+18 | if TYPE_CHECKING:
+19 +     from pathlib import Path
+20 |     from a2a.server.context import ServerCallContext
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+TRY003 Avoid specifying long messages outside the exception class
+  --> market_a2a/seller_store.py:41:23
+   |
+39 |             version = database.execute("PRAGMA user_version").fetchone()[0]
+40 |             if version not in (0, 1):
+41 |                 raise HarnessError("Unsupported seller state database version.")
+   |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+42 |             _ = database.execute("PRAGMA journal_mode=WAL")
+43 |             _ = database.execute("PRAGMA synchronous=FULL")
+   |
+
+EM101 Exception must not use a string literal, assign to variable first
+  --> market_a2a/seller_store.py:41:36
+   |
+39 |             version = database.execute("PRAGMA user_version").fetchone()[0]
+40 |             if version not in (0, 1):
+41 |                 raise HarnessError("Unsupported seller state database version.")
+   |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+42 |             _ = database.execute("PRAGMA journal_mode=WAL")
+43 |             _ = database.execute("PRAGMA synchronous=FULL")
+   |
+help: Assign to variable; remove string literal
+   |
+40 |             if version not in (0, 1):
+   -                 raise HarnessError("Unsupported seller state database version.")
+41 +                 msg = "Unsupported seller state database version."
+42 +                 raise HarnessError(msg)
+43 |             _ = database.execute("PRAGMA journal_mode=WAL")
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+TRY003 Avoid specifying long messages outside the exception class
+   --> market_a2a/seller_store.py:145:23
+    |
+143 |                 opened[task_id] = NEGOTIATION.validate_json(payload)
+144 |             else:
+145 |                 raise HarnessError("Open seller state lacks a negotiation summary.")
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+146 |         return opened, closed
+    |
+
+EM101 Exception must not use a string literal, assign to variable first
+   --> market_a2a/seller_store.py:145:36
+    |
+143 |                 opened[task_id] = NEGOTIATION.validate_json(payload)
+144 |             else:
+145 |                 raise HarnessError("Open seller state lacks a negotiation summary.")
+    |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+146 |         return opened, closed
+    |
+help: Assign to variable; remove string literal
+    |
+144 |             else:
+    -                 raise HarnessError("Open seller state lacks a negotiation summary.")
+145 +                 msg = "Open seller state lacks a negotiation summary."
+146 +                 raise HarnessError(msg)
+147 |         return opened, closed
+    |
+note: This is an unsafe fix and may change runtime behavior
+
+TRY003 Avoid specifying long messages outside the exception class
+   --> market_a2a/seller_store.py:165:27
+    |
+163 |                 ).rowcount
+164 |                 if changed != 1:
+165 |                     raise HarnessError("A closed seller task cannot reopen.")
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+166 |
+167 |     async def save_negotiation(self, task_id: str, negotiation: Negotiation) -> None:
+    |
+
+EM101 Exception must not use a string literal, assign to variable first
+   --> market_a2a/seller_store.py:165:40
+    |
+163 |                 ).rowcount
+164 |                 if changed != 1:
+165 |                     raise HarnessError("A closed seller task cannot reopen.")
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+166 |
+167 |     async def save_negotiation(self, task_id: str, negotiation: Negotiation) -> None:
+    |
+help: Assign to variable; remove string literal
+    |
+164 |                 if changed != 1:
+    -                     raise HarnessError("A closed seller task cannot reopen.")
+165 +                     msg = "A closed seller task cannot reopen."
+166 +                     raise HarnessError(msg)
+167 |
+    |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 7 errors.
+4 unsafe fixes available with `--fix --unsafe-fixes`.

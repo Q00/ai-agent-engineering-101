@@ -1,0 +1,9 @@
+# One-week free-first operation (Codex)
+
+At the user's explicit request,the seller deadline was extended to2026-10-28 17:15KST. The initial weekly image was deployed at2026-10-21 17:16:13KST,keeping the same public URL,signing identity,database,baseline4354 and immutable baseline hash.
+
+The verified MiniMax free promotion expires2026-10-22 21:00KST. Thereafter requests use openrouter/free; a404 from MiniMax also tries that free-only router. All OpenRouter requests retain zero prompt/completion/request price filters. The official router documentation says it selects only free models supporting the requested features; it can choose different models over time. It is not a guarantee that a free endpoint will always have capacity. Sources: https://openrouter.ai/openrouter/free and https://openrouter.ai/docs/guides/routing/model-variants/free .
+
+The free router passed3 actual local A2A signed transactions at100/180/260 in12 successful calls with ephemeral keys. Actual model IDs are logged in router/local-seller.log. Offline247/247,guard12/12,scoped lint/types and isolated image preflight passed. A public lamp100 transaction verified the registered key and same URL; no market result or review was submitted. The first public script invocation failed before network I/O because it was executed as a file; invoking it as a module fixed the import path.
+
+The first weekly image still stopped at cumulative10000; this was later superseded by the user's explicit authorization of original OpenAI fallback at5000 requests/day. Its record also retained an obsolete same-day deadline string despite the actual deadline constant being extended; the next deployment fixed that reporting error. See [final policy and runtime proof](../openai-fallback-20261021/RESULTS.md). No monitoring heartbeat or automatic buyer was resumed.

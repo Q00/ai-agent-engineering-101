@@ -1,0 +1,1507 @@
+invocation: ['/Users/sungjinho/.cache/uv/archive-v0/_-8U3fd7bNabVtGWz7U0m/bin/ruff', 'check', 'market_a2a/catalog.py', 'market_a2a/seller_turn.py', 'market_a2a/seller_policy.py', 'market_a2a/seller.py', 'tests/test_search_shortlist.py']
+E501 Line too long (95 > 88)
+   --> market_a2a/catalog.py:228:89
+    |
+226 |         scored: list[tuple[float, str, Product]] = []
+227 |         for item in self.products:
+228 |             if not parsed.matches(item) or (constraints is not None and not constraints(item)):
+    |                                                                                         ^^^^^^^
+229 |                 continue
+230 |             overlap = parsed.words & self._terms[item.sku]
+    |
+
+E501 Line too long (89 > 88)
+   --> market_a2a/seller_turn.py:126:89
+    |
+124 |                         query = Search.model_validate_json(arguments)
+125 |                         basic = re.fullmatch(
+126 |                             r"(?:i want to buy a |i want a )?(lamp|chair|bookshelf)[.]?",
+    |                                                                                         ^
+127 |                             text.strip().lower(),
+128 |                         )
+    |
+
+TC003 Move standard library import `pathlib.Path` into a type-checking block
+ --> tests/test_search_shortlist.py:6:21
+  |
+5 | import json
+6 | from pathlib import Path
+  |                     ^^^^
+7 | from typing import TYPE_CHECKING
+  |
+help: Move into type-checking block
+   |
+5  | import json
+   - from pathlib import Path
+6  | from typing import TYPE_CHECKING
+--------------------------------------------------------------------------------
+22 | if TYPE_CHECKING:
+23 +     from pathlib import Path
+24 |     from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:30:21
+   |
+28 | def catalog(tmp_path: Path) -> Catalog:
+29 |     products = [
+30 |         Product(sku='lamp', name='lamp', description='lamp', kind='lamp', reserve=100),
+   |                     ^^^^^^
+31 |         *[
+32 |             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+   |
+help: Replace single quotes with double quotes
+   |
+29 |     products = [
+   -         Product(sku='lamp', name='lamp', description='lamp', kind='lamp', reserve=100),
+30 +         Product(sku="lamp", name='lamp', description='lamp', kind='lamp', reserve=100),
+31 |         *[
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:30:34
+   |
+28 | def catalog(tmp_path: Path) -> Catalog:
+29 |     products = [
+30 |         Product(sku='lamp', name='lamp', description='lamp', kind='lamp', reserve=100),
+   |                                  ^^^^^^
+31 |         *[
+32 |             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+   |
+help: Replace single quotes with double quotes
+   |
+29 |     products = [
+   -         Product(sku='lamp', name='lamp', description='lamp', kind='lamp', reserve=100),
+30 +         Product(sku='lamp', name="lamp", description='lamp', kind='lamp', reserve=100),
+31 |         *[
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:30:54
+   |
+28 | def catalog(tmp_path: Path) -> Catalog:
+29 |     products = [
+30 |         Product(sku='lamp', name='lamp', description='lamp', kind='lamp', reserve=100),
+   |                                                      ^^^^^^
+31 |         *[
+32 |             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+   |
+help: Replace single quotes with double quotes
+   |
+29 |     products = [
+   -         Product(sku='lamp', name='lamp', description='lamp', kind='lamp', reserve=100),
+30 +         Product(sku='lamp', name='lamp', description="lamp", kind='lamp', reserve=100),
+31 |         *[
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:30:67
+   |
+28 | def catalog(tmp_path: Path) -> Catalog:
+29 |     products = [
+30 |         Product(sku='lamp', name='lamp', description='lamp', kind='lamp', reserve=100),
+   |                                                                   ^^^^^^
+31 |         *[
+32 |             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+   |
+help: Replace single quotes with double quotes
+   |
+29 |     products = [
+   -         Product(sku='lamp', name='lamp', description='lamp', kind='lamp', reserve=100),
+30 +         Product(sku='lamp', name='lamp', description='lamp', kind="lamp", reserve=100),
+31 |         *[
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:32:25
+   |
+30 |         Product(sku='lamp', name='lamp', description='lamp', kind='lamp', reserve=100),
+31 |         *[
+32 |             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+   |                         ^^^^^^^^^^^
+33 |                     kind='lamp', reserve=100)
+34 |             for i in range(6)
+   |
+help: Replace single quotes with double quotes
+   |
+31 |         *[
+   -             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+32 +             Product(sku=f"lamp-{i}", name='lamp', description='lamp',
+33 |                     kind='lamp', reserve=100)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:32:43
+   |
+30 |         Product(sku='lamp', name='lamp', description='lamp', kind='lamp', reserve=100),
+31 |         *[
+32 |             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+   |                                           ^^^^^^
+33 |                     kind='lamp', reserve=100)
+34 |             for i in range(6)
+   |
+help: Replace single quotes with double quotes
+   |
+31 |         *[
+   -             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+32 +             Product(sku=f'lamp-{i}', name="lamp", description='lamp',
+33 |                     kind='lamp', reserve=100)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:32:63
+   |
+30 |         Product(sku='lamp', name='lamp', description='lamp', kind='lamp', reserve=100),
+31 |         *[
+32 |             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+   |                                                               ^^^^^^
+33 |                     kind='lamp', reserve=100)
+34 |             for i in range(6)
+   |
+help: Replace single quotes with double quotes
+   |
+31 |         *[
+   -             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+32 +             Product(sku=f'lamp-{i}', name='lamp', description="lamp",
+33 |                     kind='lamp', reserve=100)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:33:26
+   |
+31 |         *[
+32 |             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+33 |                     kind='lamp', reserve=100)
+   |                          ^^^^^^
+34 |             for i in range(6)
+35 |         ],
+   |
+help: Replace single quotes with double quotes
+   |
+32 |             Product(sku=f'lamp-{i}', name='lamp', description='lamp',
+   -                     kind='lamp', reserve=100)
+33 +                     kind="lamp", reserve=100)
+34 |             for i in range(6)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:36:21
+   |
+34 |             for i in range(6)
+35 |         ],
+36 |         Product(sku='lamp-z', name='lamp', description='dimmable lamp',
+   |                     ^^^^^^^^
+37 |                 kind='lamp', reserve=100),
+38 |     ]
+   |
+help: Replace single quotes with double quotes
+   |
+35 |         ],
+   -         Product(sku='lamp-z', name='lamp', description='dimmable lamp',
+36 +         Product(sku="lamp-z", name='lamp', description='dimmable lamp',
+37 |                 kind='lamp', reserve=100),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:36:36
+   |
+34 |             for i in range(6)
+35 |         ],
+36 |         Product(sku='lamp-z', name='lamp', description='dimmable lamp',
+   |                                    ^^^^^^
+37 |                 kind='lamp', reserve=100),
+38 |     ]
+   |
+help: Replace single quotes with double quotes
+   |
+35 |         ],
+   -         Product(sku='lamp-z', name='lamp', description='dimmable lamp',
+36 +         Product(sku='lamp-z', name="lamp", description='dimmable lamp',
+37 |                 kind='lamp', reserve=100),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:36:56
+   |
+34 |             for i in range(6)
+35 |         ],
+36 |         Product(sku='lamp-z', name='lamp', description='dimmable lamp',
+   |                                                        ^^^^^^^^^^^^^^^
+37 |                 kind='lamp', reserve=100),
+38 |     ]
+   |
+help: Replace single quotes with double quotes
+   |
+35 |         ],
+   -         Product(sku='lamp-z', name='lamp', description='dimmable lamp',
+36 +         Product(sku='lamp-z', name='lamp', description="dimmable lamp",
+37 |                 kind='lamp', reserve=100),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:37:22
+   |
+35 |         ],
+36 |         Product(sku='lamp-z', name='lamp', description='dimmable lamp',
+37 |                 kind='lamp', reserve=100),
+   |                      ^^^^^^
+38 |     ]
+39 |     path = tmp_path / 'catalog.json'
+   |
+help: Replace single quotes with double quotes
+   |
+36 |         Product(sku='lamp-z', name='lamp', description='dimmable lamp',
+   -                 kind='lamp', reserve=100),
+37 +                 kind="lamp", reserve=100),
+38 |     ]
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:39:23
+   |
+37 |                 kind='lamp', reserve=100),
+38 |     ]
+39 |     path = tmp_path / 'catalog.json'
+   |                       ^^^^^^^^^^^^^^
+40 |     _ = path.write_text('[' + ','.join(p.model_dump_json() for p in products) + ']')
+41 |     return Catalog(path)
+   |
+help: Replace single quotes with double quotes
+   |
+38 |     ]
+   -     path = tmp_path / 'catalog.json'
+39 +     path = tmp_path / "catalog.json"
+40 |     _ = path.write_text('[' + ','.join(p.model_dump_json() for p in products) + ']')
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:40:25
+   |
+38 |     ]
+39 |     path = tmp_path / 'catalog.json'
+40 |     _ = path.write_text('[' + ','.join(p.model_dump_json() for p in products) + ']')
+   |                         ^^^
+41 |     return Catalog(path)
+   |
+help: Replace single quotes with double quotes
+   |
+39 |     path = tmp_path / 'catalog.json'
+   -     _ = path.write_text('[' + ','.join(p.model_dump_json() for p in products) + ']')
+40 +     _ = path.write_text("[" + ','.join(p.model_dump_json() for p in products) + ']')
+41 |     return Catalog(path)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:40:31
+   |
+38 |     ]
+39 |     path = tmp_path / 'catalog.json'
+40 |     _ = path.write_text('[' + ','.join(p.model_dump_json() for p in products) + ']')
+   |                               ^^^
+41 |     return Catalog(path)
+   |
+help: Replace single quotes with double quotes
+   |
+39 |     path = tmp_path / 'catalog.json'
+   -     _ = path.write_text('[' + ','.join(p.model_dump_json() for p in products) + ']')
+40 +     _ = path.write_text('[' + ",".join(p.model_dump_json() for p in products) + ']')
+41 |     return Catalog(path)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:40:81
+   |
+38 |     ]
+39 |     path = tmp_path / 'catalog.json'
+40 |     _ = path.write_text('[' + ','.join(p.model_dump_json() for p in products) + ']')
+   |                                                                                 ^^^
+41 |     return Catalog(path)
+   |
+help: Replace single quotes with double quotes
+   |
+39 |     path = tmp_path / 'catalog.json'
+   -     _ = path.write_text('[' + ','.join(p.model_dump_json() for p in products) + ']')
+40 +     _ = path.write_text('[' + ','.join(p.model_dump_json() for p in products) + "]")
+41 |     return Catalog(path)
+   |
+
+E501 Line too long (90 > 88)
+  --> tests/test_search_shortlist.py:44:89
+   |
+44 | def test_request_filter_before_limit_recovers_seventh_candidate(catalog: Catalog) -> None:
+   |                                                                                         ^^
+45 |     ordinary = catalog.search('lamp')
+46 |     assert len(ordinary) == 6
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:45:31
+   |
+44 | def test_request_filter_before_limit_recovers_seventh_candidate(catalog: Catalog) -> None:
+45 |     ordinary = catalog.search('lamp')
+   |                               ^^^^^^
+46 |     assert len(ordinary) == 6
+47 |     assert not any(compatible(p, 'dimmable lamp') for p in ordinary)
+   |
+help: Replace single quotes with double quotes
+   |
+44 | def test_request_filter_before_limit_recovers_seventh_candidate(catalog: Catalog) -> None:
+   -     ordinary = catalog.search('lamp')
+45 +     ordinary = catalog.search("lamp")
+46 |     assert len(ordinary) == 6
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:47:34
+   |
+45 |     ordinary = catalog.search('lamp')
+46 |     assert len(ordinary) == 6
+47 |     assert not any(compatible(p, 'dimmable lamp') for p in ordinary)
+   |                                  ^^^^^^^^^^^^^^^
+48 |     found = catalog.search('lamp', constraints=lambda p: compatible(p, 'dimmable lamp'))
+49 |     assert [p.sku for p in found] == ['lamp-z']
+   |
+help: Replace single quotes with double quotes
+   |
+46 |     assert len(ordinary) == 6
+   -     assert not any(compatible(p, 'dimmable lamp') for p in ordinary)
+47 +     assert not any(compatible(p, "dimmable lamp") for p in ordinary)
+48 |     found = catalog.search('lamp', constraints=lambda p: compatible(p, 'dimmable lamp'))
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:48:28
+   |
+46 |     assert len(ordinary) == 6
+47 |     assert not any(compatible(p, 'dimmable lamp') for p in ordinary)
+48 |     found = catalog.search('lamp', constraints=lambda p: compatible(p, 'dimmable lamp'))
+   |                            ^^^^^^
+49 |     assert [p.sku for p in found] == ['lamp-z']
+50 |     assert catalog.search('lamp', constraints=lambda _p: True) == ordinary
+   |
+help: Replace single quotes with double quotes
+   |
+47 |     assert not any(compatible(p, 'dimmable lamp') for p in ordinary)
+   -     found = catalog.search('lamp', constraints=lambda p: compatible(p, 'dimmable lamp'))
+48 +     found = catalog.search("lamp", constraints=lambda p: compatible(p, 'dimmable lamp'))
+49 |     assert [p.sku for p in found] == ['lamp-z']
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:48:72
+   |
+46 |     assert len(ordinary) == 6
+47 |     assert not any(compatible(p, 'dimmable lamp') for p in ordinary)
+48 |     found = catalog.search('lamp', constraints=lambda p: compatible(p, 'dimmable lamp'))
+   |                                                                        ^^^^^^^^^^^^^^^
+49 |     assert [p.sku for p in found] == ['lamp-z']
+50 |     assert catalog.search('lamp', constraints=lambda _p: True) == ordinary
+   |
+help: Replace single quotes with double quotes
+   |
+47 |     assert not any(compatible(p, 'dimmable lamp') for p in ordinary)
+   -     found = catalog.search('lamp', constraints=lambda p: compatible(p, 'dimmable lamp'))
+48 +     found = catalog.search('lamp', constraints=lambda p: compatible(p, "dimmable lamp"))
+49 |     assert [p.sku for p in found] == ['lamp-z']
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:49:39
+   |
+47 |     assert not any(compatible(p, 'dimmable lamp') for p in ordinary)
+48 |     found = catalog.search('lamp', constraints=lambda p: compatible(p, 'dimmable lamp'))
+49 |     assert [p.sku for p in found] == ['lamp-z']
+   |                                       ^^^^^^^^
+50 |     assert catalog.search('lamp', constraints=lambda _p: True) == ordinary
+51 |     assert catalog.search('lamp', limit=0, constraints=lambda _p: True) == ()
+   |
+help: Replace single quotes with double quotes
+   |
+48 |     found = catalog.search('lamp', constraints=lambda p: compatible(p, 'dimmable lamp'))
+   -     assert [p.sku for p in found] == ['lamp-z']
+49 +     assert [p.sku for p in found] == ["lamp-z"]
+50 |     assert catalog.search('lamp', constraints=lambda _p: True) == ordinary
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:50:27
+   |
+48 |     found = catalog.search('lamp', constraints=lambda p: compatible(p, 'dimmable lamp'))
+49 |     assert [p.sku for p in found] == ['lamp-z']
+50 |     assert catalog.search('lamp', constraints=lambda _p: True) == ordinary
+   |                           ^^^^^^
+51 |     assert catalog.search('lamp', limit=0, constraints=lambda _p: True) == ()
+   |
+help: Replace single quotes with double quotes
+   |
+49 |     assert [p.sku for p in found] == ['lamp-z']
+   -     assert catalog.search('lamp', constraints=lambda _p: True) == ordinary
+50 +     assert catalog.search("lamp", constraints=lambda _p: True) == ordinary
+51 |     assert catalog.search('lamp', limit=0, constraints=lambda _p: True) == ()
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:51:27
+   |
+49 |     assert [p.sku for p in found] == ['lamp-z']
+50 |     assert catalog.search('lamp', constraints=lambda _p: True) == ordinary
+51 |     assert catalog.search('lamp', limit=0, constraints=lambda _p: True) == ()
+   |                           ^^^^^^
+help: Replace single quotes with double quotes
+   |
+50 |     assert catalog.search('lamp', constraints=lambda _p: True) == ordinary
+   -     assert catalog.search('lamp', limit=0, constraints=lambda _p: True) == ()
+51 +     assert catalog.search("lamp", limit=0, constraints=lambda _p: True) == ()
+52 |
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:55:6
+   |
+54 | @pytest.mark.parametrize(
+55 |     ('buyer_request', 'expected_count', 'sku'),
+   |      ^^^^^^^^^^^^^^^
+56 |     [
+57 |         ('I want to buy a lamp', 1, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+54 | @pytest.mark.parametrize(
+   -     ('buyer_request', 'expected_count', 'sku'),
+55 +     ("buyer_request", 'expected_count', 'sku'),
+56 |     [
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:55:23
+   |
+54 | @pytest.mark.parametrize(
+55 |     ('buyer_request', 'expected_count', 'sku'),
+   |                       ^^^^^^^^^^^^^^^^
+56 |     [
+57 |         ('I want to buy a lamp', 1, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+54 | @pytest.mark.parametrize(
+   -     ('buyer_request', 'expected_count', 'sku'),
+55 +     ('buyer_request', "expected_count", 'sku'),
+56 |     [
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:55:41
+   |
+54 | @pytest.mark.parametrize(
+55 |     ('buyer_request', 'expected_count', 'sku'),
+   |                                         ^^^^^
+56 |     [
+57 |         ('I want to buy a lamp', 1, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+54 | @pytest.mark.parametrize(
+   -     ('buyer_request', 'expected_count', 'sku'),
+55 +     ('buyer_request', 'expected_count', "sku"),
+56 |     [
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:57:10
+   |
+55 |     ('buyer_request', 'expected_count', 'sku'),
+56 |     [
+57 |         ('I want to buy a lamp', 1, 'lamp'),
+   |          ^^^^^^^^^^^^^^^^^^^^^^
+58 |         ('I want a lamp.', 1, 'lamp'),
+59 |         ('lamp', 1, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+56 |     [
+   -         ('I want to buy a lamp', 1, 'lamp'),
+57 +         ("I want to buy a lamp", 1, 'lamp'),
+58 |         ('I want a lamp.', 1, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:57:37
+   |
+55 |     ('buyer_request', 'expected_count', 'sku'),
+56 |     [
+57 |         ('I want to buy a lamp', 1, 'lamp'),
+   |                                     ^^^^^^
+58 |         ('I want a lamp.', 1, 'lamp'),
+59 |         ('lamp', 1, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+56 |     [
+   -         ('I want to buy a lamp', 1, 'lamp'),
+57 +         ('I want to buy a lamp', 1, "lamp"),
+58 |         ('I want a lamp.', 1, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:58:10
+   |
+56 |     [
+57 |         ('I want to buy a lamp', 1, 'lamp'),
+58 |         ('I want a lamp.', 1, 'lamp'),
+   |          ^^^^^^^^^^^^^^^^
+59 |         ('lamp', 1, 'lamp'),
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+   |
+help: Replace single quotes with double quotes
+   |
+57 |         ('I want to buy a lamp', 1, 'lamp'),
+   -         ('I want a lamp.', 1, 'lamp'),
+58 +         ("I want a lamp.", 1, 'lamp'),
+59 |         ('lamp', 1, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:58:31
+   |
+56 |     [
+57 |         ('I want to buy a lamp', 1, 'lamp'),
+58 |         ('I want a lamp.', 1, 'lamp'),
+   |                               ^^^^^^
+59 |         ('lamp', 1, 'lamp'),
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+   |
+help: Replace single quotes with double quotes
+   |
+57 |         ('I want to buy a lamp', 1, 'lamp'),
+   -         ('I want a lamp.', 1, 'lamp'),
+58 +         ('I want a lamp.', 1, "lamp"),
+59 |         ('lamp', 1, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:59:10
+   |
+57 |         ('I want to buy a lamp', 1, 'lamp'),
+58 |         ('I want a lamp.', 1, 'lamp'),
+59 |         ('lamp', 1, 'lamp'),
+   |          ^^^^^^
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+58 |         ('I want a lamp.', 1, 'lamp'),
+   -         ('lamp', 1, 'lamp'),
+59 +         ("lamp", 1, 'lamp'),
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:59:21
+   |
+57 |         ('I want to buy a lamp', 1, 'lamp'),
+58 |         ('I want a lamp.', 1, 'lamp'),
+59 |         ('lamp', 1, 'lamp'),
+   |                     ^^^^^^
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+58 |         ('I want a lamp.', 1, 'lamp'),
+   -         ('lamp', 1, 'lamp'),
+59 +         ('lamp', 1, "lamp"),
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:60:10
+   |
+58 |         ('I want a lamp.', 1, 'lamp'),
+59 |         ('lamp', 1, 'lamp'),
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+59 |         ('lamp', 1, 'lamp'),
+   -         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+60 +         ("I want to buy a dimmable lamp", 1, 'lamp-z'),
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:60:46
+   |
+58 |         ('I want a lamp.', 1, 'lamp'),
+59 |         ('lamp', 1, 'lamp'),
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+   |                                              ^^^^^^^^
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+59 |         ('lamp', 1, 'lamp'),
+   -         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+60 +         ('I want to buy a dimmable lamp', 1, "lamp-z"),
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:61:10
+   |
+59 |         ('lamp', 1, 'lamp'),
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+   -         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+61 +         ("I want to buy a lamp under 50 cm", 6, 'lamp'),
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:61:49
+   |
+59 |         ('lamp', 1, 'lamp'),
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+   |                                                 ^^^^^^
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+   -         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+61 +         ('I want to buy a lamp under 50 cm', 6, "lamp"),
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:62:10
+   |
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+64 |         ('I want to buy 2 lamps', 6, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+   -         ('I want to buy a white lamp', 6, 'lamp'),
+62 +         ("I want to buy a white lamp", 6, 'lamp'),
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:62:43
+   |
+60 |         ('I want to buy a dimmable lamp', 1, 'lamp-z'),
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+   |                                           ^^^^^^
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+64 |         ('I want to buy 2 lamps', 6, 'lamp'),
+   |
+help: Replace single quotes with double quotes
+   |
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+   -         ('I want to buy a white lamp', 6, 'lamp'),
+62 +         ('I want to buy a white lamp', 6, "lamp"),
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:63:10
+   |
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+64 |         ('I want to buy 2 lamps', 6, 'lamp'),
+65 |     ],
+   |
+help: Replace single quotes with double quotes
+   |
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+   -         ('I want to buy a lamp for two people', 6, 'lamp'),
+63 +         ("I want to buy a lamp for two people", 6, 'lamp'),
+64 |         ('I want to buy 2 lamps', 6, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:63:52
+   |
+61 |         ('I want to buy a lamp under 50 cm', 6, 'lamp'),
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+   |                                                    ^^^^^^
+64 |         ('I want to buy 2 lamps', 6, 'lamp'),
+65 |     ],
+   |
+help: Replace single quotes with double quotes
+   |
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+   -         ('I want to buy a lamp for two people', 6, 'lamp'),
+63 +         ('I want to buy a lamp for two people', 6, "lamp"),
+64 |         ('I want to buy 2 lamps', 6, 'lamp'),
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:64:10
+   |
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+64 |         ('I want to buy 2 lamps', 6, 'lamp'),
+   |          ^^^^^^^^^^^^^^^^^^^^^^^
+65 |     ],
+66 | )
+   |
+help: Replace single quotes with double quotes
+   |
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+   -         ('I want to buy 2 lamps', 6, 'lamp'),
+64 +         ("I want to buy 2 lamps", 6, 'lamp'),
+65 |     ],
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:64:38
+   |
+62 |         ('I want to buy a white lamp', 6, 'lamp'),
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+64 |         ('I want to buy 2 lamps', 6, 'lamp'),
+   |                                      ^^^^^^
+65 |     ],
+66 | )
+   |
+help: Replace single quotes with double quotes
+   |
+63 |         ('I want to buy a lamp for two people', 6, 'lamp'),
+   -         ('I want to buy 2 lamps', 6, 'lamp'),
+64 +         ('I want to buy 2 lamps', 6, "lamp"),
+65 |     ],
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:83:17
+   |
+81 |     ) -> ChatCompletionMessage:
+82 |         last = messages[-1]
+83 |         if last['role'] == 'tool':
+   |                 ^^^^^^
+84 |             content = last['content']
+85 |             assert isinstance(content, str)
+   |
+help: Replace single quotes with double quotes
+   |
+82 |         last = messages[-1]
+   -         if last['role'] == 'tool':
+83 +         if last["role"] == 'tool':
+84 |             content = last['content']
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:83:28
+   |
+81 |     ) -> ChatCompletionMessage:
+82 |         last = messages[-1]
+83 |         if last['role'] == 'tool':
+   |                            ^^^^^^
+84 |             content = last['content']
+85 |             assert isinstance(content, str)
+   |
+help: Replace single quotes with double quotes
+   |
+82 |         last = messages[-1]
+   -         if last['role'] == 'tool':
+83 +         if last['role'] == "tool":
+84 |             content = last['content']
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:84:28
+   |
+82 |         last = messages[-1]
+83 |         if last['role'] == 'tool':
+84 |             content = last['content']
+   |                            ^^^^^^^^^
+85 |             assert isinstance(content, str)
+86 |             feedback.append(TypeAdapter(JsonValue).validate_json(content))
+   |
+help: Replace single quotes with double quotes
+   |
+83 |         if last['role'] == 'tool':
+   -             content = last['content']
+84 +             content = last["content"]
+85 |             assert isinstance(content, str)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:87:16
+   |
+85 |             assert isinstance(content, str)
+86 |             feedback.append(TypeAdapter(JsonValue).validate_json(content))
+87 |         name = 'search_catalog' if not calls else 'decide'
+   |                ^^^^^^^^^^^^^^^^
+88 |         arguments = ({'query': 'lamp'} if not calls else
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+   |
+help: Replace single quotes with double quotes
+   |
+86 |             feedback.append(TypeAdapter(JsonValue).validate_json(content))
+   -         name = 'search_catalog' if not calls else 'decide'
+87 +         name = "search_catalog" if not calls else 'decide'
+88 |         arguments = ({'query': 'lamp'} if not calls else
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:87:51
+   |
+85 |             assert isinstance(content, str)
+86 |             feedback.append(TypeAdapter(JsonValue).validate_json(content))
+87 |         name = 'search_catalog' if not calls else 'decide'
+   |                                                   ^^^^^^^^
+88 |         arguments = ({'query': 'lamp'} if not calls else
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+   |
+help: Replace single quotes with double quotes
+   |
+86 |             feedback.append(TypeAdapter(JsonValue).validate_json(content))
+   -         name = 'search_catalog' if not calls else 'decide'
+87 +         name = 'search_catalog' if not calls else "decide"
+88 |         arguments = ({'query': 'lamp'} if not calls else
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:88:23
+   |
+86 |             feedback.append(TypeAdapter(JsonValue).validate_json(content))
+87 |         name = 'search_catalog' if not calls else 'decide'
+88 |         arguments = ({'query': 'lamp'} if not calls else
+   |                       ^^^^^^^
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+90 |         calls.append(name)
+   |
+help: Replace single quotes with double quotes
+   |
+87 |         name = 'search_catalog' if not calls else 'decide'
+   -         arguments = ({'query': 'lamp'} if not calls else
+88 +         arguments = ({"query": 'lamp'} if not calls else
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:88:32
+   |
+86 |             feedback.append(TypeAdapter(JsonValue).validate_json(content))
+87 |         name = 'search_catalog' if not calls else 'decide'
+88 |         arguments = ({'query': 'lamp'} if not calls else
+   |                                ^^^^^^
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+90 |         calls.append(name)
+   |
+help: Replace single quotes with double quotes
+   |
+87 |         name = 'search_catalog' if not calls else 'decide'
+   -         arguments = ({'query': 'lamp'} if not calls else
+88 +         arguments = ({'query': "lamp"} if not calls else
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:89:23
+   |
+87 |         name = 'search_catalog' if not calls else 'decide'
+88 |         arguments = ({'query': 'lamp'} if not calls else
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+   |                       ^^^^^^^^
+90 |         calls.append(name)
+91 |         return ChatCompletionMessage.model_validate({
+   |
+help: Replace single quotes with double quotes
+   |
+88 |         arguments = ({'query': 'lamp'} if not calls else
+   -                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+89 +                      {"action": 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+90 |         calls.append(name)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:89:33
+   |
+87 |         name = 'search_catalog' if not calls else 'decide'
+88 |         arguments = ({'query': 'lamp'} if not calls else
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+   |                                 ^^^^^^^
+90 |         calls.append(name)
+91 |         return ChatCompletionMessage.model_validate({
+   |
+help: Replace single quotes with double quotes
+   |
+88 |         arguments = ({'query': 'lamp'} if not calls else
+   -                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+89 +                      {'action': "quote", 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+90 |         calls.append(name)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:89:42
+   |
+87 |         name = 'search_catalog' if not calls else 'decide'
+88 |         arguments = ({'query': 'lamp'} if not calls else
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+   |                                          ^^^^^
+90 |         calls.append(name)
+91 |         return ChatCompletionMessage.model_validate({
+   |
+help: Replace single quotes with double quotes
+   |
+88 |         arguments = ({'query': 'lamp'} if not calls else
+   -                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+89 +                      {'action': 'quote', "sku": sku, 'price': 107, 'reason': 'Chosen'})
+90 |         calls.append(name)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:89:54
+   |
+87 |         name = 'search_catalog' if not calls else 'decide'
+88 |         arguments = ({'query': 'lamp'} if not calls else
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+   |                                                      ^^^^^^^
+90 |         calls.append(name)
+91 |         return ChatCompletionMessage.model_validate({
+   |
+help: Replace single quotes with double quotes
+   |
+88 |         arguments = ({'query': 'lamp'} if not calls else
+   -                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+89 +                      {'action': 'quote', 'sku': sku, "price": 107, 'reason': 'Chosen'})
+90 |         calls.append(name)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:89:68
+   |
+87 |         name = 'search_catalog' if not calls else 'decide'
+88 |         arguments = ({'query': 'lamp'} if not calls else
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+   |                                                                    ^^^^^^^^
+90 |         calls.append(name)
+91 |         return ChatCompletionMessage.model_validate({
+   |
+help: Replace single quotes with double quotes
+   |
+88 |         arguments = ({'query': 'lamp'} if not calls else
+   -                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+89 +                      {'action': 'quote', 'sku': sku, 'price': 107, "reason": 'Chosen'})
+90 |         calls.append(name)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:89:78
+   |
+87 |         name = 'search_catalog' if not calls else 'decide'
+88 |         arguments = ({'query': 'lamp'} if not calls else
+89 |                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+   |                                                                              ^^^^^^^^
+90 |         calls.append(name)
+91 |         return ChatCompletionMessage.model_validate({
+   |
+help: Replace single quotes with double quotes
+   |
+88 |         arguments = ({'query': 'lamp'} if not calls else
+   -                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': 'Chosen'})
+89 +                      {'action': 'quote', 'sku': sku, 'price': 107, 'reason': "Chosen"})
+90 |         calls.append(name)
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:92:13
+   |
+90 |         calls.append(name)
+91 |         return ChatCompletionMessage.model_validate({
+92 |             'role': 'assistant', 'content': None,
+   |             ^^^^^^
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |
+help: Replace single quotes with double quotes
+   |
+91 |         return ChatCompletionMessage.model_validate({
+   -             'role': 'assistant', 'content': None,
+92 +             "role": 'assistant', 'content': None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:92:21
+   |
+90 |         calls.append(name)
+91 |         return ChatCompletionMessage.model_validate({
+92 |             'role': 'assistant', 'content': None,
+   |                     ^^^^^^^^^^^
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |
+help: Replace single quotes with double quotes
+   |
+91 |         return ChatCompletionMessage.model_validate({
+   -             'role': 'assistant', 'content': None,
+92 +             'role': "assistant", 'content': None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:92:34
+   |
+90 |         calls.append(name)
+91 |         return ChatCompletionMessage.model_validate({
+92 |             'role': 'assistant', 'content': None,
+   |                                  ^^^^^^^^^
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |
+help: Replace single quotes with double quotes
+   |
+91 |         return ChatCompletionMessage.model_validate({
+   -             'role': 'assistant', 'content': None,
+92 +             'role': 'assistant', "content": None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:93:13
+   |
+91 |         return ChatCompletionMessage.model_validate({
+92 |             'role': 'assistant', 'content': None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+   |             ^^^^^^^^^^^^
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+95 |         })
+   |
+help: Replace single quotes with double quotes
+   |
+92 |             'role': 'assistant', 'content': None,
+   -             'tool_calls': [{'id': 'offline', 'type': 'function',
+93 +             "tool_calls": [{'id': 'offline', 'type': 'function',
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:93:29
+   |
+91 |         return ChatCompletionMessage.model_validate({
+92 |             'role': 'assistant', 'content': None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+   |                             ^^^^
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+95 |         })
+   |
+help: Replace single quotes with double quotes
+   |
+92 |             'role': 'assistant', 'content': None,
+   -             'tool_calls': [{'id': 'offline', 'type': 'function',
+93 +             'tool_calls': [{"id": 'offline', 'type': 'function',
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:93:35
+   |
+91 |         return ChatCompletionMessage.model_validate({
+92 |             'role': 'assistant', 'content': None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+   |                                   ^^^^^^^^^
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+95 |         })
+   |
+help: Replace single quotes with double quotes
+   |
+92 |             'role': 'assistant', 'content': None,
+   -             'tool_calls': [{'id': 'offline', 'type': 'function',
+93 +             'tool_calls': [{'id': "offline", 'type': 'function',
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:93:46
+   |
+91 |         return ChatCompletionMessage.model_validate({
+92 |             'role': 'assistant', 'content': None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+   |                                              ^^^^^^
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+95 |         })
+   |
+help: Replace single quotes with double quotes
+   |
+92 |             'role': 'assistant', 'content': None,
+   -             'tool_calls': [{'id': 'offline', 'type': 'function',
+93 +             'tool_calls': [{'id': 'offline', "type": 'function',
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:93:54
+   |
+91 |         return ChatCompletionMessage.model_validate({
+92 |             'role': 'assistant', 'content': None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+   |                                                      ^^^^^^^^^^
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+95 |         })
+   |
+help: Replace single quotes with double quotes
+   |
+92 |             'role': 'assistant', 'content': None,
+   -             'tool_calls': [{'id': 'offline', 'type': 'function',
+93 +             'tool_calls': [{'id': 'offline', 'type': "function",
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:94:29
+   |
+92 |             'role': 'assistant', 'content': None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |                             ^^^^^^^^^^
+95 |         })
+   |
+help: Replace single quotes with double quotes
+   |
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+   -                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+94 +                             "function": {'name': name, 'arguments': json.dumps(arguments)}}],
+95 |         })
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:94:42
+   |
+92 |             'role': 'assistant', 'content': None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |                                          ^^^^^^
+95 |         })
+   |
+help: Replace single quotes with double quotes
+   |
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+   -                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+94 +                             'function': {"name": name, 'arguments': json.dumps(arguments)}}],
+95 |         })
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:94:56
+   |
+92 |             'role': 'assistant', 'content': None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |                                                        ^^^^^^^^^^^
+95 |         })
+   |
+help: Replace single quotes with double quotes
+   |
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+   -                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+94 +                             'function': {'name': name, "arguments": json.dumps(arguments)}}],
+95 |         })
+   |
+
+E501 Line too long (93 > 88)
+  --> tests/test_search_shortlist.py:94:89
+   |
+92 |             'role': 'assistant', 'content': None,
+93 |             'tool_calls': [{'id': 'offline', 'type': 'function',
+94 |                             'function': {'name': name, 'arguments': json.dumps(arguments)}}],
+   |                                                                                         ^^^^^
+95 |         })
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+  --> tests/test_search_shortlist.py:97:34
+   |
+95 |         })
+96 |
+97 |     monkeypatch.setattr(Harness, 'complete', complete)
+   |                                  ^^^^^^^^^^
+98 |
+99 |     async def scenario() -> None:
+   |
+help: Replace single quotes with double quotes
+   |
+96 |
+   -     monkeypatch.setattr(Harness, 'complete', complete)
+97 +     monkeypatch.setattr(Harness, "complete", complete)
+98 |
+   |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:100:40
+    |
+ 99 |     async def scenario() -> None:
+100 |         async with AsyncOpenAI(api_key='offline-placeholder') as model:
+    |                                        ^^^^^^^^^^^^^^^^^^^^^
+101 |             app = create_app('http://seller/', Harness(model, lambda _line: None),
+102 |                              catalog, 'Shortlist test')
+    |
+help: Replace single quotes with double quotes
+    |
+99  |     async def scenario() -> None:
+    -         async with AsyncOpenAI(api_key='offline-placeholder') as model:
+100 +         async with AsyncOpenAI(api_key="offline-placeholder") as model:
+101 |             app = create_app('http://seller/', Harness(model, lambda _line: None),
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:101:30
+    |
+ 99 |     async def scenario() -> None:
+100 |         async with AsyncOpenAI(api_key='offline-placeholder') as model:
+101 |             app = create_app('http://seller/', Harness(model, lambda _line: None),
+    |                              ^^^^^^^^^^^^^^^^
+102 |                              catalog, 'Shortlist test')
+103 |             async with httpx2.AsyncClient(transport=httpx2.ASGITransport(app=app),
+    |
+help: Replace single quotes with double quotes
+    |
+100 |         async with AsyncOpenAI(api_key='offline-placeholder') as model:
+    -             app = create_app('http://seller/', Harness(model, lambda _line: None),
+101 +             app = create_app("http://seller/", Harness(model, lambda _line: None),
+102 |                              catalog, 'Shortlist test')
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:102:39
+    |
+100 |         async with AsyncOpenAI(api_key='offline-placeholder') as model:
+101 |             app = create_app('http://seller/', Harness(model, lambda _line: None),
+102 |                              catalog, 'Shortlist test')
+    |                                       ^^^^^^^^^^^^^^^^
+103 |             async with httpx2.AsyncClient(transport=httpx2.ASGITransport(app=app),
+104 |                                          base_url='http://seller') as client:
+    |
+help: Replace single quotes with double quotes
+    |
+101 |             app = create_app('http://seller/', Harness(model, lambda _line: None),
+    -                              catalog, 'Shortlist test')
+102 +                              catalog, "Shortlist test")
+103 |             async with httpx2.AsyncClient(transport=httpx2.ASGITransport(app=app),
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:104:51
+    |
+102 |                              catalog, 'Shortlist test')
+103 |             async with httpx2.AsyncClient(transport=httpx2.ASGITransport(app=app),
+104 |                                          base_url='http://seller') as client:
+    |                                                   ^^^^^^^^^^^^^^^
+105 |                 task = task_from(await send(client, buyer_request))
+106 |                 assert 'Asking price: 107' in task.status.message.parts[0].text
+    |
+help: Replace single quotes with double quotes
+    |
+103 |             async with httpx2.AsyncClient(transport=httpx2.ASGITransport(app=app),
+    -                                          base_url='http://seller') as client:
+104 +                                          base_url="http://seller") as client:
+105 |                 task = task_from(await send(client, buyer_request))
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:106:24
+    |
+104 |                                          base_url='http://seller') as client:
+105 |                 task = task_from(await send(client, buyer_request))
+106 |                 assert 'Asking price: 107' in task.status.message.parts[0].text
+    |                        ^^^^^^^^^^^^^^^^^^^
+107 |                 assert not task.artifacts
+108 |         assert calls == ['search_catalog', 'decide']
+    |
+help: Replace single quotes with double quotes
+    |
+105 |                 task = task_from(await send(client, buyer_request))
+    -                 assert 'Asking price: 107' in task.status.message.parts[0].text
+106 +                 assert "Asking price: 107" in task.status.message.parts[0].text
+107 |                 assert not task.artifacts
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:108:26
+    |
+106 |                 assert 'Asking price: 107' in task.status.message.parts[0].text
+107 |                 assert not task.artifacts
+108 |         assert calls == ['search_catalog', 'decide']
+    |                          ^^^^^^^^^^^^^^^^
+109 |         assert len(feedback) == 1
+110 |         products = feedback[0]
+    |
+help: Replace single quotes with double quotes
+    |
+107 |                 assert not task.artifacts
+    -         assert calls == ['search_catalog', 'decide']
+108 +         assert calls == ["search_catalog", 'decide']
+109 |         assert len(feedback) == 1
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:108:44
+    |
+106 |                 assert 'Asking price: 107' in task.status.message.parts[0].text
+107 |                 assert not task.artifacts
+108 |         assert calls == ['search_catalog', 'decide']
+    |                                            ^^^^^^^^
+109 |         assert len(feedback) == 1
+110 |         products = feedback[0]
+    |
+help: Replace single quotes with double quotes
+    |
+107 |                 assert not task.artifacts
+    -         assert calls == ['search_catalog', 'decide']
+108 +         assert calls == ['search_catalog', "decide"]
+109 |         assert len(feedback) == 1
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:115:26
+    |
+113 |         for entry in products:
+114 |             assert isinstance(entry, dict)
+115 |             assert entry['allowed_quote_min'] == 100
+    |                          ^^^^^^^^^^^^^^^^^^^
+116 |             assert entry['allowed_quote_max'] == 110
+117 |         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+    |
+help: Replace single quotes with double quotes
+    |
+114 |             assert isinstance(entry, dict)
+    -             assert entry['allowed_quote_min'] == 100
+115 +             assert entry["allowed_quote_min"] == 100
+116 |             assert entry['allowed_quote_max'] == 110
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:116:26
+    |
+114 |             assert isinstance(entry, dict)
+115 |             assert entry['allowed_quote_min'] == 100
+116 |             assert entry['allowed_quote_max'] == 110
+    |                          ^^^^^^^^^^^^^^^^^^^
+117 |         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+118 |                           'model_calls': calls, 'model_quote': 107,
+    |
+help: Replace single quotes with double quotes
+    |
+115 |             assert entry['allowed_quote_min'] == 100
+    -             assert entry['allowed_quote_max'] == 110
+116 +             assert entry["allowed_quote_max"] == 110
+117 |         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:117:27
+    |
+115 |             assert entry['allowed_quote_min'] == 100
+116 |             assert entry['allowed_quote_max'] == 110
+117 |         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+    |                           ^^^^^^^^^
+118 |                           'model_calls': calls, 'model_quote': 107,
+119 |                           'tool_result_chars': len(json.dumps(products))}))
+    |
+help: Replace single quotes with double quotes
+    |
+116 |             assert entry['allowed_quote_max'] == 110
+    -         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+117 +         print(json.dumps({"request": buyer_request, 'candidate_count': len(products),
+118 |                           'model_calls': calls, 'model_quote': 107,
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:117:53
+    |
+115 |             assert entry['allowed_quote_min'] == 100
+116 |             assert entry['allowed_quote_max'] == 110
+117 |         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+    |                                                     ^^^^^^^^^^^^^^^^^
+118 |                           'model_calls': calls, 'model_quote': 107,
+119 |                           'tool_result_chars': len(json.dumps(products))}))
+    |
+help: Replace single quotes with double quotes
+    |
+116 |             assert entry['allowed_quote_max'] == 110
+    -         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+117 +         print(json.dumps({'request': buyer_request, "candidate_count": len(products),
+118 |                           'model_calls': calls, 'model_quote': 107,
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:118:27
+    |
+116 |             assert entry['allowed_quote_max'] == 110
+117 |         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+118 |                           'model_calls': calls, 'model_quote': 107,
+    |                           ^^^^^^^^^^^^^
+119 |                           'tool_result_chars': len(json.dumps(products))}))
+    |
+help: Replace single quotes with double quotes
+    |
+117 |         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+    -                           'model_calls': calls, 'model_quote': 107,
+118 +                           "model_calls": calls, 'model_quote': 107,
+119 |                           'tool_result_chars': len(json.dumps(products))}))
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:118:49
+    |
+116 |             assert entry['allowed_quote_max'] == 110
+117 |         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+118 |                           'model_calls': calls, 'model_quote': 107,
+    |                                                 ^^^^^^^^^^^^^
+119 |                           'tool_result_chars': len(json.dumps(products))}))
+    |
+help: Replace single quotes with double quotes
+    |
+117 |         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+    -                           'model_calls': calls, 'model_quote': 107,
+118 +                           'model_calls': calls, "model_quote": 107,
+119 |                           'tool_result_chars': len(json.dumps(products))}))
+    |
+
+Q000 [*] Single quotes found but double quotes preferred
+   --> tests/test_search_shortlist.py:119:27
+    |
+117 |         print(json.dumps({'request': buyer_request, 'candidate_count': len(products),
+118 |                           'model_calls': calls, 'model_quote': 107,
+119 |                           'tool_result_chars': len(json.dumps(products))}))
+    |                           ^^^^^^^^^^^^^^^^^^^
+120 |
+121 |     anyio.run(scenario)
+    |
+help: Replace single quotes with double quotes
+    |
+118 |                           'model_calls': calls, 'model_quote': 107,
+    -                           'tool_result_chars': len(json.dumps(products))}))
+119 +                           "tool_result_chars": len(json.dumps(products))}))
+120 |
+    |
+
+Found 86 errors.
+[*] 81 fixable with `--fix` (1 unsafe fix available with `--fix --unsafe-fixes`).
+
+exit_code=1

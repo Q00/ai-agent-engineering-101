@@ -1,0 +1,19 @@
+D202 [*] No blank lines allowed after function docstring (found 1)
+  --> market_a2a/security_review.py:70:5
+   |
+68 |     reviews: tuple[PublicReview, ...],
+69 | ) -> tuple[SelectionReview, ...]:
+70 |     """Collapse bounded same-round claims without inferring independent authors."""
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+71 |
+72 |     evidence: list[SelectionReview] = []
+   |
+help: Remove blank line(s) after function docstring
+   |
+70 |     """Collapse bounded same-round claims without inferring independent authors."""
+   -
+71 |     evidence: list[SelectionReview] = []
+   |
+
+Found 1 error.
+[*] 1 fixable with `--fix`.

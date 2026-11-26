@@ -1,0 +1,104 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> harness_app.py:18:1
+   |
+16 |   """Launch the current A2A agents using the Week 05 custom tool-loop harness."""
+17 |
+18 | / from __future__ import annotations
+19 | |
+20 | | import logging
+21 | | import os
+22 | | import sys
+23 | | from pathlib import Path
+24 | | from tempfile import TemporaryDirectory
+25 | | from typing import TYPE_CHECKING, Annotated, Final
+26 | |
+27 | | import anyio
+28 | | import typer
+29 | | import uvicorn
+30 | | from fastapi import FastAPI
+31 | | from pydantic import TypeAdapter
+32 | |
+33 | | from http_client import create_client
+34 | | from market_a2a.buyer import buy
+35 | | from market_a2a.catalog import Catalog
+36 | | from market_a2a.harness import Harness
+37 | | from market_a2a.model_provider import create_model_client
+38 | | from market_a2a.market_buyer import MarketRequest, market_buy
+39 | | from market_a2a.models import FrozenModel, Purchase, ShopCard, ShoppingItem
+40 | | from market_a2a.receipts import ReceiptSigner
+41 | | from market_a2a.seller import create_app
+42 | | from market_a2a.shopping import shop
+   | |____________________________________^
+43 |
+44 |   if TYPE_CHECKING:
+   |
+help: Organize imports
+   |
+36 | from market_a2a.harness import Harness
+37 + from market_a2a.market_buyer import MarketRequest, market_buy
+38 | from market_a2a.model_provider import create_model_client
+   - from market_a2a.market_buyer import MarketRequest, market_buy
+39 | from market_a2a.models import FrozenModel, Purchase, ShopCard, ShoppingItem
+   |
+
+E501 Line too long (92 > 88)
+   --> harness_app.py:110:89
+    |
+108 |                 signer=signer,
+109 |             )
+110 |         emit(f"HARNESS model={harness.model} source=week05-tool-loop directory={directory}")
+    |                                                                                         ^^^^
+111 |         await uvicorn.Server(
+112 |             uvicorn.Config(web, host="127.0.0.1", port=port, log_level="warning"),
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> market_a2a/harness.py:7:1
+   |
+ 5 |   """
+ 6 |
+ 7 | / from __future__ import annotations
+ 8 | |
+ 9 | | import json
+10 | | from typing import TYPE_CHECKING, Final, assert_never, final
+11 | |
+12 | | import anyio
+13 | | from openai import APIConnectionError, APIStatusError, APITimeoutError, AsyncOpenAI
+14 | | from openai.types.chat import (
+15 | |     ChatCompletionAssistantMessageParam,
+16 | |     ChatCompletionFunctionToolParam,
+17 | |     ChatCompletionMessage,
+18 | |     ChatCompletionMessageFunctionToolCallParam,
+19 | |     ChatCompletionMessageParam,
+20 | |     ChatCompletionToolMessageParam,
+21 | |     ChatCompletionToolParam,
+22 | | )
+23 | | from openai.types.shared_params import FunctionDefinition
+24 | |
+25 | | from market_a2a.models import HarnessError, ToolDispatch, ToolResult, ToolSpec
+26 | | from market_a2a.model_provider import DEFAULT_MODEL, FREE_MODEL, configured_model
+   | |_________________________________________________________________________________^
+27 |
+28 |   if TYPE_CHECKING:
+   |
+help: Organize imports
+   |
+24 |
+25 + from market_a2a.model_provider import DEFAULT_MODEL, FREE_MODEL, configured_model
+26 | from market_a2a.models import HarnessError, ToolDispatch, ToolResult, ToolSpec
+   - from market_a2a.model_provider import DEFAULT_MODEL, FREE_MODEL, configured_model
+27 |
+   |
+
+E501 Line too long (91 > 88)
+  --> market_a2a/harness.py:78:89
+   |
+77 |     def __init__(
+78 |         self, client: AsyncOpenAI, emit: Callable[[str], None], *, model: str | None = None
+   |                                                                                         ^^^
+79 |     ) -> None:
+80 |         """Own observability counters while the caller owns the API client."""
+   |
+
+Found 4 errors.
+[*] 2 fixable with `--fix`.

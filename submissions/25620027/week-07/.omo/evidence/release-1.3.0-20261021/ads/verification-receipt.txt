@@ -1,0 +1,50 @@
+# Direct verification receipt
+
+$ /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests/test_price_page.py tests/test_price_promotion.py tests/test_comparison_routes.py -v
+============================= test session starts ==============================
+platform darwin -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 21 items
+
+tests/test_price_page.py::test_comparison_script_behavior[fresh_rows_and_scoped_relations] PASSED [  4%]
+tests/test_price_page.py::test_comparison_script_behavior[missing_observations_are_visible] PASSED [  9%]
+tests/test_price_page.py::test_comparison_script_behavior[stale_suppresses_claims_and_uses_baseline] PASSED [ 14%]
+tests/test_price_page.py::test_comparison_script_behavior[expiry_without_next_fetch] PASSED [ 19%]
+tests/test_price_page.py::test_comparison_script_behavior[hostile_text_and_links_cannot_become_markup] PASSED [ 23%]
+tests/test_price_page.py::test_comparison_script_behavior[unknown_and_disabled_never_claim] PASSED [ 28%]
+tests/test_price_page.py::test_comparison_script_behavior[failed_refresh_clears_claims_and_recovers] PASSED [ 33%]
+tests/test_price_page.py::test_comparison_script_behavior[polls_only_same_origin_every_sixty_seconds] PASSED [ 38%]
+tests/test_price_page.py::test_comparison_script_behavior[malformed_quote_or_wrong_price_kind_is_not_comparable] PASSED [ 42%]
+tests/test_price_page.py::test_comparison_script_behavior[higher_relation_and_partial_snapshot] PASSED [ 47%]
+tests/test_price_page.py::test_candidate_keeps_static_navigation_and_semantic_comparison PASSED [ 52%]
+tests/test_price_promotion.py::test_truthful_promotion[fresh_lower_and_tie] PASSED [ 57%]
+tests/test_price_promotion.py::test_truthful_promotion[strictly_lower_all_items] PASSED [ 61%]
+tests/test_price_promotion.py::test_truthful_promotion[partial_unknown_and_higher] PASSED [ 66%]
+tests/test_price_promotion.py::test_truthful_promotion[expiry_clears_every_promotional_claim] PASSED [ 71%]
+tests/test_price_promotion.py::test_truthful_promotion[error_clears_claims_then_recovers] PASSED [ 76%]
+tests/test_price_promotion.py::test_truthful_promotion[deduplicates_and_cross_checks_shop_count] PASSED [ 80%]
+tests/test_price_promotion.py::test_truthful_promotion[unverified_snapshot_no_claim] PASSED [ 85%]
+tests/test_price_promotion.py::test_truthful_promotion[hostile_values_do_not_create_promotional_markup] PASSED [ 90%]
+tests/test_price_promotion.py::test_actual_release_page_puts_observations_before_baseline_catalog PASSED [ 95%]
+tests/test_comparison_routes.py::test_comparison_when_visitors_read_json_uses_same_opening_bound PASSED [100%]
+
+============================== 21 passed in 1.57s ==============================
+
+EXIT_CODE: 0
+
+$ /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/ruff check tests/test_price_promotion.py
+All checks passed!
+
+EXIT_CODE: 0
+
+$ /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/basedpyright --pythonpath /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python tests/test_price_promotion.py
+0 errors, 0 warnings, 0 notes
+
+EXIT_CODE: 0
+
+$ node --check assets/price-comparison.js
+
+EXIT_CODE: 0

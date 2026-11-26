@@ -1,0 +1,64 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+________ test_receipt_alone_cannot_support_exceptional_rating[our-shop] ________
+
+shop = 'our-shop'
+
+    @pytest.mark.parametrize("shop", ["our-shop", "competitor-shop"])
+    def test_receipt_alone_cannot_support_exceptional_rating(shop: str) -> None:
+        # Given: successful receipt but no comparative price or effort measurements.
+        trade = Trade(
+            item="lamp", budget=150, selection_reason="Listed seller",
+            purchase=Purchase(completed=True, item="lamp", price=120,
+                              receipt={"price": 120}, shop=shop),
+        )
+        # When: a model proposes the maximum rating.
+        review = grounded_review(trade, Review(stars=5, review="Exceptional"))
+        # Then: unsupported maximum praise cannot pass the factual boundary.
+>       assert review.stars == 4
+E       AssertionError: assert 5 == 4
+E        +  where 5 = Review(stars=5, review='Purchase completed at 120; budget was 150. A receipt was received and the recorded price was within budget.').stars
+
+tests/test_strict_review.py:23: AssertionError
+____ test_receipt_alone_cannot_support_exceptional_rating[competitor-shop] _____
+
+shop = 'competitor-shop'
+
+    @pytest.mark.parametrize("shop", ["our-shop", "competitor-shop"])
+    def test_receipt_alone_cannot_support_exceptional_rating(shop: str) -> None:
+        # Given: successful receipt but no comparative price or effort measurements.
+        trade = Trade(
+            item="lamp", budget=150, selection_reason="Listed seller",
+            purchase=Purchase(completed=True, item="lamp", price=120,
+                              receipt={"price": 120}, shop=shop),
+        )
+        # When: a model proposes the maximum rating.
+        review = grounded_review(trade, Review(stars=5, review="Exceptional"))
+        # Then: unsupported maximum praise cannot pass the factual boundary.
+>       assert review.stars == 4
+E       AssertionError: assert 5 == 4
+E        +  where 5 = Review(stars=5, review='Purchase completed at 120; budget was 150. A receipt was received and the recorded price was within budget.').stars
+
+tests/test_strict_review.py:23: AssertionError
+______ test_success_without_adverse_facts_cannot_support_punitive_rating _______
+
+    def test_success_without_adverse_facts_cannot_support_punitive_rating() -> None:
+        # Given: the local outcome contains only a successful affordable purchase.
+        trade = Trade(
+            item="lamp", budget=150, selection_reason="Listed seller",
+            purchase=Purchase(completed=True, item="lamp", price=120,
+                              receipt={"price": 120}),
+        )
+        # When: a model proposes a punitive score with an unsupported fraud claim.
+        review = grounded_review(trade, Review(stars=1, review="Fraudulent receipt"))
+        # Then: no negative incident is fabricated from an ordinary completed deal.
+>       assert review.stars == 3
+E       AssertionError: assert 1 == 3
+E        +  where 1 = Review(stars=1, review='Purchase completed at 120; budget was 150. A receipt was received and the recorded price was within budget.').stars
+
+tests/test_strict_review.py:36: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_strict_review.py::test_receipt_alone_cannot_support_exceptional_rating[our-shop]
+FAILED tests/test_strict_review.py::test_receipt_alone_cannot_support_exceptional_rating[competitor-shop]
+FAILED tests/test_strict_review.py::test_success_without_adverse_facts_cannot_support_punitive_rating
+3 failed in 0.46s

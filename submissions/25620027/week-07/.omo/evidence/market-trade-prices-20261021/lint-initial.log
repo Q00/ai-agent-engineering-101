@@ -1,0 +1,23 @@
+E501 Line too long (90 > 88)
+   --> market_a2a/comparison.py:170:89
+    |
+168 |     if trade is not None and lowest is not None and second is not None:
+169 |         premium = max(1, product.reserve * 2 // 100)
+170 |         ceiling = max(product.reserve, min(baseline, lowest + premium, floor(trade.mean)))
+    |                                                                                         ^^
+171 |         policy = "market_trade_mean"
+172 |     relation: Literal["lower", "equal", "higher", "unavailable"] = "unavailable"
+    |
+
+E501 Line too long (101 > 88)
+   --> market_a2a/seller.py:127:89
+    |
+125 |                 "Counteroffers never increase within a negotiation.",
+126 |                 "Offers meeting the product minimum settle on the first counteroffer.",
+127 |                 "Fresh quotes and current-round completed-trade means bound a small opening margin.",
+    |                                                                                         ^^^^^^^^^^^^^
+128 |                 "A final-price quote cannot be discounted further.",
+129 |                 "R2WELCOME credit is part of an actual reduction, never extra.",
+    |
+
+Found 2 errors.

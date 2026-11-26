@@ -1,0 +1,70 @@
+{
+  "scope": "Authorized repair: reject seller item substitution before any offer on exact market orders; preserve descriptive legacy buyer.",
+  "cwd": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07",
+  "checks": [
+    {
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests -vv",
+      "chunk_id": "177b0c",
+      "wall_time_seconds": 1.001795292,
+      "original_token_count": 125,
+      "output": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python\ncachedir: .pytest_cache\nrootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07\nconfigfile: pyproject.toml\nplugins: anyio-4.15.1\ncollecting ... collected 36 items\n\ntests/test_buyer_order.py::test_market_order_when_seller_substitutes_product_never_offers PASSED [  2%]\ntests/test_buyer_order.py::test_descriptive_order_when_seller_resolves_item_preserves_legacy_buy PASSED [  5%]\ntests/test_cli_market.py::test_cli_resolves_paths_before_isolation_and_prints_final_json PASSED [  8%]\ntests/test_market_buyer.py::test_trade_when_model_selects_shop_preserves_receipt_and_budget PASSED [ 11%]\ntests/test_market_buyer.py::test_memory_when_url_changes_retains_failed_trade_for_selection PASSED [ 13%]\ntests/test_market_buyer.py::test_failure_when_review_model_fails_still_persists_trade PASSED [ 16%]\ntests/test_market_buyer.py::test_registry_when_schema_invalid_surfaces_error[{}] PASSED [ 19%]\ntests/test_market_buyer.py::test_registry_when_schema_invalid_surfaces_error[[{\"name\":\"x\",\"url\":\"u\",\"reviews\":[{}]}]] PASSED [ 22%]\ntests/test_market_buyer.py::test_memory_when_corrupt_surfaces_error PASSED [ 25%]\ntests/test_market_buyer.py::test_trade_when_transport_fails_records_failure_and_review PASSED [ 27%]\ntests/test_market_buyer.py::test_memory_when_atomic_replace_fails_preserves_previous_file PASSED [ 30%]\ntests/test_receipt_transport.py::test_receipt_when_valid_preserves_signature_extensions_and_numeric_type[120] PASSED [ 33%]\ntests/test_receipt_transport.py::test_receipt_when_valid_preserves_signature_extensions_and_numeric_type[120.0] PASSED [ 36%]\ntests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[121] PASSED [ 38%]\ntests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[120.5] PASSED [ 41%]\ntests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[120] PASSED [ 44%]\ntests/test_receipt_transport.py::test_receipt_when_price_invalid_rejects_checkout[True] PASSED [ 47%]\ntests/test_receipt_transport.py::test_receipt_when_task_identity_differs_rejects_checkout PASSED [ 50%]\ntests/test_receipts.py::test_signature_when_unicode_receipt_uses_exact_canonical_body PASSED [ 52%]\ntests/test_receipts.py::test_signature_rejected_when_signed_field_tampered[shop-other] PASSED [ 55%]\ntests/test_receipts.py::test_signature_rejected_when_signed_field_tampered[item-chair] PASSED [ 58%]\ntests/test_receipts.py::test_signature_rejected_when_signed_field_tampered[price-121] PASSED [ 61%]\ntests/test_receipts.py::test_signature_rejected_when_signed_field_tampered[task-another-task] PASSED [ 63%]\ntests/test_receipts.py::test_signature_rejected_when_verified_with_another_key PASSED [ 66%]\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[True] PASSED [ 69%]\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[-1] PASSED [ 72%]\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[120.0] PASSED [ 75%]\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[120.5] PASSED [ 77%]\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[120] PASSED [ 80%]\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[1000000000] PASSED [ 83%]\ntests/test_receipts.py::test_key_load_when_existing_pem_has_broad_permissions PASSED [ 86%]\ntests/test_receipts.py::test_key_missing_raises_without_creating_file PASSED [ 88%]\ntests/test_receipts.py::test_key_invalid_raises_safe_error[False] PASSED [ 91%]\ntests/test_receipts.py::test_key_invalid_raises_safe_error[True] PASSED  [ 94%]\ntests/test_signed_seller.py::test_seller_receipt_when_real_a2a_task_accepts_offer[True] PASSED [ 97%]\ntests/test_signed_seller.py::test_seller_receipt_when_real_a2a_task_accepts_offer[False] PASSED [100%]\n\n============================== 36 passed in 1.54s ==============================\n",
+      "exit_code": 0
+    },
+    {
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/ruff check market_a2a/buyer.py market_a2a/market_buyer.py market_a2a/memory.py market_a2a/models.py market_a2a/remote.py tests/test_market_buyer.py tests/test_receipt_transport.py tests/market_fakes.py tests/test_buyer_order.py",
+      "chunk_id": "13739f",
+      "wall_time_seconds": 0.000005875,
+      "exit_code": 0,
+      "original_token_count": 5,
+      "output": "All checks passed!\n"
+    },
+    {
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/ruff format --check market_a2a/buyer.py market_a2a/market_buyer.py market_a2a/memory.py market_a2a/models.py market_a2a/remote.py tests/test_market_buyer.py tests/test_receipt_transport.py tests/market_fakes.py tests/test_buyer_order.py",
+      "chunk_id": "2b9cb8",
+      "wall_time_seconds": 0.000011042,
+      "exit_code": 0,
+      "original_token_count": 7,
+      "output": "9 files already formatted\n"
+    },
+    {
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/basedpyright --pythonpath /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python market_a2a/buyer.py market_a2a/market_buyer.py market_a2a/memory.py market_a2a/models.py market_a2a/remote.py tests/test_market_buyer.py tests/test_receipt_transport.py tests/market_fakes.py tests/test_buyer_order.py",
+      "chunk_id": "1fd2fd",
+      "wall_time_seconds": 1.001336458,
+      "original_token_count": 0,
+      "output": "0 errors, 0 warnings, 0 notes\n",
+      "exit_code": 0
+    },
+    {
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python /Users/sungjinho/.codex/plugins/cache/sisyphuslabs/omo/5.1.35/skills/programming/scripts/python/check-no-excuse-rules.py market_a2a/buyer.py market_a2a/market_buyer.py market_a2a/memory.py market_a2a/models.py market_a2a/remote.py tests/test_market_buyer.py tests/test_receipt_transport.py tests/market_fakes.py tests/test_buyer_order.py",
+      "chunk_id": "8ea99d",
+      "wall_time_seconds": 0.044314,
+      "exit_code": 0,
+      "original_token_count": 7,
+      "output": "no violations in 9 file(s)\n"
+    }
+  ],
+  "scenarios": [
+    {
+      "scenario": "lamp request receives chair metadata and chair receipt",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests -vv",
+      "binary_observable": "test_market_order_when_seller_substitutes_product_never_offers PASSED; only initial POST, null receipt, OrderedItemMismatchError stored",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer-item-guard.json"
+    },
+    {
+      "scenario": "legacy descriptive request resolves seller chair",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests -vv",
+      "binary_observable": "test_descriptive_order_when_seller_resolves_item_preserves_legacy_buy PASSED; completed chair purchase",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer-item-guard.json"
+    },
+    {
+      "scenario": "full offline submission test suite",
+      "invocation": "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python -m pytest tests -vv",
+      "binary_observable": "36 passed; exit_code=0",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-market-buyer-item-guard.json"
+    }
+  ],
+  "limitations": [
+    "Uses scripted harness and HTTP MockTransport; no real model or official 25 checks claimed."
+  ],
+  "skill_reflection": "Existing strict Python contracts applied; no reusable user-owned skill change identified."
+}

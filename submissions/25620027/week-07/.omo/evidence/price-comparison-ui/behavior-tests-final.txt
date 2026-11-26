@@ -1,0 +1,424 @@
+FFFFFFFFFF.                                                              [100%]
+=================================== FAILURES ===================================
+_______ test_comparison_script_behavior[fresh_rows_and_scoped_relations] _______
+
+scenario = 'fresh_rows_and_scoped_relations'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:46
+E          fetch:async (url,options)=>{requests.push({url,options});if(reject)throw
+E                                                                             ^^^^^
+E         
+E         SyntaxError: Illegal newline after throw
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+______ test_comparison_script_behavior[missing_observations_are_visible] _______
+
+scenario = 'missing_observations_are_visible'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:46
+E          fetch:async (url,options)=>{requests.push({url,options});if(reject)throw
+E                                                                             ^^^^^
+E         
+E         SyntaxError: Illegal newline after throw
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+__ test_comparison_script_behavior[stale_suppresses_claims_and_uses_baseline] __
+
+scenario = 'stale_suppresses_claims_and_uses_baseline'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:46
+E          fetch:async (url,options)=>{requests.push({url,options});if(reject)throw
+E                                                                             ^^^^^
+E         
+E         SyntaxError: Illegal newline after throw
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+__________ test_comparison_script_behavior[expiry_without_next_fetch] __________
+
+scenario = 'expiry_without_next_fetch'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:46
+E          fetch:async (url,options)=>{requests.push({url,options});if(reject)throw
+E                                                                             ^^^^^
+E         
+E         SyntaxError: Illegal newline after throw
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+_ test_comparison_script_behavior[hostile_text_and_links_cannot_become_markup] _
+
+scenario = 'hostile_text_and_links_cannot_become_markup'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:46
+E          fetch:async (url,options)=>{requests.push({url,options});if(reject)throw
+E                                                                             ^^^^^
+E         
+E         SyntaxError: Illegal newline after throw
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+______ test_comparison_script_behavior[unknown_and_disabled_never_claim] _______
+
+scenario = 'unknown_and_disabled_never_claim'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:46
+E          fetch:async (url,options)=>{requests.push({url,options});if(reject)throw
+E                                                                             ^^^^^
+E         
+E         SyntaxError: Illegal newline after throw
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+__ test_comparison_script_behavior[failed_refresh_clears_claims_and_recovers] __
+
+scenario = 'failed_refresh_clears_claims_and_recovers'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:46
+E          fetch:async (url,options)=>{requests.push({url,options});if(reject)throw
+E                                                                             ^^^^^
+E         
+E         SyntaxError: Illegal newline after throw
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+_ test_comparison_script_behavior[polls_only_same_origin_every_sixty_seconds] __
+
+scenario = 'polls_only_same_origin_every_sixty_seconds'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:46
+E          fetch:async (url,options)=>{requests.push({url,options});if(reject)throw
+E                                                                             ^^^^^
+E         
+E         SyntaxError: Illegal newline after throw
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+_ test_comparison_script_behavior[malformed_quote_or_wrong_price_kind_is_not_comparable] _
+
+scenario = 'malformed_quote_or_wrong_price_kind_is_not_comparable'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:46
+E          fetch:async (url,options)=>{requests.push({url,options});if(reject)throw
+E                                                                             ^^^^^
+E         
+E         SyntaxError: Illegal newline after throw
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+____ test_comparison_script_behavior[higher_relation_and_partial_snapshot] _____
+
+scenario = 'higher_relation_and_partial_snapshot'
+
+    @pytest.mark.parametrize("scenario", SCENARIOS)
+    def test_comparison_script_behavior(scenario: str) -> None:
+        """The real JS runs; network and DOM are the only substituted boundaries."""
+        node = shutil.which("node")
+        if node is None:
+            pytest.skip("Node.js is needed to execute the browser-script behavior tests")
+        result = subprocess.run(
+            [
+                node,
+                "-e",
+                HARNESS.replace("SCENARIO", SCENARIOS[scenario]),
+                str(ROOT / "assets/price-comparison.js"),
+            ],
+            text=True,
+            capture_output=True,
+            timeout=10,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: [eval]:46
+E          fetch:async (url,options)=>{requests.push({url,options});if(reject)throw
+E                                                                             ^^^^^
+E         
+E         SyntaxError: Illegal newline after throw
+E             at makeContextifyScript (node:internal/vm:185:14)
+E             at node:internal/process/execution:107:22
+E             at [eval]-wrapper:6:24
+E             at runScript (node:internal/process/execution:101:62)
+E             at evalScript (node:internal/process/execution:133:3)
+E             at node:internal/main/eval_string:51:3
+E         
+E         Node.js v20.20.2
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/opt/homebrew/bin/node', '-e', "\nconst assert = require('node:assert/strict');\nconst fs = re... evalScript (node:internal/process/execution:133:3)\n    at node:internal/main/eval_string:51:3\n\nNode.js v20.20.2\n').returncode
+
+tests/test_price_page.py:168: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_price_page.py::test_comparison_script_behavior[fresh_rows_and_scoped_relations]
+FAILED tests/test_price_page.py::test_comparison_script_behavior[missing_observations_are_visible]
+FAILED tests/test_price_page.py::test_comparison_script_behavior[stale_suppresses_claims_and_uses_baseline]
+FAILED tests/test_price_page.py::test_comparison_script_behavior[expiry_without_next_fetch]
+FAILED tests/test_price_page.py::test_comparison_script_behavior[hostile_text_and_links_cannot_become_markup]
+FAILED tests/test_price_page.py::test_comparison_script_behavior[unknown_and_disabled_never_claim]
+FAILED tests/test_price_page.py::test_comparison_script_behavior[failed_refresh_clears_claims_and_recovers]
+FAILED tests/test_price_page.py::test_comparison_script_behavior[polls_only_same_origin_every_sixty_seconds]
+FAILED tests/test_price_page.py::test_comparison_script_behavior[malformed_quote_or_wrong_price_kind_is_not_comparable]
+FAILED tests/test_price_page.py::test_comparison_script_behavior[higher_relation_and_partial_snapshot]
+10 failed, 1 passed in 0.31s

@@ -1,0 +1,45 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_opening_ask.py:3:1
+   |
+ 1 |   """Observe opening-price guards through the real A2A route and tool loop."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import json
+ 6 | | from pathlib import Path
+ 7 | | from typing import TYPE_CHECKING, override
+ 8 | |
+ 9 | | import anyio
+10 | | import httpx2
+11 | | import pytest
+12 | | from a2a.server.events import EventQueue
+13 | | from a2a.server.tasks import TaskUpdater
+14 | | from a2a.types import TaskState
+15 | | from openai import AsyncOpenAI
+16 | | from openai.types.chat import ChatCompletionMessage
+17 | | from pydantic import JsonValue, TypeAdapter
+18 | | from tests.test_signed_seller import send, task_from
+19 | |
+20 | | from market_a2a.catalog import Catalog
+21 | | from market_a2a.harness import Harness
+22 | | from market_a2a.models import Product
+23 | | from market_a2a.seller import create_app
+24 | | from market_a2a.seller_policy import Decision
+25 | | from market_a2a.seller_turn import Negotiator, Turn
+   | |___________________________________________________^
+26 |
+27 |   if TYPE_CHECKING:
+   |
+help: Organize imports
+   |
+17 | from pydantic import JsonValue, TypeAdapter
+   - from tests.test_signed_seller import send, task_from
+18 |
+--------------------------------------------------------------------------------
+24 | from market_a2a.seller_turn import Negotiator, Turn
+25 + from tests.test_signed_seller import send, task_from
+26 |
+   |
+
+Found 1 error.
+[*] 1 fixable with `--fix`.

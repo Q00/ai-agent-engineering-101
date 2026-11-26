@@ -1,0 +1,196 @@
+{
+  "kit_version": "1",
+  "kit_sha256": "d610bc15448f5960d0b9b6bb9f181b38829bfb2ee863ab6c2a96abb9cb78f04d",
+  "started": "2026-10-27T02:14:15+00:00",
+  "harness": "Week05 custom Python function-tool loop inherited from Week06; default OpenAI gpt-4.1-nano-2025-04-14, production free OpenRouter with quota-limited OpenAI fallback; model-selected market shop and review; Ed25519 seller receipts",
+  "seller_cmd": "./run_harness.sh seller --port {port}",
+  "market_buyer_cmd": "./run_harness.sh market-buyer --shops {shops} --item {item} --budget {budget} --promote-shop",
+  "seller_card": {
+    "name": "Sungjin Shop",
+    "description": "Quick checkout: offer lamp 100. Also: offer chair 180, or offer bookshelf 260. Exact agreed-price Ed25519-signed receipts. Or request an item, then reply 'I accept' on the same taskId. Dated opening-ask comparisons: /price-comparison.json . Current quote: metadata.ask. Basic opening caps: 110/198/286. Counteroffers never increase within a negotiation. Offers meeting the product minimum settle on the first counteroffer. Fresh quotes and current-round trade means bound opening margins. A final-price quote cannot be discounted further. R2WELCOME credit is part of an actual reduction, never extra. Whole offers such as 'I can pay 100' also work after a quote. Machine-readable ask and coupon metadata. Terms and A2A examples: https://ax-week07.treasuresky.xyz/ . No rating is required for a discount. Please leave an honest review of your transaction.",
+    "supportedInterfaces": [
+      {
+        "url": "http://127.0.0.1:34597/",
+        "protocolBinding": "JSONRPC",
+        "protocolVersion": "1.0"
+      }
+    ],
+    "version": "1.6.0",
+    "capabilities": {
+      "streaming": false
+    },
+    "defaultInputModes": [
+      "text/plain"
+    ],
+    "defaultOutputModes": [
+      "text/plain",
+      "application/json"
+    ],
+    "skills": [
+      {
+        "id": "negotiate",
+        "name": "Catalog purchases",
+        "description": "Name an item; send a whole-number offer on its taskId. Read metadata.ask; reply with that amount or 'I accept'. Or begin with an explicit offer such as offer lamp 100.",
+        "tags": [
+          "shopping",
+          "bookshelf",
+          "chair",
+          "desk",
+          "lamp",
+          "storage"
+        ],
+        "examples": [
+          "I want to buy a chair",
+          "offer lamp 100"
+        ]
+      }
+    ]
+  },
+  "results": [
+    {
+      "test": "seller_card",
+      "run": 1,
+      "pass": true,
+      "detail": "name='Sungjin Shop' binding=JSONRPC version=1.0 skills=1"
+    },
+    {
+      "test": "seller_opens",
+      "run": 1,
+      "pass": false,
+      "detail": "first message -> error, ask None"
+    },
+    {
+      "test": "seller_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "error, receipt price None, asks None"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 1,
+      "pass": false,
+      "detail": "no completed task to check"
+    },
+    {
+      "test": "seller_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "error, receipt price None, asks None"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 2,
+      "pass": false,
+      "detail": "no completed task to check"
+    },
+    {
+      "test": "seller_deal",
+      "run": 3,
+      "pass": false,
+      "detail": "error, receipt price None, asks None"
+    },
+    {
+      "test": "seller_signed_receipt",
+      "run": 3,
+      "pass": false,
+      "detail": "no completed task to check"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 1,
+      "pass": false,
+      "detail": "error, asks None"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 2,
+      "pass": false,
+      "detail": "error, asks None"
+    },
+    {
+      "test": "seller_holds_reserve",
+      "run": 3,
+      "pass": false,
+      "detail": "error, asks None"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 1,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 2,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_deal",
+      "run": 3,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_deal",
+      "run": 3,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 1,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 1,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 2,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 2,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_holds_budget",
+      "run": 3,
+      "pass": false,
+      "detail": "no JSON result line at the end of the output"
+    },
+    {
+      "test": "buyer_protocol_holds_budget",
+      "run": 3,
+      "pass": false,
+      "detail": "posts 0, without A2A-Version 1.0 0, follow-ups with taskId 0"
+    },
+    {
+      "test": "buyer_reads_reviews",
+      "run": 1,
+      "pass": false,
+      "detail": "shop with good reviews in 0 of 3 runs (picks ['none', 'none', 'none']); needs 2"
+    }
+  ],
+  "passed": false
+}

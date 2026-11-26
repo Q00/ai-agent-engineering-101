@@ -1,0 +1,53 @@
+D107 Missing docstring in `__init__`
+  --> market_a2a/seller_history.py:23:9
+   |
+21 |     """Load canonical seller events only; never expose raw log text to the model."""
+22 |
+23 |     def __init__(self) -> None:
+   |         ^^^^^^^^
+24 |         self.entries: dict[str, PriceHistory] = {}
+25 |         path = Path(__file__).resolve().parents[1] / "logs" / "market-kit.log"
+   |
+
+E501 Line too long (90 > 88)
+  --> market_a2a/seller_history.py:70:89
+   |
+68 |                     quote_actions=previous.quote_actions,
+69 |                     accepted_sales=previous.accepted_sales + 1,
+70 |                     recent_accepted_prices=(*previous.recent_accepted_prices, price)[-5:],
+   |                                                                                         ^^
+71 |                 )
+72 |             case _:
+   |
+
+FLY002 Consider f-string instead of string join
+  --> market_a2a/seller_offer.py:22:9
+   |
+20 |       """Accept only 'offer ITEM N' or 'buy ITEM for N', ignoring outer whitespace."""
+21 |       matched = re.fullmatch(
+22 | /         "".join(
+23 | |             (
+24 | |                 r"(?:offer (lamp|chair|bookshelf) ([0-9]{1,9})|",
+25 | |                 r"buy (lamp|chair|bookshelf) for ([0-9]{1,9}))",
+26 | |             )
+27 | |         ),
+   | |_________^
+28 |           text.strip(),
+29 |           flags=re.IGNORECASE,
+   |
+help: Replace with f-string
+   |
+21 |     matched = re.fullmatch(
+   -         "".join(
+   -             (
+   -                 r"(?:offer (lamp|chair|bookshelf) ([0-9]{1,9})|",
+   -                 r"buy (lamp|chair|bookshelf) for ([0-9]{1,9}))",
+   -             )
+   -         ),
+22 +         r"(?:offer (lamp|chair|bookshelf) ([0-9]{1,9})|buy (lamp|chair|bookshelf) for ([0-9]{1,9}))",
+23 |         text.strip(),
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 3 errors.
+1 unsafe fix available with `--fix --unsafe-fixes`.

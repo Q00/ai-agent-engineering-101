@@ -1,0 +1,112 @@
+╭───────────────────── Traceback (most recent call last) ──────────────────────╮
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 07/submissions/25620027/week-07/tests/manual_public_restart.py:223 in main   │
+│                                                                              │
+│   220                                                                        │
+│   221 def main(phase: Phase) -> None:                                        │
+│   222 │   """Open a task, or finish it after the operator recreates the      │
+│       seller container."""                                                   │
+│ ❱ 223 │   anyio.run(run_phase, phase)                                        │
+│   224                                                                        │
+│   225                                                                        │
+│   226 if __name__ == "__main__":                                             │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/s │
+│ ite-packages/anyio/_core/_eventloop.py:83 in run                             │
+│                                                                              │
+│    80 │                                                                      │
+│    81 │   try:                                                               │
+│    82 │   │   backend_options = backend_options or {}                        │
+│ ❱  83 │   │   return async_backend.run(func, args, {}, backend_options)      │
+│    84 │   finally:                                                           │
+│    85 │   │   reset_current_async_library(token)                             │
+│    86                                                                        │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/s │
+│ ite-packages/anyio/_backends/_asyncio.py:2548 in run                         │
+│                                                                              │
+│   2545 │   │   │   │   loop_factory = winloop.new_event_loop                 │
+│   2546 │   │                                                                 │
+│   2547 │   │   with Runner(debug=debug, loop_factory=loop_factory) as        │
+│        runner:                                                               │
+│ ❱ 2548 │   │   │   return runner.run(wrapper())                              │
+│   2549 │                                                                     │
+│   2550 │   @classmethod                                                      │
+│   2551 │   def current_token(cls) -> object:                                 │
+│                                                                              │
+│ /Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/l │
+│ ib/python3.12/asyncio/runners.py:118 in run                                  │
+│                                                                              │
+│   115 │   │                                                                  │
+│   116 │   │   self._interrupt_count = 0                                      │
+│   117 │   │   try:                                                           │
+│ ❱ 118 │   │   │   return self._loop.run_until_complete(task)                 │
+│   119 │   │   except exceptions.CancelledError:                              │
+│   120 │   │   │   if self._interrupt_count > 0:                              │
+│   121 │   │   │   │   uncancel = getattr(task, "uncancel", None)             │
+│                                                                              │
+│ /Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/l │
+│ ib/python3.12/asyncio/base_events.py:691 in run_until_complete               │
+│                                                                              │
+│    688 │   │   if not future.done():                                         │
+│    689 │   │   │   raise RuntimeError('Event loop stopped before Future      │
+│        completed.')                                                          │
+│    690 │   │                                                                 │
+│ ❱  691 │   │   return future.result()                                        │
+│    692 │                                                                     │
+│    693 │   def stop(self):                                                   │
+│    694 │   │   """Stop running the event loop.                               │
+│                                                                              │
+│ /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/s │
+│ ite-packages/anyio/_backends/_asyncio.py:2531 in wrapper                     │
+│                                                                              │
+│   2528 │   │   │   _task_states[task] = TaskState(None, None)                │
+│   2529 │   │   │                                                             │
+│   2530 │   │   │   try:                                                      │
+│ ❱ 2531 │   │   │   │   return await func(*args)                              │
+│   2532 │   │   │   finally:                                                  │
+│   2533 │   │   │   │   del _task_states[task]                                │
+│   2534                                                                       │
+│                                                                              │
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 07/submissions/25620027/week-07/tests/manual_public_restart.py:216 in        │
+│ run_phase                                                                    │
+│                                                                              │
+│   213 │   │   │   │   │   )                                                  │
+│   214 │   │   │   │   │   assert checkpoint.endpoint == card.endpoint()      │
+│   215 │   │   │   │   │   assert checkpoint.version == card.version          │
+│ ❱ 216 │   │   │   │   │   await finish(client, checkpoint)                   │
+│   217 │   │   │   │   case _:                                                │
+│   218 │   │   │   │   │   assert_never(phase)                                │
+│   219                                                                        │
+│                                                                              │
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 07/submissions/25620027/week-07/tests/manual_public_restart.py:132 in finish │
+│                                                                              │
+│   129 │   assert fresh.error is None                                         │
+│   130 │   assert fresh.result is not None                                    │
+│   131 │   assert fresh.result.task.id != task.id                             │
+│ ❱ 132 │   fresh_receipt = verify_sale(fresh.result.task, key)                │
+│   133 │   summary = {                                                        │
+│   134 │   │   "version": checkpoint.version,                                 │
+│   135 │   │   "restarted_task_id": task.id,                                  │
+│                                                                              │
+│ /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/2026052 │
+│ 9_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week- │
+│ 07/submissions/25620027/week-07/tests/manual_public_restart.py:87 in         │
+│ verify_sale                                                                  │
+│                                                                              │
+│    84                                                                        │
+│    85 def verify_sale(task: Task, key: Ed25519PublicKey) -> SignedReceipt:   │
+│    86 │   """Verify exact price, SKU, task and registered seller             │
+│       signature."""                                                          │
+│ ❱  87 │   assert task.status.state == "TASK_STATE_COMPLETED"                 │
+│    88 │   assert len(task.artifacts) == 1                                    │
+│    89 │   result = purchase(                                                 │
+│    90 │   │   task, Checkout(item="lamp", sku="lamp", price=100, budget=100, │
+│       shop=BASE_URL)                                                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+AssertionError

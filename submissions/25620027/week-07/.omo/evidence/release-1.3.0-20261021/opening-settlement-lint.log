@@ -1,0 +1,13 @@
+warning: Invalid `# noqa` directive on market_a2a/seller_turn.py:3: expected a comma-separated list of codes (e.g., `# noqa: F401, F841`).
+PLR0911 Too many return statements (7 > 6)
+   --> market_a2a/seller_turn.py:253:15
+    |
+251 |         await turn.updater.requires_input(message)
+252 |
+253 |     async def commit(self, turn: Turn, decision: Decision) -> ToolResult:
+    |               ^^^^^^
+254 |         """Commit one guarded model action to the authoritative task."""
+255 |         updater, current = turn.updater, turn.current
+    |
+
+Found 1 error.

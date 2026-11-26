@@ -1,0 +1,175 @@
+.FF..F                                                                   [100%]
+=================================== FAILURES ===================================
+_ test_opening_when_observed_market_has_room_uses_bounded_near_low_price[chair-prices1-182] _
+
+item = 'chair', prices = (180, 183, 195, 198, 234), ceiling = 182
+
+    @pytest.mark.parametrize(
+        ("item", "prices", "ceiling"),
+        [
+            ("lamp", (100, 101, 110, 120, 130), 100),
+            ("chair", (180, 183, 195, 198, 234), 182),
+            ("bookshelf", (260, 265, 275, 290, 338), 264),
+            ("chair", (180, 180, 195, 198, 234), 180),
+            ("chair", (180, 183), 180),
+        ],
+    )
+    def test_opening_when_observed_market_has_room_uses_bounded_near_low_price(
+        item: str, prices: tuple[int, ...], ceiling: int
+    ) -> None:
+        now = dt.datetime.now(dt.UTC)
+        snapshot = ComparisonSnapshot(
+            observed_at=now,
+            expires_at=now + dt.timedelta(minutes=15),
+            shops=tuple(
+                ComparedShop(
+                    rank=index + 1,
+                    name=f"Peer{index}",
+                    url=f"https://peer{index}.example",
+                    deals=100,
+                    quotes=(
+                        ObservedQuote(item=item, ask=price, observed_at=now),
+                    ),
+                )
+                for index, price in enumerate(prices)
+            ),
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        compared = compare_price(catalog.get(item), snapshot, now)
+>       assert compared.ceiling == ceiling
+E       AssertionError: assert 180 == 182
+E        +  where 180 = OwnComparison(item='chair', ceiling=180, baseline_ceiling=198, lowest_peer_ask=180, observed_shop_count=5, relation='equal').ceiling
+
+tests/test_market_strategy.py:58: AssertionError
+_ test_opening_when_observed_market_has_room_uses_bounded_near_low_price[bookshelf-prices2-264] _
+
+item = 'bookshelf', prices = (260, 265, 275, 290, 338), ceiling = 264
+
+    @pytest.mark.parametrize(
+        ("item", "prices", "ceiling"),
+        [
+            ("lamp", (100, 101, 110, 120, 130), 100),
+            ("chair", (180, 183, 195, 198, 234), 182),
+            ("bookshelf", (260, 265, 275, 290, 338), 264),
+            ("chair", (180, 180, 195, 198, 234), 180),
+            ("chair", (180, 183), 180),
+        ],
+    )
+    def test_opening_when_observed_market_has_room_uses_bounded_near_low_price(
+        item: str, prices: tuple[int, ...], ceiling: int
+    ) -> None:
+        now = dt.datetime.now(dt.UTC)
+        snapshot = ComparisonSnapshot(
+            observed_at=now,
+            expires_at=now + dt.timedelta(minutes=15),
+            shops=tuple(
+                ComparedShop(
+                    rank=index + 1,
+                    name=f"Peer{index}",
+                    url=f"https://peer{index}.example",
+                    deals=100,
+                    quotes=(
+                        ObservedQuote(item=item, ask=price, observed_at=now),
+                    ),
+                )
+                for index, price in enumerate(prices)
+            ),
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        compared = compare_price(catalog.get(item), snapshot, now)
+>       assert compared.ceiling == ceiling
+E       AssertionError: assert 260 == 264
+E        +  where 260 = OwnComparison(item='bookshelf', ceiling=260, baseline_ceiling=286, lowest_peer_ask=260, observed_shop_count=5, relation='equal').ceiling
+
+tests/test_market_strategy.py:58: AssertionError
+_____ test_first_feasible_counter_when_model_delays_completes_same_request _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10db6c110>
+
+    def test_first_feasible_counter_when_model_delays_completes_same_request(
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _ = scripted(
+            monkeypatch,
+            [
+                ("search_catalog", {"query": "bookshelf"}),
+                action("quote", 286, "bookshelf"),
+                action("quote", 270, "bookshelf"),
+                action("accept", 260, "bookshelf"),
+            ],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/", Harness(model, print), catalog, "Test"
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app), base_url="http://seller"
+                ) as client:
+                    opening = task_from(await send(client, "I want to buy a bookshelf"))
+                    closed = task_from(await send(client, "260", opening.id))
+                    assert closed.status.state == TaskState.TASK_STATE_COMPLETED
+                    assert MessageToDict(closed.artifacts[0].parts[0])["data"]["price"] == 260
+    
+>       anyio.run(scenario)
+
+tests/test_market_strategy.py:89: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/", Harness(model, print), catalog, "Test"
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app), base_url="http://seller"
+            ) as client:
+                opening = task_from(await send(client, "I want to buy a bookshelf"))
+                closed = task_from(await send(client, "260", opening.id))
+>               assert closed.status.state == TaskState.TASK_STATE_COMPLETED
+E               assert 6 == 3
+E                +  where 6 = state: TASK_STATE_INPUT_REQUIRED\nmessage {\n  message_id: "51983a37-3041-4911-af39-3cd4e5eadd01"\n  context_id: "f4e7cb5...sk"\n      value {\n        number_value: 270\n      }\n    }\n  }\n}\ntimestamp {\n  seconds: 1792567328\n  nanos: 711608000\n}\n.state
+E                +    where state: TASK_STATE_INPUT_REQUIRED\nmessage {\n  message_id: "51983a37-3041-4911-af39-3cd4e5eadd01"\n  context_id: "f4e7cb5...sk"\n      value {\n        number_value: 270\n      }\n    }\n  }\n}\ntimestamp {\n  seconds: 1792567328\n  nanos: 711608000\n}\n = id: "f31cce4a-a745-49a7-bede-00e4edea4cda"\ncontext_id: "f4e7cb5e-aa67-4692-bb6c-ff9fdd357dd3"\nstatus {\n  state: TASK_S...bb6c-ff9fdd357dd3"\n  task_id: "f31cce4a-a745-49a7-bede-00e4edea4cda"\n  role: ROLE_USER\n  parts {\n    text: "260"\n  }\n}\n.status
+E                +  and   3 = <google.protobuf.internal.enum_type_wrapper.EnumTypeWrapper object at 0x109b8d3d0>.TASK_STATE_COMPLETED
+
+tests/test_market_strategy.py:86: AssertionError
+----------------------------- Captured stdout call -----------------------------
+seller.summary task=f31cce4a-a745-49a7-bede-00e4edea4cda selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=406 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "bookshelf"}
+seller.search task=f31cce4a-a745-49a7-bede-00e4edea4cda candidates=1 catalog=3008
+TOOL_RESULT search_catalog [{"product": {"sku": "bookshelf", "name": "bookshelf", "description": "Basic tall white bookshelf for 80 books.", "kind": "bookshelf", "material": "wood", "color": "white", "height_cm": 180, "capacity": 80, "reserve": 260}, "opening_max": 286, "allowed_quote_min": 260, "allowed_quote_max": 286, "comparison": {"item": "bookshelf", "ceiling": 286, "baseline_ceiling": 286, "lowest_peer_ask": null, "observed_shop_count": 0, "relation": "unavailable"}, "own_price_history": {"quote_actions": 108, "accepted_sales": 18, "recent_accepted_prices": [260, 286, 260, 260, 286]}}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 286, "sku": "bookshelf", "reason": "Test"}
+seller.action task=f31cce4a-a745-49a7-bede-00e4edea4cda action=quote sku=bookshelf price=286
+TOOL_RESULT decide {"action": "quote", "price": 286}
+seller.summary task=f31cce4a-a745-49a7-bede-00e4edea4cda selected=bookshelf rounds=0 offer=260 history_replayed=0
+CONTEXT chars=679 tools=1
+MODEL_TOOL round=1 decide {"action": "quote", "price": 270, "sku": "bookshelf", "reason": "Test"}
+seller.action task=f31cce4a-a745-49a7-bede-00e4edea4cda action=quote sku=bookshelf price=270
+TOOL_RESULT decide {"action": "quote", "price": 270}
+------------------------------ Captured log call -------------------------------
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+WARNING  a2a.server.events.event_queue_v2:event_queue_v2.py:172 Dispatcher task is not running. Cannot wait for event dispatch.
+=========================== short test summary info ============================
+FAILED tests/test_market_strategy.py::test_opening_when_observed_market_has_room_uses_bounded_near_low_price[chair-prices1-182]
+FAILED tests/test_market_strategy.py::test_opening_when_observed_market_has_room_uses_bounded_near_low_price[bookshelf-prices2-264]
+FAILED tests/test_market_strategy.py::test_first_feasible_counter_when_model_delays_completes_same_request
+3 failed, 3 passed in 1.21s

@@ -1,0 +1,8 @@
+CONTEXT chars=26 tools=2
+MODEL_USAGE model=minimax/minimax-m3.1-flash:free input=498 output=17
+MODEL_TOOL round=1 lookup {}
+TOOL_RESULT lookup {"price": 100}
+MODEL_USAGE model=minimax/minimax-m3.1-flash:free input=536 output=26
+MODEL_TOOL round=2 accept {"price": 100}
+TOOL_RESULT accept {"price": 100}
+{"model": "minimax/minimax-m3.1-flash:free", "successful_calls": 2, "input_tokens": 1034, "output_tokens": 43, "result": {"price": 100}, "market_transaction": false}

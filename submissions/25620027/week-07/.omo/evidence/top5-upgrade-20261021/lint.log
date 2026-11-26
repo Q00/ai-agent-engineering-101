@@ -1,0 +1,25 @@
+ISC004 Unparenthesized implicit string concatenation in collection
+   --> market_a2a/seller.py:118:17
+    |
+116 |           description=" ".join(
+117 |               (
+118 | /                 "Quick checkout: offer lamp 100, offer chair 180, "
+119 | |                 "or offer bookshelf 260.",
+    | |_________________________________________^
+120 |                   "Exact agreed-price Ed25519-signed receipts."
+121 |                   if signer is not None
+    |
+help: Did you forget a comma?
+help: Wrap implicitly concatenated strings in parentheses
+    |
+117 |             (
+    -                 "Quick checkout: offer lamp 100, offer chair 180, "
+    -                 "or offer bookshelf 260.",
+118 +                 ("Quick checkout: offer lamp 100, offer chair 180, "
+119 +                 "or offer bookshelf 260."),
+120 |                 "Exact agreed-price Ed25519-signed receipts."
+    |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 1 error.
+1 unsafe fix available with `--fix --unsafe-fixes`.

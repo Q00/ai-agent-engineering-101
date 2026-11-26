@@ -1,0 +1,156 @@
+TC001 Move application import `market_a2a.paid_fallback.OpenAIFallback` into a type-checking block
+  --> market_a2a/harness.py:36:38
+   |
+34 | )
+35 | from market_a2a.models import HarnessError, ToolDispatch, ToolResult, ToolSpec
+36 | from market_a2a.paid_fallback import OpenAIFallback
+   |                                      ^^^^^^^^^^^^^^
+37 |
+38 | if TYPE_CHECKING:
+   |
+help: Move into type-checking block
+   |
+35 | from market_a2a.models import HarnessError, ToolDispatch, ToolResult, ToolSpec
+   - from market_a2a.paid_fallback import OpenAIFallback
+36 |
+37 | if TYPE_CHECKING:
+38 +     from market_a2a.paid_fallback import OpenAIFallback
+39 |     from collections.abc import Callable
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+C901 `complete` is too complex (11 > 10)
+   --> market_a2a/harness.py:178:15
+    |
+176 |         raise HarnessError(message)
+177 |
+178 |     async def complete(
+    |               ^^^^^^^^
+179 |         self,
+180 |         messages: list[ChatCompletionMessageParam],
+    |
+
+TC002 Move third-party import `openai.AsyncOpenAI` into a type-checking block
+  --> market_a2a/paid_fallback.py:11:20
+   |
+ 9 | from typing import TYPE_CHECKING, Final
+10 |
+11 | from openai import AsyncOpenAI
+   |                    ^^^^^^^^^^^
+12 | from pydantic import TypeAdapter
+   |
+help: Move into type-checking block
+   |
+10 |
+   - from openai import AsyncOpenAI
+11 | from pydantic import TypeAdapter
+--------------------------------------------------------------------------------
+16 | if TYPE_CHECKING:
+17 +     from openai import AsyncOpenAI
+18 |     from collections.abc import Callable
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> market_a2a/paid_fallback.py:18:5
+   |
+17 |   if TYPE_CHECKING:
+18 | /     from collections.abc import Callable
+19 | |     from pathlib import Path
+20 | |
+21 | |     from openai.types.chat import (
+22 | |         ChatCompletion, ChatCompletionMessageParam, ChatCompletionToolParam,
+23 | |     )
+   | |_____^
+24 |
+25 |   PAID_DAILY_LIMIT: Final = 5000
+   |
+help: Organize imports
+   |
+21 |     from openai.types.chat import (
+   -         ChatCompletion, ChatCompletionMessageParam, ChatCompletionToolParam,
+22 +         ChatCompletion,
+23 +         ChatCompletionMessageParam,
+24 +         ChatCompletionToolParam,
+25 |     )
+   |
+
+D105 Missing docstring in magic method
+  --> market_a2a/paid_fallback.py:37:9
+   |
+35 |     limit: int = PAID_DAILY_LIMIT
+36 |
+37 |     def __post_init__(self) -> None:
+   |         ^^^^^^^^^^^^^
+38 |         if not 0 < self.limit <= PAID_DAILY_LIMIT:
+39 |             message = "OpenAI daily limit must be between1 and5000"
+   |
+
+E501 Line too long (89 > 88)
+  --> market_a2a/paid_fallback.py:94:89
+   |
+92 |     ) -> ChatCompletion:
+93 |         """Reserve quota even if OpenAI later fails or the process is interrupted."""
+94 |         if self.client.max_retries != 0 or self.client.base_url.host != "api.openai.com":
+   |                                                                                         ^
+95 |             message = "Paid fallback requires OpenAI directly with SDK retries off"
+96 |             raise HarnessError(message)
+   |
+
+TC003 Move standard library import `pathlib.Path` into a type-checking block
+ --> tests/test_paid_fallback.py:5:21
+  |
+3 | from concurrent.futures import ThreadPoolExecutor
+4 | from datetime import UTC, datetime, timedelta
+5 | from pathlib import Path
+  |                     ^^^^
+6 |
+7 | import anyio
+  |
+help: Move into type-checking block
+   |
+4  | from datetime import UTC, datetime, timedelta
+   - from pathlib import Path
+5  |
+--------------------------------------------------------------------------------
+15 | from market_a2a.paid_fallback import DailyQuota, OpenAIFallback
+16 + from typing import TYPE_CHECKING
+17 +
+18 + if TYPE_CHECKING:
+19 +     from pathlib import Path
+20 |
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+E501 Line too long (90 > 88)
+  --> tests/test_paid_fallback.py:19:89
+   |
+19 | def test_quota_survives_restart_and_rolls_over_at_korean_midnight(tmp_path: Path) -> None:
+   |                                                                                         ^^
+20 |     path = tmp_path / "quota.sqlite3"
+21 |     now = datetime(2026, 10, 21, 14, 59, tzinfo=UTC)
+   |
+
+E501 Line too long (89 > 88)
+  --> tests/test_paid_fallback.py:53:89
+   |
+52 | @pytest.mark.parametrize("limit", [0, 5001])
+53 | def test_invalid_or_excessive_paid_limit_is_rejected(tmp_path: Path, limit: int) -> None:
+   |                                                                                         ^
+54 |     with pytest.raises(HarnessError, match="between1 and5000"):
+55 |         _ = DailyQuota(tmp_path / "quota.sqlite3", limit)
+   |
+
+E501 Line too long (89 > 88)
+   --> tests/test_paid_fallback.py:110:89
+    |
+108 |             harness = Harness(
+109 |                 free, print, model=FREE_ROUTER,
+110 |                 fallback=OpenAIFallback(paid, DailyQuota(tmp_path / "quota.sqlite3", 1)),
+    |                                                                                         ^
+111 |             )
+112 |             _ = await harness.complete([], [])
+    |
+
+Found 10 errors.
+[*] 1 fixable with `--fix` (3 unsafe fixes available with `--fix --unsafe-fixes`).

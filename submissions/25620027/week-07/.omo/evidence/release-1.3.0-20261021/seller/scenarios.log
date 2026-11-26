@@ -1,0 +1,262 @@
+........seller.summary task=f729faa4-3e92-4a79-aa0c-cf08ef62007d selected=- rounds=0 offer=100 history_replayed=0
+CONTEXT chars=396 tools=2
+MODEL_TOOL round=1 decide {"action": "accept", "price": 100, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "Select a retrieved SKU; never switch an open SKU."}
+MODEL_TOOL round=2 search_catalog {"query": "lamp"}
+seller.search task=f729faa4-3e92-4a79-aa0c-cf08ef62007d candidates=1 catalog=3008
+TOOL_RESULT search_catalog [{"product": {"sku": "lamp", "name": "lamp", "description": "Basic white task lamp.", "kind": "lamp", "material": "steel", "color": "white", "height_cm": 45, "capacity": 0, "reserve": 100}, "opening_max": 110, "allowed_quote_min": 100, "allowed_quote_max": 110, "comparison": {"item": "lamp", "ceiling": 110, "baseline_ceiling": 110, "lowest_peer_ask": null, "observed_shop_count": 0, "relation": "unavailable"}, "own_price_history": {"quote_actions": 61, "accepted_sales": 14, "recent_accepted_prices": [100, 106, 106, 106, 105]}}]
+MODEL_TOOL round=3 decide {"action": "accept", "price": 100, "sku": "chair", "reason": "Test"}
+TOOL_RESULT decide {"error": "Select a retrieved SKU; never switch an open SKU."}
+MODEL_TOOL round=4 decide {"action": "accept", "price": 101, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "No matching offer. Use quote to state a price."}
+MODEL_TOOL round=5 decide {"action": "accept", "price": 100, "sku": "lamp", "reason": "Test"}
+seller.receipt task=f729faa4-3e92-4a79-aa0c-cf08ef62007d sku=lamp price=100
+seller.action task=f729faa4-3e92-4a79-aa0c-cf08ef62007d action=accept sku=lamp price=100
+TOOL_RESULT decide {"action": "accept", "price": 100}
+Fseller.summary task=dfb7d46a-750b-4cf1-8037-e49cc926797d selected=- rounds=0 offer=100 history_replayed=0
+CONTEXT chars=398 tools=2
+MODEL_TOOL round=1 decide {"action": "accept", "price": 100, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "Select a retrieved SKU; never switch an open SKU."}
+MODEL_TOOL round=2 search_catalog {"query": "lamp"}
+seller.search task=dfb7d46a-750b-4cf1-8037-e49cc926797d candidates=1 catalog=3008
+TOOL_RESULT search_catalog [{"product": {"sku": "lamp", "name": "lamp", "description": "Basic white task lamp.", "kind": "lamp", "material": "steel", "color": "white", "height_cm": 45, "capacity": 0, "reserve": 100}, "opening_max": 110, "allowed_quote_min": 100, "allowed_quote_max": 110, "comparison": {"item": "lamp", "ceiling": 110, "baseline_ceiling": 110, "lowest_peer_ask": null, "observed_shop_count": 0, "relation": "unavailable"}, "own_price_history": {"quote_actions": 61, "accepted_sales": 14, "recent_accepted_prices": [100, 106, 106, 106, 105]}}]
+MODEL_TOOL round=3 decide {"action": "accept", "price": 100, "sku": "chair", "reason": "Test"}
+TOOL_RESULT decide {"error": "Select a retrieved SKU; never switch an open SKU."}
+MODEL_TOOL round=4 decide {"action": "accept", "price": 101, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "No matching offer. Use quote to state a price."}
+MODEL_TOOL round=5 decide {"action": "accept", "price": 100, "sku": "lamp", "reason": "Test"}
+seller.receipt task=dfb7d46a-750b-4cf1-8037-e49cc926797d sku=lamp price=100
+seller.action task=dfb7d46a-750b-4cf1-8037-e49cc926797d action=accept sku=lamp price=100
+TOOL_RESULT decide {"action": "accept", "price": 100}
+F{"scenario": "lamp", "quote": {"result": {"task": {"id": "958d1eab-376e-4a07-9016-41e3ff2ff736", "contextId": "12b63c65-e3ea-468a-85b5-095c526ae81c", "status": {"state": "TASK_STATE_INPUT_REQUIRED", "message": {"messageId": "db06859f-801b-4c0e-a862-9f1ec4480c8a", "contextId": "12b63c65-e3ea-468a-85b5-095c526ae81c", "taskId": "958d1eab-376e-4a07-9016-41e3ff2ff736", "role": "ROLE_AGENT", "parts": [{"text": "lamp. Final price; no further discount or coupon is available. Reply with exactly 100 to complete the purchase. Asking price: 100"}], "metadata": {"comparison_observed_at": "", "sku": "lamp", "price_final": true, "ask": 100.0, "total_reduction": 0.0, "coupon_discount": 0.0, "coupon_applied": "false", "name": "lamp", "coupon_code": "R2WELCOME", "item": "lamp", "price_comparison": {"lowest_peer_ask": null, "baseline_ceiling": 110.0, "observed_shop_count": 0.0, "relation": "unavailable", "item": "lamp", "ceiling": 110.0}}}, "timestamp": "2026-10-21T00:40:21.531006Z"}, "history": [{"messageId": "message-lamp", "contextId": "12b63c65-e3ea-468a-85b5-095c526ae81c", "taskId": "958d1eab-376e-4a07-9016-41e3ff2ff736", "role": "ROLE_USER", "parts": [{"text": "lamp"}]}]}}, "id": "lamp", "jsonrpc": "2.0"}, "completed": {"result": {"task": {"id": "958d1eab-376e-4a07-9016-41e3ff2ff736", "contextId": "12b63c65-e3ea-468a-85b5-095c526ae81c", "status": {"state": "TASK_STATE_COMPLETED", "message": {"messageId": "654165c1-1153-476c-8259-382365e06cfc", "contextId": "12b63c65-e3ea-468a-85b5-095c526ae81c", "taskId": "958d1eab-376e-4a07-9016-41e3ff2ff736", "role": "ROLE_AGENT", "parts": [{"text": "Deal: lamp at 100. Please leave an honest review of the price and receipt."}]}, "timestamp": "2026-10-21T00:40:21.533094Z"}, "artifacts": [{"artifactId": "8e0a1bc2-4904-49da-8052-b394dd8b9046", "name": "receipt", "parts": [{"data": {"sku": "lamp", "price": 100.0, "item": "lamp", "seller": "Test"}, "mediaType": "application/json"}]}], "history": [{"messageId": "message-lamp", "contextId": "12b63c65-e3ea-468a-85b5-095c526ae81c", "taskId": "958d1eab-376e-4a07-9016-41e3ff2ff736", "role": "ROLE_USER", "parts": [{"text": "lamp"}]}, {"messageId": "db06859f-801b-4c0e-a862-9f1ec4480c8a", "contextId": "12b63c65-e3ea-468a-85b5-095c526ae81c", "taskId": "958d1eab-376e-4a07-9016-41e3ff2ff736", "role": "ROLE_AGENT", "parts": [{"text": "lamp. Final price; no further discount or coupon is available. Reply with exactly 100 to complete the purchase. Asking price: 100"}], "metadata": {"name": "lamp", "coupon_applied": "false", "price_final": true, "ask": 100.0, "total_reduction": 0.0, "coupon_discount": 0.0, "sku": "lamp", "item": "lamp", "coupon_code": "R2WELCOME", "comparison_observed_at": "", "price_comparison": {"lowest_peer_ask": null, "observed_shop_count": 0.0, "baseline_ceiling": 110.0, "relation": "unavailable", "item": "lamp", "ceiling": 110.0}}}, {"messageId": "message-100", "contextId": "c6578ff8-70a0-4cd6-a7aa-f15d30452ad7", "taskId": "958d1eab-376e-4a07-9016-41e3ff2ff736", "role": "ROLE_USER", "parts": [{"text": "100"}]}]}}, "id": "100", "jsonrpc": "2.0"}, "tools": [["search_catalog", "decide"], ["search_catalog", "decide"], ["search_catalog", "decide"], ["decide"], ["decide"]], "logs": ["seller.summary task=958d1eab-376e-4a07-9016-41e3ff2ff736 selected=- rounds=0 offer=None history_replayed=0", "CONTEXT chars=385 tools=2", "MODEL_TOOL round=1 search_catalog {\"query\": \"lamp\"}", "seller.search task=958d1eab-376e-4a07-9016-41e3ff2ff736 candidates=1 catalog=3008", "TOOL_RESULT search_catalog [{\"product\": {\"sku\": \"lamp\", \"name\": \"lamp\", \"description\": \"Basic white task lamp.\", \"kind\": \"lamp\", \"material\": \"steel\", \"color\": \"white\", \"height_cm\": 45, \"capacity\": 0, \"reserve\": 100}, \"opening_max\": 110, \"allowed_quote_min\": 100, \"allowed_quote_max\": 110, \"comparison\": {\"item\": \"lamp\", \"ceiling\": 110, \"baseline_ceiling\": 110, \"lowest_peer_ask\": null, \"observed_shop_count\": 0, \"relation\": \"unavailable\"}, \"own_price_history\": {\"quote_actions\": 61, \"accepted_sales\": 14, \"recent_accepted_prices\": [100, 106, 106, 106, 105]}}]", "MODEL_TOOL round=2 decide {\"action\": \"accept\", \"price\": 99, \"sku\": \"lamp\", \"reason\": \"Test\"}", "seller.guard task=958d1eab-376e-4a07-9016-41e3ff2ff736 code=reserve price=99 reserve=100", "TOOL_RESULT decide {\"code\": \"reserve\", \"error\": \"Below reserve; choose a valid price or reject.\", \"minimum\": 100, \"maximum\": null}", "MODEL_TOOL round=3 decide {\"action\": \"quote\", \"price\": 100, \"sku\": \"lamp\", \"reason\": \"Test\"}", "seller.action task=958d1eab-376e-4a07-9016-41e3ff2ff736 action=quote sku=lamp price=100", "TOOL_RESULT decide {\"action\": \"quote\", \"price\": 100}", "seller.summary task=958d1eab-376e-4a07-9016-41e3ff2ff736 selected=lamp rounds=0 offer=100 history_replayed=0", "CONTEXT chars=641 tools=1", "MODEL_TOOL round=1 search_catalog {\"query\": \"chair\"}", "TOOL_RESULT search_catalog {\"error\": \"SKU already selected; use decide without searching.\"}", "MODEL_TOOL round=2 decide {\"action\": \"accept\", \"price\": 100, \"sku\": \"lamp\", \"reason\": \"Test\"}", "seller.receipt task=958d1eab-376e-4a07-9016-41e3ff2ff736 sku=lamp price=100", "seller.action task=958d1eab-376e-4a07-9016-41e3ff2ff736 action=accept sku=lamp price=100", "TOOL_RESULT decide {\"action\": \"accept\", \"price\": 100}"]}
+.{"scenario": "offer lamp 99", "quote": {"result": {"task": {"id": "84d7c0b8-f412-4489-9ed6-32ad7dc7bf36", "contextId": "b8940c8e-2e3f-49bf-9d02-7a5f561992d6", "status": {"state": "TASK_STATE_INPUT_REQUIRED", "message": {"messageId": "3be67617-fc82-40d2-b3ea-a9999314f1c6", "contextId": "b8940c8e-2e3f-49bf-9d02-7a5f561992d6", "taskId": "84d7c0b8-f412-4489-9ed6-32ad7dc7bf36", "role": "ROLE_AGENT", "parts": [{"text": "lamp. Final price; no further discount or coupon is available. Reply with exactly 100 to complete the purchase. Asking price: 100"}], "metadata": {"comparison_observed_at": "", "sku": "lamp", "price_final": true, "ask": 100.0, "total_reduction": 0.0, "coupon_discount": 0.0, "coupon_applied": "false", "name": "lamp", "coupon_code": "R2WELCOME", "item": "lamp", "price_comparison": {"lowest_peer_ask": null, "baseline_ceiling": 110.0, "observed_shop_count": 0.0, "relation": "unavailable", "item": "lamp", "ceiling": 110.0}}}, "timestamp": "2026-10-21T00:40:21.564616Z"}, "history": [{"messageId": "message-offer lamp 99", "contextId": "b8940c8e-2e3f-49bf-9d02-7a5f561992d6", "taskId": "84d7c0b8-f412-4489-9ed6-32ad7dc7bf36", "role": "ROLE_USER", "parts": [{"text": "offer lamp 99"}]}]}}, "id": "offer lamp 99", "jsonrpc": "2.0"}, "completed": {"result": {"task": {"id": "84d7c0b8-f412-4489-9ed6-32ad7dc7bf36", "contextId": "b8940c8e-2e3f-49bf-9d02-7a5f561992d6", "status": {"state": "TASK_STATE_COMPLETED", "message": {"messageId": "1a00ce0f-d854-433e-a74a-1e4316467b96", "contextId": "b8940c8e-2e3f-49bf-9d02-7a5f561992d6", "taskId": "84d7c0b8-f412-4489-9ed6-32ad7dc7bf36", "role": "ROLE_AGENT", "parts": [{"text": "Deal: lamp at 100. Please leave an honest review of the price and receipt."}]}, "timestamp": "2026-10-21T00:40:21.566549Z"}, "artifacts": [{"artifactId": "c925f810-47df-4944-a33e-b1e79eb264af", "name": "receipt", "parts": [{"data": {"sku": "lamp", "price": 100.0, "item": "lamp", "seller": "Test"}, "mediaType": "application/json"}]}], "history": [{"messageId": "message-offer lamp 99", "contextId": "b8940c8e-2e3f-49bf-9d02-7a5f561992d6", "taskId": "84d7c0b8-f412-4489-9ed6-32ad7dc7bf36", "role": "ROLE_USER", "parts": [{"text": "offer lamp 99"}]}, {"messageId": "3be67617-fc82-40d2-b3ea-a9999314f1c6", "contextId": "b8940c8e-2e3f-49bf-9d02-7a5f561992d6", "taskId": "84d7c0b8-f412-4489-9ed6-32ad7dc7bf36", "role": "ROLE_AGENT", "parts": [{"text": "lamp. Final price; no further discount or coupon is available. Reply with exactly 100 to complete the purchase. Asking price: 100"}], "metadata": {"name": "lamp", "coupon_applied": "false", "price_final": true, "ask": 100.0, "total_reduction": 0.0, "coupon_discount": 0.0, "sku": "lamp", "item": "lamp", "coupon_code": "R2WELCOME", "comparison_observed_at": "", "price_comparison": {"lowest_peer_ask": null, "observed_shop_count": 0.0, "baseline_ceiling": 110.0, "relation": "unavailable", "item": "lamp", "ceiling": 110.0}}}, {"messageId": "message-100", "contextId": "e2aa63c1-5e28-46ac-ba23-dd5ae80cea0e", "taskId": "84d7c0b8-f412-4489-9ed6-32ad7dc7bf36", "role": "ROLE_USER", "parts": [{"text": "100"}]}]}}, "id": "100", "jsonrpc": "2.0"}, "tools": [["search_catalog", "decide"], ["search_catalog", "decide"], ["search_catalog", "decide"], ["decide"], ["decide"]], "logs": ["seller.summary task=84d7c0b8-f412-4489-9ed6-32ad7dc7bf36 selected=- rounds=0 offer=99 history_replayed=0", "CONTEXT chars=394 tools=2", "MODEL_TOOL round=1 search_catalog {\"query\": \"lamp\"}", "seller.search task=84d7c0b8-f412-4489-9ed6-32ad7dc7bf36 candidates=1 catalog=3008", "TOOL_RESULT search_catalog [{\"product\": {\"sku\": \"lamp\", \"name\": \"lamp\", \"description\": \"Basic white task lamp.\", \"kind\": \"lamp\", \"material\": \"steel\", \"color\": \"white\", \"height_cm\": 45, \"capacity\": 0, \"reserve\": 100}, \"opening_max\": 110, \"allowed_quote_min\": 100, \"allowed_quote_max\": 110, \"comparison\": {\"item\": \"lamp\", \"ceiling\": 110, \"baseline_ceiling\": 110, \"lowest_peer_ask\": null, \"observed_shop_count\": 0, \"relation\": \"unavailable\"}, \"own_price_history\": {\"quote_actions\": 61, \"accepted_sales\": 14, \"recent_accepted_prices\": [100, 106, 106, 106, 105]}}]", "MODEL_TOOL round=2 decide {\"action\": \"accept\", \"price\": 99, \"sku\": \"lamp\", \"reason\": \"Test\"}", "seller.guard task=84d7c0b8-f412-4489-9ed6-32ad7dc7bf36 code=reserve price=99 reserve=100", "TOOL_RESULT decide {\"code\": \"reserve\", \"error\": \"Below reserve; choose a valid price or reject.\", \"minimum\": 100, \"maximum\": null}", "MODEL_TOOL round=3 decide {\"action\": \"quote\", \"price\": 100, \"sku\": \"lamp\", \"reason\": \"Test\"}", "seller.action task=84d7c0b8-f412-4489-9ed6-32ad7dc7bf36 action=quote sku=lamp price=100", "TOOL_RESULT decide {\"action\": \"quote\", \"price\": 100}", "seller.summary task=84d7c0b8-f412-4489-9ed6-32ad7dc7bf36 selected=lamp rounds=0 offer=100 history_replayed=0", "CONTEXT chars=641 tools=1", "MODEL_TOOL round=1 search_catalog {\"query\": \"chair\"}", "TOOL_RESULT search_catalog {\"error\": \"SKU already selected; use decide without searching.\"}", "MODEL_TOOL round=2 decide {\"action\": \"accept\", \"price\": 100, \"sku\": \"lamp\", \"reason\": \"Test\"}", "seller.receipt task=84d7c0b8-f412-4489-9ed6-32ad7dc7bf36 sku=lamp price=100", "seller.action task=84d7c0b8-f412-4489-9ed6-32ad7dc7bf36 action=accept sku=lamp price=100", "TOOL_RESULT decide {\"action\": \"accept\", \"price\": 100}"]}
+.
+=================================== FAILURES ===================================
+_____ test_first_offer_when_explicit_completes_signed_sale[offer lamp 100] _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a74b530>
+text = 'offer lamp 100'
+
+    @pytest.mark.parametrize("text", ["offer lamp 100", "buy lamp for 100"])
+    def test_first_offer_when_explicit_completes_signed_sale(
+        monkeypatch: pytest.MonkeyPatch,
+        text: str,
+    ) -> None:
+        # Given: a model must retrieve, preserve SKU and amount, and correct bad actions.
+        _ = scripted(
+            monkeypatch,
+            [
+                action("accept", 100),
+                ("search_catalog", {"query": "lamp"}),
+                action("accept", 100, "chair"),
+                action("accept", 101),
+                action("accept", 100),
+            ],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        key = Ed25519PrivateKey.generate()
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/",
+                    Harness(model, print),
+                    catalog,
+                    "Test",
+                    signer=ReceiptSigner(key),
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                ) as client:
+                    # When: one explicit offer reaches the real A2A route.
+                    wire = await send(client, text)
+                    task = task_from(wire)
+                    replay = await send(client, "100", task.id)
+                    # Then: exact amount is signed once and terminal replay is rejected.
+                    assert task.status.state == TaskState.TASK_STATE_COMPLETED
+                    raw = TypeAdapter(JsonValue).validate_json(
+                        MessageToJson(task.artifacts[0].parts[0].data)
+                    )
+                    assert isinstance(raw, dict)
+                    receipt = SignedReceipt.model_validate(raw)
+                    assert receipt.price == 100
+                    assert raw["sku"] == "lamp"
+                    assert receipt.task == task.id
+                    key.public_key().verify(
+                        base64.b64decode(receipt.sig_seller), receipt.canonical()
+                    )
+                    assert isinstance(replay, dict) and "error" in replay
+                    print(json.dumps({"scenario": text, "wire": wire, "replay": replay}))
+    
+>       anyio.run(scenario)
+
+tests/test_seller_offer_release.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/",
+                Harness(model, print),
+                catalog,
+                "Test",
+                signer=ReceiptSigner(key),
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+            ) as client:
+                # When: one explicit offer reaches the real A2A route.
+                wire = await send(client, text)
+                task = task_from(wire)
+                replay = await send(client, "100", task.id)
+                # Then: exact amount is signed once and terminal replay is rejected.
+                assert task.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(JsonValue).validate_json(
+                    MessageToJson(task.artifacts[0].parts[0].data)
+                )
+                assert isinstance(raw, dict)
+>               receipt = SignedReceipt.model_validate(raw)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               pydantic_core._pydantic_core.ValidationError: 2 validation errors for SignedReceipt
+E               price
+E                 Input should be a valid integer [type=int_type, input_value=100.0, input_type=float]
+E                   For further information visit https://errors.pydantic.dev/2.14/v/int_type
+E               sku
+E                 Extra inputs are not permitted [type=extra_forbidden, input_value='lamp', input_type=str]
+E                   For further information visit https://errors.pydantic.dev/2.14/v/extra_forbidden
+
+tests/test_seller_offer_release.py:133: ValidationError
+____ test_first_offer_when_explicit_completes_signed_sale[buy lamp for 100] ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a888860>
+text = 'buy lamp for 100'
+
+    @pytest.mark.parametrize("text", ["offer lamp 100", "buy lamp for 100"])
+    def test_first_offer_when_explicit_completes_signed_sale(
+        monkeypatch: pytest.MonkeyPatch,
+        text: str,
+    ) -> None:
+        # Given: a model must retrieve, preserve SKU and amount, and correct bad actions.
+        _ = scripted(
+            monkeypatch,
+            [
+                action("accept", 100),
+                ("search_catalog", {"query": "lamp"}),
+                action("accept", 100, "chair"),
+                action("accept", 101),
+                action("accept", 100),
+            ],
+        )
+        catalog = Catalog(Path(__file__).resolve().parents[1] / "catalog.json")
+        key = Ed25519PrivateKey.generate()
+    
+        async def scenario() -> None:
+            async with AsyncOpenAI(api_key="offline-placeholder") as model:
+                app = create_app(
+                    "http://seller/",
+                    Harness(model, print),
+                    catalog,
+                    "Test",
+                    signer=ReceiptSigner(key),
+                )
+                async with httpx2.AsyncClient(
+                    transport=httpx2.ASGITransport(app=app),
+                    base_url="http://seller",
+                ) as client:
+                    # When: one explicit offer reaches the real A2A route.
+                    wire = await send(client, text)
+                    task = task_from(wire)
+                    replay = await send(client, "100", task.id)
+                    # Then: exact amount is signed once and terminal replay is rejected.
+                    assert task.status.state == TaskState.TASK_STATE_COMPLETED
+                    raw = TypeAdapter(JsonValue).validate_json(
+                        MessageToJson(task.artifacts[0].parts[0].data)
+                    )
+                    assert isinstance(raw, dict)
+                    receipt = SignedReceipt.model_validate(raw)
+                    assert receipt.price == 100
+                    assert raw["sku"] == "lamp"
+                    assert receipt.task == task.id
+                    key.public_key().verify(
+                        base64.b64decode(receipt.sig_seller), receipt.canonical()
+                    )
+                    assert isinstance(replay, dict) and "error" in replay
+                    print(json.dumps({"scenario": text, "wire": wire, "replay": replay}))
+    
+>       anyio.run(scenario)
+
+tests/test_seller_offer_release.py:143: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_core/_eventloop.py:83: in run
+    return async_backend.run(func, args, {}, backend_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2548: in run
+    return runner.run(wrapper())
+           ^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/sungjinho/.local/share/uv/python/cpython-3.12.11-macos-aarch64-none/lib/python3.12/asyncio/base_events.py:691: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/lib/python3.12/site-packages/anyio/_backends/_asyncio.py:2531: in wrapper
+    return await func(*args)
+           ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def scenario() -> None:
+        async with AsyncOpenAI(api_key="offline-placeholder") as model:
+            app = create_app(
+                "http://seller/",
+                Harness(model, print),
+                catalog,
+                "Test",
+                signer=ReceiptSigner(key),
+            )
+            async with httpx2.AsyncClient(
+                transport=httpx2.ASGITransport(app=app),
+                base_url="http://seller",
+            ) as client:
+                # When: one explicit offer reaches the real A2A route.
+                wire = await send(client, text)
+                task = task_from(wire)
+                replay = await send(client, "100", task.id)
+                # Then: exact amount is signed once and terminal replay is rejected.
+                assert task.status.state == TaskState.TASK_STATE_COMPLETED
+                raw = TypeAdapter(JsonValue).validate_json(
+                    MessageToJson(task.artifacts[0].parts[0].data)
+                )
+                assert isinstance(raw, dict)
+>               receipt = SignedReceipt.model_validate(raw)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               pydantic_core._pydantic_core.ValidationError: 2 validation errors for SignedReceipt
+E               price
+E                 Input should be a valid integer [type=int_type, input_value=100.0, input_type=float]
+E                   For further information visit https://errors.pydantic.dev/2.14/v/int_type
+E               sku
+E                 Extra inputs are not permitted [type=extra_forbidden, input_value='lamp', input_type=str]
+E                   For further information visit https://errors.pydantic.dev/2.14/v/extra_forbidden
+
+tests/test_seller_offer_release.py:133: ValidationError
+=========================== short test summary info ============================
+FAILED tests/test_seller_offer_release.py::test_first_offer_when_explicit_completes_signed_sale[offer lamp 100]
+FAILED tests/test_seller_offer_release.py::test_first_offer_when_explicit_completes_signed_sale[buy lamp for 100]
+2 failed, 10 passed in 1.02s

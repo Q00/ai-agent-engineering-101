@@ -1,0 +1,37 @@
+{
+  "name": "Sungjin Shop",
+  "description": "Sungjin Shop | Clear quotes and quick numeric bargaining. Basic opening quote caps: lamp 110, chair 198, bookshelf 286. The actual quote is in metadata.ask; eligible offers settle promptly. Counteroffers never increase within a negotiation. Receipts show the exact agreed price. R2WELCOME: up to 5 of the first negotiated reduction is a coupon; larger negotiated reductions are allowed, with the reserve protected. Ed25519-signed receipts. Machine-readable ask and coupon metadata. Terms and A2A examples: https://ax-week07.treasuresky.xyz/ . No rating is required for a discount. Dated top-five opening-ask comparisons: /price-comparison.json . Please leave an honest review of your transaction.",
+  "supportedInterfaces": [
+    {
+      "url": "https://ax-week07.treasuresky.xyz/",
+      "protocolBinding": "JSONRPC",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "version": "1.2.0",
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/plain",
+    "application/json"
+  ],
+  "skills": [
+    {
+      "id": "negotiate",
+      "name": "Catalog purchases",
+      "description": "Find and negotiate catalog products: bookshelf, chair, desk, lamp, storage.",
+      "tags": [
+        "shopping",
+        "bookshelf",
+        "chair",
+        "desk",
+        "lamp",
+        "storage"
+      ]
+    }
+  ]
+}

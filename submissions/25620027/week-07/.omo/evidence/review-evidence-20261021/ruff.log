@@ -1,0 +1,28 @@
+D101 Missing docstring in public class
+  --> market_a2a/security_review.py:23:7
+   |
+23 | class PublicReviewSignals(TypedDict):
+   |       ^^^^^^^^^^^^^^^^^^^
+24 |     stars: int
+25 |     reviewer_reports_overcharge: bool
+   |
+
+D101 Missing docstring in public class
+  --> market_a2a/security_review.py:31:7
+   |
+31 | class SelectionReview(FrozenModel):
+   |       ^^^^^^^^^^^^^^^
+32 |     round: int
+33 |     reviewer_reports_overcharge: bool
+   |
+
+D103 Missing docstring in public function
+  --> market_a2a/security_review.py:63:5
+   |
+63 | def selection_review_evidence(
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+64 |     reviews: tuple[PublicReview, ...],
+65 | ) -> tuple[SelectionReview, ...]:
+   |
+
+Found 3 errors.

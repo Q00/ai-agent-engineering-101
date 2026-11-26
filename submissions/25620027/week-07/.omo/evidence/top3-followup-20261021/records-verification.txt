@@ -1,0 +1,101 @@
+Records verification — 2026-10-21
+Scope: REPORT.md, SETUP.md, three existing Obsidian notes, this receipt only.
+No source, deployment, runtime, Git, SSH, or API mutation was performed by this records worker.
+No active attempt: omo-agent-toolkit ulw-loop status --json returned ULW_LOOP_PLAN_MISSING.
+Evidence location: delegated submission .omo/evidence/top3-followup-20261021.
+
+Criteria and binary observables:
+1. Final current status on five documents: assertions for1.2.1/4433/4354/5000/21:00/cache limitation pass.
+2. Facts match raw artifacts: parsed board entries, smoke receipt and runtime values equal expected numbers; public result/review flags are false.
+3. Validation claims have readable nonempty artifacts: official25 all pass, offline XML178 with0failures/errors, guard11, strict type passing artifact, Ruff, structural, APPROVE text checked. These inspect executor results; no runtime/test rerun by this records worker.
+4. History and navigation: earlier09:00 sections retained; one stable note anchor, backlinks, all new local evidence links exist and are nonempty.
+Artifact for all four documentary scenarios: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/top3-followup-20261021/records-verification.txt
+
+Exact invocation (cwd: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07):
+python3 - <<'PY'
+from pathlib import Path
+import json, hashlib, re
+import xml.etree.ElementTree as ET
+b=Path("/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07")
+v=Path("/Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2")
+e=b/'.omo/evidence/top3-followup-20261021'
+docs=[b/'REPORT.md',b/'SETUP.md',v/'20_학업/current_state.md',v/'20_학업/00_Course_Hubs/AX이해와활용.md',v/'20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md']
+texts=[p.read_text() for p in docs]
+for t in texts:
+ assert '21:00' in t or '21시' in t
+ assert '4433' in t and '4354' in t and '5000' in t and '1.2.1' in t
+ assert '캐시' in t and '1.2.0' in t
+print('PASS current status: all 5 documents have version1.2.1 / count4433 / baseline4354 / limit5000 / 21:00 and cache limitation')
+board=json.loads((e/'market-snapshot.json').read_text())['board']['shops']
+assert [(s['name'],s['deals'],s['visits'],s['stars']) for s in board[:3]]==[('lee-sungsoo',3349,4320,4.46),('11im',3334,4243,4.49),('JangSeongWoong',1556,2004,4.13)]
+assert board[14]['name']=='25620027' and (board[14]['deals'],board[14]['visits'],board[14]['stars'])==(257,503,4.59)
+after=json.loads((e/'market-board-after-rollout.json').read_text())['shops']
+assert after[11]['name']=='25620027' and (after[11]['deals'],after[11]['visits'],after[11]['stars'],after[11]['card']['version'])==(272,522,4.6,'1.2.0')
+smoke=json.loads((e/'public-smoke.json').read_text())
+assert smoke['version']=='1.2.1'
+assert [smoke[k] for k in ['opening_ask','first_offer','counter_ask','second_offer']]==[100,1,100,100]
+assert smoke['receipt']['price']==100 and smoke['signature_verified_with_registered_public_key'] is True
+assert smoke['market_result_submitted'] is False and smoke['public_review_submitted'] is False
+runtime=json.loads((e/'runtime-status.log').read_text().splitlines()[1])
+assert (runtime['baseline'],runtime['limit'],runtime['model_usage_count'],runtime['deadline'])==(4354,5000,4433,'2026-10-21T21:00:00+09:00')
+print('PASS evidence crosscheck: baseline15th and later12th snapshots, stale registry card, public100/1/100/100 signed receipt, runtime4433')
+official=json.loads((e/'official-attempt-1/test-report.json').read_text())
+assert len(official['results'])==25 and all(r['pass'] is True for r in official['results']) and official['passed'] is True
+suite=ET.parse(e/'implementation/pytest-pass.xml').getroot().find('testsuite')
+assert suite is not None and suite.get('tests')=='178' and suite.get('failures')=='0' and suite.get('errors')=='0'
+assert '0 errors, 0 warnings' in (e/'implementation/types-pass.txt').read_text()
+assert 'exit_code=0' in (e/'implementation/types-pass.txt').read_text()
+assert 'All checks passed!' in (e/'implementation/ruff-pass.txt').read_text()
+assert 'Ran 11 tests' in (e/'guard-21h-tests.log').read_text() and '\nOK\n' in (e/'guard-21h-tests.log').read_text()
+assert 'all checks passed' in (e/'structural-check.log').read_text()
+assert 'recommendation: APPROVE' in (e.parent/'top3-followup-20261021-code-review.md').read_text()
+print('PASS validation artifact inspection: official25 / offline178 XML / guard11 / types0 / Ruff / structural / review APPROVE; no test rerun by records worker')
+r=texts[0].split('## 17. 상위3곳 비교·운영 연장·검색/입력 개선',1)[1]
+assert all(s in r for s in ['8.59','51.09','Haiku/Sonnet/Opus','qwen3:4b-instruct','24시간','1991','미완료','캐시'])
+assert '## 16.' in texts[0] and '08:48 KST' in texts[0] and '오늘09:00' in texts[0]
+assert '## Mac 가격 비교 실행 — 교체 전 이력' in texts[1]
+anchor='ax-w07-top3-followup-20261021'
+assert texts[4].count('^'+anchor+'\n')==1
+assert all('#^'+anchor in t for t in texts[2:])
+assert '[[20_학업/current_state|학업 현재 상태]]' in texts[4]
+assert '[[20_학업/00_Course_Hubs/AX이해와활용|과목 허브]]' in texts[4]
+assert '## 2026-10-21 08:47 VPS 이전·Mac 실행 종료' in texts[4]
+linked=[]
+for section in [r,texts[1].split('## 현재 운영 — 21:00 연장·상위3 비교 후속',1)[1].split('\n## ',1)[0]]:
+ for match in re.finditer(r'\]\(([^)]+)\)',section):
+  target=match.group(1).split('#',1)[0]
+  if target and not target.startswith(('http','<file:')):
+   p=b/target; assert p.is_file() and p.stat().st_size>0,p;linked.append(str(p))
+for raw in re.findall(r'\]\(<file://([^>]+)>\)',texts[4].split('## 2026-10-21 상위3 비교·21시 연장·검색/입력 개선',1)[1]):
+ assert Path(raw).is_file() and Path(raw).stat().st_size>0,raw
+print('PASS document structure: previous09:00 history remains / one stable note anchor / current-state and hub backlinks / all new local links nonempty')
+for p in docs:
+ print('DOC_SHA256',hashlib.sha256(p.read_bytes()).hexdigest(),str(p))
+print('CHECKS_PASS=4')
+
+PY
+
+Captured stdout:
+PASS current status: all 5 documents have version1.2.1 / count4433 / baseline4354 / limit5000 / 21:00 and cache limitation
+PASS evidence crosscheck: baseline15th and later12th snapshots, stale registry card, public100/1/100/100 signed receipt, runtime4433
+PASS validation artifact inspection: official25 / offline178 XML / guard11 / types0 / Ruff / structural / review APPROVE; no test rerun by records worker
+PASS document structure: previous09:00 history remains / one stable note anchor / current-state and hub backlinks / all new local links nonempty
+DOC_SHA256 488daf55f1a116536eb68f3b4b3d5a3f0dd4838a0e763d4ceba73e4e04049ed9 /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/REPORT.md
+DOC_SHA256 808d277185fd1bb9f8900669d075575f94da5f0ffc0677fcbb671db46bdc0064 /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/SETUP.md
+DOC_SHA256 4359c892efeadbd5651b9e243f19617d9d9cfc59363851f264f382bb69122f6f /Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/current_state.md
+DOC_SHA256 a238866a01dd18c02f0cc8d67a00b6e0d80e0d0aeb777637f3163ebafc6898c8 /Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/00_Course_Hubs/AX이해와활용.md
+DOC_SHA256 49a7ddb3640f8068adfe442220656456f465f3f8cb9de5ff6e30bd306de5f882 /Users/sungjinho/Library/Mobile Documents/iCloud~md~obsidian/Documents/jin_icloud2V2/20_학업/01_강의자료/AX이해와활용/261020_AX이해와활용_7주차_수업사항.md
+CHECKS_PASS=4
+
+Process exit_code=0
+
+Limitations recorded in documents:
+- LSS model undisclosed; 11im Claude family only; Jang public Qwen default does not establish live override.
+- Overnight point observations do not establish continuous24/7 uptime or hosting.
+- Rank/traffic/price snapshots are dated separately and do not establish patch effects.
+- Actual card1.2.1 differs from market registry cached1.2.0; no rejoin claimed.
+- Initial basic lamp narrowed to1 candidate but subsequent numeric offer still searched6; two initial model calls remain.
+- Actual container replacement/counter continuity observed by executor; server reboot not tested.
+- Prior09:00 operation history preserved. Final deadline21:00 or observed cumulative5000 first.
+- Passing types-pass.txt distinguished from preserved failed types-final.txt.
+

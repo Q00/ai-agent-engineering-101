@@ -1,0 +1,20 @@
+INP001 File `deploy/vps/provision_openrouter.py` is part of an implicit namespace package. Add an `__init__.py`.
+--> deploy/vps/provision_openrouter.py:1:1
+
+T201 `print` found
+  --> deploy/vps/provision_openrouter.py:34:5
+   |
+32 |         os.fsync(stream.fileno())
+33 |     os.chown(destination, 10001, 10001)
+34 |     print("Configured private OpenRouter free-only model environment; no key output")
+   |     ^^^^^
+help: Remove `print`
+   |
+33 |     os.chown(destination, 10001, 10001)
+   -     print("Configured private OpenRouter free-only model environment; no key output")
+34 |
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 2 errors.
+1 unsafe fix available with `--fix --unsafe-fixes`.

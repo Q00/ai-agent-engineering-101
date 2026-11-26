@@ -1,0 +1,34 @@
+PLR2004 Magic value used in comparison, consider replacing `3` with a constant variable
+   --> market_a2a/comparison.py:129:62
+    |
+127 |                 observations.append(quote.ask)
+128 |     lowest = min(observations) if observations else None
+129 |     second = sorted(observations)[1] if len(observations) >= 3 else None
+    |                                                              ^
+130 |     policy: Literal["baseline", "undercut_lowest", "near_lowest"] = (
+131 |         "undercut_lowest" if lowest is not None else "baseline"
+    |
+
+E501 Line too long (90 > 88)
+   --> market_a2a/seller.py:126:89
+    |
+124 |                 "Current quote: metadata.ask. Basic opening caps: 110/198/286.",
+125 |                 "Counteroffers never increase within a negotiation.",
+126 |                 "Every actual offer at or above the product minimum settles immediately.",
+    |                                                                                         ^^
+127 |                 "Fresh observed prices may allow a small near-lowest opening margin.",
+128 |                 "A final-price quote cannot be discounted further.",
+    |
+
+E501 Line too long (94 > 88)
+  --> market_a2a/seller_messages.py:83:89
+   |
+81 |                         ".",
+82 |                         (
+83 |                             f" Firm minimum: {notice.price}; lower offers cannot be accepted."
+   |                                                                                         ^^^^^^
+84 |                             if price_final
+85 |                             else ""
+   |
+
+Found 3 errors.

@@ -1,0 +1,52 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> tests/test_market_trade_prices.py:1:1
+   |
+ 1 | / from __future__ import annotations
+ 2 | |
+ 3 | | import datetime as dt
+ 4 | | from pathlib import Path
+ 5 | |
+ 6 | | import anyio
+ 7 | | import httpx2
+ 8 | | import pytest
+ 9 | | from a2a.server.tasks import TaskUpdater
+10 | | from pydantic import JsonValue, TypeAdapter
+11 | |
+12 | | from market_a2a.catalog import Catalog
+13 | | from market_a2a.comparison import (
+14 | |     ComparedShop, ComparisonFeed, ComparisonSnapshot, ObservedQuote, TradePrice,
+15 | |     compare_price,
+16 | | )
+17 | | from market_a2a.price_monitor import BOARD_URL, STATS_URL, PriceMonitor
+18 | | from market_a2a.seller_messages import QuoteNotice, quote_message
+19 | | from tests.test_opening_ask import EventCollector
+20 | | from tests.test_price_monitor import MarketTransport
+   | |____________________________________________________^
+21 |
+22 |   ROOT = Path(__file__).resolve().parents[1]
+   |
+help: Organize imports
+   |
+13 | from market_a2a.comparison import (
+   -     ComparedShop, ComparisonFeed, ComparisonSnapshot, ObservedQuote, TradePrice,
+14 +     ComparedShop,
+15 +     ComparisonFeed,
+16 +     ComparisonSnapshot,
+17 +     ObservedQuote,
+18 +     TradePrice,
+19 |     compare_price,
+   |
+
+FBT003 Boolean positional value in function call
+  --> tests/test_market_trade_prices.py:78:41
+   |
+76 |     message = quote_message(
+77 |         TaskUpdater(EventCollector(), "task", "context"),
+78 |         QuoteNotice(product, 102, None, False, snapshot("lamp", 100, 102.8)),
+   |                                         ^^^^^
+79 |     )
+80 |     assert "Market R2 completed-trade mean 102.8 (N=100)" in message.parts[0].text
+   |
+
+Found 2 errors.
+[*] 1 fixable with `--fix`.

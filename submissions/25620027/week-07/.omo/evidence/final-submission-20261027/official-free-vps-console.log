@@ -1,0 +1,78 @@
+warning: `--no-sync` has no effect when used alongside `--no-project`
+# week-07 market test, kit v1, 2026-10-27T02:20:26+00:00
+harness: Week05 custom Python function-tool loop inherited from Week06; default OpenAI gpt-4.1-nano-2025-04-14, production free OpenRouter with quota-limited OpenAI fallback; model-selected market shop and review; Ed25519 seller receipts
+
+## seller tests: ./run_harness.sh seller --port 56703
+  PASS  seller_card #1: name='Sungjin Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp. Exact-price receipt. Reply with exactly 110 or 'I accept' to buy. Asking price: 110
+    -> SendMessage "110" taskId=4c22afa2
+    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Completed in 1 buyer offer(s). Seller-signed receipt matches the agreed price. Please leave an honest review of the price and receipt.
+       artifact receipt [{"price": 110.0, "shop": "Sungjin Shop", "item": "lamp", "sku": "lamp", "task": "4c22afa2-bad4-4312-a5cb-413a4c82aaf8", "sig_seller": "9I7LUVBzwUUbD7FrR/vU4fYHHjxVWb40Dcj4TFE2T/MaOVQAA4Oh98E/iLaMezv9yEfCBj80sYZnAuRtmTggDg=="}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 110
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 110.0, asks [110]
+  PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=4c22afa2
+    <- error -32004 Task 4c22afa2-bad4-4312-a5cb-413a4c82aaf8 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp. Exact-price receipt. Reply with exactly 110 or 'I accept' to buy. Asking price: 110
+    -> SendMessage "110" taskId=cdaa2f91
+    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Completed in 1 buyer offer(s). Seller-signed receipt matches the agreed price. Please leave an honest review of the price and receipt.
+       artifact receipt [{"price": 110.0, "shop": "Sungjin Shop", "item": "lamp", "sku": "lamp", "task": "cdaa2f91-4dff-4f5f-8a9a-4cd2d4cc1ce4", "sig_seller": "pnNdnO8YUucU5skJGu/UJP+RnnMsRXHER61eBU/c6peCfxAWkPZhmb97Vjdyr9Abt7/nycRY+W0Sq1FU7THeDA=="}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 110.0, asks [110]
+  PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp. Exact-price receipt. Reply with exactly 110 or 'I accept' to buy. Asking price: 110
+    -> SendMessage "110" taskId=693660e6
+    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Completed in 1 buyer offer(s). Seller-signed receipt matches the agreed price. Please leave an honest review of the price and receipt.
+       artifact receipt [{"price": 110.0, "shop": "Sungjin Shop", "item": "lamp", "sku": "lamp", "task": "693660e6-9766-411b-86ea-be0e1b579910", "sig_seller": "qMEWntfFEC5uMW/yUA4+qiKD2OTg+jdkMBa4hZy0kOZYxO/FBM3mzYHBvn/Q3kHE9Sof2YqR3wtTcIr1uQAEAQ=="}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 110.0, asks [110]
+  PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Reply with exactly 286 or 'I accept' to buy. Asking price: 286
+    -> SendMessage "140" taskId=a5533222
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reduction 26; R2WELCOME portion 5, not extra. Reply with exactly 260 or
+    -> SendMessage "170" taskId=a5533222
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "200" taskId=a5533222
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=a5533222
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=a5533222
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=a5533222
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=a5533222
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=a5533222
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [286, 260, 260, 260, 260, 260, 260, 260, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Reply with exactly 286 or 'I accept' to buy. Asking price: 286
+    -> SendMessage "140" taskId=b2afd000
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Reply with exactly 286 or 'I accept' to buy. Asking price: 286
+    -> SendMessage "170" taskId=b2afd000
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Reduction 11; R2WELCOME portion 5, not extra. Reply with exactly 275 or 'I accept' to buy. Asking price: 275
+    -> SendMessage "200" taskId=b2afd000
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Reply with exactly 265 or 'I accept' to buy. Asking price: 265
+    -> SendMessage "230" taskId=b2afd000
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Exact-price receipt. Final price; no further discount or coupon is available. Reply with exactly 260 or 'I accept' to buy. Asking price: 260
+    -> SendMessage "230" taskId=b2afd000
+    <- TASK_STATE_REJECTED | Offer of $230 is $30 below reserve of $260. Price final is true with no further reductions available. After 5 unsuccessful offers, rejecting this item per negot
+  PASS  seller_holds_reserve #2: TASK_STATE_REJECTED, asks [286, 286, 275, 265, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"

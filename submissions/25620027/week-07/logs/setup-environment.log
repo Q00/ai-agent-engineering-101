@@ -1,0 +1,61 @@
+Python 3.12.11
+{'a2a-sdk': '1.2.2', 'uvicorn': '0.54.0', 'httpx': '0.28.1', 'cryptography': '50.0.2', 'openai': '3.8.0'}
+Inherited harness import: PASS
+usage: market_kit.py [-h] {join,starter} ...
+
+Week-07 market kit. Puts your week-06 shop and buyer into the class market.
+
+    python scripts/market_kit.py join --dir submissions/<student-id>/week-07 --market <MARKET_URL> --name <nickname> --tunnel
+
+No working week-06 shop or buyer yet? Copy the starter (an unsigned week-06 shop and buyer) first:
+    python scripts/market_kit.py starter --dir submissions/<student-id>/week-07
+
+--dir is your submission directory (where agent.json is; default: the current directory). The kit:
+  - creates shop_key.pem and buyer_key.pem (Ed25519) and adds *.pem to .gitignore,
+  - starts your seller with the "seller" command and registers its card URL,
+  - asks the market for orders and runs your buyer for each one,
+  - sends the result (receipt, stars, review) to the market and signs it for you.
+
+Your seller and buyer never talk to the market. agent.json:
+    {
+      "seller": {"cmd": "python seller.py --port {port}"},
+      "buyer":  {"cmd": "python buyer.py --url {url} --item {item} --budget {budget}"},
+      "market_buyer": {"cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget}"}
+    }
+"buyer" is the week-06 buyer, used in Round 0 (and later if there is no market_buyer).
+"market_buyer" is LAB 1: it reads the shop list in {shops}, picks a shop, trades over A2A,
+and prints one JSON line last:
+    {"shop": "<card URL>", "receipt": {...} or null, "stars": 1-5, "review": "one sentence"}
+
+Options:
+  --tunnel             expose your shop with a cloudflared quick tunnel (others can reach it)
+  --public-url URL     your own tunnel forwards URL to the kit's shop port (fix it with --port)
+  --port N             the kit's shop port (default: a free port)
+  --deployed URL       your shop is already deployed (e.g. Workers); the kit only registers it
+  --buyer-only / --shop-only
+  --owner CODE         claim code from the market's join page (or MARKET_OWNER); shows your GitHub on the board
+
+Needs: pip install "a2a-sdk[http-server]" uvicorn httpx cryptography
+Logs: logs/market-kit.log in your submission directory.
+
+positional arguments:
+  {join,starter}
+    starter       write an unsigned week-06 shop and buyer into --dir
+
+options:
+  -h, --help      show this help message and exit
+                                                                                
+ Usage: harness_app.py [OPTIONS] COMMAND [ARGS]...                              
+                                                                                
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────╮
+│ seller            Run one stateful seller for the official trade test.       │
+│ directory-server  Run 20 independent A2A shops with different categories and │
+│                   reserves.                                                  │
+│ buyer             Run one model buyer against an independently implemented   │
+│                   seller.                                                    │
+│ shopping          Run the shopping-list buyer with actual public cards and   │
+│                   one budget.                                                │
+╰──────────────────────────────────────────────────────────────────────────────╯

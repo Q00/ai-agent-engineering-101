@@ -1,0 +1,72 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 8 items
+
+tests/test_seller_persistence.py::test_signed_sale_when_app_restarts_preserves_offer_and_blocks_terminal_replay seller.summary task=355992a6-a068-4fae-8218-b5cf1b53dcae selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=385 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "lamp"}
+seller.search task=355992a6-a068-4fae-8218-b5cf1b53dcae candidates=1 catalog=3008
+TOOL_RESULT search_catalog [{"product": {"sku": "lamp", "name": "lamp", "description": "Basic white task lamp.", "kind": "lamp", "material": "steel", "color": "white", "height_cm": 45, "capacity": 0, "reserve": 100}, "opening_max": 110, "allowed_quote_min": 100, "allowed_quote_max": 110, "comparison": {"item": "lamp", "ceiling": 110, "baseline_ceiling": 110, "lowest_peer_ask": null, "observed_shop_count": 0, "relation": "unavailable"}, "own_price_history": {"quote_actions": 61, "accepted_sales": 14, "recent_accepted_prices": [100, 106, 106, 106, 105]}}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 105, "sku": "lamp", "reason": "Test"}
+seller.action task=355992a6-a068-4fae-8218-b5cf1b53dcae action=quote sku=lamp price=105
+TOOL_RESULT decide {"action": "quote", "price": 105}
+seller.summary task=355992a6-a068-4fae-8218-b5cf1b53dcae selected=lamp rounds=0 offer=105 history_replayed=0
+CONTEXT chars=642 tools=1
+MODEL_TOOL round=1 decide {"action": "accept", "price": 105, "sku": "chair", "reason": "Test"}
+TOOL_RESULT decide {"error": "Select a retrieved SKU; never switch an open SKU."}
+MODEL_TOOL round=2 decide {"action": "accept", "price": 106, "sku": "lamp", "reason": "Test"}
+TOOL_RESULT decide {"error": "No matching offer. Use quote to state a price."}
+MODEL_TOOL round=3 decide {"action": "accept", "price": 105, "sku": "lamp", "reason": "Test"}
+seller.receipt task=355992a6-a068-4fae-8218-b5cf1b53dcae sku=lamp price=105
+seller.action task=355992a6-a068-4fae-8218-b5cf1b53dcae action=accept sku=lamp price=105
+TOOL_RESULT decide {"action": "accept", "price": 105}
+{"accepted": {"result": {"task": {"id": "355992a6-a068-4fae-8218-b5cf1b53dcae", "contextId": "63f32ee8-cf86-4b0f-b299-0402c96e3113", "status": {"state": "TASK_STATE_COMPLETED", "message": {"messageId": "5b18d772-4abe-417f-b6f6-4d490eb09d23", "contextId": "63f32ee8-cf86-4b0f-b299-0402c96e3113", "taskId": "355992a6-a068-4fae-8218-b5cf1b53dcae", "role": "ROLE_AGENT", "parts": [{"text": "Deal: lamp at 105. Please leave an honest review of the price and receipt."}]}, "timestamp": "2026-10-21T00:53:40.969331Z"}, "artifacts": [{"artifactId": "08768ade-bd6c-4fbb-a075-3f4508f5d5fc", "name": "receipt", "parts": [{"data": {"task": "355992a6-a068-4fae-8218-b5cf1b53dcae", "shop": "Test", "sig_seller": "Mv/yu7yTcwfCTXI1QF6MehEwz2TaWy2lwbqEHHBnY4B2AmBMc9DR/OVCPt00bH24TzG488WQxG9MoPdPs4nKCg==", "item": "lamp", "price": 105.0, "sku": "lamp"}, "mediaType": "application/json"}]}], "history": [{"messageId": "message-lamp", "contextId": "63f32ee8-cf86-4b0f-b299-0402c96e3113", "taskId": "355992a6-a068-4fae-8218-b5cf1b53dcae", "role": "ROLE_USER", "parts": [{"text": "lamp"}]}, {"messageId": "c0fb08d1-a8f2-478d-b173-678953153ea3", "contextId": "63f32ee8-cf86-4b0f-b299-0402c96e3113", "taskId": "355992a6-a068-4fae-8218-b5cf1b53dcae", "role": "ROLE_AGENT", "parts": [{"text": "lamp. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Reply with exactly 105 to complete the purchase. Asking price: 105"}], "metadata": {"price_final": false, "coupon_discount": 0.0, "coupon_code": "R2WELCOME", "total_reduction": 0.0, "name": "lamp", "price_comparison": {"baseline_ceiling": 110.0, "lowest_peer_ask": null, "relation": "unavailable", "item": "lamp", "ceiling": 110.0, "observed_shop_count": 0.0}, "ask": 105.0, "sku": "lamp", "comparison_observed_at": "", "item": "lamp", "coupon_applied": "false"}}, {"messageId": "message-105", "contextId": "63f32ee8-cf86-4b0f-b299-0402c96e3113", "taskId": "355992a6-a068-4fae-8218-b5cf1b53dcae", "role": "ROLE_USER", "parts": [{"text": "105"}]}]}}, "id": "105", "jsonrpc": "2.0"}, "replay": {"error": {"code": -32004, "message": "Task 355992a6-a068-4fae-8218-b5cf1b53dcae is in terminal state: TASK_STATE_COMPLETED", "data": [{"@type": "type.googleapis.com/google.rpc.ErrorInfo", "reason": "UNSUPPORTED_OPERATION", "domain": "a2a-protocol.org", "metadata": {}}]}, "id": "105", "jsonrpc": "2.0"}, "model_calls": 5}
+PASSED
+tests/test_seller_persistence.py::test_floor_and_current_ask_when_restarted_reject_invalid_model_prices seller.summary task=d3ac9962-c22d-4e66-91c6-4df37385d0b1 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=385 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "lamp"}
+seller.search task=d3ac9962-c22d-4e66-91c6-4df37385d0b1 candidates=1 catalog=3008
+TOOL_RESULT search_catalog [{"product": {"sku": "lamp", "name": "lamp", "description": "Basic white task lamp.", "kind": "lamp", "material": "steel", "color": "white", "height_cm": 45, "capacity": 0, "reserve": 100}, "opening_max": 110, "allowed_quote_min": 100, "allowed_quote_max": 110, "comparison": {"item": "lamp", "ceiling": 110, "baseline_ceiling": 110, "lowest_peer_ask": null, "observed_shop_count": 0, "relation": "unavailable"}, "own_price_history": {"quote_actions": 61, "accepted_sales": 14, "recent_accepted_prices": [100, 106, 106, 106, 105]}}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 105, "sku": "lamp", "reason": "Test"}
+seller.action task=d3ac9962-c22d-4e66-91c6-4df37385d0b1 action=quote sku=lamp price=105
+TOOL_RESULT decide {"action": "quote", "price": 105}
+seller.summary task=d3ac9962-c22d-4e66-91c6-4df37385d0b1 selected=lamp rounds=0 offer=99 history_replayed=0
+CONTEXT chars=644 tools=1
+MODEL_TOOL round=1 decide {"action": "accept", "price": 99, "sku": "lamp", "reason": "Test"}
+seller.guard task=d3ac9962-c22d-4e66-91c6-4df37385d0b1 code=reserve price=99 reserve=100
+TOOL_RESULT decide {"code": "reserve", "error": "Below reserve; choose a valid price or reject.", "minimum": 100, "maximum": null}
+MODEL_TOOL round=2 decide {"action": "quote", "price": 110, "sku": "lamp", "reason": "Test"}
+seller.guard task=d3ac9962-c22d-4e66-91c6-4df37385d0b1 code=ask_increase price=110 reserve=100
+TOOL_RESULT decide {"code": "ask_increase", "error": "Ask exceeds the allowed maximum; choose a new price.", "minimum": 100, "maximum": 105}
+MODEL_TOOL round=3 decide {"action": "quote", "price": 105, "sku": "lamp", "reason": "Test"}
+seller.action task=d3ac9962-c22d-4e66-91c6-4df37385d0b1 action=quote sku=lamp price=105
+TOOL_RESULT decide {"action": "quote", "price": 105}
+{"continued": {"result": {"task": {"id": "d3ac9962-c22d-4e66-91c6-4df37385d0b1", "contextId": "f62de06e-5cd2-4a73-aa26-a2d66d9bfde5", "status": {"state": "TASK_STATE_INPUT_REQUIRED", "message": {"messageId": "48dc03a4-9136-46e1-850c-0c57351f2c3b", "contextId": "f62de06e-5cd2-4a73-aa26-a2d66d9bfde5", "taskId": "d3ac9962-c22d-4e66-91c6-4df37385d0b1", "role": "ROLE_AGENT", "parts": [{"text": "lamp. Reply with exactly 105 to complete the purchase. Asking price: 105"}], "metadata": {"price_final": false, "coupon_discount": 0.0, "coupon_code": "R2WELCOME", "total_reduction": 0.0, "name": "lamp", "price_comparison": {"baseline_ceiling": 110.0, "lowest_peer_ask": null, "relation": "unavailable", "item": "lamp", "ceiling": 110.0, "observed_shop_count": 0.0}, "ask": 105.0, "sku": "lamp", "comparison_observed_at": "", "item": "lamp", "coupon_applied": "false"}}, "timestamp": "2026-10-21T00:53:41.089705Z"}, "history": [{"messageId": "message-lamp", "contextId": "f62de06e-5cd2-4a73-aa26-a2d66d9bfde5", "taskId": "d3ac9962-c22d-4e66-91c6-4df37385d0b1", "role": "ROLE_USER", "parts": [{"text": "lamp"}]}, {"messageId": "d11c6c56-3b2f-472e-b6d8-d4282e60bf7a", "contextId": "f62de06e-5cd2-4a73-aa26-a2d66d9bfde5", "taskId": "d3ac9962-c22d-4e66-91c6-4df37385d0b1", "role": "ROLE_AGENT", "parts": [{"text": "lamp. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Reply with exactly 105 to complete the purchase. Asking price: 105"}], "metadata": {"price_final": false, "coupon_discount": 0.0, "coupon_code": "R2WELCOME", "total_reduction": 0.0, "name": "lamp", "price_comparison": {"baseline_ceiling": 110.0, "lowest_peer_ask": null, "relation": "unavailable", "item": "lamp", "ceiling": 110.0, "observed_shop_count": 0.0}, "ask": 105.0, "sku": "lamp", "comparison_observed_at": "", "item": "lamp", "coupon_applied": "false"}}, {"messageId": "message-99", "contextId": "f62de06e-5cd2-4a73-aa26-a2d66d9bfde5", "taskId": "d3ac9962-c22d-4e66-91c6-4df37385d0b1", "role": "ROLE_USER", "parts": [{"text": "99"}]}]}}, "id": "99", "jsonrpc": "2.0"}, "model_calls": 5}
+PASSED
+tests/test_seller_persistence.py::test_task_get_list_delete_when_reopened_preserve_sdk_owner_isolation {"owner_isolation": true, "durable_owner_delete": true}
+PASSED
+tests/test_seller_persistence.py::test_journal_when_closed_cannot_be_reopened {"closed_reopen_rejected": true}
+PASSED
+tests/test_seller_persistence.py::test_startup_when_open_journal_corrupt_fails_closed[None] {"corrupt_payload": null, "startup_rejected": true}
+PASSED
+tests/test_seller_persistence.py::test_startup_when_open_journal_corrupt_fails_closed[{"product":{}}] {"corrupt_payload": "{\"product\":{}}", "startup_rejected": true}
+PASSED
+tests/test_seller_persistence.py::test_startup_when_open_journal_corrupt_fails_closed[{"product":{"sku":"lamp","name":"lamp","description":"","kind":"lamp","reserve":100},"ask":99}] {"corrupt_payload": "{\"product\":{\"sku\":\"lamp\",\"name\":\"lamp\",\"description\":\"\",\"kind\":\"lamp\",\"reserve\":100},\"ask\":99}", "startup_rejected": true}
+PASSED
+tests/test_seller_persistence.py::test_prior_memory_only_task_when_persistence_enabled_is_not_migrated seller.summary task=3ed95de4-f587-472a-957d-fc4b93fe89b0 selected=- rounds=0 offer=None history_replayed=0
+CONTEXT chars=385 tools=2
+MODEL_TOOL round=1 search_catalog {"query": "lamp"}
+seller.search task=3ed95de4-f587-472a-957d-fc4b93fe89b0 candidates=1 catalog=3008
+TOOL_RESULT search_catalog [{"product": {"sku": "lamp", "name": "lamp", "description": "Basic white task lamp.", "kind": "lamp", "material": "steel", "color": "white", "height_cm": 45, "capacity": 0, "reserve": 100}, "opening_max": 110, "allowed_quote_min": 100, "allowed_quote_max": 110, "comparison": {"item": "lamp", "ceiling": 110, "baseline_ceiling": 110, "lowest_peer_ask": null, "observed_shop_count": 0, "relation": "unavailable"}, "own_price_history": {"quote_actions": 61, "accepted_sales": 14, "recent_accepted_prices": [100, 106, 106, 106, 105]}}]
+MODEL_TOOL round=2 decide {"action": "quote", "price": 105, "sku": "lamp", "reason": "Test"}
+seller.action task=3ed95de4-f587-472a-957d-fc4b93fe89b0 action=quote sku=lamp price=105
+TOOL_RESULT decide {"action": "quote", "price": 105}
+{"prior_memory_task": "3ed95de4-f587-472a-957d-fc4b93fe89b0", "response": {"error": {"code": -32001, "message": "Task 3ed95de4-f587-472a-957d-fc4b93fe89b0 not found", "data": [{"@type": "type.googleapis.com/google.rpc.ErrorInfo", "reason": "TASK_NOT_FOUND", "domain": "a2a-protocol.org", "metadata": {}}]}, "id": "105", "jsonrpc": "2.0"}}
+PASSED
+
+- generated xml file: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/release-1.3.0-20261021/persistence/pytest-final.xml -
+============================== 8 passed in 1.25s ===============================

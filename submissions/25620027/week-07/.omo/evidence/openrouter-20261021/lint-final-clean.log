@@ -1,0 +1,27 @@
+FLY002 Consider f-string instead of string join
+  --> tests/manual_openrouter_tools.py:39:13
+   |
+37 |           harness = Harness(client, print)
+38 |           result = await harness.run(
+39 | /             " ".join((
+40 | |                 "Fictional integration test. Call lookup first, then use its observed",
+41 | |                 "price in accept. Always use a tool, never answer with text.",
+42 | |             )),
+   | |______________^
+43 |               {"item": "fictional lamp"}, tools, dispatch,
+44 |           )
+   |
+help: Replace with f-string
+   |
+38 |         result = await harness.run(
+   -             " ".join((
+   -                 "Fictional integration test. Call lookup first, then use its observed",
+   -                 "price in accept. Always use a tool, never answer with text.",
+   -             )),
+39 +             "Fictional integration test. Call lookup first, then use its observed price in accept. Always use a tool, never answer with text.",
+40 |             {"item": "fictional lamp"}, tools, dispatch,
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+Found 1 error.
+1 unsafe fix available with `--fix --unsafe-fixes`.

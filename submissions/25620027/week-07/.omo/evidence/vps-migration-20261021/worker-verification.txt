@@ -1,0 +1,26 @@
+Week07 VPS package verification. Hook requires original cwd evidence root.
+Working directory: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07
+$ python3 deploy/vps/test_guard.py
+test_absolute_deadline_prevents_child_launch (__main__.GuardTests) ... ok
+test_cap_and_restart_keeps_cumulative_baseline (__main__.GuardTests) ... ok
+test_child_failure_returns_nonzero_for_bounded_restart (__main__.GuardTests) ... ok
+test_deadline_stops_silent_children (__main__.GuardTests) ... ok
+test_deleted_log_cannot_reduce_persistent_count (__main__.GuardTests) ... ok
+test_existing_persistent_usage_counts_on_restart (__main__.GuardTests) ... ok
+test_lost_baseline_fails_closed (__main__.GuardTests) ... ok
+test_replaced_baseline_fails_closed (__main__.GuardTests) ... ok
+test_sigterm_stops_both_children_normally (__main__.GuardTests) ... ok
+test_staging_disables_only_tunnel (__main__.GuardTests) ... ok
+test_truncated_log_cannot_reduce_persistent_count (__main__.GuardTests) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.958s
+
+OK
+
+EXIT_CODE=0
+$ .venv/bin/python deploy/vps/test_public.py
+PASS: wrapper binds loopback:8900; real card version 1.2.0 advertises existing HTTPS URL; all four public routes return 200; comparison enabled; no model/network calls
+
+EXIT_CODE=0
+PASS: 11 offline guard subprocess scenarios and actual ASGI public route tests. Remote Docker/VPS deployment is not claimed.

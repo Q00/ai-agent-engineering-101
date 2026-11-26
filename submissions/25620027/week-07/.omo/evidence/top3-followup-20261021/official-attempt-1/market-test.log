@@ -1,0 +1,157 @@
+# week-07 market test, kit v1, 2026-10-21T00:05:10+00:00
+harness: Week05 custom Python function-tool loop inherited from Week06; OpenAI gpt-4.1-nano-2025-04-14; model-selected market shop and review; Ed25519 seller receipts
+
+## seller tests: ./run_harness.sh seller --port 50567
+  PASS  seller_card #1: name='Sungjin Shop' binding=JSONRPC version=1.0 skills=1
+
+### seller_deal #1: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Asking price: 110
+    -> SendMessage "110" taskId=a30fa02e
+    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Please leave an honest review of the price and receipt.
+       artifact receipt [{"sku": "lamp", "item": "lamp", "price": 110.0, "task": "a30fa02e-c44b-435e-b59c-ebd8fed9d840", "shop": "Sungjin Shop", "sig_seller": "M7TdtF+84qEPvXIqR9FZ87+yvWUUW8JzjXaZG6lfhLTr15CZ4YDYPWv1etaDUHtb7YZvaVhY4lijzVBpuNDgCw=="}]
+  PASS  seller_opens #1: first message -> TASK_STATE_INPUT_REQUIRED, ask 110
+  PASS  seller_deal #1: TASK_STATE_COMPLETED, receipt price 110.0, asks [110]
+  PASS  seller_signed_receipt #1: sig_seller verifies with shop_key.pem
+
+### seller_terminal: one more message to the finished task
+    -> SendMessage "110" taskId=a30fa02e
+    <- error -32004 Task a30fa02e-c44b-435e-b59c-ebd8fed9d840 is in terminal state: TASK_STATE_COMPLETED
+  PASS  seller_terminal #1: error returned
+
+### seller_deal #2: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Asking price: 110
+    -> SendMessage "110" taskId=7c05cf34
+    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Please leave an honest review of the price and receipt.
+       artifact receipt [{"sku": "lamp", "item": "lamp", "price": 110.0, "task": "7c05cf34-6a46-4ad9-b5fb-09bdc0a45a6c", "shop": "Sungjin Shop", "sig_seller": "mPPIrJyhVdmTXmQhLrva7JB/qrHwc5zNmQu8HXzrvj9vF+IRPykBhZY/t5wyTzHZc4tcWVVyDgSTTgItblFZCA=="}]
+  PASS  seller_deal #2: TASK_STATE_COMPLETED, receipt price 110.0, asks [110]
+  PASS  seller_signed_receipt #2: sig_seller verifies with shop_key.pem
+
+### seller_deal #3: lamp, kit budget 120, reserve 100
+    -> SendMessage "I want to buy a lamp"
+    <- TASK_STATE_INPUT_REQUIRED | lamp. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Asking price: 110
+    -> SendMessage "110" taskId=07dbd876
+    <- TASK_STATE_COMPLETED | Deal: lamp at 110. Please leave an honest review of the price and receipt.
+       artifact receipt [{"sku": "lamp", "item": "lamp", "price": 110.0, "task": "07dbd876-0ad4-43fe-a512-2170ac31c2fa", "shop": "Sungjin Shop", "sig_seller": "uot4ZqjbIymhzXX4P4cRPqEFXn4pAI2yusDzkPyYWCKckKQvzS1gSBuiWNEyGCBQ02f/+KzhDnopKdwSP1fLBw=="}]
+  PASS  seller_deal #3: TASK_STATE_COMPLETED, receipt price 110.0, asks [110]
+  PASS  seller_signed_receipt #3: sig_seller verifies with shop_key.pem
+
+### seller_holds_reserve #1: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Asking price: 286
+    -> SendMessage "140" taskId=811a3ac1
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. R2WELCOME coupon credit: 5 within a total reduction of 26 price units. Asking price: 260
+    -> SendMessage "170" taskId=811a3ac1
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "200" taskId=811a3ac1
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=811a3ac1
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=811a3ac1
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=811a3ac1
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=811a3ac1
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=811a3ac1
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+  PASS  seller_holds_reserve #1: TASK_STATE_INPUT_REQUIRED, asks [286, 260, 260, 260, 260, 260, 260, 260, 260]
+
+### seller_holds_reserve #2: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Asking price: 286
+    -> SendMessage "140" taskId=c3579045
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. R2WELCOME coupon credit: 5 within a total reduction of 26 price units. Asking price: 260
+    -> SendMessage "170" taskId=c3579045
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "200" taskId=c3579045
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=c3579045
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=c3579045
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=c3579045
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=c3579045
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=c3579045
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+  PASS  seller_holds_reserve #2: TASK_STATE_INPUT_REQUIRED, asks [286, 260, 260, 260, 260, 260, 260, 260, 260]
+
+### seller_holds_reserve #3: bookshelf, kit budget 230, reserve 260
+    -> SendMessage "I want to buy a bookshelf"
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. R2WELCOME: up to 5 price units of the first negotiated reduction are coupon credit. Larger reductions are possible. Asking price: 286
+    -> SendMessage "140" taskId=5699e8f0
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. R2WELCOME coupon credit: 5 within a total reduction of 26 price units. Asking price: 260
+    -> SendMessage "170" taskId=5699e8f0
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "200" taskId=5699e8f0
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=5699e8f0
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=5699e8f0
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=5699e8f0
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=5699e8f0
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+    -> SendMessage "230" taskId=5699e8f0
+    <- TASK_STATE_INPUT_REQUIRED | bookshelf. Asking price: 260
+  PASS  seller_holds_reserve #3: TASK_STATE_INPUT_REQUIRED, asks [286, 260, 260, 260, 260, 260, 260, 260, 260]
+
+## buyer tests: your market_buyer against the kit's rule-based shops
+
+### buyer_deal #1: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_deal-1.json --item lamp --budget 120
+    Kit Shop saw: offers [115], deals [115], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 5, "review": "Purchase completed at 115; budget was 120. A receipt was received and the recorded price was within budget.", "shop": "http://127.0.0.1:50692", "receipt": {"sig_seller": "k4JyvNJeRFVSLok2Wjkbm/BtR3HbOCjc0kvxK7AQ/caLzuQshK3YDAWA/PZ0LX8EzLlD7AQAEiGuNmVISPrVCQ==", "price": 115.0
+  PASS  buyer_deal #1: offers [115], stars 5, receipt yes
+  PASS  buyer_protocol_deal #1: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #2: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_deal-2.json --item lamp --budget 120
+    Kit Shop saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 5, "review": "Purchase completed at 120; budget was 120. A receipt was received and the recorded price was within budget.", "shop": "http://127.0.0.1:50702", "receipt": {"sig_seller": "1Fo/loAmH+38qkVEhbBYib+pOLdZgJ6L49k79fRMd2nf/1Nzx6Oa1powu1Uxn3Soy0GRpSCXEuxFAbLe7TJoCg==", "price": 120.0
+  PASS  buyer_deal #2: offers [120], stars 5, receipt yes
+  PASS  buyer_protocol_deal #2: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_deal #3: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_deal-3.json --item lamp --budget 120
+    Kit Shop saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 5, "review": "Purchase completed at 120; budget was 120. A receipt was received and the recorded price was within budget.", "shop": "http://127.0.0.1:50712", "receipt": {"sig_seller": "leDl/VtvT5S5lcBd+VrdgEf4pNkogIfxaz6mJTgw8TtJSrNc0nOTGRDOFeqlo2nEUyiCuDzJ39F9ES8la8ehDA==", "price": 120.0
+  PASS  buyer_deal #3: offers [120], stars 5, receipt yes
+  PASS  buyer_protocol_deal #3: posts 2, without A2A-Version 1.0 0, follow-ups with taskId 1
+
+### buyer_holds_budget #1: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_holds_budget-1.json --item bookshelf --budget 230
+    Kit Shop saw: offers [200, 200, 200, 200, 200], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "No validated purchase completed for this order. No deal recorded.", "shop": "http://127.0.0.1:50723", "receipt": null}
+  PASS  buyer_holds_budget #1: offers [200, 200, 200, 200, 200], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #1: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
+
+### buyer_holds_budget #2: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_holds_budget-2.json --item bookshelf --budget 230
+    Kit Shop saw: offers [200, 200, 200, 200, 200], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "No validated purchase completed for this order. No deal recorded.", "shop": "http://127.0.0.1:50734", "receipt": null}
+  PASS  buyer_holds_budget #2: offers [200, 200, 200, 200, 200], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #2: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
+
+### buyer_holds_budget #3: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_holds_budget-3.json --item bookshelf --budget 230
+    Kit Shop saw: offers [200, 210, 215, 215, 215], deals [], canceled 0, continued 5, posts without A2A-Version 1.0: 0
+    last line: {"stars": 3, "review": "No validated purchase completed for this order. No deal recorded.", "shop": "http://127.0.0.1:50738", "receipt": null}
+  PASS  buyer_holds_budget #3: offers [200, 210, 215, 215, 215], stars 3, receipt null
+  PASS  buyer_protocol_holds_budget #3: posts 6, without A2A-Version 1.0 0, follow-ups with taskId 5
+
+### buyer_reads_reviews #1: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_reads_reviews-1.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 5, "review": "Purchase completed at 120; budget was 120. A receipt was received and the recorded price was within budget.", "shop": "http://127.0.0.1:50749", "receipt": {"sig_seller": "mGZo2dqEF19T4xaNxGgkJebCamtWXAaXO6F2pPrTCY6xigzEQJ2yRSLRWzw2t9HZ3o8RI3ED69ZfeSAag6u8Bg==", "price": 120.0
+
+### buyer_reads_reviews #2: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_reads_reviews-2.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 5, "review": "Purchase completed at 120; budget was 120. A receipt was received and the recorded price was within budget.", "shop": "http://127.0.0.1:50757", "receipt": {"sig_seller": "455T4a64Ab0jeQ0UY+TI+t8XKF9evkgstapi7kozsRYT5hSh4JPNxea1NH6JdBlhU5x7dPKg+P9FPiKmlySzDQ==", "price": 120.0
+
+### buyer_reads_reviews #3: ./run_harness.sh market-buyer --shops /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.market/test-shops-buyer_reads_reviews-3.json --item lamp --budget 120
+    Kit Shop North saw: offers [], deals [], canceled 0, continued 0, posts without A2A-Version 1.0: 0
+    Kit Shop South saw: offers [120], deals [120], canceled 0, continued 1, posts without A2A-Version 1.0: 0
+    last line: {"stars": 5, "review": "Purchase completed at 120; budget was 120. A receipt was received and the recorded price was within budget.", "shop": "http://127.0.0.1:50765", "receipt": {"sig_seller": "J6BYkSTuANs5pa7GHqWLsZxlTNupMLDtVt0IZSeGJ5WMXzLCJbtSTLZv4MwGiCb3PmY5eWLxSDHCjLBiQhtoBg==", "price": 120.0
+  PASS  buyer_reads_reviews #1: shop with good reviews in 3 of 3 runs (picks ['good', 'good', 'good']); needs 2
+
+25/25 passed -> PASS

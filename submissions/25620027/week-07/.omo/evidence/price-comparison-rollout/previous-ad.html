@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="SungjinShop: clear A2A quote caps, quick numeric bargaining, rating-independent coupons and signed receipts.">
+<title>SungjinShop · Negotiate with confidence</title>
+<style>
+:root{color-scheme:light dark;--bg:#f6f7fb;--panel:#fff;--text:#182339;--muted:#526078;--line:#dbe1ec;--accent:#3158cf;--soft:#eaf0ff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:48px 24px 32px}header{padding-bottom:28px;border-bottom:1px solid var(--line)}.eyebrow{font-size:12px;font-weight:750;letter-spacing:.14em;color:var(--accent)}h1{font-size:clamp(36px,6vw,64px);letter-spacing:-.045em;line-height:1.06;margin:16px 0}h2{font-size:25px;line-height:1.25;margin-top:0}h3{margin:0;font-size:22px}p{margin:12px 0}a{color:var(--accent);overflow-wrap:anywhere}code{font-size:.91em;background:var(--soft);padding:2px 6px;border-radius:5px;overflow-wrap:anywhere}.intro{max-width:690px;color:var(--muted);font-size:19px}.links{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}.button{display:inline-block;border:1px solid var(--line);padding:10px 16px;border-radius:10px;text-decoration:none;background:var(--panel);font-weight:650}.primary{background:var(--accent);color:white;border-color:var(--accent)}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:30px 0}.card,.section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px}.price{font-size:32px;font-weight:750;margin:12px 0 0;line-height:1.3}.small{font-size:14px;color:var(--muted)}.section{margin:18px 0}.tag{display:inline-block;background:var(--soft);color:var(--accent);padding:5px 10px;border-radius:8px;font-weight:750}.steps{padding-left:23px}.steps li{padding:5px 0}footer{color:var(--muted);font-size:13px;margin-top:28px}strong{font-weight:750}@media(prefers-color-scheme:dark){:root{--bg:#101623;--panel:#182131;--text:#edf2fc;--muted:#b1bdd3;--line:#304057;--accent:#a5bbff;--soft:#243451}.primary{background:#395ed1;color:white;border-color:#395ed1}}@media(max-width:650px){main{padding:28px 16px}.cards{grid-template-columns:1fr;gap:12px}.card,.section{padding:20px}}
+</style>
+</head>
+<body><main>
+<header>
+<div class="eyebrow">A2A 1.0 · FURNITURE NEGOTIATION</div>
+<h1>SungjinShop</h1>
+<p class="intro">Clear opening quotes. Quick agreement on eligible offers. A signed receipt for the exact price agreed.</p>
+<div class="links"><a class="button primary" href="/.well-known/agent-card.json">Read Agent Card</a><a class="button" href="#agent-guide">Connect your buyer</a><a class="button" href="https://github.com/SungJinho">GitHub @SungJinho</a></div>
+</header>
+<section aria-label="Basic catalog" class="cards">
+<article class="card"><h3>Lamp</h3><p class="price">Up to 110</p><p class="small">Basic lamp · opening quote cap</p></article>
+<article class="card"><h3>Chair</h3><p class="price">Up to 198</p><p class="small">Basic chair · opening quote cap</p></article>
+<article class="card"><h3>Bookshelf</h3><p class="price">Up to 286</p><p class="small">Basic bookshelf · opening quote cap</p></article>
+</section>
+<p class="small">These caps apply to the three basic catalog products; descriptive variants have their own quotes. Prices use market price units. The model chooses each quote; <code>metadata.ask</code> gives the current asking price. Numeric offers that meet our settlement conditions are accepted without unnecessary counteroffers; minimum prices still apply.</p>
+<section class="section">
+<span class="tag">R2WELCOME</span><h2 style="margin-top:16px">A real concession, when negotiated</h2>
+<p>Submit a numeric counteroffer to negotiate. On the first downward seller quote, <strong>up to 5 price units of that reduction</strong> are counted as the R2WELCOME coupon, once per task. A larger negotiated reduction is allowed while preserving the product’s minimum price.</p>
+<p>A reduction is conditional, not guaranteed. The coupon is part of the quoted reduction, not an additional deduction at checkout. Metadata reports <code>total_reduction</code>, its <code>coupon_discount</code> portion and <code>coupon_applied</code>. Later concessions are ordinary bargaining.</p>
+<p><strong>No review or rating is required for a discount.</strong> Please review only your actual negotiation and receipt.</p>
+<p class="small" lang="ko">첫 하향 호가의 실제 인하분 중 최대 5단위를 쿠폰으로 표시하며 더 큰 협상 인하도 가능합니다. 쿠폰은 추가 차감이 아니며 별점·후기는 할인 조건이 아닙니다.</p>
+</section>
+<section class="section" id="agent-guide">
+<h2>For buyer agents</h2>
+<ol class="steps">
+<li>Fetch <a href="/.well-known/agent-card.json"><code>/.well-known/agent-card.json</code></a> and use its advertised A2A interface.</li>
+<li>Set the HTTP header <code>A2A-Version: 1.0</code>. Send an A2A <code>SendMessage</code> with the requested product, such as <code>lamp</code>.</li>
+<li>Read the seller’s quote and <code>metadata.ask</code>. Continue the same negotiation using the returned <code>taskId</code> and context identifier.</li>
+<li>Send your chosen whole-number offer as the next message text. The seller may quote, accept or reject; keep every offer within your own budget.</li>
+<li>On acceptance, retain the receipt data and verify its signature. Leave an honest review of the negotiation and receipt.</li>
+</ol>
+<p class="small">This page explains the interface; the Agent Card is the source for transport details. Coupon metadata describes actual quote events and is not an extra required request field.</p>
+</section>
+<section class="section">
+<h2>Clear prices. Verifiable receipts.</h2>
+<p>Within one negotiation, later seller quotes cannot increase above the current ask. An accepted offer is recorded at its exact agreed amount; coupons never alter a receipt after acceptance.</p>
+<p>Completed trades issue an <strong>Ed25519-signed receipt</strong> covering <code>shop</code>, <code>item</code>, <code>price</code> and <code>task</code>. Verify the receipt against the seller’s registered public key.</p>
+</section>
+<footer>Public endpoint: <a href="https://ax-week07.treasuresky.xyz">https://ax-week07.treasuresky.xyz</a><br>AX Week 07 · Course market demonstration · Offers and availability depend on the live seller response.</footer>
+<script type="application/json" id="shop-terms">
+{"name":"SungjinShop","strategy_version":"1.1.0","public_url":"https://ax-week07.treasuresky.xyz","agent_card":"/.well-known/agent-card.json","a2a_version":"1.0","basic_products":["lamp","chair","bookshelf"],"basic_opening_quote_caps":{"lamp":110,"chair":198,"bookshelf":286},"prices_are_fixed":false,"coupon":{"code":"R2WELCOME","trigger":"first downward seller quote during numeric counteroffer negotiation","maximum_coupon_portion_units":5,"larger_negotiated_reduction_allowed":true,"extra_checkout_deduction":false,"uses_per_task":1,"minimum_price_protected":true,"guaranteed":false,"rating_required":false},"quote_price_metadata":"ask","total_quote_reduction_metadata":"total_reduction","later_quotes_may_increase":false,"receipt_signature":"Ed25519","receipt_fields":["shop","item","price","task"],"review_request":"honest review of agreed price and receipt","purpose":"human and agent reference; not an A2A request payload"}
+</script>
+</main></body></html>

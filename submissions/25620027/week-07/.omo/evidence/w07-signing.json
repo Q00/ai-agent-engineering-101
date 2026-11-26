@@ -1,0 +1,157 @@
+{
+  "timestamp_utc": "2026-10-20T09:46:56.570885+00:00",
+  "workdir": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07",
+  "scope": [
+    "market_a2a/receipts.py",
+    "market_a2a/seller.py",
+    "market_a2a/seller_turn.py",
+    "tests/test_receipts.py",
+    "tests/test_signed_seller.py"
+  ],
+  "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-signing.json",
+  "runs": [
+    {
+      "invocation": [
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_receipts.py",
+        "tests/test_signed_seller.py",
+        "-vv",
+        "-s"
+      ],
+      "exit_code": 0,
+      "stdout": "============================= test session starts ==============================\nplatform darwin -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0 -- /Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python\ncachedir: .pytest_cache\nrootdir: /Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07\nconfigfile: pyproject.toml\nplugins: anyio-4.15.1\ncollecting ... collected 18 items\n\ntests/test_receipts.py::test_signature_when_unicode_receipt_uses_exact_canonical_body PASSED\ntests/test_receipts.py::test_signature_rejected_when_signed_field_tampered[shop-other] PASSED\ntests/test_receipts.py::test_signature_rejected_when_signed_field_tampered[item-chair] PASSED\ntests/test_receipts.py::test_signature_rejected_when_signed_field_tampered[price-121] PASSED\ntests/test_receipts.py::test_signature_rejected_when_signed_field_tampered[task-another-task] PASSED\ntests/test_receipts.py::test_signature_rejected_when_verified_with_another_key PASSED\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[True] PASSED\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[-1] PASSED\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[120.0] PASSED\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[120.5] PASSED\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[120] PASSED\ntests/test_receipts.py::test_price_rejected_when_not_a_small_nonnegative_integer[1000000000] PASSED\ntests/test_receipts.py::test_key_load_when_existing_pem_has_broad_permissions PASSED\ntests/test_receipts.py::test_key_missing_raises_without_creating_file PASSED\ntests/test_receipts.py::test_key_invalid_raises_safe_error[False] PASSED\ntests/test_receipts.py::test_key_invalid_raises_safe_error[True] PASSED\ntests/test_signed_seller.py::test_seller_receipt_when_real_a2a_task_accepts_offer[True] {\"signed\": true, \"task\": \"13bbbb3a-dc87-40a7-8f3a-b5e720504310\", \"receipt\": {\"item\": \"lamp\", \"sig_seller\": \"azg5Blx7i2+40k0paDKPWUT4qMSqT3HOj+9HQNwOUvuUeJjR7sN0WMyJI8qbpxRP84V22Hz1SxAwhraQHSIICQ==\", \"task\": \"13bbbb3a-dc87-40a7-8f3a-b5e720504310\", \"shop\": \"테스트 상점\", \"sku\": \"lamp\", \"price\": 120.0}, \"reserve_held\": true, \"terminal_rejected\": true}\nPASSED\ntests/test_signed_seller.py::test_seller_receipt_when_real_a2a_task_accepts_offer[False] {\"signed\": false, \"task\": \"d410d2f7-accc-455a-90b4-f698127a79ad\", \"receipt\": {\"item\": \"lamp\", \"price\": 120.0, \"sku\": \"lamp\", \"seller\": \"테스트 상점\"}, \"reserve_held\": true, \"terminal_rejected\": true}\nPASSED\n\n============================== 18 passed in 0.95s ==============================\n",
+      "stderr": ""
+    },
+    {
+      "invocation": [
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "market_a2a/receipts.py",
+        "market_a2a/seller.py",
+        "market_a2a/seller_turn.py",
+        "tests/test_receipts.py",
+        "tests/test_signed_seller.py"
+      ],
+      "exit_code": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "invocation": [
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python",
+        "-m",
+        "ruff",
+        "format",
+        "--check",
+        "market_a2a/receipts.py",
+        "market_a2a/seller.py",
+        "market_a2a/seller_turn.py",
+        "tests/test_receipts.py",
+        "tests/test_signed_seller.py"
+      ],
+      "exit_code": 0,
+      "stdout": "5 files already formatted\n",
+      "stderr": ""
+    },
+    {
+      "invocation": [
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python",
+        "-m",
+        "basedpyright",
+        "market_a2a/receipts.py",
+        "market_a2a/seller.py",
+        "market_a2a/seller_turn.py",
+        "tests/test_receipts.py",
+        "tests/test_signed_seller.py",
+        "--pythonpath",
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python"
+      ],
+      "exit_code": 0,
+      "stdout": "0 errors, 0 warnings, 0 notes\n",
+      "stderr": ""
+    },
+    {
+      "invocation": [
+        "/Users/sungjinho/.cache/uv/archive-v0/k_F7EUrQE1oYyHVUjw4SH/bin/python",
+        "/Users/sungjinho/.codex/plugins/cache/sisyphuslabs/omo/5.1.35/skills/programming/scripts/python/check-no-excuse-rules.py",
+        "market_a2a/receipts.py",
+        "market_a2a/seller.py",
+        "market_a2a/seller_turn.py",
+        "tests/test_receipts.py",
+        "tests/test_signed_seller.py"
+      ],
+      "exit_code": 0,
+      "stdout": "no violations in 5 file(s)\n",
+      "stderr": ""
+    },
+    {
+      "invocation": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "market_a2a/receipts.py",
+        "market_a2a/seller.py",
+        "market_a2a/seller_turn.py",
+        "tests/test_receipts.py",
+        "tests/test_signed_seller.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "criteria": [
+    {
+      "scenario": "exact four-key canonical Unicode receipt and integer price",
+      "invocation_index": 0,
+      "binary_observable": "test_signature_when_unicode_receipt_uses_exact_canonical_body PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-signing.json"
+    },
+    {
+      "scenario": "mutated shop/item/price/task and different verification key",
+      "invocation_index": 0,
+      "binary_observable": "four test_signature_rejected_when_signed_field_tampered cases and test_signature_rejected_when_verified_with_another_key PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-signing.json"
+    },
+    {
+      "scenario": "reject booleans, negative, float, fractional, string, oversized prices",
+      "invocation_index": 0,
+      "binary_observable": "six test_price_rejected_when_not_a_small_nonnegative_integer cases PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-signing.json"
+    },
+    {
+      "scenario": "load existing key, chmod 0600, reject missing/malformed/wrong-algorithm keys without creation or secret output",
+      "invocation_index": 0,
+      "binary_observable": "four key-loading test cases PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-signing.json"
+    },
+    {
+      "scenario": "real A2A route opens and holds reserve, accepts actual price, signs actual SDK task id, refuses terminal replay",
+      "invocation_index": 0,
+      "binary_observable": "test_seller_receipt_when_real_a2a_task_accepts_offer[True] PASSED; stdout contains actual task, received receipt, reserve_held=true, terminal_rejected=true",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-signing.json"
+    },
+    {
+      "scenario": "same A2A lifecycle without signer retains prior unsigned receipt",
+      "invocation_index": 0,
+      "binary_observable": "test_seller_receipt_when_real_a2a_task_accepts_offer[False] PASSED",
+      "artifact_path": "/Users/sungjinho/Documents/Obsidian_Raw/jin_icloud2V2_raw/Vscode_Raw/20260529_cleaned_workspace/20_Study_Coursework/.work/ai-agent-engineering-101-week-07/submissions/25620027/week-07/.omo/evidence/w07-signing.json"
+    }
+  ],
+  "sha256": {
+    "market_a2a/receipts.py": "93ea9a5472500571823c59391db5a3abbc01be810441f4dd4c329afa817141f7",
+    "market_a2a/seller.py": "1b2041af4479a7afc4a20f14b90de5845447d91858f944579796ed41eebb731b",
+    "market_a2a/seller_turn.py": "9e0d098027317ff711eb035c89133be74ea8d7baea699810c9cd45cedaa72e7f",
+    "tests/test_receipts.py": "228af0d3ab0bb965dcc93960093ba92b8fc8d85f1592e81705ebdea56c06a7cd",
+    "tests/test_signed_seller.py": "ae1a4503477e40e4a38310fcd58da9a4c7cd2a24721c928918a3a9f1ce5c9d2c"
+  },
+  "limitations": [
+    "Offline model completions are scripted at Harness.complete; no live model API execution or official full market test performed by this worker."
+  ],
+  "skill_review": "Applied omo:programming and Python references; no reusable managed-skill modification warranted. Existing create_app positional API retained with optional keyword signer for compatibility."
+}

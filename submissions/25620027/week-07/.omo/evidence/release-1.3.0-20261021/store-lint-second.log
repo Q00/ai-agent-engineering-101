@@ -1,0 +1,293 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> market_a2a/seller.py:3:1
+   |
+ 1 |   """A2A SDK lifecycle and discovery for the model-driven catalog seller."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import os
+ 6 | | from pathlib import Path
+ 7 | | from typing import TYPE_CHECKING, override
+ 8 | |
+ 9 | | import anyio
+10 | | from a2a.server.agent_execution import AgentExecutor, RequestContext
+11 | | from a2a.server.request_handlers import DefaultRequestHandler
+12 | | from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
+13 | | from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
+14 | | from a2a.types import (
+15 | |     AgentCapabilities,
+16 | |     AgentCard,
+17 | |     AgentInterface,
+18 | |     AgentSkill,
+19 | |     Task,
+20 | |     TaskState,
+21 | |     TaskStatus,
+22 | | )
+23 | | from a2a.utils.errors import InvalidParamsError
+24 | | from fastapi import FastAPI
+25 | |
+26 | | from market_a2a.advertisement import advertisement
+27 | | from market_a2a.comparison_service import ComparisonService
+28 | | from market_a2a.seller_turn import Negotiator
+29 | | from market_a2a.seller_store import PersistentSellerStore
+   | |_________________________________________________________^
+30 |
+31 |   if TYPE_CHECKING:
+   |
+help: Organize imports
+   |
+27 | from market_a2a.comparison_service import ComparisonService
+28 + from market_a2a.seller_store import PersistentSellerStore
+29 | from market_a2a.seller_turn import Negotiator
+   - from market_a2a.seller_store import PersistentSellerStore
+30 |
+   |
+
+PLR0913 Too many arguments in function definition (6 > 5)
+  --> market_a2a/seller.py:43:9
+   |
+41 |     """Mutate task summaries under per-task locks; SDK stores wire history."""
+42 |
+43 |     def __init__(
+   |         ^^^^^^^^
+44 |         self,
+45 |         harness: Harness,
+   |
+
+F841 Local variable `kinds` is assigned to but never used
+   --> market_a2a/seller.py:109:5
+    |
+107 | ) -> FastAPI:
+108 |     """Expose SDK routes; base_url is the advertised root or mounted shop URL."""
+109 |     kinds = sorted({product.kind for product in catalog.products})
+    |     ^^^^^
+110 |     comparison = ComparisonService(
+111 |         catalog, enabled=os.environ.get("AX_PRICE_COMPARISON") == "1"
+    |
+help: Remove assignment to unused variable `kinds`
+    |
+108 |     """Expose SDK routes; base_url is the advertised root or mounted shop URL."""
+    -     kinds = sorted({product.kind for product in catalog.products})
+109 +     sorted({product.kind for product in catalog.products})
+110 |     comparison = ComparisonService(
+    |
+note: This is an unsafe fix and may change runtime behavior
+
+FLY002 Consider f-string instead of string join
+   --> market_a2a/seller.py:149:29
+    |
+147 |                   id="negotiate",
+148 |                   name="Catalog purchases",
+149 |                   description=" ".join(
+    |  _____________________________^
+150 | |                     (
+151 | |                         "Name an item; send a whole-number offer on its returned taskId.",
+152 | |                         "Read metadata.ask; completion requires a signed receipt.",
+153 | |                         "Or begin with an explicit offer such as offer lamp 100.",
+154 | |                     )
+155 | |                 ),
+    | |_________________^
+156 |                   examples=["I want to buy a chair", "offer lamp 100"],
+157 |                   tags=[
+    |
+help: Replace with f-string
+    |
+148 |                 name="Catalog purchases",
+    -                 description=" ".join(
+    -                     (
+    -                         "Name an item; send a whole-number offer on its returned taskId.",
+    -                         "Read metadata.ask; completion requires a signed receipt.",
+    -                         "Or begin with an explicit offer such as offer lamp 100.",
+    -                     )
+    -                 ),
+149 +                 description="Name an item; send a whole-number offer on its returned taskId. Read metadata.ask; completion requires a signed receipt. Or begin with an explicit offer such as offer lamp 100.",
+150 |                 examples=["I want to buy a chair", "offer lamp 100"],
+    |
+note: This is an unsafe fix and may change runtime behavior
+
+E501 Line too long (90 > 88)
+   --> market_a2a/seller.py:151:89
+    |
+149 |                 description=" ".join(
+150 |                     (
+151 |                         "Name an item; send a whole-number offer on its returned taskId.",
+    |                                                                                         ^^
+152 |                         "Read metadata.ask; completion requires a signed receipt.",
+153 |                         "Or begin with an explicit offer such as offer lamp 100.",
+    |
+
+FLY002 Consider f-string instead of string join
+  --> market_a2a/seller_store.py:49:17
+   |
+47 |               _ = database.execute("PRAGMA synchronous=FULL")
+48 |               _ = database.execute(
+49 | /                 "".join(
+50 | |                     (
+51 | |                         "CREATE TABLE IF NOT EXISTS tasks ",
+52 | |                         "(owner TEXT NOT NULL, task_id TEXT NOT NULL, ",
+53 | |                         "payload BLOB NOT NULL, PRIMARY KEY(owner, task_id))",
+54 | |                     )
+55 | |                 )
+   | |_________________^
+56 |               )
+57 |               _ = database.execute(
+   |
+help: Replace with f-string
+   |
+48 |             _ = database.execute(
+   -                 "".join(
+   -                     (
+   -                         "CREATE TABLE IF NOT EXISTS tasks ",
+   -                         "(owner TEXT NOT NULL, task_id TEXT NOT NULL, ",
+   -                         "payload BLOB NOT NULL, PRIMARY KEY(owner, task_id))",
+   -                     )
+   -                 )
+49 +                 "CREATE TABLE IF NOT EXISTS tasks (owner TEXT NOT NULL, task_id TEXT NOT NULL, payload BLOB NOT NULL, PRIMARY KEY(owner, task_id))"
+50 |             )
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+FLY002 Consider f-string instead of string join
+  --> market_a2a/seller_store.py:58:17
+   |
+56 |               )
+57 |               _ = database.execute(
+58 | /                 "".join(
+59 | |                     (
+60 | |                         "CREATE TABLE IF NOT EXISTS negotiations ",
+61 | |                         "(task_id TEXT PRIMARY KEY, payload TEXT, ",
+62 | |                         "closed INTEGER NOT NULL CHECK(closed IN (0, 1)))",
+63 | |                     )
+64 | |                 )
+   | |_________________^
+65 |               )
+66 |               _ = database.execute("PRAGMA user_version=1")
+   |
+help: Replace with f-string
+   |
+57 |             _ = database.execute(
+   -                 "".join(
+   -                     (
+   -                         "CREATE TABLE IF NOT EXISTS negotiations ",
+   -                         "(task_id TEXT PRIMARY KEY, payload TEXT, ",
+   -                         "closed INTEGER NOT NULL CHECK(closed IN (0, 1)))",
+   -                     )
+   -                 )
+58 +                 "CREATE TABLE IF NOT EXISTS negotiations (task_id TEXT PRIMARY KEY, payload TEXT, closed INTEGER NOT NULL CHECK(closed IN (0, 1)))"
+59 |             )
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+FLY002 Consider f-string instead of string join
+   --> market_a2a/seller_store.py:97:17
+    |
+ 95 |               _ = database.execute("PRAGMA synchronous=FULL")
+ 96 |               _ = database.execute(
+ 97 | /                 "".join(
+ 98 | |                     (
+ 99 | |                         "INSERT INTO tasks(owner, task_id, payload) VALUES(?, ?, ?) ",
+100 | |                         "ON CONFLICT(owner, task_id) DO UPDATE SET payload=excluded.payload",
+101 | |                     )
+102 | |                 ),
+    | |_________________^
+103 |                   (owner, task_id, payload),
+104 |               )
+    |
+help: Replace with f-string
+   |
+96 |             _ = database.execute(
+   -                 "".join(
+   -                     (
+   -                         "INSERT INTO tasks(owner, task_id, payload) VALUES(?, ?, ?) ",
+   -                         "ON CONFLICT(owner, task_id) DO UPDATE SET payload=excluded.payload",
+   -                     )
+   -                 ),
+97 +                 "INSERT INTO tasks(owner, task_id, payload) VALUES(?, ?, ?) ON CONFLICT(owner, task_id) DO UPDATE SET payload=excluded.payload",
+98 |                 (owner, task_id, payload),
+   |
+note: This is an unsafe fix and may change runtime behavior
+
+E501 Line too long (93 > 88)
+   --> market_a2a/seller_store.py:100:89
+    |
+ 98 |                     (
+ 99 |                         "INSERT INTO tasks(owner, task_id, payload) VALUES(?, ?, ?) ",
+100 |                         "ON CONFLICT(owner, task_id) DO UPDATE SET payload=excluded.payload",
+    |                                                                                         ^^^^^
+101 |                     )
+102 |                 ),
+    |
+
+FLY002 Consider f-string instead of string join
+   --> market_a2a/seller_store.py:172:21
+    |
+170 |               if payload is None:
+171 |                   _ = database.execute(
+172 | /                     "".join(
+173 | |                         (
+174 | |                             "INSERT INTO negotiations VALUES(?, NULL, 1) ",
+175 | |                             "ON CONFLICT(task_id) DO UPDATE SET payload=NULL, closed=1",
+176 | |                         )
+177 | |                     ),
+    | |_____________________^
+178 |                       (task_id,),
+179 |                   )
+    |
+help: Replace with f-string
+    |
+171 |                 _ = database.execute(
+    -                     "".join(
+    -                         (
+    -                             "INSERT INTO negotiations VALUES(?, NULL, 1) ",
+    -                             "ON CONFLICT(task_id) DO UPDATE SET payload=NULL, closed=1",
+    -                         )
+    -                     ),
+172 +                     "INSERT INTO negotiations VALUES(?, NULL, 1) ON CONFLICT(task_id) DO UPDATE SET payload=NULL, closed=1",
+173 |                     (task_id,),
+    |
+note: This is an unsafe fix and may change runtime behavior
+
+FLY002 Consider f-string instead of string join
+   --> market_a2a/seller_store.py:182:21
+    |
+180 |               else:
+181 |                   changed = database.execute(
+182 | /                     "".join(
+183 | |                         (
+184 | |                             "INSERT INTO negotiations VALUES(?, ?, 0) ",
+185 | |                             "ON CONFLICT(task_id) DO UPDATE SET payload=excluded.payload ",
+186 | |                             "WHERE negotiations.closed=0",
+187 | |                         )
+188 | |                     ),
+    | |_____________________^
+189 |                       (task_id, payload),
+190 |                   ).rowcount
+    |
+help: Replace with f-string
+    |
+181 |                 changed = database.execute(
+    -                     "".join(
+    -                         (
+    -                             "INSERT INTO negotiations VALUES(?, ?, 0) ",
+    -                             "ON CONFLICT(task_id) DO UPDATE SET payload=excluded.payload ",
+    -                             "WHERE negotiations.closed=0",
+    -                         )
+    -                     ),
+182 +                     "INSERT INTO negotiations VALUES(?, ?, 0) ON CONFLICT(task_id) DO UPDATE SET payload=excluded.payload WHERE negotiations.closed=0",
+183 |                     (task_id, payload),
+    |
+note: This is an unsafe fix and may change runtime behavior
+
+E501 Line too long (91 > 88)
+   --> market_a2a/seller_store.py:185:89
+    |
+183 |                         (
+184 |                             "INSERT INTO negotiations VALUES(?, ?, 0) ",
+185 |                             "ON CONFLICT(task_id) DO UPDATE SET payload=excluded.payload ",
+    |                                                                                         ^^^
+186 |                             "WHERE negotiations.closed=0",
+187 |                         )
+    |
+
+Found 12 errors.
+[*] 1 fixable with `--fix` (7 unsafe fixes available with `--fix --unsafe-fixes`).
