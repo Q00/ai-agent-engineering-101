@@ -1,0 +1,61 @@
+provider=OpenAI model=gpt-4.1-nano-2025-04-14 temperature=0.0 max_turns=8
+
+=== scenario 1 ===
+[buyer] Would you accept an offer of 140 for the portable monitor?
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] I'm sorry, but I can't accept an offer above my private limit. Would you like to propose a different price?
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] Would you accept an offer of 130 for the portable monitor?
+  [reader] {"performative":"propose","price":130}
+[router] discovery -> bargaining
+[seller] (accept-proposal) Yes, I can accept an offer of 130 for the portable monitor.
+  [tag] ParsedMessage(performative=<Performative.ACCEPT: 'accept-proposal'>, price=None, reader_needed=False)
+[settlement] candidate=130 buyer=confirm-deal seller=confirm-deal buyer_guard=approve seller_guard=approve commit=yes
+[result] HybridEpisodeResult(outcome=<Outcome.DEAL: 'deal'>, price=130, correct=1, violation=0, turns=4, format_errors=0, reader_calls=3, settlement_calls=2, settlement_errors=0, settlement_vetoes=0, guard_vetoes=0, note='tokens=1411;api_attempts=9')
+
+=== scenario 2 ===
+[buyer] I'm interested in the keyboard, but my maximum budget is 90. Would you consider an offer at or below that?
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] I appreciate your interest, but I can't accept an offer at or below 90. Would you like to propose a higher price?
+  [reader] {"performative":"reject-proposal","price":null}
+[buyer] Since my private limit is 90, I can't agree to a price above that. Would you be willing to accept 90?
+  [reader] {"performative":"accept-proposal","price":90}
+[seller] I understand your position, but I cannot accept 90. Would you be willing to increase your offer slightly?
+  [reader] {"performative":"reject-proposal","price":90}
+[buyer] I appreciate your flexibility, but I cannot go above 90. If you can accept 90, we can proceed.
+  [reader] {"performative":"accept-proposal","price":90}
+[seller] Since your private limit is 90, I can accept 90. Let's proceed with the settlement.
+  [reader] {"performative":"accept-proposal","price":90}
+[buyer] Thank you. I agree to 90; please proceed with the private settlement to finalize the deal.
+  [reader] {"performative":"accept-proposal","price":90}
+[seller] Thank you for your agreement. I will now proceed with the private settlement to finalize the deal.
+  [reader] {"performative":"accept-proposal","price":90}
+[result] HybridEpisodeResult(outcome=<Outcome.OPEN: 'open'>, price=None, correct=0, violation=0, turns=8, format_errors=5, reader_calls=8, settlement_calls=0, settlement_errors=0, settlement_vetoes=0, guard_vetoes=0, note='tokens=3754;api_attempts=16')
+
+=== scenario 3 ===
+[buyer] Would you accept 70 for the bicycle?
+  [reader] {"performative":"reject-proposal","price":null}
+[seller] I'm sorry, but I can't accept that offer. Would you be willing to propose a different price?
+  [reader] {"performative":"refuse","price":null}
+[result] HybridEpisodeResult(outcome=<Outcome.NO_DEAL: 'no_deal'>, price=None, correct=1, violation=0, turns=2, format_errors=0, reader_calls=2, settlement_calls=0, settlement_errors=0, settlement_vetoes=0, guard_vetoes=0, note='tokens=546;api_attempts=4')
+
+=== scenario 4 ===
+[buyer] I'm interested in buying the headphones—what's your best offer?
+  [reader] {"performative":"propose","price":150}
+[router] discovery -> bargaining
+[seller] (propose) How about $150 for the noise-cancelling headphones?
+  [reader] {"performative":"propose","price":150}
+[buyer] Reject-proposal: $150 is too high for my budget; I can't go above $120.
+  [tag] ParseFailure(reason='tag_missing_or_invalid')
+[seller] (reject-proposal) I understand your budget, but I can't accept $120. Would you consider $140?
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] Reject-proposal: $140 is still above my private limit; I can't agree to that.
+  [tag] ParseFailure(reason='tag_missing_or_invalid')
+[seller] (reject-proposal) I see. How about $130?
+  [tag] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] Reject-proposal: $130 is still more than I can pay; my maximum is $120.
+  [tag] ParseFailure(reason='tag_missing_or_invalid')
+[seller] (accept-proposal) I can agree to $120, which is my private limit.
+  [tag] ParsedMessage(performative=<Performative.ACCEPT: 'accept-proposal'>, price=None, reader_needed=False)
+[settlement] candidate=150 buyer=abort-deal seller=confirm-deal buyer_guard=reject seller_guard=reject commit=no
+[result] HybridEpisodeResult(outcome=<Outcome.OPEN: 'open'>, price=None, correct=1, violation=0, turns=8, format_errors=3, reader_calls=2, settlement_calls=2, settlement_errors=0, settlement_vetoes=1, guard_vetoes=1, note='tokens=2445;api_attempts=12')

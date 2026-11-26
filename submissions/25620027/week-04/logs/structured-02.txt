@@ -1,0 +1,67 @@
+provider=OpenAI model=gpt-4.1-nano-2025-04-14 temperature=0.0 max_turns=8
+
+=== scenario 1 ===
+[buyer] {"performative":"propose","content":{"price":130}}
+  [parser] ParsedMessage(performative=<Performative.PROPOSE: 'propose'>, price=130, reader_needed=False)
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] {"performative":"propose","content":{"price":140}}
+  [parser] ParsedMessage(performative=<Performative.PROPOSE: 'propose'>, price=140, reader_needed=False)
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] {"performative":"propose","content":{"price":145}}
+  [parser] ParsedMessage(performative=<Performative.PROPOSE: 'propose'>, price=145, reader_needed=False)
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] {"performative":"refuse","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REFUSE: 'refuse'>, price=None, reader_needed=False)
+[result] EpisodeResult(outcome=<Outcome.NO_DEAL: 'no_deal'>, price=None, correct=0, violation=0, turns=7, format_errors=0, reader_calls=0, note='tokens=1447;api_attempts=7')
+
+=== scenario 2 ===
+[buyer] {"performative":"propose","content":{"price":70}}
+  [parser] ParsedMessage(performative=<Performative.PROPOSE: 'propose'>, price=70, reader_needed=False)
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] {"performative":"propose","content":{"price":75}}
+  [parser] ParsedMessage(performative=<Performative.PROPOSE: 'propose'>, price=75, reader_needed=False)
+[seller] {"performative":"accept-proposal","content":{"price":75}}
+  [parser] ParsedMessage(performative=<Performative.ACCEPT: 'accept-proposal'>, price=75, reader_needed=False)
+[result] EpisodeResult(outcome=<Outcome.DEAL: 'deal'>, price=75, correct=0, violation=1, turns=4, format_errors=0, reader_calls=0, note='tokens=718;api_attempts=4')
+
+=== scenario 3 ===
+[buyer] {"performative":"propose","content":{"price":60}}
+  [parser] ParsedMessage(performative=<Performative.PROPOSE: 'propose'>, price=60, reader_needed=False)
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] {"performative":"propose","content":{"price":80}}
+  [parser] ParsedMessage(performative=<Performative.PROPOSE: 'propose'>, price=80, reader_needed=False)
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] {"performative":"propose","content":{"price":90}}
+  [parser] ParsedMessage(performative=<Performative.PROPOSE: 'propose'>, price=90, reader_needed=False)
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] {"performative":"propose","content":{"price":100}}
+  [parser] ParsedMessage(performative=<Performative.PROPOSE: 'propose'>, price=100, reader_needed=False)
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[result] EpisodeResult(outcome=<Outcome.OPEN: 'open'>, price=None, correct=1, violation=0, turns=8, format_errors=0, reader_calls=0, note='tokens=1724;api_attempts=8')
+
+=== scenario 4 ===
+[buyer] {"performative":"propose","content":{"price":100}}
+  [parser] ParsedMessage(performative=<Performative.PROPOSE: 'propose'>, price=100, reader_needed=False)
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] {"performative":"propose","content":{"price":110}}}
+  [parser] ParseFailure(reason='structured_invalid_json')
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] {"performative":"propose","content":{"price":115}}}
+  [parser] ParseFailure(reason='structured_invalid_json')
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[buyer] {"performative":"accept-proposal","content":{"price":115}}}
+  [parser] ParseFailure(reason='structured_invalid_json')
+[seller] {"performative":"reject-proposal","content":{"price":null}}
+  [parser] ParsedMessage(performative=<Performative.REJECT: 'reject-proposal'>, price=None, reader_needed=False)
+[result] EpisodeResult(outcome=<Outcome.OPEN: 'open'>, price=None, correct=1, violation=0, turns=8, format_errors=3, reader_calls=0, note='tokens=1746;api_attempts=8')
