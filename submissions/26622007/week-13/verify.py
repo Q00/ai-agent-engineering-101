@@ -23,7 +23,10 @@ EVENT_SCHEMA = "meshkit.transaction-event/v1"
 ACCOUNTS = ("user", "seller", "platform")
 ALLOWED = {None: {"created"}, "created": {"paid", "cancelled"}, "paid": {"settled"},
            "settled": {"refunded"}, "refunded": set(), "cancelled": set()}
-# What may be recorded for a trade while it is in each state.
+# What may be recorded for a trade while it is in each state. Each kind appears at
+# most once per state, in the order of TradeCheck.FULL: one payment posting and one
+# settled event while paid; one refund posting, one refunded event and one refund
+# check while settled.
 MAY_APPEAR = {None: {"negotiation", "contract"}, "created": {"routing"}, "paid": {"ledger", "event"},
               "settled": {"ledger", "event", "refund_check"}, "refunded": set(), "cancelled": set()}
 
@@ -67,10 +70,13 @@ class TradeCheck:
         self.id, self.problems, self.mandate = trade_id, problems, mandate
         self.state, self.kinds = None, []
         self.negotiation = self.wrapper = self.routing = self.settled = self.before = None
-        self.others = dict.fromkeys(ACCOUNTS, 0)   # what other trades moved since this one settled
+        self.refund_posted = self.refunded = self.refund_checked = False
+        # What other trades moved after this trade's payment posting and before its
+        # refund posting: the same lines trade.refund sets aside.
+        self.others = dict.fromkeys(ACCOUNTS, 0)
 
     def see_other(self, entries):
-        if self.state == "settled":
+        if self.before is not None and not self.refund_posted:
             for e in entries:
                 self.others[e["acct"]] = self.others.get(e["acct"], 0) + e["delta"]
 
@@ -103,8 +109,10 @@ class TradeCheck:
                 self.bad("paid without a routing decision that allows it")
             elif r["decision"] == "confirm" and (r["human"] or {}).get("answer") != "y":
                 self.bad("paid on the confirm route without a person's approval")
-        if d["to"] == "settled" and self.settled is None:
-            self.bad("settled without a settlement event")
+        if d["to"] == "settled" and (self.before is None or self.settled is None):
+            self.bad("settled without a payment posting and a settlement event")
+        if d["to"] == "refunded" and not (self.refund_posted and self.refunded and self.refund_checked):
+            self.bad("refunded without its own refund posting, refunded event and refund check")
         if d["to"] == "cancelled":
             r = self.routing or {}
             if r.get("decision") == "auto" or (r.get("decision") == "confirm" and (r["human"] or {}).get("answer") == "y"):
@@ -152,6 +160,8 @@ class TradeCheck:
 
     def on_ledger(self, line, running):
         d = line["data"]
+        if (self.before if self.state == "paid" else self.refund_posted):
+            self.bad(f"a second {'payment' if self.state == 'paid' else 'refund'} posting")
         _, _, pay = self.pay()
         want = pay if self.state == "paid" else {a: -v for a, v in pay.items()}
         moves = moves_of(line, self.id)
@@ -159,8 +169,10 @@ class TradeCheck:
             self.bad("ledger amounts must be whole numbers")
         if moves != want:
             self.bad(f"ledger entries {moves} are not the expected {want}")
-        if self.state == "paid":
+        if self.state == "paid" and self.before is None:
             self.before = {a: running.get(a, 0) - (moves or {}).get(a, 0) for a in ACCOUNTS}
+        elif self.state == "settled":
+            self.refund_posted = True
         if sum(e["delta"] for e in d["entries"]) != 0 or d["sum"] != 0:
             self.bad("ledger entries do not sum to 0")
         if d["balances"] != {a: running.get(a, 0) for a in ACCOUNTS}:
@@ -169,6 +181,10 @@ class TradeCheck:
     def on_event(self, line, running):
         d = line["data"]
         want = "settled" if self.state == "paid" else "refunded"
+        if (self.settled is not None) if want == "settled" else self.refunded:
+            self.bad(f"a second {want} event")
+        if (self.before is None) if want == "settled" else not self.refund_posted:
+            self.bad(f"a {want} event before its ledger posting")
         amount, fee, _ = self.pay()
         if d.get("schema") != EVENT_SCHEMA or d.get("event") != want:
             self.bad(f"expected a {want} {EVENT_SCHEMA} event")
@@ -179,12 +195,18 @@ class TradeCheck:
         if (d.get("amount"), d.get("fee")) != (amount, fee):
             self.bad("event amount or fee differs from the contract")
         if want == "settled":
-            self.settled = d
-        elif d.get("refunds_event_tag") != self.settled.get("platform_auth_tag"):
+            if self.settled is None:
+                self.settled = d
+            return
+        self.refunded = True
+        if d.get("refunds_event_tag") != self.settled.get("platform_auth_tag"):
             self.bad("refund event does not point at the settlement event")
 
     def on_refund_check(self, line, running):
         d, want = line["data"], {}
+        if self.refund_checked or not self.refunded:
+            self.bad("a refund check that does not follow exactly one refund posting and refunded event")
+        self.refund_checked = True
         for acct in ("user", "seller"):
             want[f"{acct}_before_trade"] = self.before[acct]
             want[f"{acct}_other_trades_since"] = self.others[acct]

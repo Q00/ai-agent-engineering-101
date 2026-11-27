@@ -376,6 +376,90 @@ class Replay(TradeCase):
         self.forge(reopen)
         self.assertTrue(any("ctr-no" in p for p in self.problems()))
 
+    def rebalance(self, lines):
+        """Rewrite every ledger line's balances and every refund check so they agree
+        with how the verifier at afe71698 replayed them (balance before the last
+        payment posting; other trades counted while this one is settled). Only the
+        shape of the forgery is then left to catch."""
+        run = dict.fromkeys(verify.ACCOUNTS, 0)
+        state, before, others = {}, {}, {}
+        for l in lines:
+            t, d = l["trade"], l["data"]
+            if l["type"] == "state":
+                state[t] = d["to"]
+            if l["type"] == "ledger":
+                if state.get(t) == "paid":
+                    before[t] = dict(run)
+                for o in others:
+                    if o != t and state.get(o) == "settled":
+                        for e in d["entries"]:
+                            if e["acct"] in others[o]:
+                                others[o][e["acct"]] += e["delta"]
+                others.setdefault(t, {"user": 0, "seller": 0})
+                for e in d["entries"]:
+                    run[e["acct"]] += e["delta"]
+                d["balances"] = dict(run)
+            if l["type"] == "refund_check":
+                c = {}
+                for a in ("user", "seller"):
+                    c[f"{a}_before_trade"], c[f"{a}_other_trades_since"] = before[t][a], others[t][a]
+                    c[f"{a}_after_refund"] = run[a]
+                c["match"] = all(before[t][a] + others[t][a] == run[a] for a in ("user", "seller"))
+                l["data"] = c
+
+    def test_a_doubled_settlement_dressed_up_as_a_refund_is_caught(self):
+        # Re-review P1 (/tmp/w13adv-23979/atk/forged.jsonl): ctr-a's payment posting and
+        # settled event are written twice, ctr-b's refund sits in between, and ctr-a is
+        # then called refunded with no refund posting or refunded event of its own.
+        def double(lines):
+            import copy
+            a = [l for l in lines if l["trade"] == "ctr-a"]
+            b = [l for l in lines if l["trade"] == "ctr-b"]
+            rest = [l for l in lines if l["trade"] not in ("ctr-a", "ctr-b")]
+            lines[:] = (b[:8] + a[:7] + [copy.deepcopy(a[5]), copy.deepcopy(a[6])] + b[8:] + [a[7]]
+                        + [{"trade": "ctr-a", "type": "refund_check", "data": {}, "ts": a[7]["ts"]},
+                           {"trade": "ctr-a", "type": "state", "ts": a[7]["ts"],
+                            "data": {"from": "settled", "to": "refunded", "why": "forged"}}] + rest)
+            self.rebalance(lines)
+        self.forge(double)
+        report = verify.verify(self.path, MANDATE)
+        self.assertNotEqual(report["problems"], [])
+        self.assertTrue(any("ctr-a" in p for p in report["problems"]))
+
+    def test_a_second_payment_posting_or_settled_event_is_caught(self):
+        for n in (5, 6):   # 5: the payment ledger line, 6: the settled event
+            with self.subTest(line=n):
+                self.setUp()
+                def twice(lines):
+                    import copy
+                    i = lines.index([l for l in lines if l["trade"] == "ctr-a"][n])
+                    lines.insert(i + 1, copy.deepcopy(lines[i]))
+                    self.rebalance(lines)
+                self.forge(twice)
+                self.assertTrue(any("ctr-a" in p for p in self.problems()))
+
+    def test_refunded_needs_its_own_refund_posting_and_event(self):
+        def bare(lines):
+            i = lines.index(self.pick(lines, "ctr-a", "state", -1))
+            lines[i + 1:i + 1] = [{"trade": "ctr-a", "type": "refund_check", "data": {}, "ts": lines[i]["ts"]},
+                                  {"trade": "ctr-a", "type": "state", "ts": lines[i]["ts"],
+                                   "data": {"from": "settled", "to": "refunded", "why": "forged"}}]
+            self.rebalance(lines)
+        self.forge(bare)
+        self.assertTrue(any("ctr-a" in p and "refund" in p for p in self.problems()))
+
+    def test_other_trades_are_counted_from_the_payment_posting_as_trade_refund_does(self):
+        # trade.refund sets aside every other trade's posting after this trade's payment
+        # posting; the verifier must start counting at the same line, not at "settled".
+        trade.refund(self.record, "ctr-a")
+        self.assertEqual(self.problems(), [])
+        def late_settle(lines):
+            settle = self.pick(lines, "ctr-a", "state", 2)
+            lines.remove(settle)
+            lines.insert(lines.index(self.pick(lines, "ctr-b", "ledger")) + 1, settle)
+        self.forge(late_settle)
+        self.assertEqual(self.problems(), [])
+
 
 if __name__ == "__main__":
     unittest.main()
