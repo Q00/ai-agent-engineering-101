@@ -1,0 +1,51 @@
+[run] id=tagged-02 condition=tagged model=gpt-5.6-luna temperature=0.2 max_turns=8
+[episode] scenario=camera item="used instant camera" reserve=70 budget=100 deal_possible=1
+[message] turn=1 speaker=buyer raw="(propose) I can offer $70 for the camera."
+[reader] turn=1 calls=1 raw="{\"price\":70}"
+[parse] turn=1 valid=true performative=propose price=70 error=""
+[message] turn=2 speaker=seller raw="(accept-proposal) That works for me."
+[parse] turn=2 valid=true performative=accept-proposal price= error=""
+[result] {"outcome": "deal", "price": 70, "correct": 1, "violation": 0, "turns": 2, "format_errors": 0, "reader_calls": 1, "note": ""}
+[episode] scenario=lamp item="vintage desk lamp" reserve=55 budget=45 deal_possible=0
+[message] turn=1 speaker=buyer raw="(propose) I offer $30 for the vintage desk lamp."
+[reader] turn=1 calls=1 raw="{\"price\":30}"
+[parse] turn=1 valid=true performative=propose price=30 error=""
+[message] turn=2 speaker=seller raw="(reject-proposal) I can’t accept $30, but I can offer the lamp for $75."
+[parse] turn=2 valid=true performative=reject-proposal price= error=""
+[message] turn=3 speaker=buyer raw="(reject-proposal) I can’t do $75; I can offer $38."
+[parse] turn=3 valid=true performative=reject-proposal price= error=""
+[message] turn=4 speaker=seller raw="(reject-proposal) I can’t accept $38, but I can offer it for $65."
+[parse] turn=4 valid=true performative=reject-proposal price= error=""
+[message] turn=5 speaker=buyer raw="(reject-proposal) I can’t do $65; my offer is $42."
+[parse] turn=5 valid=true performative=reject-proposal price= error=""
+[message] turn=6 speaker=seller raw="(reject-proposal) I can’t accept $42, but I can offer it for $60."
+[parse] turn=6 valid=true performative=reject-proposal price= error=""
+[message] turn=7 speaker=buyer raw="(reject-proposal) I can’t do $60; I offer $45."
+[parse] turn=7 valid=true performative=reject-proposal price= error=""
+[message] turn=8 speaker=seller raw="(reject-proposal) I can’t accept $45, but I can offer it for $55."
+[parse] turn=8 valid=true performative=reject-proposal price= error=""
+[result] {"outcome": "open", "price": null, "correct": 0, "violation": 0, "turns": 8, "format_errors": 0, "reader_calls": 1, "note": ""}
+[episode] scenario=headphones item="noise-cancelling headphones" reserve=90 budget=110 deal_possible=1
+[message] turn=1 speaker=buyer raw="(propose) I offer $90 for the headphones."
+[reader] turn=1 calls=1 raw="{\"price\":90}"
+[parse] turn=1 valid=true performative=propose price=90 error=""
+[message] turn=2 speaker=seller raw="(accept-proposal) I accept your offer of $90."
+[parse] turn=2 valid=true performative=accept-proposal price= error=""
+[result] {"outcome": "deal", "price": 90, "correct": 1, "violation": 0, "turns": 2, "format_errors": 0, "reader_calls": 1, "note": ""}
+[episode] scenario=chair item="ergonomic office chair" reserve=120 budget=100 deal_possible=0
+[message] turn=1 speaker=buyer raw="(propose) I offer $80 for the chair."
+[reader] turn=1 calls=1 raw="{\"price\":80}"
+[parse] turn=1 valid=true performative=propose price=80 error=""
+[message] turn=2 speaker=seller raw="(reject-proposal) I can’t accept $80, but I can offer the chair for $150."
+[parse] turn=2 valid=true performative=reject-proposal price= error=""
+[message] turn=3 speaker=buyer raw="(reject-proposal) I can’t meet $150; I can offer $90."
+[parse] turn=3 valid=true performative=reject-proposal price= error=""
+[message] turn=4 speaker=seller raw="(reject-proposal) I can’t accept $90; my best offer is $135."
+[parse] turn=4 valid=true performative=reject-proposal price= error=""
+[message] turn=5 speaker=buyer raw="(reject-proposal) I can’t meet $135; I can offer $100."
+[parse] turn=5 valid=true performative=reject-proposal price= error=""
+[message] turn=6 speaker=seller raw="(reject-proposal) I can’t accept $100; I can offer $125."
+[parse] turn=6 valid=true performative=reject-proposal price= error=""
+[message] turn=7 speaker=buyer raw="(refuse) I’ll pass; no deal."
+[parse] turn=7 valid=true performative=refuse price= error=""
+[result] {"outcome": "no_deal", "price": null, "correct": 1, "violation": 0, "turns": 7, "format_errors": 0, "reader_calls": 1, "note": ""}

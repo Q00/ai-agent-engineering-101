@@ -1,0 +1,9 @@
+model:     gpt-5.6-luna
+transport: stdio child process
+goal:      Read notes.txt and sum the numbers in it.
+
+[host] 3 tools: ['calculator', 'read_file', 'clock']
+[schema] calculator: {"type": "object", "properties": {"expression": {"title": "Expression", "type": "string"}}, "required": ["expression"], "title": "calculatorArguments"}
+[schema] read_file: {"type": "object", "properties": {"path": {"title": "Path", "type": "string"}}, "required": ["path"], "title": "read_fileArguments"}
+[schema] clock: {"type": "object", "properties": {"timezone": {"default": "Asia/Seoul", "title": "Timezone", "type": "string"}, "date_str": {"default": "", "title": "Date Str", "type": "string"}}, "title": "clockArguments"}
+listed tools only
