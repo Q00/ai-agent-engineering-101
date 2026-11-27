@@ -1,0 +1,50 @@
+Standalone launcher final verification, including shutdown (offline)
+[acp] settled G0001 at 105, ledger #123, unit sample-unit via student checkout
+[acp] settled G0001 at 105, ledger #123, unit sample-unit via student checkout
+[acp] settled G0001 at 105, ledger #123, unit sample-unit via student checkout
+[acp] settlement outcome uncertain; payment remains pending
+[acp] settlement refused by market checks
+[acp] settlement outcome uncertain; payment remains pending
+[choose] {"shop_name": "Sample", "sku": "G2", "reason": "Simulated"}
+[choose] {"shop_name": "Sample", "sku": "F1", "reason": "Simulated"}
+08:15:53 [standalone] shop registered as Afford Shop, round 3
+08:15:53 [standalone] shop registered as Afford Shop, round 3
+08:15:53 [standalone] public A2A card and student ACP descriptor verified
+08:15:53 [standalone] shop registered as Afford Shop, round 3
+08:15:53 [standalone] student A2A and ACP server at https://sample.trycloudflare.com
+08:15:53 [standalone] inventory ready: 0 units; selling existing stock
+08:15:53 [standalone] student shop stopped
+C:\Users\user\AgenticAI\ai-agent-engineering-101\submissions\26512073\week-08\test_agent.py:852: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient
+Error on reading from the event loop self pipe
+handle_traceback: Handle created at (most recent call last):
+  File "C:\Users\user\anaconda3\Lib\unittest\async_case.py", line 147, in run
+    return super().run(result)
+  File "C:\Users\user\anaconda3\Lib\unittest\case.py", line 669, in run
+    self._callTestMethod(testMethod)
+  File "C:\Users\user\anaconda3\Lib\unittest\async_case.py", line 102, in _callTestMethod
+    result = self._callMaybeAsync(method)
+  File "C:\Users\user\anaconda3\Lib\unittest\async_case.py", line 128, in _callMaybeAsync
+    return self._asyncioRunner.run(
+  File "C:\Users\user\anaconda3\Lib\asyncio\runners.py", line 128, in run
+    return self._loop.run_until_complete(task)
+  File "C:\Users\user\anaconda3\Lib\asyncio\base_events.py", line 706, in run_until_complete
+    self.run_forever()
+  File "C:\Users\user\anaconda3\Lib\asyncio\base_events.py", line 674, in run_forever
+    self._run_forever_setup()
+  File "C:\Users\user\anaconda3\Lib\asyncio\windows_events.py", line 320, in _run_forever_setup
+    self.call_soon(self._loop_self_reading)
+loop: <ProactorEventLoop running=True closed=False debug=True>
+Traceback (most recent call last):
+  File "C:\Users\user\anaconda3\Lib\asyncio\proactor_events.py", line 802, in _loop_self_reading
+    f = self._proactor.recv(self._ssock, 4096)
+  File "C:\Users\user\anaconda3\Lib\asyncio\windows_events.py", line 487, in recv
+    if isinstance(conn, socket.socket):
+       ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+TypeError: isinstance() arg 2 must be a type, a tuple of types, or a union
+----------------------------------------------------------------------
+Ran 93 tests in 1.016s
+
+OK
+
+Exit code 0
