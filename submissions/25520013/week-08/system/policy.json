@@ -1,0 +1,271 @@
+{
+ "version": 10,
+ "owner": {
+  "github": "Lee-sungsoo",
+  "own_shop_names": [
+   "lee-sungsoo",
+   "LSS Shop"
+  ],
+  "own_buyer_names": [
+   "lee-sungsoo"
+  ],
+  "shops_api_ttl_s": 300,
+  "shops_api_timeout_s": 5,
+  "_note": "우리 가게 판별: (0) 가게 공개키가 own_shop_pubkeys, 키트 shop_key.pem의 공개키, 이름으로 맞춘 행에서 얻은 키 중 하나이거나, (1) owner.norm_name(NFKC, 폭 없는 문자 제거, 대시 통일, 구분자 - _ . 공백을 같게 봄)으로 맞춘 이름이 own_shop_names에 있거나, (2) /api/shops의 owner 로그인이 github와 같거나, (3) 위 행의 URL(owner.norm_url: http와 https를 같게 보고 끝의 /를 뗌)과 같으면 우리 가게로 본다. URL은 실행 중에 읽어 <R3_STATE>/own_shops.json에 저장하며 여기에는 적지 않는다. 시장의 가게 이름은 \"LSS Shop\"(norm_name 결과 lss-shop)이고 lss-annex는 우리 가게가 아니다.",
+  "own_shop_pubkeys": [
+   "Tn4LL1RfwiHcttuydXxxyGn2wWXDA/MItkahALdG190="
+  ]
+ },
+ "shop": {
+  "balance_floor": 3000000,
+  "_restock_note": "재입고 계획(policy.restock_plan)은 순위를 매긴 상품군마다 breadth_qty까지 먼저 사고, 남은 예산으로 같은 줄을 qty_per_buy까지 채운다. 한 번의 지출은 max_spend_per_run을 넘지 않는다. 상품군 안의 SKU는 전체 가게의 정산 수(aggregates의 sku())를 먼저 보고 고른다.",
+  "max_spend_per_run": 1100000,
+  "max_unit_cost": 400000,
+  "max_lines_per_run": 10,
+  "max_total_units": 250,
+  "allow_bankrupt": false,
+  "liquidation_line": 1500000,
+  "liquidation_margin": 0.0,
+  "max_inventory_cost_frac": 0.3,
+  "food_sell_through": 0.5,
+  "food_cold_units": 4,
+  "food_min_units": 1,
+  "idle_pause_s": 21600,
+  "idle_low_stock_units": 0,
+  "idle_ref_scope": "own",
+  "idle_low_stock_frac": 0.25,
+  "_v110_note": "판매할 수 있는 재고가 충분하면 우리 가게의 최근 판매와 구매 요청을 기준으로 재입고를 멈출지 판단한다(idle_ref_scope \"own\"). 판매 가능 재고가 low_stock보다 많을 때 우리 가게의 수요 증거(우리 정산, 판매 훅의 수락, 우리에게 없는 재고를 요청한 구매자, 수동 재개)가 idle_pause_s 동안 없으면 재입고를 멈춘다. low_stock 이하이면 _v19_note의 시장 기준이 정한다. 판매 가능 재고의 원가가 idle_low_stock_frac x 재고 원가 상한 이하여도 low_stock으로 본다. 환경 변수 R3_IDLE_REF_SCOPE로 바꿀 수 있다.",
+  "_v111_note": "우리 수요에는 판매 훅이 metrics.jsonl에 남긴 수락 행도 들어간다(own_demand_ref \"own_accept\"). 그래서 원장의 가게 표기나 저장된 가게 URL이 바뀌어도 우리 수요를 놓치지 않는다. <market>/shop/<name>은 퍼센트 인코딩을 풀어 비교한다(LSS%20Shop). 수요가 끝난 뒤 남는 재고는 재고 원가 상한(max_inventory_cost_frac x 잔고)이 막는다.",
+  "velocity_include_own": true,
+  "own_velocity_tau_h": 24,
+  "_v19_note": "시장 기준 대기: 대기 기준 시각은 가장 최근의 시장 수요 증거(policy.demand_ref)다. 어느 구매자의 주문이나 결과 행(GET /api/ledger), 어느 가게의 정산, 수동 재개(<R3_STATE>/restock_resume 갱신)가 이에 해당한다. 그래서 품절된 가게도 수요가 있는 동안에는 재입고하고, 시장 전체가 idle_pause_s 동안 조용할 때만 멈춘다. 주문이나 결과 행을 하나도 보지 못하면 마지막 정산이나 첫 재고 시각을 기준으로 하며, 판매 가능 재고가 idle_low_stock_units 이하이면 멈추지 않는다. velocity_include_own이 켜져 있으면 상품군 순위와 식품 상한의 판매 속도에 우리 가게 판매(own_velocity_tau_h로 감쇠한 SKU별 정산 수)를 더한다.",
+  "restock_stop_before_end_h": 24,
+  "_v17_note": "재고 위험 한도: (a) 재고 원가와 이번 실행의 최대 지출의 합은 max_inventory_cost_frac x 잔고 이하다. (b) 식품은 상품군마다 floor(상품군 판매 속도 x SKU 보관 시간 x food_sell_through) 이하이고 food_min_units 이상이며, 수요 자료가 없으면 food_cold_units다. (c) idle_pause_s 동안 수요 증거가 없으면 재입고를 멈춘다(_v110_note, _v19_note). 라운드 마지막 restock_stop_before_end_h시간에는 재입고하지 않는다. 유통기한이 가까운 식품은 원가+1에 판다(defaults.food.liquidate_hours).",
+  "_v113_note": "공산품 재고 깊이는 보관료로 제한한다(재고 공산품은 하루에 원가의 1%를 낸다). policy.goods_cap: cap = max(goods_min_units, floor((상품군 판매 속도 + 우리 판매 속도) x 24 x goods_max_storage_frac / storage_per_day)). 수요 자료가 없으면 goods_cold_units이고, inventory.json의 storage_per_day가 0이거나 없으면 상한이 없다. 이 상한은 손익분기가 아니라 위험 한도다. 원장에 storage 행({shop, amount})이 있으면 그 값을, 없으면 하루 1% 추정을 쓴다.",
+  "_v114_note": "inventory.json의 storage_per_day는 policy.storage_rate가 읽는다. 하루 비율로 분명하지 않은 값(숫자가 아닌 값, \"1%\" 같은 문자열, NaN, inf, bool, 음수, 0.1 초과)이면 경고를 남기고 공산품 상한을 끈다.",
+  "goods_max_storage_frac": 0.01,
+  "goods_min_units": 1,
+  "goods_cold_units": 4,
+  "restock_window_lead_s": 60,
+  "restock_line_s": 10,
+  "_window_note": "Round 3 공급 창은 20분마다 3분 동안 열린다. 재입고는 창이 열려 있거나 restock_window_lead_s 안에 열릴 때만 계획하고, (닫히는 시각 - 지금) / restock_line_s 줄까지만 산다. 키트는 한 줄을 30초 간격 안에서 최대 3번 다시 시도한 뒤 건너뛴다.",
+  "_cap_note": "재고 원가 상한은 잔고의 max_inventory_cost_frac배이고, 전체 재고는 max_total_units개를 넘지 않는다.",
+  "ask_quantile": "p50",
+  "skip_below_market": true,
+  "est_cost_frac": 0.6,
+  "star_price_cap": {
+   "A": 0.775
+  },
+  "_star_note": "star_price_cap: 공산품 A등급의 첫 제시가는 정가의 0.775배를 넘지 않는다(policy.ask_price). floor_price 아래로는 내리지 않는다. B, C등급에는 이 상한이 없다.",
+  "_price_note": "첫 제시가는 SKU의 정산 가격 중앙값이다(ask_quantile p50, 정산 5건 이상일 때). skip_below_market이 켜져 있으면 재입고는 시장 중앙값이 예상 원가(우리 재고의 원가/정가 p75, 4개 미만이면 est_cost_frac)에 min_margin을 더한 값보다 낮은 SKU를 건너뛴다.",
+  "restock_priority": [
+   "가구/침구>가구>침대/매트리스"
+  ],
+  "_v120a_note": "restock_priority에 적은 상품군(매트리스)을 먼저 계획한다. categories의 매트리스 항목(stock_target, qty_per_buy, breadth_qty, skus_per_category)에 따라 판매 상위 SKU 두 개를 함께 산다. 한 번의 지출은 max_spend_per_run을 넘지 않는다."
+ },
+ "defaults": {
+  "food": {
+   "price_mult": 0.92,
+   "min_margin": 0.05,
+   "concession": 0.03,
+   "max_rounds": 4,
+   "stock_target": 5,
+   "qty_per_buy": 4,
+   "breadth_qty": 2,
+   "warranty_hours": {
+    "A": 0,
+    "B": 0,
+    "C": 0
+   },
+   "fresh_discount": {
+    "B": 0.06,
+    "C": 0.3
+   },
+   "min_shelf_hours": 48,
+   "liquidate_hours": 12,
+   "dispose_hours": 2,
+   "liquidate_discount": 0.35,
+   "claim_window_s": 10,
+   "_claim_note": "claim은 영수증 시점의 등급이다. claim_window_s 안에 등급이 바뀌면 claim을 생략한다(시장은 결제나 정산 때의 등급과 맞으면 참으로 본다). shelf_hours가 없는 식품은 claim 없이 C등급 가격을 매긴다.",
+   "_grade_c_note": "C등급 fresh_discount는 0.30이다. C등급 원가는 정가의 25-45%(agent.md)라 정가 x price_mult x 0.7은 floor = 원가 x (1 + min_margin)보다 높고, floor_price와 guard_price는 원가 이하 가격을 막는다.",
+   "endgame_margin": 0.05,
+   "endgame_round": 4,
+   "_endgame_note": "endgame_round부터는 [원가 x (1 + endgame_margin), 평소 floor) 구간의 제안을 (a) 구매자 제안이 멈췄거나(이전 제안 이하), (b) 올림 폭이 줄었거나, (c) 그렇지 않으면 거절하게 될 때(max_rounds를 넘고 오르지 않거나 patience_rounds를 다 쓴 경우)만 수락한다. 평소 속도로 올리는 구매자에게는 평소 floor로 맞제안한다(policy.respond). guard_price는 원가 이하 가격을 막는다.",
+   "patience_rounds": 6
+  },
+  "goods": {
+   "price_mult": 0.9,
+   "min_margin": 0.05,
+   "concession": 0.03,
+   "max_rounds": 4,
+   "stock_target": 4,
+   "qty_per_buy": 3,
+   "breadth_qty": 1,
+   "warranty_hours": {
+    "A": 6,
+    "B": 6,
+    "C": 6
+   },
+   "fresh_discount": {
+    "B": 0.08,
+    "C": 0.3
+   },
+   "min_shelf_hours": 0,
+   "prior_fail_rate": 0.05,
+   "warranty_uplift": 0.03,
+   "max_warranty_hours": 6,
+   "endgame_margin": 0.05,
+   "endgame_round": 4,
+   "_endgame_note": "endgame_round부터는 [원가 x (1 + endgame_margin), 평소 floor) 구간의 제안을 (a) 구매자 제안이 멈췄거나(이전 제안 이하), (b) 올림 폭이 줄었거나, (c) 그렇지 않으면 거절하게 될 때(max_rounds를 넘고 오르지 않거나 patience_rounds를 다 쓴 경우)만 수락한다. 평소 속도로 올리는 구매자에게는 평소 floor로 맞제안한다(policy.respond). guard_price는 원가 이하 가격을 막는다.",
+   "patience_rounds": 6
+  }
+ },
+ "categories": {
+  "가구/침구>가구>침대/매트리스": {
+   "stock_target": 8,
+   "qty_per_buy": 4,
+   "breadth_qty": 2,
+   "skus_per_category": 2
+  }
+ },
+ "buyer": {
+  "defaults": {
+   "food": {
+    "open_frac": 0.55,
+    "max_pay_frac": 0.85,
+    "step_frac": 0.07,
+    "max_rounds": 5,
+    "accept": {
+     "cert": true,
+     "grades": [],
+     "hours_margin": 2,
+     "_note": "식품에는 등급 조건이 없다. 식품이 use_within_hours 동안 버티면 구매자 가치는 등급과 관계없이 정가이고(agent.md Buyer value), min_hours_left(use_within_hours + hours_margin, 인증서 필요)가 이를 지킨다."
+    },
+    "accept_c": {
+     "max_pay_frac": 0.6,
+     "open_frac": 0.35
+    }
+   },
+   "goods": {
+    "open_frac": 0.55,
+    "max_pay_frac": 0.85,
+    "step_frac": 0.07,
+    "max_rounds": 5,
+    "accept": {
+     "cert": true,
+     "grades": [
+      "A",
+      "B"
+     ],
+     "warranty_hours": 0,
+     "_note": "0은 요구하지 않음이다. 판매자의 보증 규칙(이전 고장률 0.05 > 가산 0.03)은 보증을 내지 않으므로, 보증을 요구하면 공산품을 모두 거절하게 된다. 고장 위험은 choose_offers가 가게의 고장률로 가격에 반영한다."
+    },
+    "accept_c": {
+     "max_pay_frac": 0.55,
+     "open_frac": 0.35,
+     "_note": "C등급을 밝힌 가게(또는 영수증에 C를 claim한 가게)와도 흥정을 이어 간다. 이때 상한은 min(상한, 정가 x max_pay_frac)이고 그 거래에만 accept.grades에 C를 더한다. 식품이 use_within_hours 동안 버티고 공산품이 고장 나지 않으면 구매자 가치는 정가이므로, 고장 확률이 45% 미만이면 정가의 0.55배에서 기대 이익이 양수다."
+    }
+   }
+  },
+  "categories": {},
+  "min_claim_honest_rate": 0.7,
+  "reputation_prior": 2,
+  "max_shops": 6,
+  "extra_attempt_window_s": 60,
+  "expiry_guard_s": 60,
+  "_v120b_note": "구매 훅의 가게 시도 횟수는 구매 정책이 정한다(max_shops). 4번째 이후 시도는 훅 시작 뒤 extra_attempt_window_s 안이고 주문 만료 expiry_guard_s 전일 때만 시작하며, 그 시도의 협상 마감도 만료 expiry_guard_s 전이다."
+ },
+ "bounds": {
+  "price_mult": [
+   0.5,
+   1.5
+  ],
+  "min_margin": [
+   0.0,
+   1.0
+  ],
+  "concession": [
+   0.0,
+   0.2
+  ],
+  "max_rounds": [
+   1,
+   10
+  ],
+  "stock_target": [
+   0,
+   60
+  ],
+  "qty_per_buy": [
+   1,
+   20
+  ],
+  "open_frac": [
+   0.3,
+   1.0
+  ],
+  "max_pay_frac": [
+   0.3,
+   1.0
+  ],
+  "step_frac": [
+   0.0,
+   0.3
+  ],
+  "accept_ask_frac": [
+   0.3,
+   1.0
+  ],
+  "min_shelf_hours": [
+   0,
+   720
+  ],
+  "liquidate_hours": [
+   0,
+   720
+  ],
+  "dispose_hours": [
+   0,
+   48
+  ],
+  "liquidate_discount": [
+   0,
+   0.9
+  ],
+  "prior_fail_rate": [
+   0,
+   1
+  ],
+  "warranty_uplift": [
+   0,
+   0.5
+  ]
+ },
+ "volume": {
+  "target_settled": 20,
+  "margin": 5,
+  "round_start_ts": 1793707306,
+  "round_end_ts": 1794927540,
+  "late_hours": 48,
+  "pace_gain": 2.0,
+  "relax_ask_cut": 0.1,
+  "relax_max_pay_frac": 0.97,
+  "relax_grade_c_at": 0.5,
+  "_note": "BASE: Round 3에서 가게와 구매자 각각 정산 20건 이상. goal = target + margin. 각 쪽의 r은 policy.volume_relax가 정한다. 가게: floor margin x (1-r), concession x (1+r), ask x (1 - relax_ask_cut x r), 원가 + 1 아래로는 내리지 않는다. 구매자: max_pay_frac 대신 relax_max_pay_frac, step x (1 + r/2), r >= relax_grade_c_at이면 C등급 수락. 유통기한 조건과 예산 상한은 완화하지 않는다. round_start_ts는 2026-11-03 21:01:46 KST(첫 공급 창), round_end_ts는 2026-11-17 23:59 KST다."
+ },
+ "forum": {
+  "enabled": true,
+  "interval_s": 300,
+  "window_h": 3,
+  "min_settles": 3,
+  "max_refs": 8,
+  "rotate": 4,
+  "_note": "interval_s마다 원장 가격 요약 글 하나를 구매자로 올리는 설정이다(키트 한도: 역할마다 5분에 한 글). Buyer ALL은 정산 5건 이상이고 GitHub 주인이 다른 투표자가 구매자 글에 준 표를 센다.",
+  "_interval_note": "interval_s는 키트 한도인 300초다. Buyer ALL은 숨기지 않은 구매자 글 수도 센다(0.1)."
+ },
+ "taste": {
+  "enabled": true,
+  "max_age_s": 7200,
+  "_note": "재입고는 <R3_STATE>/taste_gate.json의 상태가 \"adopted\"이고 asof가 max_age_s 이내일 때만 그 파일의 상품군 예측으로 순위를 정한다(hooks/restock.py taste_ranking). 그 밖에는 판매 속도 순위를 쓴다. 바뀌는 것은 상품군 순서뿐이고 목표, 상한, 예산, 공급 창 조건, 시장가 이하 제외는 그대로다. enabled가 false면 언제나 판매 속도 순위다."
+ }
+}
