@@ -1,0 +1,26 @@
+Read-only baseline d602568 regression reproduction; two failures are expected evidence, not current implementation failures.
+test_missing_warranty_must_not_prove_c_zero_warranty (__main__.OriginalRegression.test_missing_warranty_must_not_prove_c_zero_warranty) ... FAIL
+test_restoration_must_not_buy_forty_watched_units (__main__.OriginalRegression.test_restoration_must_not_buy_forty_watched_units) ... FAIL
+
+======================================================================
+FAIL: test_missing_warranty_must_not_prove_c_zero_warranty (__main__.OriginalRegression.test_missing_warranty_must_not_prove_c_zero_warranty)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 16, in test_missing_warranty_must_not_prove_c_zero_warranty
+    self.assertIsNone(pricing.reference_price(cash,hub,sku,'C',now))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 100000 is not None
+
+======================================================================
+FAIL: test_restoration_must_not_buy_forty_watched_units (__main__.OriginalRegression.test_restoration_must_not_buy_forty_watched_units)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<string>", line 20, in test_restoration_must_not_buy_forty_watched_units
+    self.assertLessEqual(sum(r['qty'] for r in result),1)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 40 not less than or equal to 1
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.002s
+
+FAILED (failures=2)

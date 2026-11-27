@@ -1,0 +1,1409 @@
+--- before/restock.py
++++ after/restock.py
+@@ -1,337 +1,369 @@
+-"""POLICY.md §9 unified buying. Stdout remains a single {buy: [...]} JSON line."""
+-from __future__ import annotations
+-
+-import argparse
+-import collections
+-import json
+-import math
+-import statistics
+-import sys
+-import time
+-from pathlib import Path
+-from typing import Any
+-
+-from adaptive_strategy import decide_restock
+-from store import (
+-    ROUND_END_TS, STOP_BUYING_BEFORE_END_S, apply_ledger_rows,
+-    fetch_ledger_rows, fetch_own_shop_urls, fetch_public_buying_data, load_catalog, load_hub,
+-    load_inventory, migrate_no_rebuy, mutate_hub, queue_forum_action,
+-    update_capital_stage,
+-)
+-
+-POPULARITY_S = 40 * 60
+-NO_DEMAND_S = 2 * 3600
+-NO_REBUY_AGE_S = 4 * 3600
+-MAX_NO_REBUY_SKUS = 500
+-WINDOW_LEAD_S = 60
+-MIN_FOOD_LIST_PRICE = 10_000
+-MAX_FOOD_LIST_PRICE = 120_000
+-FOOD_MIN_SHELF_HOURS = 180
+-DEFAULT_RATIO = .40
+-RATIO_CACHE_S = 30 * 60
+-RATIO_MIN, RATIO_MAX = .30, .75   # Growth phase: allow up to the top shops' stock ratio (POLICY 9.1)
+-FILL_WINDOWS = 2                  # Close the stock deficit over ~2 supply windows (~40 min)
+-WINDOW_EQUITY_CAP = .50           # Runaway guard per supply window
+-ENDGAME_SCHEDULE = {
+-    # Exclusive lower bound in hours remaining (exact boundary enters the next phase).
+-    96: {"name": "normal", "ratio_cap": None, "grades": ("hot", "popular", "observe"), "hot_max_depth": 8},
+-    72: {"name": "taper-1", "ratio_cap": .50, "grades": ("hot", "popular", "observe"), "hot_max_depth": 6},
+-    48: {"name": "taper-2", "ratio_cap": .30, "grades": ("hot", "popular"), "hot_max_depth": 4},
+-    36: {"name": "taper-3", "ratio_cap": .15, "grades": ("hot",), "hot_max_depth": 2},
+-    -math.inf: {"name": "stop", "ratio_cap": 0, "grades": (), "hot_max_depth": 0},
+-}
+-
+-
+-def endgame_phase(now):
+-    hours_left = (ROUND_END_TS - now) / 3600
+-    phase = ENDGAME_SCHEDULE[-math.inf] if ROUND_END_TS - now <= STOP_BUYING_BEFORE_END_S else next(
+-        ENDGAME_SCHEDULE[lower] for lower in sorted(ENDGAME_SCHEDULE, reverse=True) if hours_left > lower)
+-    return phase, {"endgame_phase": phase["name"], "ratio_cap": phase["ratio_cap"], "hours_left": hours_left}
+-
+-
+-def taper_ratio(ratio, phase):
+-    # §9 has already clamped R; never apply RATIO_MIN again after the endgame cap.
+-    return ratio if phase["ratio_cap"] is None else min(ratio, phase["ratio_cap"])
+-
+-
+-def supply_window(inv: dict[str, Any]) -> tuple[float, float] | None:
+-    window = inv.get("restock") or {}
+-    try:
+-        opens, closes = float(window["opens_at"]), float(window["closes_at"])
+-    except (KeyError, TypeError, ValueError):
+-        return None
+-    if (math.isfinite(opens) and math.isfinite(closes) and opens < closes
+-            and opens - WINDOW_LEAD_S <= time.time() < closes):
+-        return opens, closes
+-    return None
+-
+-
+-def market_ratio(shops, board, catalog):
+-    """Pure calculation from full public API snapshots, never order-specific files."""
+-    shops = shops.get("shops", []) if isinstance(shops, dict) else shops
+-    board = board.get("shops", []) if isinstance(board, dict) else board
+-    metrics = {s.get("name"): s for s in board if isinstance(s, dict)}
+-    ratios = []
+-    for shop in shops:
+-        if not isinstance(shop, dict):
+-            continue
+-        data = {**shop, **metrics.get(shop.get("name"), {})}
+-        revenue, profit, stock = data.get("revenue"), data.get("profit"), shop.get("stock")
+-        if (not isinstance(revenue, (int, float)) or not math.isfinite(revenue)
+-                or not isinstance(profit, (int, float)) or not math.isfinite(profit)
+-                or not isinstance(stock, dict)):
+-            continue
+-        if any(s not in catalog or not isinstance(q, (int, float)) or not math.isfinite(q) or q < 0
+-               for s, q in stock.items()):
+-            continue
+-        estimated = sum(q * int(catalog[s].get("list_price", 0)) * .75 for s, q in stock.items())
+-        cash = 5_000_000 + profit
+-        if cash < 0 or cash + estimated <= 0:
+-            continue
+-        ratios.append((revenue, str(shop.get("name", "")), estimated / (cash + estimated)))
+-    if len(ratios) < 3:
+-        return DEFAULT_RATIO, {"source": "default: insufficient public shops/financials", "default": True,
+-                               "shops": len(ratios)}
+-    top = sorted(ratios, key=lambda r: (-r[0], r[1]))[:5]
+-    return max(RATIO_MIN, min(RATIO_MAX, statistics.median(r[2] for r in top))), {
+-        "source": "/api/shops+/api/board: top revenue median", "default": False, "shops": len(top)}
+-
+-
+-def resolve_market_ratio(hub, observation=None):
+-    now = time.time()
+-    if observation is not None and not observation[1]["default"]:
+-        ratio, source = observation
+-        hub["market_ratio_cache"] = {"ratio": ratio, "ts": now, "shops": source["shops"], "source": source["source"]}
+-        return ratio, {**source, "cached": False, "ts": now}
+-    cached = hub.get("market_ratio_cache", {})
+-    ratio, ts = cached.get("ratio"), cached.get("ts")
+-    if (isinstance(ratio, (int, float)) and RATIO_MIN <= ratio <= RATIO_MAX
+-            and isinstance(ts, (int, float)) and 0 <= now - ts <= RATIO_CACHE_S):
+-        return ratio, {"source": cached["source"], "shops": cached["shops"], "ts": ts,
+-                       "default": False, "cached": True, "refresh_failed": True}
+-    return DEFAULT_RATIO, {"source": "default: public API unavailable/insufficient, no fresh cache",
+-                           "default": True, "cached": False, "shops": 0}
+-
+-
+-def popularity(inquiries, misses, settlements, *, hot_max_depth=None):
+-    if hot_max_depth is None:
+-        hot_max_depth = ENDGAME_SCHEDULE[max(ENDGAME_SCHEDULE)]["hot_max_depth"]
+-    if inquiries >= 4:
+-        return "hot", min(hot_max_depth, max(3, inquiries))
+-    if inquiries >= 2 or misses >= 2 or settlements >= 21:
+-        return "popular", 2
+-    if inquiries == 1 or misses == 1 or 11 <= settlements <= 20:
+-        return "observe", 1
+-    return "none", 0
+-
+-
+-def estimated_cost(hub, sku, info):
+-    actual = hub.get("purchase_costs", {}).get(sku, {}).get("cost", 0)
+-    return max(1, math.ceil(actual if actual > 0 else int(info.get("list_price", 0)) * .75))
+-
+-
+-def build_restock_plan(market_dir: Path) -> dict[str, Any]:
+-    catalog, inv = load_catalog(market_dir), load_inventory(market_dir)
+-
+-    def stopped(reason, *, bankrupt=False):
+-        cs = update_capital_stage({"capital_stage": {}}, inv)
+-        stock = cs.get("stock_cost_value", 0)
+-        equity = int(inv.get("balance") or 0) + stock
+-        ratio, source = resolve_market_ratio(load_hub())
+-        phase, endgame = endgame_phase(time.time())
+-        ratio = taper_ratio(ratio, phase)
+-        print(json.dumps({"E": equity, "R": ratio, "R_source": source, "T": ratio * equity,
+-                          "deficit": max(0, ratio * equity - stock), "W": 0,
+-                          "grades": {g: {"skus": 0, "reserved": 0} for g in ("hot", "popular", "observe")},
+-                          "grade_budget": {"hot_popular": 0, "observe": 0},
+-                          "no_rebuy_new": 0, "no_rebuy_total": len(load_hub().get("no_rebuy", {})),
+-                          "excluded": {}, "stop": reason, **endgame}), file=sys.stderr, flush=True)
+-        return {"buy": [], "bankrupt": True} if bankrupt else {"buy": []}
+-
+-    if not catalog or not inv:
+-        return stopped("missing_input")
+-    balance = int(inv.get("balance") or 0)
+-    sellable = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
+-    if balance < int(inv.get("bankrupt_line") or 0) and int(inv.get("bankruptcies_left") or 0) > 0 and not sellable:
+-        return stopped("bankruptcy", bankrupt=True)
+-    if time.time() >= ROUND_END_TS - STOP_BUYING_BEFORE_END_S:
+-        return stopped("round_end")
+-    snapshot = load_hub()
+-    rows = fetch_ledger_rows(int(snapshot.get("ledger_seq", 0)))
+-    window = supply_window(inv)
+-    if window and str(window) not in snapshot.get("restock_windows", {}):
+-        rows += fetch_ledger_rows(0)
+-    own_urls = fetch_own_shop_urls()
+-    public_data = fetch_public_buying_data()
+-    observation = market_ratio(*public_data, catalog) if public_data is not None else None
+-    try:
+-        fresh = 0 <= time.time() - (market_dir / "inventory.json").stat().st_mtime <= 120
+-    except OSError:
+-        fresh = False
+-    with mutate_hub() as hub:
+-        hub["own_shop_urls"] = sorted(set(hub.get("own_shop_urls", [])) | set(own_urls))
+-        if window and not hub.get("restock_windows"):
+-            hub.setdefault("restock_windows", {})[str(window)] = {
+-                "baseline_actual": 0, "reserved": 0, "blocked": True}
+-        return plan_with_hub(hub, market_dir, catalog, inv, rows, inventory_fresh=fresh,
+-                             ratio_observation=observation)
+-
+-
+-def plan_with_hub(hub, market_dir, catalog, inv, rows, *, inventory_fresh=False, ratio_observation=None):
+-    """Locked caller persists reservations, inquiries and no-rebuy history atomically."""
+-    now = time.time()
+-    migrate_no_rebuy(hub)
+-    apply_ledger_rows(hub, rows, catalog)
+-    detection_since = hub.setdefault("no_rebuy_detection_since", now)
+-    cs = update_capital_stage(hub, inv)
+-    decide_restock(hub, inv, now, inventory_fresh=inventory_fresh)  # metrics only
+-    radar = hub.get("demand_radar", {})
+-    units = inv.get("units") or []
+-    active = [u for u in units if u.get("grade") != "expired"]
+-    held = collections.Counter(u.get("sku") for u in active)
+-    costs = hub.setdefault("purchase_costs", {})
+-    for u in units:
+-        if u.get("sku") in catalog and u.get("cost", 0) > 0:
+-            sku, ts = u["sku"], u.get("supplied_at", 0)
+-            if ts >= costs.get(sku, {}).get("ts", 0):
+-                costs[sku] = {"cost": u["cost"], "ts": ts}
+-    no_rebuy = hub.setdefault("no_rebuy", {})
+-    new_no_rebuy = 0
+-    for u in units:
+-        sku, supplied = u.get("sku"), u.get("supplied_at")
+-        if (sku in catalog and isinstance(supplied, (int, float)) and supplied > 0
+-                and now - max(supplied, detection_since) >= NO_REBUY_AGE_S
+-                and hub.get("own_last_sale_ts", {}).get(sku, 0) < supplied and sku not in no_rebuy):
+-            if len(no_rebuy) < MAX_NO_REBUY_SKUS:
+-                no_rebuy[sku] = now
+-                new_no_rebuy += 1
+-            else:
+-                hub["no_rebuy_overflow"] = True  # never evict a round-long prohibition
+-    coverage = hub.get("adaptive_ledger_coverage", {})
+-    covered = (coverage.get("since", now) <= now - NO_DEMAND_S
+-               and 0 <= now - coverage.get("through", 0) <= 120)
+-    ratio, source = resolve_market_ratio(hub, ratio_observation)
+-    phase, endgame = endgame_phase(now)
+-    ratio = taper_ratio(ratio, phase)
+-    stock = cs["stock_cost_value"]
+-    equity = int(inv.get("balance") or 0) + stock
+-    target = ratio * equity
+-    deficit = max(0, target - stock)
+-    excluded = collections.Counter()
+-    candidates = {g: [] for g in ("hot", "popular", "observe")}
+-    storage = float(inv.get("storage_per_day", .01))
+-    for sku, info in catalog.items():
+-        events = radar.get("sku_inquiries", {}).get(sku.lower(), [])
+-        recent = [e for e in events if 0 <= now - e["ts"] <= POPULARITY_S]
+-        misses = sum(bool(e.get("miss")) for e in recent)
+-        # Unheld SKUs use stockout inquiries only, not old quotes for stock no longer held.
+-        inquiries = len(recent) if held[sku] else misses
+-        sales = radar.get("sku_sold_ts", {}).get(sku, [])
+-        grade, depth = popularity(inquiries, misses, sum(0 <= now - t <= POPULARITY_S for t in sales),
+-                                  hot_max_depth=phase["hot_max_depth"])
+-        lp, cost = int(info.get("list_price", 0)), estimated_cost(hub, sku, info)
+-        prices = radar.get("sku_settles", {}).get(sku, [])
+-        expected_price = statistics.median(prices) if prices else .95 * lp
+-        margin = expected_price * .97 - cost  # net expected proceeds, including settlement fee
+-        reason = None
+-        if sku in no_rebuy or hub.get("no_rebuy_overflow"):
+-            reason = "no_rebuy" if sku in no_rebuy else "no_rebuy_history_full"
+-        elif covered and not any(0 <= now - t <= NO_DEMAND_S for t in sales) and not any(
+-                0 <= now - e["ts"] <= NO_DEMAND_S for e in events):
+-            reason = "no_demand_2h"
+-        elif depth == 0:
+-            reason = "no_popularity"
+-        elif grade not in phase["grades"]:
+-            reason = "endgame_grade"
+-        elif lp <= 0:
+-            reason = "invalid_price"
+-        elif (info.get("kind") == "food" and grade != "hot"
+-              and (not MIN_FOOD_LIST_PRICE <= lp <= MAX_FOOD_LIST_PRICE
+-                    or (not held[sku] and (info.get("shelf_hours") or 0) < FOOD_MIN_SHELF_HOURS))):
+-            reason = "food_safety"
+-        elif margin < 2 * storage * cost:
+-            reason = "storage_margin"
+-        elif depth <= held[sku]:
+-            reason = "target_met"
+-        if reason:
+-            excluded[reason] += 1
+-        else:
+-            candidates[grade].append((sku, depth - held[sku], cost, margin))
+-    for group in candidates.values():
+-        group.sort(key=lambda c: (-c[3], c[0]))
+-    restore = sum(n * c for g in ("hot", "popular") for s, n, c, m in candidates[g] if not held[s])
+-    calculated = max(0, int(min(cs["available_budget"], max(restore, deficit / FILL_WINDOWS), WINDOW_EQUITY_CAP * equity)))
+-    if phase["ratio_cap"] is not None and deficit <= 0:
+-        calculated = 0
+-    diag = {"E": equity, "R": ratio, "R_source": source, "T": target, "deficit": deficit,
+-            "W": calculated, "cash_floor": cs["cash_floor"], "restore_cost": restore,
+-            "grades": {g: {"skus": len(v), "reserved": 0} for g, v in candidates.items()},
+-            "grade_budget": {"hot_popular": calculated, "observe": calculated // 2},
+-            "no_rebuy_new": new_no_rebuy, "no_rebuy_total": len(no_rebuy), "excluded": excluded,
+-            "no_demand_deferred": not covered, **endgame}
+-
+-    def finish(orders, reason=None):
+-        if reason:
+-            diag["stop"] = reason
+-        print(json.dumps(diag, ensure_ascii=False), file=sys.stderr, flush=True)
+-        return {"buy": orders}
+-
+-    if time.time() >= ROUND_END_TS - STOP_BUYING_BEFORE_END_S:
+-        return finish([], "round_end")
+-    window = supply_window(inv)
+-    if window is None:
+-        return finish([], "outside_window")
+-    actual = sum(s["total"] for s in hub.get("own_supplies", {}).values() if window[0] <= s["ts"] < window[1])
+-    state = hub.setdefault("restock_windows", {}).setdefault(str(window), {"baseline_actual": actual, "reserved": 0})
+-    if state.get("blocked"):
+-        return finish([], "first_window")
+-    cap = state.setdefault("window_cap", calculated)
+-    diag["W"] = cap  # immutable initial ceiling; current cash can only reduce usable funds
+-    used = max(actual, state["baseline_actual"] + state["reserved"])
+-    budget = min(cs["available_budget"], calculated, max(0, cap - used))
+-    diag["usable_budget"] = budget
+-    planned = state.setdefault("planned_skus", {})
+-    grade_spent = state.setdefault("grade_reserved", {g: 0 for g in candidates})
+-    spent, orders = 0, []
+-    for grade, group in candidates.items():
+-        for sku, need, cost, margin in group:
+-            if sku in planned:
+-                excluded["window_duplicate"] += 1
+-                continue
+-            allowance = budget - spent
+-            if grade == "observe":
+-                allowance = min(allowance, max(0, cap // 2 - grade_spent[grade]))
+-            qty = min(need, 20, max(0, allowance) // cost)
+-            if not qty or len(orders) >= 10:
+-                continue
+-            orders.append({"sku": sku, "qty": qty})
+-            planned[sku] = qty
+-            spent += qty * cost
+-            grade_spent[grade] += qty * cost
+-    state["reserved"] += spent
+-    for grade in candidates:
+-        diag["grades"][grade]["reserved"] = grade_spent[grade]
+-    diag["grade_budget"] = {"hot_popular": cap, "observe": cap // 2}
+-    # Preserve the existing optional shop promotion; it does not affect buying.
+-    last_post = int(hub.get("forum_state", {}).get("last_shop_post_ts", 0))
+-    if len(active) >= 6 and now - last_post >= 330:
+-        refs = (radar.get("recent_refs") or [])[-3:]
+-        cats = sorted({u.get("category", "").split(">")[-1] for u in active if u.get("category")})[:5]
+-        text = (f"[mjforge Fulfillment Report] Stage-{cs['stage']} inventory active ({len(active)} certified units across "
+-                f"{', '.join(cats)}). All units ship with market certificate (cert=true), honest grade claims, "
+-                "6h Safe-Care (안심케어) full-refund warranty on all goods (A/B can drop it for a lower price), "
+-                "and instant 1-turn discount below list price.")
+-        queue_forum_action(market_dir, {"post": text, "refs": refs, "as": "shop"})
+-        hub.setdefault("forum_state", {})["last_shop_post_ts"] = int(now)
+-    return finish(orders)
+-
+-
+-def main():
+-    ap = argparse.ArgumentParser()
+-    ap.add_argument("--state", default=".market", help="Path to .market directory")
+-    args = ap.parse_args()
+-    print(json.dumps(build_restock_plan(Path(args.state)), ensure_ascii=False), flush=True)
+-
+-
+-if __name__ == "__main__":
+-    main()
++"""POLICY.md §9 unified buying. Stdout remains a single {buy: [...]} JSON line."""
++from __future__ import annotations
++
++import argparse
++import collections
++import json
++import math
++import statistics
++import sys
++import time
++from pathlib import Path
++from typing import Any
++
++from adaptive_strategy import decide_restock
++import seller_cash_policy as cash_policy
++from store import (
++    ROUND_END_TS, STOP_BUYING_BEFORE_END_S, apply_ledger_rows,
++    fetch_ledger_rows, fetch_own_shop_urls, fetch_public_buying_data, load_catalog, load_hub,
++    load_inventory, migrate_no_rebuy, mutate_hub, queue_forum_action,
++    update_capital_stage,
++)
++
++POPULARITY_S = 40 * 60
++NO_DEMAND_S = 2 * 3600
++NO_REBUY_AGE_S = 4 * 3600
++MAX_NO_REBUY_SKUS = 500
++WINDOW_LEAD_S = 60
++MIN_FOOD_LIST_PRICE = 10_000
++MAX_FOOD_LIST_PRICE = 120_000
++FOOD_MIN_SHELF_HOURS = 180
++DEFAULT_RATIO = .40
++RATIO_CACHE_S = 30 * 60
++RATIO_MIN, RATIO_MAX = .30, .75   # Growth phase: allow up to the top shops' stock ratio (POLICY 9.1)
++FILL_WINDOWS = 2                  # Close the stock deficit over ~2 supply windows (~40 min)
++WINDOW_EQUITY_CAP = .50           # Runaway guard per supply window
++ENDGAME_SCHEDULE = {
++    # Exclusive lower bound in hours remaining (exact boundary enters the next phase).
++    96: {"name": "normal", "ratio_cap": None, "grades": ("hot", "popular", "observe"), "hot_max_depth": 8},
++    72: {"name": "taper-1", "ratio_cap": .50, "grades": ("hot", "popular", "observe"), "hot_max_depth": 6},
++    48: {"name": "taper-2", "ratio_cap": .30, "grades": ("hot", "popular"), "hot_max_depth": 4},
++    36: {"name": "taper-3", "ratio_cap": .15, "grades": ("hot",), "hot_max_depth": 2},
++    -math.inf: {"name": "stop", "ratio_cap": 0, "grades": (), "hot_max_depth": 0},
++}
++
++
++def endgame_phase(now):
++    hours_left = (ROUND_END_TS - now) / 3600
++    phase = ENDGAME_SCHEDULE[-math.inf] if ROUND_END_TS - now <= STOP_BUYING_BEFORE_END_S else next(
++        ENDGAME_SCHEDULE[lower] for lower in sorted(ENDGAME_SCHEDULE, reverse=True) if hours_left > lower)
++    return phase, {"endgame_phase": phase["name"], "ratio_cap": phase["ratio_cap"], "hours_left": hours_left}
++
++
++def taper_ratio(ratio, phase):
++    # §9 has already clamped R; never apply RATIO_MIN again after the endgame cap.
++    return ratio if phase["ratio_cap"] is None else min(ratio, phase["ratio_cap"])
++
++
++def supply_window(inv: dict[str, Any]) -> tuple[float, float] | None:
++    window = inv.get("restock") or {}
++    try:
++        opens, closes = float(window["opens_at"]), float(window["closes_at"])
++    except (KeyError, TypeError, ValueError):
++        return None
++    if (math.isfinite(opens) and math.isfinite(closes) and opens < closes
++            and opens - WINDOW_LEAD_S <= time.time() < closes):
++        return opens, closes
++    return None
++
++
++def market_ratio(shops, board, catalog):
++    """Pure calculation from full public API snapshots, never order-specific files."""
++    shops = shops.get("shops", []) if isinstance(shops, dict) else shops
++    board = board.get("shops", []) if isinstance(board, dict) else board
++    metrics = {s.get("name"): s for s in board if isinstance(s, dict)}
++    ratios = []
++    for shop in shops:
++        if not isinstance(shop, dict):
++            continue
++        data = {**shop, **metrics.get(shop.get("name"), {})}
++        revenue, profit, stock = data.get("revenue"), data.get("profit"), shop.get("stock")
++        if (not isinstance(revenue, (int, float)) or not math.isfinite(revenue)
++                or not isinstance(profit, (int, float)) or not math.isfinite(profit)
++                or not isinstance(stock, dict)):
++            continue
++        if any(s not in catalog or not isinstance(q, (int, float)) or not math.isfinite(q) or q < 0
++               for s, q in stock.items()):
++            continue
++        estimated = sum(q * int(catalog[s].get("list_price", 0)) * .75 for s, q in stock.items())
++        cash = 5_000_000 + profit
++        if cash < 0 or cash + estimated <= 0:
++            continue
++        ratios.append((revenue, str(shop.get("name", "")), estimated / (cash + estimated)))
++    if len(ratios) < 3:
++        return DEFAULT_RATIO, {"source": "default: insufficient public shops/financials", "default": True,
++                               "shops": len(ratios)}
++    top = sorted(ratios, key=lambda r: (-r[0], r[1]))[:5]
++    return max(RATIO_MIN, min(RATIO_MAX, statistics.median(r[2] for r in top))), {
++        "source": "/api/shops+/api/board: top revenue median", "default": False, "shops": len(top)}
++
++
++def resolve_market_ratio(hub, observation=None):
++    now = time.time()
++    if observation is not None and not observation[1]["default"]:
++        ratio, source = observation
++        hub["market_ratio_cache"] = {"ratio": ratio, "ts": now, "shops": source["shops"], "source": source["source"]}
++        return ratio, {**source, "cached": False, "ts": now}
++    cached = hub.get("market_ratio_cache", {})
++    ratio, ts = cached.get("ratio"), cached.get("ts")
++    if (isinstance(ratio, (int, float)) and RATIO_MIN <= ratio <= RATIO_MAX
++            and isinstance(ts, (int, float)) and 0 <= now - ts <= RATIO_CACHE_S):
++        return ratio, {"source": cached["source"], "shops": cached["shops"], "ts": ts,
++                       "default": False, "cached": True, "refresh_failed": True}
++    return DEFAULT_RATIO, {"source": "default: public API unavailable/insufficient, no fresh cache",
++                           "default": True, "cached": False, "shops": 0}
++
++
++def popularity(inquiries, misses, settlements, *, hot_max_depth=None):
++    if hot_max_depth is None:
++        hot_max_depth = ENDGAME_SCHEDULE[max(ENDGAME_SCHEDULE)]["hot_max_depth"]
++    if inquiries >= 4:
++        return "hot", min(hot_max_depth, max(3, inquiries))
++    if inquiries >= 2 or misses >= 2 or settlements >= 21:
++        return "popular", 2
++    if inquiries == 1 or misses == 1 or 11 <= settlements <= 20:
++        return "observe", 1
++    return "none", 0
++
++
++def estimated_cost(hub, sku, info):
++    actual = hub.get("purchase_costs", {}).get(sku, {}).get("cost", 0)
++    return max(1, math.ceil(actual if actual > 0 else int(info.get("list_price", 0)) * .75))
++
++
++def build_restock_plan(market_dir: Path) -> dict[str, Any]:
++    catalog, inv = load_catalog(market_dir), load_inventory(market_dir)
++
++    def stopped(reason, *, bankrupt=False):
++        cs = update_capital_stage({"capital_stage": {}}, inv)
++        stock = cs.get("stock_cost_value", 0)
++        equity = int(inv.get("balance") or 0) + stock
++        ratio, source = resolve_market_ratio(load_hub())
++        phase, endgame = endgame_phase(time.time())
++        ratio = taper_ratio(ratio, phase)
++        print(json.dumps({"E": equity, "R": ratio, "R_source": source, "T": ratio * equity,
++                          "deficit": max(0, ratio * equity - stock), "W": 0,
++                          "grades": {g: {"skus": 0, "reserved": 0} for g in ("hot", "popular", "observe")},
++                          "grade_budget": {"hot_popular": 0, "observe": 0},
++                          "no_rebuy_new": 0, "no_rebuy_total": len(load_hub().get("no_rebuy", {})),
++                          "excluded": {}, "stop": reason, **endgame}), file=sys.stderr, flush=True)
++        return {"buy": [], "bankrupt": True} if bankrupt else {"buy": []}
++
++    if not catalog or not inv:
++        return stopped("missing_input")
++    balance = int(inv.get("balance") or 0)
++    sellable = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
++    if balance < int(inv.get("bankrupt_line") or 0) and int(inv.get("bankruptcies_left") or 0) > 0 and not sellable:
++        return stopped("bankruptcy", bankrupt=True)
++    if time.time() >= ROUND_END_TS - STOP_BUYING_BEFORE_END_S:
++        return stopped("round_end")
++    snapshot = load_hub()
++    rows = fetch_ledger_rows(int(snapshot.get("ledger_seq", 0)))
++    window = supply_window(inv)
++    if window and str(window) not in snapshot.get("restock_windows", {}):
++        rows += fetch_ledger_rows(0)
++    own_urls = fetch_own_shop_urls()
++    public_data = fetch_public_buying_data()
++    observation = market_ratio(*public_data, catalog) if public_data is not None else None
++    try:
++        fresh = 0 <= time.time() - (market_dir / "inventory.json").stat().st_mtime <= 120
++    except OSError:
++        fresh = False
++    with mutate_hub() as hub:
++        hub["own_shop_urls"] = sorted(set(hub.get("own_shop_urls", [])) | set(own_urls))
++        if window and not hub.get("restock_windows"):
++            hub.setdefault("restock_windows", {})[str(window)] = {
++                "baseline_actual": 0, "reserved": 0, "blocked": True}
++        return plan_with_hub(hub, market_dir, catalog, inv, rows, inventory_fresh=fresh,
++                             ratio_observation=observation)
++
++
++def plan_with_hub(hub, market_dir, catalog, inv, rows, *, inventory_fresh=False, ratio_observation=None):
++    """Locked caller persists reservations, inquiries and no-rebuy history atomically."""
++    now = time.time()
++    migrate_no_rebuy(hub)
++    apply_ledger_rows(hub, rows, catalog)
++    detection_since = hub.setdefault("no_rebuy_detection_since", now)
++    cs = update_capital_stage(hub, inv)
++    decide_restock(hub, inv, now, inventory_fresh=inventory_fresh)  # metrics only
++    radar = hub.get("demand_radar", {})
++    units = inv.get("units") or []
++    active = [u for u in units if u.get("grade") != "expired"]
++    held = collections.Counter(u.get("sku") for u in active)
++    costs = hub.setdefault("purchase_costs", {})
++    for u in units:
++        if u.get("sku") in catalog and u.get("cost", 0) > 0:
++            sku, ts = u["sku"], u.get("supplied_at", 0)
++            if ts >= costs.get(sku, {}).get("ts", 0):
++                costs[sku] = {"cost": u["cost"], "ts": ts}
++    no_rebuy = hub.setdefault("no_rebuy", {})
++    new_no_rebuy = 0
++    for u in units:
++        sku, supplied = u.get("sku"), u.get("supplied_at")
++        if (sku in catalog and isinstance(supplied, (int, float)) and supplied > 0
++                and now - max(supplied, detection_since) >= NO_REBUY_AGE_S
++                and hub.get("own_last_sale_ts", {}).get(sku, 0) < supplied and sku not in no_rebuy):
++            if len(no_rebuy) < MAX_NO_REBUY_SKUS:
++                no_rebuy[sku] = now
++                new_no_rebuy += 1
++            else:
++                hub["no_rebuy_overflow"] = True  # never evict a round-long prohibition
++    coverage = hub.get("adaptive_ledger_coverage", {})
++    covered = (coverage.get("since", now) <= now - NO_DEMAND_S
++               and 0 <= now - coverage.get("through", 0) <= 120)
++    ratio, source = resolve_market_ratio(hub, ratio_observation)
++    phase, endgame = endgame_phase(now)
++    growth = cash_policy.ready(hub, inv, now, inventory_fresh, phase['name'])
++    cash_policy.note_stock(hub, held, now)
++    cash_signals = {r['sku'] for r in cash_policy.sale_rows(hub) if 0 <= now-r['ts'] <= 3600}
++    cash_models = {}
++    ratio = taper_ratio(ratio, phase)
++    stock = cs["stock_cost_value"]
++    equity = int(inv.get("balance") or 0) + stock
++    target = ratio * equity
++    deficit = max(0, target - stock)
++    excluded = collections.Counter()
++    candidates = {g: [] for g in ("hot", "popular", "observe")}
++    storage = float(inv.get("storage_per_day", .01))
++    for sku, info in catalog.items():
++        events = radar.get("sku_inquiries", {}).get(sku.lower(), [])
++        recent = [e for e in events if 0 <= now - e["ts"] <= POPULARITY_S]
++        misses = sum(bool(e.get("miss")) for e in recent)
++        # Unheld SKUs use stockout inquiries only, not old quotes for stock no longer held.
++        inquiries = len(recent) if held[sku] else misses
++        sales = radar.get("sku_sold_ts", {}).get(sku, [])
++        grade, depth = popularity(inquiries, misses, sum(0 <= now - t <= POPULARITY_S for t in sales),
++                                  hot_max_depth=phase["hot_max_depth"])
++        if growth and (grade != 'none' or sku in cash_signals):
++            model = cash_policy.forecast(hub, sku, info, catalog, now, inquiries)
++            if model['own20'] >= 2 or inquiries >= 4:
++                grade = 'hot'
++            elif model['market60'] >= 10 or model['own60'] or misses:
++                grade = 'popular'
++            elif model['market60'] >= 3:
++                grade = 'observe'
++            depth = model['depth'] if grade != 'none' else 0
++            cash_models[sku] = model
++        lp, cost = int(info.get("list_price", 0)), estimated_cost(hub, sku, info)
++        prices = radar.get("sku_settles", {}).get(sku, [])
++        expected_price = statistics.median(prices) if prices else .95 * lp
++        margin = expected_price * .97 - cost  # net expected proceeds, including settlement fee
++        if growth and sku in cash_models:
++            estimate = cash_policy.procurement(hub,sku,info,inv,max(0,depth-held[sku]),catalog,now)
++            if estimate is None:
++                margin = -math.inf
++            else:
++                cost,margin = estimate['reservation_unit_cost'],estimate['expected_unit_contribution']
++                cash_models[sku].update(estimate)
++                cash_models[sku]['score20'] = cash_models[sku]['prediction20']*margin
++        reason = None
++        if sku in no_rebuy or hub.get("no_rebuy_overflow"):
++            reason = "no_rebuy" if sku in no_rebuy else "no_rebuy_history_full"
++        elif covered and not any(0 <= now - t <= NO_DEMAND_S for t in sales) and not any(
++                0 <= now - e["ts"] <= NO_DEMAND_S for e in events):
++            reason = "no_demand_2h"
++        elif depth == 0:
++            reason = "no_popularity"
++        elif grade not in phase["grades"]:
++            reason = "endgame_grade"
++        elif lp <= 0:
++            reason = "invalid_price"
++        elif (info.get("kind") == "food" and grade != "hot"
++              and (not MIN_FOOD_LIST_PRICE <= lp <= MAX_FOOD_LIST_PRICE
++                    or (not held[sku] and (info.get("shelf_hours") or 0) < FOOD_MIN_SHELF_HOURS))):
++            reason = "food_safety"
++        elif margin < 2 * storage * cost:
++            reason = "storage_margin"
++        elif depth <= held[sku]:
++            reason = "target_met"
++        if reason:
++            excluded[reason] += 1
++        else:
++            candidates[grade].append((sku, depth - held[sku], cost, margin))
++    for group in candidates.values():
++        group.sort(key=lambda c: (-c[3], c[0]))
++    restore = sum(n * c for g in ("hot", "popular") for s, n, c, m in candidates[g] if not held[s])
++    calculated = max(0, int(min(cs["available_budget"], max(restore, deficit / FILL_WINDOWS), WINDOW_EQUITY_CAP * equity)))
++    if growth:
++        calculated, reserve = cash_policy.spending_budget(hub,inv,cs['cash_floor'],now)
++        cs['available_budget'] = min(cs['available_budget'],max(0,inv['balance']-reserve))
++        cs['cash_floor'] = reserve
++    if phase["ratio_cap"] is not None and deficit <= 0:
++        calculated = 0
++    diag = {"E": equity, "R": ratio, "R_source": source, "T": target, "deficit": deficit,
++            "W": calculated, "cash_floor": cs["cash_floor"], "restore_cost": restore,
++            "grades": {g: {"skus": len(v), "reserved": 0} for g, v in candidates.items()},
++            "grade_budget": {"hot_popular": calculated, "observe": calculated // 2},
++            "no_rebuy_new": new_no_rebuy, "no_rebuy_total": len(no_rebuy), "excluded": excluded,
++            "no_demand_deferred": not covered, **endgame}
++    diag['seller_cash_policy'] = {'active':growth,'objective':'forecast own 20m sales * refund-adjusted contribution',
++                                  'models':cash_models if growth else {}}
++
++    def finish(orders, reason=None):
++        if reason:
++            diag["stop"] = reason
++        print(json.dumps(diag, ensure_ascii=False), file=sys.stderr, flush=True)
++        return {"buy": orders}
++
++    if time.time() >= ROUND_END_TS - STOP_BUYING_BEFORE_END_S:
++        return finish([], "round_end")
++    window = supply_window(inv)
++    if window is None:
++        return finish([], "outside_window")
++    actual = sum(s["total"] for s in hub.get("own_supplies", {}).values() if window[0] <= s["ts"] < window[1])
++    state = hub.setdefault("restock_windows", {}).setdefault(str(window), {"baseline_actual": actual, "reserved": 0})
++    if state.get("blocked"):
++        return finish([], "first_window")
++    cap = state.setdefault("window_cap", calculated)
++    diag["W"] = cap  # immutable initial ceiling; current cash can only reduce usable funds
++    used = max(actual, state["baseline_actual"] + state["reserved"])
++    budget = min(cs["available_budget"], calculated, max(0, cap - used))
++    diag["usable_budget"] = budget
++    planned = state.setdefault("planned_skus", {})
++    grade_spent = state.setdefault("grade_reserved", {g: 0 for g in candidates})
++    spent, orders = 0, []
++    groups = [(g,c) for g,group in candidates.items() for c in group]
++    if growth:
++        orders,spent = cash_policy.allocate(groups,cash_models,held,budget,cap,grade_spent,planned)
++    for grade, candidate in ([] if growth else groups):
++        sku, need, cost, margin = candidate
++        if sku in planned:
++            excluded["window_duplicate"] += 1
++            continue
++        allowance = budget - spent
++        if grade == "observe":
++            allowance = min(allowance, max(0, cap // 2 - grade_spent[grade]))
++        qty = min(need, 20*(10-len(orders)) if growth else 20, max(0, allowance) // cost)
++        if not qty or len(orders) >= 10:
++            continue
++        remaining = qty
++        while remaining:
++            batch = min(20,remaining)
++            orders.append({"sku":sku,'qty':batch})
++            remaining -= batch
++        planned[sku] = qty
++        spent += qty * cost
++        grade_spent[grade] += qty * cost
++    state["reserved"] += spent
++    for grade in candidates:
++        diag["grades"][grade]["reserved"] = grade_spent[grade]
++    diag["grade_budget"] = {"hot_popular": cap, "observe": cap // 2}
++    # Advertise only actual certified stock, using the seller's own first-quote calculation.
++    last_post = int(hub.get("forum_state", {}).get("last_shop_post_ts", 0))
++    text = cash_policy.stock_post(active,hub,catalog,now) if now-last_post >= cash_policy.config().get('forum_interval_seconds',1200) else None
++    if text:
++        queue_forum_action(market_dir, {"post": text, "refs": [], "as": "shop"})
++        hub.setdefault("forum_state", {})["last_shop_post_ts"] = int(now)
++    return finish(orders)
++
++
++def main():
++    ap = argparse.ArgumentParser()
++    ap.add_argument("--state", default=".market", help="Path to .market directory")
++    args = ap.parse_args()
++    print(json.dumps(build_restock_plan(Path(args.state)), ensure_ascii=False), flush=True)
++
++
++if __name__ == "__main__":
++    main()
++
+--- before/seller.py
++++ after/seller.py
+@@ -22,6 +22,7 @@
+ from typing import Any
+ 
+ import httpx
++import seller_cash_policy as cash_policy
+ import uvicorn
+ from cryptography.hazmat.primitives import serialization
+ from starlette.applications import Starlette
+@@ -356,7 +357,8 @@
+     """Compute High-Anchor opening ask, Fast-Close r1_target, hard reserve floor, and warranty_hours
+     for a Round 3 stock unit, with differentiated clearance logic for expiring food vs aged goods."""
+     cost = int(unit.get("cost") or 100)
+-    list_price = max(cost, int(unit.get("list_price") or int(cost * 1.5)))
++    # Catalog value never changes merely because wholesale cost exceeds it.
++    list_price = max(1, int(unit.get("list_price") or 1))
+     kind = unit.get("kind", "goods")
+     grade = str(unit.get("live_grade") or unit.get("grade") or "A")
+     hours_left = unit.get("hours_left")
+@@ -461,6 +463,12 @@
+ 
+         default_warranty = 0
+ 
++    first_quote = None
++    if clearance_factor() == 1.0:
++        first_quote = cash_policy.quote(unit,hub,load_catalog(MARKET_DIR),now)
++    if first_quote:
++        open_ask,r1_target,r2_target,hard_floor = (first_quote[k] for k in ('open_ask','r1_target','r2_target','hard_floor'))
++        break_rate = first_quote['break_rate']
+     open_ask = max(open_ask, hard_floor)
+     r1_target = min(open_ask, max(hard_floor, r1_target))
+     r2_target = min(r1_target, max(hard_floor, r2_target))
+@@ -472,7 +480,7 @@
+         salvage = max(1, int(cost * 0.25))
+         open_ask, r1_target, r2_target, hard_floor = (
+             int(salvage + (p - salvage) * f) for p in (open_ask, r1_target, r2_target, hard_floor))
+-    disc_from_list = max(1, int(round((1.0 - open_ask / max(1, list_price)) * 100)))
++    disc_from_list = max(0, int(round((1.0 - open_ask / max(1, list_price)) * 100)))
+     return {
+         "open_ask": open_ask,
+         "r1_target": r1_target,
+@@ -485,6 +493,7 @@
+         "warranty_hours": default_warranty,
+         "break_rate": break_rate,
+         "disc_pct": disc_from_list,
++        "cash_first_quote": bool(first_quote),
+     }
+ 
+ 
+@@ -785,9 +794,11 @@
+                     if grade in NO_CARE_GRADES:
+                         care_note += (f" Without Safe-Care: {no_care_price(ask, unit['cost'], pricing['break_rate'])}"
+                                       f" (no refund); say 'without care' to take that option.")
++                price_relation = (f"{list_price-ask} below catalog list" if ask < list_price else
++                                  "at catalog list" if ask == list_price else f"{ask-list_price} above catalog list")
+                 opening_msg = (
+                     f"{unit['name']} ({', '.join(spec_parts)}): asking price {ask} "
+-                    f"({pricing['disc_pct']}% below list price {list_price}).{care_note} "
++                    f"({price_relation} {list_price}).{care_note} "
+                     f"Send your offer as a number or reply {ask} for an instant Ed25519-signed receipt."
+                 )
+                 if is_food and required_hours is None:
+@@ -798,7 +809,8 @@
+                 record_inbound_inquiry(demand_query, matched=True, raw_text=text, sku=unit["sku"])
+                 print(
+                     f"[r3-quote] {unit['sku']} ({unit['name']}): cost={unit['cost']}, list={list_price}, "
+-                    f"grade={grade}, ask={ask}, r1_target={r1_target}, floor={hard_floor}, warranty={warranty}h",
++                    f"grade={grade}, ask={ask}, r1_target={r1_target}, floor={hard_floor}, warranty={warranty}h, "
++                    f"task={task.id}, cash_first_quote={pricing['cash_first_quote']}",
+                     flush=True,
+                 )
+                 # Immediate Opening Ask Lock: unit is bound to this task so concurrent buyers cannot touch it
+@@ -807,6 +819,8 @@
+                     "unit": unit,
+                     "item": unit["sku"],
+                     "ask": ask,
++                    "initial_ask": ask,
++                    "cash_first_quote": pricing['cash_first_quote'],
+                     "r1_target": r1_target,
+                     "r2_target": pricing["r2_target"],
+                     "hard_floor": hard_floor,
+@@ -948,6 +962,13 @@
+                 or (deal["rounds"] == 2 and offer >= r2_target)
+                 or (deal["rounds"] >= 3 and offer >= hard_floor)
+             )
++            if deal.get('cash_first_quote'):
++                final_target = max(hard_floor,math.ceil(in_mode(deal['initial_ask'])*.99))
++                should_accept = offer >= final_target
++                if not should_accept and deal['rounds'] >= 2:
++                    await up.reject(say(f"Our final price is {final_target}, including the stated certificate and warranty. No deal at {offer}."))
++                    del self.open[task.id]
++                    return
+ 
+             # Never below cost, except in the end-of-round clearance, where the floor itself goes below cost
+             if should_accept and offer >= min(cost, hard_floor):
+@@ -986,7 +1007,8 @@
+                 profit_est = final_price - cost
+                 print(
+                     f"[r3-deal] Sold {u['sku']} ({u['name']}) unit={u['unit']} at {final_price} "
+-                    f"(cost={cost}, profit=+{profit_est}, grade={live_grade}, warranty={warranty}h) in {deal['rounds']} turn(s)!",
++                    f"(cost={cost}, gross_before_refunds={profit_est}, grade={live_grade}, warranty={warranty}h, "
++                    f"task={task.id}, first_quote_accepted={final_price == deal.get('initial_ask')}) in {deal['rounds']} turn(s); receipt signed, payment not yet confirmed.",
+                     flush=True,
+                 )
+                 # Elevate to committed lock before deleting negotiation state
+@@ -1007,6 +1029,8 @@
+             # deal["ask"] stays in Safe-Care terms; the message quotes the price for the option the buyer is on
+             care_targets = (int(deal.get("r1_target") or 0), int(deal.get("r2_target") or 0), int(deal.get("hard_floor") or 0))
+             step = care_targets[0] if deal["rounds"] == 1 else (care_targets[1] if deal["rounds"] == 2 else care_targets[2])
++            if deal.get('cash_first_quote'):
++                step = max(care_targets[2],math.ceil(deal['initial_ask']*.99))
+             deal["ask"] = max(care_targets[2], step)
+             new_ask = in_mode(deal["ask"])
+ 
+@@ -1087,10 +1111,11 @@
+         name=SHOP_NAME,
+         description=(
+             "mjforge Certified Fulfillment Shop: Every unit ships with the market-signed certificate (cert=true), "
+-            "100% honest grade claims (A/B/C), up to 6h full-refund warranty on goods, and instant 1-turn discount "
+-            "below list price. Ed25519-signed receipts. Ask for a SKU or category: 'I want to buy <name> (<sku>)'."
++            "honest current grades (A/B/C), and a stated warranty on goods. First quotes reflect certified grade, "
++            "actual unit cost and comparable trades; prices can exceed catalog list when costs require it. "
++            "Ed25519-signed receipts. Ask for a SKU or category: 'I want to buy <name> (<sku>)'."
+         ),
+-        version="3.0.0",
++        version="3.1.0",
+         default_input_modes=["text/plain"],
+         default_output_modes=["application/json", "text/plain"],
+         capabilities=AgentCapabilities(streaming=False),
+@@ -1104,7 +1129,7 @@
+                 description=(
+                     "Ask for a SKU, product name, or category, then send an offer price as a number. "
+                     "Replies quote sku, unit, honest grade, certificate (cert=true), shelf life, warranty_hours, "
+-                    "list price, and discounted ask; closes fast in 1-2 turns with an Ed25519-signed receipt."
++                    "catalog list price, and the actual ask. Send the quoted price for an immediate Ed25519-signed receipt."
+                 ),
+                 tags=["shopping", "negotiation", "certified", "warranty"],
+                 examples=["I want to buy <name> (<sku>)", "15000"],
+@@ -1120,3 +1145,4 @@
+     parser.add_argument("--port", type=int, default=9999)
+     args = parser.parse_args()
+     uvicorn.run(build_app(args.port), host="127.0.0.1", port=args.port, log_level="warning")
++
+--- before/store.py
++++ after/store.py
+@@ -377,6 +377,9 @@
+                 supplies[str(e.get("seq"))] = {"ts": float(e["ts"]), "total": math.ceil(total),
+                                                "qty": data.get("qty")}
+     hub["own_shop_urls"] = sorted(own_urls)
++    # Separate idempotent seller-only observations; never change the buyer's ranking state.
++    from seller_cash_policy import observe
++    observe(hub, rows, catalog, time.time(), own_urls, OWN_NAME)
+ 
+     # Fast case-insensitive catalog lookup for canonical SKU & category
+     cat_lookup: dict[str, tuple[str, str]] = {}
+@@ -488,6 +491,7 @@
+             "expires_at": data.get("expires_at"), "shelf_hours": data.get("shelf_hours"),
+             "shop": data.get("shop") or data.get("seller"),
+             "order": data.get("order"), "seq": s_id,
++            "warranty_hours": data.get("warranty_hours"),
+         })
+         radar["sku_comparables"][canonical_sku] = observations[-50:]
+ 
+@@ -636,3 +640,4 @@
+             f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+     except OSError:
+         pass
++
+--- before/POLICY.md
++++ after/POLICY.md
+@@ -371,7 +371,7 @@
+ 
+ ---
+ 
+-## 9. 통합 매입 규칙 (확정안, 2026-11-04 — 아직 코드 미반영)
++## 9. 통합 매입 규칙 (2026-11-04 구현 기준; 성장기 변경은 12장 우선)
+ 
+ > 목적: 사람이 예산을 손으로 올리는 방식과 하드코딩 SKU 목록을 없애고, **시장 규모 · 우리 자본 · 인기 신호** 세 가지로만 매입을 결정한다.
+ > 근거: 11/04 16:39~18:43 KST 정산 6,050건 + seller 로그 24시간 분석(`Temp/opencode/pop-analysis/`), 같은 날 20시대 상위 상점 공개 지표.
+@@ -449,7 +449,7 @@
+ 
+ | 구간 (종료까지) | 기간 (KST) | 재고 비율 R 상한 | 매입 대상 등급 | 핫 최대 깊이 |
+ |---|---|---|---|---|
+-| 96시간 초과 | ~ 11/13 23:59 | 평소 규칙(9장, 최대 0.75) | 핫·인기·관찰 | 8 |
++| 96시간 초과 | ~ 11/13 23:59 | 성장 정책 활성 시 12장, 그 외 9장 | 핫·인기·관찰 | 성장 정책 40, 그 외 8 |
+ | 96~72시간 | 11/13 23:59 ~ 11/14 23:59 | 0.50 | 핫·인기·관찰 | 6 |
+ | 72~48시간 | 11/14 23:59 ~ 11/15 23:59 | 0.30 | 핫·인기 (관찰 중지) | 4 |
+ | 48~36시간 | 11/15 23:59 ~ 11/16 11:59 | 0.15 | 핫만 | 2 |
+@@ -496,3 +496,50 @@
+ 
+ ### 11.5 라운드 종료
+ - 종료 24시간 전부터의 청산 할인(`clearance_factor`)은 11.2·11.3 위에 그대로 적용된다(10장).
++
++---
++
++## 12. 셀러 Cash 성장 정책 (2026-11-04 적용)
++
++이 장은 정상 성장기에 한해 9장의 매입 규모·깊이·정렬과 정상 재고의 첫 호가를 대체한다. 10장의 종료 전 축소, 11장의 8/12시간 비식품·72/48/24/12시간 식품 처분, 재구매 금지, 동일 창 예약, 실제 공급창, 시작 직후 창 보류는 유지한다. buyer·review의 선택 정책은 변경하지 않는다.
++
++### 12.1 활성화와 관측
++
++- 설정은 `seller_cash_policy.json`, 계산은 `seller_cash_policy.py` 한 곳에 둔다. `enabled=false`면 새 성장·첫 호가 정책을 끌 수 있다.
++- 성장 매입은 round≥3, 잔액≥620만, 최신 재고, 20분 이상 연속 원장, 최근 원장≤120초, 종료 96시간 초과일 때 활성화한다. 조건 미충족 시 9장/10장 경로를 사용한다.
++- 별도 seller_cash 상태는 실제 settle·broken만 8시간/최대 40,000건 보관한다. 같은 seq는 중복 집계하지 않는다. 우리 buyer와 설정의 excluded_buyers를 제외한다. 공개 시장 거래수를 우리 매출로 간주하지 않는다.
++- 고장률은 6시간 이상 경과한 판매에서 추정하며, SKU 표본이 작으면 카테고리와 사전 가정(A .03/B .15/C .35)으로 보완한다. 공식 확률이 아닌 추정이다.
++
++### 12.2 공격적인 준비 수량과 현금 한도
++
++- 다음 20분 우리 판매 예측은 최근 자체 20분 판매, 자체 1시간 판매÷3, 관측된 재고 보유 시간으로 보정한 속도, 시장 1시간 거래×목표 점유율÷3, 문의 기반 추정 중 큰 값이다.
++- 목표 점유율은 SKU/카테고리의 우리 점유율과 초기 2% 중 큰 값의 1.5배다. 관측은 시나리오이며 미래 점유율 보장이 아니다. 부족한 재고 관측 구간을 재고가 있었다고 채우지 않는다.
++- 목표 재고 = ceil(다음 30분 판매 예측×1.75), 자체 판매/문의가 있는 상품은 최소 4단위, 새 후보는 최소 3단위, 최대 40단위. 현재 재고를 차감한다.
++- 예산 = (실제 잔액−준비금)의 최대 85%. 준비금은 기존 현금 하한, 500만, 미종결 보증 예상손실의 2배 중 가장 큰 값이다. 고정 자산 비율까지 재고를 채우지 않는다.
++- 품절된 자체 판매 상품을 우선 3단위까지 복원하고, `다음 20분 우리 예상 판매수×환불 후 건당 기여`가 큰 순서로 목표까지 채운다. 이 값은 판매분 기여 추정이며 미판매 재고 지출까지 포함한 확정 Cash 증가가 아니다.
++- 신규 매입의 기대이익에는 계획 물량이 올리는 할증을 반영한다. 예산 예약에는 다른 셀러의 동시 매입까지 대비해 정가×최고 A원가 .75×최대 할증 1.5를 상한으로 사용한다. 원가가 이미 고정된 판매 재고는 실제 개별 원가로 가격을 계산한다.
++- 요청당 최대 20단위·실제 출력 최대 10줄·같은 창 SKU 재예약 금지를 유지한다. 40단위 목표는 필요하면 20단위 두 줄로 분할한다. 비용과 예약은 한 번만 집계한다.
++
++### 12.3 정직한 첫 제안
++
++- 같은 SKU·같은 실제 등급·6시간 이상 보증의 최근 1시간 체결 표본 5개 이상일 때 중앙값을 첫 호가 기준으로 사용한다. 모르는 등급이나 보증 없는 거래를 비교 가격에 섞지 않는다. 부족하면 기존 가격 경로를 유지한다.
++- 가격 하한 = ceil((실제 개별 원가+절대 기여 하한)/(1−추정 환불확률)). 비식품 기본 기여 하한은 5,000, 정상 식품은 1,000이다. 기준 체결가가 하한보다 낮으면 하한을 제시하며, 이 높은 가격에 반드시 판매된다고 주장하지 않는다.
++- 새 첫 호가 경로는 첫 가격 또는 최대 1%의 단 한 번 양보로 체결한다. 두 번째 낮은 제안에서도 최종가를 충족하지 못하면 종료한다. 사용자가 명시적으로 선택한 기존 무보증 옵션은 조건을 설명한 뒤 유지한다.
++- 정가를 `max(원가, 정가)`로 바꾸지 않는다. 정가보다 비싸면 실제 초과 금액을 표시하고 할인이라고 쓰지 않는다. 증명서·실제 등급·식품 사용시간 확인·영수증 서명·재고 예약을 유지한다.
++- 로그의 first_quote_accepted는 영수증 발행 단계이며 결제 확정과 구분한다. 실제 정산은 장부로 대조한다. 최근 미성숙 판매의 차액을 환불 차감 확정 이익이라고 기록하지 않는다.
++
++### 12.4 게시판과 주기
++
++- 기존 5분대 일반 광고를 20분 간격의 검증된 재고 공지로 바꾼다. 현재 보유·증명서·실제 등급·가격을 확인한 비식품 최대 3개만 표시한다. 각 행은 실제 단위 한 개의 견적이며 이미 팔린 재고나 미입고 물량을 홍보하지 않는다.
++- 모든 상품이 정가보다 싸다는 문구와 무관한 카테고리 나열을 제거한다. 다른 가게 거래를 우리 판매 근거로 인용하지 않는다. shop 좋아요를 셀러 ALL이나 매출 유입의 증거로 사용하지 않는다.
++- 실행 중 restock hook의 기존 60초 확인과 주문별 재고 확인을 유지한다. 외부 시장 재평가는 20분 주기로 하되 실행 전 잔액·원가·예약·공급창을 다시 확인한다. 새 프로세스/네트워크 스케줄러를 셀러에 추가하지 않는다.
++
++### 12.5 검증과 반영 범위
++
++- 기준 커밋 `2fa90e6688696f0c23936a51f5f82f167f955d2b`: 오프라인 205개 통과.
++- 성장·현금 예약·원가·정가 표시·첫 가격 영수증·1회 양보·게시판 정확성 테스트 15개 추가. 전체 오프라인 220개 통과.
++- 반영 직전 원격의 buyer 수정 2개 커밋(`26d017f`)을 그대로 보존해 통합한 뒤, 추가된 buyer 테스트까지 포함한 227개도 통과했다.
++- 배포 전 점검에서 기존 공유 원장 커버리지로 새 관측기의 준비 시간을 건너뛰지 않도록 별도 커버리지를 추가했다. 이 회귀 테스트까지 228개를 통과했다. 새 관측기는 실제 20분 자료를 쌓은 뒤 확대하며, 그동안 기존 매입은 계속한다.
++- 공개 장부 136,241줄/5,629 SKU의 모의 원가 성능 재생: 약 1.06초. 실제 개인 재고나 실매입을 사용한 수익 검증이 아니다.
++- `history/20261104-seller-cash/`에 수정 전후 파일·해시·diff를 남긴다. GitHub 반영과 VM 배포는 별개다. 실제 VM에서 이 파일 전체를 갱신하고 seller 프로세스를 재시작해야 새 가격 코드가 실행된다. 서명 키나 `.market`을 교체하지 않는다.
++
+--- before/REPORT.md
++++ after/REPORT.md
+@@ -73,3 +73,12 @@
+    - 이를 제어하려면:
+      1. **주문/위임장 층(Order / Open Mandate Layer)**: Open Checkout Mandate의 `checkout.allowed_merchants` 제약에 직전 $K$회 연속 거래한 가게를 제외하거나 특정 가게 비중 상한(Concentration Cap)을 두는 방법.
+      2. **기록·평판 집계 층(Reputation / Board Layer)**: 정산 원장(`settle` 그래프)에서 특정 `(buyer, shop)` 쌍의 상호 거래 집중도(Reciprocal Trade Ratio)나 엔트로피를 계산하여, 폐쇄적 순환 거래에 대해서는 리더보드 가중치와 평점 반영률을 감쇠(Discounting)시키는 메커니즘이 필요하다.
++
++# 2026-11-04 셀러 Cash 성장 변경 이력
++
++이번 변경은 `POLICY.md` 12장과 `seller_cash_policy.json`에 정의했다. 목표를 우리 예상 판매수와 환불 차감 건당 기여의 곱으로 두고, 30분 수요의 1.75배를 준비한다. 정상 성장기에만 작동하며 기존 종료 전 축소·재구매 금지·처분·서명·식품 사용기간 확인은 유지한다.
++
++같은 SKU·등급·6시간 보증의 실제 체결가를 첫 가격 기준으로 사용하고, 새 경로의 양보를 1회·최대 1%로 제한했다. 원가가 정가를 넘더라도 정가를 부풀리거나 할인이라고 표시하지 않는다. 게시판은 현재 인증된 재고와 실제 첫 가격만 20분 간격으로 공지한다. buyer 전략은 변경하지 않았다.
++
++수정 전 205개, 수정 후 220개 오프라인 테스트를 통과했다. 원격 buyer 수정 2개 커밋을 보존해 최신 머리에 통합한 뒤에는 새 buyer 테스트까지 포함한 227개가 통과했다. 로그와 수정 전후 파일은 `logs/seller-cash-*.log`, `history/20261104-seller-cash/`에 보존했다. GitHub 반영은 실제 VM 배포·판매 실적 개선 확인과 구분한다. 다음 기존 보고서 본문은 이전 구현 당시 기록으로 보존하며 현재 셀러 규칙은 POLICY 12장을 우선한다.
++
+--- before/.gitignore
++++ after/.gitignore
+@@ -6,5 +6,8 @@
+ state_hub.lock
+ *.tmp
+ logs/*under-test*.log
++.test-deps/
++__pycache__/
+ 
+ 
++
+--- before/seller_cash_policy.py
++++ after/seller_cash_policy.py
+@@ -0,0 +1,237 @@
++"""Seller-only cash-growth policy. Pure calculations, bounded state, no network.
++
++Public settled volume is a demand signal, never our promised sales. All rates and
++refund probabilities below are estimates; no statistic is a guaranteed margin.
++"""
++from __future__ import annotations
++
++import collections
++import json
++import math
++from pathlib import Path
++import statistics
++from adaptive_strategy import note_ledger_coverage
++
++CONFIG_PATH = Path(__file__).with_name('seller_cash_policy.json')
++PRIOR_BREAK = {'A': .03, 'B': .15, 'C': .35}
++
++
++def config():
++    try:
++        value = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
++        return value if isinstance(value, dict) else {'enabled': False}
++    except (OSError, ValueError):
++        return {'enabled': False}
++
++
++def number(x):
++    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
++
++
++def observe(hub, rows, catalog, now, own_urls, own_name):
++    """Idempotent eight-hour sale/break observations shared under the existing lock."""
++    state = hub.setdefault('seller_cash', {})
++    # An older shared cursor does not prove that this new observer saw the same history.
++    note_ledger_coverage({'adaptive_ledger_coverage':state.setdefault('coverage',{})},rows,now)
++    sales = state.setdefault('sales', {})
++    breaks = state.setdefault('breaks', {})
++    lookup = {s.lower(): s for s in catalog}
++    excluded = set(config().get('excluded_buyers', [])) | {own_name}
++    for e in rows:
++        d, ts, seq = e.get('data') or {}, e.get('ts'), e.get('seq')
++        if e.get('round') != 3 or not number(ts) or not now-8*3600 <= ts <= now or not number(seq):
++            continue
++        if e.get('kind') == 'broken' and d.get('order'):
++            breaks[d['order']] = {'ts': ts, 'refunded': d.get('refunded') or 0}
++        if e.get('kind') != 'settle' or d.get('buyer') in excluded or not number(d.get('amount')) or d['amount'] <= 0:
++            continue
++        sku = lookup.get(str(d.get('sku') or d.get('item') or '').lower())
++        if sku is None:
++            continue
++        sales[str(int(seq))] = {'ts': ts, 'sku': sku, 'amount': d['amount'], 'grade': d.get('grade'),
++                                'warranty_hours': d.get('warranty_hours'), 'order': d.get('order'),
++                                'own': str(d.get('shop') or '').rstrip('/') in own_urls}
++    state['sales'] = dict(sorted(((s,d) for s,d in sales.items() if now-8*3600 <= d['ts'] <= now),
++                                key=lambda pair: pair[1]['ts'])[-40000:])
++    state['breaks'] = {k:d for k,d in breaks.items() if now-8*3600 <= d['ts'] <= now}
++
++
++def ready(hub, inv, now, inventory_fresh, phase):
++    p, coverage = config(), hub.get('adaptive_ledger_coverage', {})
++    observed = hub.get('seller_cash',{}).get('coverage',{})
++    return bool(p.get('enabled') and phase == 'normal' and inventory_fresh and inv.get('round', 0) >= 3
++                and number(inv.get('balance')) and inv['balance'] >= p.get('minimum_growth_balance', 6200000)
++                and number(coverage.get('since')) and coverage['since'] <= now-1200
++                and number(coverage.get('through')) and 0 <= now-coverage['through'] <= 120
++                and number(observed.get('since')) and observed['since'] <= now-1200
++                and number(observed.get('through')) and 0 <= now-observed['through'] <= 120)
++
++
++def sale_rows(hub):
++    return list(hub.get('seller_cash', {}).get('sales', {}).values())
++
++
++def refund_probability(hub, sku, grade, catalog, now):
++    prior = PRIOR_BREAK.get(grade, .35)
++    old = [r for r in sale_rows(hub) if now-8*3600 <= r['ts'] <= now-6*3600 and r.get('grade') == grade]
++    own_sku = [r for r in old if r['sku'] == sku]
++    if len(own_sku) >= 30:
++        old = own_sku
++    else:
++        cat = catalog.get(sku, {}).get('category')
++        old = [r for r in old if catalog.get(r['sku'], {}).get('category') == cat]
++    broken = hub.get('seller_cash', {}).get('breaks', {})
++    return (sum(r.get('order') in broken for r in old) + 20*prior)/(len(old)+20)
++
++
++def reference_price(hub, sku, grade, now, kind='goods'):
++    """Never mix unknown/other grades into the first-quote comparable price."""
++    observations = hub.get('demand_radar', {}).get('sku_comparables', {}).get(sku, [])
++    valid = [r for r in observations if r.get('grade') == grade and number(r.get('ts'))
++             and 0 <= now-r['ts'] <= 3600 and number(r.get('amount')) and r['amount'] > 0
++             and (kind != 'goods' or number(r.get('warranty_hours')) and r['warranty_hours'] >= 6)]
++    return int(round(statistics.median(r['amount'] for r in valid))) if len(valid) >= 5 else None
++
++
++def quote(unit, hub, catalog, now):
++    """Return a cost-safe first quote only with comparable evidence. Keep clearance separate."""
++    if not config().get('enabled'):
++        return None
++    sku = unit.get('sku')
++    grade = str(unit.get('live_grade') or unit.get('grade') or '')
++    kind = unit.get('kind', 'goods')
++    if kind == 'goods' and now-float(unit.get('supplied_at') or now) >= 8*3600:
++        return None
++    if kind == 'food' and float(unit.get('hours_left') or 0) < 72:
++        return None
++    price = reference_price(hub, sku, grade, now, kind)
++    if price is None or not number(unit.get('cost')):
++        return None
++    p = config()
++    q = refund_probability(hub, sku, grade, catalog, now) if kind == 'goods' else 0
++    contribution = p.get('absolute_goods_contribution',5000) if kind == 'goods' else p.get('absolute_food_contribution',1000)
++    floor = math.ceil((unit['cost']+contribution)/(1-q))
++    ask = max(floor, price)
++    last = max(floor, math.ceil(ask*(1-p.get('maximum_concession_fraction',.01))))
++    return {'open_ask':ask, 'r1_target':last, 'r2_target':last, 'hard_floor':floor,
++            'break_rate':q, 'cash_first_quote':True, 'quote_basis':'same-SKU/grade/6h-settles-1h'}
++
++
++def note_stock(hub, held, now):
++    observations = hub.setdefault('seller_cash', {}).setdefault('stock_observations', [])
++    if not observations or now-observations[-1]['ts'] >= 30:
++        observations.append({'ts':now,'skus':sorted(s for s,n in held.items() if n)})
++    hub['seller_cash']['stock_observations'] = [r for r in observations if 0 <= now-r['ts'] <= 3600][-121:]
++
++
++def forecast(hub, sku, info, catalog, now, inquiries=0):
++    p = config()
++    rows = [r for r in sale_rows(hub) if 0 <= now-r['ts'] <= 3600]
++    market = [r for r in rows if r['sku'] == sku]
++    own = [r for r in market if r.get('own')]
++    category = [r for r in rows if catalog.get(r['sku'],{}).get('category') == info.get('category')]
++    share = len(own)/len(market) if market else 0
++    cat_share = sum(bool(r.get('own')) for r in category)/len(category) if category else 0
++    target_share = min(1, max(share,cat_share,p.get('cold_start_share',.02))*p.get('share_growth_multiplier',1.5))
++    own20 = sum(now-r['ts'] <= 1200 for r in own)
++    # Correct only measured short gaps; a missing heartbeat never proves inventory availability.
++    observations = hub.get('seller_cash',{}).get('stock_observations',[])
++    available = sum(b['ts']-a['ts'] for a,b in zip(observations,observations[1:])
++                    if 0 < b['ts']-a['ts'] <= 90 and sku in a['skus'])
++    corrected = len(own)*1200/available if available >= 300 else len(own)/3
++    prediction = max(own20,len(own)/3,corrected,len(market)*target_share/3,inquiries/3)
++    if market:
++        prediction = min(prediction,max(len(market)/3,own20,inquiries/3))
++    minimum = p.get('minimum_proven_depth',4) if own or inquiries else p.get('minimum_new_depth',3)
++    depth = min(p.get('maximum_depth',40),max(minimum,math.ceil(prediction*p.get('forecast_minutes',30)/20*p.get('target_multiplier',1.75))))
++    return {'own20':own20,'own60':len(own),'market60':len(market),'prediction20':prediction,'depth':depth,'target_share':target_share}
++
++
++def procurement(hub, sku, info, inv, qty, catalog, now):
++    """Expected contribution for ranking; global legal cost ceiling for cash reservations."""
++    surge = next((r for r in inv.get('surge',[]) if r.get('sku') == sku),{})
++    units = surge.get('units')
++    current = surge.get('factor',1)
++    if not number(current) or not 1 <= current <= 1.5:
++        return None
++    factor = 1+min(.5,max(0,units+qty-50)*.002) if number(units) else min(1.5,current+qty*.002)
++    lp = info.get('list_price',0)
++    if not number(lp) or lp <= 0:
++        return None
++    weights = {'A':.7,'B':.2,'C':.1} if info.get('kind') == 'goods' else {'A':.25,'B':.5,'C':.25}
++    expected = 0
++    for grade,weight in weights.items():
++        price = reference_price(hub,sku,grade,now,info.get('kind','goods'))
++        if price is None:
++            # Prior is explicitly an estimate, never a current quote or a claimed executable price.
++            price = lp*{'A':.80,'B':.72,'C':.65}[grade]
++        q = refund_probability(hub,sku,grade,catalog,now) if info.get('kind') == 'goods' else 0
++        cost = lp*{'A':.65,'B':.5,'C':.35}[grade]*factor
++        expected += weight*(price*(1-q)-cost)
++    return {'expected_unit_contribution':expected,'projected_surge':factor,
++            # Other shops can buy between planning and supply. Reserve the published global maximum.
++            'reservation_unit_cost':math.ceil(lp*.75*1.5)}
++
++
++def spending_budget(hub, inv, existing_floor, now):
++    p = config()
++    pending = sum(r['amount']*PRIOR_BREAK.get(r.get('grade'),.35) for r in sale_rows(hub)
++                  if r.get('own') and 0 <= now-r['ts'] <= 6*3600 and (r.get('warranty_hours') or 0) >= 6
++                  and r.get('order') not in hub.get('seller_cash',{}).get('breaks',{}))
++    reserve = max(existing_floor,p.get('minimum_cash_reserve',5000000),math.ceil(pending*2))
++    return int(max(0,inv['balance']-reserve)*p.get('deployable_fraction',.85)),reserve
++
++
++def allocate(groups, models, held, budget, cap, grade_spent, previous):
++    """Restore proven stockouts first, then fund the highest total-cash forecasts."""
++    funded = collections.Counter()
++    spent = 0
++    priority = sorted(groups,key=lambda row:(-models.get(row[1][0],{}).get('score20',0),row[1][0]))
++    restoration = [(g,(s,min(3,n),c,m)) for g,(s,n,c,m) in priority
++                   if not held[s] and models.get(s,{}).get('own60',0)>0]
++    for grade,(sku,need,cost,margin) in restoration+priority:
++        if sku in previous or cost <= 0:
++            continue
++        missing = need-funded[sku]
++        allowance = budget-spent
++        if grade == 'observe':
++            allowance = min(allowance,max(0,cap//2-grade_spent[grade]))
++        qty = min(missing,max(0,allowance)//cost)
++        while qty > 0 and sum(math.ceil((n+(qty if s==sku else 0))/20) for s,n in funded.items()) + (math.ceil(qty/20) if sku not in funded else 0) > 10:
++            qty -= 1
++        if qty <= 0:
++            continue
++        funded[sku] += qty
++        spent += qty*cost
++        grade_spent[grade] += qty*cost
++    orders = []
++    for sku,qty in funded.items():
++        previous[sku] = qty
++        while qty:
++            batch = min(20,qty)
++            orders.append({'sku':sku,'qty':batch})
++            qty -= batch
++    return orders,spent
++
++
++def stock_post(units, hub, catalog, now):
++    """Only advertise verified held goods, at the same quote used by the seller."""
++    ranked = []
++    for u in units:
++        if u.get('kind') != 'goods' or u.get('grade') not in PRIOR_BREAK or not u.get('cert'):
++            continue
++        value = quote(u,hub,catalog,now)
++        if value:
++            ranked.append(((value['open_ask']*(1-value['break_rate'])-u['cost']),u,value))
++    lines, seen = [],set()
++    for _,u,value in sorted(ranked,key=lambda r:-r[0]):
++        key = u['sku'],u['grade'],value['open_ask']
++        if key in seen:
++            continue
++        seen.add(key)
++        lines.append(f"SKU={u['sku']} grade={u['grade']} qty=1 first_quote={value['open_ask']} cert=true warranty_hours=6")
++        if len(lines)==3:
++            break
++    if not lines:
++        return None
++    return '[mjforge verified stock]\n'+'\n'.join(lines)+f'\nChecked_at={int(now)}. Each quote is for one verified unit; stock is rechecked at checkout. Send the SKU for an immediate quote.'
+--- before/seller_cash_policy.json
++++ after/seller_cash_policy.json
+@@ -0,0 +1,21 @@
++{
++  "version": 1,
++  "enabled": true,
++  "analysis_seconds": 1200,
++  "quote_lookback_seconds": 3600,
++  "forecast_minutes": 30,
++  "target_multiplier": 1.75,
++  "share_growth_multiplier": 1.5,
++  "cold_start_share": 0.02,
++  "minimum_growth_balance": 6200000,
++  "minimum_cash_reserve": 5000000,
++  "deployable_fraction": 0.85,
++  "minimum_proven_depth": 4,
++  "minimum_new_depth": 3,
++  "maximum_depth": 40,
++  "absolute_goods_contribution": 5000,
++  "absolute_food_contribution": 1000,
++  "maximum_concession_fraction": 0.01,
++  "forum_interval_seconds": 1200,
++  "excluded_buyers": ["mjforge"]
++}
+--- before/test_seller_cash_offline.py
++++ after/test_seller_cash_offline.py
+@@ -0,0 +1,167 @@
++"""Seller cash policy: monetary limits, forecast attribution, honest receipts; no network."""
++import collections
++import unittest
++from unittest.mock import patch
++
++import seller
++import seller_cash_policy as cash
++import store
++import restock
++from test_unified_buying_offline import BuyingFixture,NOW
++import test_seller_food_offline as food_fixture
++
++
++def sale(sku,ts,own=False,amount=80000,grade='A',order='order'):
++    return {'sku':sku,'ts':ts,'own':own,'amount':amount,'grade':grade,'order':order,'warranty_hours':6}
++
++
++class CashMathTests(unittest.TestCase):
++    def setUp(self):
++        self.catalog={'G00000001':{'category':'beds','kind':'goods','list_price':100000}}
++        self.hub=store.default_hub()
++
++    def test_observations_deduplicate_and_exclude_own_buyer(self):
++        rows=[{'round':3,'kind':'settle','seq':1,'ts':NOW,'data':{'item':'G00000001','buyer':'outside','amount':80000,'grade':'A','shop':'https://own','order':'a'}},
++              {'round':3,'kind':'settle','seq':2,'ts':NOW,'data':{'item':'G00000001','buyer':'mjforge','amount':80000,'shop':'other','order':'b'}}]
++        cash.observe(self.hub,rows*2,self.catalog,NOW,{'https://own'},'mjforge')
++        self.assertEqual(len(self.hub['seller_cash']['sales']),1)
++        self.assertTrue(self.hub['seller_cash']['sales']['1']['own'])
++
++    def test_only_mature_sales_estimate_breakage(self):
++        self.hub['seller_cash']={'sales':{'old':sale('G00000001',NOW-7*3600,order='old'),
++                                          'new':sale('G00000001',NOW-60,order='new')},
++                                 'breaks':{'new':{'ts':NOW}}}
++        self.assertAlmostEqual(cash.refund_probability(self.hub,'G00000001','A',self.catalog,NOW),.6/21)
++
++    def test_huge_market_is_not_assigned_to_our_shop(self):
++        self.hub['seller_cash']={'sales':{str(i):sale('G00000001',NOW-i) for i in range(800)}}
++        p=cash.forecast(self.hub,'G00000001',self.catalog['G00000001'],self.catalog,NOW)
++        self.assertAlmostEqual(p['prediction20'],8)
++        self.assertEqual(p['depth'],21)
++        self.assertLess(p['prediction20'],800)
++
++    def test_own_velocity_can_grow_beyond_old_eight_unit_cap(self):
++        self.hub['seller_cash']={'sales':{str(i):sale('G00000001',NOW-i,own=i<8) for i in range(40)}}
++        p=cash.forecast(self.hub,'G00000001',self.catalog['G00000001'],self.catalog,NOW)
++        self.assertGreater(p['depth'],8)
++        self.assertLessEqual(p['depth'],40)
++
++    def test_actual_worst_case_reservations_cover_surge_races(self):
++        v=cash.procurement(self.hub,'G00000001',self.catalog['G00000001'],
++                           {'surge':[{'sku':'G00000001','units':233,'factor':1.366}]},20,self.catalog,NOW)
++        self.assertAlmostEqual(v['projected_surge'],1.406)
++        self.assertEqual(v['reservation_unit_cost'],112500)
++
++    def test_budget_keeps_refund_cash_and_does_not_depend_on_stock_target_ratio(self):
++        budget,reserve=cash.spending_budget(self.hub,{'balance':30000000},1500000,NOW)
++        self.assertEqual(reserve,5000000)
++        self.assertEqual(budget,21250000)
++        self.assertGreaterEqual(30000000-budget,reserve)
++
++    def test_restoration_precedes_whole_budget_concentration_and_repeats_are_blocked(self):
++        models={'a':{'score20':1000000,'own60':10},'b':{'score20':100,'own60':2}}
++        groups=[('hot',('a',40,100,100)),('popular',('b',10,100,10))]
++        previous={};spending=collections.Counter()
++        orders,spent=cash.allocate(groups,models,collections.Counter(),1000,1000,spending,previous)
++        bought=collections.Counter()
++        for o in orders:bought[o['sku']]+=o['qty']
++        self.assertGreaterEqual(bought['b'],3)
++        self.assertEqual(spent,1000)
++        self.assertEqual(cash.allocate(groups,models,collections.Counter(),1000,1000,spending,previous),([],0))
++
++    def test_supply_limits_apply_to_split_lines(self):
++        groups=[('hot',(str(i),40,100,100)) for i in range(12)]
++        models={str(i):{'score20':i,'own60':0} for i in range(12)}
++        orders,spent=cash.allocate(groups,models,collections.Counter(),100000,100000,collections.Counter(),{})
++        self.assertLessEqual(len(orders),10)
++        self.assertTrue(all(1<=o['qty']<=20 for o in orders))
++
++    def test_warmup_freshness_and_endgame_gate(self):
++        self.hub['adaptive_ledger_coverage']={'since':NOW-1200,'through':NOW}
++        self.hub['seller_cash']={'coverage':{'since':NOW-1200,'through':NOW}}
++        inv={'round':3,'balance':10000000}
++        self.assertTrue(cash.ready(self.hub,inv,NOW,True,'normal'))
++        self.assertFalse(cash.ready(self.hub,inv,NOW,False,'normal'))
++        self.assertFalse(cash.ready(self.hub,inv,NOW,True,'taper-1'))
++        self.hub['adaptive_ledger_coverage']['since']=NOW-60
++        self.assertFalse(cash.ready(self.hub,inv,NOW,True,'normal'))
++
++    def test_old_shared_history_does_not_skip_new_observer_warmup(self):
++        self.hub['adaptive_ledger_coverage']={'since':NOW-7200,'through':NOW}
++        self.hub['seller_cash']={'coverage':{'since':NOW-60,'through':NOW}}
++        self.assertFalse(cash.ready(self.hub,{'round':3,'balance':30000000},NOW,True,'normal'))
++
++
++class CashRestockTests(BuyingFixture,unittest.TestCase):
++    def test_live_growth_runs_through_real_planner_without_duplicate_buys(self):
++        sku=self.item('G00000001',price=100000)
++        self.inv.update(round=3,balance=30000000,surge=[])
++        self.hub['adaptive_ledger_coverage']={'since':NOW-1200,'through':NOW}
++        self.hub['seller_cash']={'sales':{str(i):sale(sku,NOW-i,own=i<8) for i in range(40)},
++                                 'coverage':{'since':NOW-1200,'through':NOW}}
++        p=restock.plan_with_hub(self.hub,self.path,self.catalog,self.inv,[],inventory_fresh=True)
++        self.assertGreater(sum(x['qty'] for x in p['buy']),8)
++        self.assertTrue(self.diag()['seller_cash_policy']['active'])
++        self.assertLessEqual(self.state()['reserved'],21250000)
++        self.assertEqual(restock.plan_with_hub(self.hub,self.path,self.catalog,self.inv,[],inventory_fresh=True)['buy'],[])
++
++
++class CashQuoteTests(unittest.TestCase):
++    # Reuse the existing isolated fake A2A fixture, without inheriting/duplicating its tests.
++    setUp=food_fixture.FoodSafetyTests.setUp
++    turn=food_fixture.FoodSafetyTests.turn
++    receipt=food_fixture.FoodSafetyTests.receipt
++
++    def prepare(self,cost=60000):
++        sku='G00000001'
++        self.catalog={sku:{'category':'beds','list_price':100000,'kind':'goods'}}
++        unit={'unit':'goods-1','sku':sku,'name':'mattress','kind':'goods','grade':'A','cost':cost,
++              'list_price':100000,'category':'beds','supplied_at':self.now-60,'cert':{'proof':'test'}}
++        self.inventory['units']=[unit]
++        hub={'demand_radar':{'sku_comparables':{sku:[{'grade':'A','amount':80000,'ts':self.now-i,'warranty_hours':6} for i in range(5)]}}}
++        self.stack.enter_context(patch.object(seller,'load_hub',return_value=hub))
++        return sku,unit,hub
++
++    def test_first_quote_receipt_uses_same_price_unit_grade_and_warranty(self):
++        sku,unit,hub=self.prepare()
++        self.turn(sku)
++        self.assertEqual(self.agent.open['task-1']['ask'],80000)
++        receipt=self.receipt(self.turn('80000'))
++        self.assertEqual((receipt['price'],receipt['unit'],receipt['claim'],receipt['warranty_hours']),(80000,'goods-1','A',6))
++
++    def test_one_small_concession_then_rejects_low_offer(self):
++        sku,unit,hub=self.prepare()
++        self.turn(sku)
++        first=self.turn('60000')
++        self.assertIn('79200',str(first))
++        second=self.turn('60000')
++        self.assertIn('reject',[k for k,_ in second])
++        self.assertNotIn('receipt',[k for k,_ in second])
++        self.assertFalse(self.agent.open)
++
++    def test_high_wholesale_cost_never_changes_catalog_value_or_claims_discount(self):
++        sku,unit,hub=self.prepare(130000)
++        quote=seller.compute_unit_pricing_and_terms(unit,hub)
++        self.assertEqual(quote['list_price'],100000)
++        self.assertEqual(quote['disc_pct'],0)
++        text=str(self.turn(sku))
++        self.assertIn('above catalog list',text)
++        self.assertNotIn('% below',text)
++
++    def test_unknown_grade_and_short_warranty_not_price_comparables(self):
++        sku,unit,hub=self.prepare()
++        obs=hub['demand_radar']['sku_comparables'][sku]
++        obs += [{'grade':'B','amount':1,'ts':self.now,'warranty_hours':6}]*30
++        obs += [{'grade':'A','amount':1,'ts':self.now,'warranty_hours':0}]*30
++        self.assertEqual(cash.quote(unit,hub,self.catalog,self.now)['open_ask'],80000)
++
++    def test_shop_post_uses_only_actual_certified_stock_and_same_quote(self):
++        sku,unit,hub=self.prepare()
++        text=cash.stock_post([unit],hub,self.catalog,self.now)
++        self.assertIn('qty=1 first_quote=80000',text)
++        self.assertIn('grade=A',text)
++        self.assertIsNone(cash.stock_post([{**unit,'cert':None}],hub,self.catalog,self.now))
++
++
++if __name__=='__main__':
++    unittest.main()

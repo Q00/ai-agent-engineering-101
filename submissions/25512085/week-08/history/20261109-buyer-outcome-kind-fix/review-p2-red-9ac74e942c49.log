@@ -1,0 +1,82 @@
+test_absent_and_matching_known_ledger_metadata_not_conflict (test_buyer_outcomes_kind_offline.KindTests.test_absent_and_matching_known_ledger_metadata_not_conflict) ... ok
+test_arbitrary_valid_sku_uses_catalog (test_buyer_outcomes_kind_offline.KindTests.test_arbitrary_valid_sku_uses_catalog) ... ok
+test_both_collision_orders_persist_until_future_insert (test_buyer_outcomes_kind_offline.KindTests.test_both_collision_orders_persist_until_future_insert) ... FAIL
+test_explicit_ledger_facts_survive_absent_snapshot (test_buyer_outcomes_kind_offline.KindTests.test_explicit_ledger_facts_survive_absent_snapshot) ... FAIL
+test_explicit_ledger_kind_contradiction_is_integrity_conflict (test_buyer_outcomes_kind_offline.KindTests.test_explicit_ledger_kind_contradiction_is_integrity_conflict) ... FAIL
+test_food_under_twenty_is_not_goods_warning (test_buyer_outcomes_kind_offline.KindTests.test_food_under_twenty_is_not_goods_warning) ... ok
+test_future_collision_order_marked_in_every_arrival_order (test_buyer_outcomes_kind_offline.KindTests.test_future_collision_order_marked_in_every_arrival_order) ... FAIL
+test_gprefix_food_not_goods (test_buyer_outcomes_kind_offline.KindTests.test_gprefix_food_not_goods) ... ok
+test_gprefix_goods (test_buyer_outcomes_kind_offline.KindTests.test_gprefix_goods) ... ok
+test_invalid_and_conflicting_ledger_evidence_unknown (test_buyer_outcomes_kind_offline.KindTests.test_invalid_and_conflicting_ledger_evidence_unknown) ... ok
+test_known_ledger_kind_against_frozen_catalog_not_lost (test_buyer_outcomes_kind_offline.KindTests.test_known_ledger_kind_against_frozen_catalog_not_lost) ... FAIL
+test_ledger_event_kind_is_not_item_kind (test_buyer_outcomes_kind_offline.KindTests.test_ledger_event_kind_is_not_item_kind) ... ok
+test_legacy_boolean_not_trusted_or_sku_inferred (test_buyer_outcomes_kind_offline.KindTests.test_legacy_boolean_not_trusted_or_sku_inferred) ... ok
+test_legacy_gfood_unknown_no_formula (test_buyer_outcomes_kind_offline.KindTests.test_legacy_gfood_unknown_no_formula) ... ok
+test_mixed_duplicate_both_orders_safe_provenance (test_buyer_outcomes_kind_offline.KindTests.test_mixed_duplicate_both_orders_safe_provenance) ... ok
+test_mixed_file_corrupt_tail_preserved_then_valid_v2 (test_buyer_outcomes_kind_offline.KindTests.test_mixed_file_corrupt_tail_preserved_then_valid_v2) ... ok
+test_mixed_following_events_counts_orders_vs_events (test_buyer_outcomes_kind_offline.KindTests.test_mixed_following_events_counts_orders_vs_events) ... ok
+test_same_order_distinct_event_kinds_keep_event_denominator (test_buyer_outcomes_kind_offline.KindTests.test_same_order_distinct_event_kinds_keep_event_denominator) ... ok
+test_same_seq_original_facts_conflicts_detected (test_buyer_outcomes_kind_offline.KindTests.test_same_seq_original_facts_conflicts_detected) ... ok
+test_snapshot_kind_change_not_ledger_conflict (test_buyer_outcomes_kind_offline.KindTests.test_snapshot_kind_change_not_ledger_conflict) ... ok
+test_stored_snapshot_frozen_not_catalog_reclassified (test_buyer_outcomes_kind_offline.KindTests.test_stored_snapshot_frozen_not_catalog_reclassified) ... ok
+test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) ... ok
+test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) ... ok
+
+======================================================================
+FAIL: test_both_collision_orders_persist_until_future_insert (test_buyer_outcomes_kind_offline.KindTests.test_both_collision_orders_persist_until_future_insert)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\review-p2-red-9ac74e942c49\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 253, in test_both_collision_orders_persist_until_future_insert
+    self.assertEqual(c['unknown_reason'], 'conflicting_events')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'ledger_coverage_unproven' != 'conflicting_events'
+- ledger_coverage_unproven
++ conflicting_events
+
+
+======================================================================
+FAIL: test_explicit_ledger_facts_survive_absent_snapshot (test_buyer_outcomes_kind_offline.KindTests.test_explicit_ledger_facts_survive_absent_snapshot)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\review-p2-red-9ac74e942c49\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 211, in test_explicit_ledger_facts_survive_absent_snapshot
+    self.assertEqual(c['unknown_reason'], 'conflicting_events')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'ledger_coverage_unproven' != 'conflicting_events'
+- ledger_coverage_unproven
++ conflicting_events
+
+
+======================================================================
+FAIL: test_explicit_ledger_kind_contradiction_is_integrity_conflict (test_buyer_outcomes_kind_offline.KindTests.test_explicit_ledger_kind_contradiction_is_integrity_conflict)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\review-p2-red-9ac74e942c49\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 200, in test_explicit_ledger_kind_contradiction_is_integrity_conflict
+    self.assertEqual(c['unknown_reason'], 'conflicting_events')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != 'conflicting_events'
+
+======================================================================
+FAIL: test_future_collision_order_marked_in_every_arrival_order (test_buyer_outcomes_kind_offline.KindTests.test_future_collision_order_marked_in_every_arrival_order)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\review-p2-red-9ac74e942c49\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 242, in test_future_collision_order_marked_in_every_arrival_order
+    self.assertEqual(c['unknown_reason'], 'conflicting_events')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != 'conflicting_events'
+
+======================================================================
+FAIL: test_known_ledger_kind_against_frozen_catalog_not_lost (test_buyer_outcomes_kind_offline.KindTests.test_known_ledger_kind_against_frozen_catalog_not_lost)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\review-p2-red-9ac74e942c49\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 230, in test_known_ledger_kind_against_frozen_catalog_not_lost
+    self.assertEqual(c['item_kind'], 'unknown')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'goods' != 'unknown'
+- goods
++ unknown
+
+
+----------------------------------------------------------------------
+Ran 23 tests in 0.035s
+
+FAILED (failures=5)

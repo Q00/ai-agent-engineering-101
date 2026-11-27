@@ -1,0 +1,60 @@
+test_slow_fsync_does_not_hold_hub_lock (test_buyer_outcomes_p2_offline.P2Tests.test_slow_fsync_does_not_hold_hub_lock) ... FAIL
+test_truncated_prefix_explicit_unknown (test_buyer_outcomes_p2_offline.P2Tests.test_truncated_prefix_explicit_unknown) ... ERROR
+test_valid_json_invalid_schema_continues_file_and_iterable (test_buyer_outcomes_p2_offline.P2Tests.test_valid_json_invalid_schema_continues_file_and_iterable) ... 
+  test_valid_json_invalid_schema_continues_file_and_iterable (test_buyer_outcomes_p2_offline.P2Tests.test_valid_json_invalid_schema_continues_file_and_iterable) (bad={'kind': 'settle', 'buyer': 'mjforge', 'seq': 3, 'order': 'bad'}) ... ERROR
+  test_valid_json_invalid_schema_continues_file_and_iterable (test_buyer_outcomes_p2_offline.P2Tests.test_valid_json_invalid_schema_continues_file_and_iterable) (bad={'version': 1, 'kind': 'settle', 'buyer': 'mjforge', 'order': 'order-1', 'seq': [], 'ts': 100, 'observed_at': 300, 'unit': None, 'sku': 'g00000001', 'paid_amount': 60, 'list_price': 100, 'list_price_source': 'catalog_at_observation', 'grade': 'A', 'warranty_hours': 72, 'goods': True}) ... ERROR
+  test_valid_json_invalid_schema_continues_file_and_iterable (test_buyer_outcomes_p2_offline.P2Tests.test_valid_json_invalid_schema_continues_file_and_iterable) (bad={'version': 1, 'kind': 'coverage', 'observed_at': 300, 'complete': False, 'unlinked': []}) ... ERROR
+
+======================================================================
+ERROR: test_truncated_prefix_explicit_unknown (test_buyer_outcomes_p2_offline.P2Tests.test_truncated_prefix_explicit_unknown)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-link\evidence\p2-before-a4e32caf6cc6\submissions\25512085\week-08\test_buyer_outcomes_p2_offline.py", line 73, in test_truncated_prefix_explicit_unknown
+    self.assertTrue(result['truncated'])
+                    ~~~~~~^^^^^^^^^^^^^
+KeyError: 'truncated'
+
+======================================================================
+ERROR: test_valid_json_invalid_schema_continues_file_and_iterable (test_buyer_outcomes_p2_offline.P2Tests.test_valid_json_invalid_schema_continues_file_and_iterable) (bad={'kind': 'settle', 'buyer': 'mjforge', 'seq': 3, 'order': 'bad'})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-link\evidence\p2-before-a4e32caf6cc6\submissions\25512085\week-08\test_buyer_outcomes_p2_offline.py", line 62, in test_valid_json_invalid_schema_continues_file_and_iterable
+    direct = outcomes.summarize([bad] + events(), OWN, 30000)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-link\evidence\p2-before-a4e32caf6cc6\submissions\25512085\week-08\buyer_outcomes.py", line 228, in summarize
+    mature_6h=now >= sale['ts'] + 21600,
+                     ~~~~^^^^^^
+KeyError: 'ts'
+
+======================================================================
+ERROR: test_valid_json_invalid_schema_continues_file_and_iterable (test_buyer_outcomes_p2_offline.P2Tests.test_valid_json_invalid_schema_continues_file_and_iterable) (bad={'version': 1, 'kind': 'settle', 'buyer': 'mjforge', 'order': 'order-1', 'seq': [], 'ts': 100, 'observed_at': 300, 'unit': None, 'sku': 'g00000001', 'paid_amount': 60, 'list_price': 100, 'list_price_source': 'catalog_at_observation', 'grade': 'A', 'warranty_hours': 72, 'goods': True})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-link\evidence\p2-before-a4e32caf6cc6\submissions\25512085\week-08\test_buyer_outcomes_p2_offline.py", line 62, in test_valid_json_invalid_schema_continues_file_and_iterable
+    direct = outcomes.summarize([bad] + events(), OWN, 30000)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-link\evidence\p2-before-a4e32caf6cc6\submissions\25512085\week-08\buyer_outcomes.py", line 183, in summarize
+    if key in seen:
+       ^^^^^^^^^^^
+TypeError: unhashable type: 'list'
+
+======================================================================
+ERROR: test_valid_json_invalid_schema_continues_file_and_iterable (test_buyer_outcomes_p2_offline.P2Tests.test_valid_json_invalid_schema_continues_file_and_iterable) (bad={'version': 1, 'kind': 'coverage', 'observed_at': 300, 'complete': False, 'unlinked': []})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-link\evidence\p2-before-a4e32caf6cc6\submissions\25512085\week-08\test_buyer_outcomes_p2_offline.py", line 64, in test_valid_json_invalid_schema_continues_file_and_iterable
+    self.assertEqual(direct['coverage']['corrupt_unknown'], 1)
+                     ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+KeyError: 'corrupt_unknown'
+
+======================================================================
+FAIL: test_slow_fsync_does_not_hold_hub_lock (test_buyer_outcomes_p2_offline.P2Tests.test_slow_fsync_does_not_hold_hub_lock)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-link\evidence\p2-before-a4e32caf6cc6\submissions\25512085\week-08\test_buyer_outcomes_p2_offline.py", line 46, in test_slow_fsync_does_not_hold_hub_lock
+    self.assertTrue(updated.wait(1), 'journal fsync blocked an independent hub update')
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : journal fsync blocked an independent hub update
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.101s
+
+FAILED (failures=1, errors=4)

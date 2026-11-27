@@ -1,0 +1,53 @@
+Command: python -B verify_cash_refactor_offline.py after
+Interpreter: C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\python.exe
+Temporary parent: C:\Users\clair\AppData\Local\Temp\opencode
+Guards: no external I/O, no repository writes, no original market/state/key/log reads
+Public API: {"allocate": "(groups, models, held, budget, cap, grade_spent, previous)", "availability_plan": "(units, hub, catalog, now, forum=None)", "compact_break_orders": "(hub, now, *, mature=False)", "compact_cash_sales": "(hub, now)", "config": "()", "forecast": "(hub, sku, info, catalog, now, inquiries=0)", "note_stock": "(hub, held, now)", "number": "(x)", "observe": "(hub, rows, catalog, now, own_urls, own_name)", "observe_break_stats": "(hub, rows, catalog, now, own_urls, own_name)", "procurement": "(hub, sku, info, inv, qty, catalog, now)", "profit_floor": "(unit, hub, catalog, now, warranty=None)", "quote": "(unit, hub, catalog, now)", "ready": "(hub, inv, now, inventory_fresh, phase)", "reference_price": "(hub, sku, grade, now, kind='goods', warranty=None)", "refund_probability": "(hub, sku, grade, catalog, now)", "sale_rows": "(hub)", "spending_budget": "(hub, inv, existing_floor, now)", "stock_post": "(units, hub, catalog, now)", "warranty_hours": "(grade, kind='goods')"}
+test_budget_uses_live_prior_and_configuration (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_budget_uses_live_prior_and_configuration) ... ok
+test_config_and_prior_replacements_reach_risk_and_floor (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_config_and_prior_replacements_reach_risk_and_floor) ... ok
+test_forecast_uses_live_configuration (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_forecast_uses_live_configuration) ... ok
+test_forum_uses_live_configuration_and_validator (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_forum_uses_live_configuration_and_validator) ... ok
+test_observation_keeps_existing_patch_boundary (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_observation_keeps_existing_patch_boundary) ... ok
+test_original_public_signatures_and_function_modules (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_original_public_signatures_and_function_modules) ... ok
+test_procurement_calls_patched_pricing_and_risk (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_procurement_calls_patched_pricing_and_risk) ... ok
+test_quote_calls_patched_facade_functions (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_quote_calls_patched_facade_functions) ... ok
+test_reference_price_uses_patched_warranty_and_numeric_validator (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_reference_price_uses_patched_warranty_and_numeric_validator) ... ok
+test_stock_post_still_calls_patched_availability_plan (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_stock_post_still_calls_patched_availability_plan) ... ok
+test_acceptable_and_stockout_filters_remain (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_acceptable_and_stockout_filters_remain) ... ok
+test_bestseller_trust_and_deal_weights_remain (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_bestseller_trust_and_deal_weights_remain) ... ok
+test_diversity_and_recent_failure_weights_remain (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_diversity_and_recent_failure_weights_remain) ... ok
+test_equal_discount_same_base_utility_across_price_scales (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_equal_discount_same_base_utility_across_price_scales) ... ok
+test_feasibility_and_budget_estimate_unchanged (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_feasibility_and_budget_estimate_unchanged) ... ok
+test_higher_rate_beats_larger_absolute_saving (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_higher_rate_beats_larger_absolute_saving) ... ok
+test_missing_zero_price_fallback_boundary_and_invalid_prices (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_missing_zero_price_fallback_boundary_and_invalid_prices) ... ok
+test_no_fixed_money_floor (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_no_fixed_money_floor) ... ok
+test_break_claim_without_break_refs_is_skipped (test_forum_intel_offline.ForumIntelTests.test_break_claim_without_break_refs_is_skipped) ... ok
+test_filters (test_forum_intel_offline.ForumIntelTests.test_filters) ... ok
+test_food_quality_is_skipped_but_food_prices_remain (test_forum_intel_offline.ForumIntelTests.test_food_quality_is_skipped_but_food_prices_remain) ... ok
+test_goods_zero_break_quality_remains_eligible (test_forum_intel_offline.ForumIntelTests.test_goods_zero_break_quality_remains_eligible) ... ok
+test_minimum_samples_and_missing_data (test_forum_intel_offline.ForumIntelTests.test_minimum_samples_and_missing_data) ... ok
+test_numbers_refs_and_lengths (test_forum_intel_offline.ForumIntelTests.test_numbers_refs_and_lengths) ... ok
+test_outbox_disabled_model_and_both_filters (test_forum_intel_offline.ForumIntelTests.test_outbox_disabled_model_and_both_filters) ... ok
+test_overflow_and_missing_inventory (test_forum_intel_offline.ForumIntelTests.test_overflow_and_missing_inventory) ... ok
+test_review_trigger_and_spawn_failure_filter (test_forum_intel_offline.ForumIntelTests.test_review_trigger_and_spawn_failure_filter) ... ok
+test_rotation_bounded_history_and_no_repeat_fallback (test_forum_intel_offline.ForumIntelTests.test_rotation_bounded_history_and_no_repeat_fallback) ... ok
+test_same_category_cannot_rotate_kind (test_forum_intel_offline.ForumIntelTests.test_same_category_cannot_rotate_kind) ... ok
+test_seed_is_not_published (test_forum_intel_offline.ForumIntelTests.test_seed_is_not_published) ... ok
+test_store_exact_window_replay_own_buyer_and_compaction (test_forum_intel_offline.ForumIntelTests.test_store_exact_window_replay_own_buyer_and_compaction) ... ok
+test_unknown_kind_quality_is_skipped (test_forum_intel_offline.ForumIntelTests.test_unknown_kind_quality_is_skipped) ... ok
+test_unsafe_catalog_does_not_become_post (test_forum_intel_offline.ForumIntelTests.test_unsafe_catalog_does_not_become_post) ... ok
+test_age_does_not_infer_actual_counter_membership (test_forum_quality_evidence_offline.QualityEvidenceTests.test_age_does_not_infer_actual_counter_membership) ... ok
+test_bounded_evidence_and_counter_eviction (test_forum_quality_evidence_offline.QualityEvidenceTests.test_bounded_evidence_and_counter_eviction) ... ok
+test_goods_and_food_mixed_conditions_disclosed_without_price_change (test_forum_quality_evidence_offline.QualityEvidenceTests.test_goods_and_food_mixed_conditions_disclosed_without_price_change) ... ok
+test_insufficient_or_unmatched_break_proof_skips (test_forum_quality_evidence_offline.QualityEvidenceTests.test_insufficient_or_unmatched_break_proof_skips) ... ok
+test_mature_matching_cohort_not_recent_refs (test_forum_quality_evidence_offline.QualityEvidenceTests.test_mature_matching_cohort_not_recent_refs) ... ok
+test_multiple_breaks_cite_matching_sales_under_cap (test_forum_quality_evidence_offline.QualityEvidenceTests.test_multiple_breaks_cite_matching_sales_under_cap) ... ok
+test_old_state_no_backfill_then_safe_new_observations (test_forum_quality_evidence_offline.QualityEvidenceTests.test_old_state_no_backfill_then_safe_new_observations) ... ok
+test_own_sale_numeric_order_and_replay (test_forum_quality_evidence_offline.QualityEvidenceTests.test_own_sale_numeric_order_and_replay) ... ok
+test_rejected_sales_other_grade_sku_round_and_unmatched (test_forum_quality_evidence_offline.QualityEvidenceTests.test_rejected_sales_other_grade_sku_round_and_unmatched) ... ok
+test_seed_has_no_proof_and_compaction_keeps_actual_membership (test_forum_quality_evidence_offline.QualityEvidenceTests.test_seed_has_no_proof_and_compaction_keeps_actual_membership) ... ok
+
+----------------------------------------------------------------------
+Ran 43 tests in 0.119s
+
+OK

@@ -1,0 +1,67 @@
+test_abc_eight_hour_branch_fixed_legacy_prices_execute (test_goods_selection_offline.GoodsSelectionTests.test_abc_eight_hour_branch_fixed_legacy_prices_execute) ... [r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=A, ask=2200000, r1_target=106000, floor=102000, warranty=72h, task=task-1, cash_first_quote=False
+[r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=B, ask=2150000, r1_target=123922, floor=123922, warranty=6h, task=task-1, cash_first_quote=False
+[r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=C, ask=1600000, r1_target=1584000, floor=105334, warranty=0h, task=task-1, cash_first_quote=False
+ok
+test_actual_comparable_cash_quotes_multi_candidate_execute (test_goods_selection_offline.GoodsSelectionTests.test_actual_comparable_cash_quotes_multi_candidate_execute) ... [r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=A, ask=108291, r1_target=108291, floor=108291, warranty=72h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=cheap at 108291 (cost=100000, gross_before_refunds=8291, grade=A, warranty=72h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=100500, list=2500000, grade=A, ask=108850, r1_target=108850, floor=108850, warranty=72h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=old at 108850 (cost=100500, gross_before_refunds=8350, grade=A, warranty=72h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=B, ask=123579, r1_target=123579, floor=123579, warranty=6h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=cheap at 123579 (cost=100000, gross_before_refunds=23579, grade=B, warranty=6h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=100500, list=2500000, grade=B, ask=124246, r1_target=124246, floor=124246, warranty=6h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=old at 124246 (cost=100500, gross_before_refunds=23746, grade=B, warranty=6h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=C, ask=105042, r1_target=105042, floor=105042, warranty=0h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=cheap at 105042 (cost=100000, gross_before_refunds=5042, grade=C, warranty=0h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=100500, list=2500000, grade=C, ask=105584, r1_target=105584, floor=105584, warranty=0h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=old at 105584 (cost=100500, gross_before_refunds=5084, grade=C, warranty=0h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_bad_timestamps_never_create_unbounded_age_credit (test_goods_selection_offline.GoodsSelectionTests.test_bad_timestamps_never_create_unbounded_age_credit) ... ok
+test_band_boundary_inclusive_real_pricing (test_goods_selection_offline.GoodsSelectionTests.test_band_boundary_inclusive_real_pricing) ... ok
+test_band_two_percent_cap (test_goods_selection_offline.GoodsSelectionTests.test_band_two_percent_cap) ... ok
+test_category_preserves_original_sku_choice (test_goods_selection_offline.GoodsSelectionTests.test_category_preserves_original_sku_choice) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_cheapest_tie_break_floor_cost_is_deterministic (test_goods_selection_offline.GoodsSelectionTests.test_cheapest_tie_break_floor_cost_is_deterministic) ... ok
+test_deterministic_permutations_inside_cohort (test_goods_selection_offline.GoodsSelectionTests.test_deterministic_permutations_inside_cohort) ... ok
+test_direct_legacy_callables_keep_fifo_without_context (test_goods_selection_offline.GoodsSelectionTests.test_direct_legacy_callables_keep_fifo_without_context) ... ok
+test_disabled_retains_fifo_execute (test_goods_selection_offline.GoodsSelectionTests.test_disabled_retains_fifo_execute) ... [r3-quote] G00000001 (sofa): cost=2030000, list=2500000, grade=A, ask=2517200, r1_target=2273600, floor=2197422, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_exact_sku_never_substitutes (test_goods_selection_offline.GoodsSelectionTests.test_exact_sku_never_substitutes) ... [stock-miss] Out of stock for buyer request: G00000001 (recorded demand: g00000001)
+ok
+test_expensive_fifo_regression_execute (test_goods_selection_offline.GoodsSelectionTests.test_expensive_fifo_regression_execute) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_extra_malformed_price_candidate_falls_back_execute (test_goods_selection_offline.GoodsSelectionTests.test_extra_malformed_price_candidate_falls_back_execute) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+[r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_final_day_clearance_snapshot_reused (test_goods_selection_offline.GoodsSelectionTests.test_final_day_clearance_snapshot_reused) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=1418750, r1_target=1287500, floor=1232538, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_food_selection_unchanged (test_goods_selection_offline.GoodsSelectionTests.test_food_selection_unchanged) ... ok
+test_grade_preferences_and_warranty_cohort_execute (test_goods_selection_offline.GoodsSelectionTests.test_grade_preferences_and_warranty_cohort_execute) ... [r3-quote] G00000001 (sofa): cost=2030000, list=2500000, grade=A, ask=2517200, r1_target=2273600, floor=2197422, warranty=72h, task=task-1, cash_first_quote=False
+[r3-deal] Sold G00000001 (sofa) unit=a at 2517200 (cost=2030000, gross_before_refunds=487200, grade=A, warranty=72h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=500000, list=2500000, grade=C, ask=1600000, r1_target=1584000, floor=505209, warranty=0h, task=task-1, cash_first_quote=False
+[r3-deal] Sold G00000001 (sofa) unit=c at 1600000 (cost=500000, gross_before_refunds=1100000, grade=C, warranty=0h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=1000000, list=2500000, grade=B, ask=2150000, r1_target=1875000, floor=1235785, warranty=6h, task=task-1, cash_first_quote=False
+ok
+test_invalid_config_fails_closed_to_fifo (test_goods_selection_offline.GoodsSelectionTests.test_invalid_config_fails_closed_to_fifo) ... ok
+test_large_finite_integer_config_band_falls_back (test_goods_selection_offline.GoodsSelectionTests.test_large_finite_integer_config_band_falls_back) ... ok
+test_missing_config_defaults_and_zero_band (test_goods_selection_offline.GoodsSelectionTests.test_missing_config_defaults_and_zero_band) ... ok
+test_missing_timestamp_legacy_fifo_and_category_sku_preserved (test_goods_selection_offline.GoodsSelectionTests.test_missing_timestamp_legacy_fifo_and_category_sku_preserved) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_old_age_never_increases_band_or_subtracts_storage_twice (test_goods_selection_offline.GoodsSelectionTests.test_old_age_never_increases_band_or_subtracts_storage_twice) ... ok
+test_raw_negative_timestamp_bc_floor_preserved (test_goods_selection_offline.GoodsSelectionTests.test_raw_negative_timestamp_bc_floor_preserved) ... ok
+test_real_eight_hour_pricing_branch (test_goods_selection_offline.GoodsSelectionTests.test_real_eight_hour_pricing_branch) ... [r3-quote] G00000001 (sofa): cost=1900000, list=2500000, grade=A, ask=2200000, r1_target=2014000, floor=1938000, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_reserved_committed_and_taken_excluded (test_goods_selection_offline.GoodsSelectionTests.test_reserved_committed_and_taken_excluded) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_selection_preserves_inventory_and_fixed_legacy_a_prices (test_goods_selection_offline.GoodsSelectionTests.test_selection_preserves_inventory_and_fixed_legacy_a_prices) ... ok
+test_snapshot_at_eight_hour_boundary (test_goods_selection_offline.GoodsSelectionTests.test_snapshot_at_eight_hour_boundary) ... ok
+test_snapshot_matches_selection_display_receipt (test_goods_selection_offline.GoodsSelectionTests.test_snapshot_matches_selection_display_receipt) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+[r3-deal] Sold G00000001 (sofa) unit=new-cheap at 2375000 (cost=1850000, gross_before_refunds=525000, grade=A, warranty=72h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_timestamp_sanitizing_only_in_cohort_tie_key (test_goods_selection_offline.GoodsSelectionTests.test_timestamp_sanitizing_only_in_cohort_tie_key) ... ok
+test_within_band_oldest_wins_execute (test_goods_selection_offline.GoodsSelectionTests.test_within_band_oldest_wins_execute) ... [r3-quote] G00000001 (sofa): cost=1851000, list=2000000, grade=A, ask=2295240, r1_target=2073120, floor=2003659, warranty=72h, task=task-1, cash_first_quote=False
+ok
+
+----------------------------------------------------------------------
+Ran 29 tests in 0.261s
+
+OK

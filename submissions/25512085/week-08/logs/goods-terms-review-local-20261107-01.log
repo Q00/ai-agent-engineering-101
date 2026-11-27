@@ -1,0 +1,13 @@
+Independent-review local synthetic verification. Raw output preserved in history/20261107-goods-terms-01/.
+python -B submissions/25512085/week-08/history/20261107-goods-terms-01/check.py review-red10 focused
+BACKPORT_TEST_RESULT={"mode": "focused", "tree": "review-red10", "tests_run": 107, "failures": 25, "errors": 0, "skipped": 0, "success": false}
+python -B submissions/25512085/week-08/history/20261107-goods-terms-01/check.py review-focused16 focused
+BACKPORT_TEST_RESULT={"mode": "focused", "tree": "review-focused16", "tests_run": 107, "failures": 0, "errors": 0, "skipped": 0, "success": true}
+python -B submissions/25512085/week-08/history/20261107-goods-terms-01/check.py review-final17
+BACKPORT_TEST_RESULT={"mode": "all", "tree": "review-final17", "tests_run": 534, "failures": 0, "errors": 0, "skipped": 2, "success": true}
+python -B submissions/25512085/week-08/history/20261107-goods-terms-01/verify_checks.py review-final17
+py_compile seller.py: PASS (isolated snapshot/output)
+py_compile test_goods_terms_pilot_offline.py: PASS (isolated snapshot/output)
+git diff 92729a6^ --check -- <changed source/docs/runner>: exit 0
+git diff 92729a6^ --check (including immutable raw logs): exit 2
+Existing raw logs were not edited. No network/VM/deployment/state/keys/install/push access was performed.

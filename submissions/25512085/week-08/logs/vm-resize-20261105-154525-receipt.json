@@ -1,0 +1,68 @@
+{
+  "action": "resize_existing_gcp_instance",
+  "instance": "market-agent",
+  "zone": "us-central1-a",
+  "from": "e2-micro",
+  "to": "e2-medium",
+  "quoted_compute_usd_per_hour": 0.03350571,
+  "stop_requested_kst": "2026-11-05T15:45:25+09:00",
+  "start_command_completed_kst": "2026-11-05T15:47:09+09:00",
+  "public_registration_verified_kst": "2026-11-05T15:49:55+09:00",
+  "operations": ["stop", "set-machine-type", "start"],
+  "new_instance_created": false,
+  "persistent_disk": "market-agent",
+  "persistent_disk_source_verified_unchanged": true,
+  "application_commit": "5a9c715",
+  "automatic_start": "existing crontab @reboot launcher",
+  "application_processes": {
+    "market_kit.py": 1,
+    "seller.py": 1,
+    "market_buyer.py": 1
+  },
+  "inventory_before_and_first_postboot_read": {
+    "balance": 18913917,
+    "unit_count": 222,
+    "actual_cost": 74935987
+  },
+  "key_file_checks": {
+    "shop_key.pem": {"exists_before_and_after": true, "bytes_before_and_after": 119},
+    "buyer_key.pem": {"exists_before_and_after": true, "bytes_before_and_after": 119},
+    "contents_read_or_recorded": false
+  },
+  "memory_mib_at_154911_kst": {
+    "total": 3913,
+    "available": 3210,
+    "swap_used": 0
+  },
+  "monitor": {
+    "new_ip_detected_automatically": true,
+    "inventory_sync_error": null,
+    "hub_sync_error": null,
+    "api_errors": {}
+  },
+  "public_board_at_154955_kst": {
+    "seller_alive": true,
+    "buyer_alive": true,
+    "seller_deals": 1742,
+    "buyer_deals": 1893
+  },
+  "postboot_buyer_settlement_refs": [2827149, 2827245],
+  "final_verification": {
+    "at_kst": "2026-11-05T15:51:04+09:00",
+    "instance_status": "RUNNING",
+    "machine_type": "e2-medium",
+    "seller_alive": true,
+    "buyer_alive": true,
+    "seller_board_deals": 1746,
+    "buyer_board_deals": 1896,
+    "observed_postboot_sale_refs": [2827330, 2827412, 2827419, 2827565, 2827642],
+    "observer_lag_seconds": 98.8,
+    "monitor_errors": {}
+  },
+  "limitations": [
+    "Short postboot observations do not establish sustained performance.",
+    "Observer ledger coverage remained behind live time during recovery.",
+    "Key files were checked for existence and size, not content equality."
+  ],
+  "strategy_or_pricing_changed": false
+}

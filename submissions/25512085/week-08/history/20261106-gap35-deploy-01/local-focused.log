@@ -1,0 +1,442 @@
+test_binding_policy_and_budget_caps (test_buyer_gap_counter_offline.BuyerGapCounterTests.test_binding_policy_and_budget_caps) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.8)"
+"[buyer] Cannot agree: seller ask 200000 > price limit 93104"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 3 round(s): seller clung to 200000 while my budget was 120000. Reason: seller ask exceeds price limit. | seller: \\\"certified item ask 100000\\\"\", \"failure_kind\": \"price_above_limit\", \"seller_text\": \"certified item ask 100000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 3 round(s): seller clung to 200000 while my budget was 120000. Reason: seller ask exceeds price limit."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=85000, trust=2.0)"
+"[buyer] Cannot agree: seller ask 200000 > price limit 85000"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 3 round(s): seller clung to 200000 while my budget was 85000. Reason: seller ask exceeds price limit. | seller: \\\"certified item ask 100000\\\"\", \"failure_kind\": \"price_above_limit\", \"seller_text\": \"certified item ask 100000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 3 round(s): seller clung to 200000 while my budget was 85000. Reason: seller ask exceeds price limit."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_cheap_opening_still_accepts_immediately (test_buyer_gap_counter_offline.BuyerGapCounterTests.test_cheap_opening_still_accepts_immediately) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.8)"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+ok
+test_counter_uses_previous_offer_not_reserve_after_low_opening (test_buyer_gap_counter_offline.BuyerGapCounterTests.test_counter_uses_previous_offer_not_reserve_after_low_opening) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=70000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 3 round(s): could not close within budget 70000 (seller ask 80000). Reason: counter limit reached (ask 80000, offer limit 70000, budget limit 70000). | seller: \\\"certified item ask 100000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 100000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 3 round(s): could not close within budget 70000 (seller ask 80000). Reason: counter limit reached (ask 80000, offer limit 70000, budget limit 70000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_equal_or_lower_ask_never_raises_offer (test_buyer_gap_counter_offline.BuyerGapCounterTests.test_equal_or_lower_ask_never_raises_offer) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 4 round(s): could not close within budget 120000 (seller ask 60000). Reason: counter limit reached (ask 60000, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 4 round(s): could not close within budget 120000 (seller ask 60000). Reason: counter limit reached (ask 60000, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 4 round(s): seller clung to 59999 while my budget was 120000. Reason: counter limit reached (ask 59999, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 4 round(s): seller clung to 59999 while my budget was 120000. Reason: counter limit reached (ask 59999, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 4 round(s): asking price 50000 stayed above budget 120000. Reason: counter limit reached (ask 50000, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal in 4 round(s): asking price 50000 stayed above budget 120000. Reason: counter limit reached (ask 50000, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_goods_use_the_same_gap_rule (test_buyer_gap_counter_offline.BuyerGapCounterTests.test_goods_use_the_same_gap_rule) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 4 round(s): could not close within budget 120000 (seller ask 80000). Reason: counter limit reached (ask 80000, offer limit 95173, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 4 round(s): could not close within budget 120000 (seller ask 80000). Reason: counter limit reached (ask 80000, offer limit 95173, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_initial_over_cap_and_current_actual_ask_not_preclamped (test_buyer_gap_counter_offline.BuyerGapCounterTests.test_initial_over_cap_and_current_actual_ask_not_preclamped) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 3 round(s): could not close within budget 120000 (seller ask 100000). Reason: counter limit reached (ask 100000, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 100000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 100000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 3 round(s): could not close within budget 120000 (seller ask 100000). Reason: counter limit reached (ask 100000, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_integer_gap_half_up_and_minimum_one (test_buyer_gap_counter_offline.BuyerGapCounterTests.test_integer_gap_half_up_and_minimum_one) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 4 round(s): asking price 60001 stayed above budget 120000. Reason: counter limit reached (ask 60001, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal in 4 round(s): asking price 60001 stayed above budget 120000. Reason: counter limit reached (ask 60001, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 4 round(s): could not close within budget 120000 (seller ask 60002). Reason: counter limit reached (ask 60002, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 4 round(s): could not close within budget 120000 (seller ask 60002). Reason: counter limit reached (ask 60002, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 4 round(s): asking price 60003 stayed above budget 120000. Reason: counter limit reached (ask 60003, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal in 4 round(s): asking price 60003 stayed above budget 120000. Reason: counter limit reached (ask 60003, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 4 round(s): could not close within budget 120000 (seller ask 60004). Reason: counter limit reached (ask 60004, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 4 round(s): could not close within budget 120000 (seller ask 60004). Reason: counter limit reached (ask 60004, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 4 round(s): seller clung to 60005 while my budget was 120000. Reason: counter limit reached (ask 60005, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 4 round(s): seller clung to 60005 while my budget was 120000. Reason: counter limit reached (ask 60005, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 4 round(s): could not close within budget 120000 (seller ask 60010). Reason: counter limit reached (ask 60010, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 4 round(s): could not close within budget 120000 (seller ask 60010). Reason: counter limit reached (ask 60010, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 4 round(s): asking price 60030 stayed above budget 120000. Reason: counter limit reached (ask 60030, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal in 4 round(s): asking price 60030 stayed above budget 120000. Reason: counter limit reached (ask 60030, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_legacy_counter_sequence_unchanged (test_buyer_gap_counter_offline.BuyerGapCounterTests.test_legacy_counter_sequence_unchanged) ... "[buyer] [choose] https://offline.invalid (shop): Only one shop available in list (shop)."
+ok
+test_nonbinding_budget_changes_do_not_change_counter (test_buyer_gap_counter_offline.BuyerGapCounterTests.test_nonbinding_budget_changes_do_not_change_counter) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=95000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 4 round(s): asking price 80000 stayed above budget 95000. Reason: counter limit reached (ask 80000, offer limit 93104, budget limit 95000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal in 4 round(s): asking price 80000 stayed above budget 95000. Reason: counter limit reached (ask 80000, offer limit 93104, budget limit 95000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 4 round(s): asking price 80000 stayed above budget 120000. Reason: counter limit reached (ask 80000, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal in 4 round(s): asking price 80000 stayed above budget 120000. Reason: counter limit reached (ask 80000, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=1000000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 4 round(s): seller clung to 80000 while my budget was 1000000. Reason: counter limit reached (ask 80000, offer limit 93104, budget limit 1000000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 4 round(s): seller clung to 80000 while my budget was 1000000. Reason: counter limit reached (ask 80000, offer limit 93104, budget limit 1000000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_second_counter_uses_previous_offer_and_current_ask (test_buyer_gap_counter_offline.BuyerGapCounterTests.test_second_counter_uses_previous_offer_and_current_ask) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 4 round(s): asking price 80000 stayed above budget 120000. Reason: counter limit reached (ask 80000, offer limit 93104, budget limit 120000). | seller: \\\"certified item ask 90000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 90000\"}"
+"[buyer] [attempt 1/3] failed: No deal in 4 round(s): asking price 80000 stayed above budget 120000. Reason: counter limit reached (ask 80000, offer limit 93104, budget limit 120000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_third_and_final_acceptance_unchanged (test_buyer_gap_counter_offline.BuyerGapCounterTests.test_third_and_final_acceptance_unchanged) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.8)"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=103449, budget=120000, trust=3.8)"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+ok
+test_acceptable_and_stockout_filters_remain (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_acceptable_and_stockout_filters_remain) ... ok
+test_bestseller_trust_and_deal_weights_remain (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_bestseller_trust_and_deal_weights_remain) ... ok
+test_diversity_and_recent_failure_weights_remain (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_diversity_and_recent_failure_weights_remain) ... ok
+test_equal_discount_same_base_utility_across_price_scales (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_equal_discount_same_base_utility_across_price_scales) ... ok
+test_feasibility_and_budget_estimate_unchanged (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_feasibility_and_budget_estimate_unchanged) ... ok
+test_higher_rate_beats_larger_absolute_saving (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_higher_rate_beats_larger_absolute_saving) ... ok
+test_missing_zero_price_fallback_boundary_and_invalid_prices (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_missing_zero_price_fallback_boundary_and_invalid_prices) ... ok
+test_no_fixed_money_floor (test_buyer_savings_ranking_offline.BuyerSavingsRankingTests.test_no_fixed_money_floor) ... ok
+test_16700_food_never_offers_over_15030_and_cancels (test_buyer_price_offline.BuyerPriceTests.test_16700_food_never_offers_over_15030_and_cancels) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 3 round(s): seller clung to 20040 while my budget was 25000. Reason: counter limit reached (ask 20040, offer limit 15030, budget limit 25000). | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: No deal after 3 round(s): seller clung to 20040 while my budget was 25000. Reason: counter limit reached (ask 20040, offer limit 15030, budget limit 25000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_budget_and_receipt_tampering_still_rejected (test_buyer_price_offline.BuyerPriceTests.test_budget_and_receipt_tampering_still_rejected) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 0 (budget 25000) in 0 round(s), but receipt says price=26000, item=f00000001, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 0 (budget 25000) in 0 round(s), but receipt says price=26000, item=f00000001, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=-9.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 0 (budget 25000) in 0 round(s), but receipt says price=9000, item=f00000001, task=wrong! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 0 (budget 25000) in 0 round(s), but receipt says price=9000, item=f00000001, task=wrong!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=-9.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 0 (budget 25000) in 0 round(s), but receipt says price=9000, item=unacceptable, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 0 (budget 25000) in 0 round(s), but receipt says price=9000, item=unacceptable, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=-9.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 8000 (budget 25000) in 1 round(s), but receipt says price=9000, item=f00000001, task=task-1! | seller: \\\"certified item ask 8000\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 8000\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 8000 (budget 25000) in 1 round(s), but receipt says price=9000, item=f00000001, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_cheap_food_passes_with_existing_expiry_accept (test_buyer_price_offline.BuyerPriceTests.test_cheap_food_passes_with_existing_expiry_accept) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+ok
+test_comparable_accept_pins_untrusted_claim_for_kit (test_buyer_price_offline.BuyerPriceTests.test_comparable_accept_pins_untrusted_claim_for_kit) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+ok
+test_comparables_never_raise_list_or_budget_cap (test_buyer_price_offline.BuyerPriceTests.test_comparables_never_raise_list_or_budget_cap) ... ok
+test_compile_without_bytecode (test_buyer_price_offline.BuyerPriceTests.test_compile_without_bytecode) ... ok
+test_every_offer_branch_clamped_even_when_budget_step_exceeds_cap (test_buyer_price_offline.BuyerPriceTests.test_every_offer_branch_clamped_even_when_budget_step_exceeds_cap) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 4 round(s): asking price 15030 stayed above budget 25000. Reason: counter limit reached (ask 15030, offer limit 15030, budget limit 25000). | seller: \\\"certified item ask 15030\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 15030\"}"
+"[buyer] [attempt 1/3] failed: No deal in 4 round(s): asking price 15030 stayed above budget 25000. Reason: counter limit reached (ask 15030, offer limit 15030, budget limit 25000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 4 round(s): seller clung to 14000 while my budget was 25000. Reason: counter limit reached (ask 14000, offer limit 15030, budget limit 25000). | seller: \\\"certified item ask 14000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 14000\"}"
+"[buyer] [attempt 1/3] failed: No deal after 4 round(s): seller clung to 14000 while my budget was 25000. Reason: counter limit reached (ask 14000, offer limit 15030, budget limit 25000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 4 round(s): asking price 9000 stayed above budget 25000. Reason: counter limit reached (ask 9000, offer limit 15030, budget limit 25000). | seller: \\\"certified item ask 9000\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 9000\"}"
+"[buyer] [attempt 1/3] failed: No deal in 4 round(s): asking price 9000 stayed above budget 25000. Reason: counter limit reached (ask 9000, offer limit 15030, budget limit 25000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=1000000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal after 3 round(s): seller clung to 20040 while my budget was 1000000. Reason: counter limit reached (ask 20040, offer limit 15030, budget limit 1000000). | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: No deal after 3 round(s): seller clung to 20040 while my budget was 1000000. Reason: counter limit reached (ask 20040, offer limit 15030, budget limit 1000000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 0 round(s): asking price high stayed above budget 25000. Reason: seller price could not be parsed. | seller: \\\"certified item ask None\\\"\", \"failure_kind\": \"other\", \"seller_text\": \"certified item ask None\"}"
+"[buyer] [attempt 1/3] failed: No deal in 0 round(s): asking price high stayed above budget 25000. Reason: seller price could not be parsed."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=8000, trust=2.8)"
+"[buyer] Cannot agree: seller ask 20040 > price limit 8000"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 3 round(s): asking price 20040 stayed above budget 8000. Reason: seller ask exceeds price limit. | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"price_above_limit\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: No deal in 3 round(s): asking price 20040 stayed above budget 8000. Reason: seller ask exceeds price limit."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_first_completed_overpriced_is_policy_decline_without_pending_or_stigma (test_buyer_price_offline.BuyerPriceTests.test_first_completed_overpriced_is_policy_decline_without_pending_or_stigma) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal: declined-price-policy for f00000001 at 20040 (cap 15030). | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: No deal: declined-price-policy for f00000001 at 20040 (cap 15030)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_goods_expected_surplus_warranty_and_unknown_grade_unchanged (test_buyer_price_offline.BuyerPriceTests.test_goods_expected_surplus_warranty_and_unknown_grade_unchanged) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal: grade C f00000001 at 12000 with no 6 h warranty is worth less than its price at a 35% break rate (list 16700). | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: No deal: grade C f00000001 at 12000 with no 6 h warranty is worth less than its price at a 35% break rate (list 16700)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.0)"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.0)"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+ok
+test_goods_negotiation_caps_offers_and_rejects_zero_surplus (test_buyer_price_offline.BuyerPriceTests.test_goods_negotiation_caps_offers_and_rejects_zero_surplus) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal in 3 round(s): asking price 16700 stayed above budget 25000. Reason: counter limit reached (ask 16700, offer limit 15364, budget limit 25000). | seller: \\\"certified item ask 16700\\\"\", \"failure_kind\": \"counter_limit\", \"seller_text\": \"certified item ask 16700\"}"
+"[buyer] [attempt 1/3] failed: No deal in 3 round(s): asking price 16700 stayed above budget 25000. Reason: counter limit reached (ask 16700, offer limit 15364, budget limit 25000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.0)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal: declined-price-policy for f00000001 at 16700 (cap 16699). | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: No deal: declined-price-policy for f00000001 at 16700 (cap 16699)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_incomparable_observations_fall_back (test_buyer_price_offline.BuyerPriceTests.test_incomparable_observations_fall_back) ... ok
+test_missing_catalog_price_defers_without_rpc (test_buyer_price_offline.BuyerPriceTests.test_missing_catalog_price_defers_without_rpc) ... "[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs for order order-1"
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs for order order-1\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_missing_public_grade_not_replaced_by_claim (test_buyer_price_offline.BuyerPriceTests.test_missing_public_grade_not_replaced_by_claim) ... ok
+test_overpriced_after_negotiation_also_declines_without_stigma (test_buyer_price_offline.BuyerPriceTests.test_overpriced_after_negotiation_also_declines_without_stigma) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal: declined-price-policy for f00000001 at 20040 (cap 15030). | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: No deal: declined-price-policy for f00000001 at 20040 (cap 15030)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_real_shipped_sku_not_target_controls_cap (test_buyer_price_offline.BuyerPriceTests.test_real_shipped_sku_not_target_controls_cap) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal: declined-price-policy for f00000002 at 10000 (cap 9000). | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: No deal: declined-price-policy for f00000002 at 10000 (cap 9000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_recent_same_grade_similar_life_median_plus_ten_percent (test_buyer_price_offline.BuyerPriceTests.test_recent_same_grade_similar_life_median_plus_ten_percent) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal: declined-price-policy for f00000001 at 12000 (cap 11000). | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: No deal: declined-price-policy for f00000001 at 12000 (cap 11000)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_round2_negotiation_and_receipt_unchanged (test_buyer_price_offline.BuyerPriceTests.test_round2_negotiation_and_receipt_unchanged) ... "[buyer] [choose] https://offline.invalid (shop): Only one shop available in list (shop)."
+ok
+test_shelf_similarity_uses_both_bucket_and_range (test_buyer_price_offline.BuyerPriceTests.test_shelf_similarity_uses_both_bucket_and_range) ... ok
+test_store_preserves_aggregates_and_deduplicates_seq (test_buyer_price_offline.BuyerPriceTests.test_store_preserves_aggregates_and_deduplicates_seq) ... ok
+test_unknown_negotiation_grade_and_expiry_do_not_mix_prices (test_buyer_price_offline.BuyerPriceTests.test_unknown_negotiation_grade_and_expiry_do_not_mix_prices) ... ok
+test_unknown_shipped_price_defers (test_buyer_price_offline.BuyerPriceTests.test_unknown_shipped_price_defers) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=16700, budget=25000, trust=3.8)"
+"[buyer] attempt failed: {\"failure_reason\": \"No deal: declined-price-policy for f00000002 at 5000 (cap None). | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: No deal: declined-price-policy for f00000002 at 5000 (cap None)."
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+ok
+test_above_offer_limit_never_gets_final_turn_and_reports_both_limits (test_buyer_retry_offline.BuyerFinalAcceptanceTests.test_above_offer_limit_never_gets_final_turn_and_reports_both_limits) ... "[buyer] [choose] https://offline.invalid (shop): offline test"
+ok
+test_expired_deadline_does_not_send_final_turn (test_buyer_retry_offline.BuyerFinalAcceptanceTests.test_expired_deadline_does_not_send_final_turn) ... "[buyer] [choose] https://offline.invalid (shop): offline test"
+ok
+test_final_receipt_cannot_exceed_last_accepted_offer (test_buyer_retry_offline.BuyerFinalAcceptanceTests.test_final_receipt_cannot_exceed_last_accepted_offer) ... "[buyer] [choose] https://offline.invalid (shop): offline test"
+ok
+test_final_turn_counter_is_not_followed_by_another_offer (test_buyer_retry_offline.BuyerFinalAcceptanceTests.test_final_turn_counter_is_not_followed_by_another_offer) ... "[buyer] [choose] https://offline.invalid (shop): offline test"
+ok
+test_final_turn_rpc_failures_are_recorded (test_buyer_retry_offline.BuyerFinalAcceptanceTests.test_final_turn_rpc_failures_are_recorded) ... "[buyer] [choose] https://offline.invalid (shop): offline test"
+"[buyer] [choose] https://offline.invalid (shop): offline test"
+ok
+test_goods_comparables_cap_still_blocks_final_turn (test_buyer_retry_offline.BuyerFinalAcceptanceTests.test_goods_comparables_cap_still_blocks_final_turn) ... "[buyer] [choose] https://offline.invalid (shop): offline test"
+ok
+test_goods_final_receipt_still_requires_positive_surplus_or_warranty (test_buyer_retry_offline.BuyerFinalAcceptanceTests.test_goods_final_receipt_still_requires_positive_surplus_or_warranty) ... "[buyer] [choose] https://offline.invalid (shop): offline test"
+ok
+test_round2_keeps_five_counters_without_final_acceptance (test_buyer_retry_offline.BuyerFinalAcceptanceTests.test_round2_keeps_five_counters_without_final_acceptance) ... "[buyer] [choose] https://offline.invalid (shop): offline test"
+ok
+test_third_counter_new_affordable_ask_gets_final_receipt (test_buyer_retry_offline.BuyerFinalAcceptanceTests.test_third_counter_new_affordable_ask_gets_final_receipt) ... "[buyer] [choose] https://offline.invalid (shop): offline test"
+ok
+test_acp_probe_distinguishes_timeout_from_explicit_unsupported (test_buyer_retry_offline.BuyerRetryTests.test_acp_probe_distinguishes_timeout_from_explicit_unsupported) ... ok
+test_all_acp_unsupported_no_attempt (test_buyer_retry_offline.BuyerRetryTests.test_all_acp_unsupported_no_attempt) ... ok
+test_all_failed_no_pending (test_buyer_retry_offline.BuyerRetryTests.test_all_failed_no_pending) ... ok
+test_at_most_three_shops (test_buyer_retry_offline.BuyerRetryTests.test_at_most_three_shops) ... ok
+test_card_exception_retries (test_buyer_retry_offline.BuyerRetryTests.test_card_exception_retries) ... ok
+test_counter_timeout_cancels_current_task (test_buyer_retry_offline.BuyerRetryTests.test_counter_timeout_cancels_current_task) ... ok
+test_deadline_after_lock_write_removes_only_own_pending (test_buyer_retry_offline.BuyerRetryTests.test_deadline_after_lock_write_removes_only_own_pending) ... ok
+test_explicitly_unsupported_acp_excluded (test_buyer_retry_offline.BuyerRetryTests.test_explicitly_unsupported_acp_excluded) ... ok
+test_goods_expected_surplus_and_warranty_preserved (test_buyer_retry_offline.BuyerRetryTests.test_goods_expected_surplus_and_warranty_preserved) ... ok
+test_late_completed_response_not_parked (test_buyer_retry_offline.BuyerRetryTests.test_late_completed_response_not_parked) ... ok
+test_lock_acquisition_over_deadline_never_writes_pending (test_buyer_retry_offline.BuyerRetryTests.test_lock_acquisition_over_deadline_never_writes_pending) ... ok
+test_no_acceptable_stock_no_card_or_rpc (test_buyer_retry_offline.BuyerRetryTests.test_no_acceptable_stock_no_card_or_rpc) ... ok
+test_nonpositive_boolean_nonfinite_fractional_prices_rejected (test_buyer_retry_offline.BuyerRetryTests.test_nonpositive_boolean_nonfinite_fractional_prices_rejected) ... ok
+test_order_deadline_limits_requests_and_stops_next_shop (test_buyer_retry_offline.BuyerRetryTests.test_order_deadline_limits_requests_and_stops_next_shop) ... ok
+test_order_expiry_safety_stops_before_network (test_buyer_retry_offline.BuyerRetryTests.test_order_expiry_safety_stops_before_network) ... ok
+test_overpriced_food_then_valid_without_dishonesty (test_buyer_retry_offline.BuyerRetryTests.test_overpriced_food_then_valid_without_dishonesty) ... ok
+test_per_shop_deadline_and_remaining_request_timeout (test_buyer_retry_offline.BuyerRetryTests.test_per_shop_deadline_and_remaining_request_timeout) ... ok
+test_reject_then_success_exactly_one_receipt_and_pending (test_buyer_retry_offline.BuyerRetryTests.test_reject_then_success_exactly_one_receipt_and_pending) ... ok
+test_round2_keeps_five_counters_and_rpc_timeout (test_buyer_retry_offline.BuyerRetryTests.test_round2_keeps_five_counters_and_rpc_timeout) ... ok
+test_same_url_multiple_skus_only_one_attempt (test_buyer_retry_offline.BuyerRetryTests.test_same_url_multiple_skus_only_one_attempt) ... ok
+test_seller_newlines_cannot_inject_standalone_json_diagnostics (test_buyer_retry_offline.BuyerRetryTests.test_seller_newlines_cannot_inject_standalone_json_diagnostics) ... ok
+test_shop_list_price_cannot_raise_food_cap (test_buyer_retry_offline.BuyerRetryTests.test_shop_list_price_cannot_raise_food_cap) ... ok
+test_target_sku_cap_recomputed_for_alternative (test_buyer_retry_offline.BuyerRetryTests.test_target_sku_cap_recomputed_for_alternative) ... ok
+test_three_counter_limit_clamps_every_offer_then_retries (test_buyer_retry_offline.BuyerRetryTests.test_three_counter_limit_clamps_every_offer_then_retries) ... ok
+test_timeout_at_negotiation_deadline_really_transmits_cancel (test_buyer_retry_offline.BuyerRetryTests.test_timeout_at_negotiation_deadline_really_transmits_cancel) ... ok
+test_total_deadline_stops_late_receipt_no_pending (test_buyer_retry_offline.BuyerRetryTests.test_total_deadline_stops_late_receipt_no_pending) ... ok
+test_unknown_acp_transport_can_still_attempt (test_buyer_retry_offline.BuyerRetryTests.test_unknown_acp_transport_can_still_attempt) ... ok
+test_unparseable_quote_cancels_then_retries (test_buyer_retry_offline.BuyerRetryTests.test_unparseable_quote_cancels_then_retries) ... ok
+test_actual_failure_paths (test_buyer_failure_reason_offline.BuyerFailureReasonTests.test_actual_failure_paths) ... ok
+test_artifact_fallback_and_canceled (test_buyer_failure_reason_offline.BuyerFailureReasonTests.test_artifact_fallback_and_canceled) ... ok
+test_deterministic_classification_ignores_seller_suffix (test_buyer_failure_reason_offline.BuyerFailureReasonTests.test_deterministic_classification_ignores_seller_suffix) ... ok
+test_last_response_and_injected_json_are_data_only (test_buyer_failure_reason_offline.BuyerFailureReasonTests.test_last_response_and_injected_json_are_data_only) ... ok
+test_no_candidates_and_deadline (test_buyer_failure_reason_offline.BuyerFailureReasonTests.test_no_candidates_and_deadline) ... ok
+test_rejection_normalized_truncated_and_not_in_final_contract (test_buyer_failure_reason_offline.BuyerFailureReasonTests.test_rejection_normalized_truncated_and_not_in_final_contract) ... ok
+test_status_precedes_artifact (test_buyer_failure_reason_offline.BuyerFailureReasonTests.test_status_precedes_artifact) ... ok
+test_failure_kind_uses_trusted_review_text (test_buyer_stockout_cooldown_offline.ClassifyTests.test_failure_kind_uses_trusted_review_text) ... ok
+test_other_text_and_empty (test_buyer_stockout_cooldown_offline.ClassifyTests.test_other_text_and_empty) ... ok
+test_stockout_texts (test_buyer_stockout_cooldown_offline.ClassifyTests.test_stockout_texts) ... ok
+test_unit_mismatch_wins_over_stock_words (test_buyer_stockout_cooldown_offline.ClassifyTests.test_unit_mismatch_wins_over_stock_words) ... ok
+test_one_stockout_skips_pair_without_fallback (test_buyer_stockout_cooldown_offline.SkipTests.test_one_stockout_skips_pair_without_fallback) ... ok
+test_price_failures_keep_old_three_order_rule (test_buyer_stockout_cooldown_offline.SkipTests.test_price_failures_keep_old_three_order_rule) ... ok
+test_record_failure_accepts_new_reasons (test_buyer_stockout_cooldown_offline.SkipTests.test_record_failure_accepts_new_reasons) ... ok
+test_same_shop_other_sku_and_other_shop_allowed (test_buyer_stockout_cooldown_offline.SkipTests.test_same_shop_other_sku_and_other_shop_allowed) ... ok
+test_stockout_expires_after_window (test_buyer_stockout_cooldown_offline.SkipTests.test_stockout_expires_after_window) ... ok
+test_trailing_slash_on_candidate_url_still_matches (test_buyer_stockout_cooldown_offline.SkipTests.test_trailing_slash_on_candidate_url_still_matches) ... ok
+test_unit_mismatch_window_is_shorter (test_buyer_stockout_cooldown_offline.SkipTests.test_unit_mismatch_window_is_shorter) ... ok
+test_abc_eight_hour_branch_protected_floors_execute (test_goods_selection_offline.GoodsSelectionTests.test_abc_eight_hour_branch_protected_floors_execute) ... [r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=A, ask=2200000, r1_target=108592, floor=108592, warranty=72h, task=task-1, cash_first_quote=False
+[r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=B, ask=2150000, r1_target=123922, floor=123922, warranty=6h, task=task-1, cash_first_quote=False
+[r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=C, ask=1600000, r1_target=1584000, floor=105334, warranty=0h, task=task-1, cash_first_quote=False
+ok
+test_actual_comparable_cash_quotes_multi_candidate_execute (test_goods_selection_offline.GoodsSelectionTests.test_actual_comparable_cash_quotes_multi_candidate_execute) ... [r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=A, ask=108291, r1_target=108291, floor=108291, warranty=72h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=cheap at 108291 (cost=100000, gross_before_refunds=8291, grade=A, warranty=72h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=100500, list=2500000, grade=A, ask=108850, r1_target=108850, floor=108850, warranty=72h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=old at 108850 (cost=100500, gross_before_refunds=8350, grade=A, warranty=72h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=B, ask=123579, r1_target=123579, floor=123579, warranty=6h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=cheap at 123579 (cost=100000, gross_before_refunds=23579, grade=B, warranty=6h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=100500, list=2500000, grade=B, ask=124246, r1_target=124246, floor=124246, warranty=6h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=old at 124246 (cost=100500, gross_before_refunds=23746, grade=B, warranty=6h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=100000, list=2500000, grade=C, ask=105042, r1_target=105042, floor=105042, warranty=0h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=cheap at 105042 (cost=100000, gross_before_refunds=5042, grade=C, warranty=0h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=100500, list=2500000, grade=C, ask=105584, r1_target=105584, floor=105584, warranty=0h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (sofa) unit=old at 105584 (cost=100500, gross_before_refunds=5084, grade=C, warranty=0h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_bad_timestamps_never_create_unbounded_age_credit (test_goods_selection_offline.GoodsSelectionTests.test_bad_timestamps_never_create_unbounded_age_credit) ... ok
+test_band_boundary_inclusive_real_pricing (test_goods_selection_offline.GoodsSelectionTests.test_band_boundary_inclusive_real_pricing) ... ok
+test_band_two_percent_cap (test_goods_selection_offline.GoodsSelectionTests.test_band_two_percent_cap) ... ok
+test_category_preserves_original_sku_choice (test_goods_selection_offline.GoodsSelectionTests.test_category_preserves_original_sku_choice) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_cheapest_tie_break_floor_cost_is_deterministic (test_goods_selection_offline.GoodsSelectionTests.test_cheapest_tie_break_floor_cost_is_deterministic) ... ok
+test_deterministic_permutations_inside_cohort (test_goods_selection_offline.GoodsSelectionTests.test_deterministic_permutations_inside_cohort) ... ok
+test_direct_legacy_callables_keep_fifo_without_context (test_goods_selection_offline.GoodsSelectionTests.test_direct_legacy_callables_keep_fifo_without_context) ... ok
+test_disabled_retains_fifo_execute (test_goods_selection_offline.GoodsSelectionTests.test_disabled_retains_fifo_execute) ... [r3-quote] G00000001 (sofa): cost=2030000, list=2500000, grade=A, ask=2517200, r1_target=2273600, floor=2197422, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_exact_sku_never_substitutes (test_goods_selection_offline.GoodsSelectionTests.test_exact_sku_never_substitutes) ... [stock-miss] Out of stock for buyer request: G00000001 (recorded demand: g00000001)
+ok
+test_expensive_fifo_regression_execute (test_goods_selection_offline.GoodsSelectionTests.test_expensive_fifo_regression_execute) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_extra_malformed_price_candidate_falls_back_execute (test_goods_selection_offline.GoodsSelectionTests.test_extra_malformed_price_candidate_falls_back_execute) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+[r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_final_day_clearance_snapshot_reused (test_goods_selection_offline.GoodsSelectionTests.test_final_day_clearance_snapshot_reused) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2002577, r1_target=2002577, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_food_selection_unchanged (test_goods_selection_offline.GoodsSelectionTests.test_food_selection_unchanged) ... ok
+test_grade_preferences_and_warranty_cohort_execute (test_goods_selection_offline.GoodsSelectionTests.test_grade_preferences_and_warranty_cohort_execute) ... [r3-quote] G00000001 (sofa): cost=2030000, list=2500000, grade=A, ask=2517200, r1_target=2273600, floor=2197422, warranty=72h, task=task-1, cash_first_quote=False
+[r3-deal] Sold G00000001 (sofa) unit=a at 2517200 (cost=2030000, gross_before_refunds=487200, grade=A, warranty=72h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=500000, list=2500000, grade=C, ask=1600000, r1_target=1584000, floor=505209, warranty=0h, task=task-1, cash_first_quote=False
+[r3-deal] Sold G00000001 (sofa) unit=c at 1600000 (cost=500000, gross_before_refunds=1100000, grade=C, warranty=0h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (sofa): cost=1000000, list=2500000, grade=B, ask=2150000, r1_target=1875000, floor=1235785, warranty=6h, task=task-1, cash_first_quote=False
+ok
+test_invalid_config_fails_closed_to_fifo (test_goods_selection_offline.GoodsSelectionTests.test_invalid_config_fails_closed_to_fifo) ... ok
+test_large_finite_integer_config_band_falls_back (test_goods_selection_offline.GoodsSelectionTests.test_large_finite_integer_config_band_falls_back) ... ok
+test_missing_config_defaults_and_zero_band (test_goods_selection_offline.GoodsSelectionTests.test_missing_config_defaults_and_zero_band) ... ok
+test_missing_timestamp_legacy_fifo_and_category_sku_preserved (test_goods_selection_offline.GoodsSelectionTests.test_missing_timestamp_legacy_fifo_and_category_sku_preserved) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_old_age_never_increases_band_or_subtracts_storage_twice (test_goods_selection_offline.GoodsSelectionTests.test_old_age_never_increases_band_or_subtracts_storage_twice) ... ok
+test_raw_negative_timestamp_bc_floor_preserved (test_goods_selection_offline.GoodsSelectionTests.test_raw_negative_timestamp_bc_floor_preserved) ... ok
+test_real_eight_hour_pricing_branch (test_goods_selection_offline.GoodsSelectionTests.test_real_eight_hour_pricing_branch) ... [r3-quote] G00000001 (sofa): cost=1900000, list=2500000, grade=A, ask=2200000, r1_target=2056701, floor=2056701, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_reserved_committed_and_taken_excluded (test_goods_selection_offline.GoodsSelectionTests.test_reserved_committed_and_taken_excluded) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_selection_preserves_inventory_and_fixed_legacy_a_prices (test_goods_selection_offline.GoodsSelectionTests.test_selection_preserves_inventory_and_fixed_legacy_a_prices) ... ok
+test_snapshot_at_eight_hour_boundary (test_goods_selection_offline.GoodsSelectionTests.test_snapshot_at_eight_hour_boundary) ... ok
+test_snapshot_matches_selection_display_receipt (test_goods_selection_offline.GoodsSelectionTests.test_snapshot_matches_selection_display_receipt) ... [r3-quote] G00000001 (sofa): cost=1850000, list=2500000, grade=A, ask=2375000, r1_target=2112500, floor=2002577, warranty=72h, task=task-1, cash_first_quote=False
+[r3-deal] Sold G00000001 (sofa) unit=new-cheap at 2375000 (cost=1850000, gross_before_refunds=525000, grade=A, warranty=72h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_timestamp_sanitizing_only_in_cohort_tie_key (test_goods_selection_offline.GoodsSelectionTests.test_timestamp_sanitizing_only_in_cohort_tie_key) ... ok
+test_within_band_oldest_wins_execute (test_goods_selection_offline.GoodsSelectionTests.test_within_band_oldest_wins_execute) ... [r3-quote] G00000001 (sofa): cost=1851000, list=2000000, grade=A, ask=2295240, r1_target=2073120, floor=2003659, warranty=72h, task=task-1, cash_first_quote=False
+ok
+test_actual_growth_legacy_repeat_restored_state_and_next_window (test_procurement_guard_offline.ProcurementGuardTests.test_actual_growth_legacy_repeat_restored_state_and_next_window) ... ok
+test_actual_orders_blocked_even_with_growth_and_popularity (test_procurement_guard_offline.ProcurementGuardTests.test_actual_orders_blocked_even_with_growth_and_popularity) ... ok
+test_all_five_observed_inventory_shapes_hold_without_blacklisting (test_procurement_guard_offline.ProcurementGuardTests.test_all_five_observed_inventory_shapes_hold_without_blacklisting) ... ok
+test_allocator_restoration_and_priority_share_one_limit (test_procurement_guard_offline.ProcurementGuardTests.test_allocator_restoration_and_priority_share_one_limit) ... ok
+test_average_positive_stress_negative (test_procurement_guard_offline.ProcurementGuardTests.test_average_positive_stress_negative) ... ok
+test_b_risk_minimum_applies_even_if_estimator_returns_zero (test_procurement_guard_offline.ProcurementGuardTests.test_b_risk_minimum_applies_even_if_estimator_returns_zero) ... ok
+test_coverage_threshold_and_grade_accumulation (test_procurement_guard_offline.ProcurementGuardTests.test_coverage_threshold_and_grade_accumulation) ... ok
+test_depletion_and_new_evidence_conditionally_reallow_one (test_procurement_guard_offline.ProcurementGuardTests.test_depletion_and_new_evidence_conditionally_reallow_one) ... ok
+test_explicit_numeric_zero_only_and_shared_quote (test_procurement_guard_offline.ProcurementGuardTests.test_explicit_numeric_zero_only_and_shared_quote) ... ok
+test_food_and_unwatched_original_procurement (test_procurement_guard_offline.ProcurementGuardTests.test_food_and_unwatched_original_procurement) ... ok
+test_no_imaginary_grade_profit_storage_minimum_and_losses (test_procurement_guard_offline.ProcurementGuardTests.test_no_imaginary_grade_profit_storage_minimum_and_losses) ... ok
+test_own_only_eight_hour_and_missing_observation (test_procurement_guard_offline.ProcurementGuardTests.test_own_only_eight_hour_and_missing_observation) ... ok
+test_unproven_c_cannot_offset_a_b_stress_losses (test_procurement_guard_offline.ProcurementGuardTests.test_unproven_c_cannot_offset_a_b_stress_losses) ... ok
+
+----------------------------------------------------------------------
+Ran 137 tests in 4.987s
+
+OK
+BACKPORT_TEST_RESULT={"mode": "focused", "tree": "sandbox", "tests_run": 137, "failures": 0, "errors": 0, "success": true}

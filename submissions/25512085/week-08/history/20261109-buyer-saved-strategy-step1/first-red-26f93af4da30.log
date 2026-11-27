@@ -1,0 +1,172 @@
+test_counts_share_retained_order_denominator_not_official_deals (test_buyer_outcomes_saved_offline.SavedContributionTests.test_counts_share_retained_order_denominator_not_official_deals) ... ERROR
+test_elapsed_six_hours_never_proves_success (test_buyer_outcomes_saved_offline.SavedContributionTests.test_elapsed_six_hours_never_proves_success) ... ERROR
+test_exact_order_and_unit_join_required (test_buyer_outcomes_saved_offline.SavedContributionTests.test_exact_order_and_unit_join_required) ... ERROR
+test_food_without_served_evidence_stays_unknown (test_buyer_outcomes_saved_offline.SavedContributionTests.test_food_without_served_evidence_stays_unknown) ... ERROR
+test_full_refund_both_zero (test_buyer_outcomes_saved_offline.SavedContributionTests.test_full_refund_both_zero) ... ERROR
+test_ledger_conflicts_remain_unknown (test_buyer_outcomes_saved_offline.SavedContributionTests.test_ledger_conflicts_remain_unknown) ... ERROR
+test_legacy_kind_not_reconstructed (test_buyer_outcomes_saved_offline.SavedContributionTests.test_legacy_kind_not_reconstructed) ... ERROR
+test_missing_or_conflicting_kind_stays_unknown (test_buyer_outcomes_saved_offline.SavedContributionTests.test_missing_or_conflicting_kind_stays_unknown) ... ERROR
+test_missing_refund_not_zero (test_buyer_outcomes_saved_offline.SavedContributionTests.test_missing_refund_not_zero) ... ERROR
+test_overrefund_invalid_for_both (test_buyer_outcomes_saved_offline.SavedContributionTests.test_overrefund_invalid_for_both) ... ERROR
+test_partial_refund_saved_unknown_but_surplus_known (test_buyer_outcomes_saved_offline.SavedContributionTests.test_partial_refund_saved_unknown_but_surplus_known) ... ERROR
+test_truncated_replay_never_keeps_known_contributions (test_buyer_outcomes_saved_offline.SavedContributionTests.test_truncated_replay_never_keeps_known_contributions) ... ERROR
+test_unrefunded_full_unserved_saved_is_minus_one_not_price_ratio (test_buyer_outcomes_saved_offline.SavedContributionTests.test_unrefunded_full_unserved_saved_is_minus_one_not_price_ratio) ... ERROR
+test_zero_paid_zero_refund_uses_unrefunded_unserved_rule (test_buyer_outcomes_saved_offline.SavedContributionTests.test_zero_paid_zero_refund_uses_unrefunded_unserved_rule) ... ERROR
+
+======================================================================
+ERROR: test_counts_share_retained_order_denominator_not_official_deals (test_buyer_outcomes_saved_offline.SavedContributionTests.test_counts_share_retained_order_denominator_not_official_deals)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 103, in test_counts_share_retained_order_denominator_not_official_deals
+    self.assertEqual(result['contribution_counts'], dict(
+                     ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'contribution_counts'
+
+======================================================================
+ERROR: test_elapsed_six_hours_never_proves_success (test_buyer_outcomes_saved_offline.SavedContributionTests.test_elapsed_six_hours_never_proves_success)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 58, in test_elapsed_six_hours_never_proves_success
+    self.assert_unknown(c, 'ledger_coverage_unproven')
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 14, in assert_unknown
+    self.assertIsNone(c['saved_contribution'])
+                      ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_exact_order_and_unit_join_required (test_buyer_outcomes_saved_offline.SavedContributionTests.test_exact_order_and_unit_join_required)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 81, in test_exact_order_and_unit_join_required
+    self.assert_unknown(c, 'ledger_coverage_unproven')
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 14, in assert_unknown
+    self.assertIsNone(c['saved_contribution'])
+                      ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_food_without_served_evidence_stays_unknown (test_buyer_outcomes_saved_offline.SavedContributionTests.test_food_without_served_evidence_stays_unknown)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 62, in test_food_without_served_evidence_stays_unknown
+    self.assert_unknown(self.cohort(0, catalog=catalog), 'food_served_value_unknown')
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 14, in assert_unknown
+    self.assertIsNone(c['saved_contribution'])
+                      ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_full_refund_both_zero (test_buyer_outcomes_saved_offline.SavedContributionTests.test_full_refund_both_zero)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 30, in test_full_refund_both_zero
+    self.assertEqual(c['saved_contribution'], 0)
+                     ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_ledger_conflicts_remain_unknown (test_buyer_outcomes_saved_offline.SavedContributionTests.test_ledger_conflicts_remain_unknown)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 87, in test_ledger_conflicts_remain_unknown
+    self.assert_unknown(c, 'conflicting_events')
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 14, in assert_unknown
+    self.assertIsNone(c['saved_contribution'])
+                      ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_legacy_kind_not_reconstructed (test_buyer_outcomes_saved_offline.SavedContributionTests.test_legacy_kind_not_reconstructed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 77, in test_legacy_kind_not_reconstructed
+    self.assert_unknown(outcomes.summarize(events, OWN, 30000)['cohorts'][0], 'legacy_kind_unknown')
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 14, in assert_unknown
+    self.assertIsNone(c['saved_contribution'])
+                      ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_missing_or_conflicting_kind_stays_unknown (test_buyer_outcomes_saved_offline.SavedContributionTests.test_missing_or_conflicting_kind_stays_unknown)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 70, in test_missing_or_conflicting_kind_stays_unknown
+    self.assert_unknown(replay(rows, catalog=catalog)['cohorts'][0], 'item_kind_unknown')
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 14, in assert_unknown
+    self.assertIsNone(c['saved_contribution'])
+                      ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_missing_refund_not_zero (test_buyer_outcomes_saved_offline.SavedContributionTests.test_missing_refund_not_zero)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 46, in test_missing_refund_not_zero
+    self.assert_unknown(self.cohort(None), 'refund_unknown')
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 14, in assert_unknown
+    self.assertIsNone(c['saved_contribution'])
+                      ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_overrefund_invalid_for_both (test_buyer_outcomes_saved_offline.SavedContributionTests.test_overrefund_invalid_for_both)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 43, in test_overrefund_invalid_for_both
+    self.assert_unknown(self.cohort(61), 'refund_unknown')
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 14, in assert_unknown
+    self.assertIsNone(c['saved_contribution'])
+                      ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_partial_refund_saved_unknown_but_surplus_known (test_buyer_outcomes_saved_offline.SavedContributionTests.test_partial_refund_saved_unknown_but_surplus_known)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 36, in test_partial_refund_saved_unknown_but_surplus_known
+    self.assertIsNone(c['saved_contribution'])
+                      ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_truncated_replay_never_keeps_known_contributions (test_buyer_outcomes_saved_offline.SavedContributionTests.test_truncated_replay_never_keeps_known_contributions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 92, in test_truncated_replay_never_keeps_known_contributions
+    self.assert_unknown(c, 'replay_truncated_unknown')
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 14, in assert_unknown
+    self.assertIsNone(c['saved_contribution'])
+                      ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_unrefunded_full_unserved_saved_is_minus_one_not_price_ratio (test_buyer_outcomes_saved_offline.SavedContributionTests.test_unrefunded_full_unserved_saved_is_minus_one_not_price_ratio)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 21, in test_unrefunded_full_unserved_saved_is_minus_one_not_price_ratio
+    self.assertEqual(c['saved_contribution'], -1)
+                     ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+======================================================================
+ERROR: test_zero_paid_zero_refund_uses_unrefunded_unserved_rule (test_buyer_outcomes_saved_offline.SavedContributionTests.test_zero_paid_zero_refund_uses_unrefunded_unserved_rule)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step1\evidence\first-red-26f93af4da30\submissions\25512085\week-08\test_buyer_outcomes_saved_offline.py", line 50, in test_zero_paid_zero_refund_uses_unrefunded_unserved_rule
+    self.assertEqual(c['saved_contribution'], -1)
+                     ~^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'saved_contribution'
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.014s
+
+FAILED (errors=14)

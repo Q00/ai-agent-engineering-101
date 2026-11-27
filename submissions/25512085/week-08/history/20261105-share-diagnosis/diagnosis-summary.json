@@ -1,0 +1,62 @@
+{
+  "scope": "Read-only share-loss investigation; no trading-policy or process changes",
+  "ledger_capture": "../20261105-procurement-audit/run-20261105-165603",
+  "interval_kst": ["2026-11-05T10:55:13.244+09:00", "2026-11-05T16:55:13.244+09:00"],
+  "market_population": "Round 3 settled orders excluding buyer mjforge; includes our shop sales and house traders",
+  "quality": {"captured_rows": 90822, "pages": 182, "page_gaps": 0, "projected_seq_duplicates": 0, "external_buyer_settlements": 15031, "own_sales": 300},
+  "first_vs_second_three_hours": {
+    "market_count": [7990, 7041],
+    "own_count": [168, 132],
+    "own_count_share_pct": [2.1026, 1.8747],
+    "own_amount_share_pct": [4.015, 3.487],
+    "own_gross_amount": [79363467, 62939831],
+    "own_refund_event_amount": [493128, 3583213],
+    "refund_warning": "Event-time refunds include earlier sales and must not be subtracted as a matched sales-cohort loss rate"
+  },
+  "suspected_operational_window_sensitivity": {
+    "excluded_kst": [["15:20", "15:50"], ["16:10", "16:20"], ["16:37", "16:55"]],
+    "remaining_minutes": [180, 122],
+    "own_sales_per_minute": [0.933, 0.926],
+    "own_count_share_pct": [2.103, 2.255],
+    "warning": "Post-hoc sensitivity check, not verified uptime normalization or causal attribution"
+  },
+  "sofa_fifo_evidence": {
+    "sku": "G8ec51935",
+    "quote_log_coverage_kst": ["12:34:09", "16:55:13"],
+    "last_two_hours_quotes": 86,
+    "last_two_hours_all_quoted_grade": "A",
+    "last_two_hours_unique_quote_tasks": 86,
+    "last_two_hours_cost_counts": {"1925951": 69, "1935090": 17},
+    "last_two_hour_quote_medians": [2036648, 2032855],
+    "same_grade_snapshot_recalculation": {
+      "fifo_cost": 1925951, "fifo_quote": 2031404,
+      "lower_cost_unit_cost": 1482453, "lower_cost_quote": 1847599,
+      "grade": "A", "warranty_hours": 72, "estimated_break_rate": 0.04842883548983364
+    },
+    "competitor_last_two_hours": {
+      "A_exact_72h": {"n": 9, "median": 2000738},
+      "A_exact_6h": {"n": 53, "median": 1868434}
+    },
+    "buyer_reported_no_deal_ref": 2835142,
+    "limitations": ["Current per-process reservations were not captured", "Recalculated lower quote is not proof of a counterfactual sale", "Comparing 72h quotes with 6h settlements does not hold contract terms identical"]
+  },
+  "listing_incident": {
+    "observed_missing_kst": ["16:54", "16:59"],
+    "public_card_http_during_missing": 200,
+    "local_card_latency_seconds": 0.0053,
+    "host_health_at_1657": {"available_mib": 3187, "swap_used_mib": 0, "load_1m": 0.12},
+    "same_url_recovered_kst": "17:08:59",
+    "own_in_public_shops_on_recheck": true,
+    "trycloudflare_alive_counts": [5, 32],
+    "trycloudflare_registered_count": 63,
+    "warning": "Recovery observed without our intervention; server probe logs are unavailable, so Cloudflare/server root cause and exact incident duration are unconfirmed"
+  },
+  "official_patch_3_3": {
+    "url": "https://market.ourolabs.ai/rules",
+    "date": "2026-11-05",
+    "unsold_stock_counts_at_cost_at_round_end": true,
+    "class_ranking_added": true,
+    "patch_time_of_day": null,
+    "correction": "Earlier local policy assumed terminal inventory value zero; this assumption is inconsistent with current official rules"
+  }
+}

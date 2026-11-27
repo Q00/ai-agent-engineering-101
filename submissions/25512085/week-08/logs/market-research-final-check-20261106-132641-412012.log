@@ -1,0 +1,12 @@
+Command: git diff --check 671df2e HEAD -- submissions\25512085\week-08\restock.py submissions\25512085\week-08\seller_market_research.py submissions\25512085\week-08\test_market_research_offline.py submissions\25512085\week-08\verify_cash_refactor_offline.py
+Exit: 0
+
+Command: git diff --check 671df2e HEAD
+Exit: 2
+submissions/25512085/week-08/logs/cash-refactor-after-20261106-132504-655529.log:452: trailing whitespace.
++test_large_synthetic_state_size (test_hub_compaction_offline.HubCompactionTests.test_large_synthetic_state_size) ... 
+submissions/25512085/week-08/logs/cash-refactor-baseline-20261106-132336-491924.log:452: trailing whitespace.
++test_large_synthetic_state_size (test_hub_compaction_offline.HubCompactionTests.test_large_synthetic_state_size) ... 
+
+Raw unittest log trailing whitespace is preserved, not cleaned. Code-only whitespace check passes.
+Prior integrity-log git diff --check ran before untracked logs were staged; it did not check those logs.

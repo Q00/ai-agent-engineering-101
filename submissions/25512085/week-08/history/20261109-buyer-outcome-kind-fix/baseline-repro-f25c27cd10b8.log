@@ -1,0 +1,260 @@
+test_arbitrary_valid_sku_uses_catalog (test_buyer_outcomes_kind_offline.KindTests.test_arbitrary_valid_sku_uses_catalog) ... ERROR
+test_food_under_twenty_is_not_goods_warning (test_buyer_outcomes_kind_offline.KindTests.test_food_under_twenty_is_not_goods_warning) ... ERROR
+test_gprefix_food_not_goods (test_buyer_outcomes_kind_offline.KindTests.test_gprefix_food_not_goods) ... FAIL
+test_gprefix_goods (test_buyer_outcomes_kind_offline.KindTests.test_gprefix_goods) ... ERROR
+test_invalid_and_conflicting_ledger_evidence_unknown (test_buyer_outcomes_kind_offline.KindTests.test_invalid_and_conflicting_ledger_evidence_unknown) ... ERROR
+test_ledger_event_kind_is_not_item_kind (test_buyer_outcomes_kind_offline.KindTests.test_ledger_event_kind_is_not_item_kind) ... ERROR
+test_legacy_gfood_unknown_no_formula (test_buyer_outcomes_kind_offline.KindTests.test_legacy_gfood_unknown_no_formula) ... ERROR
+test_mixed_duplicate_both_orders_safe_provenance (test_buyer_outcomes_kind_offline.KindTests.test_mixed_duplicate_both_orders_safe_provenance) ... ERROR
+test_mixed_following_events_counts_orders_vs_events (test_buyer_outcomes_kind_offline.KindTests.test_mixed_following_events_counts_orders_vs_events) ... ERROR
+test_same_seq_original_facts_conflicts_detected (test_buyer_outcomes_kind_offline.KindTests.test_same_seq_original_facts_conflicts_detected) ... FAIL
+test_snapshot_kind_change_not_ledger_conflict (test_buyer_outcomes_kind_offline.KindTests.test_snapshot_kind_change_not_ledger_conflict) ... ERROR
+test_stored_snapshot_frozen_not_catalog_reclassified (test_buyer_outcomes_kind_offline.KindTests.test_stored_snapshot_frozen_not_catalog_reclassified) ... ERROR
+test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) ... 
+  test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='missing', catalog={}) ... ERROR
+  test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='missing', catalog={'G12345678': None}) ... ERROR
+  test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='missing', catalog={'G12345678': {}}) ... ERROR
+  test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='null', catalog={'G12345678': {'kind': None}}) ... ERROR
+  test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='invalid', catalog={'G12345678': {'kind': 'unknown'}}) ... ERROR
+  test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='invalid', catalog={'G12345678': {'kind': True}}) ... ERROR
+  test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='invalid', catalog={'G12345678': {'kind': []}}) ... ERROR
+test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) ... 
+  test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) (key='item_kind', value=None) ... FAIL
+  test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) (key='item_kind', value=True) ... FAIL
+  test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) (key='item_kind', value=[]) ... FAIL
+  test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) (key='item_kind', value=nan) ... FAIL
+  test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) (key='item_kind', value='bogus') ... FAIL
+test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) ... ERROR
+
+======================================================================
+ERROR: test_arbitrary_valid_sku_uses_catalog (test_buyer_outcomes_kind_offline.KindTests.test_arbitrary_valid_sku_uses_catalog)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 43, in test_arbitrary_valid_sku_uses_catalog
+    self.assertEqual(sale(kind, sku)['item_kind'], kind)
+                     ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_food_under_twenty_is_not_goods_warning (test_buyer_outcomes_kind_offline.KindTests.test_food_under_twenty_is_not_goods_warning)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 151, in test_food_under_twenty_is_not_goods_warning
+    self.assertEqual(c['item_kind'], 'food')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_gprefix_goods (test_buyer_outcomes_kind_offline.KindTests.test_gprefix_goods)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 38, in test_gprefix_goods
+    self.assertEqual(sale('goods')['item_kind'], 'goods')
+                     ~~~~~~~~~~~~~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_invalid_and_conflicting_ledger_evidence_unknown (test_buyer_outcomes_kind_offline.KindTests.test_invalid_and_conflicting_ledger_evidence_unknown)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 73, in test_invalid_and_conflicting_ledger_evidence_unknown
+    self.assertEqual(e['item_kind'], 'unknown')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_ledger_event_kind_is_not_item_kind (test_buyer_outcomes_kind_offline.KindTests.test_ledger_event_kind_is_not_item_kind)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 63, in test_ledger_event_kind_is_not_item_kind
+    self.assertEqual(e['item_kind'], 'food')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_legacy_gfood_unknown_no_formula (test_buyer_outcomes_kind_offline.KindTests.test_legacy_gfood_unknown_no_formula)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 106, in test_legacy_gfood_unknown_no_formula
+    self.assertEqual(c['item_kind_source'], 'legacy_kind_unknown')
+                     ~^^^^^^^^^^^^^^^^^^^^
+KeyError: 'item_kind_source'
+
+======================================================================
+ERROR: test_mixed_duplicate_both_orders_safe_provenance (test_buyer_outcomes_kind_offline.KindTests.test_mixed_duplicate_both_orders_safe_provenance)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 117, in test_mixed_duplicate_both_orders_safe_provenance
+    self.assertEqual(c['item_kind'], 'food')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_mixed_following_events_counts_orders_vs_events (test_buyer_outcomes_kind_offline.KindTests.test_mixed_following_events_counts_orders_vs_events)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 163, in test_mixed_following_events_counts_orders_vs_events
+    self.assertEqual(r['item_kind_orders'], dict(goods=1, food=1, unknown=1))
+                     ~^^^^^^^^^^^^^^^^^^^^
+KeyError: 'item_kind_orders'
+
+======================================================================
+ERROR: test_snapshot_kind_change_not_ledger_conflict (test_buyer_outcomes_kind_offline.KindTests.test_snapshot_kind_change_not_ledger_conflict)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 126, in test_snapshot_kind_change_not_ledger_conflict
+    self.assertEqual(c['item_kind'], 'food')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_stored_snapshot_frozen_not_catalog_reclassified (test_buyer_outcomes_kind_offline.KindTests.test_stored_snapshot_frozen_not_catalog_reclassified)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 145, in test_stored_snapshot_frozen_not_catalog_reclassified
+    self.assertEqual(summary(b.read_events(path))['cohorts'][0]['item_kind'], 'food')
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='missing', catalog={})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 54, in test_unknown_catalog_without_price_keeps_kind_evidence
+    self.assertEqual(e['item_kind'], 'unknown')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='missing', catalog={'G12345678': None})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 54, in test_unknown_catalog_without_price_keeps_kind_evidence
+    self.assertEqual(e['item_kind'], 'unknown')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='missing', catalog={'G12345678': {}})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 54, in test_unknown_catalog_without_price_keeps_kind_evidence
+    self.assertEqual(e['item_kind'], 'unknown')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='null', catalog={'G12345678': {'kind': None}})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 54, in test_unknown_catalog_without_price_keeps_kind_evidence
+    self.assertEqual(e['item_kind'], 'unknown')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='invalid', catalog={'G12345678': {'kind': 'unknown'}})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 54, in test_unknown_catalog_without_price_keeps_kind_evidence
+    self.assertEqual(e['item_kind'], 'unknown')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='invalid', catalog={'G12345678': {'kind': True}})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 54, in test_unknown_catalog_without_price_keeps_kind_evidence
+    self.assertEqual(e['item_kind'], 'unknown')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_unknown_catalog_without_price_keeps_kind_evidence (test_buyer_outcomes_kind_offline.KindTests.test_unknown_catalog_without_price_keeps_kind_evidence) (state='invalid', catalog={'G12345678': {'kind': []}})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 54, in test_unknown_catalog_without_price_keeps_kind_evidence
+    self.assertEqual(e['item_kind'], 'unknown')
+                     ~^^^^^^^^^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+ERROR: test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 86, in test_v2_metadata_required_strict_and_roundtrip
+    del bad[key]
+        ~~~^^^^^
+KeyError: 'item_kind'
+
+======================================================================
+FAIL: test_gprefix_food_not_goods (test_buyer_outcomes_kind_offline.KindTests.test_gprefix_food_not_goods)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 33, in test_gprefix_food_not_goods
+    self.assertEqual(e.get('item_kind'), 'food')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != 'food'
+
+======================================================================
+FAIL: test_same_seq_original_facts_conflicts_detected (test_buyer_outcomes_kind_offline.KindTests.test_same_seq_original_facts_conflicts_detected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 135, in test_same_seq_original_facts_conflicts_detected
+    self.assertEqual(c['unknown_reason'], 'conflicting_events')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'ledger_coverage_unproven' != 'conflicting_events'
+- ledger_coverage_unproven
++ conflicting_events
+
+
+======================================================================
+FAIL: test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) (key='item_kind', value=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 84, in test_v2_metadata_required_strict_and_roundtrip
+    self.assertIsNone(b.validate_event(dict(e, **{key: value})))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'version': 1, 'kind': 'settle', 'observed_at': 200, 'buyer': 'mjforge', 'order': 'order-1', 'seq': 1, 'ts': 100, 'unit': None, 'sku': 'G12345678', 'paid_amount': 85, 'list_price': 100, 'warranty_hours': None, 'grade': 'A', 'list_price_source': 'catalog_at_observation', 'goods': True} is not None
+
+======================================================================
+FAIL: test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) (key='item_kind', value=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 84, in test_v2_metadata_required_strict_and_roundtrip
+    self.assertIsNone(b.validate_event(dict(e, **{key: value})))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'version': 1, 'kind': 'settle', 'observed_at': 200, 'buyer': 'mjforge', 'order': 'order-1', 'seq': 1, 'ts': 100, 'unit': None, 'sku': 'G12345678', 'paid_amount': 85, 'list_price': 100, 'warranty_hours': None, 'grade': 'A', 'list_price_source': 'catalog_at_observation', 'goods': True} is not None
+
+======================================================================
+FAIL: test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) (key='item_kind', value=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 84, in test_v2_metadata_required_strict_and_roundtrip
+    self.assertIsNone(b.validate_event(dict(e, **{key: value})))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'version': 1, 'kind': 'settle', 'observed_at': 200, 'buyer': 'mjforge', 'order': 'order-1', 'seq': 1, 'ts': 100, 'unit': None, 'sku': 'G12345678', 'paid_amount': 85, 'list_price': 100, 'warranty_hours': None, 'grade': 'A', 'list_price_source': 'catalog_at_observation', 'goods': True} is not None
+
+======================================================================
+FAIL: test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) (key='item_kind', value=nan)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 84, in test_v2_metadata_required_strict_and_roundtrip
+    self.assertIsNone(b.validate_event(dict(e, **{key: value})))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'version': 1, 'kind': 'settle', 'observed_at': 200, 'buyer': 'mjforge', 'order': 'order-1', 'seq': 1, 'ts': 100, 'unit': None, 'sku': 'G12345678', 'paid_amount': 85, 'list_price': 100, 'warranty_hours': None, 'grade': 'A', 'list_price_source': 'catalog_at_observation', 'goods': True} is not None
+
+======================================================================
+FAIL: test_v2_metadata_required_strict_and_roundtrip (test_buyer_outcomes_kind_offline.KindTests.test_v2_metadata_required_strict_and_roundtrip) (key='item_kind', value='bogus')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-outcome-kind-fix\evidence\baseline-repro-f25c27cd10b8\submissions\25512085\week-08\test_buyer_outcomes_kind_offline.py", line 84, in test_v2_metadata_required_strict_and_roundtrip
+    self.assertIsNone(b.validate_event(dict(e, **{key: value})))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'version': 1, 'kind': 'settle', 'observed_at': 200, 'buyer': 'mjforge', 'order': 'order-1', 'seq': 1, 'ts': 100, 'unit': None, 'sku': 'G12345678', 'paid_amount': 85, 'list_price': 100, 'warranty_hours': None, 'grade': 'A', 'list_price_source': 'catalog_at_observation', 'goods': True} is not None
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.027s
+
+FAILED (failures=7, errors=18)

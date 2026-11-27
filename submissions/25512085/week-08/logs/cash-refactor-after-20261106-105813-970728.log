@@ -1,0 +1,116 @@
+Command: python -B verify_cash_refactor_offline.py after
+Interpreter: C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\python.exe
+Temporary parent: C:\Users\clair\AppData\Local\Temp\opencode
+Guards: no external I/O, no repository writes, no original market/state/key/log reads
+Public API: {"allocate": "(groups, models, held, budget, cap, grade_spent, previous)", "availability_plan": "(units, hub, catalog, now, forum=None)", "compact_break_orders": "(hub, now, *, mature=False)", "compact_cash_sales": "(hub, now)", "config": "()", "forecast": "(hub, sku, info, catalog, now, inquiries=0)", "note_stock": "(hub, held, now)", "number": "(x)", "observe": "(hub, rows, catalog, now, own_urls, own_name)", "observe_break_stats": "(hub, rows, catalog, now, own_urls, own_name)", "procurement": "(hub, sku, info, inv, qty, catalog, now)", "profit_floor": "(unit, hub, catalog, now, warranty=None)", "quote": "(unit, hub, catalog, now)", "ready": "(hub, inv, now, inventory_fresh, phase)", "reference_price": "(hub, sku, grade, now, kind='goods', warranty=None)", "refund_probability": "(hub, sku, grade, catalog, now)", "sale_rows": "(hub)", "spending_budget": "(hub, inv, existing_floor, now)", "stock_post": "(units, hub, catalog, now)", "warranty_hours": "(grade, kind='goods')"}
+test_default_dependencies_are_resolved_at_call_time (test_seller_forum_offline.NoticeExecutionTests.test_default_dependencies_are_resolved_at_call_time) ... ok
+test_enqueue_exception_propagates_without_reserving_slot (test_seller_forum_offline.NoticeExecutionTests.test_enqueue_exception_propagates_without_reserving_slot) ... ok
+test_feed_read_oserror_falls_back_to_empty (test_seller_forum_offline.NoticeExecutionTests.test_feed_read_oserror_falls_back_to_empty) ... ok
+test_latest_feed_is_read_on_each_call (test_seller_forum_offline.NoticeExecutionTests.test_latest_feed_is_read_on_each_call) ... ok
+test_missing_stale_future_and_invalid_feeds_fall_back_to_empty (test_seller_forum_offline.NoticeExecutionTests.test_missing_stale_future_and_invalid_feeds_fall_back_to_empty) ... ok
+test_non_reply_success_does_not_create_reply_history (test_seller_forum_offline.NoticeExecutionTests.test_non_reply_success_does_not_create_reply_history) ... ok
+test_none_plan_does_not_enqueue_or_create_state (test_seller_forum_offline.NoticeExecutionTests.test_none_plan_does_not_enqueue_or_create_state) ... ok
+test_planner_exception_is_not_swallowed (test_seller_forum_offline.NoticeExecutionTests.test_planner_exception_is_not_swallowed) ... ok
+test_success_records_only_after_enqueue_and_keeps_history_bounds (test_seller_forum_offline.NoticeExecutionTests.test_success_records_only_after_enqueue_and_keeps_history_bounds) ... ok
+test_unsuccessful_enqueue_leaves_existing_or_absent_state_unchanged (test_seller_forum_offline.NoticeExecutionTests.test_unsuccessful_enqueue_leaves_existing_or_absent_state_unchanged) ... ok
+test_build_keeps_notice_within_hub_lock_outside_supply_window (test_seller_forum_offline.RestockNoticeBoundaryTests.test_build_keeps_notice_within_hub_lock_outside_supply_window) ... ok
+test_enqueue_failure_still_logs_and_returns_but_exception_prevents_both (test_seller_forum_offline.RestockNoticeBoundaryTests.test_enqueue_failure_still_logs_and_returns_but_exception_prevents_both) ... FAIL
+test_finish_branches_keep_monkeypatch_boundary_and_log_order (test_seller_forum_offline.RestockNoticeBoundaryTests.test_finish_branches_keep_monkeypatch_boundary_and_log_order) ... 
+  test_finish_branches_keep_monkeypatch_boundary_and_log_order (test_seller_forum_offline.RestockNoticeBoundaryTests.test_finish_branches_keep_monkeypatch_boundary_and_log_order) (branch='outside_window') ... ERROR
+  test_finish_branches_keep_monkeypatch_boundary_and_log_order (test_seller_forum_offline.RestockNoticeBoundaryTests.test_finish_branches_keep_monkeypatch_boundary_and_log_order) (branch='round_end') ... ERROR
+  test_finish_branches_keep_monkeypatch_boundary_and_log_order (test_seller_forum_offline.RestockNoticeBoundaryTests.test_finish_branches_keep_monkeypatch_boundary_and_log_order) (branch='first_window') ... ERROR
+  test_finish_branches_keep_monkeypatch_boundary_and_log_order (test_seller_forum_offline.RestockNoticeBoundaryTests.test_finish_branches_keep_monkeypatch_boundary_and_log_order) (branch='normal') ... ERROR
+test_inventory_not_fresh_skips_all_notice_work (test_seller_forum_offline.RestockNoticeBoundaryTests.test_inventory_not_fresh_skips_all_notice_work) ... FAIL
+test_budget_uses_live_prior_and_configuration (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_budget_uses_live_prior_and_configuration) ... ok
+test_config_and_prior_replacements_reach_risk_and_floor (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_config_and_prior_replacements_reach_risk_and_floor) ... ok
+test_forecast_uses_live_configuration (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_forecast_uses_live_configuration) ... ok
+test_forum_uses_live_configuration_and_validator (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_forum_uses_live_configuration_and_validator) ... ok
+test_observation_keeps_existing_patch_boundary (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_observation_keeps_existing_patch_boundary) ... ok
+test_original_public_signatures_and_function_modules (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_original_public_signatures_and_function_modules) ... ok
+test_procurement_calls_patched_pricing_and_risk (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_procurement_calls_patched_pricing_and_risk) ... ok
+test_quote_calls_patched_facade_functions (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_quote_calls_patched_facade_functions) ... ok
+test_reference_price_uses_patched_warranty_and_numeric_validator (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_reference_price_uses_patched_warranty_and_numeric_validator) ... ok
+test_stock_post_still_calls_patched_availability_plan (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_stock_post_still_calls_patched_availability_plan) ... ok
+
+======================================================================
+ERROR: test_finish_branches_keep_monkeypatch_boundary_and_log_order (test_seller_forum_offline.RestockNoticeBoundaryTests.test_finish_branches_keep_monkeypatch_boundary_and_log_order) (branch='outside_window')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_seller_forum_offline.py", line 157, in test_finish_branches_keep_monkeypatch_boundary_and_log_order
+    result = restock.plan_with_hub(self.hub, self.path, self.catalog, self.inv, [],
+                                   inventory_fresh=True)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\restock.py", line 189, in plan_with_hub
+    apply_ledger_rows(hub, rows, catalog)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\store.py", line 391, in apply_ledger_rows
+    radar = hub["demand_radar"]
+            ~~~^^^^^^^^^^^^^^^^
+KeyError: 'demand_radar'
+
+======================================================================
+ERROR: test_finish_branches_keep_monkeypatch_boundary_and_log_order (test_seller_forum_offline.RestockNoticeBoundaryTests.test_finish_branches_keep_monkeypatch_boundary_and_log_order) (branch='round_end')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_seller_forum_offline.py", line 157, in test_finish_branches_keep_monkeypatch_boundary_and_log_order
+    result = restock.plan_with_hub(self.hub, self.path, self.catalog, self.inv, [],
+                                   inventory_fresh=True)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\restock.py", line 189, in plan_with_hub
+    apply_ledger_rows(hub, rows, catalog)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\store.py", line 391, in apply_ledger_rows
+    radar = hub["demand_radar"]
+            ~~~^^^^^^^^^^^^^^^^
+KeyError: 'demand_radar'
+
+======================================================================
+ERROR: test_finish_branches_keep_monkeypatch_boundary_and_log_order (test_seller_forum_offline.RestockNoticeBoundaryTests.test_finish_branches_keep_monkeypatch_boundary_and_log_order) (branch='first_window')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_seller_forum_offline.py", line 157, in test_finish_branches_keep_monkeypatch_boundary_and_log_order
+    result = restock.plan_with_hub(self.hub, self.path, self.catalog, self.inv, [],
+                                   inventory_fresh=True)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\restock.py", line 189, in plan_with_hub
+    apply_ledger_rows(hub, rows, catalog)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\store.py", line 391, in apply_ledger_rows
+    radar = hub["demand_radar"]
+            ~~~^^^^^^^^^^^^^^^^
+KeyError: 'demand_radar'
+
+======================================================================
+ERROR: test_finish_branches_keep_monkeypatch_boundary_and_log_order (test_seller_forum_offline.RestockNoticeBoundaryTests.test_finish_branches_keep_monkeypatch_boundary_and_log_order) (branch='normal')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_seller_forum_offline.py", line 157, in test_finish_branches_keep_monkeypatch_boundary_and_log_order
+    result = restock.plan_with_hub(self.hub, self.path, self.catalog, self.inv, [],
+                                   inventory_fresh=True)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\restock.py", line 189, in plan_with_hub
+    apply_ledger_rows(hub, rows, catalog)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\store.py", line 391, in apply_ledger_rows
+    radar = hub["demand_radar"]
+            ~~~^^^^^^^^^^^^^^^^
+KeyError: 'demand_radar'
+
+======================================================================
+FAIL: test_enqueue_failure_still_logs_and_returns_but_exception_prevents_both (test_seller_forum_offline.RestockNoticeBoundaryTests.test_enqueue_failure_still_logs_and_returns_but_exception_prevents_both)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_seller_forum_offline.py", line 178, in test_enqueue_failure_still_logs_and_returns_but_exception_prevents_both
+    self.assertNotIn('forum_state', self.hub)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'forum_state' unexpectedly found in {'updated_at': 0, 'ledger_seq': 0, 'broken_lines_read': 0, 'payments_lines_read': 0, 'demand_radar': {'inbound_wants': {}, 'missed_wants': {}, 'buyer_orders': {}, 'market_settles': {}, 'sku_settles': {}, 'sku_comparables': {}, 'recent_refs': [], 'own_sku_sold_ts': {}}, 'capital_stage': {'stage': 3, 'balance': 6000000, 'start': 5000000, 'injected': 0, 'stock_cost_value': 0, 'estimated_profit': 1000000, 'cash_floor': 1500000, 'available_budget': 4500000}, 'shop_trust': {}, 'my_purchases': [], 'forum_state': {'last_buyer_post_ts': 0, 'last_shop_post_ts': 0, 'voted_posts': []}, 'no_rebuy_detection_since': 1789985600, 'adaptive_ledger_coverage': {}, 'own_supplies': {}, 'own_shop_urls': [], 'break_stats': {'G1515d951': {'A': {'sold': 110, 'broken': 9, 'last_ts': 1790000000}, 'B': {'sold': 32, 'broken': 8, 'last_ts': 1790000000}, 'C': {'sold': 21, 'broken': 5, 'last_ts': 1790000000}}, 'G8ec51935': {'A': {'sold': 40, 'broken': 4, 'last_ts': 1790000000}, 'B': {'sold': 8, 'broken': 3, 'last_ts': 1790000000}}, 'G07ec17d5': {'A': {'sold': 96, 'broken': 2, 'last_ts': 1790000000}, 'B': {'sold': 27, 'broken': 2, 'last_ts': 1790000000}}}, 'market_break_stats': {}, 'break_observer': {'seeded': True, 'market_orders': {}, 'orders': {}, 'unmatched': {}, 'seq': -1}, 'seller_cash': {'coverage': {}, 'sales': {}, 'market_sales': {}, 'breaks': {}, 'stock_observations': [{'ts': 1790000000, 'skus': []}]}, 'forum_intel': {'settles': [], 'quality_refs': {}, 'quality_break_refs': {}}, 'own_sale_events': {}, 'own_last_sale_ts': {}, 'purchase_costs': {}, 'adaptive_strategy': {'mode': 'metrics-only', 'last_decision': 1790000000, 'reason': 'incomplete-observation: policy held'}, 'no_rebuy': {}, 'restock_windows': {'(1789999980.0, 1790000160.0)': {'baseline_actual': 0, 'reserved': 0, 'window_cap': 1200000, 'planned_skus': {}, 'grade_reserved': {'hot': 0, 'popular': 0, 'observe': 0}}}}
+
+======================================================================
+FAIL: test_inventory_not_fresh_skips_all_notice_work (test_seller_forum_offline.RestockNoticeBoundaryTests.test_inventory_not_fresh_skips_all_notice_work)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_seller_forum_offline.py", line 171, in test_inventory_not_fresh_skips_all_notice_work
+    self.assertNotIn('forum_state', self.hub)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'forum_state' unexpectedly found in {'updated_at': 0, 'ledger_seq': 0, 'broken_lines_read': 0, 'payments_lines_read': 0, 'demand_radar': {'inbound_wants': {}, 'missed_wants': {}, 'buyer_orders': {}, 'market_settles': {}, 'sku_settles': {}, 'sku_comparables': {}, 'recent_refs': [], 'own_sku_sold_ts': {}}, 'capital_stage': {'stage': 3, 'balance': 6000000, 'start': 5000000, 'injected': 0, 'stock_cost_value': 0, 'estimated_profit': 1000000, 'cash_floor': 1500000, 'available_budget': 4500000}, 'shop_trust': {}, 'my_purchases': [], 'forum_state': {'last_buyer_post_ts': 0, 'last_shop_post_ts': 0, 'voted_posts': []}, 'no_rebuy_detection_since': 1789985600, 'adaptive_ledger_coverage': {}, 'own_supplies': {}, 'own_shop_urls': [], 'break_stats': {'G1515d951': {'A': {'sold': 110, 'broken': 9, 'last_ts': 1790000000}, 'B': {'sold': 32, 'broken': 8, 'last_ts': 1790000000}, 'C': {'sold': 21, 'broken': 5, 'last_ts': 1790000000}}, 'G8ec51935': {'A': {'sold': 40, 'broken': 4, 'last_ts': 1790000000}, 'B': {'sold': 8, 'broken': 3, 'last_ts': 1790000000}}, 'G07ec17d5': {'A': {'sold': 96, 'broken': 2, 'last_ts': 1790000000}, 'B': {'sold': 27, 'broken': 2, 'last_ts': 1790000000}}}, 'market_break_stats': {}, 'break_observer': {'seeded': True, 'market_orders': {}, 'orders': {}, 'unmatched': {}, 'seq': -1}, 'seller_cash': {'coverage': {}, 'sales': {}, 'market_sales': {}, 'breaks': {}, 'stock_observations': [{'ts': 1790000000, 'skus': []}]}, 'forum_intel': {'settles': [], 'quality_refs': {}, 'quality_break_refs': {}}, 'own_sale_events': {}, 'own_last_sale_ts': {}, 'purchase_costs': {}, 'adaptive_strategy': {'mode': 'metrics-only', 'last_decision': 1790000000, 'reason': 'incomplete-observation: policy held'}, 'no_rebuy': {}, 'restock_windows': {'(1789999980.0, 1790000160.0)': {'baseline_actual': 0, 'reserved': 0, 'window_cap': 1200000, 'planned_skus': {}, 'grade_reserved': {'hot': 0, 'popular': 0, 'observe': 0}}}}
+
+----------------------------------------------------------------------
+Ran 24 tests in 0.097s
+
+FAILED (failures=2, errors=4)

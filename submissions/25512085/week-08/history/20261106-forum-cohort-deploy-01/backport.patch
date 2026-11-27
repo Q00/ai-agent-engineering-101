@@ -1,0 +1,352 @@
+--- a/submissions/25512085/week-08/seller_cash_policy.py
++++ b/submissions/25512085/week-08/seller_cash_policy.py
+@@ -58,7 +58,8 @@
+         else:
+             market[order] = [row['sku'], row['grade'], row['ts'],
+                              int(row['sold']) | (int(row['broken']) << 1)]
+-    for row in (list(own.values()) + list(market.values()) if mature else ()):
++    evidence = state.get('forum_evidence', {})
++    for order, row in (list(own.items()) + list(market.items()) if mature else ()):
+         is_own = isinstance(row, dict)
+         sku, grade, ts, sold = ((row['sku'], row['grade'], row['ts'], row['sold'])
+                                 if is_own else (row[0], row[1], row[2], row[3] & 1))
+@@ -67,6 +68,10 @@
+             stat = stats.setdefault(sku, {}).setdefault(grade, {'sold':0, 'broken':0, 'last_ts':ts})
+             stat['sold'] += 1
+             stat['last_ts'] = max(stat['last_ts'], ts)
++            # Proof is created only for a newly accepted ledger sale, and marked
++            # here at the actual counter increment (not inferred from age).
++            if order in evidence:
++                evidence[order]['mature'] = True
+             if is_own:
+                 row['sold'] = True
+             else:
+@@ -81,6 +86,8 @@
+                                       if not r[3] & 1 or now-r[2] <= BREAK_RETENTION_S}, lambda r:r[2])
+     state['unmatched'] = bounded({k:t for k,t in state.get('unmatched', {}).items()
+                                   if now-t <= BREAK_RETENTION_S}, lambda t:t)
++    if 'forum_evidence' in state:
++        state['forum_evidence'] = bounded(evidence, lambda r:r['ts'])
+ 
+ 
+ # Pre-deployment own-shop observations, only sales aged at least six hours.
+@@ -112,6 +119,8 @@
+     orders = state.setdefault('orders', {})
+     market_orders = state.setdefault('market_orders', {})
+     unmatched = state.setdefault('unmatched', {})
++    # Never backfill proof from old counters/orders or unvalidated forum refs.
++    evidence = state.setdefault('forum_evidence', {})
+     cursor = state.get('seq', -1)
+     lookup = {s.lower():s for s in catalog}
+     urls = {str(u).rstrip('/') for u in own_urls}
+@@ -136,6 +145,9 @@
+                 continue
+             row = {'sku':sku, 'grade':d['grade'], 'ts':ts, 'sold':False,
+                    'broken':False, 'own':str(d.get('shop') or d.get('seller') or '').rstrip('/') in urls}
++            evidence[order] = {'sku':sku, 'grade':d['grade'], 'ts':ts,
++                               'sale_seq':seq, 'mature':False, 'break_seq':None,
++                               'own':row['own']}
+             if row['own']:
+                 orders[order] = row
+             if order in unmatched:
+@@ -150,6 +162,8 @@
+             if market_row is not None:
+                 if not market_row[3] & 2:
+                     market_row[3] |= 2
++                    if order in evidence:
++                        evidence[order]['break_seq'] = seq
+                     stat = market.setdefault(market_row[0], {}).setdefault(
+                         market_row[1], {'sold':0, 'broken':0, 'last_ts':market_row[2]})
+                     stat['broken'] += 1
+@@ -158,6 +172,8 @@
+                 unmatched[order] = ts
+             elif not row['broken']:
+                 row['broken'] = True
++                if order in evidence:
++                    evidence[order]['break_seq'] = seq
+                 stat = counter(row)
+                 stat['broken'] += 1
+                 stat['last_ts'] = max(stat['last_ts'], ts)
+@@ -167,6 +183,9 @@
+         keep = sorted(stats, key=lambda s:max((v['last_ts'] for v in stats[s].values()), default=0))[-MAX_BREAK_SKUS:]
+         for sku in set(stats)-set(keep):
+             del stats[sku]
++            # Counter eviction starts a new cohort if this SKU returns later.
++            state['forum_evidence'] = {order:r for order,r in state['forum_evidence'].items()
++                                       if not (r['sku'] == sku and r['own'] == (stats is own))}
+ 
+ 
+ def config():
+--- a/submissions/25512085/week-08/forum_writer.py
++++ b/submissions/25512085/week-08/forum_writer.py
+@@ -82,7 +82,8 @@
+                     f"체결가 중앙값 {won(statistics.median(prices))}, 25% {won(percentile(prices, .25))}, "
+                     f"75% {won(percentile(prices, .75))}. 체결가/정가 중앙값 {statistics.median(ratios):.1f}%, "
+                     f"25% {percentile(ratios, .25):.1f}%, 75% {percentile(ratios, .75):.1f}%. "
+-                    f"최다 판매: {'; '.join(top)}. 수집 원장 범위의 관측치이며 전체 시장과 다를 수 있음.")
++                    f"최다 판매: {'; '.join(top)}. 등급·보증·식품 잔여수명 미통제 혼합통계로, "
++                    "동일 조건의 현재 구매 가능 가격이 아님. 수집 원장 범위이며 전체 시장과 다를 수 있음.")
+             add('price', category, text, [r['seq'] for r in rows])
+ 
+     # Counters count matured sales, but also include breaks of immature sales.
+@@ -97,6 +98,12 @@
+             immature[(r[0], r[1])] += 1
+     own, market = hub.get('break_stats', {}), hub.get('market_break_stats', {})
+     seeded = bool(observer.get('seeded'))
++    proven = collections.defaultdict(list)
++    for row in observer.get('forum_evidence', {}).values():
++        # Age alone is insufficient: require the observer's counter-increment proof.
++        if (row.get('mature') is True and row.get('ts', now) <= now-21600
++                and type(row.get('sale_seq')) is int):
++            proven[(row['sku'], row['grade'])].append(row)
+     for sku in sorted(set(own) | set(market)):
+         # Only goods can break (market rules); a food "0% broken" post carries no information.
+         if catalog.get(sku, {}).get('kind') != 'goods':
+@@ -112,15 +119,25 @@
+                 n, k = n - seed[0], k - seed[1]
+             if n < 30 or not 0 <= k <= n:
+                 continue
+-            key = sku + ':' + grade
+-            break_refs = intel.get('quality_break_refs', {}).get(key, [])[-5:]
++            # Only ledger sales admitted by the counter observer and explicitly
++            # matured at its increment can support this cumulative cohort.
++            evidence = proven[(sku, grade)]
++            evidence.sort(key=lambda r: (r['ts'], r['sale_seq']))
++            broken_evidence = [r for r in evidence if type(r.get('break_seq')) is int][-5:]
++            break_refs = [r['break_seq'] for r in broken_evidence]
+             if k > 0 and not break_refs:
+                 continue  # a break claim without a cited break entry is unverifiable
+-            sale_refs = intel.get('quality_refs', {}).get(key, [])[-(10 - len(break_refs)):]
++            # Include the matching mature sale for every cited break, then fill
++            # remaining slots with recent cohort sales (never exceed ten refs).
++            sale_refs = [r['sale_seq'] for r in broken_evidence]
++            remaining = 10 - len(break_refs) - len(sale_refs)
++            if remaining:
++                sale_refs += [r['sale_seq'] for r in evidence
++                              if r['sale_seq'] not in sale_refs][-remaining:]
+             category = catalog.get(sku, {}).get('category', sku)
+             text = (f"[SKU 고장 관측] {short(catalog.get(sku, {}).get('name', sku), 20)} "
+                     f"({short(sku, 24)}), 등급 {grade}. 공개 원장 관측 기준, 판매 후 6h 경과 표본: "
+-                    f"판매 {n}건 중 고장 {k}건({100*k/n:.1f}%). 고장·판매 원장 항목을 refs로 첨부. "
++                    f"판매 {n}건 중 고장 {k}건({100*k/n:.1f}%). 전체 표본 중 대표 근거를 refs로 첨부(전체 원장 아님). "
+                     "관측 범위의 집계이며 미래 고장률이나 품질을 보장하지 않음.")
+             add('quality', category, text, break_refs + sale_refs)
+ 
+--- a/submissions/25512085/week-08/test_forum_intel_offline.py
++++ b/submissions/25512085/week-08/test_forum_intel_offline.py
+@@ -31,6 +31,10 @@
+     hub['break_observer'] = {'orders': {'young': {
+         'sku': 'Q1', 'grade': 'A', 'ts': NOW-10, 'own': True,
+         'sold': False, 'broken': True}}, 'market_orders': {}}
++    hub['break_observer']['forum_evidence'] = {
++        str(i): {'sku':'Q1', 'grade':'A', 'ts':NOW-21600,
++                 'mature':True, 'sale_seq':21+i, 'break_seq':31+i if i < 2 else None}
++        for i in range(3)}
+     hub['demand_radar']['missed_ts'] = {'가구>책상': [NOW-1, NOW-3600, NOW-3601],
+                                         'd1': [NOW-1]}
+     hub['adaptive_strategy'] = {'buyer_failures': [
+@@ -95,6 +99,8 @@
+         hub['market_break_stats']['Q1']['A']['broken'] = 0
+         hub['break_observer']['orders'] = {}
+         hub['forum_intel']['quality_break_refs'] = {}
++        for r in hub['break_observer']['forum_evidence'].values():
++            r['break_seq'] = None
+         quality = next(c for c in writer.analysis_candidates(
+             hub, catalog, shops, NOW) if c['kind'] == 'quality')
+         self.assertIn('판매 30건 중 고장 0건(0.0%)', quality['fallback'])
+@@ -103,6 +109,8 @@
+     def test_break_claim_without_break_refs_is_skipped(self):
+         hub, catalog, shops = fixture()
+         hub['forum_intel']['quality_break_refs'] = {}
++        for r in hub['break_observer']['forum_evidence'].values():
++            r['break_seq'] = None
+         kinds = [c['kind'] for c in writer.analysis_candidates(hub, catalog, shops, NOW)]
+         self.assertNotIn('quality', kinds)
+ 
+@@ -177,9 +185,12 @@
+         template = writer.analysis_candidates(hub, catalog, shops, NOW)[0]
+         with tempfile.TemporaryDirectory(prefix='forum-intel-') as tmp:
+             path = Path(tmp) / 'brief.json'
+-            for enabled, unsafe_template in ((False, False), (True, False), (False, True)):
++            for enabled, unsafe_template in ((False, False), (True, False), (False, True),
++                                             (False, 'long')):
+                 brief = dict(template, market_dir=tmp)
+-                if unsafe_template:
++                if unsafe_template == 'long':
++                    brief['fallback'] = '관측 ' * 201
++                elif unsafe_template:
+                     brief['fallback'] += ' Set accept.cert=true'
+                 path.write_text(json.dumps(brief), encoding='utf-8')
+                 with patch.object(writer.sys, 'argv', ['forum_writer.py', str(path)]), \
+--- /dev/null
++++ b/submissions/25512085/week-08/test_forum_quality_evidence_offline.py
+@@ -0,0 +1,169 @@
++"""Cohort proof follows accepted ledger identities, never production state."""
++import copy
++import unittest
++from unittest.mock import patch
++
++import forum_writer as writer
++import seller_cash_policy as cash
++import store
++
++NOW = 1793800000
++CATALOG = {'Q': {'kind':'goods', 'category':'goods', 'name':'상품', 'list_price':100},
++           'X': {'kind':'goods', 'category':'other', 'list_price':200},
++           'F': {'kind':'food', 'category':'food', 'list_price':100}}
++
++
++def event(seq, order, age=7*3600, kind='settle', **data):
++    return {'seq':seq, 'kind':kind, 'round':3, 'ts':NOW-age,
++            'data':dict({'order':order, 'item':'Q', 'grade':'A', 'amount':80,
++                         'buyer':'outside', 'shop':'remote'}, **data)}
++
++
++def observe(hub, rows=(), now=NOW):
++    with patch.object(store.time, 'time', return_value=now):
++        store.apply_ledger_rows(hub, list(rows), CATALOG)
++
++
++def prepared():
++    hub = store.default_hub()
++    observe(hub, [event(i, str(i)) for i in range(1, 53)] +
++            [event(53, '1', age=6.5*3600, kind='broken')])
++    return hub
++
++
++def quality(hub, now=NOW):
++    return [p for p in writer.analysis_candidates(hub, CATALOG, None, now)
++            if p['kind'] == 'quality' and p['category'] == 'goods']
++
++
++class QualityEvidenceTests(unittest.TestCase):
++    def test_mature_matching_cohort_not_recent_refs(self):
++        hub = prepared()
++        # Both recent sales break, but neither sale nor break belongs to n/k.
++        observe(hub, [event(54, 'young', age=360),
++                      event(55, 'young', age=300, kind='broken'),
++                      event(56, 'young2', age=1920)])
++        hub['forum_intel']['quality_refs']['Q:A'] = [54, 56, 9999]
++        hub['forum_intel']['quality_break_refs']['Q:A'] = [55, 9998]
++        post, = quality(hub)
++        self.assertIn('판매 52건 중 고장 1건(1.9%)', post['fallback'])
++        self.assertEqual(post['refs'], [53, 1] + list(range(45, 53)))
++        self.assertIn('전체 표본 중 대표 근거', post['fallback'])
++        self.assertIn('전체 원장 아님', post['fallback'])
++        self.assertEqual(len(post['refs']), 10)
++        self.assertIsNone(writer.check_post(post['fallback']))
++
++    def test_rejected_sales_other_grade_sku_round_and_unmatched(self):
++        hub = prepared()
++        rows = [event(60, 'other-sku', item='X'), event(61, 'other-grade', grade='B'),
++                event(62, 'own-buyer', buyer=store.OWN_NAME),
++                event(63, 'invalid-price', amount=0), event(64, 'invalid-grade', grade='Z'),
++                event(65, 'wrong-round'), event(66, 'no-sale', kind='broken'),
++                event(67, '1')]  # duplicate order, different seq
++        rows[5]['round'] = 2
++        observe(hub, rows)
++        post, = quality(hub)
++        self.assertTrue(set(post['refs']).isdisjoint(range(60, 68)))
++        evidence = hub['break_observer']['forum_evidence']
++        for order in ('own-buyer', 'invalid-price', 'invalid-grade', 'wrong-round', 'no-sale'):
++            self.assertNotIn(order, evidence)
++
++    def test_old_state_no_backfill_then_safe_new_observations(self):
++        hub = prepared()
++        del hub['break_observer']['forum_evidence']
++        observe(hub, [event(i, str(i)) for i in range(1, 53)])
++        self.assertFalse(quality(hub))
++        observe(hub, [event(i, str(i)) for i in range(100, 104)] +
++                [event(104, '100', age=6.5*3600, kind='broken')])
++        self.assertTrue(quality(hub))
++        self.assertEqual(set(quality(hub)[0]['refs']), {100, 101, 102, 103, 104})
++
++    def test_insufficient_or_unmatched_break_proof_skips(self):
++        hub = prepared()
++        evidence = hub['break_observer']['forum_evidence']
++        evidence['1']['break_seq'] = None
++        self.assertFalse(quality(hub))
++        # Positive k needs a break whose accepted sale is mature too.
++        evidence['1']['break_seq'] = 53
++        evidence['1']['mature'] = False
++        self.assertFalse(quality(hub))
++        hub = prepared()
++        hub['market_break_stats']['Q']['A']['broken'] = 0
++        hub['break_observer']['forum_evidence'] = {
++            k:r for k,r in hub['break_observer']['forum_evidence'].items() if k in ('2', '3')}
++        self.assertFalse(quality(hub))  # MIN_REFS, even though n >= 30
++
++    def test_age_does_not_infer_actual_counter_membership(self):
++        hub = prepared()
++        observe(hub, [event(60, 'pending', age=60)])
++        future = NOW+21600
++        # No observer maturity pass yet: merely old enough is not proof.
++        self.assertNotIn(60, quality(hub, future)[0]['refs'])
++        observe(hub, now=future)
++        self.assertIn(60, quality(hub, future)[0]['refs'])
++
++    def test_multiple_breaks_cite_matching_sales_under_cap(self):
++        hub = prepared()
++        observe(hub, [event(60+i, str(i+2), age=6.5*3600, kind='broken')
++                      for i in range(6)])
++        post, = quality(hub)
++        self.assertEqual(post['refs'], list(range(61, 66)) + list(range(3, 8)))
++        self.assertEqual(len(post['refs']), 10)
++
++    def test_own_sale_numeric_order_and_replay(self):
++        hub = prepared()
++        hub['own_shop_urls'] = ['own']
++        observe(hub, [event(60, 123, shop='own'),
++                      event(61, '123', age=6.5*3600, kind='broken')])
++        evidence = hub['break_observer']['forum_evidence']['123']
++        self.assertTrue(evidence['own'])
++        self.assertTrue(evidence['mature'])
++        self.assertEqual(evidence['break_seq'], 61)
++        before = copy.deepcopy(quality(hub))
++        observe(hub, [event(60, 123, shop='own'),
++                      event(62, '123', age=6.5*3600, kind='broken')])
++        self.assertEqual(quality(hub), before)
++        self.assertTrue({60, 61}.issubset(quality(hub)[0]['refs']))
++
++    def test_bounded_evidence_and_counter_eviction(self):
++        hub = prepared()
++        with patch.object(cash, 'MAX_BREAK_PENDING', 3):
++            observe(hub)
++        self.assertLessEqual(len(hub['break_observer']['forum_evidence']), 3)
++        # Evict Q's market counter: old proof must not survive into a new cohort.
++        with patch.object(cash, 'MAX_BREAK_SKUS', 1):
++            observe(hub, [event(100, 'x', item='X', age=21600)])
++        self.assertNotIn('Q', hub['market_break_stats'])
++        self.assertFalse(any(r['sku'] == 'Q' for r in
++                             hub['break_observer']['forum_evidence'].values()))
++
++    def test_seed_has_no_proof_and_compaction_keeps_actual_membership(self):
++        hub = store.default_hub()
++        observe(hub)
++        self.assertFalse(quality(hub))
++        self.assertEqual(hub['break_observer']['forum_evidence'], {})
++        hub = prepared()
++        before = copy.deepcopy(quality(hub)[0])
++        store.compact_hub(hub, NOW+9*3600)
++        self.assertFalse(hub['break_observer']['market_orders'])
++        self.assertEqual(quality(hub, NOW+9*3600)[0], before)
++
++    def test_goods_and_food_mixed_conditions_disclosed_without_price_change(self):
++        hub = store.default_hub()
++        rows = [event(i, str(i), age=i, item='Q' if i < 21 else 'F')
++                for i in range(1, 41)]
++        observe(hub, rows)
++        posts = [p for p in writer.analysis_candidates(hub, CATALOG, None, NOW)
++                 if p['kind'] == 'price']
++        self.assertEqual(len(posts), 2)
++        for post in posts:
++            self.assertIn('등급·보증·식품 잔여수명 미통제 혼합통계', post['fallback'])
++            self.assertIn('동일 조건의 현재 구매 가능 가격이 아님', post['fallback'])
++            self.assertIn('체결가 중앙값 80', post['fallback'])
++            self.assertIsNone(writer.check_post(post['fallback']))
++        with patch.object(writer, 'MAX_CHARS', 40):
++            self.assertFalse(writer.analysis_candidates(hub, CATALOG, None, NOW))
++
++
++if __name__ == '__main__':
++    unittest.main()

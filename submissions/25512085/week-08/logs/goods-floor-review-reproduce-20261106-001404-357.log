@@ -1,0 +1,73 @@
+test_sixty_second_late_cash_low_offer_rejects_instead_of_counter (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_low_offer_rejects_instead_of_counter) ... [r3-quote] G00000001 (sofa): cost=100000, list=250000, grade=A, ask=108248, r1_target=108248, floor=108248, warranty=72h, task=task-1, cash_first_quote=True
+
+  test_sixty_second_late_cash_low_offer_rejects_instead_of_counter (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_low_offer_rejects_instead_of_counter) (grade='A', offer=1) ... FAIL
+[r3-quote] G00000001 (sofa): cost=100000, list=250000, grade=B, ask=123530, r1_target=123530, floor=123530, warranty=6h, task=task-1, cash_first_quote=True
+  test_sixty_second_late_cash_low_offer_rejects_instead_of_counter (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_low_offer_rejects_instead_of_counter) (grade='B', offer=1) ... FAIL
+[r3-quote] G00000001 (sofa): cost=100000, list=250000, grade=C, ask=105000, r1_target=105000, floor=105000, warranty=0h, task=task-1, cash_first_quote=True
+  test_sixty_second_late_cash_low_offer_rejects_instead_of_counter (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_low_offer_rejects_instead_of_counter) (grade='C', offer=1) ... FAIL
+test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor) ... [r3-quote] G00000001 (sofa): cost=100000, list=250000, grade=A, ask=108248, r1_target=108248, floor=108248, warranty=72h, task=task-1, cash_first_quote=True
+
+  test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor) (grade='A', offer='old_ask') ... FAIL
+[r3-quote] G00000001 (sofa): cost=100000, list=250000, grade=B, ask=123530, r1_target=123530, floor=123530, warranty=6h, task=task-1, cash_first_quote=True
+  test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor) (grade='B', offer='old_ask') ... FAIL
+[r3-quote] G00000001 (sofa): cost=100000, list=250000, grade=C, ask=105000, r1_target=105000, floor=105000, warranty=0h, task=task-1, cash_first_quote=True
+  test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor) (grade='C', offer='old_ask') ... FAIL
+
+======================================================================
+FAIL: test_sixty_second_late_cash_low_offer_rejects_instead_of_counter (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_low_offer_rejects_instead_of_counter) (grade='A', offer=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_floor_offline.py", line 188, in late_cash_turn
+    self.assertIn('reject', [kind for kind, _ in events])
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'reject' not found in ['input']
+
+======================================================================
+FAIL: test_sixty_second_late_cash_low_offer_rejects_instead_of_counter (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_low_offer_rejects_instead_of_counter) (grade='B', offer=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_floor_offline.py", line 188, in late_cash_turn
+    self.assertIn('reject', [kind for kind, _ in events])
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'reject' not found in ['input']
+
+======================================================================
+FAIL: test_sixty_second_late_cash_low_offer_rejects_instead_of_counter (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_low_offer_rejects_instead_of_counter) (grade='C', offer=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_floor_offline.py", line 188, in late_cash_turn
+    self.assertIn('reject', [kind for kind, _ in events])
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'reject' not found in ['input']
+
+======================================================================
+FAIL: test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor) (grade='A', offer='old_ask')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_floor_offline.py", line 188, in late_cash_turn
+    self.assertIn('reject', [kind for kind, _ in events])
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'reject' not found in ['input']
+
+======================================================================
+FAIL: test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor) (grade='B', offer='old_ask')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_floor_offline.py", line 188, in late_cash_turn
+    self.assertIn('reject', [kind for kind, _ in events])
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'reject' not found in ['input']
+
+======================================================================
+FAIL: test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor (test_goods_floor_offline.GoodsFloorTests.test_sixty_second_late_cash_old_ask_acceptance_rejects_for_floor) (grade='C', offer='old_ask')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_floor_offline.py", line 188, in late_cash_turn
+    self.assertIn('reject', [kind for kind, _ in events])
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'reject' not found in ['input']
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.075s
+
+FAILED (failures=6)

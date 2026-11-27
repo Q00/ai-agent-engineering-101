@@ -1,0 +1,14 @@
+Local synthetic verification; complete immutable output is in history/20261107-goods-terms-01/.
+python -B submissions/25512085/week-08/history/20261107-goods-terms-01/check.py baseline
+BACKPORT_TEST_RESULT={"mode": "all", "tree": "baseline", "tests_run": 499, "failures": 0, "errors": 0, "success": true}
+python -B submissions/25512085/week-08/history/20261107-goods-terms-01/check.py duration-green07 focused
+BACKPORT_TEST_RESULT={"mode": "focused", "tree": "duration-green07", "tests_run": 100, "failures": 0, "errors": 0, "skipped": 0, "success": true}
+python -B submissions/25512085/week-08/history/20261107-goods-terms-01/check.py final08
+BACKPORT_TEST_RESULT={"mode": "all", "tree": "final08", "tests_run": 527, "failures": 0, "errors": 0, "skipped": 2, "success": true}
+python -B submissions/25512085/week-08/history/20261107-goods-terms-01/verify_checks.py final08
+py_compile seller.py: PASS (isolated snapshot/output)
+py_compile test_goods_terms_pilot_offline.py: PASS (isolated snapshot/output)
+git diff 92729a6^ --check -- <changed source/docs/runner>: exit 0
+git diff 92729a6^ --check (including immutable raw logs): exit 2
+Whole-change whitespace warnings are in immutable raw logs; they were not edited.
+No live market/VM/push verification performed. Existing dirty user logs/report remain unstaged.

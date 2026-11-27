@@ -1,0 +1,11 @@
+Command: PowerShell here-string | python -B - (AST and syntax integrity checks)
+Baseline: 671df2e
+PASS: all restock nodes outside the two target functions and added import are AST-identical
+PASS: moved function bodies are AST-identical after constant parameter renaming and clock injection
+PASS: in-memory syntax compilation of 4 changed Python files (no bytecode writes)
+PASS: guard demand/pricing/config/tests unchanged against 671df2e
+PASS: git diff --check
+cash-refactor-baseline-20261106-132336-491924.log: test_market_research_offline: 9 passed
+cash-refactor-baseline-20261106-132336-491924.log: test_procurement_guard_offline: 13 passed
+cash-refactor-after-20261106-132504-655529.log: test_market_research_offline: 9 passed
+cash-refactor-after-20261106-132504-655529.log: test_procurement_guard_offline: 13 passed

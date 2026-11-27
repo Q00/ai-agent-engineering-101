@@ -1,0 +1,36 @@
+Command: python -B verify_cash_refactor_offline.py after
+Interpreter: C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\python.exe
+Temporary parent: C:\Users\clair\AppData\Local\Temp\opencode
+Guards: no external I/O, no repository writes, no original market/state/key/log reads
+Public API: {"allocate": "(groups, models, held, budget, cap, grade_spent, previous)", "availability_plan": "(units, hub, catalog, now, forum=None)", "compact_break_orders": "(hub, now, *, mature=False)", "compact_cash_sales": "(hub, now)", "config": "()", "forecast": "(hub, sku, info, catalog, now, inquiries=0)", "note_stock": "(hub, held, now)", "number": "(x)", "observe": "(hub, rows, catalog, now, own_urls, own_name)", "observe_break_stats": "(hub, rows, catalog, now, own_urls, own_name)", "procurement": "(hub, sku, info, inv, qty, catalog, now)", "profit_floor": "(unit, hub, catalog, now, warranty=None)", "quote": "(unit, hub, catalog, now)", "ready": "(hub, inv, now, inventory_fresh, phase)", "reference_price": "(hub, sku, grade, now, kind='goods', warranty=None)", "refund_probability": "(hub, sku, grade, catalog, now)", "sale_rows": "(hub)", "spending_budget": "(hub, inv, existing_floor, now)", "stock_post": "(units, hub, catalog, now)", "warranty_hours": "(grade, kind='goods')"}
+test_default_dependencies_are_resolved_at_call_time (test_seller_forum_offline.NoticeExecutionTests.test_default_dependencies_are_resolved_at_call_time) ... ok
+test_enqueue_exception_propagates_without_reserving_slot (test_seller_forum_offline.NoticeExecutionTests.test_enqueue_exception_propagates_without_reserving_slot) ... ok
+test_feed_freshness_includes_zero_and_120_seconds_only (test_seller_forum_offline.NoticeExecutionTests.test_feed_freshness_includes_zero_and_120_seconds_only) ... ok
+test_feed_read_oserror_falls_back_to_empty (test_seller_forum_offline.NoticeExecutionTests.test_feed_read_oserror_falls_back_to_empty) ... ok
+test_latest_feed_is_read_on_each_call (test_seller_forum_offline.NoticeExecutionTests.test_latest_feed_is_read_on_each_call) ... ok
+test_missing_stale_future_and_invalid_feeds_fall_back_to_empty (test_seller_forum_offline.NoticeExecutionTests.test_missing_stale_future_and_invalid_feeds_fall_back_to_empty) ... ok
+test_non_reply_success_does_not_create_reply_history (test_seller_forum_offline.NoticeExecutionTests.test_non_reply_success_does_not_create_reply_history) ... ok
+test_none_plan_does_not_enqueue_or_create_state (test_seller_forum_offline.NoticeExecutionTests.test_none_plan_does_not_enqueue_or_create_state) ... ok
+test_planner_exception_is_not_swallowed (test_seller_forum_offline.NoticeExecutionTests.test_planner_exception_is_not_swallowed) ... ok
+test_success_records_only_after_enqueue_and_keeps_history_bounds (test_seller_forum_offline.NoticeExecutionTests.test_success_records_only_after_enqueue_and_keeps_history_bounds) ... ok
+test_unsuccessful_enqueue_leaves_existing_or_absent_state_unchanged (test_seller_forum_offline.NoticeExecutionTests.test_unsuccessful_enqueue_leaves_existing_or_absent_state_unchanged) ... ok
+test_build_keeps_notice_within_hub_lock_outside_supply_window (test_seller_forum_offline.RestockNoticeBoundaryTests.test_build_keeps_notice_within_hub_lock_outside_supply_window) ... ok
+test_enqueue_failure_still_logs_and_returns_but_exception_prevents_both (test_seller_forum_offline.RestockNoticeBoundaryTests.test_enqueue_failure_still_logs_and_returns_but_exception_prevents_both) ... ok
+test_finish_branches_keep_monkeypatch_boundary_and_log_order (test_seller_forum_offline.RestockNoticeBoundaryTests.test_finish_branches_keep_monkeypatch_boundary_and_log_order) ... ok
+test_inventory_not_fresh_skips_all_notice_work (test_seller_forum_offline.RestockNoticeBoundaryTests.test_inventory_not_fresh_skips_all_notice_work) ... ok
+test_real_policy_replies_outside_window_then_suppresses_duplicate (test_seller_forum_offline.RestockNoticeBoundaryTests.test_real_policy_replies_outside_window_then_suppresses_duplicate) ... ok
+test_budget_uses_live_prior_and_configuration (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_budget_uses_live_prior_and_configuration) ... ok
+test_config_and_prior_replacements_reach_risk_and_floor (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_config_and_prior_replacements_reach_risk_and_floor) ... ok
+test_forecast_uses_live_configuration (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_forecast_uses_live_configuration) ... ok
+test_forum_uses_live_configuration_and_validator (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_forum_uses_live_configuration_and_validator) ... ok
+test_observation_keeps_existing_patch_boundary (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_observation_keeps_existing_patch_boundary) ... ok
+test_original_public_signatures_and_function_modules (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_original_public_signatures_and_function_modules) ... ok
+test_procurement_calls_patched_pricing_and_risk (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_procurement_calls_patched_pricing_and_risk) ... ok
+test_quote_calls_patched_facade_functions (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_quote_calls_patched_facade_functions) ... ok
+test_reference_price_uses_patched_warranty_and_numeric_validator (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_reference_price_uses_patched_warranty_and_numeric_validator) ... ok
+test_stock_post_still_calls_patched_availability_plan (test_cash_policy_modules_offline.CashModuleCompatibilityTests.test_stock_post_still_calls_patched_availability_plan) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 0.111s
+
+OK

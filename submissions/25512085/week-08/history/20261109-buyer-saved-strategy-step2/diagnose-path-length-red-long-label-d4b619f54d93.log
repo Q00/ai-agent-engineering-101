@@ -1,0 +1,1215 @@
+test_bash_stub_preserves_auth_loop_and_other_python_forwarding (test_visibility_guard_offline.LauncherTests.test_bash_stub_preserves_auth_loop_and_other_python_forwarding) ... ok
+test_bash_stub_structure_failure_cannot_fall_back_to_vanilla (test_visibility_guard_offline.LauncherTests.test_bash_stub_structure_failure_cannot_fall_back_to_vanilla) ... ok
+test_expected_structure_and_absolute_same_repo_path (test_visibility_guard_offline.LauncherTests.test_expected_structure_and_absolute_same_repo_path) ... ok
+test_live_vm_launcher_shape_is_accepted (test_visibility_guard_offline.LauncherTests.test_live_vm_launcher_shape_is_accepted) ... ok
+test_uninterceptable_or_extra_invocation_is_rejected_without_output (test_visibility_guard_offline.LauncherTests.test_uninterceptable_or_extra_invocation_is_rejected_without_output) ... ok
+test_healthy_policy_and_reservations_identical_to_unflagged (test_visibility_guard_offline.RestockGuardTests.test_healthy_policy_and_reservations_identical_to_unflagged) ... ok
+test_market_sales_alone_old_or_future_own_sales_not_proof (test_visibility_guard_offline.RestockGuardTests.test_market_sales_alone_old_or_future_own_sales_not_proof) ... ok
+test_missing_stale_future_invalid_nonhealthy_state_pause (test_visibility_guard_offline.RestockGuardTests.test_missing_stale_future_invalid_nonhealthy_state_pause) ... ok
+test_pause_existing_risk_and_no_rebuy_restrictions_preserved (test_visibility_guard_offline.RestockGuardTests.test_pause_existing_risk_and_no_rebuy_restrictions_preserved) ... ok
+test_pause_growth_allocator_cannot_expand_past_one (test_visibility_guard_offline.RestockGuardTests.test_pause_growth_allocator_cannot_expand_past_one) ... ok
+test_pause_held_zero_proven_stockout_one_other_zero_exact_reservation (test_visibility_guard_offline.RestockGuardTests.test_pause_held_zero_proven_stockout_one_other_zero_exact_reservation) ... ok
+test_pause_inventory_not_fresh_no_restore (test_visibility_guard_offline.RestockGuardTests.test_pause_inventory_not_fresh_no_restore) ... ok
+test_production_flag_missing_file_passes_explicit_failclosed_state (test_visibility_guard_offline.RestockGuardTests.test_production_flag_missing_file_passes_explicit_failclosed_state) ... ok
+test_concurrent_initial_joins_start_exactly_one_guard (test_visibility_guard_offline.SerializationTests.test_concurrent_initial_joins_start_exactly_one_guard) ... Exception in thread Thread-5 (<lambda>):
+Exception in thread Thread-6 (<lambda>):
+Traceback (most recent call last):
+Traceback (most recent call last):
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 1044, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\threading.py", line 995, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 422, in <lambda>
+    threads = [threading.Thread(target=lambda: market.join("shop", "mjforge", "fake-key", URL)) for _ in range(2)]
+                                               ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 422, in <lambda>
+    threads = [threading.Thread(target=lambda: market.join("shop", "mjforge", "fake-key", URL)) for _ in range(2)]
+                                               ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1169, in __call__
+    return self._mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1173, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1169, in __call__
+    return self._mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1240, in _execute_mock_call
+    result = effect(*args, **kwargs)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 418, in <lambda>
+    factory = Mock(side_effect=lambda *a: vg.VisibilityGuard(*a, client=self.client, clock=lambda: self.now))
+                                          ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1173, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1240, in _execute_mock_call
+    result = effect(*args, **kwargs)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 418, in <lambda>
+    factory = Mock(side_effect=lambda *a: vg.VisibilityGuard(*a, client=self.client, clock=lambda: self.now))
+                                          ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-ud85kjpe\\.market\\visibility_guard.json.198900.197336.tmp'
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-ud85kjpe\\.market\\visibility_guard.json.198900.197756.tmp'
+FAIL
+test_join_and_shop_call_share_reentrant_lock (test_visibility_guard_offline.SerializationTests.test_join_and_shop_call_share_reentrant_lock) ... ERROR
+test_corrupt_restoration_reservations_do_not_allow_duplicate (test_visibility_guard_offline.SupplyGateTests.test_corrupt_restoration_reservations_do_not_allow_duplicate) ... ERROR
+test_healthy_original_supply_unchanged_then_plan_to_post_deterioration_blocks (test_visibility_guard_offline.SupplyGateTests.test_healthy_original_supply_unchanged_then_plan_to_post_deterioration_blocks) ... ERROR
+test_isolated_atomic_reservation_path_stays_below_windows_limit (test_visibility_guard_offline.SupplyGateTests.test_isolated_atomic_reservation_path_stays_below_windows_limit) ... ERROR
+test_missing_future_stale_state_all_hold (test_visibility_guard_offline.SupplyGateTests.test_missing_future_stale_state_all_hold) ... ERROR
+test_pause_restores_one_only_once_per_sku_window_even_401 (test_visibility_guard_offline.SupplyGateTests.test_pause_restores_one_only_once_per_sku_window_even_401) ... ERROR
+test_qty_held_missing_evidence_stale_inventory_and_closed_window_block (test_visibility_guard_offline.SupplyGateTests.test_qty_held_missing_evidence_stale_inventory_and_closed_window_block) ... ERROR
+test_timeout_reservation_survives_wrapper_restart (test_visibility_guard_offline.SupplyGateTests.test_timeout_reservation_survives_wrapper_restart) ... ERROR
+test_backoff_300_600_1200_and_cap_without_healthy_reset (test_visibility_guard_offline.VisibilityTests.test_backoff_300_600_1200_and_cap_without_healthy_reset) ... ERROR
+test_both_bad_twice_same_key_url_tries_one_then_two_confirmations (test_visibility_guard_offline.VisibilityTests.test_both_bad_twice_same_key_url_tries_one_then_two_confirmations) ... ERROR
+test_buyer_token_calls_and_join_unaffected (test_visibility_guard_offline.VisibilityTests.test_buyer_token_calls_and_join_unaffected) ... ok
+test_card_failure_and_redirect_never_rejoin_or_follow (test_visibility_guard_offline.VisibilityTests.test_card_failure_and_redirect_never_rejoin_or_follow) ... 
+  test_card_failure_and_redirect_never_rejoin_or_follow (test_visibility_guard_offline.VisibilityTests.test_card_failure_and_redirect_never_rejoin_or_follow) (code=302) ... ERROR
+  test_card_failure_and_redirect_never_rejoin_or_follow (test_visibility_guard_offline.VisibilityTests.test_card_failure_and_redirect_never_rejoin_or_follow) (code=404) ... ERROR
+  test_card_failure_and_redirect_never_rejoin_or_follow (test_visibility_guard_offline.VisibilityTests.test_card_failure_and_redirect_never_rejoin_or_follow) (code=503) ... ERROR
+test_duplicate_runtime_lock_released (test_visibility_guard_offline.VisibilityTests.test_duplicate_runtime_lock_released) ... ok
+test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) ... 
+  test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='status') ... ERROR
+  test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='exception') ... ERROR
+  test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='schema') ... ERROR
+  test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='duplicate') ... ERROR
+  test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='url') ... ERROR
+  test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='alive') ... ERROR
+  test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='stock') ... ERROR
+test_false_board_and_missing_shop_are_both_bad (test_visibility_guard_offline.VisibilityTests.test_false_board_and_missing_shop_are_both_bad) ... ERROR
+test_guard_loop_waits_60_and_stops (test_visibility_guard_offline.VisibilityTests.test_guard_loop_waits_60_and_stops) ... ERROR
+test_inventory_401_with_card_down_never_reauth (test_visibility_guard_offline.VisibilityTests.test_inventory_401_with_card_down_never_reauth) ... ERROR
+test_malformed_other_rows_are_not_evidence_of_our_absence (test_visibility_guard_offline.VisibilityTests.test_malformed_other_rows_are_not_evidence_of_our_absence) ... ERROR
+test_mixed_signals_never_rejoin (test_visibility_guard_offline.VisibilityTests.test_mixed_signals_never_rejoin) ... ERROR
+test_shared_real_kit_signature_compatibility_and_version_rejection (test_visibility_guard_offline.VisibilityTests.test_shared_real_kit_signature_compatibility_and_version_rejection) ... ok
+test_shop_inventory_401_rechecked_and_new_token_same_market (test_visibility_guard_offline.VisibilityTests.test_shop_inventory_401_rechecked_and_new_token_same_market) ... ERROR
+test_stale_join_url_is_refused_instead_of_re_registering_old_url (test_visibility_guard_offline.VisibilityTests.test_stale_join_url_is_refused_instead_of_re_registering_old_url) ... ERROR
+test_startup_incompatible_is_unknown_and_aborts_before_vanilla (test_visibility_guard_offline.VisibilityTests.test_startup_incompatible_is_unknown_and_aborts_before_vanilla) ... ERROR
+test_startup_missing_keys_never_calls_kit_or_creates_keys (test_visibility_guard_offline.VisibilityTests.test_startup_missing_keys_never_calls_kit_or_creates_keys) ... ok
+test_startup_uses_key_existence_only_and_buyer_only_is_vanilla (test_visibility_guard_offline.VisibilityTests.test_startup_uses_key_existence_only_and_buyer_only_is_vanilla) ... ok
+test_transient_inventory_401_current_success_does_not_reauth (test_visibility_guard_offline.VisibilityTests.test_transient_inventory_401_current_success_does_not_reauth) ... ERROR
+test_two_good_observations_required (test_visibility_guard_offline.VisibilityTests.test_two_good_observations_required) ... ERROR
+test_unsafe_post_401_never_retried_or_reauth (test_visibility_guard_offline.VisibilityTests.test_unsafe_post_401_never_retried_or_reauth) ... ERROR
+test_url_rotation_during_observation_does_not_join_old_url (test_visibility_guard_offline.VisibilityTests.test_url_rotation_during_observation_does_not_join_old_url) ... ERROR
+test_watchdog_failed_join_recovers_current_proxy_not_joined_url (test_visibility_guard_offline.VisibilityTests.test_watchdog_failed_join_recovers_current_proxy_not_joined_url) ... ERROR
+
+======================================================================
+ERROR: test_join_and_shop_call_share_reentrant_lock (test_visibility_guard_offline.SerializationTests.test_join_and_shop_call_share_reentrant_lock)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 391, in test_join_and_shop_call_share_reentrant_lock
+    _, market, _ = self.guarded()
+                   ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-d9xprpgt\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_corrupt_restoration_reservations_do_not_allow_duplicate (test_visibility_guard_offline.SupplyGateTests.test_corrupt_restoration_reservations_do_not_allow_duplicate)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 434, in setUp
+    self.kit, self.market, self.guard = self.guarded()
+                                        ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-8tg0hepy\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_healthy_original_supply_unchanged_then_plan_to_post_deterioration_blocks (test_visibility_guard_offline.SupplyGateTests.test_healthy_original_supply_unchanged_then_plan_to_post_deterioration_blocks)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 434, in setUp
+    self.kit, self.market, self.guard = self.guarded()
+                                        ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-ys2vowct\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_isolated_atomic_reservation_path_stays_below_windows_limit (test_visibility_guard_offline.SupplyGateTests.test_isolated_atomic_reservation_path_stays_below_windows_limit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 434, in setUp
+    self.kit, self.market, self.guard = self.guarded()
+                                        ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-0qev34i4\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_missing_future_stale_state_all_hold (test_visibility_guard_offline.SupplyGateTests.test_missing_future_stale_state_all_hold)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 434, in setUp
+    self.kit, self.market, self.guard = self.guarded()
+                                        ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-vs3zaw86\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_pause_restores_one_only_once_per_sku_window_even_401 (test_visibility_guard_offline.SupplyGateTests.test_pause_restores_one_only_once_per_sku_window_even_401)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 434, in setUp
+    self.kit, self.market, self.guard = self.guarded()
+                                        ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-a4dp72r5\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_qty_held_missing_evidence_stale_inventory_and_closed_window_block (test_visibility_guard_offline.SupplyGateTests.test_qty_held_missing_evidence_stale_inventory_and_closed_window_block)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 434, in setUp
+    self.kit, self.market, self.guard = self.guarded()
+                                        ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-m_wehka8\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_timeout_reservation_survives_wrapper_restart (test_visibility_guard_offline.SupplyGateTests.test_timeout_reservation_survives_wrapper_restart)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 434, in setUp
+    self.kit, self.market, self.guard = self.guarded()
+                                        ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-m4inhqxe\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_backoff_300_600_1200_and_cap_without_healthy_reset (test_visibility_guard_offline.VisibilityTests.test_backoff_300_600_1200_and_cap_without_healthy_reset)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 263, in test_backoff_300_600_1200_and_cap_without_healthy_reset
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-cr62sqz_\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_both_bad_twice_same_key_url_tries_one_then_two_confirmations (test_visibility_guard_offline.VisibilityTests.test_both_bad_twice_same_key_url_tries_one_then_two_confirmations)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 156, in test_both_bad_twice_same_key_url_tries_one_then_two_confirmations
+    _, market, guard = self.guarded()
+                       ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-jjh8csnv\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_card_failure_and_redirect_never_rejoin_or_follow (test_visibility_guard_offline.VisibilityTests.test_card_failure_and_redirect_never_rejoin_or_follow) (code=302)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 211, in test_card_failure_and_redirect_never_rejoin_or_follow
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-2b5nl_i_\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_card_failure_and_redirect_never_rejoin_or_follow (test_visibility_guard_offline.VisibilityTests.test_card_failure_and_redirect_never_rejoin_or_follow) (code=404)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 211, in test_card_failure_and_redirect_never_rejoin_or_follow
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-2b5nl_i_\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_card_failure_and_redirect_never_rejoin_or_follow (test_visibility_guard_offline.VisibilityTests.test_card_failure_and_redirect_never_rejoin_or_follow) (code=503)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 211, in test_card_failure_and_redirect_never_rejoin_or_follow
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-2b5nl_i_\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='status')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 187, in test_errors_schema_duplicates_and_url_mismatch_no_rejoin
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-sm91pp3k\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='exception')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 187, in test_errors_schema_duplicates_and_url_mismatch_no_rejoin
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-sm91pp3k\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='schema')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 187, in test_errors_schema_duplicates_and_url_mismatch_no_rejoin
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-sm91pp3k\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='duplicate')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 187, in test_errors_schema_duplicates_and_url_mismatch_no_rejoin
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-sm91pp3k\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='url')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 187, in test_errors_schema_duplicates_and_url_mismatch_no_rejoin
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-sm91pp3k\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='alive')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 187, in test_errors_schema_duplicates_and_url_mismatch_no_rejoin
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-sm91pp3k\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_errors_schema_duplicates_and_url_mismatch_no_rejoin (test_visibility_guard_offline.VisibilityTests.test_errors_schema_duplicates_and_url_mismatch_no_rejoin) (kind='stock')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 187, in test_errors_schema_duplicates_and_url_mismatch_no_rejoin
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-sm91pp3k\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_false_board_and_missing_shop_are_both_bad (test_visibility_guard_offline.VisibilityTests.test_false_board_and_missing_shop_are_both_bad)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 175, in test_false_board_and_missing_shop_are_both_bad
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-m8w0xve_\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_guard_loop_waits_60_and_stops (test_visibility_guard_offline.VisibilityTests.test_guard_loop_waits_60_and_stops)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 350, in test_guard_loop_waits_60_and_stops
+    _, guard = self.standalone()
+               ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-_bv2mwco\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_inventory_401_with_card_down_never_reauth (test_visibility_guard_offline.VisibilityTests.test_inventory_401_with_card_down_never_reauth)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 290, in test_inventory_401_with_card_down_never_reauth
+    _, market, guard = self.guarded()
+                       ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-5x2in0ds\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_malformed_other_rows_are_not_evidence_of_our_absence (test_visibility_guard_offline.VisibilityTests.test_malformed_other_rows_are_not_evidence_of_our_absence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 221, in test_malformed_other_rows_are_not_evidence_of_our_absence
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-kkpkbcjd\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_mixed_signals_never_rejoin (test_visibility_guard_offline.VisibilityTests.test_mixed_signals_never_rejoin)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 143, in test_mixed_signals_never_rejoin
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-vh84i5x2\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_shop_inventory_401_rechecked_and_new_token_same_market (test_visibility_guard_offline.VisibilityTests.test_shop_inventory_401_rechecked_and_new_token_same_market)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 278, in test_shop_inventory_401_rechecked_and_new_token_same_market
+    _, market, guard = self.guarded()
+                       ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-_96pwwhy\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_stale_join_url_is_refused_instead_of_re_registering_old_url (test_visibility_guard_offline.VisibilityTests.test_stale_join_url_is_refused_instead_of_re_registering_old_url)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 253, in test_stale_join_url_is_refused_instead_of_re_registering_old_url
+    kit, market, _ = self.guarded()
+                     ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-5z4do7gs\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_startup_incompatible_is_unknown_and_aborts_before_vanilla (test_visibility_guard_offline.VisibilityTests.test_startup_incompatible_is_unknown_and_aborts_before_vanilla)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 383, in test_startup_incompatible_is_unknown_and_aborts_before_vanilla
+    adapter.run_join(kit, original, args)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 153, in run_join
+    atomic_json(directory / ".market" / "visibility_guard.json",
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                {"version": 1, "checked_at": time.time(), "state": "unknown", "reason": "incompatible_kit"})
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-hxio2fjr\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_transient_inventory_401_current_success_does_not_reauth (test_visibility_guard_offline.VisibilityTests.test_transient_inventory_401_current_success_does_not_reauth)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 298, in test_transient_inventory_401_current_success_does_not_reauth
+    _, market, guard = self.guarded()
+                       ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-l0a7kskt\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_two_good_observations_required (test_visibility_guard_offline.VisibilityTests.test_two_good_observations_required)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 133, in test_two_good_observations_required
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-b8uzbt6f\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_unsafe_post_401_never_retried_or_reauth (test_visibility_guard_offline.VisibilityTests.test_unsafe_post_401_never_retried_or_reauth)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 308, in test_unsafe_post_401_never_retried_or_reauth
+    _, market, guard = self.guarded()
+                       ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-nbaaierd\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_url_rotation_during_observation_does_not_join_old_url (test_visibility_guard_offline.VisibilityTests.test_url_rotation_during_observation_does_not_join_old_url)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 229, in test_url_rotation_during_observation_does_not_join_old_url
+    market, guard = self.standalone()
+                    ~~~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 105, in standalone
+    guard = vg.VisibilityGuard(market, self.md, "mjforge", lambda: self.url, client=self.client, clock=lambda: self.now)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-biw8tezf\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+ERROR: test_watchdog_failed_join_recovers_current_proxy_not_joined_url (test_visibility_guard_offline.VisibilityTests.test_watchdog_failed_join_recovers_current_proxy_not_joined_url)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 238, in test_watchdog_failed_join_recovers_current_proxy_not_joined_url
+    kit, market, guard = self.guarded()
+                         ~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 117, in guarded
+    market.join("shop", "mjforge", object(), URL)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\guarded_market_kit.py", line 57, in join
+    self.visibility_guard = guard_factory(self, directory / ".market", name, lambda: self.current_url())
+                            ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 112, in factory
+    return vg.VisibilityGuard(market, directory, name, supplier, client=self.client, clock=lambda: self.now)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 78, in __init__
+    self.publish("unknown", "starting", None)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 87, in publish
+    atomic_json(self.directory / "visibility_guard.json", value)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\visibility_guard.py", line 28, in atomic_json
+    temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf-8")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 555, in write_text
+    return PathBase.write_text(self, data, encoding, errors, newline)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_abc.py", line 651, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\pathlib\_local.py", line 537, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\clair\\Desktop\\Projects\\ai-agent-engineering-101\\submissions\\25512085\\week-08\\history\\20261109-buyer-saved-strategy-step2\\evidence\\scratch-diagnose-path-length-red-long-label-d4b619f54d93\\visibility-urvqp1o8\\.market\\visibility_guard.json.198900.151224.tmp'
+
+======================================================================
+FAIL: test_concurrent_initial_joins_start_exactly_one_guard (test_visibility_guard_offline.SerializationTests.test_concurrent_initial_joins_start_exactly_one_guard)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\diagnose-path-length-red-long-label-d4b619f54d93\submissions\25512085\week-08\test_visibility_guard_offline.py", line 427, in test_concurrent_initial_joins_start_exactly_one_guard
+    self.assertEqual(factory.call_count, 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1
+
+----------------------------------------------------------------------
+Ran 44 tests in 2.584s
+
+FAILED (failures=1, errors=33)

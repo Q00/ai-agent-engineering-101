@@ -1,0 +1,163 @@
+"""REJECTED DRAFT: read-only review found PID races and incomplete rollback.
+
+Explicit, scoped VM runtime handoff; never changes boot configuration or keys.
+
+Run on the existing Linux VM only, after code/test review. The default is dry-run.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import signal
+import subprocess
+import time
+
+
+BASE = Path(__file__).resolve().parent
+SESSION = "market"
+
+
+def command(*args, check=True):
+    return subprocess.run(args, check=check, capture_output=True, text=True)
+
+
+def processes():
+    result = {}
+    for folder in Path("/proc").iterdir():
+        if not folder.name.isdigit():
+            continue
+        try:
+            stat = (folder / "stat").read_text().rsplit(")", 1)[1].split()
+            args = (folder / "cmdline").read_bytes().decode(errors="replace").split("\0")
+            result[int(folder.name)] = {"state": stat[0], "parent": int(stat[1]), "args": args}
+        except (OSError, ValueError, IndexError):
+            continue
+    return result
+
+
+def is_alive(pid):
+    row = processes().get(pid)
+    return row is not None and row["state"] not in ("Z", "X")
+
+
+def wait_gone(pids, seconds):
+    end = time.monotonic() + seconds
+    while time.monotonic() < end:
+        if not any(is_alive(p) for p in pids):
+            return True
+        time.sleep(.2)
+    return not any(is_alive(p) for p in pids)
+
+
+def signal_pid(pid, sig):
+    try:
+        os.kill(pid, sig)
+    except ProcessLookupError:
+        pass
+
+
+def protected_digests():
+    launcher = Path.home() / "run_kit.sh"
+    cron = command("crontab", "-l", check=False)
+    return {"launcher_sha256": hashlib.sha256(launcher.read_bytes()).hexdigest(),
+            "crontab_sha256": hashlib.sha256(cron.stdout.encode()).hexdigest()}
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--expected-commit", required=True)
+    args = parser.parse_args()
+    if os.name != "posix" or not Path("/proc").is_dir():
+        raise SystemExit("Linux VM only")
+    actual = command("git", "-C", str(BASE), "rev-parse", "--short", "HEAD").stdout.strip()
+    if actual != args.expected_commit:
+        raise SystemExit("Unexpected deployment commit")
+    launcher = BASE / "run_guarded_market.sh"
+    if not launcher.is_file() or not (BASE / "guarded_market_kit.py").is_file():
+        raise SystemExit("Guard runtime files missing")
+    for name in ("shop_key.pem", "buyer_key.pem"):
+        if not (BASE / name).is_file():
+            raise SystemExit("Existing signing key missing; refusing to create a new identity")
+    panes = command("tmux", "list-panes", "-t", SESSION, "-F", "#{pane_pid}").stdout.splitlines()
+    if len(panes) != 1:
+        raise SystemExit("Expected exactly one market pane")
+    root_pid = int(panes[0])
+    table = processes()
+    descendants = {root_pid}
+    while True:
+        more = {p for p, r in table.items() if r["parent"] in descendants}
+        if more <= descendants:
+            break
+        descendants |= more
+    kits = [p for p in descendants if any(Path(a).name in ("market_kit.py", "guarded_market_kit.py")
+                                         for a in table[p]["args"] if a)]
+    if len(kits) != 1:
+        raise SystemExit("Expected one kit in the named market pane")
+    kit = kits[0]
+    kit_args = table[kit]["args"]
+    if not any("25512085/week-08" in a.replace("\\", "/") for a in kit_args):
+        raise SystemExit("Kit is not attributed to the authorized submission")
+    before = protected_digests()
+    inv = json.loads((BASE / ".market/inventory.json").read_text())
+    receipt = {"started_at": time.time(), "commit": actual, "execute": args.execute,
+               "old_kit_pid": kit, "scoped_process_count": len(descendants),
+               "boot_settings_before": before,
+               "inventory_before": {"balance": inv.get("balance"), "units": len(inv.get("units", [])),
+                                    "cost": sum(u.get("cost", 0) for u in inv.get("units", []))}}
+    if not args.execute:
+        print(json.dumps(receipt))
+        return
+    ancestors = []
+    current = table[kit]["parent"]
+    while current in descendants:
+        ancestors.append(current)
+        if current == root_pid:
+            break
+        current = table[current]["parent"]
+    launched = False
+    try:
+        # Stop only the old launcher ancestors from respawning the authorized kit.
+        for pid in ancestors:
+            signal_pid(pid, signal.SIGSTOP)
+        signal_pid(kit, signal.SIGINT)
+        receipt["graceful_exit"] = wait_gone([kit], 35)
+        remaining = [p for p in descendants if p not in ancestors and is_alive(p)]
+        for pid in remaining:
+            signal_pid(pid, signal.SIGTERM)
+        wait_gone(remaining, 8)
+        for pid in remaining:
+            if is_alive(pid):
+                signal_pid(pid, signal.SIGKILL)
+        command("tmux", "kill-session", "-t", SESSION, check=False)
+        for pid in ancestors:
+            signal_pid(pid, signal.SIGKILL)
+        wait_gone(ancestors, 3)
+        command("tmux", "new-session", "-d", "-s", SESSION, f"exec /bin/bash '{launcher}'")
+        launched = True
+        receipt["new_runtime_launched_at"] = time.time()
+    finally:
+        if not launched:
+            # Preserve the pre-existing service when a handoff cannot be completed.
+            for pid in ancestors:
+                signal_pid(pid, signal.SIGCONT)
+            if command("tmux", "has-session", "-t", SESSION, check=False).returncode:
+                command("tmux", "new-session", "-d", "-s", SESSION,
+                        f"exec /bin/bash '{Path.home() / 'run_kit.sh'}'", check=False)
+        receipt["boot_settings_after"] = protected_digests()
+        receipt["boot_settings_unchanged"] = receipt["boot_settings_after"] == before
+        receipt["runtime_launched"] = launched
+        receipt["finished_at"] = time.time()
+        log = BASE / "logs" / ("visibility-handoff-" + time.strftime("%Y%m%d-%H%M%S", time.gmtime()) + ".json")
+        with log.open("x", encoding="utf-8") as f:
+            json.dump(receipt, f, indent=2)
+        print(json.dumps(receipt))
+    if not receipt["boot_settings_unchanged"]:
+        raise SystemExit("Boot configuration changed unexpectedly")
+
+
+if __name__ == "__main__":
+    main()

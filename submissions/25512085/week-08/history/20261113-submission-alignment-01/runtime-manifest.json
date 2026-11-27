@@ -1,0 +1,473 @@
+{
+  "observed_utc": "2026-11-12T16:20:45.589718+00:00",
+  "head": "6bb3cd855fe76a29e1412699688595069ca5fa45",
+  "head_after": "6bb3cd855fe76a29e1412699688595069ca5fa45",
+  "dirty_allowlisted": [],
+  "staged_allowlisted": [],
+  "sources": {
+    "submissions/25512085/week-08/seller.py": {
+      "exists": true,
+      "bytes": 74596,
+      "mtime_utc": "2026-11-07T05:49:06.519689+00:00",
+      "sha256": "17c653f836436975268651436e9f7cf0e1bfda9b1fdfeb6615de4b67df4a13fd",
+      "imports": [
+        "a2a.helpers",
+        "a2a.server.agent_execution",
+        "a2a.server.events",
+        "a2a.server.request_handlers",
+        "a2a.server.routes",
+        "a2a.server.tasks",
+        "a2a.types",
+        "argparse",
+        "base64",
+        "cryptography.hazmat.primitives",
+        "httpx",
+        "json",
+        "logging",
+        "math",
+        "os",
+        "pathlib",
+        "queue",
+        "random",
+        "re",
+        "seller_cash_policy",
+        "starlette.applications",
+        "store",
+        "threading",
+        "time",
+        "typing",
+        "uvicorn"
+      ],
+      "local_exists": true,
+      "local_sha256": "20fb09e30d61db776574ace514b25c8fef52e2a3ef741a5c5c2545d6937d447d",
+      "matches_local": false
+    },
+    "submissions/25512085/week-08/store.py": {
+      "exists": true,
+      "bytes": 37597,
+      "mtime_utc": "2026-11-09T07:24:55.276638+00:00",
+      "sha256": "074f0afbab172aa31dba5bf0150ee0179dd192d0f08479a62d25a7b39029d8ae",
+      "imports": [
+        "__future__",
+        "adaptive_strategy",
+        "buyer_outcomes",
+        "contextlib",
+        "contextvars",
+        "datetime",
+        "fcntl",
+        "json",
+        "math",
+        "msvcrt",
+        "os",
+        "pathlib",
+        "re",
+        "seller_cash_policy",
+        "statistics",
+        "threading",
+        "time",
+        "typing",
+        "urllib.request"
+      ],
+      "local_exists": true,
+      "local_sha256": "2c951fb66027d15ca2f1e876368d576510eee2aa8fe284aeea75c2d0102ede24",
+      "matches_local": false
+    },
+    "submissions/25512085/week-08/seller_cash_policy.py": {
+      "exists": true,
+      "bytes": 30549,
+      "mtime_utc": "2026-11-06T07:02:54.241446+00:00",
+      "sha256": "be987efb453a33905ed898b9a9f7ed608c8c8645f4febd82e4731ac803a52af6",
+      "imports": [
+        "__future__",
+        "adaptive_strategy",
+        "collections",
+        "json",
+        "math",
+        "pathlib",
+        "re",
+        "statistics"
+      ],
+      "local_exists": true,
+      "local_sha256": "133ecea80a5f17d81c82883747df49b6a039781114a07360da75c580e579da6a",
+      "matches_local": false
+    },
+    "submissions/25512085/week-08/_cash_demand.py": {
+      "exists": false
+    },
+    "submissions/25512085/week-08/_cash_forum.py": {
+      "exists": false
+    },
+    "submissions/25512085/week-08/_cash_pricing.py": {
+      "exists": false
+    },
+    "submissions/25512085/week-08/_cash_risk.py": {
+      "exists": false
+    },
+    "submissions/25512085/week-08/restock.py": {
+      "exists": true,
+      "bytes": 21728,
+      "mtime_utc": "2026-11-06T04:16:07.989483+00:00",
+      "sha256": "3ac0efef435d67c2903c48e198be663bb1cfca4cf08be0bf0ea8463ad9f53cd1",
+      "imports": [
+        "__future__",
+        "adaptive_strategy",
+        "argparse",
+        "collections",
+        "json",
+        "math",
+        "pathlib",
+        "seller_cash_policy",
+        "statistics",
+        "store",
+        "sys",
+        "time",
+        "typing",
+        "visibility_guard"
+      ],
+      "local_exists": true,
+      "local_sha256": "50ae67c85c71be91419fdcc807f167ae3b33c0508eb3367c2c3055fd73cda4f3",
+      "matches_local": false
+    },
+    "submissions/25512085/week-08/market_buyer.py": {
+      "exists": true,
+      "bytes": 74625,
+      "mtime_utc": "2026-11-12T06:05:22.581655+00:00",
+      "sha256": "5995122cab2418f64ca63c9fe283358ff633dfd89149c908919ece3646465a3d",
+      "imports": [
+        "adaptive_strategy",
+        "argparse",
+        "contextvars",
+        "datetime",
+        "httpx",
+        "json",
+        "math",
+        "os",
+        "pathlib",
+        "random",
+        "re",
+        "statistics",
+        "store",
+        "subprocess",
+        "sys",
+        "tempfile",
+        "time",
+        "typing",
+        "unicodedata",
+        "uuid"
+      ],
+      "local_exists": true,
+      "local_sha256": "9b82a311b509dd477d0ef636a6c54ea8d70c3726939326f3cefca3a8a641f1c7",
+      "matches_local": false
+    },
+    "submissions/25512085/week-08/buyer.py": {
+      "exists": true,
+      "bytes": 9357,
+      "mtime_utc": "2026-11-04T05:47:39.807370+00:00",
+      "sha256": "1f58faa41c0b585a1fa5db6d67f7e209606944bcfa12971f8c2123742c4da391",
+      "imports": [
+        "argparse",
+        "httpx",
+        "math",
+        "os",
+        "re",
+        "subprocess",
+        "sys",
+        "tempfile",
+        "uuid"
+      ],
+      "local_exists": true,
+      "local_sha256": "5e39b2aab51960352ec2398579a5d3c0691f4366fac4b89754f8f468a3d084d3",
+      "matches_local": false
+    },
+    "submissions/25512085/week-08/review.py": {
+      "exists": true,
+      "bytes": 9565,
+      "mtime_utc": "2026-11-04T23:55:24.361445+00:00",
+      "sha256": "a320a56b6b35f9632a82c536a653790d267272ed2cd29270f8c1ba48a0cf04c5",
+      "imports": [
+        "__future__",
+        "argparse",
+        "forum_writer",
+        "json",
+        "market_buyer",
+        "os",
+        "pathlib",
+        "store",
+        "subprocess",
+        "sys",
+        "time",
+        "typing"
+      ],
+      "local_exists": true,
+      "local_sha256": "ff31f31a0f5b6f8ced78c2125fe677dd732174b166875146441e275322cf51ff",
+      "matches_local": false
+    },
+    "submissions/25512085/week-08/forum_writer.py": {
+      "exists": true,
+      "bytes": 16985,
+      "mtime_utc": "2026-11-06T07:02:54.261447+00:00",
+      "sha256": "2da35b80578c943949c5abd80618bce07875a9c0b35d112bde6d9ba06a4cb619",
+      "imports": [
+        "__future__",
+        "collections",
+        "json",
+        "math",
+        "os",
+        "pathlib",
+        "re",
+        "seller_cash_policy",
+        "signal",
+        "statistics",
+        "store",
+        "subprocess",
+        "sys",
+        "tempfile",
+        "time"
+      ],
+      "local_exists": true,
+      "local_sha256": "2da35b80578c943949c5abd80618bce07875a9c0b35d112bde6d9ba06a4cb619",
+      "matches_local": true
+    },
+    "submissions/25512085/week-08/seller_forum.py": {
+      "exists": false
+    },
+    "submissions/25512085/week-08/buyer_outcomes.py": {
+      "exists": true,
+      "bytes": 21833,
+      "mtime_utc": "2026-11-09T07:24:55.256637+00:00",
+      "sha256": "1ff89064457ce26a9dd400bb94061c94a6114725386e4d4f4060f2d42c3df47c",
+      "imports": [
+        "__future__",
+        "collections",
+        "contextlib",
+        "fcntl",
+        "json",
+        "math",
+        "msvcrt",
+        "os",
+        "pathlib",
+        "re",
+        "sys",
+        "threading"
+      ],
+      "local_exists": true,
+      "local_sha256": "1ff89064457ce26a9dd400bb94061c94a6114725386e4d4f4060f2d42c3df47c",
+      "matches_local": true
+    },
+    "submissions/25512085/week-08/seller_reputation.py": {
+      "exists": false
+    },
+    "submissions/25512085/week-08/seller_market_research.py": {
+      "exists": false
+    },
+    "submissions/25512085/week-08/adaptive_strategy.py": {
+      "exists": true,
+      "bytes": 7216,
+      "mtime_utc": "2026-11-04T16:50:50.413212+00:00",
+      "sha256": "93b0b5ce967385c12f2b9fbbe1aac54bb2505e39bee37e34a073a709299b1530",
+      "imports": [
+        "__future__",
+        "json",
+        "math",
+        "sys"
+      ],
+      "local_exists": true,
+      "local_sha256": "93b0b5ce967385c12f2b9fbbe1aac54bb2505e39bee37e34a073a709299b1530",
+      "matches_local": true
+    },
+    "submissions/25512085/week-08/guarded_market_kit.py": {
+      "exists": true,
+      "bytes": 11734,
+      "mtime_utc": "2026-11-05T09:39:24.643170+00:00",
+      "sha256": "4ab109212a56abade9b6be6217b24082f40dae3d263967166599e8a7ab6603b3",
+      "imports": [
+        "__future__",
+        "httpx",
+        "importlib.util",
+        "inspect",
+        "os",
+        "pathlib",
+        "re",
+        "shlex",
+        "sys",
+        "threading",
+        "time",
+        "visibility_guard"
+      ],
+      "local_exists": true,
+      "local_sha256": "4ab109212a56abade9b6be6217b24082f40dae3d263967166599e8a7ab6603b3",
+      "matches_local": true
+    },
+    "submissions/25512085/week-08/visibility_guard.py": {
+      "exists": true,
+      "bytes": 8892,
+      "mtime_utc": "2026-11-05T09:36:45.834949+00:00",
+      "sha256": "7490521ca11dc7184ead9d27adc46d176fcb16885a48b720767259b1a4400125",
+      "imports": [
+        "__future__",
+        "fcntl",
+        "httpx",
+        "json",
+        "math",
+        "msvcrt",
+        "os",
+        "pathlib",
+        "threading",
+        "time",
+        "urllib.parse"
+      ],
+      "local_exists": true,
+      "local_sha256": "7490521ca11dc7184ead9d27adc46d176fcb16885a48b720767259b1a4400125",
+      "matches_local": true
+    },
+    "submissions/25512085/week-08/run_guarded_market.sh": {
+      "exists": true,
+      "bytes": 1232,
+      "mtime_utc": "2026-11-05T09:32:48.128155+00:00",
+      "sha256": "a7816a1da9ce9a9d99fb3539323e34f6094f564c2596d93cbf864f2c3493e357",
+      "imports": [],
+      "local_exists": true,
+      "local_sha256": "a7816a1da9ce9a9d99fb3539323e34f6094f564c2596d93cbf864f2c3493e357",
+      "matches_local": true
+    },
+    "submissions/25512085/week-08/seller_cash_policy.json": {
+      "exists": true,
+      "bytes": 992,
+      "mtime_utc": "2026-11-06T04:16:08.000484+00:00",
+      "sha256": "bb4acb41f4aee208a1b2e4e575282cfacce4eed6fbebd8a0c52ea0a23ba904d6",
+      "imports": [],
+      "local_exists": true,
+      "local_sha256": "52ab828832001207e560be94f9f84d8263efdb32f20c7302bdfa3d881800700c",
+      "matches_local": false
+    },
+    "scripts/market_kit.py": {
+      "exists": true,
+      "bytes": 60243,
+      "mtime_utc": "2026-11-02T15:12:15.199248+00:00",
+      "sha256": "4a0f48b33a6c0b207401325cd1e48086c364a0c89177fb5b347703affe774272",
+      "imports": [
+        "argparse",
+        "asyncio",
+        "base64",
+        "collections",
+        "contextlib",
+        "cryptography.exceptions",
+        "cryptography.hazmat.primitives",
+        "cryptography.hazmat.primitives.asymmetric.ed25519",
+        "datetime",
+        "hashlib",
+        "httpx",
+        "json",
+        "os",
+        "pathlib",
+        "random",
+        "re",
+        "shlex",
+        "signal",
+        "socket",
+        "starlette.applications",
+        "starlette.requests",
+        "starlette.responses",
+        "starlette.routing",
+        "subprocess",
+        "sys",
+        "tempfile",
+        "threading",
+        "time",
+        "urllib.parse",
+        "uvicorn"
+      ],
+      "local_exists": true,
+      "local_sha256": "25aa8c13847ddd1940dd2de5a16a5c0eee8285e1173836e605b7a4da1617647d",
+      "matches_local": false
+    },
+    "scripts/a2a.py": {
+      "exists": false
+    }
+  },
+  "agent_commands_models_only": {
+    "seller": {
+      "cmd": "python seller.py --port {port}"
+    },
+    "buyer": {
+      "cmd": "python buyer.py --url {url} --item {item} --budget {budget}"
+    },
+    "market_buyer": {
+      "cmd": "python market_buyer.py --shops {shops} --item {item} --budget {budget} --order {order}"
+    },
+    "review": {
+      "cmd": "python review.py --deal {deal}"
+    },
+    "restock": {
+      "cmd": "python restock.py --state {state} --visibility-guard"
+    }
+  },
+  "processes": [
+    {
+      "role": "kit",
+      "pid": 43679,
+      "ppid": 43669,
+      "start_utc": "2026-11-05T09:40:10.010000+00:00",
+      "cwd": "/home/comalswjd/ai-agent-engineering-101",
+      "exe": "/usr/bin/python3.10"
+    },
+    {
+      "role": "tunnel",
+      "pid": 43696,
+      "ppid": 43679,
+      "start_utc": "2026-11-05T09:40:12.860000+00:00",
+      "cwd": "/home/comalswjd/ai-agent-engineering-101",
+      "exe": "/usr/bin/cloudflared"
+    },
+    {
+      "role": "seller",
+      "pid": 974042,
+      "ppid": 974040,
+      "start_utc": "2026-11-10T14:23:45.030000+00:00",
+      "cwd": "/home/comalswjd/ai-agent-engineering-101/submissions/25512085/week-08",
+      "exe": "/usr/bin/python3.10"
+    },
+    {
+      "role": "market_buyer",
+      "pid": 1166242,
+      "ppid": 1166241,
+      "start_utc": "2026-11-12T16:20:25.920000+00:00",
+      "cwd": "/home/comalswjd/ai-agent-engineering-101/submissions/25512085/week-08",
+      "exe": "/usr/bin/python3.10"
+    }
+  ],
+  "logs_stat_only": [
+    {
+      "name": "market-kit.log",
+      "bytes": 9861278,
+      "mtime_utc": "2026-11-12T16:20:43.584929+00:00",
+      "inode": 776067
+    },
+    {
+      "name": "market-kit.log.1",
+      "bytes": 20166378,
+      "mtime_utc": "2026-11-12T15:45:46.786594+00:00",
+      "inode": 776071
+    }
+  ],
+  "python": "3.10.12",
+  "local": {
+    "head": "7d0eba01f418b2d269a2fc14fc4b6a1f801e8302",
+    "tracked_dirty": [],
+    "untracked_present": true
+  },
+  "local_existing_logs": [
+    {
+      "name": "market-kit.log",
+      "bytes": 4318210,
+      "mtime_utc": "2026-11-05T10:28:40.953798+00:00",
+      "sha256": "8599add99b29939a00c5ba22188df9ac5223e0a4dcc39cc416b30d839ef0957c"
+    },
+    {
+      "name": "market-kit.log.1",
+      "bytes": 20105408,
+      "mtime_utc": "2026-11-05T10:27:28.769045+00:00",
+      "sha256": "f428a8a1e5baf5d23caa8e82ba2260443220a1713fa91664afff6275174e2f62"
+    }
+  ]
+}

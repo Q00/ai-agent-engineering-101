@@ -1,0 +1,92 @@
+test_raw_negative_timestamp_bc_floor_preserved (test_goods_selection_offline.GoodsSelectionTests.test_raw_negative_timestamp_bc_floor_preserved) ... 
+  test_raw_negative_timestamp_bc_floor_preserved (test_goods_selection_offline.GoodsSelectionTests.test_raw_negative_timestamp_bc_floor_preserved) (grade='B', enabled=False) ... FAIL
+  test_raw_negative_timestamp_bc_floor_preserved (test_goods_selection_offline.GoodsSelectionTests.test_raw_negative_timestamp_bc_floor_preserved) (grade='B', enabled=True) ... FAIL
+  test_raw_negative_timestamp_bc_floor_preserved (test_goods_selection_offline.GoodsSelectionTests.test_raw_negative_timestamp_bc_floor_preserved) (grade='C', enabled=False) ... FAIL
+  test_raw_negative_timestamp_bc_floor_preserved (test_goods_selection_offline.GoodsSelectionTests.test_raw_negative_timestamp_bc_floor_preserved) (grade='C', enabled=True) ... FAIL
+test_missing_timestamp_legacy_fifo_and_category_sku_preserved (test_goods_selection_offline.GoodsSelectionTests.test_missing_timestamp_legacy_fifo_and_category_sku_preserved) ... FAIL
+test_large_finite_integer_config_band_falls_back (test_goods_selection_offline.GoodsSelectionTests.test_large_finite_integer_config_band_falls_back) ... 
+  test_large_finite_integer_config_band_falls_back (test_goods_selection_offline.GoodsSelectionTests.test_large_finite_integer_config_band_falls_back) (name='holding_cost_rate_per_day') ... ERROR
+  test_large_finite_integer_config_band_falls_back (test_goods_selection_offline.GoodsSelectionTests.test_large_finite_integer_config_band_falls_back) (name='holding_tie_max_fraction') ... ERROR
+
+======================================================================
+ERROR: test_large_finite_integer_config_band_falls_back (test_goods_selection_offline.GoodsSelectionTests.test_large_finite_integer_config_band_falls_back) (name='holding_cost_rate_per_day')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_selection_offline.py", line 84, in test_large_finite_integer_config_band_falls_back
+    self.assertEqual(self.select(self.inventory['units'])['unit'], 'old-expensive')
+                     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_selection_offline.py", line 43, in select
+    return seller.select_best_unit(units, text, pricing_context=self.context(**kwargs))
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\seller.py", line 238, in select_best_unit
+    holding = quote['cost'] * rate * (horizon / 24)
+              ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~
+OverflowError: int too large to convert to float
+
+======================================================================
+ERROR: test_large_finite_integer_config_band_falls_back (test_goods_selection_offline.GoodsSelectionTests.test_large_finite_integer_config_band_falls_back) (name='holding_tie_max_fraction')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_selection_offline.py", line 84, in test_large_finite_integer_config_band_falls_back
+    self.assertEqual(self.select(self.inventory['units'])['unit'], 'old-expensive')
+                     ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_selection_offline.py", line 43, in select
+    return seller.select_best_unit(units, text, pricing_context=self.context(**kwargs))
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\seller.py", line 240, in select_best_unit
+    if not math.isfinite(holding) or not math.isfinite(cap):
+                                         ~~~~~~~~~~~~~^^^^^
+OverflowError: int too large to convert to float
+
+======================================================================
+FAIL: test_raw_negative_timestamp_bc_floor_preserved (test_goods_selection_offline.GoodsSelectionTests.test_raw_negative_timestamp_bc_floor_preserved) (grade='B', enabled=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_selection_offline.py", line 62, in test_raw_negative_timestamp_bc_floor_preserved
+    self.assertEqual(quote['hard_floor'], expected)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 123530 != 24633334
+
+======================================================================
+FAIL: test_raw_negative_timestamp_bc_floor_preserved (test_goods_selection_offline.GoodsSelectionTests.test_raw_negative_timestamp_bc_floor_preserved) (grade='B', enabled=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_selection_offline.py", line 62, in test_raw_negative_timestamp_bc_floor_preserved
+    self.assertEqual(quote['hard_floor'], expected)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 123530 != 24633334
+
+======================================================================
+FAIL: test_raw_negative_timestamp_bc_floor_preserved (test_goods_selection_offline.GoodsSelectionTests.test_raw_negative_timestamp_bc_floor_preserved) (grade='C', enabled=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_selection_offline.py", line 62, in test_raw_negative_timestamp_bc_floor_preserved
+    self.assertEqual(quote['hard_floor'], expected)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 105000 != 20938334
+
+======================================================================
+FAIL: test_raw_negative_timestamp_bc_floor_preserved (test_goods_selection_offline.GoodsSelectionTests.test_raw_negative_timestamp_bc_floor_preserved) (grade='C', enabled=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_selection_offline.py", line 62, in test_raw_negative_timestamp_bc_floor_preserved
+    self.assertEqual(quote['hard_floor'], expected)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 105000 != 20938334
+
+======================================================================
+FAIL: test_missing_timestamp_legacy_fifo_and_category_sku_preserved (test_goods_selection_offline.GoodsSelectionTests.test_missing_timestamp_legacy_fifo_and_category_sku_preserved)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\test_goods_selection_offline.py", line 70, in test_missing_timestamp_legacy_fifo_and_category_sku_preserved
+    self.assertEqual(seller.select_best_unit(units, '')['unit'], 'missing-sku1')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'sku2' != 'missing-sku1'
+- sku2
++ missing-sku1
+
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.022s
+
+FAILED (failures=5, errors=2)

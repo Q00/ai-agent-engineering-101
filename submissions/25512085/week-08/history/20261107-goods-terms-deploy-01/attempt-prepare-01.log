@@ -1,0 +1,12 @@
+Command: .venv/Scripts/python.exe -B submissions/25512085/week-08/history/20261107-goods-terms-deploy-01/control.py prepare
+Captured tool output (retained after failure; no remote mutation):
+{"seller_baseline_byte_ast_equal": true, "cash_policy_references": ["config", "profit_floor", "quote", "warranty_hours"]}
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261107-goods-terms-deploy-01\control.py", line 95, in <module>
+    prepare()
+    ~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261107-goods-terms-deploy-01\control.py", line 78, in prepare
+    assert candidate == subprocess.check_output(['git', 'show', source+':'+p], cwd=REPO)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+Exited with code 1

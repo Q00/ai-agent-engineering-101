@@ -1,0 +1,203 @@
+\documentclass[9pt,a4paper,landscape]{article}
+\usepackage[margin=9mm]{geometry}
+\usepackage{kotex}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,shapes.geometric,calc}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\definecolor{c4blue}{RGB}{32, 98, 165}
+\definecolor{c4kit}{RGB}{24, 126, 118}
+\definecolor{c4red}{RGB}{185, 38, 48}
+\definecolor{c4orange}{RGB}{210, 126, 22}
+\definecolor{c4gray}{RGB}{90, 96, 106}
+
+\begin{document}
+\begin{center}
+\begin{tikzpicture}[
+  x=1cm, y=1cm, >=Latex,
+  comp/.style={
+    draw=c4blue, line width=1.05pt, rounded corners=2.5pt, fill=white,
+    align=center, text=c4blue, font=\footnotesize,
+    text width=4.05cm, minimum height=1.78cm, inner sep=5pt,
+    append after command={
+      \pgfextra{
+        \draw[draw=c4blue, line width=0.9pt, fill=white]
+          ($(\tikzlastnode.north west)+(-0.22,-0.28)$) rectangle ($(\tikzlastnode.north west)+(0.24,-0.46)$);
+        \draw[draw=c4blue, line width=0.9pt, fill=white]
+          ($(\tikzlastnode.north west)+(-0.22,-0.58)$) rectangle ($(\tikzlastnode.north west)+(0.24,-0.76)$);
+      }
+    }
+  },
+  kitbox/.style={
+    draw=c4kit, line width=1.15pt, rounded corners=3pt, fill=white,
+    align=center, text=c4kit, font=\footnotesize,
+    text width=8.2cm, minimum height=1.85cm, inner sep=5pt
+  },
+  db/.style={
+    cylinder, shape border rotate=90, aspect=0.22,
+    draw=c4blue, line width=1.05pt, fill=white,
+    align=center, text=c4blue, font=\footnotesize,
+    text width=4.4cm, minimum height=1.65cm, inner sep=4pt
+  },
+  extred/.style={
+    draw=c4red, line width=1.2pt, rounded corners=3pt, fill=white,
+    align=center, text=c4red, font=\footnotesize,
+    text width=5.25cm, minimum height=2.05cm, inner sep=6pt
+  },
+  extorg/.style={
+    draw=c4orange, line width=1.2pt, rounded corners=3pt, fill=white,
+    align=center, text=c4orange, font=\footnotesize,
+    text width=5.25cm, minimum height=2.05cm, inner sep=6pt
+  },
+  act/.style={->, line width=0.95pt, draw=black!75},
+  actbi/.style={<->, line width=0.95pt, draw=black!75},
+  rel/.style={->, dashed, line width=0.85pt, draw=c4blue!75!black},
+  relbi/.style={<->, dashed, line width=0.85pt, draw=c4blue!75!black},
+  rlbl/.style={font=\scriptsize, text=black!75, align=center, fill=white, inner sep=1.5pt}
+]
+
+% ================= Boundaries =================
+\draw[draw=c4blue, line width=1.15pt, rounded corners=4pt, fill=white]
+  (-0.55, -13.25) rectangle (19.95, 2.55);
+\node[anchor=south west, text=c4blue, font=\footnotesize\bfseries, align=left]
+  at (1.05, -13.12) {mjforge Round 3 Agent\\[-1pt]{\scriptsize\mdseries [Market Agent System]}};
+
+\draw[draw=c4blue!85, line width=0.95pt, rounded corners=3.5pt, fill=white]
+  (-0.15, -8.75) rectangle (19.55, -0.85);
+
+% ================= Top Gateway: Provided Kit + Visibility Guard =================
+\node[kitbox] (kit) at (9.7, 1.15) {
+  \rule{0pt}{3.2mm}\\[0.5mm]
+  \textbf{기본 마켓 키트}\\
+  {\scriptsize [Provided Kit + Wrapper: \texttt{market\_kit.py} v4 · \texttt{guarded\_market\_kit.py}]}\\
+  {\scriptsize A2A 프록시 · ACP/AP2 결제 검증 · \texttt{.market/} 동기화 · \texttt{outbox} 전송 · 가시성 보호}
+};
+\draw[draw=c4kit, line width=0.95pt]
+  ($(kit.north west)+(0,-0.34)$) -- ($(kit.north east)+(0,-0.34)$);
+\fill[c4kit] ($(kit.north west)+(0.28,-0.17)$) circle (1.6pt);
+\fill[c4kit] ($(kit.north west)+(0.50,-0.17)$) circle (1.6pt);
+\fill[c4kit] ($(kit.north west)+(0.72,-0.17)$) circle (1.6pt);
+
+% ================= Row 1 inside Inner Boundary: 4 Core Processes =================
+\node[comp] (buyer) at (2.4, -2.5) {
+  \textbf{Buyer 상품 구매}\\
+  {\scriptsize [\texttt{market\_buyer.py}]}\\
+  {\scriptsize 평판·시세 순위, 파손·유통기한 가드}\\
+  {\scriptsize 기대절감률(>0, 표본 5+ >0.25)}
+};
+
+\node[comp] (seller) at (7.25, -2.5) {
+  \textbf{Shop 판매·가격·보증}\\
+  {\scriptsize [\texttt{seller.py} · \texttt{seller\_cash\_policy}]}\\
+  {\scriptsize A 72h/B 6h/C 0h 차등 보증,}\\
+  {\scriptsize 동일조건 시세 견적·Ed25519 서명}
+};
+
+\node[comp] (restock) at (12.15, -2.5) {
+  \textbf{Shop 재고 입고·공지}\\
+  {\scriptsize [\texttt{restock.py} · \texttt{seller\_forum}]}\\
+  {\scriptsize 시장 입고 창 확인·\texttt{cash\_floor},}\\
+  {\scriptsize 파손/보관료 차감·Shop 재고 공지}
+};
+
+\node[comp] (review) at (17.0, -2.5) {
+  \textbf{정산 후기·게시판}\\
+  {\scriptsize [\texttt{review.py} · \texttt{forum\_writer}]}\\
+  {\scriptsize 파손 역추적, \texttt{forum\_intel} 집계}\\
+  {\scriptsize 원장 \texttt{refs} 3건+ Buyer 시세 글}
+};
+
+% ================= Row 2 inside Inner Boundary: Central Hub ETL =================
+\node[comp, text width=6.1cm, minimum height=1.7cm] (store) at (9.7, -6.55) {
+  \textbf{공유 인텔리전스 허브 ETL (Silver)}\\
+  {\scriptsize [\texttt{store.py} · Medallion: Bronze $\rightarrow$ Silver $\rightarrow$ Gold]}\\
+  {\scriptsize 공개 원장(\texttt{/api/ledger}) 및 원시 로그 증분 수집·정규화,}\\
+  {\scriptsize 파일 락 기반 4-프로세스 공유 피처 갱신}
+};
+
+% ================= Row 3 inside Outer Boundary: 3 Cylinder Data Stores =================
+\node[db] (bronze) at (3.2, -11.05) {
+  \textbf{원본 보관 (Bronze)}\\
+  {\scriptsize [\texttt{.market/} · \texttt{buyer\_outcomes}]}\\
+  {\scriptsize 결제·파손·재고 원본, 감사 저널}
+};
+
+\node[db] (hub) at (9.7, -11.05) {
+  \textbf{공유 상태 허브 (Gold)}\\
+  {\scriptsize [\texttt{state\_hub.json}]}\\
+  {\scriptsize 최근 3h SKU 체결가·수요·파손통계}
+};
+
+\node[db] (mem) at (16.2, -11.05) {
+  \textbf{가게 평판 메모리}\\
+  {\scriptsize [\texttt{memory.json}]}\\
+  {\scriptsize 가게별 최근 5건·누적 평점·쿨다운}
+};
+
+% ================= Right Side: External Systems =================
+\node[extred] (market) at (24.40, -1.65) {
+  \textbf{시장 서버}\\
+  {\scriptsize [External: \texttt{market.ourolabs.ai}]}\\
+  {\scriptsize 정산(\texttt{/api/settle}) · 입고(\texttt{/api/supply})}\\
+  {\scriptsize 공개 원장(\texttt{/api/ledger}) · 게시판(\texttt{/api/forum})}
+};
+
+\node[extorg] (peers) at (24.40, -6.55) {
+  \textbf{상대 에이전트}\\
+  {\scriptsize [External: Peer Shops \& Buyers]}\\
+  {\scriptsize A2A 가격 협상·서명 영수증 교환 및}\\
+  {\scriptsize ACP 체크아웃 생성·완료}
+};
+
+% ================= Relationships (Solid: Execution/Payment, Dashed: Context/Memory) =================
+% Kit -> 4 Processes (Solid: execution hooks & proxy)
+\draw[act]   (kit.south west) ++(1.0,0) -- node[rlbl, left=2pt]{주문 훅} (buyer.north);
+\draw[actbi] (kit.south) ++(-1.2,0) -- node[rlbl, left=1pt]{A2A 프록시} (seller.north);
+\draw[actbi] (kit.south) ++(1.2,0) -- node[rlbl, right=1pt]{입고 계획 조회} (restock.north);
+\draw[actbi] (kit.south east) ++(-1.0,0) -- node[rlbl, right=2pt]{정산 후기·\texttt{outbox}} (review.north);
+
+% 4 Processes <-> Central Store ETL (Dashed: context/memory)
+\draw[rel]   (store.north west) ++(0.35,0) -- node[rlbl, pos=0.52, above=1pt, sloped]{시세·수요 조회} ($(buyer.south)+(0.85,0)$);
+\draw[relbi] (store.north) ++(-1.15,0) -- node[rlbl, left=1pt]{체결가·문의} (seller.south);
+\draw[relbi] (store.north) ++(1.15,0) -- node[rlbl, right=1pt]{원장 수집 트리거} (restock.south);
+\draw[relbi] (store.north east) ++(-0.35,0) -- node[rlbl, pos=0.52, above=1pt, sloped]{구매·파손 반영} (review.south);
+
+% Store ETL <-> Bottom DBs (Dashed: Bronze <-> Silver -> Gold; store.py reads raw logs & writes audit journal)
+\draw[relbi] (bronze.north east) ++(-0.4,0) -- node[rlbl, pos=0.62, right=5pt, align=left]{원시 로그 읽기\\감사 저널 기록} (store.south west);
+\draw[rel]   (store.south) -- node[rlbl, right=2pt]{정제·원자적 적재} (hub.north);
+
+% Kit -> Bronze (.market/ raw files, clean far-left corridor x=-0.35)
+\draw[rel]   (kit.west) -| (-0.35, -11.05) -- (bronze.west);
+\node[rlbl, rotate=90] at (-0.35, -5.2) {\texttt{.market/} 원본 기록};
+
+% Review <-> Memory (100% dead-straight vertical dashed arrow, label cleanly below inner border)
+\draw[relbi] (17.85, -3.39) -- (17.85, -9.63);
+\node[font=\scriptsize, text=black!75] at (18.62, -9.15) {평판 갱신};
+
+% Memory <-> Buyer (Bidirectional dashed: market_buyer.py both reads and writes memory.json)
+\draw[relbi] ($(mem.north west)+(0.25,0)$) -- ++(0,0.68) -| (2.0, -3.39);
+\node[font=\scriptsize, text=black!75] at (12.85, -9.13) {가게 평판·쿨다운 조회/갱신};
+
+% External Connections (Solid: payment/network, Dashed: ledger ingestion)
+\draw[actbi] (kit.east) ++(0,0.22) -| node[rlbl, pos=0.28, above=1pt]{정산·입고·게시판·동기화} (market.north);
+\draw[actbi] (kit.east) ++(0,-0.32) -- (20.65, 0.83) -- (20.65, -6.55) -- (peers.west);
+\node[rlbl, rotate=90] at (20.65, -2.85) {ACP 결제·A2A 프록시};
+\draw[actbi] (0.60, -3.39) -- (0.60, -13.60) -- node[rlbl, pos=0.91, above=2pt]{Buyer $\rightarrow$ 상대 Shop: A2A 협상} (24.40, -13.60) -- (peers.south);
+\draw[rel]   ($(market.south west)+(0.6,0)$) |- (18.9, -4.68) -- (18.9, -6.55) -- node[rlbl, pos=0.58, above=1pt]{\texttt{GET /api/ledger}} (store.east);
+
+\end{tikzpicture}
+\end{center}
+
+\vspace{-2mm}
+\begin{flushleft}
+\scriptsize
+\textbf{C4 Container/Component View} \quad|\quad
+\textcolor{c4kit}{\textbf{청록}}: 제공 키트+래퍼 \quad
+\textcolor{c4blue}{\textbf{파랑}}: 자체 구현 모듈·DB \quad
+\textcolor{c4red}{\textbf{빨강}}/\textcolor{c4orange}{\textbf{주황}}: 외부 시스템 \quad|\quad
+\textbf{실선}: 실행·호출·결제 \quad
+\textcolor{c4blue!75!black}{\textbf{점선}}: 컨텍스트·메모리
+\end{flushleft}
+\end{document}

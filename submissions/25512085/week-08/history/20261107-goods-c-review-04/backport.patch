@@ -1,0 +1,683 @@
+--- a/submissions/25512085/week-08/seller.py
++++ b/submissions/25512085/week-08/seller.py
+@@ -198,6 +198,124 @@
+     except (TypeError, ValueError, OverflowError):
+         return now
+     return ts if math.isfinite(ts) and 0 < ts <= now else now
++
++
++GOODS_TERMS_PILOT_SKUS = frozenset(('g021aae64', 'g0be9ed07', 'g81ade83e'))
++
++
++def goods_request_terms(text: str) -> dict[str, Any]:
++    """Explicit public requirements only. Unknown quality/refund intent is not C0 consent."""
++    low = (text or '').lower()
++    grade_matches = list(re.finditer(
++        r'(?:\b(?:exact_)?grade\s*(?:[:=]|>=)?\s*([abc])\b|([abc])\s*급|'
++        r'\b([abc])등급|\b([abc])(?=인가요|\s*이상|만)|\b([abc])\s*(?:-?grade\b|only\b)|'
++        r'\bonly\s+([abc])\b|등급\s*([abc])\b)(?:\s*(?:or\s+above\b|이상))?', low))
++    grades = {next(g for g in match.groups() if g).upper() for match in grade_matches}
++    minimum = bool(re.search(r'min(?:imum)?\s+grade|grade\s*>=|[abc]\s*(?:급\s*)?이상|grade\s*[abc]\s*(?:or\s+above|이상)', low))
++    exact_matches = list(re.finditer(r'\bwarranty_hours\s*[:=]\s*([^\s,;?]+)', low))
++    # Bound only the explicit condition span, not SKU/product names or the message.
++    invalid = (len(grade_matches) > 1 or any(match.end() - match.start() > 128 for match in grade_matches)
++               or bool(re.search(r'\bgrade\s*[:=]\s*(?![abc]\b)\S+|\b(?:not|no)\s+(?:grade\s+)?[abc]\b|[abc]\s*급\s*제외', low)))
++
++    def covered(marker, matches):
++        return any(match.start() <= marker.start() and marker.end() <= match.end() for match in matches)
++
++    def unsupported_tail(match):
++        # A supported prefix does not consume an operator/list attached to its
++        # value (grade=C/D, grade=C !=B, warranty 6h or 72h, etc.).
++        return bool(re.match(
++            r'\s*(?:[^\w\s.,;!?]|!|,\s*(?:[a-z]\b|\d)|'
++            r'\b(?:or(?!\s+above\b)|to|except)\b|\band\s+(?:[a-z]\b|\d))|'
++            r'\s+[a-z]\b', low[match.end():]))
++
++    # Validate EVERY explicit field occurrence, even after another valid clause.
++    # Repeated grade clauses are conservatively rejected: a global minimum flag
++    # must never weaken an exact grade in another clause, even for the same grade.
++    if any(not covered(marker, grade_matches)
++           for marker in re.finditer(r'\b(?:exact_)?grades?\w*|등급|[abc]\s*급', low)):
++        invalid = True
++    if any(unsupported_tail(match) or re.match(r'\s*or\b', low[match.end():]) for match in grade_matches):
++        invalid = True
++    if re.search(r'\b[abc]\s*[/,]\s*[a-d]\b', low):
++        invalid = True
++    # Recognizing a grade token is not positive consent to that grade. Reject
++    # unsupported rejection/negation language rather than invert it or guess.
++    # Scan the whole grade-bearing message, including beyond a consumed minimum
++    # suffix. Word boundaries avoid matching names such as Exceptional/Excludington.
++    if grades and re.search(
++            r"\b(?:not|never|unacceptable|unwanted|refuse|reject|exclud(?:e[sd]?|ing)|except(?:ing)?|exceptions?|cannot|can't|don't|won't|isn't)\b|"
++            r'빼고(?:요)?(?![가-힣a-z0-9_])|'
++            r'말고|아니|제외|거절|불가|원하지|싫|안\s*(?:돼|되|해|함|하)', low):
++        invalid = True
++    exact_hours = None
++    for match in exact_matches:
++        value = match.group(1)
++        try:
++            hours = float(value)
++        except ValueError:
++            invalid = True
++            continue
++        if not math.isfinite(hours) or hours < 0 or hours > 72 or (exact_hours is not None and exact_hours != hours):
++            invalid = True
++        exact_hours = hours
++    required = required_warranty_hours(low)
++    duration = r'([+-]?(?:\d+(?:\.\d+)?|nan|inf))\s*(hours?|hrs?|h|days?|시간|일)(?![a-zA-Z])'
++    parsed_durations = set()
++    warranty_matches = list(exact_matches)
++    qualifier = r'(?:(?:of\s+)?at\s+least\s+|minimum\s+|최소\s*)?'
++    for pattern in (r'(?:warranty|guarantee|보증)\s*(?:hours?|기간)?[=: ]*'+qualifier+duration,
++                    duration+r'\s*(?:warranty|guarantee|보증)'):
++        for match in re.finditer(pattern, low):
++            warranty_matches.append(match)
++            value, unit = match.groups()
++            parsed_durations.add((match.start(1), match.end(2)))
++            hours = float(value) * (24 if unit in ('day', 'days', '일') else 1)
++            if not math.isfinite(hours) or hours < 0 or hours > 72:
++                invalid = True
++                continue
++            required = max(required, hours)
++            if hours == 0:
++                if exact_hours not in (None, 0):
++                    invalid = True
++                exact_hours = 0
++    if len(exact_matches) + len(parsed_durations) > 1:
++        invalid = True  # Multiple explicit warranties require one clarified clause.
++    if any(unsupported_tail(match) for match in warranty_matches):
++        invalid = True
++    for marker in re.finditer(r'\b(?:warranty\w*|guarantee\w*)\b|보증', low):
++        if covered(marker, warranty_matches):
++            continue
++        # Bare warranty/quality questions retain the historical safe cohort, but
++        # unconsumed structured fields, operators or numbers must fail closed.
++        tail = re.split(r'\b(?:grade|warranty_hours|warranty|guarantee|offer|cert)\b|보증|등급|[,;\n]',
++                        low[marker.end():], maxsplit=1)[0]
++        if (marker.group().startswith('warranty_') or unsupported_tail(marker)
++                or re.search(r'[!<>=~:/\\|\d]|\b(?:nan|inf)\b', tail)):
++            invalid = True
++    if re.search(r'warranty|guarantee|보증', low):
++        # Unparsed duration-bearing warranty language cannot be reduced to
++        # "some warranty". Ask for supported explicit conditions instead.
++        if any((match.start(1), match.end(2)) not in parsed_durations
++               for match in re.finditer(duration, low)):
++            invalid = True
++    if any(word in low for word in NO_CARE_WORDS):
++        if exact_hours not in (None, 0):
++            invalid = True
++        exact_hours = 0
++    if exact_hours is not None and required > exact_hours:
++        invalid = True
++    invalid = invalid or required > 72 or bool(re.search(r'\bcert\s*[:=]\s*false\b', low))
++    # Duration-less warranty/refund/quality/certificate requests retain the safe
++    # historical cohort. Do not claim to know the buyer's hidden accept rules.
++    ambiguous = bool(re.search(r'quality|refund|return|reliable|premium|service|support|defect|durab|\bsafe\b|\bbest\b|\bnew\b|\bfresh\b|cert|품질|환불|반품|최상|신선|상태|고장|하자|정품|인증|안전', low))
++    if not grades and re.search(r'grade|등급|[abc]\s*[/,]\s*[abc]', low):
++        invalid = True  # Unsupported grade syntax needs clarification, not substitution.
++    if re.search(r'\bgrades\b', low):
++        invalid = True  # Do not silently discard an unparsed explicit allowed-grade set.
++    if re.search(r'warranty|guarantee|보증|care', low) and exact_hours is None and not required:
++        ambiguous = True
++    return dict(grade=next(iter(grades), None), minimum=minimum, warranty=exact_hours,
++                required=required, ambiguous=ambiguous, invalid=invalid)
+ 
+ 
+ def select_best_unit(units: list[dict[str, Any]], buyer_text: str, *, pricing_context=None) -> dict[str, Any] | None:
+@@ -323,6 +441,38 @@
+         # Non-food (goods): Grade is permanent, no expiration date
+         grade_prio_quality = {"A": 0, "B": 1, "C": 2}
+         grade_prio_cheap = {"C": 0, "B": 1, "A": 2}
++
++        # Preserve the historical SKU for category/name inquiries; the pilot
++        # changes only the condition cohort within that one SKU.
++        priority = grade_prio_cheap if wants_cheap else grade_prio_quality
++        legacy = min(units, key=lambda u: (
++            priority.get(str(u.get('live_grade') or u.get('grade', 'A')), 1), u.get('supplied_at') or 0))
++        if str(legacy.get('sku', '')).lower() in GOODS_TERMS_PILOT_SKUS:
++            request = goods_request_terms(buyer_text)
++            if request['invalid']:
++                return None
++            pool = [u for u in units if u.get('sku') == legacy.get('sku')]
++            if request['grade']:
++                allowed = {'A': 0, 'B': 1, 'C': 2}
++                pool = [u for u in pool if (
++                    allowed.get(str(u.get('live_grade') or u.get('grade')), 99) <= allowed[request['grade']]
++                    if request['minimum'] else str(u.get('live_grade') or u.get('grade')) == request['grade'])]
++            # Zero/no-care wording never unbundles A/B warranty. Keep their
++            # historical grade terms; positive exact warranties still constrain.
++            pool = [u for u in pool if cash_policy.warranty_hours(str(u.get('live_grade') or u.get('grade'))) >= request['required']
++                    and (request['warranty'] in (None, 0) or cash_policy.warranty_hours(str(u.get('live_grade') or u.get('grade'))) == request['warranty'])]
++            if request['ambiguous']:
++                pool = [u for u in pool if cash_policy.warranty_hours(str(u.get('live_grade') or u.get('grade'))) > 0]
++            if not pool:
++                return None
++            unconstrained = (not request['grade'] and request['warranty'] is None
++                             and not request['required'] and not request['ambiguous'])
++            if unconstrained and any(str(u.get('live_grade') or u.get('grade')) == 'C' for u in pool):
++                pool = [u for u in pool if str(u.get('live_grade') or u.get('grade')) == 'C']
++            elif request['ambiguous']:
++                priority = grade_prio_quality
++            return min(pool, key=lambda u: (
++                priority.get(str(u.get('live_grade') or u.get('grade')), 1), u.get('supplied_at') or 0))
+ 
+         if wants_cheap:
+             # Buyer wants cheap/refurb -> clear C/B grades first, tie-break by oldest in stock (FIFO)
+@@ -844,7 +994,11 @@
+                 if unit is None:
+                     queue_inbound_inquiry(demand_query, matched=False, raw_text=text)
+                     print(f"[stock-miss] Out of stock for buyer request: {text[:80]} (recorded demand: {demand_query})", flush=True)
+-                    await up.reject(say("Sorry, no matching stock meets your request (including any required shelf life plus checkout buffer). No receipt issued."))
++                    reason = "Sorry, no matching stock meets your request (including any required shelf life plus checkout buffer). No receipt issued."
++                    if (any(sku in text.lower() for sku in GOODS_TERMS_PILOT_SKUS)
++                            and goods_request_terms(text)['invalid']):
++                        reason = "Unsupported or conflicting explicit grade/warranty conditions. Please clarify your conditions in a new inquiry. No receipt issued."
++                    await up.reject(say(reason))
+                     return
+ 
+                 pricing = compute_unit_pricing_and_terms(unit, **pricing_context)
+@@ -1009,6 +1163,18 @@
+         # up to ~3 s to every turn, and could leave codex processes running after a timeout on a 1 GB VM. The
+         # model is used outside the negotiation path instead, where latency does not matter.
+         text_low = text.lower()
++        if (deal.get('mode') == 'round3_stock' and deal['unit'].get('kind') == 'goods'
++                and str(deal['unit'].get('sku', '')).lower() in GOODS_TERMS_PILOT_SKUS):
++            request = goods_request_terms(text)
++            grade = deal['grade']
++            warranty = int(deal.get('warranty_hours', cash_policy.warranty_hours(grade)))
++            grade_ok = (not request['grade'] or (grade <= request['grade'] if request['minimum'] else grade == request['grade']))
++            if (request['invalid'] or not grade_ok or request['required'] > warranty
++                    or (request['warranty'] not in (None, 0) and request['warranty'] != warranty)
++                    or (warranty == 0 and request['ambiguous'])):
++                self.open.pop(task.id, None)
++                await up.reject(say('Requested conditions do not match the disclosed unit/grade/warranty. Please start a new condition-specific inquiry. No receipt issued.'))
++                return
+         if deal.get("mode") == "round3_stock" and deal["unit"].get("kind") == "food":
+             required_hours = extract_food_use_hours(text, awaiting_duration=deal.get("awaiting_use_period", False))
+             if required_hours is not None:
+--- /dev/null
++++ b/submissions/25512085/week-08/test_goods_terms_pilot_offline.py
+@@ -0,0 +1,482 @@
++"""Three-SKU terms pilot: synthetic inventory, temporary signing key, no market I/O."""
++import inspect
++import unittest
++from unittest.mock import patch
++
++import seller
++import test_seller_food_offline as fixture
++
++
++class GoodsTermsPilotTests(unittest.TestCase):
++    setUp = fixture.FoodSafetyTests.setUp
++    turn = fixture.FoodSafetyTests.turn
++    receipt = fixture.FoodSafetyTests.receipt
++    SKUS = ('G021aae64', 'G0be9ed07', 'G81ade83e')
++
++    def stock(self, sku='G021aae64', grades=('A', 'B', 'C')):
++        self.agent = seller.Seller(0)
++        self.catalog[sku] = dict(kind='goods', category='goods>sofa', list_price=100000)
++        self.inventory['units'] = [dict(
++            sku=sku, unit=sku+'-'+g, name='sofa', category='goods>sofa', kind='goods',
++            grade=g, cost=30000, list_price=100000, supplied_at=self.now-3600,
++            cert={'proof': 'offline'}) for g in grades]
++        self.stack.enter_context(patch.object(seller, 'queue_inbound_inquiry', lambda *a, **kw: None))
++        return sku
++
++    def open_deal(self, text):
++        events = self.turn(text)
++        self.assertEqual([k for k, _ in events], ['input'])
++        return self.agent.open['task-1'], str(events)
++
++    def test_three_skus_unconstrained_prefer_C0(self):
++        for sku in self.SKUS:
++            with self.subTest(sku=sku):
++                self.stock(sku)
++                deal, _ = self.open_deal(sku)
++                self.assertEqual((deal['grade'], deal['warranty_hours']), ('C', 0))
++
++    def test_A_only_new_quote_is_A72_without_no_warranty_option(self):
++        for sku in self.SKUS:
++            with self.subTest(sku=sku):
++                self.stock(sku)
++                deal, text = self.open_deal(sku+' grade A')
++                self.assertEqual((deal['grade'], deal['warranty_hours']), ('A', 72))
++                self.assertGreater(deal['break_rate'], 0)
++                self.assertNotIn('warranty_hours=0', text)
++                self.assertIn('72h', text)
++                self.assertNotIn('choose', text.lower())
++                self.assertNotIn('without warranty', text.lower())
++                self.assertNotIn('pilot_A0_option', deal)
++                self.assertNotIn('Grade C refurbished', text)
++
++    def test_A_question_is_not_permission_to_sell_C(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' A인가요?')
++        self.assertEqual((deal['grade'], deal['warranty_hours']), ('A', 72))
++
++    def test_explicit_A72_preserved(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' grade=A warranty_hours=72')
++        self.assertEqual((deal['grade'], deal['warranty_hours']), ('A', 72))
++
++    def test_B_minimum_not_C_even_when_cheap(self):
++        for text in ('B급 이상 저렴', 'B이상 저렴', 'B 이상 저렴', 'minimum grade B cheap', 'grade>=B cheap'):
++            with self.subTest(text=text):
++                sku = self.stock(grades=('B', 'C'))
++                deal, _ = self.open_deal(sku+' '+text)
++                self.assertEqual((deal['grade'], deal['warranty_hours']), ('B', 6))
++
++    def test_explicit_C0_exact_selection(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' grade=C warranty_hours=0')
++        self.assertEqual((deal['grade'], deal['warranty_hours']), ('C', 0))
++
++    def test_six_hour_minimum_uses_warrantied_stock(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' warranty 6h')
++        self.assertGreaterEqual(deal['warranty_hours'], 6)
++        self.assertNotEqual(deal['grade'], 'C')
++
++    def test_C_missing_uses_existing_A_fallback(self):
++        sku = self.stock(grades=('A', 'B'))
++        deal, _ = self.open_deal(sku)
++        self.assertEqual((deal['grade'], deal['warranty_hours']), ('A', 72))
++
++    def test_ambiguous_quality_refund_and_cert_keep_conservative_terms(self):
++        for text in ('품질 중요', '환불 가능?', 'good quality', 'cert=true', 'after-sales service', '고장 적은 것', 'A급 품질 보증 필요'):
++            with self.subTest(text=text):
++                sku = self.stock()
++                deal, _ = self.open_deal(sku+' '+text)
++                self.assertEqual((deal['grade'], deal['warranty_hours']), ('A', 72))
++
++    def test_other_sku_default_and_A_remain_A72(self):
++        for text in ('', ' grade A'):
++            sku = self.stock('G00000001')
++            deal, _ = self.open_deal(sku+text)
++            self.assertEqual((deal['grade'], deal['warranty_hours']), ('A', 72))
++
++    def test_invalid_or_conflicting_conditions_never_sign(self):
++        for text in ('grade=D', 'warranty_hours=-1', 'warranty_hours=nan',
++                     'warranty_hours=73', 'grade=C warranty 6h', 'grade=A grade=C',
++                     'cert=false', 'grade=A warranty_hours=0 warranty 6h', 'grades=[B,C]',
++                     'grade=unknown', 'not grade A'):
++            with self.subTest(text=text):
++                sku = self.stock()
++                events = self.turn(sku+' '+text+' offer 999999')
++                self.assertIn('reject', [k for k, _ in events])
++                self.assertNotIn('receipt', [k for k, _ in events])
++
++    def test_A72_numeric_acceptance_receipt_and_completion_match(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' grade A')
++        events = self.turn(str(deal['ask']))
++        receipt = self.receipt(events)
++        self.assertEqual((receipt['unit'], receipt['claim'], receipt['warranty_hours'], receipt['price']),
++                         (deal['unit']['unit'], 'A', 72, deal['ask']))
++        self.assertIn('warranty=72h', str(events))
++        self.assertNotEqual(receipt['refund_policy'], 'no refund if the item breaks')
++
++    def test_A72_initial_price_can_close_without_new_option_flow(self):
++        sku = self.stock()
++        receipt = self.receipt(self.turn(sku+' grade A offer 999999'))
++        self.assertEqual((receipt['claim'], receipt['warranty_hours']), ('A', 72))
++
++    def test_explicit_C0_instant_receipt_matches(self):
++        sku = self.stock()
++        receipt = self.receipt(self.turn(sku+' grade=C warranty_hours=0 offer 999999'))
++        self.assertEqual((receipt['claim'], receipt['warranty_hours']), ('C', 0))
++
++    def test_existing_A72_promise_numeric_reply_never_downgrades(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' grade A warranty 72h')
++        self.assertNotIn('pilot_A0_option', deal)
++        receipt = self.receipt(self.turn(str(deal['ask'])))
++        self.assertEqual(receipt['warranty_hours'], 72)
++
++    def test_later_minimum_warranty_without_price_cannot_be_ignored(self):
++        sku = self.stock()
++        self.open_deal(sku)
++        events = self.turn('warranty 6h')
++        self.assertIn('reject', [k for k, _ in events])
++        self.assertFalse(self.agent.open)
++
++    def test_later_conflicting_grade_with_offer_never_signs(self):
++        sku = self.stock()
++        self.open_deal(sku)
++        events = self.turn('grade=A offer 999999')
++        self.assertIn('reject', [k for k, _ in events])
++        self.assertNotIn('receipt', [k for k, _ in events])
++
++    def test_A72_requirement_keeps_existing_quote_without_option_repricing(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' grade A')
++        before = {key: deal[key] for key in ('unit', 'ask', 'initial_ask', 'hard_floor', 'r1_target', 'r2_target')}
++        events = self.turn('warranty 72h')
++        self.assertEqual([k for k, _ in events], ['input'])
++        self.assertEqual({key: deal[key] for key in before}, before)
++        self.assertEqual(deal['warranty_hours'], 72)
++        receipt = self.receipt(self.turn(str(deal['ask'])))
++        self.assertEqual(receipt['warranty_hours'], 72)
++
++    def test_A72_pricing_is_unchanged_default_grade_pricing(self):
++        sku = self.stock()
++        unit = self.inventory['units'][0]
++        standard = seller.compute_unit_pricing_and_terms(unit, {}, now=self.now, catalog=self.catalog, clearance=1)
++        deal, _ = self.open_deal(sku+' grade A')
++        self.assertEqual(deal['ask'], standard['open_ask'])
++        self.assertEqual(deal['hard_floor'], standard['hard_floor'])
++        self.assertEqual(deal['break_rate'], standard['break_rate'])
++        self.assertGreater(deal['break_rate'], 0)
++
++    def test_A72_keeps_existing_comparable_pricing_path(self):
++        sku = self.stock()
++        hub = {'demand_radar': {'sku_comparables': {sku: [dict(
++            grade='A', amount=77777, warranty_hours=72, ts=self.now-i) for i in range(5)]}}}
++        standard = seller.compute_unit_pricing_and_terms(
++            self.inventory['units'][0], hub, now=self.now, catalog=self.catalog, clearance=1)
++        with patch.object(seller, 'load_hub', return_value=hub):
++            deal, _ = self.open_deal(sku+' grade A')
++        self.assertEqual(deal['cash_first_quote'], standard['cash_first_quote'])
++        self.assertEqual(deal['ask'], standard['open_ask'])
++        self.assertEqual(deal['break_rate'], standard['break_rate'])
++
++    def test_A_wording_variants_never_sell_C(self):
++        for text in ('A only', 'only A', 'A-grade', 'A급만', '등급 A'):
++            with self.subTest(text=text):
++                sku = self.stock()
++                deal, _ = self.open_deal(sku+' '+text)
++                self.assertEqual((deal['grade'], deal['warranty_hours']), ('A', 72))
++
++    def test_ambiguous_refund_with_only_C_needs_new_inquiry(self):
++        sku = self.stock(grades=('C',))
++        events = self.turn(sku+' 환불 가능? offer 999999')
++        self.assertIn('reject', [k for k, _ in events])
++        self.assertNotIn('receipt', [k for k, _ in events])
++
++    def test_A0_pricing_override_and_option_helper_are_removed(self):
++        self.assertNotIn('warranty_override', inspect.signature(seller.compute_unit_pricing_and_terms).parameters)
++        self.assertFalse(hasattr(seller, 'explicit_A72_choice'))
++        sku = self.stock()
++        with self.assertRaises(TypeError):
++            seller.compute_unit_pricing_and_terms(self.inventory['units'][0], {}, now=self.now,
++                catalog=self.catalog, clearance=1, warranty_override=0)
++
++    def test_A72_concession_receipt_same_conditions_and_no_floor_bypass(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' grade A')
++        events = self.turn('offer 1')
++        self.assertIn('72h', str(events))
++        self.assertGreaterEqual(deal['ask'], deal['hard_floor'])
++        receipt = self.receipt(self.turn(str(deal['ask'])))
++        self.assertEqual((receipt['price'], receipt['warranty_hours']), (deal['ask'], 72))
++
++    def test_explicit_B6_and_no_matching_A_are_not_substituted(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' grade=B warranty_hours=6')
++        self.assertEqual((deal['grade'], deal['warranty_hours']), ('B', 6))
++        sku = self.stock(grades=('B', 'C'))
++        events = self.turn(sku+' grade=A offer 999999')
++        self.assertIn('reject', [k for k, _ in events])
++        self.assertNotIn('receipt', [k for k, _ in events])
++
++    def test_numeric_72_never_changes_A72_terms(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' grade A')
++        self.turn('72')
++        self.assertEqual(deal['warranty_hours'], 72)
++
++    def test_no_care_request_cannot_downgrade_existing_A72(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' grade A')
++        events = self.turn('without care')
++        self.assertEqual([k for k, _ in events], ['input'])
++        self.assertIs(self.agent.open['task-1'], deal)
++        self.assertEqual(deal['warranty_hours'], 72)
++
++    def test_natural_zero_days_and_invalid_warranty_durations_are_not_ignored(self):
++        for text in ('warranty 6 days', '6일 보증', 'warranty -1h', 'warranty nan h'):
++            with self.subTest(text=text):
++                sku = self.stock()
++                events = self.turn(sku+' '+text+' offer 999999')
++                self.assertIn('reject', [k for k, _ in events])
++                self.assertNotIn('receipt', [k for k, _ in events])
++        for text in ('grade=C warranty 0h', 'grade=C 0h warranty'):
++            with self.subTest(text=text):
++                sku = self.stock()
++                deal, _ = self.open_deal(sku+' '+text)
++                self.assertEqual((deal['grade'], deal['warranty_hours']), ('C', 0))
++
++    def test_review_grade_rejection_never_issues_initial_receipt(self):
++        for text in ('grade C is not acceptable', 'C급 말고', 'C급은 안 돼요',
++                     'grade C is unacceptable', 'I do not want grade C'):
++            with self.subTest(text=text):
++                sku = self.stock()
++                events = self.turn(sku+' '+text+' offer 999999')
++                self.assertEqual([k for k, _ in events], ['reject'])
++                self.assertIn('clarify', str(events))
++                self.assertIn('No receipt issued', str(events))
++                self.assertFalse(self.agent.open)
++                self.assertFalse(self.agent.committed_units)
++
++    def test_review_grade_rejection_never_issues_later_receipt(self):
++        for text in ('grade C is not acceptable', 'C급 말고', 'C급은 안 돼요'):
++            with self.subTest(text=text):
++                sku = self.stock()
++                self.open_deal(sku)
++                events = self.turn(text+' offer 999999')
++                self.assertEqual([k for k, _ in events], ['reject'])
++                self.assertFalse(self.agent.committed_units)
++
++    def test_review_minimum_warranty_cannot_close_B6_or_C0_initially(self):
++        for text in ('보증 최소 72시간', 'warranty of at least 72h', 'warranty covering at least 72h'):
++            with self.subTest(text=text):
++                sku = self.stock(grades=('B', 'C'))
++                events = self.turn(sku+' '+text+' offer 999999')
++                self.assertEqual([k for k, _ in events], ['reject'])
++                self.assertFalse(self.agent.committed_units)
++
++    def test_review_minimum_warranty_checked_after_B6_quote_without_price_too(self):
++        for text in ('보증 최소 72시간', 'warranty of at least 72h', 'warranty covering at least 72h'):
++            for offer in ('', ' offer 999999'):
++                with self.subTest(text=text, offer=offer):
++                    sku = self.stock(grades=('B', 'C'))
++                    deal, _ = self.open_deal(sku+' grade=B warranty_hours=6')
++                    events = self.turn(text+offer)
++                    self.assertEqual([k for k, _ in events], ['reject'])
++                    self.assertEqual(deal['warranty_hours'], 6)
++                    self.assertFalse(self.agent.open)
++                    self.assertFalse(self.agent.committed_units)
++
++    def test_review_minimum_warranty_fulfilled_by_actual_A72(self):
++        for text in ('보증 최소 72시간', 'warranty of at least 72h'):
++            with self.subTest(text=text):
++                sku = self.stock()
++                receipt = self.receipt(self.turn(sku+' '+text+' offer 999999'))
++                self.assertEqual((receipt['claim'], receipt['warranty_hours']), ('A', 72))
++
++    def test_explicit_zero_warranty_never_creates_A0(self):
++        for text in ('grade=A warranty_hours=0', 'grade A warranty 0h',
++                     'grade A without care', 'A급 보증 0시간'):
++            with self.subTest(text=text):
++                for sku in self.SKUS:
++                    self.stock(sku)
++                    deal, wording = self.open_deal(sku+' '+text)
++                    self.assertEqual((deal['grade'], deal['warranty_hours']), ('A', 72))
++                    self.assertNotIn('warranty_hours=0', wording)
++                    self.assertNotIn('choose', wording.lower())
++                    receipt = self.receipt(self.turn(str(deal['ask'])))
++                    self.assertEqual((receipt['claim'], receipt['warranty_hours']), ('A', 72))
++
++    def test_zero_warranty_with_no_grade_retains_default_A72(self):
++        for text in ('warranty_hours=0', 'warranty 0h', 'without care'):
++            with self.subTest(text=text):
++                sku = self.stock()
++                deal, _ = self.open_deal(sku+' '+text)
++                self.assertEqual((deal['grade'], deal['warranty_hours']), ('A', 72))
++
++    def test_explicit_zero_warranty_initial_price_uses_A72_receipt(self):
++        sku = self.stock()
++        receipt = self.receipt(self.turn(sku+' grade=A warranty_hours=0 offer 999999'))
++        self.assertEqual((receipt['claim'], receipt['warranty_hours']), ('A', 72))
++
++    def test_C0_concession_receipt_matches_stored_conditions(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku)
++        self.turn('offer 1')
++        self.assertGreaterEqual(deal['ask'], deal['hard_floor'])
++        receipt = self.receipt(self.turn(str(deal['ask'])))
++        self.assertEqual((receipt['unit'], receipt['claim'], receipt['warranty_hours'], receipt['price']),
++                         (deal['unit']['unit'], 'C', 0, deal['ask']))
++        self.assertEqual(receipt['refund_policy'], 'no refund if the item breaks')
++
++    def test_explicit_B_cannot_meet_72h_even_when_A_exists(self):
++        sku = self.stock()
++        events = self.turn(sku+' grade=B warranty 72h offer 999999')
++        self.assertEqual([k for k, _ in events], ['reject'])
++        self.assertFalse(self.agent.committed_units)
++
++    def test_later_zero_warranty_with_price_keeps_promised_A72(self):
++        sku = self.stock()
++        deal, _ = self.open_deal(sku+' grade A')
++        receipt = self.receipt(self.turn('warranty_hours=0 offer '+str(deal['ask'])))
++        self.assertEqual((receipt['claim'], receipt['warranty_hours']), ('A', 72))
++
++    def assert_rejected_conditions(self, text):
++        events = self.turn(text)
++        self.assertEqual([kind for kind, _ in events], ['reject'])
++        self.assertFalse(self.agent.committed_units)
++        self.assertFalse(self.agent.open)
++
++    def test_review_partial_grade_clause_initial_with_and_without_price(self):
++        for price in ('', ' offer 999999'):
++            with self.subTest(price=price):
++                sku = self.stock()
++                self.assert_rejected_conditions(sku+' grade=C grade!=C'+price)
++
++    def test_review_partial_grade_clause_later_with_and_without_price(self):
++        for price in ('', ' offer 999999'):
++            with self.subTest(price=price):
++                self.stock()
++                self.open_deal(self.SKUS[0]+' grade=C')
++                self.assert_rejected_conditions('grade=C grade!=C'+price)
++
++    def test_review_partial_warranty_clause_initial_with_and_without_price(self):
++        for price in ('', ' offer 999999'):
++            with self.subTest(price=price):
++                sku = self.stock()
++                self.assert_rejected_conditions(sku+' grade=B warranty_hours>=72'+price)
++
++    def test_review_partial_warranty_clause_later_with_and_without_price(self):
++        for price in ('', ' offer 999999'):
++            with self.subTest(price=price):
++                sku = self.stock()
++                self.open_deal(sku+' grade=B warranty_hours=6')
++                self.assert_rejected_conditions('grade=B warranty_hours>=72'+price)
++
++    def test_review_all_grade_clauses_and_suffixes_must_be_consumed(self):
++        conditions = ('grade=C grade!=C', 'grade=C grade<>C', 'grade=C grade=unknown',
++                      'grade=C grade:C/D', 'grade=C grade=C', 'grade>=B grade=B',
++                      'grade=C or D', 'grade=C, D', 'grade=C !=B',
++                      'grade=C grade==C', 'grade=C grade~C', 'C급 grade!=C',
++                      '등급 C 등급!=C', 'grade=C grade C 이상')
++        for condition in conditions:
++            for later in (False, True):
++                with self.subTest(condition=condition, later=later):
++                    sku = self.stock()
++                    if later:
++                        self.open_deal(sku+' grade=C')
++                    self.assert_rejected_conditions(('' if later else sku+' ')+condition+' offer 999999')
++
++    def test_review_all_warranty_clauses_and_suffixes_must_be_consumed(self):
++        conditions = ('warranty_hours>=72', 'warranty_hours!=6', 'warranty_hours==6',
++                      'warranty_hours=6 warranty_hours!=6', 'warranty_hours=6!=72',
++                      'warranty 6h warranty>=72h', 'warranty 6h 보증>=72시간',
++                      'warranty_hours=6/72', 'warranty_hours=6 or 72',
++                      'warranty_hours=6 warranty_hours=72', 'warranty_hours=6 warranty>=72',
++                      'warranty_hours=6 warranty 72', 'warranty_hours=6 보증 최소 72',
++                      'warranty_hours=6 warranty_hours=6',
++                      'warranty_hours=6 warranty≥six', 'warranty_hours=6 보증≤six')
++        for condition in conditions:
++            for later in (False, True):
++                with self.subTest(condition=condition, later=later):
++                    sku = self.stock()
++                    if later:
++                        self.open_deal(sku+' grade=B warranty_hours=6')
++                    self.assert_rejected_conditions(('' if later else sku+' ')+'grade=B '+condition+' offer 999999')
++
++    def test_review_field_suffixes_and_unconsumed_grade_sets_fail_closed(self):
++        for condition in ('grade=C grade_min=C', 'grade=C grade_condition=C',
++                          'grade=C or Z', 'grade=C or unknown', 'grade=C, Z',
++                          'grade=C D', 'grade=C [B,C]', 'grade=C ≠A',
++                          'grade=C ≤B', 'grade=C %A',
++                          'grade=B warranty_hours_min=72', 'grade=B warrantyhours>=72'):
++            for later in (False, True):
++                with self.subTest(condition=condition, later=later):
++                    sku = self.stock()
++                    if later:
++                        self.open_deal(sku+' grade='+('B' if 'grade=B' in condition else 'C'))
++                    self.assert_rejected_conditions(('' if later else sku+' ')+condition+' offer 999999')
++
++    def test_review_supported_single_clauses_retain_exact_terms(self):
++        for condition, expected in (
++                ('grade=C', ('C', 0)), ('grade=C warranty_hours=0', ('C', 0)),
++                ('grade>=B cheap', ('B', 6)), ('grade B or above cheap', ('B', 6)),
++                ('grade=B warranty_hours=6', ('B', 6)), ('grade B and warranty 6h', ('B', 6)),
++                ('grade=A warranty_hours=0', ('A', 72)), ('A등급', ('A', 72)),
++                ('보증 최소 72시간', ('A', 72)), ('warranty of at least 72h', ('A', 72))):
++            with self.subTest(condition=condition):
++                sku = self.stock()
++                deal, _ = self.open_deal(sku+' '+condition)
++                self.assertEqual((deal['grade'], deal['warranty_hours']), expected)
++                receipt = self.receipt(self.turn(str(deal['ask'])))
++                self.assertEqual((receipt['claim'], receipt['warranty_hours']), expected)
++
++    COMPOUND_GRADE_CONDITIONS = (
++        'grade B or above except A', 'grade B or above excluding A',
++        'grade B or above but not A', 'except A, grade B or above',
++        'grade B or above sofa, excluding A', 'grade B or above with exception of A',
++        'B급 이상 A 제외', 'B급 이상 A 빼고', 'B급 이상 A빼고요',
++        'B급 이상 A 말고', 'grade B or above != A', 'grade B or above / C',
++    )
++
++    def test_review_compound_minimum_grade_initial_with_and_without_price(self):
++        for condition in self.COMPOUND_GRADE_CONDITIONS:
++            for price in ('', ' offer 999999'):
++                with self.subTest(condition=condition, price=price):
++                    sku = self.stock()
++                    self.assert_rejected_conditions(sku+' '+condition+price)
++
++    def test_review_compound_minimum_grade_later_with_and_without_price(self):
++        for condition in self.COMPOUND_GRADE_CONDITIONS:
++            for price in ('', ' offer 999999'):
++                with self.subTest(condition=condition, price=price):
++                    sku = self.stock()
++                    self.open_deal(sku+' grade A')
++                    self.assert_rejected_conditions(condition+price)
++
++    def test_review_consumed_minimum_suffix_keeps_supported_single_condition(self):
++        for condition, expected in (
++                ('grade B or above', ('A', 72)), ('grade B or above cheap', ('B', 6)),
++                ('B급 이상', ('B', 6)), ('B급 이상 저렴', ('B', 6))):
++            with self.subTest(condition=condition):
++                sku = self.stock()
++                deal, _ = self.open_deal(sku+' '+condition)
++                self.assertEqual((deal['grade'], deal['warranty_hours']), expected)
++                receipt = self.receipt(self.turn(str(deal['ask'])))
++                self.assertEqual((receipt['claim'], receipt['warranty_hours']), expected)
++
++    def test_review_compound_negation_words_do_not_match_harmless_name_substrings(self):
++        for name in ('Exceptional sofa', 'Excludington table', '빼고테이블', 'A'*200+'sofa'):
++            with self.subTest(name=name):
++                sku = self.stock()
++                deal, _ = self.open_deal(sku+' '+name+' grade A')
++                self.assertEqual((deal['grade'], deal['warranty_hours']), ('A', 72))
++                self.assertFalse(seller.goods_request_terms(sku+' '+name)['invalid'])
++
++    def test_review_explicit_grade_clause_length_is_bounded_not_whole_name(self):
++        self.assertTrue(seller.goods_request_terms('grade B'+' '*129+'or above')['invalid'])
++        self.assertFalse(seller.goods_request_terms('A'*200+'sofa grade B or above')['invalid'])
++
++
++if __name__ == '__main__':
++    unittest.main(verbosity=2)

@@ -1,0 +1,65 @@
+test_A_concession_then_receipt_72h (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_A_concession_then_receipt_72h) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=A, ask=60000, r1_target=59400, floor=32475, warranty=72h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 59400 (cost=30000, gross_before_refunds=29400, grade=A, warranty=72h, task=task-1, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_B_concession_then_receipt_6h (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_B_concession_then_receipt_6h) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=B, ask=60000, r1_target=59400, floor=37060, warranty=6h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 59400 (cost=30000, gross_before_refunds=29400, grade=B, warranty=6h, task=task-1, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_C_concession_then_receipt_zero_no_paid_care_alternative (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_C_concession_then_receipt_zero_no_paid_care_alternative) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=C, ask=60000, r1_target=59400, floor=31501, warranty=0h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 59400 (cost=30000, gross_before_refunds=29400, grade=C, warranty=0h, task=task-1, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_C_no_care_does_not_advertise_unavailable_warrantied_option (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_C_no_care_does_not_advertise_unavailable_warrantied_option) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=C, ask=60000, r1_target=59400, floor=31501, warranty=0h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 59400 (cost=30000, gross_before_refunds=29400, grade=C, warranty=0h, task=task-1, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_explicit_zero_overrides_current_A_policy (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_explicit_zero_overrides_current_A_policy) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=A, ask=60000, r1_target=59400, floor=32475, warranty=72h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 59400 (cost=30000, gross_before_refunds=29400, grade=A, warranty=0h, task=task-1, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_final_rejection_C_does_not_imply_included_warranty (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_final_rejection_C_does_not_imply_included_warranty) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=C, ask=60000, r1_target=59400, floor=31501, warranty=0h, task=task-1, cash_first_quote=True
+ok
+test_final_rejection_discloses_A_72h (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_final_rejection_discloses_A_72h) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=A, ask=60000, r1_target=59400, floor=32475, warranty=72h, task=task-1, cash_first_quote=True
+ok
+test_final_rejection_no_care_does_not_imply_included_warranty (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_final_rejection_no_care_does_not_imply_included_warranty) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=A, ask=60000, r1_target=59400, floor=32475, warranty=72h, task=task-1, cash_first_quote=True
+ok
+test_food_concession_then_receipt_has_no_goods_warranty (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_food_concession_then_receipt_has_no_goods_warranty) ... [r3-quote] f00000001 (milk 500ml 24팩): cost=100, list=200, grade=A, ask=190, r1_target=138, floor=110, warranty=0h, task=task-1, cash_first_quote=False
+[r3-deal] Sold f00000001 (milk 500ml 24팩) unit=food-1 at 138 (cost=100, gross_before_refunds=38, grade=A, warranty=0h, task=task-1, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_legacy_missing_warranty_keeps_grade_fallback (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_legacy_missing_warranty_keeps_grade_fallback) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=A, ask=60000, r1_target=59400, floor=32475, warranty=72h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 59400 (cost=30000, gross_before_refunds=29400, grade=A, warranty=72h, task=task-1, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=B, ask=60000, r1_target=59400, floor=37060, warranty=6h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 59400 (cost=30000, gross_before_refunds=29400, grade=B, warranty=6h, task=task-1, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+[r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=C, ask=60000, r1_target=59400, floor=31501, warranty=0h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 59400 (cost=30000, gross_before_refunds=29400, grade=C, warranty=0h, task=task-1, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_no_care_overrides_positive_stored_warranty (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_no_care_overrides_positive_stored_warranty) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=A, ask=60000, r1_target=59400, floor=32475, warranty=72h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 57618 (cost=30000, gross_before_refunds=27618, grade=A, warranty=0h, task=task-1, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_stored_24h_overrides_current_A_policy (test_warranty_disclosure_offline.WarrantyDisclosureTests.test_stored_24h_overrides_current_A_policy) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=A, ask=60000, r1_target=59400, floor=32475, warranty=72h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 59400 (cost=30000, gross_before_refunds=29400, grade=A, warranty=24h, task=task-1, first_quote_accepted=False) in 2 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_A_counter_receipt_and_opening_keep_72h (test_grade_warranty_offline.GradeWarrantyTests.test_A_counter_receipt_and_opening_keep_72h) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=A, ask=60000, r1_target=59400, floor=32475, warranty=72h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 60000 (cost=30000, gross_before_refunds=30000, grade=A, warranty=72h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_A_instant_receipt_has_market_maximum_72h (test_grade_warranty_offline.GradeWarrantyTests.test_A_instant_receipt_has_market_maximum_72h) ... [instant-deal] Sold G00000001 (mattress) unit=goods-1 at 60000 (cost=30000)
+ok
+test_B_cost_and_risk_floor_survives_old_stock_and_endgame (test_grade_warranty_offline.GradeWarrantyTests.test_B_cost_and_risk_floor_survives_old_stock_and_endgame) ... ok
+test_B_low_offer_cannot_bypass_profit_floor (test_grade_warranty_offline.GradeWarrantyTests.test_B_low_offer_cannot_bypass_profit_floor) ... [r3-quote] G00000001 (mattress): cost=100000, list=100000, grade=B, ask=123531, r1_target=123531, floor=123531, warranty=6h, task=task-1, cash_first_quote=True
+[stock-miss] Out of stock for buyer request: 100000 (recorded demand: 100000)
+ok
+test_C_instant_receipt_has_zero_warranty (test_grade_warranty_offline.GradeWarrantyTests.test_C_instant_receipt_has_zero_warranty) ... [instant-deal] Sold G00000001 (mattress) unit=goods-1 at 60000 (cost=30000)
+ok
+test_C_never_uses_warrantied_price_as_unwarrantied_comparable (test_grade_warranty_offline.GradeWarrantyTests.test_C_never_uses_warrantied_price_as_unwarrantied_comparable) ... ok
+test_C_opening_and_counter_receipt_explicitly_have_zero_warranty (test_grade_warranty_offline.GradeWarrantyTests.test_C_opening_and_counter_receipt_explicitly_have_zero_warranty) ... [r3-quote] G00000001 (mattress): cost=30000, list=100000, grade=C, ask=60000, r1_target=59400, floor=31501, warranty=0h, task=task-1, cash_first_quote=True
+[r3-deal] Sold G00000001 (mattress) unit=goods-1 at 60000 (cost=30000, gross_before_refunds=30000, grade=C, warranty=0h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_C_short_warranty_cannot_satisfy_explicit_six_hour_requirement (test_grade_warranty_offline.GradeWarrantyTests.test_C_short_warranty_cannot_satisfy_explicit_six_hour_requirement) ... ok
+test_blocked_analytics_writer_does_not_block_the_seller_thread (test_grade_warranty_offline.GradeWarrantyTests.test_blocked_analytics_writer_does_not_block_the_seller_thread) ... ok
+test_forum_discloses_availability_only (test_grade_warranty_offline.GradeWarrantyTests.test_forum_discloses_availability_only) ... ok
+test_new_forum_request_can_get_reply_after_five_minutes (test_grade_warranty_offline.GradeWarrantyTests.test_new_forum_request_can_get_reply_after_five_minutes) ... ok
+test_no_demand_or_absent_stock_never_produces_notice (test_grade_warranty_offline.GradeWarrantyTests.test_no_demand_or_absent_stock_never_produces_notice) ... ok
+test_same_demand_is_not_reannounced_after_twenty_minutes (test_grade_warranty_offline.GradeWarrantyTests.test_same_demand_is_not_reannounced_after_twenty_minutes) ... ok
+test_settlement_review_availability_word_is_not_a_new_purchase_request (test_grade_warranty_offline.GradeWarrantyTests.test_settlement_review_availability_word_is_not_a_new_purchase_request) ... ok
+test_small_goods_do_not_inherit_a_flat_5000_margin_floor (test_grade_warranty_offline.GradeWarrantyTests.test_small_goods_do_not_inherit_a_flat_5000_margin_floor) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 0.252s
+
+OK

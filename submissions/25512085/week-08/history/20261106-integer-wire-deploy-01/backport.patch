@@ -1,0 +1,185 @@
+--- a/submissions/25512085/week-08/market_buyer.py
++++ b/submissions/25512085/week-08/market_buyer.py
+@@ -1125,7 +1125,7 @@
+ 
+         # Send clean numeric offer (avoid extra numbers in the text so simple regex sellers parse `offer` accurately!)
+         follow_up_text = (
+-            f"I offer {offer} for this certified item."
++            str(offer)
+             if is_round3
+             else f"I offer {offer} if you guarantee product quality and after-sales service support."
+         )
+@@ -1181,7 +1181,7 @@
+                 "role": "ROLE_USER",
+                 "messageId": str(uuid.uuid4()),
+                 "taskId": task_id,
+-                "parts": [{"text": f"I offer {seller_ask} for this certified item."}],
++                "parts": [{"text": str(seller_ask)}],
+             }})
+             active["seller_text"] = seller_response_text(res)
+             if "error" in res:
+--- /dev/null
++++ b/submissions/25512085/week-08/test_buyer_integer_wire_offline.py
+@@ -0,0 +1,109 @@
++"""Strict integer-only synthetic seller; no real RPC, model, state or checkout."""
++from contextlib import contextmanager, redirect_stderr
++import io
++import json
++import re
++from types import SimpleNamespace
++import unittest
++from unittest.mock import patch
++
++import market_buyer as buyer
++import test_buyer_price_offline as price_tests
++
++
++class BuyerIntegerWireTests(unittest.TestCase):
++    setUp = price_tests.BuyerPriceTests.setUp
++    receipt = price_tests.BuyerPriceTests.receipt
++
++    def simulate(self, asks=(100000, 100000, 100000, 80000), legacy=False):
++        messages, offers = [], []
++        invalid = []
++
++        @contextmanager
++        def hub():
++            yield self.hub
++
++        def rpc(url, method, params):
++            if method == 'CancelTask':
++                return {}
++            self.assertEqual(method, 'SendMessage')
++            message = params['message']
++            text = message['parts'][0]['text']
++            messages.append(message)
++            done = False
++            ask = asks[min(len(offers), len(asks)-1)]
++            if len(messages) > 1:
++                self.assertEqual(message['taskId'], 'task-1')
++                if legacy:
++                    match = re.fullmatch(r'I offer ([0-9]+) if you guarantee product quality and after-sales service support\.', text)
++                else:
++                    match = re.fullmatch(r'([0-9]+)', text)
++                if match is None:
++                    invalid.append(text)
++                else:
++                    offers.append(int(match[1]))
++                    done = offers[-1] >= ask
++                ask = asks[min(len(offers), len(asks)-1)]
++            task = dict(id='task-1', status=dict(
++                state='TASK_STATE_COMPLETED' if done else 'TASK_STATE_INPUT_REQUIRED',
++                message=dict(parts=[{'text': f'Send your integer offer. ask {ask} cert warranty'}])))
++            if done:
++                task['artifacts'] = [{'parts': [{'data': dict(self.receipt(offers[-1]), item='lamp') if legacy
++                                               else self.receipt(offers[-1])}]}]
++            return task
++
++        errors = io.StringIO()
++        with patch.object(buyer, 'rpc_call', side_effect=rpc), \
++             patch.object(buyer, 'mutate_hub', hub), \
++             patch.object(buyer, 'update_memory', lambda *a: None), \
++             patch.object(buyer, 'call_harness', return_value='OFFER 100'), \
++             patch.object(buyer.httpx, 'get', return_value=SimpleNamespace(json=lambda: {})), \
++             redirect_stderr(errors):
++            result = buyer.run_attempt(dict(name='shop', url='https://offline.invalid'),
++                dict(sku=self.sku, name='synthetic', list_price=103449), 'lamp' if legacy else 'food',
++                {}, self.hub, self.catalog, {} if legacy else self.order, 'lamp' if legacy else 'food', 120000)
++        events = [json.loads(json.loads(line)[8:]) for line in errors.getvalue().splitlines()
++                  if json.loads(line).startswith('[buyer] {"event":"buyer_turn"')]
++        self.assertEqual(invalid, [], 'strict seller rejects sentence-form offers')
++        return result, messages, offers, events
++
++    def test_all_counters_and_finalaccept_are_integer_only(self):
++        self.catalog[self.sku]['list_price'] = 103449
++        result, messages, offers, events = self.simulate()
++        self.assertEqual(messages[0]['parts'][0]['text'],
++            f'I want to buy synthetic ({self.sku}). Please quote your best price with market certificate (cert=true) and at least 12h shelf life.')
++        self.assertNotIn('taskId', messages[0])
++        self.assertEqual(offers, [60000, 74000, 93104, 80000])
++        self.assertEqual(result['receipt']['price'], 80000)
++        requests = [e for e in events if e['phase']=='offer' and e['boundary']=='request']
++        self.assertEqual([e['policy_branch'] for e in requests], ['first', 'counter35', 'third', 'finalaccept'])
++        self.assertEqual([e['offer_sent'] for e in requests], offers)
++        self.assertEqual(len(events), 13)
++        self.assertTrue(events[-1]['receipt_selected'])
++        self.assertFalse(events[-1]['payment_confirmed'])
++
++    def test_strict_seller_accepts_current_ask_on_first_offer(self):
++        result, messages, offers, _ = self.simulate(asks=(9000,))
++        self.assertEqual(offers, [9000])
++        self.assertEqual(result['receipt']['price'], 9000)
++        self.assertEqual(len(messages), 2)
++
++    def test_goods_opening_keeps_warranty_and_certificate(self):
++        self.order.pop('use_within_hours')
++        self.order['kind'] = 'goods'
++        _, messages, _, _ = self.simulate(asks=(9000,))
++        self.assertEqual(messages[0]['parts'][0]['text'],
++            f'I want to buy synthetic ({self.sku}). Please quote your best price with market certificate (cert=true) and warranty.')
++
++    def test_legacy_sentence_and_opening_unchanged(self):
++        result, messages, offers, events = self.simulate(asks=(200,), legacy=True)
++        self.assertEqual(messages[0]['parts'][0]['text'],
++            'I want to buy a lamp. Quality and trouble-free use matter: '
++            'do you provide after-sales service, a quality warranty, or a flexible refund policy?')
++        self.assertEqual(offers, [100, 155, 200])
++        self.assertEqual(result['receipt']['price'], 200)
++        self.assertEqual(events, [])
++
++
++if __name__ == '__main__':
++    unittest.main(verbosity=2)
+--- a/submissions/25512085/week-08/test_buyer_price_offline.py
++++ b/submissions/25512085/week-08/test_buyer_price_offline.py
+@@ -63,7 +63,9 @@
+             if method == "CancelTask":
+                 return {}
+             text = params["message"]["parts"][0]["text"]
+-            if text.startswith("I offer "):
++            if text.isascii() and text.isdigit():
++                offers.append(int(text))
++            elif text.startswith("I offer "):
+                 offers.append(int(text.split()[2]))
+             done = receipt is not None and len(offers) >= complete_after
+             task = {"id": "task-1", "status": {
+--- a/submissions/25512085/week-08/test_buyer_retry_offline.py
++++ b/submissions/25512085/week-08/test_buyer_retry_offline.py
+@@ -62,9 +62,9 @@
+                 return SimpleNamespace(json=lambda: {"result": {}})
+             sends.append(i)
+             text = params["message"]["parts"][0]["text"]
+-            counter = text.startswith("I offer ")
++            counter = text.isascii() and text.isdigit() or text.startswith("I offer ")
+             if counter:
+-                offers.append((i, int(text.split()[2])))
++                offers.append((i, int(text) if text.isdigit() else int(text.split()[2])))
+             clock[0] += elapsed
+             action = actions[i]
+             if action == "rpc-error":
+@@ -326,9 +326,9 @@
+         def rpc(url, method, params):
+             self.assertEqual(method, "SendMessage")
+             text = params["message"]["parts"][0]["text"]
+-            if text.startswith("I offer "):
+-                offers.append(int(text.split()[2]))
+-                self.assertEqual(text, f"I offer {offers[-1]} for this certified item." if not legacy
++            if text.isascii() and text.isdigit() or text.startswith("I offer "):
++                offers.append(int(text) if text.isdigit() else int(text.split()[2]))
++                self.assertEqual(text, str(offers[-1]) if not legacy
+                                  else f"I offer {offers[-1]} if you guarantee product quality and after-sales service support.")
+             count = len(offers)
+             if count == 3 and expired:
+--- a/submissions/25512085/week-08/test_buyer_turn_telemetry_offline.py
++++ b/submissions/25512085/week-08/test_buyer_turn_telemetry_offline.py
+@@ -34,7 +34,9 @@
+             if method == 'CancelTask':
+                 return {}
+             text = params['message']['parts'][0]['text']
+-            if text.startswith('I offer '):
++            if text.isascii() and text.isdigit():
++                offers.append(int(text))
++            elif text.startswith('I offer '):
+                 offers.append(int(text.split()[2]))
+             index = len(offers)
+             if index == fail_at:

@@ -1,0 +1,8 @@
+{
+  "stage": "first local prepare.py run, before any remote mutation",
+  "command": ".venv/Scripts/python.exe -B submissions/25512085/week-08/history/20261106-forum-cohort-deploy-01/prepare.py",
+  "error": "AssertionError: nonunique_context_test_forum_intel_offline.py",
+  "cause": "Two-line byte anchors overlapped adjacent fixture changes after reverse application.",
+  "fix": "Read immutable exported baseline and use one-line exact unique anchors. Repeated preparation passed baseline/final AST checks; all later local and VM tests passed.",
+  "operating_files_changed_by_failed_attempt": false
+}

@@ -1,0 +1,829 @@
+test_fresh_condition_vs_unknown_fallback (test_buyer_saved_risk_offline.ConditionRankingTests.test_fresh_condition_vs_unknown_fallback) ... ERROR
+test_metadata_roundtrip_bounded (test_buyer_saved_risk_offline.ConditionRankingTests.test_metadata_roundtrip_bounded) ... FAIL
+test_missing_stale_sparse_wrong_shop_are_unknown (test_buyer_saved_risk_offline.ConditionRankingTests.test_missing_stale_sparse_wrong_shop_are_unknown) ... ERROR
+test_mixed_conditions_do_not_pool_samples (test_buyer_saved_risk_offline.ConditionRankingTests.test_mixed_conditions_do_not_pool_samples) ... ERROR
+test_ranking_uses_shop_condition_not_offer_claim (test_buyer_saved_risk_offline.ConditionRankingTests.test_ranking_uses_shop_condition_not_offer_claim) ... FAIL
+test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) ... "[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=3.8)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.197+00:00\",\"attempt_id\":\"78c6615a38684ea491558d86b13be057\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.197+00:00\",\"attempt_id\":\"78c6615a38684ea491558d86b13be057\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.197+00:00\",\"attempt_id\":\"78c6615a38684ea491558d86b13be057\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.198+00:00\",\"attempt_id\":\"78c6615a38684ea491558d86b13be057\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.198+00:00\",\"attempt_id\":\"78c6615a38684ea491558d86b13be057\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null,\"receipt_selected\":true,\"payment_confirmed\":false}"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+
+  test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=0, price=30000, hours=0, grade='C') ... FAIL
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=3.8)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.206+00:00\",\"attempt_id\":\"a034a985763c4de28226c1dfcb4c22db\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.206+00:00\",\"attempt_id\":\"a034a985763c4de28226c1dfcb4c22db\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.206+00:00\",\"attempt_id\":\"a034a985763c4de28226c1dfcb4c22db\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.206+00:00\",\"attempt_id\":\"a034a985763c4de28226c1dfcb4c22db\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.206+00:00\",\"attempt_id\":\"a034a985763c4de28226c1dfcb4c22db\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null,\"receipt_selected\":true,\"payment_confirmed\":false}"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=3.8)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.214+00:00\",\"attempt_id\":\"481cc5c195c54f11babb7362fa60ebe0\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.214+00:00\",\"attempt_id\":\"481cc5c195c54f11babb7362fa60ebe0\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.214+00:00\",\"attempt_id\":\"481cc5c195c54f11babb7362fa60ebe0\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.214+00:00\",\"attempt_id\":\"481cc5c195c54f11babb7362fa60ebe0\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.214+00:00\",\"attempt_id\":\"481cc5c195c54f11babb7362fa60ebe0\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null,\"receipt_selected\":true,\"payment_confirmed\":false}"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+  test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=0, price=30000, hours=1, grade='C') ... FAIL
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=3.8)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.221+00:00\",\"attempt_id\":\"6b19833a833f433da081d21c8f2ae7f7\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.221+00:00\",\"attempt_id\":\"6b19833a833f433da081d21c8f2ae7f7\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.221+00:00\",\"attempt_id\":\"6b19833a833f433da081d21c8f2ae7f7\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.222+00:00\",\"attempt_id\":\"6b19833a833f433da081d21c8f2ae7f7\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.222+00:00\",\"attempt_id\":\"6b19833a833f433da081d21c8f2ae7f7\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null,\"receipt_selected\":true,\"payment_confirmed\":false}"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=3.8)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.228+00:00\",\"attempt_id\":\"ed763f282c5b46639f9664ced07e2629\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.228+00:00\",\"attempt_id\":\"ed763f282c5b46639f9664ced07e2629\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.228+00:00\",\"attempt_id\":\"ed763f282c5b46639f9664ced07e2629\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.228+00:00\",\"attempt_id\":\"ed763f282c5b46639f9664ced07e2629\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.228+00:00\",\"attempt_id\":\"ed763f282c5b46639f9664ced07e2629\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null,\"receipt_selected\":true,\"payment_confirmed\":false}"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+  test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=0, price=30000, hours=nan, grade='A') ... FAIL
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=3.8)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.235+00:00\",\"attempt_id\":\"d39597b297ae4c538777073e175f90a0\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.235+00:00\",\"attempt_id\":\"d39597b297ae4c538777073e175f90a0\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.235+00:00\",\"attempt_id\":\"d39597b297ae4c538777073e175f90a0\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.235+00:00\",\"attempt_id\":\"d39597b297ae4c538777073e175f90a0\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.235+00:00\",\"attempt_id\":\"d39597b297ae4c538777073e175f90a0\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null,\"receipt_selected\":true,\"payment_confirmed\":false}"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+  test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=0, price=30000, hours=True, grade='A') ... FAIL
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=3.8)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.241+00:00\",\"attempt_id\":\"ce7e6ed55e3f421eaa95e474125b059c\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.241+00:00\",\"attempt_id\":\"ce7e6ed55e3f421eaa95e474125b059c\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.242+00:00\",\"attempt_id\":\"ce7e6ed55e3f421eaa95e474125b059c\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.242+00:00\",\"attempt_id\":\"ce7e6ed55e3f421eaa95e474125b059c\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.242+00:00\",\"attempt_id\":\"ce7e6ed55e3f421eaa95e474125b059c\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null,\"receipt_selected\":true,\"payment_confirmed\":false}"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+  test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=0, price=30000, hours=6, grade=[]) ... FAIL
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=3.8)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.248+00:00\",\"attempt_id\":\"733d54f545104005b8e2ce5a4543b12d\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.248+00:00\",\"attempt_id\":\"733d54f545104005b8e2ce5a4543b12d\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.248+00:00\",\"attempt_id\":\"733d54f545104005b8e2ce5a4543b12d\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.248+00:00\",\"attempt_id\":\"733d54f545104005b8e2ce5a4543b12d\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.248+00:00\",\"attempt_id\":\"733d54f545104005b8e2ce5a4543b12d\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.248+00:00\",\"attempt_id\":\"733d54f545104005b8e2ce5a4543b12d\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.250+00:00\",\"attempt_id\":\"733d54f545104005b8e2ce5a4543b12d\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.267+00:00\",\"attempt_id\":\"0434b6421ca84cbaa67acccb8bd523fc\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.267+00:00\",\"attempt_id\":\"0434b6421ca84cbaa67acccb8bd523fc\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.267+00:00\",\"attempt_id\":\"0434b6421ca84cbaa67acccb8bd523fc\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.267+00:00\",\"attempt_id\":\"0434b6421ca84cbaa67acccb8bd523fc\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.267+00:00\",\"attempt_id\":\"0434b6421ca84cbaa67acccb8bd523fc\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.267+00:00\",\"attempt_id\":\"0434b6421ca84cbaa67acccb8bd523fc\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.267+00:00\",\"attempt_id\":\"0434b6421ca84cbaa67acccb8bd523fc\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null,\"receipt_selected\":true,\"payment_confirmed\":false}"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.276+00:00\",\"attempt_id\":\"6660d5052a8547399e849bae523dcba0\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.276+00:00\",\"attempt_id\":\"6660d5052a8547399e849bae523dcba0\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.276+00:00\",\"attempt_id\":\"6660d5052a8547399e849bae523dcba0\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.276+00:00\",\"attempt_id\":\"6660d5052a8547399e849bae523dcba0\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.276+00:00\",\"attempt_id\":\"6660d5052a8547399e849bae523dcba0\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.276+00:00\",\"attempt_id\":\"6660d5052a8547399e849bae523dcba0\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.277+00:00\",\"attempt_id\":\"6660d5052a8547399e849bae523dcba0\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.293+00:00\",\"attempt_id\":\"c45d6e2625dd49808263d711b00df8d8\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.293+00:00\",\"attempt_id\":\"c45d6e2625dd49808263d711b00df8d8\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.293+00:00\",\"attempt_id\":\"c45d6e2625dd49808263d711b00df8d8\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.293+00:00\",\"attempt_id\":\"c45d6e2625dd49808263d711b00df8d8\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.293+00:00\",\"attempt_id\":\"c45d6e2625dd49808263d711b00df8d8\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.293+00:00\",\"attempt_id\":\"c45d6e2625dd49808263d711b00df8d8\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.298+00:00\",\"attempt_id\":\"c45d6e2625dd49808263d711b00df8d8\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+  test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=1, price=30000, hours=6, grade='C') ... FAIL
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.315+00:00\",\"attempt_id\":\"e3eee0b9cb474aadb4b3ba0dbb61e55f\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.315+00:00\",\"attempt_id\":\"e3eee0b9cb474aadb4b3ba0dbb61e55f\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.315+00:00\",\"attempt_id\":\"e3eee0b9cb474aadb4b3ba0dbb61e55f\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.315+00:00\",\"attempt_id\":\"e3eee0b9cb474aadb4b3ba0dbb61e55f\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.315+00:00\",\"attempt_id\":\"e3eee0b9cb474aadb4b3ba0dbb61e55f\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.315+00:00\",\"attempt_id\":\"e3eee0b9cb474aadb4b3ba0dbb61e55f\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.316+00:00\",\"attempt_id\":\"e3eee0b9cb474aadb4b3ba0dbb61e55f\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.331+00:00\",\"attempt_id\":\"5038de6b413e445e9b408081ea3f5617\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.331+00:00\",\"attempt_id\":\"5038de6b413e445e9b408081ea3f5617\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.331+00:00\",\"attempt_id\":\"5038de6b413e445e9b408081ea3f5617\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.331+00:00\",\"attempt_id\":\"5038de6b413e445e9b408081ea3f5617\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.331+00:00\",\"attempt_id\":\"5038de6b413e445e9b408081ea3f5617\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.331+00:00\",\"attempt_id\":\"5038de6b413e445e9b408081ea3f5617\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.332+00:00\",\"attempt_id\":\"5038de6b413e445e9b408081ea3f5617\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.349+00:00\",\"attempt_id\":\"62546d1995dd4371a458ce98e2291057\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.349+00:00\",\"attempt_id\":\"62546d1995dd4371a458ce98e2291057\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.349+00:00\",\"attempt_id\":\"62546d1995dd4371a458ce98e2291057\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.349+00:00\",\"attempt_id\":\"62546d1995dd4371a458ce98e2291057\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.349+00:00\",\"attempt_id\":\"62546d1995dd4371a458ce98e2291057\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.349+00:00\",\"attempt_id\":\"62546d1995dd4371a458ce98e2291057\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.350+00:00\",\"attempt_id\":\"62546d1995dd4371a458ce98e2291057\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 1 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.365+00:00\",\"attempt_id\":\"832ee23912ea4d5b88d6371dece9da6d\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.365+00:00\",\"attempt_id\":\"832ee23912ea4d5b88d6371dece9da6d\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.365+00:00\",\"attempt_id\":\"832ee23912ea4d5b88d6371dece9da6d\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.365+00:00\",\"attempt_id\":\"832ee23912ea4d5b88d6371dece9da6d\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.365+00:00\",\"attempt_id\":\"832ee23912ea4d5b88d6371dece9da6d\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.366+00:00\",\"attempt_id\":\"832ee23912ea4d5b88d6371dece9da6d\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.366+00:00\",\"attempt_id\":\"832ee23912ea4d5b88d6371dece9da6d\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.366+00:00\",\"attempt_id\":\"832ee23912ea4d5b88d6371dece9da6d\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.367+00:00\",\"attempt_id\":\"832ee23912ea4d5b88d6371dece9da6d\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.382+00:00\",\"attempt_id\":\"f747a7c680824a74bf11b6d2398f7d7a\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.382+00:00\",\"attempt_id\":\"f747a7c680824a74bf11b6d2398f7d7a\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.382+00:00\",\"attempt_id\":\"f747a7c680824a74bf11b6d2398f7d7a\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.382+00:00\",\"attempt_id\":\"f747a7c680824a74bf11b6d2398f7d7a\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.383+00:00\",\"attempt_id\":\"f747a7c680824a74bf11b6d2398f7d7a\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.383+00:00\",\"attempt_id\":\"f747a7c680824a74bf11b6d2398f7d7a\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.383+00:00\",\"attempt_id\":\"f747a7c680824a74bf11b6d2398f7d7a\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.383+00:00\",\"attempt_id\":\"f747a7c680824a74bf11b6d2398f7d7a\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.383+00:00\",\"attempt_id\":\"f747a7c680824a74bf11b6d2398f7d7a\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null,\"receipt_selected\":true,\"payment_confirmed\":false}"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.389+00:00\",\"attempt_id\":\"e62e2166912f4a9b94d029d4c36afeef\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.390+00:00\",\"attempt_id\":\"e62e2166912f4a9b94d029d4c36afeef\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.390+00:00\",\"attempt_id\":\"e62e2166912f4a9b94d029d4c36afeef\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.390+00:00\",\"attempt_id\":\"e62e2166912f4a9b94d029d4c36afeef\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.390+00:00\",\"attempt_id\":\"e62e2166912f4a9b94d029d4c36afeef\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.390+00:00\",\"attempt_id\":\"e62e2166912f4a9b94d029d4c36afeef\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.390+00:00\",\"attempt_id\":\"e62e2166912f4a9b94d029d4c36afeef\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.390+00:00\",\"attempt_id\":\"e62e2166912f4a9b94d029d4c36afeef\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.391+00:00\",\"attempt_id\":\"e62e2166912f4a9b94d029d4c36afeef\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.407+00:00\",\"attempt_id\":\"4d758784b4944f5eb9d5212e29d79a90\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.407+00:00\",\"attempt_id\":\"4d758784b4944f5eb9d5212e29d79a90\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.407+00:00\",\"attempt_id\":\"4d758784b4944f5eb9d5212e29d79a90\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.407+00:00\",\"attempt_id\":\"4d758784b4944f5eb9d5212e29d79a90\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.407+00:00\",\"attempt_id\":\"4d758784b4944f5eb9d5212e29d79a90\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.407+00:00\",\"attempt_id\":\"4d758784b4944f5eb9d5212e29d79a90\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.408+00:00\",\"attempt_id\":\"4d758784b4944f5eb9d5212e29d79a90\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.408+00:00\",\"attempt_id\":\"4d758784b4944f5eb9d5212e29d79a90\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.409+00:00\",\"attempt_id\":\"4d758784b4944f5eb9d5212e29d79a90\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+  test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=2, price=30000, hours=6, grade='C') ... FAIL
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.428+00:00\",\"attempt_id\":\"0cc656dccde24e739c404190d9154469\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.428+00:00\",\"attempt_id\":\"0cc656dccde24e739c404190d9154469\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.428+00:00\",\"attempt_id\":\"0cc656dccde24e739c404190d9154469\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.428+00:00\",\"attempt_id\":\"0cc656dccde24e739c404190d9154469\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.428+00:00\",\"attempt_id\":\"0cc656dccde24e739c404190d9154469\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.428+00:00\",\"attempt_id\":\"0cc656dccde24e739c404190d9154469\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.428+00:00\",\"attempt_id\":\"0cc656dccde24e739c404190d9154469\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.428+00:00\",\"attempt_id\":\"0cc656dccde24e739c404190d9154469\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.429+00:00\",\"attempt_id\":\"0cc656dccde24e739c404190d9154469\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.445+00:00\",\"attempt_id\":\"43a029f695e44bf6a63cc04357d89d5e\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.445+00:00\",\"attempt_id\":\"43a029f695e44bf6a63cc04357d89d5e\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.445+00:00\",\"attempt_id\":\"43a029f695e44bf6a63cc04357d89d5e\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.445+00:00\",\"attempt_id\":\"43a029f695e44bf6a63cc04357d89d5e\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.445+00:00\",\"attempt_id\":\"43a029f695e44bf6a63cc04357d89d5e\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.445+00:00\",\"attempt_id\":\"43a029f695e44bf6a63cc04357d89d5e\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.445+00:00\",\"attempt_id\":\"43a029f695e44bf6a63cc04357d89d5e\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.446+00:00\",\"attempt_id\":\"43a029f695e44bf6a63cc04357d89d5e\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.447+00:00\",\"attempt_id\":\"43a029f695e44bf6a63cc04357d89d5e\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.463+00:00\",\"attempt_id\":\"28969dbf8ce2480ea621d9a11bb55bdf\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.463+00:00\",\"attempt_id\":\"28969dbf8ce2480ea621d9a11bb55bdf\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.463+00:00\",\"attempt_id\":\"28969dbf8ce2480ea621d9a11bb55bdf\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.463+00:00\",\"attempt_id\":\"28969dbf8ce2480ea621d9a11bb55bdf\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.463+00:00\",\"attempt_id\":\"28969dbf8ce2480ea621d9a11bb55bdf\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.463+00:00\",\"attempt_id\":\"28969dbf8ce2480ea621d9a11bb55bdf\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.463+00:00\",\"attempt_id\":\"28969dbf8ce2480ea621d9a11bb55bdf\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.463+00:00\",\"attempt_id\":\"28969dbf8ce2480ea621d9a11bb55bdf\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.464+00:00\",\"attempt_id\":\"28969dbf8ce2480ea621d9a11bb55bdf\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 2 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.478+00:00\",\"attempt_id\":\"4b0a17d39b274393a474b84f374cf53e\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.478+00:00\",\"attempt_id\":\"4b0a17d39b274393a474b84f374cf53e\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.478+00:00\",\"attempt_id\":\"4b0a17d39b274393a474b84f374cf53e\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.478+00:00\",\"attempt_id\":\"4b0a17d39b274393a474b84f374cf53e\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.479+00:00\",\"attempt_id\":\"4b0a17d39b274393a474b84f374cf53e\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.479+00:00\",\"attempt_id\":\"4b0a17d39b274393a474b84f374cf53e\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.479+00:00\",\"attempt_id\":\"4b0a17d39b274393a474b84f374cf53e\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.479+00:00\",\"attempt_id\":\"4b0a17d39b274393a474b84f374cf53e\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.479+00:00\",\"attempt_id\":\"4b0a17d39b274393a474b84f374cf53e\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.479+00:00\",\"attempt_id\":\"4b0a17d39b274393a474b84f374cf53e\",\"seq\":10,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.480+00:00\",\"attempt_id\":\"4b0a17d39b274393a474b84f374cf53e\",\"seq\":11,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.495+00:00\",\"attempt_id\":\"0d53ea14b80f4e16a66b4179521cc385\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.495+00:00\",\"attempt_id\":\"0d53ea14b80f4e16a66b4179521cc385\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.495+00:00\",\"attempt_id\":\"0d53ea14b80f4e16a66b4179521cc385\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.495+00:00\",\"attempt_id\":\"0d53ea14b80f4e16a66b4179521cc385\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.495+00:00\",\"attempt_id\":\"0d53ea14b80f4e16a66b4179521cc385\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.495+00:00\",\"attempt_id\":\"0d53ea14b80f4e16a66b4179521cc385\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.495+00:00\",\"attempt_id\":\"0d53ea14b80f4e16a66b4179521cc385\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.495+00:00\",\"attempt_id\":\"0d53ea14b80f4e16a66b4179521cc385\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.495+00:00\",\"attempt_id\":\"0d53ea14b80f4e16a66b4179521cc385\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.495+00:00\",\"attempt_id\":\"0d53ea14b80f4e16a66b4179521cc385\",\"seq\":10,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.495+00:00\",\"attempt_id\":\"0d53ea14b80f4e16a66b4179521cc385\",\"seq\":11,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null,\"receipt_selected\":true,\"payment_confirmed\":false}"
+"[buyer] [attempt 1/3] receipt selected (checkout still pending)"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.501+00:00\",\"attempt_id\":\"fd69f01b37f94084acfd85ace0981eca\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.501+00:00\",\"attempt_id\":\"fd69f01b37f94084acfd85ace0981eca\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.501+00:00\",\"attempt_id\":\"fd69f01b37f94084acfd85ace0981eca\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.501+00:00\",\"attempt_id\":\"fd69f01b37f94084acfd85ace0981eca\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.501+00:00\",\"attempt_id\":\"fd69f01b37f94084acfd85ace0981eca\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.501+00:00\",\"attempt_id\":\"fd69f01b37f94084acfd85ace0981eca\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.501+00:00\",\"attempt_id\":\"fd69f01b37f94084acfd85ace0981eca\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.501+00:00\",\"attempt_id\":\"fd69f01b37f94084acfd85ace0981eca\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.501+00:00\",\"attempt_id\":\"fd69f01b37f94084acfd85ace0981eca\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.501+00:00\",\"attempt_id\":\"fd69f01b37f94084acfd85ace0981eca\",\"seq\":10,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.502+00:00\",\"attempt_id\":\"fd69f01b37f94084acfd85ace0981eca\",\"seq\":11,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.517+00:00\",\"attempt_id\":\"07fad8bbb45e43afa7c188fe4a37de92\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.517+00:00\",\"attempt_id\":\"07fad8bbb45e43afa7c188fe4a37de92\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.517+00:00\",\"attempt_id\":\"07fad8bbb45e43afa7c188fe4a37de92\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.517+00:00\",\"attempt_id\":\"07fad8bbb45e43afa7c188fe4a37de92\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.517+00:00\",\"attempt_id\":\"07fad8bbb45e43afa7c188fe4a37de92\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.517+00:00\",\"attempt_id\":\"07fad8bbb45e43afa7c188fe4a37de92\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.517+00:00\",\"attempt_id\":\"07fad8bbb45e43afa7c188fe4a37de92\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.517+00:00\",\"attempt_id\":\"07fad8bbb45e43afa7c188fe4a37de92\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.517+00:00\",\"attempt_id\":\"07fad8bbb45e43afa7c188fe4a37de92\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.517+00:00\",\"attempt_id\":\"07fad8bbb45e43afa7c188fe4a37de92\",\"seq\":10,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.518+00:00\",\"attempt_id\":\"07fad8bbb45e43afa7c188fe4a37de92\",\"seq\":11,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+  test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=3, price=30000, hours=6, grade='C') ... FAIL
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.531+00:00\",\"attempt_id\":\"3492bf9fb8a44732b38bd26eba3d3217\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.531+00:00\",\"attempt_id\":\"3492bf9fb8a44732b38bd26eba3d3217\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.531+00:00\",\"attempt_id\":\"3492bf9fb8a44732b38bd26eba3d3217\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.531+00:00\",\"attempt_id\":\"3492bf9fb8a44732b38bd26eba3d3217\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.532+00:00\",\"attempt_id\":\"3492bf9fb8a44732b38bd26eba3d3217\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.532+00:00\",\"attempt_id\":\"3492bf9fb8a44732b38bd26eba3d3217\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.532+00:00\",\"attempt_id\":\"3492bf9fb8a44732b38bd26eba3d3217\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.532+00:00\",\"attempt_id\":\"3492bf9fb8a44732b38bd26eba3d3217\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.532+00:00\",\"attempt_id\":\"3492bf9fb8a44732b38bd26eba3d3217\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.532+00:00\",\"attempt_id\":\"3492bf9fb8a44732b38bd26eba3d3217\",\"seq\":10,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.533+00:00\",\"attempt_id\":\"3492bf9fb8a44732b38bd26eba3d3217\",\"seq\":11,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.547+00:00\",\"attempt_id\":\"7253261b59f74495aa10fc06270e9aa7\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.547+00:00\",\"attempt_id\":\"7253261b59f74495aa10fc06270e9aa7\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.547+00:00\",\"attempt_id\":\"7253261b59f74495aa10fc06270e9aa7\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.547+00:00\",\"attempt_id\":\"7253261b59f74495aa10fc06270e9aa7\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.547+00:00\",\"attempt_id\":\"7253261b59f74495aa10fc06270e9aa7\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.547+00:00\",\"attempt_id\":\"7253261b59f74495aa10fc06270e9aa7\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.547+00:00\",\"attempt_id\":\"7253261b59f74495aa10fc06270e9aa7\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.547+00:00\",\"attempt_id\":\"7253261b59f74495aa10fc06270e9aa7\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.547+00:00\",\"attempt_id\":\"7253261b59f74495aa10fc06270e9aa7\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.547+00:00\",\"attempt_id\":\"7253261b59f74495aa10fc06270e9aa7\",\"seq\":10,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.548+00:00\",\"attempt_id\":\"7253261b59f74495aa10fc06270e9aa7\",\"seq\":11,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+"[buyer] [attempt 1/3] shop https://offline.invalid SKU=f00000001"
+"[buyer] [choose] https://offline.invalid (shop): [R3-Surplus-Max] Picked shop holding SKU f00000001 (list_price=100000, budget=200000, trust=-9.0)"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.561+00:00\",\"attempt_id\":\"e2319cd938a44f2ca313d32dda373f7c\",\"seq\":1,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.561+00:00\",\"attempt_id\":\"e2319cd938a44f2ca313d32dda373f7c\",\"seq\":2,\"sku\":\"f00000001\",\"phase\":\"card\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.561+00:00\",\"attempt_id\":\"e2319cd938a44f2ca313d32dda373f7c\",\"seq\":3,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"request\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.561+00:00\",\"attempt_id\":\"e2319cd938a44f2ca313d32dda373f7c\",\"seq\":4,\"sku\":\"f00000001\",\"phase\":\"opening\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.561+00:00\",\"attempt_id\":\"e2319cd938a44f2ca313d32dda373f7c\",\"seq\":5,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.561+00:00\",\"attempt_id\":\"e2319cd938a44f2ca313d32dda373f7c\",\"seq\":6,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":1,\"policy_branch\":\"first\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.561+00:00\",\"attempt_id\":\"e2319cd938a44f2ca313d32dda373f7c\",\"seq\":7,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.561+00:00\",\"attempt_id\":\"e2319cd938a44f2ca313d32dda373f7c\",\"seq\":8,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":2,\"policy_branch\":\"counter35\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"inputrequired\",\"outcome\":\"inputrequired\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.561+00:00\",\"attempt_id\":\"e2319cd938a44f2ca313d32dda373f7c\",\"seq\":9,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"request\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":null,\"response_state\":null,\"outcome\":\"request\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.561+00:00\",\"attempt_id\":\"e2319cd938a44f2ca313d32dda373f7c\",\"seq\":10,\"sku\":\"f00000001\",\"phase\":\"offer\",\"boundary\":\"response\",\"turn_index\":3,\"policy_branch\":\"third\",\"ask_before\":20040,\"offer_sent\":20040,\"ask_after\":20040,\"response_state\":\"completed\",\"outcome\":\"completed\",\"error_type\":null}"
+"[buyer] {\"event\":\"buyer_turn\",\"schema_version\":1,\"timestamp_utc\":\"2026-11-09T05:48:09.562+00:00\",\"attempt_id\":\"e2319cd938a44f2ca313d32dda373f7c\",\"seq\":11,\"sku\":\"f00000001\",\"phase\":\"attempt\",\"boundary\":\"response\",\"turn_index\":0,\"policy_branch\":\"first\",\"ask_before\":null,\"offer_sent\":null,\"ask_after\":null,\"response_state\":\"completed\",\"outcome\":\"rejected\",\"error_type\":null,\"receipt_selected\":false,\"payment_confirmed\":false}"
+"[buyer] attempt failed: {\"failure_reason\": \"Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1! | seller: \\\"certified item ask 20040\\\"\", \"failure_kind\": \"receipt_policy\", \"seller_text\": \"certified item ask 20040\"}"
+"[buyer] [attempt 1/3] failed: Invalid receipt! Agreed at 20040 (budget 200000) in 3 round(s), but receipt says price=30000, item=f00000002, task=task-1!"
+"[buyer] [retry] no candidates: No shop currently holds in-stock acceptable SKUs."
+"[buyer] attempt failed: {\"failure_reason\": \"no candidates: No shop currently holds in-stock acceptable SKUs.\", \"failure_kind\": \"no_candidates\", \"seller_text\": \"\"}"
+test_c_is_not_blacklisted (test_buyer_saved_risk_offline.SavedRiskTests.test_c_is_not_blacklisted) ... ERROR
+test_checkout_whitelist_never_weakens_grade (test_buyer_saved_risk_offline.SavedRiskTests.test_checkout_whitelist_never_weakens_grade) ... ERROR
+test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) ... 
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=0) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=1) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=5.99) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=6) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=72) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=None) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=0) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=1) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=5.99) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=6) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=72) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=None) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=0) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=1) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=5.99) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=6) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=72) ... ERROR
+  test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=None) ... ERROR
+test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) ... 
+  test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=True) ... ERROR
+  test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=False) ... ERROR
+  test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value='6') ... ERROR
+  test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=nan) ... ERROR
+  test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=inf) ... ERROR
+  test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=-1) ... ERROR
+  test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=[]) ... ERROR
+  test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value={}) ... ERROR
+test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) ... ERROR
+
+======================================================================
+ERROR: test_fresh_condition_vs_unknown_fallback (test_buyer_saved_risk_offline.ConditionRankingTests.test_fresh_condition_vs_unknown_fallback)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 76, in test_fresh_condition_vs_unknown_fallback
+    self.assertGreater(self.proxy(self.rows()), self.proxy([]))
+                       ~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 72, in proxy
+    return buyer.goods_ranking_proxy({'demand_radar': {'sku_comparables': {'sku': rows}}},
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_ranking_proxy'
+
+======================================================================
+ERROR: test_missing_stale_sparse_wrong_shop_are_unknown (test_buyer_saved_risk_offline.ConditionRankingTests.test_missing_stale_sparse_wrong_shop_are_unknown)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 80, in test_missing_stale_sparse_wrong_shop_are_unknown
+    unknown = self.proxy([])
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 72, in proxy
+    return buyer.goods_ranking_proxy({'demand_radar': {'sku_comparables': {'sku': rows}}},
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_ranking_proxy'
+
+======================================================================
+ERROR: test_mixed_conditions_do_not_pool_samples (test_buyer_saved_risk_offline.ConditionRankingTests.test_mixed_conditions_do_not_pool_samples)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 88, in test_mixed_conditions_do_not_pool_samples
+    self.assertEqual(self.proxy(rows), self.proxy([]))
+                     ~~~~~~~~~~^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 72, in proxy
+    return buyer.goods_ranking_proxy({'demand_radar': {'sku_comparables': {'sku': rows}}},
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_ranking_proxy'
+
+======================================================================
+ERROR: test_c_is_not_blacklisted (test_buyer_saved_risk_offline.SavedRiskTests.test_c_is_not_blacklisted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 21, in test_c_is_not_blacklisted
+    self.assertLess(buyer.goods_expected_saved(600, 1000, 'C', 0), 0)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_checkout_whitelist_never_weakens_grade (test_buyer_saved_risk_offline.SavedRiskTests.test_checkout_whitelist_never_weakens_grade)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 36, in test_checkout_whitelist_never_weakens_grade
+    policy = buyer.build_accept_policy(order, 400, 1000, 6, grade)
+TypeError: build_accept_policy() takes from 3 to 4 positional arguments but 5 were given
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=5.99)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=6)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=72)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='A', hours=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=5.99)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=6)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=72)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='B', hours=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=5.99)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=6)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=72)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_formula_full_short_and_missing (test_buyer_saved_risk_offline.SavedRiskTests.test_formula_full_short_and_missing) (grade='C', hours=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 18, in test_formula_full_short_and_missing
+    self.assertAlmostEqual(buyer.goods_expected_saved(600, 1000, grade, hours), expected)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 27, in test_invalid_terms_fail_closed
+    self.assertIsNone(buyer.goods_expected_saved(600, 1000, 'A', value))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 27, in test_invalid_terms_fail_closed
+    self.assertIsNone(buyer.goods_expected_saved(600, 1000, 'A', value))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value='6')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 27, in test_invalid_terms_fail_closed
+    self.assertIsNone(buyer.goods_expected_saved(600, 1000, 'A', value))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=nan)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 27, in test_invalid_terms_fail_closed
+    self.assertIsNone(buyer.goods_expected_saved(600, 1000, 'A', value))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=inf)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 27, in test_invalid_terms_fail_closed
+    self.assertIsNone(buyer.goods_expected_saved(600, 1000, 'A', value))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=-1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 27, in test_invalid_terms_fail_closed
+    self.assertIsNone(buyer.goods_expected_saved(600, 1000, 'A', value))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 27, in test_invalid_terms_fail_closed
+    self.assertIsNone(buyer.goods_expected_saved(600, 1000, 'A', value))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed) (value={})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 27, in test_invalid_terms_fail_closed
+    self.assertIsNone(buyer.goods_expected_saved(600, 1000, 'A', value))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+ERROR: test_invalid_terms_fail_closed (test_buyer_saved_risk_offline.SavedRiskTests.test_invalid_terms_fail_closed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 29, in test_invalid_terms_fail_closed
+    self.assertIsNone(buyer.goods_expected_saved(600, 1000, grade, 6))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'market_buyer' has no attribute 'goods_expected_saved'
+
+======================================================================
+FAIL: test_metadata_roundtrip_bounded (test_buyer_saved_risk_offline.ConditionRankingTests.test_metadata_roundtrip_bounded)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 94, in test_metadata_roundtrip_bounded
+    self.assertEqual(hub['demand_radar']['sku_comparables']['sku'], rows)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [{'ts[58 chars]s': 6}, {'ts': 1799999999, 'amount': 800, 'gra[96 chars]: 6}] != [{'ts[58 chars]s': 6, 'shop': 'shop', 'order': '0', 'seq': 0}[216 chars]: 2}]
+
+First differing element 0:
+{'ts'[40 chars]', 'warranty_hours': 6}
+{'ts'[40 chars]', 'warranty_hours': 6, 'shop': 'shop', 'order': '0', 'seq': 0}
+
+- [{'amount': 800, 'grade': 'A', 'ts': 1800000000, 'warranty_hours': 6},
+-  {'amount': 800, 'grade': 'A', 'ts': 1799999999, 'warranty_hours': 6},
+-  {'amount': 800, 'grade': 'A', 'ts': 1799999998, 'warranty_hours': 6}]
++ [{'amount': 800,
++   'grade': 'A',
++   'order': '0',
++   'seq': 0,
++   'shop': 'shop',
++   'ts': 1800000000,
++   'warranty_hours': 6},
++  {'amount': 800,
++   'grade': 'A',
++   'order': '1',
++   'seq': 1,
++   'shop': 'shop',
++   'ts': 1799999999,
++   'warranty_hours': 6},
++  {'amount': 800,
++   'grade': 'A',
++   'order': '2',
++   'seq': 2,
++   'shop': 'shop',
++   'ts': 1799999998,
++   'warranty_hours': 6}]
+
+======================================================================
+FAIL: test_ranking_uses_shop_condition_not_offer_claim (test_buyer_saved_risk_offline.ConditionRankingTests.test_ranking_uses_shop_condition_not_offer_claim)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 106, in test_ranking_uses_shop_condition_not_offer_claim
+    self.assertEqual(chosen['name'], 'shop')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'unknown' != 'shop'
+- unknown
++ shop
+
+
+======================================================================
+FAIL: test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=0, price=30000, hours=0, grade='C')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 63, in test_actual_receipt_terms_and_sku
+    self.assertEqual(result['receipt'] is not None, accepted)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True != False
+
+======================================================================
+FAIL: test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=0, price=30000, hours=1, grade='C')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 63, in test_actual_receipt_terms_and_sku
+    self.assertEqual(result['receipt'] is not None, accepted)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True != False
+
+======================================================================
+FAIL: test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=0, price=30000, hours=nan, grade='A')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 63, in test_actual_receipt_terms_and_sku
+    self.assertEqual(result['receipt'] is not None, accepted)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True != False
+
+======================================================================
+FAIL: test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=0, price=30000, hours=True, grade='A')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 63, in test_actual_receipt_terms_and_sku
+    self.assertEqual(result['receipt'] is not None, accepted)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True != False
+
+======================================================================
+FAIL: test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=0, price=30000, hours=6, grade=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 63, in test_actual_receipt_terms_and_sku
+    self.assertEqual(result['receipt'] is not None, accepted)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True != False
+
+======================================================================
+FAIL: test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=1, price=30000, hours=6, grade='C')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 63, in test_actual_receipt_terms_and_sku
+    self.assertEqual(result['receipt'] is not None, accepted)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False != True
+
+======================================================================
+FAIL: test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=2, price=30000, hours=6, grade='C')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 63, in test_actual_receipt_terms_and_sku
+    self.assertEqual(result['receipt'] is not None, accepted)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False != True
+
+======================================================================
+FAIL: test_actual_receipt_terms_and_sku (test_buyer_saved_risk_offline.ReceiptRiskTests.test_actual_receipt_terms_and_sku) (turn=3, price=30000, hours=6, grade='C')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261109-buyer-saved-strategy-step2\evidence\first-red-4e3c3f611a2a\submissions\25512085\week-08\test_buyer_saved_risk_offline.py", line 63, in test_actual_receipt_terms_and_sku
+    self.assertEqual(result['receipt'] is not None, accepted)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False != True
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.457s
+
+FAILED (failures=10, errors=32)

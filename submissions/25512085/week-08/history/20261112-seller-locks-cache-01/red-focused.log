@@ -1,0 +1,235 @@
+test_analytics_timeout_skips_with_diagnostic (test_seller_locks_cache_offline.LockAndCacheTests.test_analytics_timeout_skips_with_diagnostic) ... ERROR
+test_catalog_cache_invalidates_mtime_and_size (test_seller_locks_cache_offline.LockAndCacheTests.test_catalog_cache_invalidates_mtime_and_size) ... FAIL
+test_migration_lock_contention_returns_read_only_snapshot (test_seller_locks_cache_offline.LockAndCacheTests.test_migration_lock_contention_returns_read_only_snapshot) ... FAIL
+test_policy_cached_quote_equivalence_and_invalidation (test_seller_locks_cache_offline.LockAndCacheTests.test_policy_cached_quote_equivalence_and_invalidation) ... FAIL
+test_timeout_never_enters_or_overwrites (test_seller_locks_cache_offline.LockAndCacheTests.test_timeout_never_enters_or_overwrites) ... FAIL
+test_activity_sliding_ttl_and_absolute_cap (test_seller_locks_cache_offline.ReservationTests.test_activity_sliding_ttl_and_absolute_cap) ... [r3-quote] G021aae64 (sofa): cost=30000, list=100000, grade=C, ask=64000, r1_target=63360, floor=31513, warranty=0h, task=task-1, cash_first_quote=False
+ERROR
+test_completion_failure_keeps_both_paths_reserved (test_seller_locks_cache_offline.ReservationTests.test_completion_failure_keeps_both_paths_reserved) ... 
+  test_completion_failure_keeps_both_paths_reserved (test_seller_locks_cache_offline.ReservationTests.test_completion_failure_keeps_both_paths_reserved) (negotiated=False) ... FAIL
+[stock-miss] Out of stock for buyer request: G021aae64 (recorded demand: g021aae64)
+[stock-miss] Out of stock for buyer request: 999999 (recorded demand: 999999)
+  test_completion_failure_keeps_both_paths_reserved (test_seller_locks_cache_offline.ReservationTests.test_completion_failure_keeps_both_paths_reserved) (negotiated=True) ... FAIL
+test_failed_inventory_read_does_not_prove_settlement (test_seller_locks_cache_offline.ReservationTests.test_failed_inventory_read_does_not_prove_settlement) ... [instant-deal] Sold G021aae64 (sofa) unit=unit-1 at 64000 (cost=30000)
+ERROR
+test_inventory_disappearance_releases_disk_and_memory (test_seller_locks_cache_offline.ReservationTests.test_inventory_disappearance_releases_disk_and_memory) ... [instant-deal] Sold G021aae64 (sofa) unit=unit-1 at 64000 (cost=30000)
+ERROR
+test_long_cap_releases_without_refreshing_on_read (test_seller_locks_cache_offline.ReservationTests.test_long_cap_releases_without_refreshing_on_read) ... [instant-deal] Sold G021aae64 (sofa) unit=unit-1 at 64000 (cost=30000)
+ERROR
+test_request_catalog_and_hub_read_once (test_seller_locks_cache_offline.ReservationTests.test_request_catalog_and_hub_read_once) ... [r3-quote] G021aae64 (sofa): cost=30000, list=100000, grade=C, ask=64000, r1_target=63360, floor=31513, warranty=0h, task=task-1, cash_first_quote=False
+[r3-deal] Sold G021aae64 (sofa) unit=unit-1 at 64000 (cost=30000, gross_before_refunds=34000, grade=C, warranty=0h, task=task-1, first_quote_accepted=True) in 1 turn(s); receipt signed, payment not yet confirmed.
+ok
+test_restart_and_old_120_seconds_do_not_release (test_seller_locks_cache_offline.ReservationTests.test_restart_and_old_120_seconds_do_not_release) ... [instant-deal] Sold G021aae64 (sofa) unit=unit-1 at 64000 (cost=30000)
+FAIL
+test_signing_and_artifact_failure_roll_back_both_paths (test_seller_locks_cache_offline.ReservationTests.test_signing_and_artifact_failure_roll_back_both_paths) ... 
+  test_signing_and_artifact_failure_roll_back_both_paths (test_seller_locks_cache_offline.ReservationTests.test_signing_and_artifact_failure_roll_back_both_paths) (negotiated=False, stage='sign') ... FAIL
+[stock-miss] Out of stock for buyer request: G021aae64 offer 999999 (recorded demand: g021aae64)
+  test_signing_and_artifact_failure_roll_back_both_paths (test_seller_locks_cache_offline.ReservationTests.test_signing_and_artifact_failure_roll_back_both_paths) (negotiated=False, stage='artifact') ... FAIL
+[stock-miss] Out of stock for buyer request: G021aae64 (recorded demand: g021aae64)
+[stock-miss] Out of stock for buyer request: 999999 (recorded demand: 999999)
+  test_signing_and_artifact_failure_roll_back_both_paths (test_seller_locks_cache_offline.ReservationTests.test_signing_and_artifact_failure_roll_back_both_paths) (negotiated=True, stage='sign') ... FAIL
+[stock-miss] Out of stock for buyer request: G021aae64 (recorded demand: g021aae64)
+[stock-miss] Out of stock for buyer request: 999999 (recorded demand: 999999)
+  test_signing_and_artifact_failure_roll_back_both_paths (test_seller_locks_cache_offline.ReservationTests.test_signing_and_artifact_failure_roll_back_both_paths) (negotiated=True, stage='artifact') ... FAIL
+
+======================================================================
+ERROR: test_analytics_timeout_skips_with_diagnostic (test_seller_locks_cache_offline.LockAndCacheTests.test_analytics_timeout_skips_with_diagnostic)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 144, in test_analytics_timeout_skips_with_diagnostic
+    self.assertIsNone(store.record_inbound_inquiry('x', True))
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\store.py", line 735, in record_inbound_inquiry
+    with mutate_hub(path) as hub:
+         ~~~~~~~~~~^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1169, in __call__
+    return self._mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1173, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1234, in _execute_mock_call
+    raise effect
+TimeoutError: busy
+
+======================================================================
+ERROR: test_activity_sliding_ttl_and_absolute_cap (test_seller_locks_cache_offline.ReservationTests.test_activity_sliding_ttl_and_absolute_cap)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 100, in test_activity_sliding_ttl_and_absolute_cap
+    self.assertEqual(self.agent.open['task-1']['last_activity_at'], self.now)
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+KeyError: 'last_activity_at'
+
+======================================================================
+ERROR: test_failed_inventory_read_does_not_prove_settlement (test_seller_locks_cache_offline.ReservationTests.test_failed_inventory_read_does_not_prove_settlement)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 62, in test_failed_inventory_read_does_not_prove_settlement
+    self.agent.cleanup_reservations({}, self.now)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Seller' object has no attribute 'cleanup_reservations'
+
+======================================================================
+ERROR: test_inventory_disappearance_releases_disk_and_memory (test_seller_locks_cache_offline.ReservationTests.test_inventory_disappearance_releases_disk_and_memory)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 45, in test_inventory_disappearance_releases_disk_and_memory
+    self.agent.cleanup_reservations(self.inventory, self.now)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Seller' object has no attribute 'cleanup_reservations'
+
+======================================================================
+ERROR: test_long_cap_releases_without_refreshing_on_read (test_seller_locks_cache_offline.ReservationTests.test_long_cap_releases_without_refreshing_on_read)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 53, in test_long_cap_releases_without_refreshing_on_read
+    self.agent.cleanup_reservations(self.inventory, self.now)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Seller' object has no attribute 'cleanup_reservations'
+
+======================================================================
+FAIL: test_catalog_cache_invalidates_mtime_and_size (test_seller_locks_cache_offline.LockAndCacheTests.test_catalog_cache_invalidates_mtime_and_size)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 157, in test_catalog_cache_invalidates_mtime_and_size
+    self.assertEqual(read.call_count, 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 1
+
+======================================================================
+FAIL: test_migration_lock_contention_returns_read_only_snapshot (test_seller_locks_cache_offline.LockAndCacheTests.test_migration_lock_contention_returns_read_only_snapshot)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\store.py", line 124, in file_lock
+    msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 139, in test_migration_lock_contention_returns_read_only_snapshot
+    self.assertEqual(store.load_hub(path)['sentinel'], 1)
+                     ~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\store.py", line 260, in load_hub
+    with file_lock(path):
+         ~~~~~~~~~^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\store.py", line 139, in file_lock
+    time.sleep(0.04)
+    ~~~~~~~~~~^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1169, in __call__
+    return self._mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1173, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1234, in _execute_mock_call
+    raise effect
+AssertionError: event-loop blocked
+
+======================================================================
+FAIL: test_policy_cached_quote_equivalence_and_invalidation (test_seller_locks_cache_offline.LockAndCacheTests.test_policy_cached_quote_equivalence_and_invalidation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 173, in test_policy_cached_quote_equivalence_and_invalidation
+    self.assertEqual(policy.quote(unit, hub, {}, 100), first)
+                     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\seller_cash_policy.py", line 287, in quote
+    return _cash_pricing.quote(_sys.modules[__name__], unit, hub, catalog, now)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\_cash_pricing.py", line 50, in quote
+    if not policy.config().get('enabled'):
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\seller_cash_policy.py", line 203, in config
+    value = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
+                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1169, in __call__
+    return self._mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1173, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\ProgramData\uv\python\cpython-3.13-windows-x86_64-none\Lib\unittest\mock.py", line 1234, in _execute_mock_call
+    raise effect
+AssertionError: repeat parse
+
+======================================================================
+FAIL: test_timeout_never_enters_or_overwrites (test_seller_locks_cache_offline.LockAndCacheTests.test_timeout_never_enters_or_overwrites)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 130, in test_timeout_never_enters_or_overwrites
+    self.fail('must not yield without lock')
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: must not yield without lock
+
+======================================================================
+FAIL: test_completion_failure_keeps_both_paths_reserved (test_seller_locks_cache_offline.ReservationTests.test_completion_failure_keeps_both_paths_reserved) (negotiated=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 90, in test_completion_failure_keeps_both_paths_reserved
+    self.assertIn('unit-1', seller.Seller(0).committed_units)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'unit-1' not found in {}
+
+======================================================================
+FAIL: test_completion_failure_keeps_both_paths_reserved (test_seller_locks_cache_offline.ReservationTests.test_completion_failure_keeps_both_paths_reserved) (negotiated=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 87, in test_completion_failure_keeps_both_paths_reserved
+    with self.assertRaises(RuntimeError):
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+AssertionError: RuntimeError not raised
+
+======================================================================
+FAIL: test_restart_and_old_120_seconds_do_not_release (test_seller_locks_cache_offline.ReservationTests.test_restart_and_old_120_seconds_do_not_release)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 36, in test_restart_and_old_120_seconds_do_not_release
+    self.assertIn('unit-1', self.agent.committed_units)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'unit-1' not found in {}
+
+======================================================================
+FAIL: test_signing_and_artifact_failure_roll_back_both_paths (test_seller_locks_cache_offline.ReservationTests.test_signing_and_artifact_failure_roll_back_both_paths) (negotiated=False, stage='sign')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 77, in test_signing_and_artifact_failure_roll_back_both_paths
+    self.assertFalse(self.agent.committed_units)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'unit-1': 1800000000.0} is not false
+
+======================================================================
+FAIL: test_signing_and_artifact_failure_roll_back_both_paths (test_seller_locks_cache_offline.ReservationTests.test_signing_and_artifact_failure_roll_back_both_paths) (negotiated=False, stage='artifact')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 74, in test_signing_and_artifact_failure_roll_back_both_paths
+    with self.assertRaises(RuntimeError):
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+AssertionError: RuntimeError not raised
+
+======================================================================
+FAIL: test_signing_and_artifact_failure_roll_back_both_paths (test_seller_locks_cache_offline.ReservationTests.test_signing_and_artifact_failure_roll_back_both_paths) (negotiated=True, stage='sign')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 74, in test_signing_and_artifact_failure_roll_back_both_paths
+    with self.assertRaises(RuntimeError):
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+AssertionError: RuntimeError not raised
+
+======================================================================
+FAIL: test_signing_and_artifact_failure_roll_back_both_paths (test_seller_locks_cache_offline.ReservationTests.test_signing_and_artifact_failure_roll_back_both_paths) (negotiated=True, stage='artifact')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\clair\Desktop\Projects\ai-agent-engineering-101\submissions\25512085\week-08\history\20261112-seller-locks-cache-01\evidence\red\submissions\25512085\week-08\test_seller_locks_cache_offline.py", line 74, in test_signing_and_artifact_failure_roll_back_both_paths
+    with self.assertRaises(RuntimeError):
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+AssertionError: RuntimeError not raised
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.318s
+
+FAILED (failures=11, errors=5)
+RESULT={"tests": 13, "failures": 11, "errors": 5, "skipped": 0}

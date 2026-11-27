@@ -1,0 +1,457 @@
+diff --git a/submissions/25512085/week-08/market_buyer.py b/submissions/25512085/week-08/market_buyer.py
+index e836695..639bae2 100644
+--- a/submissions/25512085/week-08/market_buyer.py
++++ b/submissions/25512085/week-08/market_buyer.py
+@@ -13,6 +13,7 @@ Supports both:
+ """
+ import argparse
+ from contextvars import ContextVar
++from datetime import datetime, timezone
+ import json
+ import math
+ import os
+@@ -53,6 +54,8 @@ GOODS_OFFER_CAP_PERCENT = 92
+ COMPARABLE_WINDOW_S = 3 * 3600
+ COMPARABLE_MIN_SAMPLES = 3
+ REQUEST_DEADLINE = ContextVar("buyer_request_deadline", default=None)
++TURN_EVENT_MAX = 13  # card + inquiry + 3 counters + final accept, request/result + summary
++TURN_EVENT_BYTES = 1024
+ 
+ 
+ def diagnostic(message: str) -> None:
+@@ -60,6 +63,78 @@ def diagnostic(message: str) -> None:
+     print(json.dumps(f"[buyer] {message}", ensure_ascii=False), file=sys.stderr, flush=True)
+ 
+ 
++def turn_event(active, phase, boundary, turn=0, branch="first", ask_before=None,
++               offer=None, ask_after=None, state=None, error=None, rpc_error=False,
++               selected=False):
++    """Best-effort bounded Round 3 telemetry, never raw messages/IDs/receipts.
++
++    One opaque attempt ID suffices to join its turns; deliberately omit server
++    task/order IDs and account/URL metadata. Existing parsers supply prices.
++    """
++    try:
++        if not active.get("telemetry_enabled"):
++            return
++        count = active.get("telemetry_count", 0)
++        if count >= TURN_EVENT_MAX:
++            return
++        active["telemetry_count"] = count + 1
++        if boundary == "request":
++            active["telemetry_pending"] = (phase, turn, branch, ask_before, offer)
++        else:
++            active.pop("telemetry_pending", None)
++        if "telemetry_id" not in active:
++            active["telemetry_id"] = uuid.uuid4().hex
++        states = {"TASK_STATE_COMPLETED": "completed", "TASK_STATE_INPUT_REQUIRED": "inputrequired",
++                  "TASK_STATE_REJECTED": "rejected", "TASK_STATE_CANCELED": "canceled"}
++        response_state = states.get(state, "other" if state is not None else None)
++        error_type = None
++        if error is not None:
++            if isinstance(error, (TimeoutError, httpx.TimeoutException)):
++                error_type = "TimeoutError"
++            elif isinstance(error, httpx.HTTPError):
++                error_type = "HTTPError"
++            elif isinstance(error, (ValueError, TypeError, KeyError)):
++                error_type = "ParseError"
++            else:
++                error_type = "Error"
++        elif rpc_error:
++            error_type = "RPCError"
++        if phase == "attempt" and not selected and error_type is None:
++            error_type = active.get("telemetry_error_type")
++        outcome = ("request" if boundary == "request" else
++                   "timeout" if error_type == "TimeoutError" else
++                   "error" if error_type else response_state or "completed")
++        if phase == "attempt":
++            outcome = ("completed" if selected else
++                       "timeout" if error_type == "TimeoutError" else "error" if error_type else
++                       active.get("telemetry_outcome") if active.get("telemetry_outcome") in ("error", "timeout")
++                       else "rejected")
++        elif boundary == "response":
++            active["telemetry_outcome"] = outcome
++            active["telemetry_error_type"] = error_type
++        def price(value):
++            return value if type(value) is int and 0 <= value <= 10**12 else None
++        sku = active.get("telemetry_sku")
++        sku = sku if isinstance(sku, str) and re.fullmatch(r"[gGfF][0-9a-fA-F]{7,10}", sku) else None
++        event = dict(event="buyer_turn", schema_version=1,
++                     timestamp_utc=datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
++                     attempt_id=active["telemetry_id"], seq=count + 1, sku=sku,
++                     phase=phase, boundary=boundary, turn_index=turn, policy_branch=branch,
++                     ask_before=price(ask_before), offer_sent=price(offer), ask_after=price(ask_after),
++                     response_state=response_state, outcome=outcome, error_type=error_type)
++        if phase == "attempt":
++            event.update(receipt_selected=bool(selected), payment_confirmed=False)
++        payload = json.dumps(event, ensure_ascii=True, separators=(",", ":"))
++        # Retain diagnostic's JSON-string envelope: kit/legacy consumers must
++        # never mistake a telemetry object for the final stdout receipt.
++        line = json.dumps("[buyer] " + payload, ensure_ascii=True)
++        if len(line.encode("utf-8")) + 1 <= TURN_EVENT_BYTES:
++            print(line, file=sys.stderr, flush=True)
++    except Exception:
++        # A broken stderr/serializer/clock must never change checkout or cleanup.
++        pass
++
++
+ def seller_response_text(response: dict) -> str:
+     """Untrusted last response only; status text takes precedence over artifacts."""
+     task = response.get("task", response)
+@@ -800,9 +875,11 @@ def run_round3(shops, memory, hub, catalog, order_data, item, budget, deadline):
+ 
+ def run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+                 order_data, item, budget, cleanup_deadline=None):
+-    active = {}
++    active = {"telemetry_enabled": bool(order_data.get("acceptable")),
++              "telemetry_sku": (target_sku_info or {}).get("sku")}
+     selected = False
+     result = None
++    attempt_error = None
+     try:
+         result = _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+                               order_data, item, budget, active)
+@@ -813,6 +890,11 @@ def run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+     except Exception as exc:
+         if not order_data.get("acceptable"):
+             raise
++        attempt_error = exc
++        pending_event = active.get("telemetry_pending")
++        if pending_event:
++            phase, turn, branch, ask, offer = pending_event
++            turn_event(active, phase, "response", turn, branch, ask, offer, error=exc)
+         if isinstance(exc, TimeoutError) and active.get("id") and not active.get("failure"):
+             # Negotiation deadline is pair-local, not proof the whole shop's network failed.
+             active["failure"] = "timeout"
+@@ -820,6 +902,7 @@ def run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+                   "review": f"No deal: attempt failed ({type(exc).__name__}: {exc})."}
+         return result
+     finally:
++        turn_event(active, "attempt", "response", selected=selected, state=active.get("state"), error=attempt_error)
+         if order_data.get("acceptable") and not selected and result is not None:
+             failure_diagnostic(result["review"], active.get("seller_text", ""))
+         if not selected and active.get("pending") is not None:
+@@ -870,12 +953,15 @@ def _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+ 
+     # 1. Fetch Agent Card
+     card_url = f"{shop_url}/.well-known/agent-card.json"
++    turn_event(active, "card", "request")
+     try:
+         card_resp = httpx.get(card_url, timeout=request_timeout(12))
+         card = card_resp.json()
+         interfaces = card.get("supportedInterfaces") or []
+         rpc_url = interfaces[0].get("url") if interfaces else f"{shop_url}/"
++        turn_event(active, "card", "response")
+     except Exception as e:
++        turn_event(active, "card", "response", error=e)
+         review = f"No deal in 0 rounds: shop card endpoint failed ({type(e).__name__})."
+         if isinstance(e, (TimeoutError, httpx.TimeoutException)):
+             active["failure"] = "network-timeout" if isinstance(e, httpx.TimeoutException) else "timeout"
+@@ -908,12 +994,14 @@ def _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+         "messageId": str(uuid.uuid4()),
+         "parts": [{"text": opening_text}],
+     }
++    turn_event(active, "opening", "request")
+     try:
+         if is_round3:
+             request_timeout(1)
+         res = rpc_call(rpc_url, "SendMessage", {"message": msg})
+         active["seller_text"] = seller_response_text(res)
+     except Exception as e:
++        turn_event(active, "opening", "response", error=e)
+         review = f"No deal in 0 rounds: shop did not respond to opening inquiry ({type(e).__name__})."
+         if isinstance(e, (TimeoutError, httpx.TimeoutException)):
+             active["failure"] = "network-timeout" if isinstance(e, httpx.TimeoutException) else "timeout"
+@@ -923,6 +1011,7 @@ def _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+         return {"shop": chosen_shop["url"], "receipt": None, "stars": 2, "review": review}
+ 
+     if "error" in res:
++        turn_event(active, "opening", "response", rpc_error=True)
+         review = f"No deal in 0 rounds: seller returned RPC error {res['error']}."
+         update_memory(memory, shop_name, {
+             "item": item, "budget": budget, "price": None, "rounds": 0, "stars": 2, "outcome": "no-deal"
+@@ -937,6 +1026,7 @@ def _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+     min_valid_p = 500 if is_round3 else 50
+     max_valid_p = max(budget * 4, list_price * 2, 1000)
+     seller_ask = extract_last_number(task, min_valid_p, max_valid_p)
++    turn_event(active, "opening", "response", ask_after=seller_ask, state=task_state)
+     seller_texts = [
+         " ".join(p.get("text", "") for p in task_status.get("message", {}).get("parts", []))
+     ]
+@@ -1045,15 +1135,20 @@ def _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+             "taskId": task_id,
+             "parts": [{"text": follow_up_text}],
+         }
++        ask_before = seller_ask
++        branch = "first" if rounds == 1 else "counter35" if rounds == 2 else "third"
++        turn_event(active, "offer", "request", rounds, branch, ask_before, offer)
+         try:
+             res = rpc_call(rpc_url, "SendMessage", {"message": follow_up})
+             active["seller_text"] = seller_response_text(res)
+         except Exception as exc:
++            turn_event(active, "offer", "response", rounds, branch, ask_before, offer, error=exc)
+             failure_reason = f"counter RPC failed ({type(exc).__name__})"
+             if isinstance(exc, (TimeoutError, httpx.TimeoutException)):
+                 active["failure"] = "network-timeout" if isinstance(exc, httpx.TimeoutException) else "timeout"
+             break
+         if "error" in res:
++            turn_event(active, "offer", "response", rounds, branch, ask_before, offer, rpc_error=True)
+             failure_reason = f"counter RPC error: {res['error']}"
+             break
+ 
+@@ -1063,6 +1158,7 @@ def _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+         task_id = task.get("id") or task_id
+         active.update(id=task_id, state=task_state)
+         seller_ask = extract_last_number(task, min_valid_p, max_valid_p)
++        turn_event(active, "offer", "response", rounds, branch, ask_before, offer, seller_ask, task_state)
+         seller_texts.append(
+             " ".join(p.get("text", "") for p in task_status.get("message", {}).get("parts", []))
+         )
+@@ -1075,6 +1171,8 @@ def _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+     if (is_round3 and rounds == 3 and not failure_reason
+             and task_state == "TASK_STATE_INPUT_REQUIRED"
+             and seller_ask is not None and seller_ask <= offer_limit):
++        ask_before = seller_ask
++        turn_event(active, "offer", "request", 4, "finalaccept", ask_before, ask_before)
+         try:
+             request_timeout(1)
+             last_offer = seller_ask
+@@ -1087,6 +1185,7 @@ def _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+             }})
+             active["seller_text"] = seller_response_text(res)
+             if "error" in res:
++                turn_event(active, "offer", "response", 4, "finalaccept", ask_before, ask_before, rpc_error=True)
+                 failure_reason = f"final acceptance RPC error: {res['error']}"
+             else:
+                 task = res.get("task", res)
+@@ -1095,10 +1194,12 @@ def _run_attempt(chosen_shop, target_sku_info, reason, memory, hub, catalog,
+                 task_id = task.get("id") or task_id
+                 active.update(id=task_id, state=task_state)
+                 seller_ask = extract_last_number(task, min_valid_p, max_valid_p)
++                turn_event(active, "offer", "response", 4, "finalaccept", ask_before, last_offer, seller_ask, task_state)
+                 seller_texts.append(
+                     " ".join(p.get("text", "") for p in task_status.get("message", {}).get("parts", []))
+                 )
+         except Exception as exc:
++            turn_event(active, "offer", "response", 4, "finalaccept", ask_before, ask_before, error=exc)
+             failure_reason = f"final acceptance RPC failed ({type(exc).__name__})"
+ 
+     # 3. Inspect result & receipt
+diff --git a/submissions/25512085/week-08/test_buyer_turn_telemetry_offline.py b/submissions/25512085/week-08/test_buyer_turn_telemetry_offline.py
+new file mode 100644
+index 0000000..f31a094
+--- /dev/null
++++ b/submissions/25512085/week-08/test_buyer_turn_telemetry_offline.py
+@@ -0,0 +1,212 @@
++"""Synthetic-only turn telemetry; no live market, key, state or network reads."""
++from contextlib import ExitStack, contextmanager, redirect_stderr, redirect_stdout
++import copy
++import io
++import json
++from types import SimpleNamespace
++import unittest
++from unittest.mock import patch
++
++import httpx
++import market_buyer as buyer
++import test_buyer_price_offline as price_tests
++
++
++class BuyerTurnTelemetryTests(unittest.TestCase):
++    setUp = price_tests.BuyerPriceTests.setUp
++    receipt = price_tests.BuyerPriceTests.receipt
++    run_buyer = price_tests.BuyerPriceTests.run_buyer
++
++    def simulate(self, asks=(100000, 100000, 100000, 80000, 80000), done=4,
++                 fail_at=None, failure=None, card_failure=None, reject_at=None,
++                 bad_parse=False, sink=None, legacy=False, timeout_at=None):
++        self.catalog[self.sku]['list_price'] = 103449
++        calls, offers = [], []
++        order = {} if legacy else self.order
++        order = dict(order, account='SECRET_ACCOUNT', order='SECRET_ORDER', budget='SECRET_BUDGET')
++        if legacy:
++            order.pop('acceptable', None)
++        @contextmanager
++        def hub():
++            yield self.hub
++        def rpc(url, method, params):
++            calls.append(method)
++            if method == 'CancelTask':
++                return {}
++            text = params['message']['parts'][0]['text']
++            if text.startswith('I offer '):
++                offers.append(int(text.split()[2]))
++            index = len(offers)
++            if index == fail_at:
++                if isinstance(failure, Exception):
++                    raise failure
++                return {'error': 'SECRET_RPC_TEXT credential=https://secret.invalid'}
++            state = ('TASK_STATE_REJECTED' if index == reject_at else
++                     'TASK_STATE_COMPLETED' if index >= done else 'TASK_STATE_INPUT_REQUIRED')
++            ask = asks[min(index, len(asks)-1)]
++            task = dict(id='SECRET_TASK', status=dict(state=state, message=dict(parts=[
++                {'text': f'ask {ask} cert warranty SECRET_DIALOG'}])))
++            if state == 'TASK_STATE_COMPLETED':
++                task['artifacts'] = [{'parts': [{'data': dict(self.receipt(ask), task='SECRET_TASK')}]}]
++            return task
++        output, errors = io.StringIO(), sink or io.StringIO()
++        timeout_calls = [0]
++        def timeout(default):
++            timeout_calls[0] += 1
++            if timeout_calls[0] == timeout_at:
++                raise TimeoutError('SECRET_DEADLINE')
++            return default
++        with ExitStack() as stack:
++            for name, value in {'rpc_call': rpc, 'update_memory': lambda *a: None,
++                                'mutate_hub': hub, 'call_harness': lambda *a: 'OFFER 100',
++                                'request_timeout': timeout}.items():
++                stack.enter_context(patch.object(buyer, name, value))
++            stack.enter_context(patch.object(buyer.httpx, 'get', side_effect=card_failure,
++                return_value=SimpleNamespace(json=lambda: {'description': 'SECRET_CARD'})))
++            if bad_parse:
++                stack.enter_context(patch.object(buyer, 'extract_last_number', side_effect=ValueError('SECRET_PARSE')))
++            with redirect_stderr(errors), redirect_stdout(output):
++                result = buyer.run_attempt({'name': 'SECRET_ACCOUNT', 'url': 'https://secret.invalid'},
++                    dict(sku=self.sku, name='synthetic', list_price=103449), 'synthetic', {}, self.hub,
++                    self.catalog, order, 'food', 120000)
++        raw = errors.getvalue()
++        events = [json.loads(json.loads(line)[8:]) for line in raw.splitlines()
++                  if json.loads(line).startswith('[buyer] {"event":"buyer_turn"')]
++        self.assertEqual(output.getvalue(), '')
++        return result, offers, calls, events, raw
++
++    def test_every_boundary_and_parsed_prices_no_extra_rpc(self):
++        result, offers, calls, events, raw = self.simulate()
++        self.assertEqual(offers, [60000, 74000, 93104, 80000])
++        self.assertEqual(calls, ['SendMessage'] * 5)
++        self.assertEqual(len(events), 13)
++        self.assertEqual([e['phase'] for e in events], ['card']*2 + ['opening']*2 + ['offer']*8 + ['attempt'])
++        self.assertEqual([e['boundary'] for e in events[:-1]], ['request', 'response']*6)
++        requests = [e for e in events if e['phase']=='offer' and e['boundary']=='request']
++        self.assertEqual([e['policy_branch'] for e in requests], ['first','counter35','third','finalaccept'])
++        self.assertEqual([e['turn_index'] for e in requests], [1,2,3,4])
++        self.assertEqual([e['ask_before'] for e in requests], [100000,100000,100000,80000])
++        self.assertEqual([e['offer_sent'] for e in requests], offers)
++        responses = [e for e in events if e['phase']=='offer' and e['boundary']=='response']
++        self.assertEqual([e['ask_after'] for e in responses], [100000,100000,80000,80000])
++        self.assertEqual(events[3]['ask_after'], 100000)
++        self.assertEqual(events[-1]['receipt_selected'], result['receipt'] is not None)
++        self.assertTrue(events[-1]['receipt_selected'])
++        self.assertFalse(events[-1]['payment_confirmed'])
++        self.assertEqual({e['attempt_id'] for e in events}, {events[0]['attempt_id']})
++        self.assertEqual([e['seq'] for e in events], list(range(1,14)))
++        self.assertTrue(all(e['schema_version']==1 and e['timestamp_utc'].endswith('+00:00') for e in events))
++        self.assertNotIn('SECRET_', '\n'.join(json.dumps(e) for e in events))
++        self.assertNotIn('offline-signature-placeholder', '\n'.join(json.dumps(e) for e in events))
++        self.assertNotIn('120000', json.dumps(events))
++        self.assertTrue(all(len(json.dumps(e,separators=(',',':')).encode())+1<=buyer.TURN_EVENT_BYTES for e in events))
++        wire_lines = [line for line in raw.splitlines() if 'buyer_turn' in line]
++        lengths = [len(line.encode('utf-8'))+1 for line in wire_lines]
++        self.assertLessEqual(max(lengths), buyer.TURN_EVENT_BYTES)
++        print('SYNTHETIC_TELEMETRY_MEASURE='+json.dumps(dict(
++            events=len(events), max_line_bytes=max(lengths), total_bytes=sum(lengths))))
++
++    def test_card_opening_all_counter_and_final_network_failures(self):
++        for index in range(5):
++            with self.subTest(index=index):
++                result, _, _, events, _ = self.simulate(fail_at=index,
++                    failure=httpx.ReadTimeout('SECRET_TIMEOUT credential'))
++                self.assertIsNone(result['receipt'])
++                error = [e for e in events if e['outcome']=='timeout'][0]
++                self.assertEqual(error['turn_index'], index)
++                self.assertEqual(error['error_type'], 'TimeoutError')
++                self.assertEqual(error['boundary'], 'response')
++                self.assertEqual(events[-1]['outcome'], 'timeout')
++                self.assertNotIn('SECRET_', json.dumps(events))
++        result, _, calls, events, _ = self.simulate(card_failure=httpx.ConnectError('SECRET_HOST'))
++        self.assertFalse(calls)
++        self.assertEqual(events[1]['error_type'], 'HTTPError')
++        self.assertEqual(events[-1]['outcome'], 'error')
++
++    def test_deadlines_between_turns_and_before_receipt_return(self):
++        for boundary in (3, 6, 7):
++            with self.subTest(boundary=boundary):
++                result, _, _, events, _ = self.simulate(timeout_at=boundary)
++                self.assertIsNone(result['receipt'])
++                self.assertEqual(events[-1]['outcome'], 'timeout')
++                self.assertEqual(events[-1]['error_type'], 'TimeoutError')
++
++    def test_existing_price_parser_is_not_called_again_for_telemetry(self):
++        with patch.object(buyer, 'extract_last_number', wraps=buyer.extract_last_number) as parser:
++            _, _, calls, _, _ = self.simulate()
++        self.assertEqual(parser.call_count, calls.count('SendMessage'))
++
++    def test_rpc_errors_rejections_and_parser_error(self):
++        for index in range(5):
++            with self.subTest(index=index):
++                _, _, _, events, _ = self.simulate(fail_at=index)
++                self.assertIn('RPCError', [e['error_type'] for e in events])
++                self.assertEqual(events[-1]['outcome'], 'error')
++                self.assertNotIn('SECRET_', json.dumps(events))
++        _, _, _, events, _ = self.simulate(reject_at=1)
++        self.assertEqual(events[-2]['response_state'], 'rejected')
++        _, _, _, events, _ = self.simulate(bad_parse=True)
++        self.assertEqual(events[-2]['phase'], 'opening')
++        self.assertEqual(events[-2]['error_type'], 'ParseError')
++
++    def test_immediate_receipt_and_third_no_final(self):
++        for done in (0,1,2,3):
++            with self.subTest(done=done):
++                _, offers, _, events, _ = self.simulate(asks=(60000,)*5, done=done)
++                self.assertEqual(len(offers), done)
++                self.assertTrue(events[-1]['receipt_selected'])
++                self.assertEqual(events[-2]['response_state'], 'completed')
++                self.assertNotIn('finalaccept', [e['policy_branch'] for e in events])
++
++    def test_logging_failure_preserves_result_calls_and_hub(self):
++        original = copy.deepcopy(self.hub)
++        expected, offers, calls, _, _ = self.simulate()
++        expected_hub = copy.deepcopy(self.hub)
++        self.hub = copy.deepcopy(original)
++        class BrokenEvents(io.StringIO):
++            def write(self, text):
++                if 'buyer_turn' in text:
++                    raise OSError('broken stderr')
++                return super().write(text)
++        actual, actual_offers, actual_calls, _, _ = self.simulate(sink=BrokenEvents())
++        self.assertEqual((actual,actual_offers,actual_calls), (expected,offers,calls))
++        self.assertEqual(self.hub, expected_hub)
++
++    def test_bounded_hostile_fields_and_sink_serializer_clock_failures(self):
++        active = dict(telemetry_enabled=True, telemetry_sku='SECRET_'*10000)
++        out = io.StringIO()
++        with redirect_stderr(out):
++            for _ in range(100):
++                buyer.turn_event(active,'opening','response',ask_after=10**1000, state='SECRET_'*10000)
++        events = [json.loads(json.loads(line)[8:]) for line in out.getvalue().splitlines()]
++        self.assertEqual(len(events), buyer.TURN_EVENT_MAX)
++        self.assertNotIn('SECRET_', out.getvalue())
++        self.assertTrue(all(e['sku'] is None and e['ask_after'] is None and e['response_state']=='other' for e in events))
++        self.assertLessEqual(max(len(line.encode())+1 for line in out.getvalue().splitlines()), buyer.TURN_EVENT_BYTES)
++        for name in ('json.dumps','datetime'):
++            with self.subTest(name=name), patch('market_buyer.'+name, side_effect=RuntimeError('SECRET')):
++                buyer.turn_event(dict(telemetry_enabled=True),'card','request')
++
++    def test_legacy_has_no_events_and_attempt_ids_are_fresh(self):
++        _, _, _, first, _ = self.simulate(done=0)
++        _, _, _, second, _ = self.simulate(done=0)
++        self.assertNotEqual(first[0]['attempt_id'], second[0]['attempt_id'])
++        _, _, _, events, _ = self.simulate(done=0, legacy=True)
++        self.assertEqual(events, [])
++
++    def test_main_keeps_single_stdout_json_contract(self):
++        capture, prints = io.StringIO(), []
++        original = print
++        def spy(*args, **kwargs):
++            if kwargs.get('file') is None:
++                prints.append(args[0])
++            return original(*args, **kwargs)
++        with redirect_stderr(capture), patch('builtins.print', side_effect=spy):
++            result, _, _, _ = self.run_buyer(receipt=self.receipt(9000))
++        self.assertEqual(len(prints), 1)
++        self.assertEqual(json.loads(prints[0]), result)
++        self.assertNotIn('buyer_turn', prints[0])
++
++
++if __name__ == '__main__':
++    unittest.main(verbosity=2)
