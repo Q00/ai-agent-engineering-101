@@ -1,0 +1,80 @@
+1e5cc1f 2026-11-16T10:09:36+09:00 docs(week08): unrestricted-rank-v1 result - seq8 live, 2 in-window hooks bought 1,059,231 (G2b7e0fe3 x37, worst-bound probes), natural own settles 7174863/7174872/7174691; ranks unchanged 46/71, 38/46; warranty rejects 205/12h reported not re-enabled
+e9238fa 2026-11-16T09:56:28+09:00 feat(week08): ACTIVATE seq8 unrestricted-rank-v1 - financial_limits disabled (room=balance-in-flight, kit 10 lines), worstbound-market-v1 probe; amend tests 12 OK, check ok, expiry/intents/legacy/64 authorities unchanged
+4c34c68 2026-11-16T09:52:53+09:00 test(week08): RED->GREEN unrestricted-rank-v1 staged - financial_limits finite-state disable (room=balance-in-flight, kit 10 lines) + worstbound-market-v1 probe; related 201 only 7 pre-existing SellerFlow fails
+3b9a72c 2026-11-14T21:04:36+09:00 docs(week08): FIX_20261114_RESULT - demand-cover-v1 active, fresh live invocation 846486cc (21:03 KST) bought G75f11c19x1 + colax2, cookies/oil need 0; blocker 2 not activated (no below-cost mandate, clearance gain 16,728/12h < seller restart risk)
+048e97e 2026-11-14T20:56:49+09:00 docs(week08): fix-20261114 evidence - own quote/cancel readback for stuck SKUs, oil offers vs cost (3 lost >cost in 12h, 16,728), external paid lookup seq 6491270/6491271 (pre-fix units), binding caps
+dc52e80 2026-11-14T20:48:32+09:00 feat(week08): activate demand-cover-v1 restock sizing - gate closed 104 s, root full 802 run with the same 4F+1E as baseline (no new failure), 16-file manifest rebound, approved
+06bd638 2026-11-14T20:46:12+09:00 fix(week08): GREEN demand-cover-v1 staged - one-day qty bounded by evidenced demand (own exact settles max 3h/12h, qualified public per-shop rate) x 6h cover minus on hand and unconfirmed supply; 222 candidate OK, 2 money-bound pins re-pinned; baseline root 795 run 4F+1E pre-existing
+45b17d1 2026-11-14T20:38:59+09:00 test(week08): RED demand-cover-v1 - greedy one-day sizing gives 20 units to a 1-sale/12h SKU with 44 on hand (first RED had a fixture bug, kept as -badfixture)
+51f6ccc 2026-11-10T20:39:02+09:00 test: verify committed Windows checkout and persistent library
+544daad 2026-11-10T20:38:08+09:00 fix: preserve exact forged source bytes on Windows checkout
+ca71ec9 2026-11-10T20:37:36+09:00 feat: verify Claude forge retry persistence demo and honest network boundary
+10cf40a 2026-11-10T20:30:49+09:00 test: expose short-circuit bypass and exercise forge boundaries
+98d21ba 2026-11-10T20:24:58+09:00 feat: restore hash-checked tool library across child restart
+d6fa165 2026-11-10T20:21:30+09:00 test: record new-interpreter restore RED
+ca03d3e 2026-11-10T20:20:32+09:00 feat: Claude authored restricted child forge tracer GREEN
+c81b701 2026-11-10T20:15:07+09:00 test: record Claude forge tracer RED before implementation
+0021a8d 2026-11-07T17:21:02+09:00 feat(week08): activate bounded truthful-post discount pilot drafted by Claude Opus; verify 346 root tests and live quote/cancel
+2e3dd3a 2026-11-07T17:15:28+09:00 docs(week08): review-discount corrections report + READY_FOR_PARENT (348 OK staged combined run)
+b88f22a 2026-11-07T17:10:36+09:00 fix(week08): stage review-discount card text discloses the per-GitHub-owner limit; receipt 22
+e93bf51 2026-11-07T17:09:50+09:00 fix(week08): stage seller rejects unsigned coupon task after expiry, integer cost+1 floor (fractional cost quoted 9001.5), fresh-cost sign guard, accept-at-cost converts to floor counter; verification tests; receipt 21
+8bf82eb 2026-11-07T17:06:28+09:00 fix(week08): stage review-discount pages ledger from signed cursor past newest-500 tail; seq gap = explicit unknown hold (never released/redeemed); receipt 20 (first RED had a fixture bug, kept as -badfixture)
+8db1b84 2026-11-07T17:03:58+09:00 fix(week08): stage review-discount requires board owner of this shop == config own_owner, journal-only own URLs for reconcile, retained-evidence note; receipt 19
+2f422e8 2026-11-07T17:02:57+09:00 fix(week08): stage review-discount reconcile requires round3, finite positive amount, exact unit/sku/item, ts>=signed, real checkout_hash; records absent task join; receipt 18
+352a133 2026-11-07T17:01:45+09:00 fix(week08): stage review-discount _get checks deadline after EOF, bounds each read by remaining budget, skips closed socket; receipt 17
+e2e71e6 2026-11-07T17:00:54+09:00 fix(week08): stage review-discount books only the reserved discount, labelled opening-incentive upper bound (causal cost unknown); receipt 16
+308a285 2026-11-07T17:00:06+09:00 fix(week08): stage review-discount ledger semantic validation (types, coherent amounts, live collisions, budget bound), evidence entry checks, corrupt evidence never replaced; receipt 15
+daaf2f8 2026-11-07T16:58:36+09:00 fix(week08): stage review-discount _get refuses every redirect and checks final URL (local HTTP 302 regression); receipt 14
+9d6943c 2026-11-07T16:57:46+09:00 fix(week08): stage review-discount caps one live redemption per GitHub owner; receipt 13 RED/GREEN
+736a646 2026-11-07T16:50:27+09:00 docs(week08): review-discount report - stage count 28, list parent's 8 pending pre-activation corrections as open
+a46e934 2026-11-07T16:49:50+09:00 docs(week08): REVIEW_DISCOUNT_PILOT report (STAGED not activated; real eligible sample 0; bearer limitation; activation/gate steps), eligibility scan, full suite 274 OK + stage 28 OK
+bd24628 2026-11-07T16:46:21+09:00 feat(week08): staged review-discount tick (refresh while active, reconcile always), neutral Korean card text only while active, seller daemon thread, restock gate SOURCES += review_discount.py; receipts 08-10
+b8d9e7a 2026-11-07T16:44:11+09:00 feat(week08): staged seller_r3 review-discount integration (open/sign/release hooks, cost+1 floor); runner cwd=stage so staged seller shadows production; 23 tests; receipt 07 (07-red ran against production seller due to cwd shadow)
+f6f2a1f 2026-11-07T16:41:19+09:00 test(week08): review-discount evidence refresh - fixed-origin allowlisted bounded GET, provenance sha256, rate limit, failure keeps only verified; receipt 06
+964de5f 2026-11-07T16:39:41+09:00 test(week08): review-discount lifecycle (signed never released, exact settle commit once) + guards/coupon parse, receipts 04-05
+b9c6005 2026-11-07T16:38:01+09:00 test(week08): review-discount staged eligibility binding + reserve/floor/budget, RED->GREEN receipts 01-03
+b6a21ef 2026-11-07T16:35:08+09:00 chore(week08): review-discount pilot brief, live baseline GET snapshots (0 own-shop forum refs in newest100), staged test runner
+1bc7cf4 2026-11-06T11:52:32+09:00 docs(week08): RESULT + rollback correction; gate rebound to corrected sources (not re-armed); kit log stalled after 11:49:02, no post-correction hook
+a7d153d 2026-11-06T11:50:26+09:00 fix(week08): armed pilot never falls through to baseline buys; corrupt/missing ledger or changed legacy rows leave pending bytes untouched; RED/GREEN, 261 tests
+0cd60e1 2026-11-06T11:48:56+09:00 docs(week08): risk-exception pilot live proof - autonomous hook a9f0a38f bought G63ef2f11 x1, unit u-a9bf00f8cca9 matched; 11 legacy UNKNOWN unchanged
+12ddd1c 2026-11-06T11:37:17+09:00 docs(week08): RISK_EXCEPTION_REPLENISHMENT - authorization, caps provenance, frozen UNKNOWN ledger, rollback, hashes
+c2fc756 2026-11-06T11:36:17+09:00 chore(week08): activate risk-exception pilot - gate hash-bound to 5 sources + pilot config + frozen ledger; 11 legacy UNKNOWN kept
+53711e5 2026-11-06T11:35:41+09:00 fix(week08): GREEN risk-exception pilot in restock plan - frozen legacy rows never reconciled/released, hash-bound expiring caps, durable lifetime counters; 258 tests
+218e0cb 2026-11-06T11:33:47+09:00 test(week08): RED risk-exception pilot plan tests (6 fail); GREEN frozen legacy ledger + SOURCES binds risk_pilot.py
+2cd1cc2 2026-11-06T11:30:20+09:00 chore(week08): risk-exception pilot - back up gate/pending/sources with SHA256 manifest and close gate before edits
+6f1ba67 2026-11-05T18:54:19+09:00 fix(week08): _fetch skips settimeout on socket closed at Content-Length body end (WinError 10038); RED/GREEN, 229 tests, live fetch timed out at 5 s
+b7f5257 2026-11-05T11:16:01+09:00 fix(week08): preserve latest fetch degradation on reused market anchors; verify 227 tests and document activation boundary
+920b8da 2026-11-05T11:06:07+09:00 test(week08): RED reused anchor must keep latest last-known-good status and seller snapshot source_historical
+6f63fdd 2026-11-05T11:01:36+09:00 fix(week08): GREEN price recovery corrections - versioned/tier-aware anchor reuse, other-SKU shop-median proxy with ratio reject and fresh-gap block, gap holes kept, post-read deadline; 226 tests, gate closed
+d7db925 2026-11-05T10:56:04+09:00 test(week08): RED price recovery corrections - anchor reuse tier/version/source age, proxy other-SKU/ratio reject/shop weighting/fresh gap, gap holes, post-read deadline
+efa87ac 2026-11-05T10:50:54+09:00 docs(week08): price recovery report cites parent timeout diagnosis and lists unimplemented correction-brief findings
+478ff22 2026-11-05T10:50:09+09:00 docs(week08): price recovery v3 report - 211 tests, RED/GREEN receipts, real snapshot replay, hashes; gate closed, not deployed
+e3d94dc 2026-11-05T10:46:31+09:00 feat(week08): GREEN price recovery slice 3 - gated category+list-band ratio proxy tier, labelled not exact, seller snapshot names tier
+cc1b8df 2026-11-05T10:45:04+09:00 test(week08): RED price recovery slice 3 - labelled category+list-band ratio proxy tier with evidence gates and seller label
+2471b34 2026-11-05T10:43:10+09:00 fix(week08): GREEN price recovery slice 2 - cursor gap tracking, one newest-first gap page per tick under deadline, explicit incomplete coverage
+ded35c8 2026-11-05T10:41:31+09:00 test(week08): RED price recovery slice 2 - cursor gap fill, two pages max, tick deadline, explicit gaps
+0ffcd51 2026-11-05T10:39:40+09:00 fix(week08): GREEN price recovery slice 1 - 5 s bounded GET, failure journal, exponential backoff, last-known-good until FRESH_S
+8993ae1 2026-11-05T10:37:50+09:00 test(week08): RED price recovery slice 1 - bounded GET, failure journal, backoff, last-known-good with hard expiry
+3990158 2026-11-05T10:34:56+09:00 chore(week08): price-recovery baseline source backup, 192-test baseline receipt and bounded cursor probe
+43454e0 2026-11-05T00:03:41+09:00 feat(week08): Opus cached comparable settlement pricing and honest seller terms; 192 tests and Fable review, restart approval pending
+18da13b 2026-11-04T23:47:30+09:00 feat(week08): Opus bounded twelve-unit restock pilot with exact-own repeats and reviewed-source activation gate
+9333da9 2026-11-04T12:25:56+09:00 docs(week08): record 20 exact Opus runs, 113 tests, verified buyer forum post and final restart approval boundary
+aba6b95 2026-11-04T12:23:43+09:00 fix(week08): Opus closes seven reproduced review edge cases; 113 tests and independent review pass
+e88ac8a 2026-11-04T12:06:36+09:00 feat(week08): Opus opt-in factual buyer forum hook with exact paid references and 12-hour dedupe
+312d209 2026-11-04T12:01:45+09:00 feat(week08): Opus bounded public settlement sample and own sale evidence for conservative restock windows
+7311192 2026-11-04T11:49:55+09:00 feat(week08): Opus bounded buyer counteroffer and paid-quality evidence decisions; preserve baseline replay
+8e3198b 2026-11-04T11:42:55+09:00 feat(week08): Opus bounded-v1 seller concessions, decision evidence and expiring reservation lifecycle
+0eff82d 2026-11-04T11:30:24+09:00 fix(week08): Opus refreshes User API key and watches real scheduled launcher parent; verify 81 tests
+1ebdd59 2026-11-04T10:14:46+09:00 docs(week08): record exact Opus attribution, 78 passing tests and real Round3 buyer and shop settlements
+aebca9c 2026-11-04T10:11:17+09:00 fix(week08): keep seller bounded trading available when API key is absent, authored by Claude Opus
+6681a50 2026-11-04T10:06:45+09:00 fix(week08): deploy Claude Opus scheduled supervisor with owned process jobs and verified recovery
+baecaa4 2026-11-04T09:59:50+09:00 test(week08): verify legacy smoke signature through invoked kit integer canonicalization
+7146a75 2026-11-04T09:48:29+09:00 fix(week08): follow advertised A2A RPC and pin original task, verified with loopback ACP
+2be11e2 2026-11-04T09:44:08+09:00 fix(week08): align buyer and seller signatures with real kit int contract using Claude Opus
+00611a9 2026-11-04T09:42:21+09:00 test(week08): reproduce kit integer-canonical receipt and merchant diversity failures with Claude Opus
+83ce8f6 2026-11-03T19:19:14+09:00 week08: wire bounded paid-evidence memory into buyer review and restock
+3cc4875 2026-11-03T19:10:23+09:00 week08: persist idempotent paid/refused evidence and observed denominators
+3a316be 2026-11-03T18:37:26+09:00 feat(week08): add bounded SKU trading baseline; record blocked deployment
+2bdab33 2026-11-02T22:13:48+09:00 docs(week08): verify both agents online after seller watchdog restart
+6d53d14 2026-11-02T22:12:30+09:00 docs(week08): record v4 registration safety tests and migration limits
+be55a07 2026-11-02T22:10:32+09:00 feat(week08): preserve week07 and migrate v4 with no-purchase guards

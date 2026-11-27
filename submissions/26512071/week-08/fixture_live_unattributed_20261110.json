@@ -1,0 +1,906 @@
+{
+ "captured_at": 1794288939.0205915,
+ "note": "frozen live snapshot 2026-11-10 for the unattributed-unit regression; ledger/config/inventory as read, raw public settle row as cached by refresh()",
+ "config": {
+  "activated_at": 1794287643.0638206,
+  "activated_kst": "2026-11-10 14:14:03 KST",
+  "authorization": "USER AUTHORIZED one-day inventory pilot, user messages 1569575751315882076 '일단은 그렇게 해서 하루정도 돌려보자' and 1569575770353963009 '클로드로 해', relayed by parent brief logs/one-day-pilot-20261110/brief.txt. NEW 24 h mandate (not an extension of risk-exception-v1). Implemented and activated by Claude Opus 5.5.",
+  "baseline": {
+   "balance": 5634613,
+   "inventory_sha256": "dc976051f9a1182a0d3d02e8d583cdd2eafeb07505d5e620b88c2dd0864a8609",
+   "round": 3,
+   "start": 5000000,
+   "stock_cost": 0,
+   "units": []
+  },
+  "caps": {
+   "cash_floor": 5000000,
+   "gross_loss": 120000,
+   "hours": 24,
+   "lifetime_spend": 1000000,
+   "per_run_lines": 3,
+   "sku_share": 0.5,
+   "stage1": 100000,
+   "stage2": 350000
+  },
+  "expires_at": 1794374043.0638206,
+  "expires_kst": "2026-11-11 14:14:03 KST",
+  "legacy": {
+   "count": 11,
+   "ledger_sha256": "e9bb6994e3392296fa9397950fb166fd33a2faf7a4e87f2e7e55026a00bf5f72",
+   "reserve": 245080,
+   "source_pending_sha256": "645fbc03fcb27ab5ee60e842191a96d715386f15ef079f5fa5ebb96df671f7e6"
+  },
+  "pilot": "one-day-v1",
+  "sources": {
+   "evidence_memory.py": "9c7e58f05d8cd0cf169d0043efbeb0af4786981b2b6ffed2db2535c8c9498e3e",
+   "harness.py": "0d071c1366ffb031cca778c8fb77255a167b9f4467f513bdaa037a4f982d8ee8",
+   "oneday_pilot.py": "8cbfd9bb1042011ba44be3e716ab807caffc7a315d992321d2eb430ad906e642",
+   "public_evidence.py": "8081262d90dfc3911b7daf88919966ca2cb9e71da7209bec4532ea4b1c431961",
+   "restock_r3.py": "773ab7b62395bc476bc9512fcc565678b4bee7c70b84bc466093f5445bab49c4",
+   "review_discount.py": "8b2f1985cd293c9c3dd2d2dfc1e0d226fbf5c5736864358c32869a9aa478d390",
+   "risk_pilot.py": "5d01958980fb8dbe098a3a5ee09ec247011eca5ec45e37ac6895eab8b5180518",
+   "seller_r3.py": "902cb9bf9f6ec5d5c53c0920fc197dee4cf88ac8a785c3e2ca097b33f68cd8b5",
+   "supply_journal.py": "304587b2608b3dc3aeabc7bdfba3fe721a8cf195a2a6e93d563de432e1a0de1b"
+  },
+  "upper_bound": "ceil(list x 0.75 x 1.5): contract max cost share x max surge"
+ },
+ "ledger": {
+  "events": {
+   "settle:4758666": {
+    "kind": "settle",
+    "price": 10150,
+    "seq": 4758666,
+    "sku": "G2b7e0fe3",
+    "ts": 1794288362.805,
+    "unit": "u-b89b92f7422a"
+   },
+   "settle:4760446": {
+    "kind": "settle",
+    "price": 9999,
+    "seq": 4760446,
+    "sku": "G2b7e0fe3",
+    "ts": 1794288774.208,
+    "unit": "u-6ec112bfc700"
+   }
+  },
+  "pilot": "one-day-v1",
+  "requests": {
+   "20dad032a25c426bbbf10426583b1f21:0": {
+    "at": 1794288253.416813,
+    "evidence_ids": [
+     2366724,
+     2382998,
+     2401678,
+     2420403,
+     2424393,
+     2431478,
+     2435763,
+     2439797,
+     2446741,
+     2457998,
+     2460405,
+     2461813,
+     2468351,
+     2474802,
+     2477628,
+     2485758,
+     2494575,
+     2498549,
+     2501093,
+     2502325,
+     2509328,
+     2512322,
+     2523206,
+     2548397,
+     2553647,
+     2570449,
+     2570833,
+     2737425,
+     2739410,
+     2745917,
+     2746095,
+     2895665,
+     2898314,
+     2898736,
+     2903975,
+     2904817
+    ],
+    "evidence_ratio": 1.1772,
+    "qty": 2,
+    "resolved_at": 1794288321.7390535,
+    "sku": "G3bd766b0",
+    "status": "supplied",
+    "total": 15661,
+    "ub": 26776,
+    "unit_ub": 13388
+   },
+   "20dad032a25c426bbbf10426583b1f21:1": {
+    "at": 1794288253.416813,
+    "evidence_ids": [
+     2356229,
+     2366924,
+     2369367,
+     2372202,
+     2373283,
+     2378434,
+     2382157,
+     2383292,
+     2386860,
+     2393007,
+     2399513,
+     2417762,
+     2423605,
+     2427488,
+     2433234,
+     2437482,
+     2437906,
+     2448329,
+     2455113,
+     2461035,
+     2465995,
+     2466527,
+     2479930,
+     2488566,
+     2490906,
+     2497970,
+     2502768,
+     2505610,
+     2506334,
+     2514225,
+     2527542,
+     2534989,
+     2539357,
+     2541534,
+     2547282,
+     2552042
+    ],
+    "evidence_ratio": 1.1457,
+    "qty": 1,
+    "resolved_at": 1794288321.7390535,
+    "sku": "Ga2e3075f",
+    "status": "supplied",
+    "total": 8897,
+    "ub": 14513,
+    "unit_ub": 14513
+   },
+   "2c01170b4acb400dbe66e20cfe8d2c5d:0": {
+    "at": 1794288105.9663393,
+    "evidence_ids": [
+     2367067,
+     2369043,
+     2371760,
+     2375264,
+     2378365,
+     2385402,
+     2386941,
+     2387597,
+     2392962,
+     2401112,
+     2404855,
+     2408967,
+     2418681,
+     2426288,
+     2427198,
+     2438671,
+     2444683,
+     2448518,
+     2450418,
+     2464978,
+     2466365,
+     2466756,
+     2471997,
+     2472858,
+     2487572,
+     2507786,
+     2511318,
+     2512618,
+     2518718,
+     2525557,
+     2528638,
+     2545235,
+     2545462,
+     2551781,
+     2556848,
+     2558517,
+     2740973,
+     2742239
+    ],
+    "evidence_ratio": 1.321,
+    "qty": 1,
+    "resolved_at": 1794288199.4309351,
+    "sku": "Gc49f4821",
+    "status": "supplied",
+    "total": 9390,
+    "ub": 25549,
+    "unit_ub": 25549
+   },
+   "2c01170b4acb400dbe66e20cfe8d2c5d:1": {
+    "at": 1794288105.9663393,
+    "evidence_ids": [
+     2370817,
+     2411538,
+     2430320,
+     2448373,
+     2478041,
+     2494084,
+     2504975,
+     2517589,
+     2532275,
+     2539726,
+     2552109,
+     2563998,
+     2564958,
+     2738217,
+     2898817,
+     2903300,
+     3132013
+    ],
+    "evidence_ratio": 1.2583,
+    "qty": 1,
+    "resolved_at": 1794288199.4309351,
+    "sku": "G63ef2f11",
+    "status": "supplied",
+    "total": 14642,
+    "ub": 40500,
+    "unit_ub": 40500
+   },
+   "2c01170b4acb400dbe66e20cfe8d2c5d:2": {
+    "at": 1794288105.9663393,
+    "evidence_ids": [
+     2970678,
+     4296221
+    ],
+    "evidence_ratio": 1.2536,
+    "qty": 2,
+    "resolved_at": 1794288199.4309351,
+    "sku": "G630a202e",
+    "status": "supplied",
+    "total": 5454,
+    "ub": 8686,
+    "unit_ub": 4343
+   },
+   "9c771c9af6fd4969b1e81881c1f93454:0": {
+    "at": 1794288199.4309351,
+    "evidence_ids": [
+     2367067,
+     2369043,
+     2371760,
+     2375264,
+     2378365,
+     2385402,
+     2386941,
+     2387597,
+     2392962,
+     2401112,
+     2404855,
+     2408967,
+     2418681,
+     2426288,
+     2427198,
+     2438671,
+     2444683,
+     2448518,
+     2450418,
+     2464978,
+     2466365,
+     2466756,
+     2471997,
+     2472858,
+     2487572,
+     2507786,
+     2511318,
+     2512618,
+     2518718,
+     2525557,
+     2528638,
+     2545235,
+     2545462,
+     2551781,
+     2556848,
+     2558517,
+     2740973,
+     2742239
+    ],
+    "evidence_ratio": 1.321,
+    "qty": 1,
+    "resolved_at": 1794288253.416813,
+    "sku": "Gc49f4821",
+    "status": "supplied",
+    "total": 13260,
+    "ub": 25549,
+    "unit_ub": 25549
+   },
+   "9c771c9af6fd4969b1e81881c1f93454:1": {
+    "at": 1794288199.4309351,
+    "evidence_ids": [
+     2369220,
+     2376709,
+     2409571,
+     2414847,
+     2416162,
+     2421936,
+     2426646,
+     2432999,
+     2439925,
+     2447303,
+     2449724,
+     2458662,
+     2469452,
+     2472030,
+     2482515,
+     2486095,
+     2501781,
+     2508673,
+     2513029,
+     2525123,
+     2529558,
+     2538560,
+     2539288,
+     2543454,
+     2549312,
+     2554573,
+     2556459,
+     2556976,
+     2738734,
+     2748346,
+     2891668,
+     2896805,
+     2897430,
+     2898557
+    ],
+    "evidence_ratio": 1.2022,
+    "qty": 2,
+    "resolved_at": 1794288253.416813,
+    "sku": "G2b7e0fe3",
+    "status": "supplied",
+    "total": 14413,
+    "ub": 33278,
+    "unit_ub": 16639
+   },
+   "a932dc49ccd7409391210664ba116aa7:0": {
+    "at": 1794288321.7390535,
+    "evidence_ids": [
+     2356229,
+     2366924,
+     2369367,
+     2372202,
+     2373283,
+     2378434,
+     2382157,
+     2383292,
+     2386860,
+     2393007,
+     2399513,
+     2417762,
+     2423605,
+     2427488,
+     2433234,
+     2437482,
+     2437906,
+     2448329,
+     2455113,
+     2461035,
+     2465995,
+     2466527,
+     2479930,
+     2488566,
+     2490906,
+     2497970,
+     2502768,
+     2505610,
+     2506334,
+     2514225,
+     2527542,
+     2534989,
+     2539357,
+     2541534,
+     2547282,
+     2552042
+    ],
+    "evidence_ratio": 1.1457,
+    "qty": 1,
+    "resolved_at": 1794288717.4138694,
+    "sku": "Ga2e3075f",
+    "status": "supplied",
+    "total": 8827,
+    "ub": 14513,
+    "unit_ub": 14513
+   }
+  },
+  "units": {
+   "u-0cf166b9d7c0": {
+    "cost": 8897,
+    "expires_at": null,
+    "first_seen": 1794288321.7390535,
+    "gone_at": null,
+    "grade": "A",
+    "kind": "goods",
+    "sku": "Ga2e3075f",
+    "supplied_at": 1794288265
+   },
+   "u-25345525f34e": {
+    "cost": 8655,
+    "expires_at": 1796848915.0,
+    "first_seen": 1794288321.7390535,
+    "gone_at": null,
+    "grade": "A",
+    "kind": "food",
+    "sku": "G3bd766b0",
+    "supplied_at": 1794288254
+   },
+   "u-31d4b701bc5c": {
+    "cost": 2846,
+    "expires_at": null,
+    "first_seen": 1794288199.4309351,
+    "gone_at": null,
+    "grade": "A",
+    "kind": "goods",
+    "sku": "G630a202e",
+    "supplied_at": 1794288185
+   },
+   "u-481cb85dd356": {
+    "cost": 7006,
+    "expires_at": 1796112289.0,
+    "first_seen": 1794288321.7390535,
+    "gone_at": null,
+    "grade": "B",
+    "kind": "food",
+    "sku": "G3bd766b0",
+    "supplied_at": 1794288254
+   },
+   "u-6ec112bfc700": {
+    "cost": 7914,
+    "expires_at": 1796332055.0,
+    "first_seen": 1794288253.416813,
+    "gone_at": 1794288788.2126224,
+    "grade": "B",
+    "kind": "food",
+    "sku": "G2b7e0fe3",
+    "supplied_at": 1794288214
+   },
+   "u-7b184ac41b80": {
+    "cost": 9390,
+    "expires_at": 1794592777.0,
+    "first_seen": 1794288199.4309351,
+    "gone_at": null,
+    "grade": "B",
+    "kind": "food",
+    "sku": "Gc49f4821",
+    "supplied_at": 1794288163
+   },
+   "u-b89b92f7422a": {
+    "cost": 6499,
+    "expires_at": 1795261482.0,
+    "first_seen": 1794288253.416813,
+    "gone_at": 1794288717.4138694,
+    "grade": "C",
+    "kind": "food",
+    "sku": "G2b7e0fe3",
+    "supplied_at": 1794288214
+   },
+   "u-c1f60fccbc00": {
+    "cost": 14642,
+    "expires_at": 1796111640.0,
+    "first_seen": 1794288199.4309351,
+    "gone_at": null,
+    "grade": "B",
+    "kind": "food",
+    "sku": "G63ef2f11",
+    "supplied_at": 1794288173
+   },
+   "u-d4fc03b48fa5": {
+    "cost": 2608,
+    "expires_at": null,
+    "first_seen": 1794288199.4309351,
+    "gone_at": null,
+    "grade": "A",
+    "kind": "goods",
+    "sku": "G630a202e",
+    "supplied_at": 1794288185
+   },
+   "u-ee5ae2f885d7": {
+    "cost": 13260,
+    "expires_at": 1794711752.0,
+    "first_seen": 1794288253.416813,
+    "gone_at": null,
+    "grade": "B",
+    "kind": "food",
+    "sku": "Gc49f4821",
+    "supplied_at": 1794288202
+   }
+  }
+ },
+ "inventory": {
+  "round": 3,
+  "balance": 5573045,
+  "start": 5000000,
+  "injected": 0,
+  "bankruptcies": 0,
+  "bankruptcies_left": 2,
+  "bankrupt_line": 500000,
+  "storage_per_day": 0.01,
+  "restock": {
+   "open": false,
+   "opens_at": 1794289446,
+   "closes_at": 1794289626
+  },
+  "surge": [
+   {
+    "sku": "G200e39a3",
+    "name": "[마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증)",
+    "units": 119,
+    "factor": 1.138
+   },
+   {
+    "sku": "G66ded25b",
+    "name": "아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg",
+    "units": 118,
+    "factor": 1.136
+   },
+   {
+    "sku": "G022ce883",
+    "name": "[양지촌농원] 26년산 보은건대추 1kg 26mm",
+    "units": 99,
+    "factor": 1.098
+   },
+   {
+    "sku": "Gef4d3036",
+    "name": "맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg",
+    "units": 91,
+    "factor": 1.082
+   },
+   {
+    "sku": "G1831f2c0",
+    "name": "켈로그 프링글스 2+2+2+1 골라담기 GS단독",
+    "units": 80,
+    "factor": 1.06
+   },
+   {
+    "sku": "G16dcdc73",
+    "name": "조선호텔 특제육수 포기김치 4kg + 총각김치 1.5kg",
+    "units": 74,
+    "factor": 1.048
+   },
+   {
+    "sku": "G3434758a",
+    "name": "제주 삼다수 무라벨 2L X 18병(유/무라벨 랜덤발송)",
+    "units": 73,
+    "factor": 1.046
+   },
+   {
+    "sku": "G2560a8c9",
+    "name": "사세 직화K버팔로윙 1kg",
+    "units": 70,
+    "factor": 1.04
+   },
+   {
+    "sku": "G32bf9a8e",
+    "name": "[호랑이김치] 국산100% 전라도 파김치 쪽파김치 2kg",
+    "units": 67,
+    "factor": 1.034
+   },
+   {
+    "sku": "G74e686be",
+    "name": "제주 달콤 노지감귤 9kg 대과(L/2L)",
+    "units": 66,
+    "factor": 1.032
+   },
+   {
+    "sku": "G021aae64",
+    "name": "현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS",
+    "units": 63,
+    "factor": 1.026
+   },
+   {
+    "sku": "Gb2392fa9",
+    "name": "햇반 현미밥 210g x18개",
+    "units": 61,
+    "factor": 1.022
+   },
+   {
+    "sku": "G0b0ca441",
+    "name": "[산해직송] 해남 포슬포슬 수미감자 특 5kg (130~180g 내외)",
+    "units": 58,
+    "factor": 1.016
+   },
+   {
+    "sku": "G7fa48eaa",
+    "name": "아이시스 화이트 ECO 무라벨 2L 6개",
+    "units": 53,
+    "factor": 1.006
+   },
+   {
+    "sku": "G0667d440",
+    "name": "지누스 그린티 에어 하이브리드 스프링 매트리스 20cm Q 퀸",
+    "units": 53,
+    "factor": 1.006
+   }
+  ],
+  "next_dislike_fee": 0,
+  "dislike_power_unit": 20000,
+  "units": [
+   {
+    "unit": "u-31d4b701bc5c",
+    "sku": "G630a202e",
+    "name": "진회색스프레이 오공 락카 스프레이 325진회색 420ml",
+    "category": "가구/침구>가구>소파/의자/스툴",
+    "list_price": 3860,
+    "kind": "goods",
+    "cost": 2846,
+    "supplied_at": 1794288185,
+    "expires_at": null,
+    "grade": "A",
+    "cert": {
+     "cert": {
+      "unit": "u-31d4b701bc5c",
+      "sku": "G630a202e",
+      "shop": "fair-furniture",
+      "kind": "goods",
+      "supplied_at": 1794288185,
+      "expires_at": null,
+      "grade": "A"
+     },
+     "sig": "WNmVLrUeUgkixgGEwVL25qLfyGnhpoKWT0ZKeXbkODCHy/pfSlJhYiDxYXIBmaO78CrVHWKDLr6VGAUZqV66BQ=="
+    }
+   },
+   {
+    "unit": "u-d4fc03b48fa5",
+    "sku": "G630a202e",
+    "name": "진회색스프레이 오공 락카 스프레이 325진회색 420ml",
+    "category": "가구/침구>가구>소파/의자/스툴",
+    "list_price": 3860,
+    "kind": "goods",
+    "cost": 2608,
+    "supplied_at": 1794288185,
+    "expires_at": null,
+    "grade": "A",
+    "cert": {
+     "cert": {
+      "unit": "u-d4fc03b48fa5",
+      "sku": "G630a202e",
+      "shop": "fair-furniture",
+      "kind": "goods",
+      "supplied_at": 1794288185,
+      "expires_at": null,
+      "grade": "A"
+     },
+     "sig": "zdo1DVpXP/pDuADKKUPiEnJ9yKVKidGPbGlcGIwNRMv+Io8c9/vF4gPNWVvv2HkmQzt1DrAmEvf7S77IZySvAg=="
+    }
+   },
+   {
+    "unit": "u-0cf166b9d7c0",
+    "sku": "Ga2e3075f",
+    "name": "ON 젤라또 베개커버 50x70 17 color",
+    "category": "가구/침구>침구/홈데코>침구",
+    "list_price": 12900,
+    "kind": "goods",
+    "cost": 8897,
+    "supplied_at": 1794288265,
+    "expires_at": null,
+    "grade": "A",
+    "cert": {
+     "cert": {
+      "unit": "u-0cf166b9d7c0",
+      "sku": "Ga2e3075f",
+      "shop": "fair-furniture",
+      "kind": "goods",
+      "supplied_at": 1794288265,
+      "expires_at": null,
+      "grade": "A"
+     },
+     "sig": "+rB04F0mJSZQ6NeOIQzyzyLBVQCgLoma/RFWZCxa0aqk1CsRd3vXtyxd1T8rH4hlHqX5XXWx4MHFA7Fz1fhbCg=="
+    }
+   },
+   {
+    "unit": "u-7b184ac41b80",
+    "sku": "Gc49f4821",
+    "name": "[호랑이김치] 국산100% 제주 무말랭이 무침 2kg",
+    "category": "식품>김치/반찬/즉석요리>김치",
+    "list_price": 22710,
+    "kind": "food",
+    "cost": 9390,
+    "supplied_at": 1794288163,
+    "expires_at": 1794592777.0,
+    "grade": "B",
+    "cert": {
+     "cert": {
+      "unit": "u-7b184ac41b80",
+      "sku": "Gc49f4821",
+      "shop": "fair-furniture",
+      "kind": "food",
+      "supplied_at": 1794288163,
+      "expires_at": 1794592777,
+      "grade": null
+     },
+     "sig": "m2RNF7RMqdreQMJjvD904O9Kdt29xDQ2h0ytKHmjFFwptLsyfK3zrMEnzrexpVhW5bZxVrmpdhjacw9SV6qkBg=="
+    }
+   },
+   {
+    "unit": "u-ee5ae2f885d7",
+    "sku": "Gc49f4821",
+    "name": "[호랑이김치] 국산100% 제주 무말랭이 무침 2kg",
+    "category": "식품>김치/반찬/즉석요리>김치",
+    "list_price": 22710,
+    "kind": "food",
+    "cost": 13260,
+    "supplied_at": 1794288202,
+    "expires_at": 1794711752.0,
+    "grade": "B",
+    "cert": {
+     "cert": {
+      "unit": "u-ee5ae2f885d7",
+      "sku": "Gc49f4821",
+      "shop": "fair-furniture",
+      "kind": "food",
+      "supplied_at": 1794288202,
+      "expires_at": 1794711752,
+      "grade": null
+     },
+     "sig": "8IKK88ajZIoTfrQk7XfGlvQx+7pNuvZ6QDOcOSSw+L6eRIaFJX0Vai7xyP8Hdgy5HLE84VrAnA+2hT2GG559Aw=="
+    }
+   },
+   {
+    "unit": "u-c1f60fccbc00",
+    "sku": "G63ef2f11",
+    "name": "[명절선물] Since 1984 최순희 명인의 참기름 들기름 선물세트 (300ml x 2병)",
+    "category": "식품>식용류/지방유지류>오일",
+    "list_price": 36000,
+    "kind": "food",
+    "cost": 14642,
+    "supplied_at": 1794288173,
+    "expires_at": 1796111640.0,
+    "grade": "B",
+    "cert": {
+     "cert": {
+      "unit": "u-c1f60fccbc00",
+      "sku": "G63ef2f11",
+      "shop": "fair-furniture",
+      "kind": "food",
+      "supplied_at": 1794288173,
+      "expires_at": 1796111640,
+      "grade": null
+     },
+     "sig": "ZOLSTBK3ZOIxamMfHW+ZMVCApFgkrfP1Bw6lV2boC45AT2/1mljr0jk4s0welV/hMelRdHdKdSI2YXJKiJhDDw=="
+    }
+   },
+   {
+    "unit": "u-481cb85dd356",
+    "sku": "G3bd766b0",
+    "name": "화과방 브라우니 쿠키세트 21개입(+쇼핑백) / 간식 과자 선물세트 (26.11.19일까지)",
+    "category": "식품>빵/제과>비스켓/쿠키",
+    "list_price": 11900,
+    "kind": "food",
+    "cost": 7006,
+    "supplied_at": 1794288254,
+    "expires_at": 1796112289.0,
+    "grade": "B",
+    "cert": {
+     "cert": {
+      "unit": "u-481cb85dd356",
+      "sku": "G3bd766b0",
+      "shop": "fair-furniture",
+      "kind": "food",
+      "supplied_at": 1794288254,
+      "expires_at": 1796112289,
+      "grade": null
+     },
+     "sig": "xdShLOBkq9ba98HSPkwwl12Wol2VKOmuMyIlm/XfMPa6pVs22B7dYKMaRr4GXWd/GGwB0C1DD/5i1TccxH9VBw=="
+    }
+   },
+   {
+    "unit": "u-25345525f34e",
+    "sku": "G3bd766b0",
+    "name": "화과방 브라우니 쿠키세트 21개입(+쇼핑백) / 간식 과자 선물세트 (26.11.19일까지)",
+    "category": "식품>빵/제과>비스켓/쿠키",
+    "list_price": 11900,
+    "kind": "food",
+    "cost": 8655,
+    "supplied_at": 1794288254,
+    "expires_at": 1796848915.0,
+    "grade": "A",
+    "cert": {
+     "cert": {
+      "unit": "u-25345525f34e",
+      "sku": "G3bd766b0",
+      "shop": "fair-furniture",
+      "kind": "food",
+      "supplied_at": 1794288254,
+      "expires_at": 1796848915,
+      "grade": null
+     },
+     "sig": "WI5b/Wm+XlYNA1t8PZ2QFEDJKjsCG5YVioVs5MGY1I7A5ddc5L9FBGT7R9b5cRwQtqgAc9NWZtxjrFzF9eRxBQ=="
+    }
+   }
+  ]
+ },
+ "own_urls": [
+  "https://alan-their-professionals-gig.trycloudflare.com",
+  "https://disco-suppose-writings-insurance.trycloudflare.com",
+  "https://disposition-completion-syndication-eternal.trycloudflare.com",
+  "https://geological-analysts-fin-lib.trycloudflare.com",
+  "https://halifax-debug-authors-bundle.trycloudflare.com",
+  "https://harvest-convergence-libs-shore.trycloudflare.com",
+  "https://lovely-quiet-fan-exceptions.trycloudflare.com",
+  "https://por-farming-fish-funky.trycloudflare.com",
+  "https://reader-names-waiting-lived.trycloudflare.com",
+  "https://south-entertaining-associated-engines.trycloudflare.com",
+  "https://speak-jose-times-enjoy.trycloudflare.com",
+  "https://timber-realize-until-closing.trycloudflare.com"
+ ],
+ "raw_rows": [
+  {
+   "data": {
+    "amount": 8827,
+    "buyer": "Kiro729",
+    "checkout_hash": "_xZWxfee4R0Ncq4gmJyAS7VBKGvVD_6acLeFbgHleNk",
+    "claim": "A",
+    "claim_honest": true,
+    "expires_at": null,
+    "grade": "A",
+    "item": "Ga2e3075f",
+    "name": "ON 젤라또 베개커버 50x70 17 color",
+    "order": "o-6be0865f6764",
+    "shop": "https://geological-analysts-fin-lib.trycloudflare.com",
+    "sku": "Ga2e3075f",
+    "unit": "u-9b29c415094b",
+    "warranty_hours": null
+   },
+   "kind": "settle",
+   "observed_at": 1794288508.5439947,
+   "round": 3,
+   "seq": 4759057,
+   "ts": 1794288462.83
+  }
+ ],
+ "catalog": {
+  "G2b7e0fe3": {
+   "sku": "G2b7e0fe3",
+   "name": "[직영] 롯데칠성 펩시콜라 제로슈거 라임향 210ml x 30캔",
+   "category": "식품>음료>주스/코코아/생수",
+   "list_price": 14790,
+   "kind": "food",
+   "shelf_hours": 720
+  },
+  "G3bd766b0": {
+   "sku": "G3bd766b0",
+   "name": "화과방 브라우니 쿠키세트 21개입(+쇼핑백) / 간식 과자 선물세트 (26.11.19일까지)",
+   "category": "식품>빵/제과>비스켓/쿠키",
+   "list_price": 11900,
+   "kind": "food",
+   "shelf_hours": 720
+  },
+  "G630a202e": {
+   "sku": "G630a202e",
+   "name": "진회색스프레이 오공 락카 스프레이 325진회색 420ml",
+   "category": "가구/침구>가구>소파/의자/스툴",
+   "list_price": 3860,
+   "kind": "goods",
+   "shelf_hours": null
+  },
+  "G63ef2f11": {
+   "sku": "G63ef2f11",
+   "name": "[명절선물] Since 1984 최순희 명인의 참기름 들기름 선물세트 (300ml x 2병)",
+   "category": "식품>식용류/지방유지류>오일",
+   "list_price": 36000,
+   "kind": "food",
+   "shelf_hours": 720
+  },
+  "Ga2e3075f": {
+   "sku": "Ga2e3075f",
+   "name": "ON 젤라또 베개커버 50x70 17 color",
+   "category": "가구/침구>침구/홈데코>침구",
+   "list_price": 12900,
+   "kind": "goods",
+   "shelf_hours": null
+  },
+  "Gc49f4821": {
+   "sku": "Gc49f4821",
+   "name": "[호랑이김치] 국산100% 제주 무말랭이 무침 2kg",
+   "category": "식품>김치/반찬/즉석요리>김치",
+   "list_price": 22710,
+   "kind": "food",
+   "shelf_hours": 168
+  }
+ }
+}

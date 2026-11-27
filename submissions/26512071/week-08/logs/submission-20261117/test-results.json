@@ -1,0 +1,130 @@
+[
+  {
+    "command": [
+      "C:/Users/qkrgk/ai-agent-engineering-101/.venv/Scripts/python.exe",
+      "-m",
+      "unittest",
+      "test_buyer_terra",
+      "test_buyer_terra_correction",
+      "test_buyer_registry_binding",
+      "test_evidence_memory",
+      "test_supply_journal",
+      "test_sol_policy",
+      "test_unrestricted_financial",
+      "test_seller_warranty0h_v1",
+      "test_seller_warranty0h_supersede_v1",
+      "test_seller_recovery_open_v1",
+      "test_market_new_goods",
+      "test_microeconomics",
+      "test_microeconomics_public",
+      "test_forum_combined_cap",
+      "test_forum_terra",
+      "-v"
+    ],
+    "cwd": "submissions/26512071/week-08",
+    "exit_code": 1,
+    "seconds": 22.74,
+    "summary": [
+      "ERROR: test_quote_72_then_signed_receipt_72_with_authority_first (test_seller_warranty0h_supersede_v1.SellerFlow0h.test_quote_72_then_signed_receipt_72_with_authority_first)",
+      "ERROR: test_real_signature_covers_core4_and_metadata_binds_terms (test_seller_warranty0h_supersede_v1.SellerFlow0h.test_real_signature_covers_core4_and_metadata_binds_terms)",
+      "ERROR: test_signer_failure_keeps_committed_authority (test_seller_warranty0h_supersede_v1.SellerFlow0h.test_signer_failure_keeps_committed_authority)",
+      "ERROR: test_grade_drop_between_quote_and_accept_refuses_unsigned (test_seller_warranty0h_supersede_v1.SellerFlow0h.test_grade_drop_between_quote_and_accept_refuses_unsigned)",
+      "ERROR: test_pilot_expired_before_accept_refuses_unsigned (test_seller_warranty0h_supersede_v1.SellerFlow0h.test_pilot_expired_before_accept_refuses_unsigned)",
+      "ERROR: test_cancel_frees_unsigned_intent (test_seller_warranty0h_supersede_v1.SellerFlow0h.test_cancel_frees_unsigned_intent)",
+      "Ran 192 tests in 21.506s",
+      "FAILED (errors=6, skipped=1)"
+    ],
+    "log": "tests-1.log"
+  },
+  {
+    "command": [
+      "C:/Users/qkrgk/ai-agent-engineering-101/.venv/Scripts/python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tool_forge",
+      "-p",
+      "test_*.py",
+      "-v"
+    ],
+    "cwd": "submissions/26512071/week-08",
+    "exit_code": 0,
+    "seconds": 85.71,
+    "summary": [
+      "Ran 14 tests in 85.060s",
+      "OK"
+    ],
+    "log": "tests-2.log"
+  },
+  {
+    "command": [
+      "C:/Users/qkrgk/ai-agent-engineering-101/.venv/Scripts/python.exe",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      ".",
+      "-p",
+      "test_*.py"
+    ],
+    "cwd": "submissions/26512071/week-08",
+    "exit_code": 1,
+    "seconds": 96.08,
+    "summary": [
+      "ERROR: test_deployment_config_disables_legacy_trading_and_default_restock (test_migration_safety.SafetyTests.test_deployment_config_disables_legacy_trading_and_default_restock)",
+      "ERROR: test_buyer_and_seller_use_shared_provider (test_openai_harness.HarnessTests.test_buyer_and_seller_use_shared_provider)",
+      "ERROR: test_replay_sends_exact_protocol_and_agrees_with_kit (test_repair_r3.AuthenticReplay.test_replay_sends_exact_protocol_and_agrees_with_kit)",
+      "ERROR: test_authentic_receipt_signed_over_exactly_one_price_encoding (test_repair_r3.AuthenticSignatureDiagnosis.test_authentic_receipt_signed_over_exactly_one_price_encoding)",
+      "ERROR: test_fixture_pubkey_is_the_registry_key (test_repair_r3.AuthenticSignatureDiagnosis.test_fixture_pubkey_is_the_registry_key)",
+      "ERROR: test_authentic_registry_stock_first_three_not_single_merchant (test_repair_r3.MerchantDiversity.test_authentic_registry_stock_first_three_not_single_merchant)",
+      "ERROR: test_round3_integration (unittest.loader._FailedTest.test_round3_integration)",
+      "ERROR: test_round3_neutrality (unittest.loader._FailedTest.test_round3_neutrality)",
+      "ERROR: test_actual_a2a_sku_budget_task_signature_and_food_policy (test_trading_r3.BuyerTests.test_actual_a2a_sku_budget_task_signature_and_food_policy)",
+      "FAIL: test_in_stock_negotiation_guard_and_signed_receipt_without_payment (test_migration_safety.SellerSmokeTests.test_in_stock_negotiation_guard_and_signed_receipt_without_payment)",
+      "FAIL: test_seller_r3_receipt_verifies_on_the_kit_buyer_path (test_repair_r3.OwnSellerReceipt.test_seller_r3_receipt_verifies_on_the_kit_buyer_path)",
+      "FAIL: test_card_mentions_unique_partial_name_discovery_without_new_claims (test_seller_discovery.DiscoveryRouteTests.test_card_mentions_unique_partial_name_discovery_without_new_claims)",
+      "FAIL: test_complex_openings_still_go_to_terra (test_seller_fastpath.FastPathTests.test_complex_openings_still_go_to_terra)",
+      "FAIL: test_non_plain_followups_go_to_terra_without_stale_or_sku_offers (test_seller_fastpath.FastPathTests.test_non_plain_followups_go_to_terra_without_stale_or_sku_offers)",
+      "FAIL: test_cancel_frees_unsigned_intent (test_warranty.SellerFlow.test_cancel_frees_unsigned_intent)",
+      "FAIL: test_grade_c_and_card (test_warranty.SellerFlow.test_grade_c_and_card)",
+      "FAIL: test_grade_drop_between_quote_and_accept_refuses_unsigned (test_warranty.SellerFlow.test_grade_drop_between_quote_and_accept_refuses_unsigned)",
+      "FAIL: test_pilot_expired_before_accept_refuses_unsigned (test_warranty.SellerFlow.test_pilot_expired_before_accept_refuses_unsigned)",
+      "FAIL: test_quote_72_then_signed_receipt_72_with_authority_first (test_warranty.SellerFlow.test_quote_72_then_signed_receipt_72_with_authority_first)",
+      "FAIL: test_real_signature_covers_core4_and_metadata_binds_terms (test_warranty.SellerFlow.test_real_signature_covers_core4_and_metadata_binds_terms)",
+      "FAIL: test_signer_failure_keeps_committed_authority (test_warranty.SellerFlow.test_signer_failure_keeps_committed_authority)",
+      "Ran 721 tests in 93.085s",
+      "FAILED (failures=12, errors=9, skipped=1)"
+    ],
+    "log": "tests-3.log"
+  },
+  {
+    "command": [
+      "python",
+      "-m",
+      "unittest",
+      "test_buyer_terra",
+      "test_buyer_terra_correction",
+      "test_buyer_registry_binding",
+      "test_evidence_memory",
+      "test_supply_journal",
+      "test_sol_policy",
+      "test_unrestricted_financial",
+      "test_seller_warranty0h_v1",
+      "test_seller_recovery_open_v1",
+      "test_market_new_goods",
+      "test_microeconomics",
+      "test_microeconomics_public",
+      "test_forum_combined_cap",
+      "test_forum_terra",
+      "-v"
+    ],
+    "cwd": "submissions/26512071/week-08",
+    "exit_code": 0,
+    "summary": [
+      "Ran 182 tests in 16.321s",
+      "OK (skipped=1)"
+    ],
+    "log": "tests-focused.log"
+  }
+]
