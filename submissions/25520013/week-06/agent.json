@@ -1,0 +1,5 @@
+{
+  "harness": "Claude Code: claude -p --model opus (claude-opus-5-5) --tools \"\" --setting-sources \"\" --no-session-persistence",
+  "seller": {"cmd": "uv run python seller.py --port {port}"},
+  "buyer": {"cmd": "uv run python buyer.py --url {url} --item {item} --budget {budget}"}
+}
